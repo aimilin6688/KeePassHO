@@ -1,67 +1,69 @@
-import settingsService from '../services/SettingsService';
-import { router } from '@kit.ArkUI';
+import { ThemeConstants, ThemeMode } from '../common/constants/ThemeConstants';
+import { SettingsService } from '../services/SettingsService';
+import router from '@ohos.router';
 
 @Entry
 @Component
 struct Settings {
-  @State isDarkMode: boolean = false
   @State isGridView: boolean = false
   @State sortBy: string = 'name' // 'name' | 'time'
+  @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
+  private settingsService: SettingsService = SettingsService.getInstance();
 
   aboutToAppear() {
-    // 初始化设置服务并加载设置
-    settingsService.init().then(() => {
-      this.loadSettings();
-    });
+    this.loadSettings();
   }
 
   async loadSettings() {
-    this.isDarkMode = await settingsService.isDarkMode();
-    this.isGridView = await settingsService.isGridView();
-    this.sortBy = await settingsService.getSortBy();
+    this.currentThemeMode = await this.settingsService.getThemeMode();
   }
 
   build() {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('app.media.ic_arrow_right'))
+        Image($r('app.media.ic_back'))
           .width(24)
           .height(24)
-          .margin({ left: 16 })
-          .rotate({ angle: 180 })
-          .onClick(() => {
-            router.back()
-          })
+          .margin({ left: 12 })
+          .onClick(() => router.back())
         Text('设置')
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
+          .margin({ left: 12 })
       }
       .width('100%')
       .height(56)
-      .backgroundColor(Color.White)
+      .backgroundColor($r('app.color.card_background'))
 
       // 设置列表
       List() {
+        // 主题设置
         ListItem() {
-          Row() {
-            Text('深色模式')
-              .fontSize(16)
-              .flexGrow(1)
-            Toggle({ type: ToggleType.Switch, isOn: this.isDarkMode })
-              .onChange((isOn: boolean) => {
-                this.isDarkMode = isOn
-                settingsService.setDarkMode(isOn);
-                // 应用主题变化
-                // TODO: 实现主题切换逻辑
-              })
+          Column() {
+            Row() {
+              Text('主题')
+                .fontSize(16)
+              Blank()
+              Select(ThemeConstants.THEME_OPTIONS)
+                .value(this.currentThemeMode)
+                .font({ size: 16 })
+                .selectedOptionFont({ size: 16 })
+                .optionFont({ size: 16 })
+                .onSelect(async (index: number) => {
+                  const selectedMode = ThemeConstants.THEME_OPTIONS[index].value;
+                  await this.settingsService.setThemeMode(selectedMode);
+                  this.currentThemeMode = selectedMode;
+                })
+            }
+            .width('100%')
+            .height(48)
+            .padding({ left: 16, right: 16 })
           }
-          .width('100%')
-          .padding(16)
+          .backgroundColor($r('app.color.card_background'))
         }
-        .backgroundColor(Color.White)
 
+        // 网格视图
         ListItem() {
           Row() {
             Text('网格视图')
@@ -70,14 +72,15 @@ struct Settings {
             Toggle({ type: ToggleType.Switch, isOn: this.isGridView })
               .onChange((isOn: boolean) => {
                 this.isGridView = isOn
-                settingsService.setGridView(isOn);
+                this.settingsService.setGridView(isOn);
               })
           }
           .width('100%')
           .padding(16)
         }
-        .backgroundColor(Color.White)
+        .backgroundColor($r('app.color.card_background'))
 
+        // 排序方式
         ListItem() {
           Column() {
             Text('排序方式')
@@ -90,7 +93,7 @@ struct Settings {
                 .onChange((isChecked: boolean) => {
                   if (isChecked) {
                     this.sortBy = 'name'
-                    settingsService.setSortBy('name');
+                    this.settingsService.setSortBy('name');
                   }
                 })
               Text('按名称')
@@ -101,7 +104,7 @@ struct Settings {
                 .onChange((isChecked: boolean) => {
                   if (isChecked) {
                     this.sortBy = 'time'
-                    settingsService.setSortBy('time');
+                    this.settingsService.setSortBy('time');
                   }
                 })
               Text('按时间')
@@ -112,17 +115,20 @@ struct Settings {
           .width('100%')
           .padding(16)
         }
-        .backgroundColor(Color.White)
+        .backgroundColor($r('app.color.card_background'))
       }
       .width('100%')
+      .layoutWeight(1)
       .margin({ top: 12 })
       .divider({
         strokeWidth: 1,
-        color: '#F1F3F5'
+        color: $r('app.color.divider'),
+        startMargin: 16,
+        endMargin: 16
       })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F1F3F5')
+    .backgroundColor($r('app.color.background_primary'))
   }
 }

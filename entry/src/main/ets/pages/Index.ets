@@ -1,9 +1,10 @@
-import { AddGroupDialog } from '../components/AddGroupDialog'
-import router from '@ohos.router'
+import { AddGroupDialog } from '../components/AddGroupDialog';
+import router from '@ohos.router';
+import ThemeManager from '../common/utils/ThemeManager';
 
 @Entry
 @Component
-struct GroupManager {
+struct Index {
   @State newGroupName: string = ""
   @State editingGroupIndex: number = -1
   @State data: Array<ItemGroup> = [
@@ -29,9 +30,13 @@ struct GroupManager {
 
   dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
-      newGroupName: $newGroupName,
-      editingGroupIndex: $editingGroupIndex,
-      onConfirm: (): void => this.handleAddGroup()
+      newGroupName: this.newGroupName,
+      editingGroupIndex: this.editingGroupIndex,
+      onConfirm: (): void => this.handleAddGroup(),
+      onCancel: (): void => {
+        this.newGroupName = "";
+        this.editingGroupIndex = -1;
+      }
     }),
     alignment: DialogAlignment.Center,
     autoCancel: true
@@ -43,7 +48,7 @@ struct GroupManager {
       Button("编辑", {type:  ButtonType.Normal})
         .width(80)
         .height(60)
-        .backgroundColor('#ff4bb8f5')
+        .backgroundColor($r('app.color.accent'))
         .fontColor(Color.White)
         .fontSize(14)
         .onClick(() => {
@@ -55,7 +60,7 @@ struct GroupManager {
       Button("删除", {type:  ButtonType.Normal})
         .width(80)
         .height(60)
-        .backgroundColor('#fff17474')
+        .backgroundColor($r('app.color.danger'))
         .fontColor(Color.White)
         .fontSize(14)
         .onClick(() => {
@@ -100,6 +105,23 @@ struct GroupManager {
     this.editingGroupIndex = -1
   }
 
+  aboutToAppear() {
+    // 监听主题变化
+    ThemeManager.getInstance().addThemeChangeListener(() => {
+      this.onThemeChanged();
+    });
+  }
+
+  aboutToDisappear() {
+    // 移除主题变化监听
+    ThemeManager.getInstance().removeThemeChangeListenerAll();
+  }
+
+  onThemeChanged() {
+    // 强制组件刷新以应用新主题
+    this.data = [...this.data];
+  }
+
   build() {
     Stack() {
       Column() {
@@ -109,19 +131,20 @@ struct GroupManager {
             .fontSize(20)
             .fontWeight(FontWeight.Medium)
             .margin({ left: 16 })
+            .fontColor($r('app.color.text_primary'))
           Blank()
           Image($r('app.media.ic_settings'))
             .width(24)
             .height(24)
             .margin({ right: 16 })
-            .outlineColor(Color.Gray)
+            .borderColor($r('app.color.icon_normal'))
             .onClick(() => {
               router.pushUrl({ url: 'pages/Settings' })
             })
         }
         .width('100%')
         .height(56)
-        .backgroundColor(Color.White)
+        .backgroundColor($r('app.color.card_background'))
         List({ space: 8 }) {
           ForEach(this.data, (itemGroup: ItemGroup, index: number) => {
             ListItem(){
@@ -142,7 +165,7 @@ struct GroupManager {
               .width('100%')
               .height(60)
               .borderRadius(8)
-              .backgroundColor(Color.White)
+              .backgroundColor($r('app.color.card_background'))
               .padding({ left: 10, right: 10 })
             }
             .swipeAction({
@@ -154,7 +177,7 @@ struct GroupManager {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('#F1F3F5')
+        .backgroundColor($r('app.color.background_primary'))
         .padding({ left: 12, right: 12, top: 12 })
         .scrollBar(BarState.Auto)
       }
@@ -164,11 +187,12 @@ struct GroupManager {
         Image($r('app.media.ic_add'))
           .width(24)
           .height(24)
+          .fillColor(Color.White)
       }
       .width(60)
       .height(60)
       .borderRadius(30)
-      .backgroundColor('#007DFF')
+      .backgroundColor($r('app.color.accent'))
       .position({right: 12, bottom: 12})
       .onClick(() => {
         this.editingGroupIndex = -1
