@@ -1,55 +1,4 @@
-
-@CustomDialog
-struct AddGroupDialog {
-  @Link showDialog: boolean
-  @Link newGroupName: string
-  @Link editingGroupIndex: number
-  controller: CustomDialogController
-
-  onConfirm(): void {
-  }
-
-
-  build() {
-    Column() {
-      Text(this.editingGroupIndex >= 0 ? '编辑分组' : '添加分组')
-        .fontSize(20)
-        .margin({ top: 10, bottom: 20 })
-      
-      TextInput({ placeholder: '请输入分组名称', text: this.newGroupName })
-        .width('90%')
-        .height(50)
-        .margin({ bottom: 20 })
-        .onChange((value: string) => {
-          this.newGroupName = value
-        })
-
-      Row() {
-        Button('取消')
-          .width(120)
-          .onClick(() => {
-            this.showDialog = false
-            this.controller.close()
-          })
-        Button('确定')
-          .width(120)
-          .onClick(() => {
-            if (this.newGroupName.trim()) {
-              this.onConfirm()
-              this.showDialog = false
-              this.controller.close()
-            }
-          })
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceEvenly)
-      .margin({ bottom: 20 })
-    }
-    .width('90%')
-    .backgroundColor(Color.White)
-    .borderRadius(10)
-  }
-}
+import { AddGroupDialog } from '../components/AddGroupDialog'
 
 @Entry
 @Component
@@ -58,8 +7,11 @@ struct GroupManager {
     builder: AddGroupDialog({
       showDialog: $showDialog,
       newGroupName: $newGroupName,
-      editingGroupIndex: $editingGroupIndex
-    })
+      editingGroupIndex: $editingGroupIndex,
+      onConfirm: (): void => this.handleAddGroup()
+    }),
+    alignment: DialogAlignment.Center,
+    autoCancel: true
   })
   
   @State data: Array<ItemGroup> = [
@@ -128,19 +80,26 @@ struct GroupManager {
   }
   
   handleAddGroup() {
-    if (this.editingGroupIndex >= 0) {
+    if (!this.newGroupName.trim()) {
+      return
+    }
+
+    if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
       // 编辑现有分组
-      this.data[this.editingGroupIndex].title = this.newGroupName
+      this.data[this.editingGroupIndex].title = this.newGroupName.trim()
     } else {
       // 添加新分组
       this.data.push({
-        title: this.newGroupName,
-        icon: $r('app.media.ic_add'),
+        title: this.newGroupName.trim(),
+        icon: $r('app.media.startIcon'),
         list: []
       })
     }
+
+    // 重置状态
     this.newGroupName = ""
     this.editingGroupIndex = -1
+    this.showDialog = false
   }
 
   build() {
