@@ -1,4 +1,5 @@
 import { AddGroupDialog } from '../components/AddGroupDialog'
+import router from '@ohos.router'
 
 @Entry
 @Component
@@ -102,6 +103,24 @@ struct GroupManager {
   build() {
     Stack() {
       Column() {
+        // 顶部导航栏
+        Row() {
+          Text('KeePassHO')
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 16 })
+          Blank()
+          Image($r('app.media.ic_edit'))
+            .width(24)
+            .height(24)
+            .margin({ right: 16 })
+            .onClick(() => {
+              router.pushUrl({ url: 'pages/Settings' })
+            })
+        }
+        .width('100%')
+        .height(56)
+        .backgroundColor(Color.White)
         List({ space: 8 }) {
           ForEach(this.data, (itemGroup: ItemGroup, index: number) => {
             ListItem(){
