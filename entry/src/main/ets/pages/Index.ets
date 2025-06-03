@@ -144,63 +144,64 @@ struct GroupManager {
   }
 
   build() {
-    Column() {
-      List({ space: 8 }) {
-        ForEach(this.data, (itemGroup: ItemGroup, index: number) => {
-          ListItem(){
-            Row() {
-              Image(itemGroup.icon)
-                .width(40)
-                .height(40)
-                .margin(10)
-              Text(itemGroup.title)
-                .fontSize(20)
-                .textAlign(TextAlign.Start)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(24)
-                .height(24)
-                .margin({ right: 10 })
+    Stack() {
+      Column() {
+        List({ space: 8 }) {
+          ForEach(this.data, (itemGroup: ItemGroup, index: number) => {
+            ListItem(){
+              Row() {
+                Image(itemGroup.icon)
+                  .width(40)
+                  .height(40)
+                  .margin(10)
+                Text(itemGroup.title)
+                  .fontSize(20)
+                  .textAlign(TextAlign.Start)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .margin({ right: 10 })
+              }
+              .width('100%')
+              .height(60)
+              .borderRadius(8)
+              .backgroundColor(Color.White)
+              .padding({ left: 10, right: 10 })
             }
-            .width('100%')
-            .height(60)
-            .borderRadius(8)
-            .backgroundColor(Color.White)
-            .padding({ left: 10, right: 10 })
-          }
-          .swipeAction({
-            end: {
-              builder: this.SwipeActionButtons(index)
-            }
-          })
-        }, (item: ItemGroup, index: number) => `${index}-${item.title}`)
-      }
-      .width('100%')
-      .backgroundColor('#F1F3F5')
-      .padding({ left: 12, right: 12, top: 12 })
-      Stack({ alignContent: Alignment.BottomEnd }) {
-        Button() {
-          Image($r('app.media.ic_add'))
-            .width(24)
-            .height(24)
+            .swipeAction({
+              end: {
+                builder: this.SwipeActionButtons(index)
+              }
+            })
+          }, (item: ItemGroup, index: number) => `${index}-${item.title}`)
         }
-        .width(60)
-        .height(60)
-        .borderRadius(30)
-        .backgroundColor('#007DFF')
-        .margin({ right: 20, bottom: 20 })
-        .onClick(() => {
-          this.showDialog = true
-          this.editingGroupIndex = -1
-          this.newGroupName = ""
-          this.dialogController.open()
-        })
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#F1F3F5')
+        .padding({ left: 12, right: 12, top: 12 })
       }
       .width('100%')
-      .height('100%')
 
-
+      Button() {
+        Image($r('app.media.ic_add'))
+          .width(24)
+          .height(24)
+      }
+      .width(60)
+      .height(60)
+      .borderRadius(30)
+      .backgroundColor('#007DFF')
+      .position({right: 12, bottom: 12})
+      .onClick(() => {
+        this.showDialog = true
+        this.editingGroupIndex = -1
+        this.newGroupName = ""
+        this.dialogController.open()
+      })
     }
+    .width('100%')
+    .height('100%')
   }
 }
 
