@@ -137,7 +137,6 @@ struct Index {
             .width(24)
             .height(24)
             .margin({ right: 16 })
-            .borderColor($r('app.color.icon_normal'))
             .onClick(() => {
               router.pushUrl({ url: 'pages/Settings' })
             })
