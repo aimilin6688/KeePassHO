@@ -3,17 +3,8 @@ import { AddGroupDialog } from '../components/AddGroupDialog'
 @Entry
 @Component
 struct GroupManager {
-  dialogController: CustomDialogController = new CustomDialogController({
-    builder: AddGroupDialog({
-      showDialog: $showDialog,
-      newGroupName: $newGroupName,
-      editingGroupIndex: $editingGroupIndex,
-      onConfirm: (): void => this.handleAddGroup()
-    }),
-    alignment: DialogAlignment.Center,
-    autoCancel: true
-  })
-  
+  @State newGroupName: string = ""
+  @State editingGroupIndex: number = -1
   @State data: Array<ItemGroup> = [
     {
       title: '组1',
@@ -34,9 +25,16 @@ struct GroupManager {
       ]
     },
   ]
-  @State showDialog: boolean = false
-  @State newGroupName: string = ""
-  @State editingGroupIndex: number = -1
+
+  dialogController: CustomDialogController = new CustomDialogController({
+    builder: AddGroupDialog({
+      newGroupName: $newGroupName,
+      editingGroupIndex: $editingGroupIndex,
+      onConfirm: (): void => this.handleAddGroup()
+    }),
+    alignment: DialogAlignment.Center,
+    autoCancel: true
+  })
   
   @Builder
   SwipeActionButtons(index: number) {
@@ -50,7 +48,6 @@ struct GroupManager {
         .onClick(() => {
           this.editingGroupIndex = index
           this.newGroupName = this.data[index].title
-          this.showDialog = true
           this.dialogController.open()
         })
       
@@ -85,8 +82,9 @@ struct GroupManager {
     }
 
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
+      let oldData = this.data[this.editingGroupIndex]
       // 编辑现有分组
-      this.data[this.editingGroupIndex].title = this.newGroupName.trim()
+      this.data.splice(this.editingGroupIndex, 1, {'title': this.newGroupName.trim(), 'icon': oldData.icon, 'list': oldData.list})
     } else {
       // 添加新分组
       this.data.push({
@@ -99,7 +97,6 @@ struct GroupManager {
     // 重置状态
     this.newGroupName = ""
     this.editingGroupIndex = -1
-    this.showDialog = false
   }
 
   build() {
@@ -139,6 +136,7 @@ struct GroupManager {
         .height('100%')
         .backgroundColor('#F1F3F5')
         .padding({ left: 12, right: 12, top: 12 })
+        .scrollBar(BarState.Auto)
       }
       .width('100%')
 
@@ -153,7 +151,6 @@ struct GroupManager {
       .backgroundColor('#007DFF')
       .position({right: 12, bottom: 12})
       .onClick(() => {
-        this.showDialog = true
         this.editingGroupIndex = -1
         this.newGroupName = ""
         this.dialogController.open()

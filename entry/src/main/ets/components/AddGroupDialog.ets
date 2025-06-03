@@ -1,16 +1,10 @@
 @CustomDialog
 export struct AddGroupDialog {
-  @Link showDialog: boolean
   @Link newGroupName: string
   @Link editingGroupIndex: number
   controller: CustomDialogController
-  @Prop onConfirm: () => void
-
-  aboutToAppear() {
-    if (!this.controller) {
-      console.error('AddGroupDialog: controller is required')
-    }
-  }
+  onConfirm: () => void = () => {}
+  onCancel: () => void = () => {}
 
   build() {
     Column() {
@@ -35,32 +29,32 @@ export struct AddGroupDialog {
           .width(120)
           .onClick(() => {
             this.controller.close()
-            this.showDialog = false
             this.newGroupName = ''
+            if(this.onCancel){
+              this.onCancel()
+            }
           })
           .backgroundColor(0xffffff)
           .fontColor(Color.Black)
 
         Button('确定')
           .width(120)
-          .enabled(this.newGroupName.length > 0)
+          .enabled(this.newGroupName.trim().length > 0)
           .onClick(() => {
-            if (this.newGroupName.trim()) {
+            this.controller.close()
+            if(this.onConfirm){
               this.onConfirm()
-              this.controller.close()
-              this.showDialog = false
             }
           })
-          .backgroundColor(this.newGroupName.length > 0 ? 0x317aff : 0xcccccc)
+          .backgroundColor(this.newGroupName.trim().length > 0 ? 0x317aff : 0xcccccc)
           .fontColor(Color.White)
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceEvenly)
       .margin({ bottom: 20 })
     }
-    .width('90%')
+    .width('100%')
     .backgroundColor(Color.White)
     .borderRadius(10)
-    .padding(20)
   }
 }
