@@ -1,23 +1,57 @@
 @Entry
 @Component
-struct Index {
-  @State message: string = 'Hello KeePassHO';
+struct GroupManager {
+  @State data: Array<ItemGroup> = [
+    {
+      title: '组1',
+      icon: $r('app.media.startIcon'),
+      list: [
+        { title: '项目1-1', icon: $r('app.media.startIcon') },
+        { title: '项目1-2', icon: $r('app.media.startIcon') },
+        { title: '项目1-3', icon: $r('app.media.startIcon') },
+      ]
+    },
+    {
+      title: '组2',
+      icon: $r('app.media.startIcon'),
+      list: [
+        { title: '项目2-1', icon: $r('app.media.startIcon') },
+        { title: '项目2-2', icon: $r('app.media.startIcon') },
+        { title: '项目2-3', icon: $r('app.media.startIcon') },
+      ]
+    },
+  ]
 
   build() {
-    RelativeContainer() {
-      Text(this.message)
-        .id('Hello KeePassHO')
-        .fontSize($r('app.float.page_text_font_size'))
-        .fontWeight(FontWeight.Bold)
-        .alignRules({
-          center: { anchor: '__container__', align: VerticalAlign.Center },
-          middle: { anchor: '__container__', align: HorizontalAlign.Center }
-        })
-        .onClick(() => {
-          this.message = 'Welcome';
-        })
+    Column() {
+      List() {
+        ForEach(this.data, (itemGroup: ItemGroup) => {
+          ListItem(){
+            Row() {
+              Image(itemGroup.icon)
+                .width(40)
+                .height(40)
+                .margin(10)
+              Text(itemGroup.title).fontSize(20)
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.Start)
+          }
+        }, (item: ItemGroup) => JSON.stringify(item))
+      }
     }
-    .height('100%')
     .width('100%')
+    .height('100%')
   }
+}
+
+interface GroupInfo {
+  title: string;
+  icon: Resource;
+}
+
+interface ItemGroup {
+  title: string;
+  icon: Resource;
+  list: Array<GroupInfo>;
 }
