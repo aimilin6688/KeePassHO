@@ -79,6 +79,7 @@ struct Settings {
                   .font({ size: 16 })
                   .selectedOptionFont({ size: 16 })
                   .optionFont({ size: 16 })
+                  .backgroundColor($r('app.color.card_background'))
                   .onSelect(async (index: number) => {
                     const selectedMode = ThemeConstants.THEME_OPTIONS[index].value;
                     this.applyThemeMode(selectedMode)
