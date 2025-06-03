@@ -89,46 +89,41 @@ struct GroupManager {
   @Builder
   SwipeActionButtons(index: number) {
     Row() {
-      Button() {
-        Image($r('app.media.ic_edit'))
-          .width(24)
-          .height(24)
-      }
-      .width(48)
-      .height(60)
-      .backgroundColor('#007DFF')
-      .margin({ right: 2 })
-      .onClick(() => {
-        this.editingGroupIndex = index
-        this.newGroupName = this.data[index].title
-        this.showDialog = true
-        this.dialogController.open()
-      })
-      
-      Button() {
-        Image($r('app.media.ic_delete'))
-          .width(24)
-          .height(24)
-      }
-      .width(48)
-      .height(60)
-      .backgroundColor('#FF3B30')
-      .onClick(() => {
-        AlertDialog.show({
-          title: '确认删除',
-          message: '确定要删除这个分组吗？',
-          primaryButton: {
-            value: '取消',
-            action: () => {}
-          },
-          secondaryButton: {
-            value: '删除',
-            action: () => {
-              this.data.splice(index, 1)
-            }
-          }
+      Button("编辑", {type:  ButtonType.Normal})
+        .width(80)
+        .height(60)
+        .backgroundColor('#ff4bb8f5')
+        .fontColor(Color.White)
+        .fontSize(14)
+        .onClick(() => {
+          this.editingGroupIndex = index
+          this.newGroupName = this.data[index].title
+          this.showDialog = true
+          this.dialogController.open()
         })
-      })
+      
+      Button("删除", {type:  ButtonType.Normal})
+        .width(80)
+        .height(60)
+        .backgroundColor('#fff17474')
+        .fontColor(Color.White)
+        .fontSize(14)
+        .onClick(() => {
+          AlertDialog.show({
+            title: '确认删除',
+            message: '确定要删除这个分组吗？',
+            primaryButton: {
+              value: '取消',
+              action: () => {}
+            },
+            secondaryButton: {
+              value: '删除',
+              action: () => {
+                this.data.splice(index, 1)
+              }
+            }
+          })
+        })
     }
   }
   
