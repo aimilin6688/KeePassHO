@@ -2,7 +2,35 @@
   "color": [
     {
       "name": "start_window_background",
-      "value": "#000000"
+      "value": "#1C1C1E"
+    },
+    {
+      "name": "background_primary",
+      "value": "#1C1C1E"
+    },
+    {
+      "name": "text_primary",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#8E8E93"
+    },
+    {
+      "name": "divider",
+      "value": "#38383A"
+    },
+    {
+      "name": "card_background",
+      "value": "#2C2C2E"
+    },
+    {
+      "name": "button_background",
+      "value": "#007AFF"
+    },
+    {
+      "name": "button_text",
+      "value": "#FFFFFF"
     }
   ]
 }

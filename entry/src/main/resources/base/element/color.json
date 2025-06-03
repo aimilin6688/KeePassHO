@@ -3,6 +3,46 @@
     {
       "name": "start_window_background",
       "value": "#FFFFFF"
+    },
+    {
+      "name": "background_primary",
+      "value": "#F1F3F5"
+    },
+    {
+      "name": "text_primary",
+      "value": "#000000"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#666666"
+    },
+    {
+      "name": "divider",
+      "value": "#E0E0E0"
+    },
+    {
+      "name": "card_background",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "button_background",
+      "value": "#007DFF"
+    },
+    {
+      "name": "button_text",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "accent",
+      "value": "#007DFF"
+    },
+    {
+      "name": "danger",
+      "value": "#FF3B30"
+    },
+    {
+      "name": "icon_normal",
+      "value": "#333333"
     }
   ]
 }
