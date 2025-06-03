@@ -1,7 +1,7 @@
 import { ThemeConstants, ThemeMode } from '../common/constants/ThemeConstants';
 import { SettingsService } from '../services/SettingsService';
 import router from '@ohos.router';
-import { ConfigurationConstant, Configuration } from '@kit.AbilityKit';
+import { ConfigurationConstant } from '@kit.AbilityKit';
 
 @Entry
 @Component
