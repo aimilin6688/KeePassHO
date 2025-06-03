@@ -110,10 +110,11 @@ struct GroupManager {
             .fontWeight(FontWeight.Medium)
             .margin({ left: 16 })
           Blank()
-          Image($r('app.media.ic_edit'))
+          Image($r('app.media.ic_settings'))
             .width(24)
             .height(24)
             .margin({ right: 16 })
+            .outlineColor(Color.Gray)
             .onClick(() => {
               router.pushUrl({ url: 'pages/Settings' })
             })
