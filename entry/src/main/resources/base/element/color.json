@@ -29,6 +29,10 @@
       "value": "#007DFF"
     },
     {
+      "name": "button_disabled_background",
+      "value": "#CCCCCC"
+    },
+    {
       "name": "button_text",
       "value": "#FFFFFF"
     },
