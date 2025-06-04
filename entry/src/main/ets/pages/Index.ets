@@ -1,14 +1,14 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import router from '@ohos.router';
 import ThemeManager from '../common/utils/ThemeManager';
-import {PasswordGroup} from '../common/models/PasswordGroup';
+import {PwGroup} from '../common/models/PwGroup';
 
 @Entry
 @Component
 struct Index {
   @State newGroupName: string = ""
   @State editingGroupIndex: number = -1
-  @State data: Array<PasswordGroup> = [
+  @State data: Array<PwGroup> = [
     {
       title: '组1',
       icon: $r('app.media.startIcon')
@@ -135,7 +135,7 @@ struct Index {
         .height(56)
         .backgroundColor($r('app.color.card_background'))
         List({ space: 8 }) {
-          ForEach(this.data, (itemGroup: PasswordGroup, index: number) => {
+          ForEach(this.data, (itemGroup: PwGroup, index: number) => {
             ListItem(){
               Row() {
                 Image(itemGroup.icon)
@@ -163,7 +163,7 @@ struct Index {
                 builder: this.SwipeActionButtons(index)
               }
             })
-          }, (item: PasswordGroup, index: number) => `${index}-${item.title}`)
+          }, (item: PwGroup, index: number) => `${index}-${item.title}`)
         }
         .width('100%')
         .height('100%')
