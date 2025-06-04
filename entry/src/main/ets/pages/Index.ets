@@ -1,30 +1,21 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import router from '@ohos.router';
 import ThemeManager from '../common/utils/ThemeManager';
+import {PasswordGroup} from '../common/models/PasswordGroup';
 
 @Entry
 @Component
 struct Index {
   @State newGroupName: string = ""
   @State editingGroupIndex: number = -1
-  @State data: Array<ItemGroup> = [
+  @State data: Array<PasswordGroup> = [
     {
       title: '组1',
-      icon: $r('app.media.startIcon'),
-      list: [
-        { title: '项目1-1', icon: $r('app.media.startIcon') },
-        { title: '项目1-2', icon: $r('app.media.startIcon') },
-        { title: '项目1-3', icon: $r('app.media.startIcon') },
-      ]
+      icon: $r('app.media.startIcon')
     },
     {
       title: '组2',
-      icon: $r('app.media.startIcon'),
-      list: [
-        { title: '项目2-1', icon: $r('app.media.startIcon') },
-        { title: '项目2-2', icon: $r('app.media.startIcon') },
-        { title: '项目2-3', icon: $r('app.media.startIcon') },
-      ]
+      icon: $r('app.media.startIcon')
     },
   ]
 
@@ -90,13 +81,12 @@ struct Index {
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
       let oldData = this.data[this.editingGroupIndex]
       // 编辑现有分组
-      this.data.splice(this.editingGroupIndex, 1, {'title': this.newGroupName.trim(), 'icon': oldData.icon, 'list': oldData.list})
+      this.data.splice(this.editingGroupIndex, 1, {'title': this.newGroupName.trim(), 'icon': oldData.icon})
     } else {
       // 添加新分组
       this.data.push({
         title: this.newGroupName.trim(),
-        icon: $r('app.media.startIcon'),
-        list: []
+        icon: $r('app.media.startIcon')
       })
     }
 
@@ -145,7 +135,7 @@ struct Index {
         .height(56)
         .backgroundColor($r('app.color.card_background'))
         List({ space: 8 }) {
-          ForEach(this.data, (itemGroup: ItemGroup, index: number) => {
+          ForEach(this.data, (itemGroup: PasswordGroup, index: number) => {
             ListItem(){
               Row() {
                 Image(itemGroup.icon)
@@ -173,7 +163,7 @@ struct Index {
                 builder: this.SwipeActionButtons(index)
               }
             })
-          }, (item: ItemGroup, index: number) => `${index}-${item.title}`)
+          }, (item: PasswordGroup, index: number) => `${index}-${item.title}`)
         }
         .width('100%')
         .height('100%')
@@ -203,15 +193,4 @@ struct Index {
     .width('100%')
     .height('100%')
   }
-}
-
-interface GroupInfo {
-  title: string;
-  icon: Resource;
-}
-
-interface ItemGroup {
-  title: string;
-  icon: Resource;
-  list: Array<GroupInfo>;
 }
