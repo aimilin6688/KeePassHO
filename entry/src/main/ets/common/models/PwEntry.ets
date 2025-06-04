@@ -2,7 +2,7 @@
 
 
 // 密码项基础信息
-export interface PasswordItem {
+export interface PwEntry {
   id: string;
   title: string;
   username?: string;
