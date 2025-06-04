@@ -44,6 +44,7 @@ struct Settings {
           .width(24)
           .height(24)
           .margin({ left: 12 })
+          .fillColor($r('app.color.text_primary'))
           .onClick(() => router.back())
         Text('设置')
           .fontSize(20)
