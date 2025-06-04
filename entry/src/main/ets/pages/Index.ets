@@ -38,7 +38,7 @@ struct Index {
         this.editingGroupIndex = -1;
       }
     }),
-    alignment: DialogAlignment.Center,
+    alignment: DialogAlignment.Default,
     autoCancel: true
   })
   
