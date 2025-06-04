@@ -10,12 +10,18 @@ struct Index {
   @State editingGroupIndex: number = -1
   @State data: Array<PwGroup> = [
     {
+      uuid: '1',
       title: '组1',
-      icon: $r('app.media.startIcon')
+      icon: $r('app.media.startIcon'),
+      createdAt: new Date().getTime(),
+      updatedAt: new Date().getTime(),
     },
     {
+      uuid: '2',
       title: '组2',
-      icon: $r('app.media.startIcon')
+      icon: $r('app.media.startIcon'),
+      createdAt: new Date().getTime(),
+      updatedAt: new Date().getTime()
     },
   ]
 
@@ -81,10 +87,13 @@ struct Index {
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
       let oldData = this.data[this.editingGroupIndex]
       // 编辑现有分组
-      this.data.splice(this.editingGroupIndex, 1, {'title': this.newGroupName.trim(), 'icon': oldData.icon})
+      this.data.splice(this.editingGroupIndex, 1, {'uuid': oldData.uuid, 'title': this.newGroupName.trim(), 'icon': oldData.icon,  'createdAt': oldData.createdAt, 'updatedAt': new Date().getTime()})
     } else {
       // 添加新分组
       this.data.push({
+        uuid: String(Math.random()),
+        createdAt: new Date().getTime(),
+        updatedAt: new Date().getTime(),
         title: this.newGroupName.trim(),
         icon: $r('app.media.startIcon')
       })
