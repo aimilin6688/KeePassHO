@@ -90,8 +90,12 @@ export default class ThemeManager {
 
     try {
       const isDark = this.isDarkMode();
-      const mainWindow = await window.getLastWindow(this.context);
 
+      let colorMode : ConfigurationConstant.ColorMode =  this.currentThemeMode === ThemeMode.SYSTEM ?
+      ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET : (isDark ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
+      this.context.getApplicationContext().setColorMode(colorMode);
+
+      const mainWindow = await window.getLastWindow(this.context);
       // 使用更新后的API和属性名
       await mainWindow.setWindowSystemBarProperties({
         statusBarContentColor: isDark ? '#FFFFFF' : '#000000',
