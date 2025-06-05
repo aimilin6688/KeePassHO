@@ -1,4 +1,6 @@
 import { Binary } from './models/KdbxTypes';
+import { buffer, util } from '@kit.ArkTS';
+import { KdbxUtils } from './utils/KdbxUtils';
 
 /**
  * 凭证类型
@@ -93,8 +95,7 @@ export class KdbxCredentials {
     }
 
     // 使用UTF-8编码密码
-    const encoder = new TextEncoder();
-    const passwordData = encoder.encode(this.password);
+    const passwordData = KdbxUtils.strToBytes(this.password);
 
     // 计算SHA-256哈希
     const hashBuffer = await crypto.subtle.digest('SHA-256', passwordData);
@@ -108,7 +109,7 @@ export class KdbxCredentials {
    */
   private async parseKeyFile(data: Binary): Promise<Binary> {
     // 尝试解析XML格式
-    const xmlString = new TextDecoder().decode(data);
+    const xmlString = KdbxUtils.bytesToStr(data);
     if (xmlString.includes('<?xml')) {
       try {
         const parser = new DOMParser();
@@ -210,7 +211,7 @@ export class KdbxCredentials {
    */
   static async generateKeyFile(format: KeyFileFormat = KeyFileFormat.XML): Promise<Binary> {
     // 生成32字节随机数据
-    const keyData = crypto.getRandomValues(new Uint8Array(32));
+    const keyData = KdbxUtils.generateRandom(new Uint8Array(32));
 
     switch (format) {
       case KeyFileFormat.XML:

@@ -846,7 +846,7 @@ export class KdbxSerializer {
       // 使用crypto/ChaCha20模块实现
       const chacha = new ChaCha20(key);
       const nonce = new Uint8Array(12); // 12字节随机数
-      crypto.getRandomValues(nonce);
+      KdbxUtils.generateRandom(nonce);
       
       const encrypted = new Uint8Array(data.length);
       chacha.process(nonce, data, encrypted);
@@ -914,7 +914,7 @@ export class KdbxSerializer {
       // 使用crypto/Salsa20模块实现
       const salsa = new Salsa20(key);
       const nonce = new Uint8Array(8); // 8字节随机数
-      crypto.getRandomValues(nonce);
+      KdbxUtils.generateRandom(nonce);
       
       const encrypted = new Uint8Array(data.length);
       salsa.process(nonce, data, encrypted);

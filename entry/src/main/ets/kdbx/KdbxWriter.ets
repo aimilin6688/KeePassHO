@@ -29,10 +29,10 @@ export class KdbxWriter {
   async write(database: any, password: string, keyFile: Binary | null = null): Promise<Uint8Array> {
     try {
       // 1. 生成加密参数
-      const masterSeed = crypto.getRandomValues(new Uint8Array(32));
-      const encryptionIV = crypto.getRandomValues(new Uint8Array(16));
-      const streamStartBytes = crypto.getRandomValues(new Uint8Array(32));
-      const protectedStreamKey = crypto.getRandomValues(new Uint8Array(32));
+      const masterSeed = KdbxUtils.generateRandom(new Uint8Array(32));
+      const encryptionIV = KdbxUtils.generateRandom(new Uint8Array(16));
+      const streamStartBytes = KdbxUtils.generateRandom(new Uint8Array(32));
+      const protectedStreamKey = KdbxUtils.generateRandom(new Uint8Array(32));
       const innerRandomStreamID = InnerRandomStreamID.CHACHA20;
 
       // 2. 创建KDF参数
@@ -143,7 +143,7 @@ export class KdbxWriter {
 
     // 使用Argon2id作为KDF
     params.set('$UUID', '9e298b19-56db-4773-b23d-fc3ec6f0a1e6');
-    params.set('salt', crypto.getRandomValues(new Uint8Array(32)));
+    params.set('salt', KdbxUtils.generateRandom(new Uint8Array(32)));
     params.set('parallelism', 2);
     params.set('memory', 1024 * 1024); // 1MB
     params.set('iterations', 10);

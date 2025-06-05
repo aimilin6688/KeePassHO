@@ -1,5 +1,5 @@
 import cryptoFramework from '@ohos.security.cryptoFramework';
-import { buffer } from '@kit.ArkTS';
+import { buffer, util } from '@kit.ArkTS';
 import { UUID } from '../models/KdbxTypes';
 
 
@@ -85,6 +85,14 @@ export class KdbxUtils {
    */
   static toUUID(uuid: Uint8Array | UUID): UUID {
     return uuid instanceof Uint8Array ? KdbxUtils.bytesToStr(uuid) : uuid;
+  }
+
+  /**
+   * 创建UUID
+   * @returns
+   */
+  static createUUID(): UUID {
+    return util.generateRandomUUID();
   }
 
 }

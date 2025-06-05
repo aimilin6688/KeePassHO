@@ -1,5 +1,6 @@
 import { Binary } from './models/KdbxTypes';
 import { HeaderFieldID, CompressionFlags, InnerRandomStreamID, KdbxVersion } from './KdbxFormat';
+import { KdbxUtils } from './utils/KdbxUtils';
 
 /**
  * KDBX文件头部
@@ -101,25 +102,25 @@ export class KdbxHeader {
    */
   generateRandomFields(): void {
     // 生成主种子
-    crypto.getRandomValues(this.masterSeed);
+    KdbxUtils.fillRandom(this.masterSeed);
 
     // 生成加密IV
-    crypto.getRandomValues(this.encryptionIV);
+    KdbxUtils.fillRandom(this.encryptionIV);
 
     if (this.isKdbx4()) {
       // KDBX4特有字段
     } else {
       // KDBX3.1特有字段
       if (this.transformSeed) {
-        crypto.getRandomValues(this.transformSeed);
+        KdbxUtils.fillRandom(this.transformSeed);
       }
 
       if (this.protectedStreamKey) {
-        crypto.getRandomValues(this.protectedStreamKey);
+        KdbxUtils.fillRandom(this.protectedStreamKey);
       }
 
       if (this.streamStartBytes) {
-        crypto.getRandomValues(this.streamStartBytes);
+        KdbxUtils.fillRandom(this.streamStartBytes);
       }
     }
   }

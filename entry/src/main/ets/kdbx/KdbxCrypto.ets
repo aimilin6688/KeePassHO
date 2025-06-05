@@ -186,7 +186,7 @@ export class KdbxCrypto {
       // 默认使用PBKDF2
       console.log('Using PBKDF2 as fallback KDF');
       const iterations = kdfParameters.get('rounds') || 60000;
-      const salt = kdfParameters.get('salt') || crypto.getRandomValues(new Uint8Array(32));
+      const salt = kdfParameters.get('salt') || KdbxUtils.generateRandom(new Uint8Array(32));
       return await this.pbkdf2(key, salt, iterations, 32);
     }
   }
@@ -208,7 +208,7 @@ export class KdbxCrypto {
     console.warn(`${variant} not directly supported, using PBKDF2 as fallback`);
     
     // 从KDF参数中提取值
-    const salt = kdfParameters.get('salt') || crypto.getRandomValues(new Uint8Array(32));
+    const salt = kdfParameters.get('salt') || KdbxUtils.generateRandom(new Uint8Array(32));
     const iterations = kdfParameters.get('iterations') || 10;
     const memory = kdfParameters.get('memory') || 1024 * 1024; // 默认1MB
     
@@ -303,7 +303,7 @@ class Salsa20Encryptor implements ProtectedStreamEncryptor{
 
   constructor(key: Binary) {
     // 生成随机的8字节nonce
-    const nonce = crypto.getRandomValues(new Uint8Array(8));
+    const nonce = KdbxUtils.generateRandom(new Uint8Array(8));
     this.cipher = new Salsa20(key, nonce);
   }
 
