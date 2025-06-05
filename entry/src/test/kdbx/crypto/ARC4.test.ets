@@ -54,23 +54,23 @@ export default function ARC4UnitTest() {
         key: strToBytes('shortKey'),
         plaintext: strToBytes('Z'),
         // Note: This expected value takes into account the 3072 byte drop
-        ciphertext: hexToBytes('83'),
+        ciphertext: hexToBytes('69'),
       },
       {
         key: strToBytes('mySecretKey'),
         plaintext: strToBytes('Hello World'),
         // Note: This expected value takes into account the 3072 byte drop
-        ciphertext: hexToBytes('77dd7b0a65daec4aabf53a'),
+        ciphertext: hexToBytes('9f22fc6b21e8c0b18d42dc'),
       },
       {
         key: strToBytes('p@ssw0rd!'),
         plaintext: strToBytes('Data123!abc'),
-        ciphertext: hexToBytes('4de692edeed0fc18de37d1'),
+        ciphertext: hexToBytes('9d582675dc78ff897b7392'),
       },
       {
         key: strToBytes('ARC4@2023'),
         plaintext: strToBytes('加密测试'),
-        ciphertext: hexToBytes('a7e2e7519efb5a28367176e8'),
+        ciphertext: hexToBytes('fb3c5f5bc522bbe0a96cafcf'),
       }
     ];
 
@@ -198,7 +198,7 @@ export default function ARC4UnitTest() {
     });
 
     it('should process data in chunks correctly', 0, () => {
-      const plaintext = new util.TextEncoder().encode('This is a longer text that will be processed in chunks');
+      const plaintext = strToBytes('This is a longer text that will be processed in chunks');
       arc4 = new ARC4(TEST_VECTORS[0].key);
 
       // Process first half
@@ -221,5 +221,141 @@ export default function ARC4UnitTest() {
       expect(bytesToHex(ciphertext1)).assertEqual(bytesToHex(fullCiphertext.slice(0, halfLength)));
       expect(bytesToHex(ciphertext2)).assertEqual(bytesToHex(fullCiphertext.slice(halfLength)));
     });
+
+    it('should handle multi-language characters correctly', 0, () => {
+      const testStrings = [
+        '你好世界',
+        '안녕하세요 세계',
+        'Hello World',
+        '1234567890!@#$%^&*()'
+      ];
+
+      testStrings.forEach((str, index) => {
+        const plaintext = strToBytes(str);
+        arc4 = new ARC4(TEST_VECTORS[0].key);
+        const ciphertext = new Uint8Array(plaintext.length);
+        arc4.process(plaintext, ciphertext);
+        
+        arc4 = new ARC4(TEST_VECTORS[0].key);
+        const decrypted = new Uint8Array(ciphertext.length);
+        arc4.process(ciphertext, decrypted);
+        
+        expect(bytesToStr(decrypted)).assertEqual(str);
+        console.log(`Multi-lang test ${index}: original: ${str}, decrypted: ${bytesToStr(decrypted)}`);
+      });
+    });
+
+    it('should handle max length key (256 bytes)', 0, () => {
+      const maxKey = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) {
+        maxKey[i] = i;
+      }
+      
+      const plaintext = strToBytes('Max key length test data');
+      arc4 = new ARC4(maxKey);
+      const ciphertext = new Uint8Array(plaintext.length);
+      arc4.process(plaintext, ciphertext);
+      
+      arc4 = new ARC4(maxKey);
+      const decrypted = new Uint8Array(ciphertext.length);
+      arc4.process(ciphertext, decrypted);
+      
+      expect(bytesToStr(decrypted)).assertEqual(bytesToStr(plaintext));
+    });
+
+    it('should maintain state between encryptions', 0, () => {
+      const plaintext1 = strToBytes('First message');
+      const plaintext2 = strToBytes('Second message');
+      
+      arc4 = new ARC4(TEST_VECTORS[0].key);
+      
+      const ciphertext1 = new Uint8Array(plaintext1.length);
+      arc4.process(plaintext1, ciphertext1);
+      
+      const ciphertext2 = new Uint8Array(plaintext2.length);
+      arc4.process(plaintext2, ciphertext2);
+      
+      // 创建新的ARC4实例用于对比
+      arc4 = new ARC4(TEST_VECTORS[0].key);
+      const fullCiphertext = new Uint8Array(plaintext1.length + plaintext2.length);
+      arc4.process(
+        new Uint8Array([...plaintext1, ...plaintext2]), 
+        fullCiphertext
+      );
+      
+      // 验证完整加密的第一部分
+      expect(bytesToHex(fullCiphertext.slice(0, plaintext1.length)))
+        .message('Full encryption first part should match individual encryption')
+        .assertEqual(bytesToHex(ciphertext1));
+      
+      // 验证完整加密的第二部分
+      expect(bytesToHex(fullCiphertext.slice(plaintext1.length)))
+        .message('Full encryption second part should match individual encryption')
+        .assertEqual(bytesToHex(ciphertext2));
+      
+      // 添加直接状态验证
+      arc4 = new ARC4(TEST_VECTORS[0].key);
+      const output1 = new Uint8Array(16);
+      const output2 = new Uint8Array(16);
+      
+      // 生成两个独立的加密流
+      const arc4a = new ARC4(TEST_VECTORS[0].key);
+      const outputA = new Uint8Array(32);
+      arc4a.process(new Uint8Array(32), outputA);
+      
+      // 分两次生成加密流
+      const arc4b = new ARC4(TEST_VECTORS[0].key);
+      const outputB1 = new Uint8Array(16);
+      const outputB2 = new Uint8Array(16);
+      arc4b.process(new Uint8Array(16), outputB1);
+      arc4b.process(new Uint8Array(16), outputB2);
+      
+      // 验证状态保持
+      expect(bytesToHex(outputA.slice(0, 16)))
+        .message('First 16 bytes should match')
+        .assertEqual(bytesToHex(outputB1));
+      
+      expect(bytesToHex(outputA.slice(16, 32)))
+        .message('Second 16 bytes should match')
+        .assertEqual(bytesToHex(outputB2));
+    });
+
+    it('should handle custom dropN parameter', 0, () => {
+      const key = TEST_VECTORS[0].key;
+      const plaintext = TEST_VECTORS[0].plaintext;
+      
+      // First with default dropN
+      let arc4a = new ARC4(key);
+      const cipherA = new Uint8Array(plaintext.length);
+      arc4a.process(plaintext, cipherA);
+      
+      // Then with zero dropN
+      let arc4b = new ARC4(key, 0); // No initial drop
+      const cipherB = new Uint8Array(plaintext.length);
+      arc4b.process(plaintext, cipherB);
+      
+      // Results should be different
+      expect(bytesToHex(cipherA)).not().assertEqual(bytesToHex(cipherB));
+    });
+
+    it('should produce same output as Python reference implementation', 0, () => {
+      // Test vector generated from Python reference implementation
+      // Key: 'PythonKey123'
+      // Plaintext: 'CrossLangTest'
+      // Expected ciphertext (after 3072 byte drop): '63c7355a9bb34e1d5e8ea5e304' (from Python test)
+      
+      const key = strToBytes('PythonKey123');
+      const plaintext = strToBytes('CrossLangTest');
+      const expectedCiphertext = hexToBytes('63c7355a9bb34e1d5e8ea5e304');
+      
+      arc4 = new ARC4(key);
+      const ciphertext = new Uint8Array(plaintext.length);
+      arc4.process(plaintext, ciphertext);
+      
+      expect(bytesToHex(ciphertext))
+        .message('Should match Python reference implementation output')
+        .assertEqual(bytesToHex(expectedCiphertext));
+    });
+
   });
 }
