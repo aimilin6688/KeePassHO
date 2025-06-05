@@ -14,9 +14,8 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxReader } from '../../../main/ets/kdbx/KdbxReader';
-import { InnerRandomStreamID } from '../../../main/ets/kdbx/KdbxFormat';
-import { Binary } from '../../../main/ets/kdbx/models/KdbxTypes';
+import { Binary } from '../../main/ets/kdbx/Index';
+import { KdbxReader } from '../../main/ets/kdbx/KdbxReader';
 import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxReaderUnitTest() {
   describe('KdbxReader', () => {

@@ -14,7 +14,13 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxError, KdbxErrorCode } from '../../../main/ets/kdbx/KdbxError';
+import { KdbxError, KdbxErrorCode } from '../../main/ets/kdbx/KdbxError';
+
+interface KdbxErrorData {
+  code: KdbxErrorCode;
+  expectedSuggestion: string;
+}
+
 export default function KdbxErrorUnitTest() {
   describe('KdbxError', () => {
     beforeAll(() => {
@@ -33,11 +39,11 @@ export default function KdbxErrorUnitTest() {
       // 测试套件结束后的清理
     });
 
-    it('should create error with default values',0, () => {
+    it('should create error with default values', 0, () => {
       const error = new KdbxError();
 
-      expect(error).assertInstanceOf(Error);
-      expect(error).assertInstanceOf(KdbxError);
+      expect(error instanceof Error).assertTrue();
+      expect(error instanceof KdbxError).assertTrue();
       expect(error.name).assertEqual('KdbxError');
       expect(error.code).assertEqual(KdbxErrorCode.UNKNOWN);
       expect(error.message).assertEqual('未知错误');
@@ -45,7 +51,7 @@ export default function KdbxErrorUnitTest() {
       expect(error.details).assertUndefined();
     });
 
-    it('should create error with custom message',0, () => {
+    it('should create error with custom message', 0, () => {
       const message = '自定义错误消息';
       const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT, message);
 
@@ -53,7 +59,7 @@ export default function KdbxErrorUnitTest() {
       expect(error.message).assertEqual(message);
     });
 
-    it('should create error with original error', 0,() => {
+    it('should create error with original error', 0, () => {
       const originalError = new Error('原始错误');
       const error = new KdbxError(
         KdbxErrorCode.OPERATION_FAILED,
@@ -65,8 +71,8 @@ export default function KdbxErrorUnitTest() {
       expect(error.originalError).assertEqual(originalError);
     });
 
-    it('should create error with details', 0,() => {
-      const details = { field: 'password', value: '****' };
+    it('should create error with details', 0, () => {
+      const details = new Map<string, Object>([['field', 'password'], ['value', '****']]);
       const error = new KdbxError(
         KdbxErrorCode.INVALID_CREDENTIALS,
         '无效的凭证',
@@ -78,7 +84,7 @@ export default function KdbxErrorUnitTest() {
       expect(error.details).assertEqual(details);
     });
 
-    it('should get default message for each error code',0, () => {
+    it('should get default message for each error code', 0, () => {
       // 测试所有错误代码的默认消息
       Object.values(KdbxErrorCode).forEach(code => {
         const error = new KdbxError(code);
@@ -87,8 +93,8 @@ export default function KdbxErrorUnitTest() {
       });
     });
 
-    it('should get suggestion for specific error codes',0, () => {
-      const testCases = [
+    it('should get suggestion for specific error codes', 0, () => {
+      const testCases: KdbxErrorData[] = [
         {
           code: KdbxErrorCode.FILE_NOT_FOUND,
           expectedSuggestion: '请检查文件路径是否正确，文件是否存在。'
@@ -123,15 +129,15 @@ export default function KdbxErrorUnitTest() {
         }
       ];
 
-      testCases.forEach(({ code, expectedSuggestion }) => {
-        const error = new KdbxError(code);
-        expect(error.getSuggestion()).assertEqual(expectedSuggestion);
+      testCases.forEach((item) => {
+        const error = new KdbxError(item.code);
+        expect(error.getSuggestion()).assertEqual(item.expectedSuggestion);
       });
     });
 
-    it('should get full message with all information', 0,() => {
+    it('should get full message with all information', 0, () => {
       const originalError = new Error('原始错误');
-      const details = { field: 'password' };
+      const details = new Map<string,Object>([['field','password' ]]);
       const error = new KdbxError(
         KdbxErrorCode.INVALID_CREDENTIALS,
         '密码错误',
@@ -148,22 +154,23 @@ export default function KdbxErrorUnitTest() {
       expect(fullMessage).assertContain('处理建议: ');
     });
 
-    it('should create error using static create method',0, () => {
+    it('should create error using static create method', 0, () => {
+      const details = new Map<string,Object>([[ 'algorithm', 'AES' ]]);
       const error = KdbxError.create(
         KdbxErrorCode.ENCRYPTION_FAILED,
         '加密失败',
         new Error('加密错误'),
-        { algorithm: 'AES' }
+        details
       );
 
-      expect(error).assertInstanceOf(KdbxError);
+      expect(error instanceof KdbxError).assertTrue();
       expect(error.code).assertEqual(KdbxErrorCode.ENCRYPTION_FAILED);
       expect(error.message).assertEqual('加密失败');
       expect(error.originalError).not().assertUndefined();
       expect(error.details).not().assertUndefined();
     });
 
-    it('should wrap existing error',0, () => {
+    it('should wrap existing error', 0, () => {
       const originalError = new Error('网络连接失败');
       const wrappedError = KdbxError.wrap(
         originalError,
@@ -172,24 +179,24 @@ export default function KdbxErrorUnitTest() {
         { url: 'https://example.com' }
       );
 
-      expect(wrappedError).assertInstanceOf(KdbxError);
+      expect(wrappedError instanceof KdbxError).assertTrue();
       expect(wrappedError.code).assertEqual(KdbxErrorCode.NETWORK_ERROR);
       expect(wrappedError.message).assertEqual('同步失败');
       expect(wrappedError.originalError).assertEqual(originalError);
       expect(wrappedError.details).not().assertUndefined();
     });
 
-    it('should wrap error with default values',0, () => {
+    it('should wrap error with default values', 0, () => {
       const originalError = new Error('测试错误');
       const wrappedError = KdbxError.wrap(originalError);
 
-      expect(wrappedError).assertInstanceOf(KdbxError);
+      expect(wrappedError instanceof KdbxError).assertTrue();
       expect(wrappedError.code).assertEqual(KdbxErrorCode.UNKNOWN);
       expect(wrappedError.message).assertEqual('测试错误');
       expect(wrappedError.originalError).assertEqual(originalError);
     });
 
-    it('should handle error inheritance correctly', 0,() => {
+    it('should handle error inheritance correctly', 0, () => {
       const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT);
 
       // 验证错误继承链
@@ -199,14 +206,14 @@ export default function KdbxErrorUnitTest() {
       expect(Object.getPrototypeOf(Object.getPrototypeOf(error))).assertEqual(Error.prototype);
     });
 
-    it('should handle stack trace', 0,() => {
+    it('should handle stack trace', 0, () => {
       const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT);
 
       expect(error.stack).not().assertUndefined();
       expect(error.stack.includes('KdbxError')).assertEqual(true);
     });
 
-    it('should handle error code validation',0, () => {
+    it('should handle error code validation', 0, () => {
       // 验证所有错误代码都是有效的字符串
       Object.values(KdbxErrorCode).forEach(code => {
         expect(typeof code).assertEqual('string');
@@ -214,14 +221,14 @@ export default function KdbxErrorUnitTest() {
       });
     });
 
-    it('should handle error code uniqueness',0, () => {
+    it('should handle error code uniqueness', 0, () => {
       // 验证错误代码的唯一性
       const codes = Object.values(KdbxErrorCode);
       const uniqueCodes = new Set(codes);
       expect(uniqueCodes.size).assertEqual(codes.length);
     });
 
-    it('should handle error grouping',0, () => {
+    it('should handle error grouping', 0, () => {
       // 验证错误分组
       const fileErrors = [
         KdbxErrorCode.FILE_NOT_FOUND,
