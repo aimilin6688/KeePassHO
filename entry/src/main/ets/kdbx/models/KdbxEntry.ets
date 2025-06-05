@@ -490,7 +490,7 @@ export class KdbxEntry {
 
     const caseSensitive = options?.caseSensitive || false,
       includeProtected = options?.includeProtected || false,
-      fieldNames = options?.fieldNames || [];
+      fieldNames = options?.fieldNames || undefined;
 
     const searchQuery = caseSensitive ? query : query.toLowerCase();
 

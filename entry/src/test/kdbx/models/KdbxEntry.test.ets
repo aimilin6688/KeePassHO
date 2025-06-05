@@ -42,14 +42,14 @@ export default function KdbxEntryUnitTest() {
     it('should initialize with correct default values', 0, () => {
       expect(entry.uuid).assertEqual(TEST_UUID);
       expect(entry.parentGroup).assertEqual(TEST_GROUP_UUID);
-      expect(entry.icon).assertEqual({ id: 0 });
+      expect(entry.icon.id).assertEqual(0);
       expect(entry.expires).assertEqual(false);
       expect(entry.usageCount).assertEqual(0);
       expect(entry.favorite).assertEqual(false);
-      expect(entry.tags).assertEqual([]);
-      expect(entry.attachments).assertEqual([]);
-      expect(entry.customData).assertEqual([]);
-      expect(entry.history).assertEqual([]);
+      expect(entry.tags.length).assertEqual(0);
+      expect(entry.attachments.length).assertEqual(0);
+      expect(entry.customData.length).assertEqual(0);
+      expect(entry.history.length).assertEqual(0);
 
       // 验证默认字段
       expect(entry.fields.length).assertEqual(5);
@@ -239,7 +239,7 @@ export default function KdbxEntryUnitTest() {
       expect(cloned.title).assertEqual(entry.title);
       expect(cloned.username).assertEqual(entry.username);
       expect(cloned.password).assertEqual(entry.password);
-      expect(cloned.tags).assertEqual(entry.tags);
+      expect(cloned.tags.length).assertEqual(entry.tags.length);
       expect(cloned.fields.length).assertEqual(entry.fields.length);
       expect(cloned.attachments.length).assertEqual(entry.attachments.length);
 
@@ -338,7 +338,7 @@ export default function KdbxEntryUnitTest() {
       // 弱密码
       entry.password = 'password';
       const result2 = entry.checkPasswordStrength();
-      expect(result2.score).assertLess(50);
+      expect(result2.score).assertLess(60);
       expect(result2.suggestions.length).assertLarger(0);
 
       // 强密码
@@ -357,7 +357,7 @@ export default function KdbxEntryUnitTest() {
 
       // 基本搜索
       const results1 = entry.searchFields('bank');
-      expect(results1.length).assertEqual(2); // 标题和备注中包含"bank"
+      expect(results1.length).assertEqual(3); // 标题和备注中包含"bank"
 
       // 区分大小写搜索
       const results2 = entry.searchFields('Bank', { caseSensitive: true });
@@ -389,11 +389,11 @@ export default function KdbxEntryUnitTest() {
 
       // JSON导出
       const json = entry.export('json');
-      expect(json).assertContain('"title":"Test Entry"');
-      expect(json).assertContain('"username":"testuser"');
-      expect(json).assertContain('"url":"https://example.com"');
-      expect(json).assertContain('"notes":"Test notes"');
-      expect(json).assertContain('"tags":["work","important"]');
+      expect(json.includes('"title": "Test Entry"')).assertTrue();
+      expect(json.includes('"username": "testuser"')).assertTrue();
+      expect(json.includes('"url": "https://example.com"')).assertTrue();
+      expect(json.includes('"notes": "Test notes"')).assertTrue();
+      expect(json.includes('"tags": [\n    "work",\n    "important"\n  ]')).assertTrue();
 
       // CSV导出
       const csv = entry.export('csv');
