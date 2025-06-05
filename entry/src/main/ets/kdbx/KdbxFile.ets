@@ -143,7 +143,7 @@ export class KdbxFile {
       this.credentials = newCredentials;
 
       // 更新头部信息
-      this.header.masterSeed = crypto.getRandomValues(new Uint8Array(32));
+      this.header.masterSeed = KdbxUtils.generateRandom(new Uint8Array(32));
       this.header.masterKeyChanged = new Date();
     } catch (error) {
       throw KdbxError.wrap(

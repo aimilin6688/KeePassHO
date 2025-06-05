@@ -79,7 +79,7 @@ export class KdbxManager {
       masterKeyChangeRec: 90,
       masterKeyChangeForce: -1,
       recycleBinEnabled: true,
-      recycleBinUUID: crypto.getRandomValues(new Uint8Array(16)),
+      recycleBinUUID: KdbxUtils.generateRandom(new Uint8Array(16)),
       recycleBinChanged: now,
       entryTemplatesGroup: new Uint8Array(0),
       entryTemplatesGroupChanged: now,
@@ -100,7 +100,7 @@ export class KdbxManager {
 
     // 创建根组
     const rootGroup: PwGroup = {
-      uuid: crypto.getRandomValues(new Uint8Array(16)),
+      uuid: KdbxUtils.generateRandom(new Uint8Array(16)),
       name: 'Root',
       notes: '',
       iconId: 48,
@@ -171,7 +171,7 @@ export class KdbxManager {
   static createEntry(title: string, username: string, password: string, url: string = '', notes: string = ''): PwEntry {
     const now = new Date();
     const entry: PwEntry = {
-      uuid: crypto.getRandomValues(new Uint8Array(16)),
+      uuid: KdbxUtils.generateRandom(new Uint8Array(16)),
       iconId: 0,
       fields: new Map([
         ['Title', title],
@@ -210,7 +210,7 @@ export class KdbxManager {
   static createGroup(name: string, notes: string = ''): PwGroup {
     const now = new Date();
     const group: PwGroup = {
-      uuid: crypto.getRandomValues(new Uint8Array(16)),
+      uuid: KdbxUtils.generateRandom(new Uint8Array(16)),
       name: name,
       notes: notes,
       iconId: 0,
