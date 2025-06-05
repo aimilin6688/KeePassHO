@@ -39,31 +39,31 @@ describe('KdbxEntry', () => {
   });
 
   it('should initialize with correct default values', () => {
-    expect(entry.uuid).toBe(TEST_UUID);
-    expect(entry.parentGroup).toBe(TEST_GROUP_UUID);
+    expect(entry.uuid).assertEqual(TEST_UUID);
+    expect(entry.parentGroup).assertEqual(TEST_GROUP_UUID);
     expect(entry.icon).toEqual({ id: 0 });
-    expect(entry.expires).toBe(false);
-    expect(entry.usageCount).toBe(0);
-    expect(entry.favorite).toBe(false);
+    expect(entry.expires).assertEqual(false);
+    expect(entry.usageCount).assertEqual(0);
+    expect(entry.favorite).assertEqual(false);
     expect(entry.tags).toEqual([]);
     expect(entry.attachments).toEqual([]);
     expect(entry.customData).toEqual([]);
     expect(entry.history).toEqual([]);
 
     // 验证默认字段
-    expect(entry.fields.length).toBe(5);
-    expect(entry.getField('Title')).toBe('');
-    expect(entry.getField('UserName')).toBe('');
-    expect(entry.getField('Password')).toBe('');
-    expect(entry.getField('URL')).toBe('');
-    expect(entry.getField('Notes')).toBe('');
+    expect(entry.fields.length).assertEqual(5);
+    expect(entry.getField('Title')).assertEqual('');
+    expect(entry.getField('UserName')).assertEqual('');
+    expect(entry.getField('Password')).assertEqual('');
+    expect(entry.getField('URL')).assertEqual('');
+    expect(entry.getField('Notes')).assertEqual('');
 
     // 验证字段保护状态
     const passwordField = entry.fields.find(f => f.name === 'Password');
-    expect(passwordField?.protected).toBe(true);
+    expect(passwordField?.protected).assertEqual(true);
 
     const titleField = entry.fields.find(f => f.name === 'Title');
-    expect(titleField?.protected).toBe(false);
+    expect(titleField?.protected).assertEqual(false);
   });
 
   it('should get and set standard fields correctly', () => {
@@ -73,58 +73,58 @@ describe('KdbxEntry', () => {
     entry.url = 'https://example.com';
     entry.notes = 'Test notes';
 
-    expect(entry.title).toBe('Test Title');
-    expect(entry.username).toBe('testuser');
-    expect(entry.password).toBe('testpassword');
-    expect(entry.url).toBe('https://example.com');
-    expect(entry.notes).toBe('Test notes');
+    expect(entry.title).assertEqual('Test Title');
+    expect(entry.username).assertEqual('testuser');
+    expect(entry.password).assertEqual('testpassword');
+    expect(entry.url).assertEqual('https://example.com');
+    expect(entry.notes).assertEqual('Test notes');
 
     // 验证通过getField方法
-    expect(entry.getField('Title')).toBe('Test Title');
-    expect(entry.getField('UserName')).toBe('testuser');
-    expect(entry.getField('Password')).toBe('testpassword');
-    expect(entry.getField('URL')).toBe('https://example.com');
-    expect(entry.getField('Notes')).toBe('Test notes');
+    expect(entry.getField('Title')).assertEqual('Test Title');
+    expect(entry.getField('UserName')).assertEqual('testuser');
+    expect(entry.getField('Password')).assertEqual('testpassword');
+    expect(entry.getField('URL')).assertEqual('https://example.com');
+    expect(entry.getField('Notes')).assertEqual('Test notes');
   });
 
   it('should set and get custom fields', () => {
     entry.setField('CustomField1', 'CustomValue1');
     entry.setField('CustomField2', 'CustomValue2', true); // 受保护字段
 
-    expect(entry.getField('CustomField1')).toBe('CustomValue1');
-    expect(entry.getField('CustomField2')).toBe('CustomValue2');
+    expect(entry.getField('CustomField1')).assertEqual('CustomValue1');
+    expect(entry.getField('CustomField2')).assertEqual('CustomValue2');
 
     // 验证字段数量
-    expect(entry.fields.length).toBe(7); // 5个默认字段 + 2个自定义字段
+    expect(entry.fields.length).assertEqual(7); // 5个默认字段 + 2个自定义字段
 
     // 验证保护状态
     const customField1 = entry.fields.find(f => f.name === 'CustomField1');
-    expect(customField1?.protected).toBe(false);
+    expect(customField1?.protected).assertEqual(false);
 
     const customField2 = entry.fields.find(f => f.name === 'CustomField2');
-    expect(customField2?.protected).toBe(true);
+    expect(customField2?.protected).assertEqual(true);
   });
 
   it('should update existing fields', () => {
     entry.title = 'Initial Title';
-    expect(entry.title).toBe('Initial Title');
+    expect(entry.title).assertEqual('Initial Title');
 
     entry.setField('Title', 'Updated Title');
-    expect(entry.title).toBe('Updated Title');
-    expect(entry.fields.length).toBe(5); // 字段数量不变
+    expect(entry.title).assertEqual('Updated Title');
+    expect(entry.fields.length).assertEqual(5); // 字段数量不变
   });
 
   it('should delete fields', () => {
     entry.setField('CustomField', 'Value');
-    expect(entry.fields.length).toBe(6);
+    expect(entry.fields.length).assertEqual(6);
 
     entry.deleteField('CustomField');
-    expect(entry.fields.length).toBe(5);
+    expect(entry.fields.length).assertEqual(5);
     expect(entry.getField('CustomField')).toBeUndefined();
 
     // 删除不存在的字段不应有影响
     entry.deleteField('NonExistentField');
-    expect(entry.fields.length).toBe(5);
+    expect(entry.fields.length).assertEqual(5);
   });
 
   it('should handle attachments', () => {
@@ -134,39 +134,39 @@ describe('KdbxEntry', () => {
     entry.addAttachment('attachment1.txt', testData1);
     entry.addAttachment('attachment2.bin', testData2);
 
-    expect(entry.attachments.length).toBe(2);
-    expect(entry.attachments[0].name).toBe('attachment1.txt');
-    expect(entry.attachments[0].data).toBe(testData1);
-    expect(entry.attachments[0].size).toBe(4);
+    expect(entry.attachments.length).assertEqual(2);
+    expect(entry.attachments[0].name).assertEqual('attachment1.txt');
+    expect(entry.attachments[0].data).assertEqual(testData1);
+    expect(entry.attachments[0].size).assertEqual(4);
 
     entry.deleteAttachment('attachment1.txt');
-    expect(entry.attachments.length).toBe(1);
-    expect(entry.attachments[0].name).toBe('attachment2.bin');
+    expect(entry.attachments.length).assertEqual(1);
+    expect(entry.attachments[0].name).assertEqual('attachment2.bin');
 
     // 删除不存在的附件不应有影响
     entry.deleteAttachment('nonexistent.txt');
-    expect(entry.attachments.length).toBe(1);
+    expect(entry.attachments.length).assertEqual(1);
   });
 
   it('should handle tags', () => {
     entry.addTag('work');
     entry.addTag('important');
 
-    expect(entry.tags.length).toBe(2);
+    expect(entry.tags.length).assertEqual(2);
     expect(entry.tags).toContain('work');
     expect(entry.tags).toContain('important');
 
     // 添加重复标签不应有影响
     entry.addTag('work');
-    expect(entry.tags.length).toBe(2);
+    expect(entry.tags.length).assertEqual(2);
 
     entry.removeTag('work');
-    expect(entry.tags.length).toBe(1);
+    expect(entry.tags.length).assertEqual(1);
     expect(entry.tags).toContain('important');
 
     // 删除不存在的标签不应有影响
     entry.removeTag('nonexistent');
-    expect(entry.tags.length).toBe(1);
+    expect(entry.tags.length).assertEqual(1);
   });
 
   it('should update usage count and access time', () => {
@@ -177,7 +177,7 @@ describe('KdbxEntry', () => {
     setTimeout(() => {
       entry.touch();
 
-      expect(entry.usageCount).toBe(initialUsageCount + 1);
+      expect(entry.usageCount).assertEqual(initialUsageCount + 1);
       expect(entry.lastAccessTime.getTime()).toBeGreaterThan(initialAccessTime.getTime());
     }, 10);
   });
@@ -187,9 +187,9 @@ describe('KdbxEntry', () => {
     entry.username = 'originaluser';
 
     entry.createHistoryEntry();
-    expect(entry.history.length).toBe(1);
-    expect(entry.history[0].title).toBe('Original Title');
-    expect(entry.history[0].username).toBe('originaluser');
+    expect(entry.history.length).assertEqual(1);
+    expect(entry.history[0].title).assertEqual('Original Title');
+    expect(entry.history[0].username).assertEqual('originaluser');
 
     // 修改当前条目
     entry.title = 'Updated Title';
@@ -197,31 +197,31 @@ describe('KdbxEntry', () => {
 
     // 创建另一个历史条目
     entry.createHistoryEntry();
-    expect(entry.history.length).toBe(2);
-    expect(entry.history[1].title).toBe('Updated Title');
-    expect(entry.history[1].username).toBe('updateduser');
+    expect(entry.history.length).assertEqual(2);
+    expect(entry.history[1].title).assertEqual('Updated Title');
+    expect(entry.history[1].username).assertEqual('updateduser');
 
     // 历史条目不应包含历史
-    expect(entry.history[0].history.length).toBe(0);
-    expect(entry.history[1].history.length).toBe(0);
+    expect(entry.history[0].history.length).assertEqual(0);
+    expect(entry.history[1].history.length).assertEqual(0);
   });
 
   it('should check expiry status', () => {
     // 默认不过期
-    expect(entry.isExpired()).toBe(false);
+    expect(entry.isExpired()).assertEqual(false);
 
     // 设置过期时间为过去
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1); // 昨天
     entry.expires = true;
     entry.expiryTime = pastDate;
-    expect(entry.isExpired()).toBe(true);
+    expect(entry.isExpired()).assertEqual(true);
 
     // 设置过期时间为未来
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 1); // 明天
     entry.expiryTime = futureDate;
-    expect(entry.isExpired()).toBe(false);
+    expect(entry.isExpired()).assertEqual(false);
   });
 
   it('should clone entries correctly', () => {
@@ -234,17 +234,17 @@ describe('KdbxEntry', () => {
 
     const cloned = entry.clone();
 
-    expect(cloned.uuid).toBe(entry.uuid);
-    expect(cloned.title).toBe(entry.title);
-    expect(cloned.username).toBe(entry.username);
-    expect(cloned.password).toBe(entry.password);
+    expect(cloned.uuid).assertEqual(entry.uuid);
+    expect(cloned.title).assertEqual(entry.title);
+    expect(cloned.username).assertEqual(entry.username);
+    expect(cloned.password).assertEqual(entry.password);
     expect(cloned.tags).toEqual(entry.tags);
-    expect(cloned.fields.length).toBe(entry.fields.length);
-    expect(cloned.attachments.length).toBe(entry.attachments.length);
+    expect(cloned.fields.length).assertEqual(entry.fields.length);
+    expect(cloned.attachments.length).assertEqual(entry.attachments.length);
 
     // 修改原始条目不应影响克隆
     entry.title = 'Modified Title';
-    expect(cloned.title).toBe('Test Title');
+    expect(cloned.title).assertEqual('Test Title');
   });
 
   it('should compare entries correctly', () => {
@@ -252,43 +252,43 @@ describe('KdbxEntry', () => {
     entry.username = 'testuser';
 
     const identical = entry.clone();
-    expect(entry.equals(identical)).toBe(true);
+    expect(entry.equals(identical)).assertEqual(true);
 
     // 修改字段值
     const modified = entry.clone();
     modified.title = 'Different Title';
-    expect(entry.equals(modified)).toBe(false);
+    expect(entry.equals(modified)).assertEqual(false);
 
     // 添加新字段
     const withExtraField = entry.clone();
     withExtraField.setField('ExtraField', 'Value');
-    expect(entry.equals(withExtraField)).toBe(false);
+    expect(entry.equals(withExtraField)).assertEqual(false);
   });
 
   it('should validate entries', () => {
     // 空条目应该无效
     const result1 = entry.validate();
-    expect(result1.valid).toBe(false);
+    expect(result1.valid).assertEqual(false);
     expect(result1.errors.length).toBeGreaterThan(0);
 
     // 设置标题但无用户名和密码
     entry.title = 'Test Title';
     const result2 = entry.validate();
-    expect(result2.valid).toBe(false);
+    expect(result2.valid).assertEqual(false);
     expect(result2.errors.length).toBeGreaterThan(0);
 
     // 设置标题和用户名
     entry.username = 'testuser';
     const result3 = entry.validate();
-    expect(result3.valid).toBe(true);
-    expect(result3.errors.length).toBe(0);
+    expect(result3.valid).assertEqual(true);
+    expect(result3.errors.length).assertEqual(0);
 
     // 或者设置标题和密码
     entry.username = '';
     entry.password = 'testpassword';
     const result4 = entry.validate();
-    expect(result4.valid).toBe(true);
-    expect(result4.errors.length).toBe(0);
+    expect(result4.valid).assertEqual(true);
+    expect(result4.errors.length).assertEqual(0);
   });
 
   it('should generate summary information', () => {
@@ -301,18 +301,18 @@ describe('KdbxEntry', () => {
 
     const summary = entry.getSummary();
 
-    expect(summary.title).toBe('Test Entry');
-    expect(summary.username).toBe('testuser');
-    expect(summary.hasPassword).toBe(true);
-    expect(summary.hasUrl).toBe(true);
-    expect(summary.hasNotes).toBe(true);
-    expect(summary.attachmentCount).toBe(1);
+    expect(summary.title).assertEqual('Test Entry');
+    expect(summary.username).assertEqual('testuser');
+    expect(summary.hasPassword).assertEqual(true);
+    expect(summary.hasUrl).assertEqual(true);
+    expect(summary.hasNotes).assertEqual(true);
+    expect(summary.attachmentCount).assertEqual(1);
   });
 
   it('should generate passwords', () => {
     const password1 = entry.generatePassword({ length: 16 });
-    expect(password1.length).toBe(16);
-    expect(entry.password).toBe(password1);
+    expect(password1.length).assertEqual(16);
+    expect(entry.password).assertEqual(password1);
 
     const password2 = entry.generatePassword({
       length: 12,
@@ -321,17 +321,17 @@ describe('KdbxEntry', () => {
       useDigits: true,
       useSpecial: false
     });
-    expect(password2.length).toBe(12);
+    expect(password2.length).assertEqual(12);
     expect(password2).not.toContain('!');
     expect(password2).not.toContain('@');
-    expect(entry.password).toBe(password2);
+    expect(entry.password).assertEqual(password2);
   });
 
   it('should check password strength', () => {
     // 空密码
     entry.password = '';
     const result1 = entry.checkPasswordStrength();
-    expect(result1.score).toBe(0);
+    expect(result1.score).assertEqual(0);
     expect(result1.suggestions.length).toBeGreaterThan(0);
 
     // 弱密码
@@ -356,25 +356,25 @@ describe('KdbxEntry', () => {
 
     // 基本搜索
     const results1 = entry.searchFields('bank');
-    expect(results1.length).toBe(2); // 标题和备注中包含"bank"
+    expect(results1.length).assertEqual(2); // 标题和备注中包含"bank"
 
     // 区分大小写搜索
     const results2 = entry.searchFields('Bank', { caseSensitive: true });
-    expect(results2.length).toBe(1); // 只有标题中包含"Bank"
+    expect(results2.length).assertEqual(1); // 只有标题中包含"Bank"
 
     // 搜索受保护字段
     const results3 = entry.searchFields('secret', { includeProtected: true });
-    expect(results3.length).toBe(1); // 密码中包含"secret"
+    expect(results3.length).assertEqual(1); // 密码中包含"secret"
 
     const results4 = entry.searchFields('secret', { includeProtected: false });
-    expect(results4.length).toBe(0); // 不搜索受保护字段
+    expect(results4.length).assertEqual(0); // 不搜索受保护字段
 
     // 指定字段搜索
     const results5 = entry.searchFields('example', { fieldNames: ['URL'] });
-    expect(results5.length).toBe(1); // 只在URL中搜索
+    expect(results5.length).assertEqual(1); // 只在URL中搜索
 
     const results6 = entry.searchFields('example', { fieldNames: ['Title', 'Notes'] });
-    expect(results6.length).toBe(0); // 标题和备注中不包含"example"
+    expect(results6.length).assertEqual(0); // 标题和备注中不包含"example"
   });
 
   it('should export to different formats', () => {
@@ -396,7 +396,7 @@ describe('KdbxEntry', () => {
 
     // CSV导出
     const csv = entry.export('csv');
-    expect(csv).toBe('"Test Entry","testuser","https://example.com","Test notes","work;important"');
+    expect(csv).assertEqual('"Test Entry","testuser","https://example.com","Test notes","work;important"');
 
     // XML导出
     const xml = entry.export('xml');
