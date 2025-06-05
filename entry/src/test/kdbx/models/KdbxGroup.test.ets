@@ -42,19 +42,19 @@ export default function KdbxGroupUnitTest() {
     it('should initialize with correct default values', 0,() => {
       expect(rootGroup.uuid).assertEqual(ROOT_UUID);
       expect(rootGroup.name).assertEqual(ROOT_NAME);
-      expect(rootGroup.icon).assertEqual({ id: 0 });
+      expect(rootGroup.icon).assertDeepEquals({ id: 0 });
       expect(rootGroup.expires).assertEqual(false);
       expect(rootGroup.expiryTime).assertUndefined();
       expect(rootGroup.parentGroup).assertUndefined();
-      expect(rootGroup.groups).assertEqual([]);
-      expect(rootGroup.entries).assertEqual([]);
+      expect(rootGroup.groups).assertDeepEquals([]);
+      expect(rootGroup.entries).assertDeepEquals([]);
       expect(rootGroup.isExpanded).assertEqual(false);
       expect(rootGroup.isSelected).assertEqual(false);
 
       // 验证时间戳
-      expect(rootGroup.creationTime).toBeInstanceOf(Date);
-      expect(rootGroup.lastModifiedTime).toBeInstanceOf(Date);
-      expect(rootGroup.lastAccessTime).toBeInstanceOf(Date);
+      expect(rootGroup.creationTime).assertInstanceOf('Date');
+      expect(rootGroup.lastModifiedTime).assertInstanceOf('Date');
+      expect(rootGroup.lastAccessTime).assertInstanceOf('Date');
     });
 
     it('should add and remove groups', 0,() => {
@@ -175,7 +175,7 @@ export default function KdbxGroupUnitTest() {
         visitedGroups.push(group.uuid);
       });
 
-      expect(visitedGroups).assertEqual([
+      expect(visitedGroups).assertDeepEquals([
         ROOT_UUID,
         'sub1-uuid',
         'sub2-uuid',
@@ -201,7 +201,7 @@ export default function KdbxGroupUnitTest() {
         visitedEntries.push(entry.uuid);
       });
 
-      expect(visitedEntries).assertEqual([
+      expect(visitedEntries).assertDeepEquals([
         'entry1-uuid',
         'entry2-uuid',
         'entry3-uuid'
