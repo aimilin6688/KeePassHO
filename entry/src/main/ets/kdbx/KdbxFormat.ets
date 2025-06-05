@@ -42,9 +42,10 @@ export enum InnerRandomStreamID {
 /**
  * KDBX版本
  */
+
 export enum KdbxVersion {
-  V3 = 0x00030001,
-  V4 = 0x00040000
+  V3_1 = 0x00030001,
+  V4 = 0x00040000,
 }
 
 /**
