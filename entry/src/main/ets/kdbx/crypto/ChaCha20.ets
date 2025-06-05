@@ -89,6 +89,9 @@ export class ChaCha20 {
    * @returns 加密/解密后的数据
    */
   process(data: Uint8Array): Uint8Array {
+    if(data === undefined || data === null || data.length === 0){
+      throw new Error('data is empty');
+    }
     const output = new Uint8Array(data.length);
     let offset = 0;
 
