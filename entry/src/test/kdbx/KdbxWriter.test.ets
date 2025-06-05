@@ -14,10 +14,8 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxWriter } from '../../../main/ets/kdbx/KdbxWriter';
-import { KdbxReader } from '../../../main/ets/kdbx/KdbxReader';
-import { InnerRandomStreamID } from '../../../main/ets/kdbx/KdbxFormat';
-import { Binary } from '../../../main/ets/kdbx/models/KdbxTypes';
+import { KdbxReader } from '../../main/ets/kdbx/KdbxReader';
+import { KdbxWriter } from '../../main/ets/kdbx/KdbxWriter';
 import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxWriterUnitTest() {
   describe('KdbxWriter', () => {
@@ -144,7 +142,7 @@ export default function KdbxWriterUnitTest() {
       const keyFile = KdbxUtils.generateRandom(new Uint8Array(32));
 
       const data = await writer.write(database, password, keyFile);
-      expect(data).assertInstanceOf(Uint8Array);
+      expect(data).assertInstanceOf('Uint8Array');
       expect(data.length).assertLarger(0);
 
       // 尝试读取写入的文件
@@ -182,7 +180,7 @@ export default function KdbxWriterUnitTest() {
       }
 
       const data = await writer.write(database, 'testpassword');
-      expect(data).assertInstanceOf(Uint8Array);
+      expect(data).assertInstanceOf('Uint8Array');
       expect(data.length).assertLarger(100000); // 应该生成较大的文件
 
       // 验证可以读取大文件
