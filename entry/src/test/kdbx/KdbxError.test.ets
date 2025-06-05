@@ -36,8 +36,8 @@ export default function KdbxErrorUnitTest() {
     it('should create error with default values',0, () => {
       const error = new KdbxError();
 
-      expect(error).toBeInstanceOf(Error);
-      expect(error).toBeInstanceOf(KdbxError);
+      expect(error).assertInstanceOf(Error);
+      expect(error).assertInstanceOf(KdbxError);
       expect(error.name).assertEqual('KdbxError');
       expect(error.code).assertEqual(KdbxErrorCode.UNKNOWN);
       expect(error.message).assertEqual('未知错误');
@@ -156,7 +156,7 @@ export default function KdbxErrorUnitTest() {
         { algorithm: 'AES' }
       );
 
-      expect(error).toBeInstanceOf(KdbxError);
+      expect(error).assertInstanceOf(KdbxError);
       expect(error.code).assertEqual(KdbxErrorCode.ENCRYPTION_FAILED);
       expect(error.message).assertEqual('加密失败');
       expect(error.originalError).not().assertUndefined();
@@ -172,7 +172,7 @@ export default function KdbxErrorUnitTest() {
         { url: 'https://example.com' }
       );
 
-      expect(wrappedError).toBeInstanceOf(KdbxError);
+      expect(wrappedError).assertInstanceOf(KdbxError);
       expect(wrappedError.code).assertEqual(KdbxErrorCode.NETWORK_ERROR);
       expect(wrappedError.message).assertEqual('同步失败');
       expect(wrappedError.originalError).assertEqual(originalError);
@@ -183,7 +183,7 @@ export default function KdbxErrorUnitTest() {
       const originalError = new Error('测试错误');
       const wrappedError = KdbxError.wrap(originalError);
 
-      expect(wrappedError).toBeInstanceOf(KdbxError);
+      expect(wrappedError).assertInstanceOf(KdbxError);
       expect(wrappedError.code).assertEqual(KdbxErrorCode.UNKNOWN);
       expect(wrappedError.message).assertEqual('测试错误');
       expect(wrappedError.originalError).assertEqual(originalError);

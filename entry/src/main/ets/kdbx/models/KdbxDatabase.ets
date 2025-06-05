@@ -1,4 +1,4 @@
-import { UUID, Meta, DeletedObject, Binary } from './KdbxTypes';
+import { Binary, DatabaseStatistics, DeletedObject, GroupSearchFieldOptions, Meta, UUID } from './KdbxTypes';
 import { KdbxGroup } from './KdbxGroup';
 import { KdbxEntry } from './KdbxEntry';
 import { InnerRandomStreamID } from '../KdbxFormat';
@@ -12,27 +12,22 @@ export class KdbxDatabase {
    * 数据库元数据
    */
   meta: Meta;
-
   /**
    * 根组
    */
   root: KdbxGroup;
-
   /**
    * 已删除对象列表
    */
   deletedObjects: DeletedObject[] = [];
-
   /**
    * 数据库版本
    */
   version: number;
-
   /**
    * 内部随机流ID
    */
   innerRandomStreamId: InnerRandomStreamID;
-
   /**
    * 保护流密钥
    */
@@ -49,7 +44,7 @@ export class KdbxDatabase {
 
     // 创建根组
     const rootUuid = KdbxUtils.generateRandom(new Uint8Array(16));
-    this.root = new KdbxGroup(rootUuid, 'Root');
+    this.root = new KdbxGroup(KdbxUtils.bytesToStr(rootUuid), 'Root');
 
     // 初始化元数据
     this.meta = {
@@ -59,7 +54,7 @@ export class KdbxDatabase {
       historyMaxItems: 10,
       historyMaxSize: 6 * 1024 * 1024, // 6MB
       recycleBinEnabled: true,
-      recycleBinUUID: KdbxUtils.generateRandom(new Uint8Array(16)),
+      recycleBinUUID: KdbxUtils.bytesToStr(KdbxUtils.generateRandom(new Uint8Array(16))),
       recycleBinChanged: new Date(),
       masterKeyChanged: new Date(),
       memoryProtection: {
@@ -87,7 +82,7 @@ export class KdbxDatabase {
    * @returns 新创建的组
    */
   createGroup(name: string, parentGroup: KdbxGroup = this.root): KdbxGroup {
-    const uuid = KdbxUtils.generateRandom(new Uint8Array(16));
+    const uuid = KdbxUtils.bytesToStr(KdbxUtils.generateRandom(new Uint8Array(16)));
     const group = new KdbxGroup(uuid, name);
     parentGroup.addGroup(group);
     return group;
@@ -99,7 +94,7 @@ export class KdbxDatabase {
    * @returns 新创建的条目
    */
   createEntry(parentGroup: KdbxGroup = this.root): KdbxEntry {
-    const uuid = KdbxUtils.generateRandom(new Uint8Array(16));
+    const uuid = KdbxUtils.bytesToStr(KdbxUtils.generateRandom(new Uint8Array(16)));
     const entry = new KdbxEntry(uuid, parentGroup.uuid);
     parentGroup.addEntry(entry);
     return entry;
@@ -136,6 +131,10 @@ export class KdbxDatabase {
 
     // 不能移动到自己或子组中
     if (group.uuid === newParent.uuid || newParent.findGroup(group.uuid)) {
+      return false;
+    }
+
+    if (group.parentGroup === undefined) {
       return false;
     }
 
@@ -195,6 +194,10 @@ export class KdbxDatabase {
 
     // 不能删除根组
     if (group.uuid === this.root.uuid) {
+      return false;
+    }
+
+    if (group.parentGroup === undefined) {
       return false;
     }
 
@@ -305,22 +308,16 @@ export class KdbxDatabase {
    * @param options 搜索选项
    * @returns 匹配的条目列表
    */
-  searchEntries(query: string, options: {
-    caseSensitive?: boolean;
-    includeProtected?: boolean;
-    fieldNames?: string[];
-    searchInGroups?: UUID[];
-    excludeGroups?: UUID[];
-  } = {}): KdbxEntry[] {
-    if (!query) return [];
+  searchEntries(query: string, options?: GroupSearchFieldOptions): KdbxEntry[] {
+    if (!query) {
+      return [];
+    }
 
-    const {
-      caseSensitive = false,
-      includeProtected = false,
-      fieldNames,
-      searchInGroups,
-      excludeGroups
-    } = options;
+    const caseSensitive = options?.caseSensitive || false,
+      includeProtected = options?.includeProtected || false,
+      fieldNames = options?.includeProtected || undefined,
+      searchInGroups = options?.searchInGroups || undefined,
+      excludeGroups = options?.excludeGroups || undefined;
 
     const searchQuery = caseSensitive ? query : query.toLowerCase();
     const results: KdbxEntry[] = [];
@@ -339,12 +336,7 @@ export class KdbxDatabase {
 
       // 搜索当前组中的条目
       for (const entry of group.entries) {
-        const matchingFields = entry.searchFields(query, {
-          caseSensitive,
-          includeProtected,
-          fieldNames
-        });
-
+        const matchingFields = entry.searchFields(query, options);
         if (matchingFields.length > 0) {
           results.push(entry);
         }
@@ -364,14 +356,7 @@ export class KdbxDatabase {
    * 获取数据库统计信息
    * @returns 统计信息
    */
-  getStatistics(): {
-    groupCount: number;
-    entryCount: number;
-    attachmentCount: number;
-    attachmentSize: number;
-    passwordCount: number;
-    expiredEntryCount: number;
-  } {
+  getStatistics(): DatabaseStatistics {
     let groupCount = 0;
     let entryCount = 0;
     let attachmentCount = 0;

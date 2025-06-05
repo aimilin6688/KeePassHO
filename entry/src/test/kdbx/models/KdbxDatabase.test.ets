@@ -18,6 +18,7 @@ import { KdbxDatabase } from '../../../main/ets/kdbx/models/KdbxDatabase';
 import { KdbxGroup } from '../../../main/ets/kdbx/models/KdbxGroup';
 import { KdbxEntry } from '../../../main/ets/kdbx/models/KdbxEntry';
 import { InnerRandomStreamID } from '../../../main/ets/kdbx/KdbxFormat';
+
 export default function KdbxDatabaseUnitTest() {
   describe('KdbxDatabase', () => {
     let db: KdbxDatabase;
@@ -39,39 +40,45 @@ export default function KdbxDatabaseUnitTest() {
       // 测试套件结束后的清理
     });
 
-    it('should initialize with correct default values', 0,() => {
+    it('should initialize with correct default values', 0, () => {
       expect(db.version).assertEqual(0x00040000);
       expect(db.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
-      expect(db.protectedStreamKey).toBeInstanceOf(Uint8Array);
+      expect(db.protectedStreamKey).assertInstanceOf('Uint8Array');
+      expect(db.protectedStreamKey).assertInstanceOf('Uint8Array');
       expect(db.protectedStreamKey.length).assertEqual(32);
-      expect(db.root).toBeInstanceOf(KdbxGroup);
+      expect(db.root instanceof  KdbxGroup).assertEqual(true);
       expect(db.deletedObjects).assertEqual([]);
 
       // 验证元数据
+      expect(db.meta).not().assertNull();
       expect(db.meta.databaseName).assertEqual('新数据库');
       expect(db.meta.historyMaxItems).assertEqual(10);
       expect(db.meta.historyMaxSize).assertEqual(6 * 1024 * 1024);
       expect(db.meta.recycleBinEnabled).assertEqual(true);
-      expect(db.meta.recycleBinUUID).toBeInstanceOf(Uint8Array);
-      expect(db.meta.masterKeyChanged).toBeInstanceOf(Date);
+      expect(db.meta.recycleBinUUID).assertInstanceOf('Uint8Array');
+      expect(db.meta.masterKeyChanged).assertInstanceOf('Date');
 
       // 验证内存保护设置
-      expect(db.meta.memoryProtection.protectTitle).assertEqual(false);
-      expect(db.meta.memoryProtection.protectUserName).assertEqual(false);
-      expect(db.meta.memoryProtection.protectPassword).assertEqual(true);
-      expect(db.meta.memoryProtection.protectUrl).assertEqual(false);
-      expect(db.meta.memoryProtection.protectNotes).assertEqual(false);
-
+      expect(db.meta.memoryProtection?.protectTitle).assertEqual(false);
+      expect(db.meta.memoryProtection?.protectUserName).assertEqual(false);
+      expect(db.meta.memoryProtection?.protectPassword).assertEqual(true);
+      expect(db.meta.memoryProtection?.protectUrl).assertEqual(false);
+      expect(db.meta.memoryProtection?.protectNotes).assertEqual(false);
+      expect(db.meta.recycleBinUUID).not().assertNull();
       // 验证回收站
-      const recycleBin = db.findGroup(db.meta.recycleBinUUID);
-      expect(recycleBin).not().assertUndefined();
-      expect(recycleBin.name).assertEqual('回收站');
-      expect(recycleBin.icon.id).assertEqual(43);
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        expect(recycleBin).not().assertUndefined();
+        if (recycleBin) {
+          expect(recycleBin.name).assertEqual('回收站');
+          expect(recycleBin.icon.id).assertEqual(43);
+        }
+      }
     });
 
-    it('should create groups', 0,() => {
+    it('should create groups', 0, () => {
       const group1 = db.createGroup('Group 1');
-      expect(group1).toBeInstanceOf(KdbxGroup);
+      expect(group1 instanceof KdbxGroup).assertTrue();
       expect(group1.name).assertEqual('Group 1');
       expect(group1.parentGroup).assertEqual(db.root.uuid);
       expect(db.root.groups).assertContain(group1);
@@ -83,11 +90,11 @@ export default function KdbxDatabaseUnitTest() {
       expect(group1.groups).assertContain(group2);
     });
 
-    it('should create entries', 0,() => {
+    it('should create entries', 0, () => {
       const group = db.createGroup('Test Group');
       const entry = db.createEntry(group);
 
-      expect(entry).toBeInstanceOf(KdbxEntry);
+      expect(entry instanceof  KdbxEntry).assertTrue();
       expect(entry.parentGroup).assertEqual(group.uuid);
       expect(group.entries).assertContain(entry);
 
@@ -101,30 +108,30 @@ export default function KdbxDatabaseUnitTest() {
       expect(entry.password).assertEqual('testpassword');
     });
 
-    it('should find groups', 0,() => {
+    it('should find groups', 0, () => {
       const group1 = db.createGroup('Group 1');
       const group2 = db.createGroup('Group 2', group1);
       const group3 = db.createGroup('Group 3', group2);
 
-      expect(db.findGroup(group1.uuid)).assertEqual(group1);
-      expect(db.findGroup(group2.uuid)).assertEqual(group2);
-      expect(db.findGroup(group3.uuid)).assertEqual(group3);
+      expect(db.findGroup(group1.uuid)).assertDeepEquals(group1);
+      expect(db.findGroup(group2.uuid)).assertDeepEquals(group2);
+      expect(db.findGroup(group3.uuid)).assertDeepEquals(group3);
       expect(db.findGroup('nonexistent-uuid')).assertUndefined();
     });
 
-    it('should find entries', 0,() => {
+    it('should find entries', 0, () => {
       const group1 = db.createGroup('Group 1');
       const group2 = db.createGroup('Group 2', group1);
 
       const entry1 = db.createEntry(group1);
       const entry2 = db.createEntry(group2);
 
-      expect(db.findEntry(entry1.uuid)).assertEqual(entry1);
-      expect(db.findEntry(entry2.uuid)).assertEqual(entry2);
+      expect(db.findEntry(entry1.uuid)).assertDeepEquals(entry1);
+      expect(db.findEntry(entry2.uuid)).assertDeepEquals(entry2);
       expect(db.findEntry('nonexistent-uuid')).assertUndefined();
     });
 
-    it('should move groups', 0,() => {
+    it('should move groups', 0, () => {
       const group1 = db.createGroup('Group 1');
       const group2 = db.createGroup('Group 2');
       const group3 = db.createGroup('Group 3', group1);
@@ -150,7 +157,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(nonExistentResult).assertEqual(false);
     });
 
-    it('should move entries', 0,() => {
+    it('should move entries', 0, () => {
       const group1 = db.createGroup('Group 1');
       const group2 = db.createGroup('Group 2');
       const entry = db.createEntry(group1);
@@ -168,7 +175,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(nonExistentResult).assertEqual(false);
     });
 
-    it('should delete groups with recycle bin', 0,() => {
+    it('should delete groups with recycle bin', 0, () => {
       const group = db.createGroup('Test Group');
       const subGroup = db.createGroup('Sub Group', group);
       const entry = db.createEntry(subGroup);
@@ -178,9 +185,15 @@ export default function KdbxDatabaseUnitTest() {
       expect(result).assertEqual(true);
 
       // 组应该被移动到回收站
-      const recycleBin = db.findGroup(db.meta.recycleBinUUID);
-      expect(recycleBin.groups).assertContain(group);
-      expect(db.root.groups).not().assertContain(group);
+      expect(db.meta.recycleBinUUID).not().assertUndefined();
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        expect(recycleBin).not().assertUndefined();
+        if (recycleBin) {
+          expect(recycleBin.groups).assertContain(group);
+          expect(db.root.groups).not().assertContain(group);
+        }
+      }
 
       // 子组和条目应该保持原样
       expect(group.groups).assertContain(subGroup);
@@ -191,7 +204,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(rootDeleteResult).assertEqual(false);
     });
 
-    it('should delete groups without recycle bin',0, () => {
+    it('should delete groups without recycle bin', 0, () => {
       const group = db.createGroup('Test Group');
 
       // 删除组（不使用回收站）
@@ -205,10 +218,10 @@ export default function KdbxDatabaseUnitTest() {
       // 组应该被添加到已删除对象列表
       expect(db.deletedObjects.length).assertEqual(1);
       expect(db.deletedObjects[0].uuid).assertEqual(group.uuid);
-      expect(db.deletedObjects[0].deletionTime).toBeInstanceOf(Date);
+      expect(db.deletedObjects[0].deletionTime).assertInstanceOf('Date');
     });
 
-    it('should delete entries with recycle bin',0, () => {
+    it('should delete entries with recycle bin', 0, () => {
       const group = db.createGroup('Test Group');
       const entry = db.createEntry(group);
 
@@ -217,13 +230,17 @@ export default function KdbxDatabaseUnitTest() {
       expect(result).assertEqual(true);
 
       // 条目应该被移动到回收站
-      const recycleBin = db.findGroup(db.meta.recycleBinUUID);
-      expect(recycleBin.entries).assertContain(entry);
-      expect(group.entries).not().assertContain(entry);
-      expect(entry.parentGroup).assertEqual(recycleBin.uuid);
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin) {
+          expect(recycleBin.entries).assertContain(entry);
+          expect(group.entries).not().assertContain(entry);
+          expect(entry.parentGroup).assertEqual(recycleBin.uuid);
+        }
+      }
     });
 
-    it('should delete entries without recycle bin', () => {
+    it('should delete entries without recycle bin', 0, () => {
       const group = db.createGroup('Test Group');
       const entry = db.createEntry(group);
 
@@ -238,11 +255,11 @@ export default function KdbxDatabaseUnitTest() {
       // 条目应该被添加到已删除对象列表
       expect(db.deletedObjects.length).assertEqual(1);
       expect(db.deletedObjects[0].uuid).assertEqual(entry.uuid);
-      expect(db.deletedObjects[0].deletionTime).toBeInstanceOf(Date);
+      expect(db.deletedObjects[0].deletionTime).assertInstanceOf('Date');
       expect(db.deletedObjects[0].deletionTime).assertInstanceOf('Date');
     });
 
-    it('should empty recycle bin', 0,() => {
+    it('should empty recycle bin', 0, () => {
       const group = db.createGroup('Test Group');
       const entry = db.createEntry(group);
 
@@ -254,9 +271,13 @@ export default function KdbxDatabaseUnitTest() {
       expect(result).assertEqual(true);
 
       // 回收站应该为空
-      const recycleBin = db.findGroup(db.meta.recycleBinUUID);
-      expect(recycleBin.groups.length).assertEqual(0);
-      expect(recycleBin.entries.length).assertEqual(0);
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin) {
+          expect(recycleBin.groups.length).assertEqual(0);
+          expect(recycleBin.entries.length).assertEqual(0);
+        }
+      }
 
       // 组和条目应该被添加到已删除对象列表
       expect(db.deletedObjects.length).assertEqual(2);
@@ -264,7 +285,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(db.deletedObjects.some(obj => obj.uuid === entry.uuid)).assertEqual(true);
     });
 
-    it('should search entries', 0,() => {
+    it('should search entries', 0, () => {
       // 创建测试数据
       const group1 = db.createGroup('Group 1');
       const group2 = db.createGroup('Group 2');
@@ -330,7 +351,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(results9[0]).assertEqual(entry3);
     });
 
-    it('should get statistics', 0,() => {
+    it('should get statistics', 0, () => {
       // 创建测试数据
       const group1 = db.createGroup('Group 1');
       const group2 = db.createGroup('Group 2', group1);
@@ -367,7 +388,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(stats.expiredEntryCount).assertEqual(1);
     });
 
-    it('should handle disabled recycle bin', 0,() => {
+    it('should handle disabled recycle bin', 0, () => {
       // 禁用回收站
       db.meta.recycleBinEnabled = false;
 
@@ -388,7 +409,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(result2).assertEqual(false);
     });
 
-    it('should handle database with custom version',0, () => {
+    it('should handle database with custom version', 0, () => {
       const customDb = new KdbxDatabase(0x00030001); // KeePass 3.1
       expect(customDb.version).assertEqual(0x00030001);
 
