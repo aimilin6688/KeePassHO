@@ -121,5 +121,100 @@ export default function ChaCha20UnitTest() {
         const output = chaCha20.process(emptyInput);
       }).not().assertThrowError('should handle empty input')
     });
+
+    // 边界条件测试
+    it('should handle counter overflow correctly', 0, () => {
+      // 设置计数器为最大值
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, 0xffffffff);
+      const data = new Uint8Array(128);
+      const firstBlock = chaCha20.process(data.slice(0, 64));
+      const secondBlock = chaCha20.process(data.slice(64));
+      
+      // 确保两个块的加密结果不同（因为计数器已经溢出并增加）
+      expect(bytesToHex(firstBlock)).not().assertEqual(bytesToHex(secondBlock));
+    });
+
+    it('should handle large data blocks correctly', 0, () => {
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      // 创建一个大于64字节的数据块
+      const largeData = new Uint8Array(200);
+      for (let i = 0; i < largeData.length; i++) {
+        largeData[i] = i & 0xff;
+      }
+      
+      // 加密大数据块
+      const encrypted = chaCha20.process(largeData);
+      
+      // 重新初始化加密器并解密
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      const decrypted = chaCha20.process(encrypted);
+      
+      // 验证解密结果
+      expect(bytesToHex(decrypted)).assertEqual(bytesToHex(largeData));
+    });
+
+    it('should handle non-aligned data length correctly', 0, () => {
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      // 创建一个非64字节对齐的数据
+      const data = new Uint8Array(100);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = i & 0xff;
+      }
+      
+      const encrypted = chaCha20.process(data);
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      const decrypted = chaCha20.process(encrypted);
+      
+      expect(bytesToHex(decrypted)).assertEqual(bytesToHex(data));
+    });
+
+    // 安全性测试
+    it('should produce different output with key/nonce reuse', 0, () => {
+      // 第一次加密
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      const data1 = new Uint8Array([1, 2, 3, 4]);
+      const encrypted1 = chaCha20.process(data1);
+      
+      // 使用相同的key和nonce加密不同的数据
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      const data2 = new Uint8Array([5, 6, 7, 8]);
+      const encrypted2 = chaCha20.process(data2);
+      
+      // 验证加密结果不同
+      expect(bytesToHex(encrypted1)).not().assertEqual(bytesToHex(encrypted2));
+    });
+
+    it('should handle zero key and nonce correctly', 0, () => {
+      const zeroKey = new Uint8Array(32);
+      const zeroNonce = new Uint8Array(12);
+      
+      chaCha20 = new ChaCha20(zeroKey, zeroNonce);
+      const data = new Uint8Array([1, 2, 3, 4]);
+      const encrypted = chaCha20.process(data);
+      
+      // 确保输出不等于输入
+      expect(bytesToHex(encrypted)).not().assertEqual(bytesToHex(data));
+    });
+
+    // 性能测试
+    it('should handle continuous encryption/decryption efficiently', 0, () => {
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      const data = new Uint8Array(1024 * 1024); // 1MB数据
+      for (let i = 0; i < data.length; i++) {
+        data[i] = i & 0xff;
+      }
+      
+      const startTime = new Date().getTime();
+      const encrypted = chaCha20.process(data);
+      const endTime = new Date().getTime();
+      
+      // 确保处理时间在合理范围内（这里设置为1秒）
+      expect(endTime - startTime).assertLess(1000);
+      
+      // 验证加密结果的正确性
+      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
+      const decrypted = chaCha20.process(encrypted);
+      expect(bytesToHex(decrypted)).assertEqual(bytesToHex(data));
+    });
   });
 }
