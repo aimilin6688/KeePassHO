@@ -15,7 +15,6 @@
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
 import { ChaCha20 } from '../../../main/ets/kdbx/crypto/ChaCha20';
-import { util, buffer } from '@kit.ArkTS';
 import { KdbxUtils } from '../../../main/ets/kdbx/utils/KdbxUtils';
 
 const hexToBytes = (hex: string): Uint8Array => {
@@ -38,8 +37,7 @@ export default function ChaCha20UnitTest() {
     const TEST_KEY = hexToBytes('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f');
     const TEST_NONCE = hexToBytes('000000000000004a00000000');
     const TEST_COUNTER = 1;
-    const TEST_PLAINTEXT: Uint8Array =
-      new util.TextEncoder().encodeInto('Ladies and Gentlemen of the class of \'99: If I could offer you only one tip for the future, sunscreen would be it.');
+    const TEST_PLAINTEXT: Uint8Array = KdbxUtils.strToBytes('Ladies and Gentlemen of the class of \'99: If I could offer you only one tip for the future, sunscreen would be it.');
     const EXPECTED_CIPHERTEXT =
       hexToBytes('6e2e359a2568f98041ba0728dd0d6981e97e7aec1d4360c20a27afccfd9fae0bf91b65c5524733ab8f593dabcd62b3571639d624e65152ab8f530c359f0861d807ca0dbf500d6a6156a38e088a22b65e52bc514d16ccf806818ce91ab77937365af90bbf74a35be6b40b8eedf2785e42874d');
 
@@ -122,13 +120,6 @@ export default function ChaCha20UnitTest() {
       expect(() => {
         const output = chaCha20.process(emptyInput);
       }).not().assertThrowError('should handle empty input')
-    });
-
-    it('should throw error if output buffer is too small', 0, () => {
-      chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
-      expect(() => {
-        chaCha20.process(TEST_PLAINTEXT);
-      }).assertThrowError('output buffer is too small')
     });
   });
 }

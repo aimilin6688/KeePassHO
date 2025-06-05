@@ -15,7 +15,7 @@
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
 import { Salsa20 } from '../../../main/ets/kdbx/crypto/Salsa20';
-import { util, buffer } from '@kit.ArkTS';
+import { KdbxUtils } from '../../../main/ets/kdbx/utils/KdbxUtils';
 
 const hexToBytes = (hex: string): Uint8Array => {
   const bytes = new Uint8Array(hex.length / 2);
@@ -36,7 +36,7 @@ export default function Salsa20UnitTest() {
     const TEST_KEY = hexToBytes('0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20');
     const TEST_NONCE = hexToBytes('0102030405060708');
     const TEST_COUNTER = 0;
-    const TEST_PLAINTEXT = new util.TextEncoder().encode('Ladies and Gentlemen of the class of \'99: If I could offer you only one tip for the future, sunscreen would be it.');
+    const TEST_PLAINTEXT = KdbxUtils.strToBytes('Ladies and Gentlemen of the class of \'99: If I could offer you only one tip for the future, sunscreen would be it.');
     // Note: This is a placeholder. In a real test, you would use the actual expected ciphertext from test vectors
     const EXPECTED_CIPHERTEXT_LENGTH = TEST_PLAINTEXT.length;
 
@@ -86,7 +86,7 @@ export default function Salsa20UnitTest() {
       salsa20 = new Salsa20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       const decrypted = salsa20.process(ciphertext,);
 
-      expect(new util.TextDecoder().decode(decrypted)).assertEqual(new util.TextDecoder().decode(TEST_PLAINTEXT));
+      expect(KdbxUtils.bytesToStr(decrypted)).assertEqual(KdbxUtils.bytesToStr(TEST_PLAINTEXT));
     });
 
     it('should produce different output with different counter', 0,() => {

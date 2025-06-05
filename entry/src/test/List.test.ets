@@ -1,6 +1,6 @@
 import ARC4UnitTest from './kdbx/crypto/ARC4.test';
 import ChaCha20UnitTest from './kdbx/crypto/ChaCha20.test';
-// import Salsa20UnitTest from './kdbx/crypto/Salsa20.test';
+import Salsa20UnitTest from './kdbx/crypto/Salsa20.test';
 // import KdbxCredentialsUnitTest from './kdbx/KdbxCredentials.test';
 // import KdbxCryptoUnitTest from './kdbx/KdbxCrypto.test';
 // import KdbxErrorUnitTest from './kdbx/KdbxError.test';
@@ -19,7 +19,7 @@ import ChaCha20UnitTest from './kdbx/crypto/ChaCha20.test';
 export default function testsuite() {
   ARC4UnitTest();
   ChaCha20UnitTest();
-  // Salsa20UnitTest();
+  Salsa20UnitTest();
   // KdbxDatabaseUnitTest();
   // KdbxEntryUnitTest();
   // KdbxGroupUnitTest();
