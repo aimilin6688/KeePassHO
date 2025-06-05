@@ -9,6 +9,8 @@
       "tablet",
       "2in1"
     ],
+    "requestPermissions": [
+    ],
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
@@ -45,7 +47,7 @@
             "name": "ohos.extension.backup",
             "resource": "$profile:backup_config"
           }
-        ],
+        ]
       }
     ]
   }

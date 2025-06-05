@@ -1,4 +1,4 @@
-import { UUID, Timestamp, Binary } from './KdbxTypes';
+import { UUID, TimeStamp, Binary } from './KdbxTypes';
 
 /**
  * 内存保护设置接口
@@ -61,7 +61,7 @@ export interface KdbxMeta {
   /**
    * 数据库名称修改时间
    */
-  databaseNameChanged: Timestamp;
+  databaseNameChanged: TimeStamp;
 
   /**
    * 历史维护天数
@@ -82,7 +82,7 @@ export interface KdbxMeta {
   /**
    * 回收站修改时间
    */
-  recycleBinChanged: Timestamp;
+  recycleBinChanged: TimeStamp;
 
   /**
    * 条目模板组UUID
@@ -92,7 +92,7 @@ export interface KdbxMeta {
   /**
    * 条目模板组修改时间
    */
-  entryTemplatesGroupChanged: Timestamp;
+  entryTemplatesGroupChanged: TimeStamp;
 
   /**
    * 最大历史记录数

@@ -1,4 +1,4 @@
-import { Timestamp, UUID } from './KdbxTypes';
+import { TimeStamp, UUID } from './KdbxTypes';
 import { PwEntry } from './PwEntry';
 
 /**
@@ -30,22 +30,22 @@ export interface PwGroup {
   /**
    * 创建时间
    */
-  createdAt: Timestamp;
+  createdAt: TimeStamp;
 
   /**
    * 修改时间
    */
-  updatedAt: Timestamp;
+  updatedAt: TimeStamp;
 
   /**
    * 最后访问时间
    */
-  lastAccessTime?: Timestamp;
+  lastAccessTime?: TimeStamp;
 
   /**
    * 过期时间
    */
-  expiryTime?: Timestamp;
+  expiryTime?: TimeStamp;
 
   /**
    * 组内密码条目
