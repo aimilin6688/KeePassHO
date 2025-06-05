@@ -16,6 +16,7 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
 import { ChaCha20 } from '../../../main/ets/kdbx/crypto/ChaCha20';
 import { util, buffer } from '@kit.ArkTS';
+import { KdbxUtils } from '../../../main/ets/kdbx/utils/KdbxUtils';
 
 const hexToBytes = (hex: string): Uint8Array => {
   const bytes = new Uint8Array(hex.length / 2);
@@ -30,6 +31,7 @@ const bytesToHex = (bytes: Uint8Array): string => {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 };
+
 export default function ChaCha20UnitTest() {
   describe('ChaCha20', () => {
     // Test vectors from RFC 8439 Section 2.4.2
@@ -59,39 +61,40 @@ export default function ChaCha20UnitTest() {
       // 测试套件结束后的清理
     });
 
-    it('should initialize with key and nonce', 0,() => {
+    it('should initialize with key and nonce', 0, () => {
       expect(() => {
         chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       }).not().assertThrowError("ChaCha20 key must be 32 bytes");
     });
 
-    it('should throw error for invalid key length', 0,() => {
+    it('should throw error for invalid key length', 0, () => {
       const invalidKey = new Uint8Array(31); // Wrong length
       expect(() => {
         chaCha20 = new ChaCha20(invalidKey, TEST_NONCE, TEST_COUNTER);
       }).assertThrowError("ChaCha20 key must be 32 bytes");
     });
 
-    it('should throw error for invalid nonce length', 0,() => {
+    it('should throw error for invalid nonce length', 0, () => {
       const invalidNonce = new Uint8Array(11); // Wrong length
       expect(() => {
         chaCha20 = new ChaCha20(TEST_KEY, invalidNonce, TEST_COUNTER);
       }).assertThrowError("ChaCha20 nonce must be 12 bytes");
     });
 
-    it('should encrypt data correctly', 0,() => {
+    it('should encrypt data correctly', 0, () => {
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       const ciphertext = chaCha20.process(TEST_PLAINTEXT);
       expect(bytesToHex(ciphertext)).assertEqual(bytesToHex(EXPECTED_CIPHERTEXT));
     });
 
-    it('should decrypt data correctly', 0,() => {
+    it('should decrypt data correctly', 0, () => {
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       const decrypted = chaCha20.process(EXPECTED_CIPHERTEXT);
-      expect(new util.TextDecoder().decode(decrypted)).assertEqual(new util.TextDecoder().decode(TEST_PLAINTEXT));
+      console.log(KdbxUtils.bytesToStr(decrypted));
+      expect(KdbxUtils.bytesToStr(decrypted)).assertEqual(KdbxUtils.bytesToStr(TEST_PLAINTEXT));
     });
 
-    it('should produce different output with different counter', 0,() => {
+    it('should produce different output with different counter', 0, () => {
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       const ciphertext1 = chaCha20.process(TEST_PLAINTEXT);
 
@@ -101,7 +104,7 @@ export default function ChaCha20UnitTest() {
       expect(bytesToHex(ciphertext1)).not().assertEqual(bytesToHex(ciphertext2));
     });
 
-    it('should produce different output with different nonce', 0,() => {
+    it('should produce different output with different nonce', 0, () => {
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       const ciphertext1 = chaCha20.process(TEST_PLAINTEXT);
 
@@ -113,7 +116,7 @@ export default function ChaCha20UnitTest() {
       expect(bytesToHex(ciphertext1)).not().assertEqual(bytesToHex(ciphertext2));
     });
 
-    it('should handle empty input', 0,() => {
+    it('should handle empty input', 0, () => {
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       const emptyInput = new Uint8Array(0);
       expect(() => {
@@ -121,7 +124,7 @@ export default function ChaCha20UnitTest() {
       }).not().assertThrowError('should handle empty input')
     });
 
-    it('should throw error if output buffer is too small', 0,() => {
+    it('should throw error if output buffer is too small', 0, () => {
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
       expect(() => {
         chaCha20.process(TEST_PLAINTEXT);
