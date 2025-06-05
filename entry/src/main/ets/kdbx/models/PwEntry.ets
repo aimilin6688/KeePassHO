@@ -1,4 +1,4 @@
-import { Binary, Timestamp, UUID } from './KdbxTypes';
+import { Binary, TimeStamp, UUID } from './KdbxTypes';
 
 /**
  * 密码条目实体定义
@@ -49,22 +49,22 @@ export interface PwEntry {
   /**
    * 创建时间
    */
-  createdAt: Timestamp;
+  createdAt: TimeStamp;
 
   /**
    * 修改时间
    */
-  updatedAt: Timestamp;
+  updatedAt: TimeStamp;
 
   /**
    * 最后访问时间
    */
-  lastAccessTime?: Timestamp;
+  lastAccessTime?: TimeStamp;
 
   /**
    * 过期时间
    */
-  expiryTime?: Timestamp;
+  expiryTime?: TimeStamp;
 
   /**
    * 自定义字段
