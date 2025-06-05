@@ -22,7 +22,7 @@ export class KdbxUtils {
    * @param uint8Array
    * @returns
    */
-  static fillRandom(uint8Array: Uint8Array): void {
+  static fillRandom(uint8Array: Uint8Array | Uint16Array | Uint32Array): void {
     try {
       // 生成随机字节
       const dataBlob: cryptoFramework.DataBlob = KdbxUtils.rand.generateRandomSync(uint8Array.length);
@@ -83,7 +83,8 @@ export class KdbxUtils {
    * @param uuid UUID或字符串
    * @returns UUID
    */
-  static toUUID(uuid: string | UUID): UUID {
-    return uuid instanceof Uint8Array ? uuid : KdbxUtils.strToBytes(uuid);
+  static toUUID(uuid: Uint8Array | UUID): UUID {
+    return uuid instanceof Uint8Array ? KdbxUtils.bytesToStr(uuid) : uuid;
   }
+
 }

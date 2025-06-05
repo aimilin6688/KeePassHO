@@ -20,7 +20,7 @@ export type Binary = Uint8Array;
 /**
  * UUID类型
  */
-export type UUID = Binary;
+export type UUID = string;
 
 /**
  * 时间戳类型
@@ -391,4 +391,115 @@ export interface Meta {
    * 颜色（RGB格式）
    */
   color?: string;
+}
+
+/**
+ * 密码生成器设置
+ */
+export interface GeneratePasswordOptions {
+  /**
+   * 密码长度
+   */
+  length?: number;
+
+  /**
+   * 是否使用大写字母
+   */
+  useUpperCase?: boolean;
+
+  /**
+   * 是否使用小写字母
+   */
+  useLowerCase?: boolean;
+
+  /**
+   * 是否使用数字
+   */
+  useDigits?: boolean;
+
+  /**
+   * 是否使用特殊字符
+   */
+  useSpecial?: boolean;
+
+  /**
+   * 是否排除类似字符
+   */
+  excludeLookAlike?: boolean;
+}
+
+/**
+ * 密码强度
+ */
+export interface PasswordStrength {
+  /**
+   * 密码强度得分
+   */
+  score: number;
+  /**
+   * 建议
+   */
+  suggestions: string[];
+}
+
+/**
+ * 搜索选项
+ */
+export interface SearchFieldOptions {
+  /**
+   * 是否区分大小写
+   */
+  caseSensitive?: boolean;
+  /**
+   * 是否包含受保护的字段
+   */
+  includeProtected?: boolean;
+  /**
+   * 是否包含指定字段
+   */
+  fieldNames?: string[];
+}
+
+/**
+ * 条目摘要信息
+ */
+export interface KdbxEntrySummary {
+  /**
+   * 标题
+   */
+  title: string;
+  /**
+   * 用户名
+   */
+  username: string;
+  /**
+   * 是否有密码
+   */
+  hasPassword: boolean;
+  /**
+   * 是否有URL
+   */
+  hasUrl: boolean;
+  /**
+   * 是否有备注
+   */
+  hasNotes: boolean;
+  /**
+   * 附件数量
+   */
+  attachmentCount: number;
+}
+
+/**
+ * 验证结果
+ */
+export interface ValidateResult {
+  /**
+   * 是否有效
+   */
+  valid: boolean;
+  /**
+   * 错误信息
+   */
+  errors: string[];
 }

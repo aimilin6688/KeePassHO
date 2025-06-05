@@ -1,6 +1,5 @@
 import { UUID, TimeStamp, Icon } from './KdbxTypes';
 import { KdbxEntry } from './KdbxEntry';
-import { KdbxUtils } from '../utils/KdbxUtils';
 
 /**
  * 数据库分组
@@ -10,62 +9,50 @@ export class KdbxGroup {
    * 组UUID
    */
   uuid: UUID;
-
   /**
    * 组名
    */
   name: string;
-
   /**
    * 图标
    */
   icon: Icon;
-
   /**
    * 创建时间
    */
   creationTime: TimeStamp;
-
   /**
    * 最后修改时间
    */
   lastModifiedTime: TimeStamp;
-
   /**
    * 最后访问时间
    */
   lastAccessTime: TimeStamp;
-
   /**
    * 过期时间
    */
   expiryTime?: TimeStamp;
-
   /**
    * 是否过期
    */
   expires: boolean = false;
-
   /**
    * 父组UUID
    */
   parentGroup?: UUID;
-
   /**
    * 子组列表
    */
   groups: KdbxGroup[] = [];
-
   /**
    * 条目列表
    */
   entries: KdbxEntry[] = [];
-
   /**
    * 是否默认展开
    */
   isExpanded: boolean = false;
-
   /**
    * 是否默认选中
    */
@@ -76,15 +63,14 @@ export class KdbxGroup {
    * @param uuid 组UUID
    * @param name 组名
    */
-  constructor(uuid: UUID | string, name: string) {
-    this.uuid = KdbxUtils.toUUID(uuid);
+  constructor(uuid: UUID, name: string) {
+    this.uuid = uuid;
     this.name = name;
     this.creationTime = new Date();
     this.lastModifiedTime = new Date();
     this.lastAccessTime = new Date();
     this.icon = { id: 0 };
   }
-
 
 
   /**
@@ -101,9 +87,8 @@ export class KdbxGroup {
    * 删除子组
    * @param uuid 子组UUID
    */
-  removeGroup(uuid: UUID | string): void {
-    const groupUuid = KdbxUtils.toUUID(uuid);
-    const index = this.groups.findIndex(g => g.uuid === groupUuid);
+  removeGroup(uuid: UUID): void {
+    const index = this.groups.findIndex(g => g.uuid === uuid);
     if (index >= 0) {
       this.groups.splice(index, 1);
       this.lastModifiedTime = new Date();
@@ -124,9 +109,8 @@ export class KdbxGroup {
    * 删除条目
    * @param uuid 条目UUID
    */
-  removeEntry(uuid: UUID | string): void {
-    const groupUuid = KdbxUtils.toUUID(uuid);
-    const index = this.entries.findIndex(e => e.uuid === groupUuid);
+  removeEntry(uuid: UUID): void {
+    const index = this.entries.findIndex(e => e.uuid === uuid);
     if (index >= 0) {
       this.entries.splice(index, 1);
       this.lastModifiedTime = new Date();
@@ -138,13 +122,12 @@ export class KdbxGroup {
    * @param uuid 组UUID
    * @returns 找到的组或undefined
    */
-  findGroup(uuid: UUID | string): KdbxGroup | undefined {
-    const groupUuid = KdbxUtils.toUUID(uuid);
-    if (this.uuid === groupUuid) {
+  findGroup(uuid: UUID): KdbxGroup | undefined {
+    if (this.uuid === uuid) {
       return this;
     }
     for (const group of this.groups) {
-      const found = group.findGroup(groupUuid);
+      const found = group.findGroup(uuid);
       if (found) {
         return found;
       }
@@ -157,14 +140,13 @@ export class KdbxGroup {
    * @param uuid 条目UUID
    * @returns 找到的条目或undefined
    */
-  findEntry(uuid: UUID | string): KdbxEntry | undefined {
-    const entryUuid = KdbxUtils.toUUID(uuid);
-    const entry = this.entries.find(e => e.uuid === entryUuid);
+  findEntry(uuid: UUID): KdbxEntry | undefined {
+    const entry = this.entries.find(e => e.uuid === uuid);
     if (entry) {
       return entry;
     }
     for (const group of this.groups) {
-      const found = group.findEntry(entryUuid);
+      const found = group.findEntry(uuid);
       if (found) {
         return found;
       }
