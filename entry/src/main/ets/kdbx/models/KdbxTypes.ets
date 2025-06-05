@@ -36,7 +36,7 @@ export class ProtectedValue {
 
   constructor(value: string | Binary, salt: Binary) {
     if (typeof value === 'string') {
-      this.encryptedValue = new util.TextEncoder().encode(value);
+      this.encryptedValue = new util.TextEncoder().encodeInto(value);
     } else {
       this.encryptedValue = value;
     }
