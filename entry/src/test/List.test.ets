@@ -11,7 +11,7 @@ import Salsa20UnitTest from './kdbx/crypto/Salsa20.test';
 // import KdbxReaderUnitTest from './kdbx/KdbxReader.test';
 // import KdbxWriterUnitTest from './kdbx/KdbxWriter.test';
 // import KdbxDatabaseUnitTest from './kdbx/models/KdbxDatabase.test';
-// import KdbxEntryUnitTest from './kdbx/models/KdbxEntry.test';
+import KdbxEntryUnitTest from './kdbx/models/KdbxEntry.test';
 // import KdbxGroupUnitTest from './kdbx/models/KdbxGroup.test';
 // import KdbxXmlProcessorUnitTest from './kdbx/xml/KdbxXmlProcessor.test';
 
@@ -21,7 +21,7 @@ export default function testsuite() {
   ChaCha20UnitTest();
   Salsa20UnitTest();
   // KdbxDatabaseUnitTest();
-  // KdbxEntryUnitTest();
+  KdbxEntryUnitTest();
   // KdbxGroupUnitTest();
   // KdbxXmlProcessorUnitTest();
   // KdbxCredentialsUnitTest();

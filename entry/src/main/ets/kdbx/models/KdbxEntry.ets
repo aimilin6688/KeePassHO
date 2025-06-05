@@ -1,5 +1,17 @@
 import { KdbxUtils } from '../utils/KdbxUtils';
-import { BinaryAttachment, CustomData, Field, Icon, TimeStamp, UUID } from './KdbxTypes';
+import {
+  BinaryAttachment,
+  CustomData,
+  Field,
+  GeneratePasswordOptions,
+  Icon,
+  KdbxEntrySummary,
+  PasswordStrength,
+  SearchFieldOptions,
+  TimeStamp,
+  UUID,
+  ValidateResult
+} from './KdbxTypes';
 
 /**
  * 数据库条目
@@ -75,9 +87,9 @@ export class KdbxEntry {
    * @param uuid 条目UUID
    * @param parentGroup 所属组UUID
    */
-  constructor(uuid: UUID | string, parentGroup: UUID | string) {
-    this.uuid = uuid instanceof Uint8Array ? uuid : KdbxUtils.strToBytes(uuid);
-    this.parentGroup = parentGroup instanceof Uint8Array ? parentGroup : KdbxUtils.strToBytes(parentGroup);
+  constructor(uuid: UUID, parentGroup: UUID) {
+    this.uuid = uuid;
+    this.parentGroup = parentGroup;
     this.creationTime = new Date();
     this.lastModifiedTime = new Date();
     this.lastAccessTime = new Date();
@@ -202,7 +214,7 @@ export class KdbxEntry {
    */
   createHistoryEntry(): void {
     // 创建当前条目的副本
-    const historyEntry = Object.assign(new KdbxEntry(this.uuid, this.parentGroup), this);
+    const historyEntry = this.cloneTo(new KdbxEntry(this.uuid, this.parentGroup));
     historyEntry.history = []; // 历史记录不需要包含历史
     this.history.push(historyEntry);
   }
@@ -258,18 +270,38 @@ export class KdbxEntry {
   }
 
   /**
+   * 克隆条目
+   * @param entry
+   * @returns
+   */
+  private cloneTo(entry: KdbxEntry): KdbxEntry {
+    entry.uuid = this.uuid;
+    entry.creationTime = this.creationTime;
+    entry.lastModifiedTime = this.lastModifiedTime;
+    entry.lastAccessTime = this.lastAccessTime;
+    entry.expiryTime = this.expiryTime;
+    entry.expires = this.expires;
+    entry.usageCount = this.usageCount;
+    entry.parentGroup = this.parentGroup;
+    entry.previousVersionUUID = this.previousVersionUUID;
+    entry.icon = this.icon;
+
+    entry.favorite = this.favorite;
+    entry.tags = [...this.tags];
+    entry.fields = [...this.fields];
+    entry.attachments = [...this.attachments];
+    entry.customData = [...this.customData];
+    entry.history = this.history.map(e => e.clone());
+
+    return entry;
+  }
+
+  /**
    * 创建条目的副本
    * @returns 新条目副本
    */
   clone(): KdbxEntry {
-    const cloned = new KdbxEntry(this.uuid, this.parentGroup);
-    Object.assign(cloned, this);
-    cloned.fields = [...this.fields];
-    cloned.attachments = [...this.attachments];
-    cloned.tags = [...this.tags];
-    cloned.customData = [...this.customData];
-    cloned.history = this.history.map(e => e.clone());
-    return cloned;
+    return this.cloneTo(new KdbxEntry(this.uuid, this.parentGroup));
   }
 
   /**
@@ -311,7 +343,7 @@ export class KdbxEntry {
    * 验证条目完整性
    * @returns 验证结果
    */
-  validate(): { valid: boolean; errors: string[] } {
+  validate(): ValidateResult {
     const errors: string[] = [];
 
     if (!this.title) {
@@ -332,14 +364,7 @@ export class KdbxEntry {
    * 获取条目摘要信息
    * @returns 摘要信息
    */
-  getSummary(): {
-    title: string;
-    username: string;
-    hasPassword: boolean;
-    hasUrl: boolean;
-    hasNotes: boolean;
-    attachmentCount: number;
-  } {
+  getSummary(): KdbxEntrySummary {
     return {
       title: this.title,
       username: this.username,
@@ -355,22 +380,16 @@ export class KdbxEntry {
    * @param options 密码生成选项
    * @returns 生成的密码
    */
-  generatePassword(options: {
-    length?: number;
-    useUpperCase?: boolean;
-    useLowerCase?: boolean;
-    useDigits?: boolean;
-    useSpecial?: boolean;
-    excludeLookAlike?: boolean;
-  } = {}): string {
-    const {
-      length = 16,
-      useUpperCase = true,
-      useLowerCase = true,
-      useDigits = true,
-      useSpecial = true,
-      excludeLookAlike = false
-    } = options;
+  generatePassword(options?: GeneratePasswordOptions): string {
+    if (!options) {
+      options = {};
+    }
+    const length = options.length || 16,
+      useUpperCase = options.useUpperCase || true,
+      useLowerCase = options.useLowerCase || true,
+      useDigits = options.useDigits || true,
+      useSpecial = options.useSpecial || true,
+      excludeLookAlike = options.excludeLookAlike || false;
 
     let chars = '';
     if (useLowerCase) {
@@ -391,7 +410,7 @@ export class KdbxEntry {
 
     let password = '';
     const randomValues = new Uint32Array(length);
-    crypto.getRandomValues(randomValues);
+    KdbxUtils.fillRandom(randomValues);
 
     for (let i = 0; i < length; i++) {
       password += chars[randomValues[i] % chars.length];
@@ -405,7 +424,7 @@ export class KdbxEntry {
    * 检查密码强度
    * @returns 密码强度评分（0-100）和建议
    */
-  checkPasswordStrength(): { score: number; suggestions: string[] } {
+  checkPasswordStrength(): PasswordStrength {
     const password = this.password;
     const suggestions: string[] = [];
     let score = 0;
@@ -464,20 +483,14 @@ export class KdbxEntry {
    * @param options 搜索选项
    * @returns 匹配的字段列表
    */
-  searchFields(query: string, options: {
-    caseSensitive?: boolean;
-    includeProtected?: boolean;
-    fieldNames?: string[];
-  } = {}): Field[] {
-    const {
-      caseSensitive = false,
-      includeProtected = false,
-      fieldNames
-    } = options;
-
+  searchFields(query: string, options?: SearchFieldOptions): Field[] {
     if (!query) {
       return [];
     }
+
+    const caseSensitive = options?.caseSensitive || false,
+      includeProtected = options?.includeProtected || false,
+      fieldNames = options?.fieldNames || [];
 
     const searchQuery = caseSensitive ? query : query.toLowerCase();
 
