@@ -461,6 +461,20 @@ export interface SearchFieldOptions {
 }
 
 /**
+ * 组内搜索选项
+ */
+export interface GroupSearchFieldOptions extends SearchFieldOptions{
+  /**
+   * 搜索的组
+   */
+  searchInGroups?: UUID[];
+  /**
+   * 排除的组
+   */
+  excludeGroups?: UUID[];
+}
+
+/**
  * 条目摘要信息
  */
 export interface KdbxEntrySummary {
@@ -502,4 +516,35 @@ export interface ValidateResult {
    * 错误信息
    */
   errors: string[];
+}
+
+
+/**
+ * 数据库统计信息
+ */
+export interface DatabaseStatistics {
+  /**
+   * 组数量
+   */
+  groupCount: number;
+  /**
+   * 条目数量
+   */
+  entryCount: number;
+  /**
+   * 附件数量
+   */
+  attachmentCount: number;
+  /**
+   * 附件大小
+   */
+  attachmentSize: number;
+  /**
+   * 密码数量
+   */
+  passwordCount: number;
+  /**
+   * 过期条目数量
+   */
+  expiredEntryCount: number;
 }

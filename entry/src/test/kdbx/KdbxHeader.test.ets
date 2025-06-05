@@ -122,12 +122,12 @@ export default function KdbxHeaderUnitTest() {
     it('should create header with default values',0, () => {
       expect(header).not().assertUndefined();
       expect(header.version).assertEqual(KdbxVersion.V4);
-      expect(header.cipherId).toBeInstanceOf(Uint8Array);
+      expect(header.cipherId).assertInstanceOf(Uint8Array);
       expect(header.cipherId.length).assertEqual(16);
       expect(header.compressionFlags).assertEqual(CompressionFlags.GZIP);
-      expect(header.masterSeed).toBeInstanceOf(Uint8Array);
+      expect(header.masterSeed).assertInstanceOf(Uint8Array);
       expect(header.masterSeed.length).assertEqual(32);
-      expect(header.encryptionIV).toBeInstanceOf(Uint8Array);
+      expect(header.encryptionIV).assertInstanceOf(Uint8Array);
       expect(header.encryptionIV.length).assertEqual(16);
 
       // KDBX4特有字段
@@ -145,12 +145,12 @@ export default function KdbxHeaderUnitTest() {
       header = new KdbxHeader(KdbxVersion.V3_1);
 
       expect(header.version).assertEqual(KdbxVersion.V3_1);
-      expect(header.transformSeed).toBeInstanceOf(Uint8Array);
+      expect(header.transformSeed).assertInstanceOf(Uint8Array);
       expect(header.transformSeed.length).assertEqual(32);
       expect(header.transformRounds).assertEqual(100000);
-      expect(header.protectedStreamKey).toBeInstanceOf(Uint8Array);
+      expect(header.protectedStreamKey).assertInstanceOf(Uint8Array);
       expect(header.protectedStreamKey.length).assertEqual(32);
-      expect(header.streamStartBytes).toBeInstanceOf(Uint8Array);
+      expect(header.streamStartBytes).assertInstanceOf(Uint8Array);
       expect(header.streamStartBytes.length).assertEqual(32);
       expect(header.innerRandomStreamId).assertEqual(InnerRandomStreamID.SALSA20);
 

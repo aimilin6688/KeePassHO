@@ -118,7 +118,7 @@ export default function KdbxWriterUnitTest() {
       const password = 'testpassword';
 
       const data = await writer.write(database, password);
-      expect(data).toBeInstanceOf(Uint8Array);
+      expect(data).assertInstanceOf('Uint8Array');
       expect(data.length).assertLarger(0);
 
       // 验证生成的文件格式
@@ -144,7 +144,7 @@ export default function KdbxWriterUnitTest() {
       const keyFile = KdbxUtils.generateRandom(new Uint8Array(32));
 
       const data = await writer.write(database, password, keyFile);
-      expect(data).toBeInstanceOf(Uint8Array);
+      expect(data).assertInstanceOf(Uint8Array);
       expect(data.length).assertLarger(0);
 
       // 尝试读取写入的文件
@@ -182,7 +182,7 @@ export default function KdbxWriterUnitTest() {
       }
 
       const data = await writer.write(database, 'testpassword');
-      expect(data).toBeInstanceOf(Uint8Array);
+      expect(data).assertInstanceOf(Uint8Array);
       expect(data.length).assertLarger(100000); // 应该生成较大的文件
 
       // 验证可以读取大文件

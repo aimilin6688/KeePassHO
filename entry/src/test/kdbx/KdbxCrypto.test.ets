@@ -47,7 +47,7 @@ export default function KdbxCryptoUnitTest() {
       kdfParameters.set('salt', KdbxUtils.generateRandom(new Uint8Array(32)));
 
       const masterKey = await KdbxCrypto.computeMasterKey(testPassword, null, testMasterSeed, kdfParameters);
-      expect(masterKey).toBeInstanceOf(Uint8Array);
+      expect(masterKey).assertInstanceOf(Uint8Array);
       expect(masterKey.length).assertEqual(32); // SHA-256输出长度
     });
 
@@ -57,7 +57,7 @@ export default function KdbxCryptoUnitTest() {
       kdfParameters.set('salt', KdbxUtils.generateRandom(new Uint8Array(32)));
 
       const masterKey = await KdbxCrypto.computeMasterKey(testPassword, testKeyFile, testMasterSeed, kdfParameters);
-      expect(masterKey).toBeInstanceOf(Uint8Array);
+      expect(masterKey).assertInstanceOf(Uint8Array);
       expect(masterKey.length).assertEqual(32);
 
       // 验证使用相同参数生成相同的密钥
@@ -86,7 +86,7 @@ export default function KdbxCryptoUnitTest() {
       const data = new util.TextEncoder().encode('Test Data');
 
       const hmac = await KdbxCrypto.hmacSha256(data, key);
-      expect(hmac).toBeInstanceOf(Uint8Array);
+      expect(hmac).assertInstanceOf(Uint8Array);
       expect(hmac.length).assertEqual(32);
 
       // 验证相同输入产生相同输出
@@ -101,7 +101,7 @@ export default function KdbxCryptoUnitTest() {
       const keyLength = 32;
 
       const derivedKey = await KdbxCrypto.pbkdf2(password, salt, iterations, keyLength);
-      expect(derivedKey).toBeInstanceOf(Uint8Array);
+      expect(derivedKey).assertInstanceOf(Uint8Array);
       expect(derivedKey.length).assertEqual(keyLength);
 
       // 验证相同参数产生相同密钥

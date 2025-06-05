@@ -46,20 +46,20 @@ export default function KdbxFileUnitTest() {
     });
 
     it('should create new database with correct defaults', 0,() => {
-      expect(kdbxFile.database).toBeInstanceOf(KdbxDatabase);
-      expect(kdbxFile.header).toBeInstanceOf(KdbxHeader);
+      expect(kdbxFile.database).assertInstanceOf(KdbxDatabase);
+      expect(kdbxFile.header).assertInstanceOf(KdbxHeader);
       expect(kdbxFile.credentials).assertEqual(credentials);
 
       // 验证头部信息
       expect(kdbxFile.header.version).assertEqual(0x00040000);
       expect(kdbxFile.header.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
-      expect(kdbxFile.header.masterSeed).toBeInstanceOf(Uint8Array);
+      expect(kdbxFile.header.masterSeed).assertInstanceOf(Uint8Array);
       expect(kdbxFile.header.masterSeed.length).assertEqual(32);
-      expect(kdbxFile.header.transformSeed).toBeInstanceOf(Uint8Array);
+      expect(kdbxFile.header.transformSeed).assertInstanceOf(Uint8Array);
       expect(kdbxFile.header.transformSeed.length).assertEqual(32);
-      expect(kdbxFile.header.encryptionIV).toBeInstanceOf(Uint8Array);
+      expect(kdbxFile.header.encryptionIV).assertInstanceOf(Uint8Array);
       expect(kdbxFile.header.encryptionIV.length).assertEqual(16);
-      expect(kdbxFile.header.protectedStreamKey).toBeInstanceOf(Uint8Array);
+      expect(kdbxFile.header.protectedStreamKey).assertInstanceOf(Uint8Array);
       expect(kdbxFile.header.protectedStreamKey.length).assertEqual(32);
 
       // 验证数据库
@@ -78,12 +78,12 @@ export default function KdbxFileUnitTest() {
 
       // 保存数据库
       const binary = await kdbxFile.saveToBinary();
-      expect(binary).toBeInstanceOf(Uint8Array);
+      expect(binary).assertInstanceOf(Uint8Array);
       expect(binary.length).assertLarger(0);
 
       // 加载数据库
       const loadedFile = await KdbxFile.loadFromBinary(binary, credentials);
-      expect(loadedFile).toBeInstanceOf(KdbxFile);
+      expect(loadedFile).assertInstanceOf(KdbxFile);
 
       // 验证加载的数据
       const loadedGroup = loadedFile.findGroup(group.uuid);
