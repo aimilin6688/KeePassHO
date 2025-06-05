@@ -1,4 +1,5 @@
-import { UUID, TimeStamp, Icon, Field, BinaryAttachment, CustomData } from './KdbxTypes';
+import { KdbxUtils } from '../utils/KdbxUtils';
+import { BinaryAttachment, CustomData, Field, Icon, TimeStamp, UUID } from './KdbxTypes';
 
 /**
  * 数据库条目
@@ -8,92 +9,75 @@ export class KdbxEntry {
    * 条目UUID
    */
   uuid: UUID;
-
   /**
    * 图标
    */
   icon: Icon;
-
   /**
    * 创建时间
    */
   creationTime: TimeStamp;
-
   /**
    * 最后修改时间
    */
   lastModifiedTime: TimeStamp;
-
   /**
    * 最后访问时间
    */
   lastAccessTime: TimeStamp;
-
   /**
    * 过期时间
    */
   expiryTime?: TimeStamp;
-
   /**
    * 是否过期
    */
   expires: boolean = false;
-
   /**
    * 使用次数
    */
   usageCount: number = 0;
-
   /**
    * 所属组UUID
    */
   parentGroup: UUID;
-
   /**
    * 标签列表
    */
   tags: string[] = [];
-
   /**
    * 字段列表
    */
   fields: Field[] = [];
-
   /**
    * 附件列表
    */
   attachments: BinaryAttachment[] = [];
-
   /**
    * 自定义数据
    */
   customData: CustomData[] = [];
-
   /**
    * 历史记录
    */
   history: KdbxEntry[] = [];
-
   /**
    * 前一个版本的UUID
    */
   previousVersionUUID?: UUID;
-
   /**
    * 是否收藏
    */
   favorite: boolean = false;
-
-
 
   /**
    * 构造函数
    * @param uuid 条目UUID
    * @param parentGroup 所属组UUID
    */
-  constructor(uuid: UUID, parentGroup: UUID) {
-    this.uuid = uuid;
-    this.parentGroup = parentGroup;
+  constructor(uuid: UUID | string, parentGroup: UUID | string) {
+    this.uuid = uuid instanceof Uint8Array ? uuid : KdbxUtils.strToBytes(uuid);
+    this.parentGroup = parentGroup instanceof Uint8Array ? parentGroup : KdbxUtils.strToBytes(parentGroup);
     this.creationTime = new Date();
     this.lastModifiedTime = new Date();
     this.lastAccessTime = new Date();
@@ -294,10 +278,16 @@ export class KdbxEntry {
    * @returns 是否相同
    */
   equals(other: KdbxEntry): boolean {
-    if (this.uuid !== other.uuid) return false;
-    if (this.fields.length !== other.fields.length) return false;
-    if (this.attachments.length !== other.attachments.length) return false;
-    
+    if (this.uuid !== other.uuid) {
+      return false;
+    }
+    if (this.fields.length !== other.fields.length) {
+      return false;
+    }
+    if (this.attachments.length !== other.attachments.length) {
+      return false;
+    }
+
     // 比较字段
     for (const field of this.fields) {
       const otherField = other.fields.find(f => f.name === field.name);
@@ -305,7 +295,7 @@ export class KdbxEntry {
         return false;
       }
     }
-    
+
     // 比较附件
     for (const attachment of this.attachments) {
       const otherAttachment = other.attachments.find(a => a.name === attachment.name);
@@ -313,7 +303,7 @@ export class KdbxEntry {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -323,15 +313,15 @@ export class KdbxEntry {
    */
   validate(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     if (!this.title) {
       errors.push('标题不能为空');
     }
-    
+
     if (!this.username && !this.password) {
       errors.push('用户名和密码不能同时为空');
     }
-    
+
     return {
       valid: errors.length === 0,
       errors
@@ -383,10 +373,18 @@ export class KdbxEntry {
     } = options;
 
     let chars = '';
-    if (useLowerCase) chars += 'abcdefghijklmnopqrstuvwxyz';
-    if (useUpperCase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    if (useDigits) chars += '0123456789';
-    if (useSpecial) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    if (useLowerCase) {
+      chars += 'abcdefghijklmnopqrstuvwxyz';
+    }
+    if (useUpperCase) {
+      chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    }
+    if (useDigits) {
+      chars += '0123456789';
+    }
+    if (useSpecial) {
+      chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    }
     if (excludeLookAlike) {
       chars = chars.replace(/[Il1O0]/g, '');
     }
@@ -394,7 +392,7 @@ export class KdbxEntry {
     let password = '';
     const randomValues = new Uint32Array(length);
     crypto.getRandomValues(randomValues);
-    
+
     for (let i = 0; i < length; i++) {
       password += chars[randomValues[i] % chars.length];
     }
@@ -420,10 +418,18 @@ export class KdbxEntry {
     score += Math.min(password.length * 4, 40);
 
     // 字符类型多样性得分
-    if (/[A-Z]/.test(password)) score += 10;
-    if (/[a-z]/.test(password)) score += 10;
-    if (/[0-9]/.test(password)) score += 10;
-    if (/[^A-Za-z0-9]/.test(password)) score += 10;
+    if (/[A-Z]/.test(password)) {
+      score += 10;
+    }
+    if (/[a-z]/.test(password)) {
+      score += 10;
+    }
+    if (/[0-9]/.test(password)) {
+      score += 10;
+    }
+    if (/[^A-Za-z0-9]/.test(password)) {
+      score += 10;
+    }
 
     // 复杂性得分
     const uniqueChars = new Set(password).size;
@@ -469,10 +475,12 @@ export class KdbxEntry {
       fieldNames
     } = options;
 
-    if (!query) return [];
+    if (!query) {
+      return [];
+    }
 
     const searchQuery = caseSensitive ? query : query.toLowerCase();
-    
+
     return this.fields.filter(field => {
       // 如果指定了字段名，只搜索指定字段
       if (fieldNames && !fieldNames.includes(field.name)) {
@@ -505,8 +513,8 @@ export class KdbxEntry {
           url: this.url,
           notes: this.notes,
           tags: this.tags,
-          customFields: this.fields.filter(f => 
-            !['Title', 'UserName', 'Password', 'URL', 'Notes'].includes(f.name)
+          customFields: this.fields.filter(f =>
+          !['Title', 'UserName', 'Password', 'URL', 'Notes'].includes(f.name)
           ),
           creationTime: this.creationTime,
           lastModifiedTime: this.lastModifiedTime
