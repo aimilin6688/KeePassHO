@@ -48,23 +48,23 @@ describe('KdbxFile', () => {
   it('should create new database with correct defaults', () => {
     expect(kdbxFile.database).toBeInstanceOf(KdbxDatabase);
     expect(kdbxFile.header).toBeInstanceOf(KdbxHeader);
-    expect(kdbxFile.credentials).toBe(credentials);
+    expect(kdbxFile.credentials).assertEqual(credentials);
 
     // 验证头部信息
-    expect(kdbxFile.header.version).toBe(0x00040000);
-    expect(kdbxFile.header.innerRandomStreamId).toBe(InnerRandomStreamID.CHACHA20);
+    expect(kdbxFile.header.version).assertEqual(0x00040000);
+    expect(kdbxFile.header.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
     expect(kdbxFile.header.masterSeed).toBeInstanceOf(Uint8Array);
-    expect(kdbxFile.header.masterSeed.length).toBe(32);
+    expect(kdbxFile.header.masterSeed.length).assertEqual(32);
     expect(kdbxFile.header.transformSeed).toBeInstanceOf(Uint8Array);
-    expect(kdbxFile.header.transformSeed.length).toBe(32);
+    expect(kdbxFile.header.transformSeed.length).assertEqual(32);
     expect(kdbxFile.header.encryptionIV).toBeInstanceOf(Uint8Array);
-    expect(kdbxFile.header.encryptionIV.length).toBe(16);
+    expect(kdbxFile.header.encryptionIV.length).assertEqual(16);
     expect(kdbxFile.header.protectedStreamKey).toBeInstanceOf(Uint8Array);
-    expect(kdbxFile.header.protectedStreamKey.length).toBe(32);
+    expect(kdbxFile.header.protectedStreamKey.length).assertEqual(32);
 
     // 验证数据库
-    expect(kdbxFile.database.meta.databaseName).toBe('新数据库');
-    expect(kdbxFile.database.meta.recycleBinEnabled).toBe(true);
+    expect(kdbxFile.database.meta.databaseName).assertEqual('新数据库');
+    expect(kdbxFile.database.meta.recycleBinEnabled).assertEqual(true);
     expect(kdbxFile.database.root).toBeDefined();
   });
 
@@ -88,13 +88,13 @@ describe('KdbxFile', () => {
     // 验证加载的数据
     const loadedGroup = loadedFile.findGroup(group.uuid);
     expect(loadedGroup).toBeDefined();
-    expect(loadedGroup.name).toBe('Test Group');
+    expect(loadedGroup.name).assertEqual('Test Group');
 
     const loadedEntry = loadedFile.findEntry(entry.uuid);
     expect(loadedEntry).toBeDefined();
-    expect(loadedEntry.title).toBe('Test Entry');
-    expect(loadedEntry.username).toBe('testuser');
-    expect(loadedEntry.password).toBe('testpass');
+    expect(loadedEntry.title).assertEqual('Test Entry');
+    expect(loadedEntry.username).assertEqual('testuser');
+    expect(loadedEntry.password).assertEqual('testpass');
   });
 
   it('should handle invalid credentials when loading', async () => {
@@ -121,7 +121,7 @@ describe('KdbxFile', () => {
 
     await kdbxFile.changeMasterKey(newCredentials);
 
-    expect(kdbxFile.credentials).toBe(newCredentials);
+    expect(kdbxFile.credentials).assertEqual(newCredentials);
     expect(kdbxFile.header.masterKeyChanged.getTime()).toBeGreaterThan(initialKeyChanged.getTime());
     expect(kdbxFile.header.masterSeed).not.toEqual(initialMasterSeed);
 
@@ -158,39 +158,39 @@ describe('KdbxFile', () => {
     // 测试创建组
     const group = kdbxFile.createGroup('Test Group');
     expect(group).toBeDefined();
-    expect(group.name).toBe('Test Group');
-    expect(kdbxFile.findGroup(group.uuid)).toBe(group);
+    expect(group.name).assertEqual('Test Group');
+    expect(kdbxFile.findGroup(group.uuid)).assertEqual(group);
 
     // 测试创建条目
     const entry = kdbxFile.createEntry(group);
     expect(entry).toBeDefined();
-    expect(entry.parentGroup).toBe(group.uuid);
-    expect(kdbxFile.findEntry(entry.uuid)).toBe(entry);
+    expect(entry.parentGroup).assertEqual(group.uuid);
+    expect(kdbxFile.findEntry(entry.uuid)).assertEqual(entry);
 
     // 测试移动组
     const newParentGroup = kdbxFile.createGroup('New Parent');
     const moveGroupResult = kdbxFile.moveGroup(group, newParentGroup);
-    expect(moveGroupResult).toBe(true);
-    expect(group.parentGroup).toBe(newParentGroup.uuid);
+    expect(moveGroupResult).assertEqual(true);
+    expect(group.parentGroup).assertEqual(newParentGroup.uuid);
 
     // 测试移动条目
     const moveEntryResult = kdbxFile.moveEntry(entry, newParentGroup);
-    expect(moveEntryResult).toBe(true);
-    expect(entry.parentGroup).toBe(newParentGroup.uuid);
+    expect(moveEntryResult).assertEqual(true);
+    expect(entry.parentGroup).assertEqual(newParentGroup.uuid);
 
     // 测试删除条目
     const deleteEntryResult = kdbxFile.deleteEntry(entry, true);
-    expect(deleteEntryResult).toBe(true);
-    expect(kdbxFile.findEntry(entry.uuid).parentGroup).toBe(kdbxFile.database.meta.recycleBinUUID);
+    expect(deleteEntryResult).assertEqual(true);
+    expect(kdbxFile.findEntry(entry.uuid).parentGroup).assertEqual(kdbxFile.database.meta.recycleBinUUID);
 
     // 测试删除组
     const deleteGroupResult = kdbxFile.deleteGroup(group, true);
-    expect(deleteGroupResult).toBe(true);
-    expect(kdbxFile.findGroup(group.uuid).parentGroup).toBe(kdbxFile.database.meta.recycleBinUUID);
+    expect(deleteGroupResult).assertEqual(true);
+    expect(kdbxFile.findGroup(group.uuid).parentGroup).assertEqual(kdbxFile.database.meta.recycleBinUUID);
 
     // 测试清空回收站
     const emptyRecycleBinResult = kdbxFile.emptyRecycleBin();
-    expect(emptyRecycleBinResult).toBe(true);
+    expect(emptyRecycleBinResult).assertEqual(true);
     expect(kdbxFile.findEntry(entry.uuid)).toBeUndefined();
     expect(kdbxFile.findGroup(group.uuid)).toBeUndefined();
   });
@@ -213,11 +213,11 @@ describe('KdbxFile', () => {
     // 获取统计信息
     const stats = kdbxFile.getStatistics();
 
-    expect(stats.groupCount).toBe(3); // 2个创建的组 + 1个回收站
-    expect(stats.entryCount).toBe(2);
-    expect(stats.attachmentCount).toBe(2);
-    expect(stats.attachmentSize).toBe(300);
-    expect(stats.passwordCount).toBe(2);
+    expect(stats.groupCount).assertEqual(3); // 2个创建的组 + 1个回收站
+    expect(stats.entryCount).assertEqual(2);
+    expect(stats.attachmentCount).assertEqual(2);
+    expect(stats.attachmentSize).assertEqual(300);
+    expect(stats.passwordCount).assertEqual(2);
   });
 
   it('should search entries correctly', () => {
@@ -235,12 +235,12 @@ describe('KdbxFile', () => {
 
     // 基本搜索
     const results1 = kdbxFile.searchEntries('bank');
-    expect(results1.length).toBe(1);
-    expect(results1[0]).toBe(entry1);
+    expect(results1.length).assertEqual(1);
+    expect(results1[0]).assertEqual(entry1);
 
     // 搜索多个结果
     const results2 = kdbxFile.searchEntries('account');
-    expect(results2.length).toBe(2);
+    expect(results2.length).assertEqual(2);
 
     // 使用选项搜索
     const results3 = kdbxFile.searchEntries('john', {
@@ -248,8 +248,8 @@ describe('KdbxFile', () => {
       fieldNames: ['UserName'],
       searchInGroups: [group1.uuid]
     });
-    expect(results3.length).toBe(1);
-    expect(results3[0]).toBe(entry1);
+    expect(results3.length).assertEqual(1);
+    expect(results3[0]).assertEqual(entry1);
   });
 
   it('should handle large files', async () => {
@@ -270,13 +270,13 @@ describe('KdbxFile', () => {
     expect(binary.length).toBeGreaterThan(1000000); // 应该大于1MB
 
     const loadedFile = await KdbxFile.loadFromBinary(binary, credentials);
-    expect(loadedFile.database.root.groups.length).toBe(101); // 100个组 + 1个回收站
+    expect(loadedFile.database.root.groups.length).assertEqual(101); // 100个组 + 1个回收站
 
     // 验证统计信息
     const stats = loadedFile.getStatistics();
-    expect(stats.groupCount).toBe(101);
-    expect(stats.entryCount).toBe(1000);
-    expect(stats.attachmentCount).toBe(1000);
-    expect(stats.attachmentSize).toBe(1000000);
+    expect(stats.groupCount).assertEqual(101);
+    expect(stats.entryCount).assertEqual(1000);
+    expect(stats.attachmentCount).assertEqual(1000);
+    expect(stats.attachmentSize).assertEqual(1000000);
   });
 });

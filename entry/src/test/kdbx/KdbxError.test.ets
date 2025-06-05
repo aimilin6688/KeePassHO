@@ -38,9 +38,9 @@ describe('KdbxError', () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(KdbxError);
-    expect(error.name).toBe('KdbxError');
-    expect(error.code).toBe(KdbxErrorCode.UNKNOWN);
-    expect(error.message).toBe('未知错误');
+    expect(error.name).assertEqual('KdbxError');
+    expect(error.code).assertEqual(KdbxErrorCode.UNKNOWN);
+    expect(error.message).assertEqual('未知错误');
     expect(error.originalError).toBeUndefined();
     expect(error.details).toBeUndefined();
   });
@@ -49,8 +49,8 @@ describe('KdbxError', () => {
     const message = '自定义错误消息';
     const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT, message);
 
-    expect(error.code).toBe(KdbxErrorCode.INVALID_ARGUMENT);
-    expect(error.message).toBe(message);
+    expect(error.code).assertEqual(KdbxErrorCode.INVALID_ARGUMENT);
+    expect(error.message).assertEqual(message);
   });
 
   it('should create error with original error', () => {
@@ -61,8 +61,8 @@ describe('KdbxError', () => {
       originalError
     );
 
-    expect(error.code).toBe(KdbxErrorCode.OPERATION_FAILED);
-    expect(error.originalError).toBe(originalError);
+    expect(error.code).assertEqual(KdbxErrorCode.OPERATION_FAILED);
+    expect(error.originalError).assertEqual(originalError);
   });
 
   it('should create error with details', () => {
@@ -74,7 +74,7 @@ describe('KdbxError', () => {
       details
     );
 
-    expect(error.code).toBe(KdbxErrorCode.INVALID_CREDENTIALS);
+    expect(error.code).assertEqual(KdbxErrorCode.INVALID_CREDENTIALS);
     expect(error.details).toEqual(details);
   });
 
@@ -125,7 +125,7 @@ describe('KdbxError', () => {
 
     testCases.forEach(({ code, expectedSuggestion }) => {
       const error = new KdbxError(code);
-      expect(error.getSuggestion()).toBe(expectedSuggestion);
+      expect(error.getSuggestion()).assertEqual(expectedSuggestion);
     });
   });
 
@@ -157,8 +157,8 @@ describe('KdbxError', () => {
     );
 
     expect(error).toBeInstanceOf(KdbxError);
-    expect(error.code).toBe(KdbxErrorCode.ENCRYPTION_FAILED);
-    expect(error.message).toBe('加密失败');
+    expect(error.code).assertEqual(KdbxErrorCode.ENCRYPTION_FAILED);
+    expect(error.message).assertEqual('加密失败');
     expect(error.originalError).toBeDefined();
     expect(error.details).toBeDefined();
   });
@@ -173,9 +173,9 @@ describe('KdbxError', () => {
     );
 
     expect(wrappedError).toBeInstanceOf(KdbxError);
-    expect(wrappedError.code).toBe(KdbxErrorCode.NETWORK_ERROR);
-    expect(wrappedError.message).toBe('同步失败');
-    expect(wrappedError.originalError).toBe(originalError);
+    expect(wrappedError.code).assertEqual(KdbxErrorCode.NETWORK_ERROR);
+    expect(wrappedError.message).assertEqual('同步失败');
+    expect(wrappedError.originalError).assertEqual(originalError);
     expect(wrappedError.details).toBeDefined();
   });
 
@@ -184,32 +184,32 @@ describe('KdbxError', () => {
     const wrappedError = KdbxError.wrap(originalError);
 
     expect(wrappedError).toBeInstanceOf(KdbxError);
-    expect(wrappedError.code).toBe(KdbxErrorCode.UNKNOWN);
-    expect(wrappedError.message).toBe('测试错误');
-    expect(wrappedError.originalError).toBe(originalError);
+    expect(wrappedError.code).assertEqual(KdbxErrorCode.UNKNOWN);
+    expect(wrappedError.message).assertEqual('测试错误');
+    expect(wrappedError.originalError).assertEqual(originalError);
   });
 
   it('should handle error inheritance correctly', () => {
     const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT);
 
     // 验证错误继承链
-    expect(error instanceof Error).toBe(true);
-    expect(error instanceof KdbxError).toBe(true);
-    expect(Object.getPrototypeOf(error)).toBe(KdbxError.prototype);
-    expect(Object.getPrototypeOf(Object.getPrototypeOf(error))).toBe(Error.prototype);
+    expect(error instanceof Error).assertEqual(true);
+    expect(error instanceof KdbxError).assertEqual(true);
+    expect(Object.getPrototypeOf(error)).assertEqual(KdbxError.prototype);
+    expect(Object.getPrototypeOf(Object.getPrototypeOf(error))).assertEqual(Error.prototype);
   });
 
   it('should handle stack trace', () => {
     const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT);
 
     expect(error.stack).toBeDefined();
-    expect(error.stack.includes('KdbxError')).toBe(true);
+    expect(error.stack.includes('KdbxError')).assertEqual(true);
   });
 
   it('should handle error code validation', () => {
     // 验证所有错误代码都是有效的字符串
     Object.values(KdbxErrorCode).forEach(code => {
-      expect(typeof code).toBe('string');
+      expect(typeof code).assertEqual('string');
       expect(code.length).toBeGreaterThan(0);
     });
   });
@@ -218,7 +218,7 @@ describe('KdbxError', () => {
     // 验证错误代码的唯一性
     const codes = Object.values(KdbxErrorCode);
     const uniqueCodes = new Set(codes);
-    expect(uniqueCodes.size).toBe(codes.length);
+    expect(uniqueCodes.size).assertEqual(codes.length);
   });
 
   it('should handle error grouping', () => {

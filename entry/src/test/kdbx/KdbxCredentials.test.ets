@@ -43,11 +43,11 @@ describe('KdbxCredentials', () => {
     const password = 'testPassword123';
     credentials.setPassword(password);
 
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32); // SHA-256输出长度
+    expect(compositeKey.length).assertEqual(32); // SHA-256输出长度
 
     // 验证相同密码生成相同的密钥
     const credentials2 = new KdbxCredentials();
@@ -70,26 +70,26 @@ describe('KdbxCredentials', () => {
 
     // 使用生成的密钥文件
     credentials.setKeyFileData(keyFileData);
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
   });
 
   it('should handle key file in binary format', async () => {
     // 生成二进制格式的密钥文件
     const keyFileData = await KdbxCredentials.generateKeyFile(KeyFileFormat.BINARY);
     expect(keyFileData).toBeDefined();
-    expect(keyFileData.length).toBe(32);
+    expect(keyFileData.length).assertEqual(32);
 
     // 使用生成的密钥文件
     credentials.setKeyFileData(keyFileData);
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
   });
 
   it('should handle key file in hex format', async () => {
@@ -99,16 +99,16 @@ describe('KdbxCredentials', () => {
 
     // 验证生成的十六进制格式
     const hexString = new util.TextDecoder().decode(keyFileData);
-    expect(hexString.length).toBe(64);
-    expect(/^[0-9A-Fa-f]{64}$/.test(hexString)).toBe(true);
+    expect(hexString.length).assertEqual(64);
+    expect(/^[0-9A-Fa-f]{64}$/.test(hexString)).assertEqual(true);
 
     // 使用生成的密钥文件
     credentials.setKeyFileData(keyFileData);
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
   });
 
   it('should handle Windows user account data', async () => {
@@ -116,11 +116,11 @@ describe('KdbxCredentials', () => {
     const userData =KdbxUtils.generateRandom(new Uint8Array(32));
     credentials.setWindowsUserData(userData);
 
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
 
     // 验证相同用户数据生成相同的密钥
     const credentials2 = new KdbxCredentials();
@@ -139,11 +139,11 @@ describe('KdbxCredentials', () => {
     credentials.setKeyFileData(keyFileData);
     credentials.setWindowsUserData(userData);
 
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
 
     // 验证相同凭证组合生成相同的密钥
     const credentials2 = new KdbxCredentials();
@@ -159,36 +159,36 @@ describe('KdbxCredentials', () => {
     credentials.setKeyFileData(new Uint8Array(32));
     credentials.setWindowsUserData(new Uint8Array(32));
 
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     credentials.clear();
-    expect(credentials.isValid()).toBe(false);
+    expect(credentials.isValid()).assertEqual(false);
   });
 
   it('should validate credentials', () => {
-    expect(credentials.isValid()).toBe(false);
+    expect(credentials.isValid()).assertEqual(false);
 
     credentials.setPassword('testPassword');
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     credentials.clear();
-    expect(credentials.isValid()).toBe(false);
+    expect(credentials.isValid()).assertEqual(false);
 
     credentials.setKeyFileData(new Uint8Array(32));
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
 
     credentials.clear();
-    expect(credentials.isValid()).toBe(false);
+    expect(credentials.isValid()).assertEqual(false);
 
     credentials.setWindowsUserData(new Uint8Array(32));
-    expect(credentials.isValid()).toBe(true);
+    expect(credentials.isValid()).assertEqual(true);
   });
 
   it('should handle empty credentials', async () => {
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
-    expect(new Set(compositeKey).size).toBe(1); // 应该全是0
+    expect(compositeKey.length).assertEqual(32);
+    expect(new Set(compositeKey).size).assertEqual(1); // 应该全是0
   });
 
   it('should handle invalid key file formats', async () => {
@@ -196,19 +196,19 @@ describe('KdbxCredentials', () => {
     const invalidXml = new util.TextEncoder().encode('<invalid>XML</data>');
     credentials.setKeyFileData(invalidXml);
     const compositeKey1 = await credentials.getCompositeKey();
-    expect(compositeKey1.length).toBe(32);
+    expect(compositeKey1.length).assertEqual(32);
 
     // 测试无效的十六进制字符串
     const invalidHex = new util.TextEncoder().encode('NotHexString');
     credentials.setKeyFileData(invalidHex);
     const compositeKey2 = await credentials.getCompositeKey();
-    expect(compositeKey2.length).toBe(32);
+    expect(compositeKey2.length).assertEqual(32);
 
     // 测试无效长度的二进制数据
     const invalidBinary = new Uint8Array(16); // 不是32字节
     credentials.setKeyFileData(invalidBinary);
     const compositeKey3 = await credentials.getCompositeKey();
-    expect(compositeKey3.length).toBe(32);
+    expect(compositeKey3.length).assertEqual(32);
   });
 
   it('should handle special characters in password', async () => {
@@ -217,7 +217,7 @@ describe('KdbxCredentials', () => {
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
 
     // 验证相同密码生成相同的密钥
     const credentials2 = new KdbxCredentials();
@@ -232,7 +232,7 @@ describe('KdbxCredentials', () => {
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
 
     // 验证相同密码生成相同的密钥
     const credentials2 = new KdbxCredentials();
@@ -248,7 +248,7 @@ describe('KdbxCredentials', () => {
 
     const compositeKey = await credentials.getCompositeKey();
     expect(compositeKey).toBeDefined();
-    expect(compositeKey.length).toBe(32);
+    expect(compositeKey.length).assertEqual(32);
 
     // 验证相同数据生成相同的密钥
     const credentials2 = new KdbxCredentials();

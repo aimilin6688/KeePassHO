@@ -195,10 +195,10 @@ describe('KdbxReader', () => {
     // 注意：这需要修改KdbxReader类，将这些方法改为public，或者使用其他方式测试
     // 这里仅作为示例，实际测试需要根据实现方式调整
     /*
-    expect(reader['readUint8']()).toBe(0x42);
-    expect(reader['readUint32']()).toBe(0x12345678);
-    expect(reader['readUint64']()).toBe(0x0123456789ABCDEF);
-    expect(reader['readVarInt'](testData, 13)).toBe(0x1234);
+    expect(reader['readUint8']()).assertEqual(0x42);
+    expect(reader['readUint32']()).assertEqual(0x12345678);
+    expect(reader['readUint64']()).assertEqual(0x0123456789ABCDEF);
+    expect(reader['readVarInt'](testData, 13)).assertEqual(0x1234);
     */
   });
 

@@ -46,18 +46,18 @@ describe('KdbxManager', () => {
 
   it('should create a new database', async () => {
     expect(database).toBeDefined();
-    expect(database.meta.databaseName).toBe('Test Database');
-    expect(database.meta.generator).toBe('KeePassHO');
+    expect(database.meta.databaseName).assertEqual('Test Database');
+    expect(database.meta.generator).assertEqual('KeePassHO');
 
     // 验证根组
     expect(database.root).toBeDefined();
-    expect(database.root.name).toBe('Root');
-    expect(database.root.iconId).toBe(48);
+    expect(database.root.name).assertEqual('Root');
+    expect(database.root.iconId).assertEqual(48);
 
     // 验证回收站
-    expect(database.root.groups.length).toBe(1);
-    expect(database.root.groups[0].name).toBe('Recycle Bin');
-    expect(database.root.groups[0].iconId).toBe(43);
+    expect(database.root.groups.length).assertEqual(1);
+    expect(database.root.groups[0].name).assertEqual('Recycle Bin');
+    expect(database.root.groups[0].iconId).assertEqual(43);
     expect(database.root.groups[0].uuid).toEqual(database.meta.recycleBinUUID);
   });
 
@@ -70,12 +70,12 @@ describe('KdbxManager', () => {
     // 打开数据库
     const loadedDatabase = await KdbxManager.open(data, testPassword);
     expect(loadedDatabase).toBeDefined();
-    expect(loadedDatabase.meta.databaseName).toBe('Test Database');
-    expect(loadedDatabase.root.name).toBe('Root');
+    expect(loadedDatabase.meta.databaseName).assertEqual('Test Database');
+    expect(loadedDatabase.root.name).assertEqual('Root');
 
     // 验证回收站
-    expect(loadedDatabase.root.groups.length).toBe(1);
-    expect(loadedDatabase.root.groups[0].name).toBe('Recycle Bin');
+    expect(loadedDatabase.root.groups.length).assertEqual(1);
+    expect(loadedDatabase.root.groups[0].name).assertEqual('Recycle Bin');
   });
 
   it('should create and add entries', () => {
@@ -89,16 +89,16 @@ describe('KdbxManager', () => {
     );
 
     expect(entry).toBeDefined();
-    expect(entry.fields.get('Title')).toBe('Test Entry');
-    expect(entry.fields.get('UserName')).toBe('testuser');
-    expect(entry.fields.get('Password')).toBe('testpassword');
-    expect(entry.fields.get('URL')).toBe('https://example.com');
-    expect(entry.fields.get('Notes')).toBe('Test notes');
+    expect(entry.fields.get('Title')).assertEqual('Test Entry');
+    expect(entry.fields.get('UserName')).assertEqual('testuser');
+    expect(entry.fields.get('Password')).assertEqual('testpassword');
+    expect(entry.fields.get('URL')).assertEqual('https://example.com');
+    expect(entry.fields.get('Notes')).assertEqual('Test notes');
 
     // 添加条目到根组
     KdbxManager.addEntryToGroup(database.root, entry);
-    expect(database.root.entries.length).toBe(1);
-    expect(database.root.entries[0]).toBe(entry);
+    expect(database.root.entries.length).assertEqual(1);
+    expect(database.root.entries[0]).assertEqual(entry);
 
     // 验证最后修改时间已更新
     expect(database.root.times.lastModificationTime.getTime()).toBeGreaterThan(
@@ -111,13 +111,13 @@ describe('KdbxManager', () => {
     const group = KdbxManager.createGroup('Test Group', 'Test group notes');
 
     expect(group).toBeDefined();
-    expect(group.name).toBe('Test Group');
-    expect(group.notes).toBe('Test group notes');
+    expect(group.name).assertEqual('Test Group');
+    expect(group.notes).assertEqual('Test group notes');
 
     // 添加组到根组
     KdbxManager.addGroupToGroup(database.root, group);
-    expect(database.root.groups.length).toBe(2); // 回收站 + 新组
-    expect(database.root.groups[1]).toBe(group);
+    expect(database.root.groups.length).assertEqual(2); // 回收站 + 新组
+    expect(database.root.groups[1]).assertEqual(group);
 
     // 验证最后修改时间已更新
     expect(database.root.times.lastModificationTime.getTime()).toBeGreaterThan(
@@ -132,7 +132,7 @@ describe('KdbxManager', () => {
 
     // 查找组
     const foundGroup = KdbxManager.findGroupByUUID(database.root, group.uuid);
-    expect(foundGroup).toBe(group);
+    expect(foundGroup).assertEqual(group);
 
     // 查找不存在的组
     const notFoundGroup = KdbxManager.findGroupByUUID(database.root, new Uint8Array(16));
@@ -150,7 +150,7 @@ describe('KdbxManager', () => {
 
     // 查找条目
     const foundEntry = KdbxManager.findEntryByUUID(database.root, entry.uuid);
-    expect(foundEntry).toBe(entry);
+    expect(foundEntry).assertEqual(entry);
 
     // 查找不存在的条目
     const notFoundEntry = KdbxManager.findEntryByUUID(database.root, new Uint8Array(16));
@@ -177,25 +177,25 @@ describe('KdbxManager', () => {
     KdbxManager.addGroupToGroup(database.root, group1);
 
     // 验证结构
-    expect(database.root.groups.length).toBe(2); // 回收站 + group1
-    expect(database.root.groups[1]).toBe(group1);
-    expect(group1.entries.length).toBe(1);
-    expect(group1.entries[0]).toBe(entry1);
-    expect(group1.groups.length).toBe(1);
-    expect(group1.groups[0]).toBe(group2);
-    expect(group2.entries.length).toBe(1);
-    expect(group2.entries[0]).toBe(entry2);
-    expect(group2.groups.length).toBe(1);
-    expect(group2.groups[0]).toBe(group3);
-    expect(group3.entries.length).toBe(1);
-    expect(group3.entries[0]).toBe(entry3);
+    expect(database.root.groups.length).assertEqual(2); // 回收站 + group1
+    expect(database.root.groups[1]).assertEqual(group1);
+    expect(group1.entries.length).assertEqual(1);
+    expect(group1.entries[0]).assertEqual(entry1);
+    expect(group1.groups.length).assertEqual(1);
+    expect(group1.groups[0]).assertEqual(group2);
+    expect(group2.entries.length).assertEqual(1);
+    expect(group2.entries[0]).assertEqual(entry2);
+    expect(group2.groups.length).assertEqual(1);
+    expect(group2.groups[0]).assertEqual(group3);
+    expect(group3.entries.length).assertEqual(1);
+    expect(group3.entries[0]).assertEqual(entry3);
 
     // 测试深层查找
     const foundEntry3 = KdbxManager.findEntryByUUID(database.root, entry3.uuid);
-    expect(foundEntry3).toBe(entry3);
+    expect(foundEntry3).assertEqual(entry3);
 
     const foundGroup3 = KdbxManager.findGroupByUUID(database.root, group3.uuid);
-    expect(foundGroup3).toBe(group3);
+    expect(foundGroup3).assertEqual(group3);
   });
 
   it('should handle database with key file', async () => {
@@ -213,7 +213,7 @@ describe('KdbxManager', () => {
     // 使用密码和密钥文件打开
     const loadedDb = await KdbxManager.open(data, testPassword, keyFile);
     expect(loadedDb).toBeDefined();
-    expect(loadedDb.meta.databaseName).toBe('Key File Database');
+    expect(loadedDb.meta.databaseName).assertEqual('Key File Database');
 
     // 尝试仅使用密码打开（应该失败）
     await expect(KdbxManager.open(data, testPassword)).rejects.toThrow();
@@ -258,14 +258,14 @@ describe('KdbxManager', () => {
     // 打开大型数据库
     const loadedDatabase = await KdbxManager.open(data, testPassword);
     expect(loadedDatabase).toBeDefined();
-    expect(loadedDatabase.root.groups.length).toBe(11); // 回收站 + 10个组
+    expect(loadedDatabase.root.groups.length).assertEqual(11); // 回收站 + 10个组
 
     // 验证条目数量
     let entryCount = 0;
     for (let i = 1; i < loadedDatabase.root.groups.length; i++) { // 跳过回收站
       entryCount += loadedDatabase.root.groups[i].entries.length;
     }
-    expect(entryCount).toBe(1000); // 10组 * 100条目
+    expect(entryCount).assertEqual(1000); // 10组 * 100条目
   });
 
   it('should maintain data integrity through save/open cycle', async () => {
@@ -288,21 +288,21 @@ describe('KdbxManager', () => {
     const loadedDatabase = await KdbxManager.open(data, testPassword);
 
     // 验证结构完整性
-    expect(loadedDatabase.meta.databaseName).toBe(database.meta.databaseName);
-    expect(loadedDatabase.root.name).toBe(database.root.name);
-    expect(loadedDatabase.root.groups.length).toBe(database.root.groups.length);
+    expect(loadedDatabase.meta.databaseName).assertEqual(database.meta.databaseName);
+    expect(loadedDatabase.root.name).assertEqual(database.root.name);
+    expect(loadedDatabase.root.groups.length).assertEqual(database.root.groups.length);
 
     // 验证组
     const loadedGroup = loadedDatabase.root.groups[1]; // 跳过回收站
-    expect(loadedGroup.name).toBe(group.name);
-    expect(loadedGroup.entries.length).toBe(group.entries.length);
+    expect(loadedGroup.name).assertEqual(group.name);
+    expect(loadedGroup.entries.length).assertEqual(group.entries.length);
 
     // 验证条目
     const loadedEntry = loadedGroup.entries[0];
-    expect(loadedEntry.fields.get('Title')).toBe(entry.fields.get('Title'));
-    expect(loadedEntry.fields.get('UserName')).toBe(entry.fields.get('UserName'));
-    expect(loadedEntry.fields.get('Password')).toBe(entry.fields.get('Password'));
-    expect(loadedEntry.fields.get('URL')).toBe(entry.fields.get('URL'));
-    expect(loadedEntry.fields.get('Notes')).toBe(entry.fields.get('Notes'));
+    expect(loadedEntry.fields.get('Title')).assertEqual(entry.fields.get('Title'));
+    expect(loadedEntry.fields.get('UserName')).assertEqual(entry.fields.get('UserName'));
+    expect(loadedEntry.fields.get('Password')).assertEqual(entry.fields.get('Password'));
+    expect(loadedEntry.fields.get('URL')).assertEqual(entry.fields.get('URL'));
+    expect(loadedEntry.fields.get('Notes')).assertEqual(entry.fields.get('Notes'));
   });
 });

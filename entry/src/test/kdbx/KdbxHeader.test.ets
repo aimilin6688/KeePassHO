@@ -121,18 +121,18 @@ describe('KdbxHeader', () => {
 
   it('should create header with default values', () => {
     expect(header).toBeDefined();
-    expect(header.version).toBe(KdbxVersion.V4);
+    expect(header.version).assertEqual(KdbxVersion.V4);
     expect(header.cipherId).toBeInstanceOf(Uint8Array);
-    expect(header.cipherId.length).toBe(16);
-    expect(header.compressionFlags).toBe(CompressionFlags.GZIP);
+    expect(header.cipherId.length).assertEqual(16);
+    expect(header.compressionFlags).assertEqual(CompressionFlags.GZIP);
     expect(header.masterSeed).toBeInstanceOf(Uint8Array);
-    expect(header.masterSeed.length).toBe(32);
+    expect(header.masterSeed.length).assertEqual(32);
     expect(header.encryptionIV).toBeInstanceOf(Uint8Array);
-    expect(header.encryptionIV.length).toBe(16);
+    expect(header.encryptionIV.length).assertEqual(16);
 
     // KDBX4特有字段
     expect(header.kdfParameters).toBeDefined();
-    expect(header.innerRandomStreamId).toBe(InnerRandomStreamID.CHACHA20);
+    expect(header.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
 
     // KDBX3.1字段应该未定义
     expect(header.transformSeed).toBeUndefined();
@@ -144,15 +144,15 @@ describe('KdbxHeader', () => {
   it('should create KDBX3.1 header', () => {
     header = new KdbxHeader(KdbxVersion.V3_1);
 
-    expect(header.version).toBe(KdbxVersion.V3_1);
+    expect(header.version).assertEqual(KdbxVersion.V3_1);
     expect(header.transformSeed).toBeInstanceOf(Uint8Array);
-    expect(header.transformSeed.length).toBe(32);
-    expect(header.transformRounds).toBe(100000);
+    expect(header.transformSeed.length).assertEqual(32);
+    expect(header.transformRounds).assertEqual(100000);
     expect(header.protectedStreamKey).toBeInstanceOf(Uint8Array);
-    expect(header.protectedStreamKey.length).toBe(32);
+    expect(header.protectedStreamKey.length).assertEqual(32);
     expect(header.streamStartBytes).toBeInstanceOf(Uint8Array);
-    expect(header.streamStartBytes.length).toBe(32);
-    expect(header.innerRandomStreamId).toBe(InnerRandomStreamID.SALSA20);
+    expect(header.streamStartBytes.length).assertEqual(32);
+    expect(header.innerRandomStreamId).assertEqual(InnerRandomStreamID.SALSA20);
 
     // KDBX4字段应该未定义
     expect(header.kdfParameters).toBeUndefined();
@@ -175,10 +175,10 @@ describe('KdbxHeader', () => {
 
     expect(offset).toBeGreaterThan(0);
     expect(header.cipherId).toEqual(new Uint8Array(Array(16).fill(0x01)));
-    expect(header.compressionFlags).toBe(CompressionFlags.GZIP);
+    expect(header.compressionFlags).assertEqual(CompressionFlags.GZIP);
     expect(header.masterSeed).toEqual(new Uint8Array(Array(32).fill(0x02)));
     expect(header.encryptionIV).toEqual(new Uint8Array(Array(16).fill(0x03)));
-    expect(header.innerRandomStreamId).toBe(InnerRandomStreamID.CHACHA20);
+    expect(header.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
     expect(header.kdfParameters).toBeDefined();
   });
 
@@ -189,11 +189,11 @@ describe('KdbxHeader', () => {
 
     expect(offset).toBeGreaterThan(0);
     expect(header.cipherId).toEqual(new Uint8Array(Array(16).fill(0x01)));
-    expect(header.compressionFlags).toBe(CompressionFlags.GZIP);
+    expect(header.compressionFlags).assertEqual(CompressionFlags.GZIP);
     expect(header.masterSeed).toEqual(new Uint8Array(Array(32).fill(0x02)));
     expect(header.encryptionIV).toEqual(new Uint8Array(Array(16).fill(0x03)));
     expect(header.transformSeed).toEqual(new Uint8Array(Array(32).fill(0x04)));
-    expect(header.transformRounds).toBe(1000000);
+    expect(header.transformRounds).assertEqual(1000000);
     expect(header.protectedStreamKey).toEqual(new Uint8Array(Array(32).fill(0x05)));
     expect(header.streamStartBytes).toEqual(new Uint8Array(Array(32).fill(0x06)));
   });
@@ -215,10 +215,10 @@ describe('KdbxHeader', () => {
     newHeader.readFromBinary(binary);
 
     expect(newHeader.cipherId).toEqual(header.cipherId);
-    expect(newHeader.compressionFlags).toBe(header.compressionFlags);
+    expect(newHeader.compressionFlags).assertEqual(header.compressionFlags);
     expect(newHeader.masterSeed).toEqual(header.masterSeed);
     expect(newHeader.encryptionIV).toEqual(header.encryptionIV);
-    expect(newHeader.innerRandomStreamId).toBe(header.innerRandomStreamId);
+    expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
   });
 
   it('should write KDBX3.1 header to binary', () => {
@@ -244,14 +244,14 @@ describe('KdbxHeader', () => {
     newHeader.readFromBinary(binary);
 
     expect(newHeader.cipherId).toEqual(header.cipherId);
-    expect(newHeader.compressionFlags).toBe(header.compressionFlags);
+    expect(newHeader.compressionFlags).assertEqual(header.compressionFlags);
     expect(newHeader.masterSeed).toEqual(header.masterSeed);
     expect(newHeader.encryptionIV).toEqual(header.encryptionIV);
     expect(newHeader.transformSeed).toEqual(header.transformSeed);
-    expect(newHeader.transformRounds).toBe(header.transformRounds);
+    expect(newHeader.transformRounds).assertEqual(header.transformRounds);
     expect(newHeader.protectedStreamKey).toEqual(header.protectedStreamKey);
     expect(newHeader.streamStartBytes).toEqual(header.streamStartBytes);
-    expect(newHeader.innerRandomStreamId).toBe(header.innerRandomStreamId);
+    expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
   });
 
   it('should handle custom data', () => {
@@ -270,8 +270,8 @@ describe('KdbxHeader', () => {
     newHeader.readFromBinary(binary);
 
     expect(newHeader.publicCustomData).toBeDefined();
-    expect(newHeader.publicCustomData.get('TestKey1')).toBe('TestValue1');
-    expect(newHeader.publicCustomData.get('TestKey2')).toBe(42);
+    expect(newHeader.publicCustomData.get('TestKey1')).assertEqual('TestValue1');
+    expect(newHeader.publicCustomData.get('TestKey2')).assertEqual(42);
     expect(newHeader.publicCustomData.get('TestKey3')).toEqual(new Uint8Array([1, 2, 3]));
   });
 
@@ -306,9 +306,9 @@ describe('KdbxHeader', () => {
     newHeader.readFromBinary(binary);
 
     expect(newHeader.publicCustomData).toBeDefined();
-    expect(newHeader.publicCustomData.size).toBe(customData.size);
+    expect(newHeader.publicCustomData.size).assertEqual(customData.size);
     for (let i = 0; i < 1000; i++) {
-      expect(newHeader.publicCustomData.get(`Key${i}`)).toBe(`Value${i}`);
+      expect(newHeader.publicCustomData.get(`Key${i}`)).assertEqual(`Value${i}`);
     }
   });
 
@@ -336,10 +336,10 @@ describe('KdbxHeader', () => {
     newHeader.readFromBinary(binary);
 
     expect(newHeader.cipherId).toEqual(header.cipherId);
-    expect(newHeader.compressionFlags).toBe(header.compressionFlags);
+    expect(newHeader.compressionFlags).assertEqual(header.compressionFlags);
     expect(newHeader.masterSeed).toEqual(header.masterSeed);
     expect(newHeader.encryptionIV).toEqual(header.encryptionIV);
-    expect(newHeader.innerRandomStreamId).toBe(header.innerRandomStreamId);
+    expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
     expect(newHeader.kdfParameters).toEqual(header.kdfParameters);
     expect(newHeader.publicCustomData).toEqual(header.publicCustomData);
   });

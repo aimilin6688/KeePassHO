@@ -124,18 +124,18 @@ describe('KdbxWriter', () => {
     // 验证生成的文件格式
     // 1. 检查文件签名
     const view = new DataView(data.buffer);
-    expect(view.getUint32(0, true)).toBe(0x9AA2D903);
-    expect(view.getUint32(4, true)).toBe(0xB54BFB67);
+    expect(view.getUint32(0, true)).assertEqual(0x9AA2D903);
+    expect(view.getUint32(4, true)).assertEqual(0xB54BFB67);
 
     // 2. 检查版本号
-    expect(view.getUint32(8, true)).toBe(0x00040000); // KDBX 4.0
+    expect(view.getUint32(8, true)).assertEqual(0x00040000); // KDBX 4.0
 
     // 3. 尝试读取写入的文件
     const reader = new KdbxReader(data);
     const readDatabase = await reader.read(password);
     expect(readDatabase).toBeDefined();
-    expect(readDatabase.meta.generator).toBe('KeePassHO');
-    expect(readDatabase.meta.databaseName).toBe('Test Database');
+    expect(readDatabase.meta.generator).assertEqual('KeePassHO');
+    expect(readDatabase.meta.databaseName).assertEqual('Test Database');
   });
 
   it('should write database with password and key file', async () => {
@@ -151,7 +151,7 @@ describe('KdbxWriter', () => {
     const reader = new KdbxReader(data);
     const readDatabase = await reader.read(password, keyFile);
     expect(readDatabase).toBeDefined();
-    expect(readDatabase.meta.generator).toBe('KeePassHO');
+    expect(readDatabase.meta.generator).assertEqual('KeePassHO');
   });
 
   it('should handle large databases', async () => {
@@ -188,7 +188,7 @@ describe('KdbxWriter', () => {
     // 验证可以读取大文件
     const reader = new KdbxReader(data);
     const readDatabase = await reader.read('testpassword');
-    expect(readDatabase.root.groups[0].entries.length).toBe(1001);
+    expect(readDatabase.root.groups[0].entries.length).assertEqual(1001);
   });
 
   it('should handle protected fields', async () => {
@@ -206,8 +206,8 @@ describe('KdbxWriter', () => {
     const reader = new KdbxReader(data);
     const readDatabase = await reader.read('testpassword');
     const entry = readDatabase.root.groups[0].entries[0];
-    expect(entry.fields.Password.protected).toBe(true);
-    expect(entry.fields.Password.value).toBe('protected_password');
+    expect(entry.fields.Password.protected).assertEqual(true);
+    expect(entry.fields.Password.value).assertEqual('protected_password');
   });
 
   it('should handle binary attachments', async () => {
@@ -246,8 +246,8 @@ describe('KdbxWriter', () => {
     // 验证自定义数据的处理
     const reader = new KdbxReader(data);
     const readDatabase = await reader.read('testpassword');
-    expect(readDatabase.meta.customData['TestKey1']).toBe('TestValue1');
-    expect(readDatabase.meta.customData['TestKey2']).toBe('TestValue2');
+    expect(readDatabase.meta.customData['TestKey1']).assertEqual('TestValue1');
+    expect(readDatabase.meta.customData['TestKey2']).assertEqual('TestValue2');
   });
 
   it('should handle error conditions gracefully', async () => {
@@ -277,36 +277,36 @@ describe('KdbxWriter', () => {
     const readDatabase = await reader.read(password);
 
     // 验证元数据
-    expect(readDatabase.meta.generator).toBe(database.meta.generator);
-    expect(readDatabase.meta.databaseName).toBe(database.meta.databaseName);
-    expect(readDatabase.meta.databaseDescription).toBe(database.meta.databaseDescription);
-    expect(readDatabase.meta.recycleBinEnabled).toBe(database.meta.recycleBinEnabled);
-    expect(readDatabase.meta.recycleBinUUID).toBe(database.meta.recycleBinUUID);
-    expect(readDatabase.meta.historyMaxItems).toBe(database.meta.historyMaxItems);
-    expect(readDatabase.meta.historyMaxSize).toBe(database.meta.historyMaxSize);
+    expect(readDatabase.meta.generator).assertEqual(database.meta.generator);
+    expect(readDatabase.meta.databaseName).assertEqual(database.meta.databaseName);
+    expect(readDatabase.meta.databaseDescription).assertEqual(database.meta.databaseDescription);
+    expect(readDatabase.meta.recycleBinEnabled).assertEqual(database.meta.recycleBinEnabled);
+    expect(readDatabase.meta.recycleBinUUID).assertEqual(database.meta.recycleBinUUID);
+    expect(readDatabase.meta.historyMaxItems).assertEqual(database.meta.historyMaxItems);
+    expect(readDatabase.meta.historyMaxSize).assertEqual(database.meta.historyMaxSize);
 
     // 验证根组
-    expect(readDatabase.root.uuid).toBe(database.root.uuid);
-    expect(readDatabase.root.name).toBe(database.root.name);
-    expect(readDatabase.root.iconId).toBe(database.root.iconId);
+    expect(readDatabase.root.uuid).assertEqual(database.root.uuid);
+    expect(readDatabase.root.name).assertEqual(database.root.name);
+    expect(readDatabase.root.iconId).assertEqual(database.root.iconId);
 
     // 验证子组
     const group = readDatabase.root.groups[0];
     const originalGroup = database.root.groups[0];
-    expect(group.uuid).toBe(originalGroup.uuid);
-    expect(group.name).toBe(originalGroup.name);
-    expect(group.notes).toBe(originalGroup.notes);
-    expect(group.iconId).toBe(originalGroup.iconId);
+    expect(group.uuid).assertEqual(originalGroup.uuid);
+    expect(group.name).assertEqual(originalGroup.name);
+    expect(group.notes).assertEqual(originalGroup.notes);
+    expect(group.iconId).assertEqual(originalGroup.iconId);
 
     // 验证条目
     const entry = group.entries[0];
     const originalEntry = originalGroup.entries[0];
-    expect(entry.uuid).toBe(originalEntry.uuid);
-    expect(entry.iconId).toBe(originalEntry.iconId);
-    expect(entry.fields.Title).toBe(originalEntry.fields.Title);
-    expect(entry.fields.UserName).toBe(originalEntry.fields.UserName);
-    expect(entry.fields.Password).toBe(originalEntry.fields.Password);
-    expect(entry.fields.URL).toBe(originalEntry.fields.URL);
-    expect(entry.fields.Notes).toBe(originalEntry.fields.Notes);
+    expect(entry.uuid).assertEqual(originalEntry.uuid);
+    expect(entry.iconId).assertEqual(originalEntry.iconId);
+    expect(entry.fields.Title).assertEqual(originalEntry.fields.Title);
+    expect(entry.fields.UserName).assertEqual(originalEntry.fields.UserName);
+    expect(entry.fields.Password).assertEqual(originalEntry.fields.Password);
+    expect(entry.fields.URL).assertEqual(originalEntry.fields.URL);
+    expect(entry.fields.Notes).assertEqual(originalEntry.fields.Notes);
   });
 });

@@ -40,16 +40,16 @@ describe('KdbxGroup', () => {
   });
 
   it('should initialize with correct default values', () => {
-    expect(rootGroup.uuid).toBe(ROOT_UUID);
-    expect(rootGroup.name).toBe(ROOT_NAME);
+    expect(rootGroup.uuid).assertEqual(ROOT_UUID);
+    expect(rootGroup.name).assertEqual(ROOT_NAME);
     expect(rootGroup.icon).toEqual({ id: 0 });
-    expect(rootGroup.expires).toBe(false);
+    expect(rootGroup.expires).assertEqual(false);
     expect(rootGroup.expiryTime).toBeUndefined();
     expect(rootGroup.parentGroup).toBeUndefined();
     expect(rootGroup.groups).toEqual([]);
     expect(rootGroup.entries).toEqual([]);
-    expect(rootGroup.isExpanded).toBe(false);
-    expect(rootGroup.isSelected).toBe(false);
+    expect(rootGroup.isExpanded).assertEqual(false);
+    expect(rootGroup.isSelected).assertEqual(false);
 
     // 验证时间戳
     expect(rootGroup.creationTime).toBeInstanceOf(Date);
@@ -66,22 +66,22 @@ describe('KdbxGroup', () => {
     setTimeout(() => {
       // 添加子组
       rootGroup.addGroup(subGroup1);
-      expect(rootGroup.groups.length).toBe(1);
-      expect(subGroup1.parentGroup).toBe(ROOT_UUID);
+      expect(rootGroup.groups.length).assertEqual(1);
+      expect(subGroup1.parentGroup).assertEqual(ROOT_UUID);
       expect(rootGroup.lastModifiedTime.getTime()).toBeGreaterThan(initialModifiedTime.getTime());
 
       rootGroup.addGroup(subGroup2);
-      expect(rootGroup.groups.length).toBe(2);
-      expect(subGroup2.parentGroup).toBe(ROOT_UUID);
+      expect(rootGroup.groups.length).assertEqual(2);
+      expect(subGroup2.parentGroup).assertEqual(ROOT_UUID);
 
       // 删除子组
       rootGroup.removeGroup('sub1-uuid');
-      expect(rootGroup.groups.length).toBe(1);
-      expect(rootGroup.groups[0].uuid).toBe('sub2-uuid');
+      expect(rootGroup.groups.length).assertEqual(1);
+      expect(rootGroup.groups[0].uuid).assertEqual('sub2-uuid');
 
       // 删除不存在的组不应有影响
       rootGroup.removeGroup('nonexistent-uuid');
-      expect(rootGroup.groups.length).toBe(1);
+      expect(rootGroup.groups.length).assertEqual(1);
     }, 10);
   });
 
@@ -94,22 +94,22 @@ describe('KdbxGroup', () => {
     setTimeout(() => {
       // 添加条目
       rootGroup.addEntry(entry1);
-      expect(rootGroup.entries.length).toBe(1);
-      expect(entry1.parentGroup).toBe(ROOT_UUID);
+      expect(rootGroup.entries.length).assertEqual(1);
+      expect(entry1.parentGroup).assertEqual(ROOT_UUID);
       expect(rootGroup.lastModifiedTime.getTime()).toBeGreaterThan(initialModifiedTime.getTime());
 
       rootGroup.addEntry(entry2);
-      expect(rootGroup.entries.length).toBe(2);
-      expect(entry2.parentGroup).toBe(ROOT_UUID);
+      expect(rootGroup.entries.length).assertEqual(2);
+      expect(entry2.parentGroup).assertEqual(ROOT_UUID);
 
       // 删除条目
       rootGroup.removeEntry('entry1-uuid');
-      expect(rootGroup.entries.length).toBe(1);
-      expect(rootGroup.entries[0].uuid).toBe('entry2-uuid');
+      expect(rootGroup.entries.length).assertEqual(1);
+      expect(rootGroup.entries[0].uuid).assertEqual('entry2-uuid');
 
       // 删除不存在的条目不应有影响
       rootGroup.removeEntry('nonexistent-uuid');
-      expect(rootGroup.entries.length).toBe(1);
+      expect(rootGroup.entries.length).assertEqual(1);
     }, 10);
   });
 
@@ -123,13 +123,13 @@ describe('KdbxGroup', () => {
     subGroup2.addGroup(subGroup3);
 
     // 查找根组
-    expect(rootGroup.findGroup(ROOT_UUID)).toBe(rootGroup);
+    expect(rootGroup.findGroup(ROOT_UUID)).assertEqual(rootGroup);
 
     // 查找直接子组
-    expect(rootGroup.findGroup('sub1-uuid')).toBe(subGroup1);
+    expect(rootGroup.findGroup('sub1-uuid')).assertEqual(subGroup1);
 
     // 查找深层子组
-    expect(rootGroup.findGroup('sub3-uuid')).toBe(subGroup3);
+    expect(rootGroup.findGroup('sub3-uuid')).assertEqual(subGroup3);
 
     // 查找不存在的组
     expect(rootGroup.findGroup('nonexistent-uuid')).toBeUndefined();
@@ -149,13 +149,13 @@ describe('KdbxGroup', () => {
     subGroup2.addEntry(entry3);
 
     // 查找根组中的条目
-    expect(rootGroup.findEntry('entry1-uuid')).toBe(entry1);
+    expect(rootGroup.findEntry('entry1-uuid')).assertEqual(entry1);
 
     // 查找子组中的条目
-    expect(rootGroup.findEntry('entry2-uuid')).toBe(entry2);
+    expect(rootGroup.findEntry('entry2-uuid')).assertEqual(entry2);
 
     // 查找深层子组中的条目
-    expect(rootGroup.findEntry('entry3-uuid')).toBe(entry3);
+    expect(rootGroup.findEntry('entry3-uuid')).assertEqual(entry3);
 
     // 查找不存在的条目
     expect(rootGroup.findEntry('nonexistent-uuid')).toBeUndefined();
@@ -220,24 +220,24 @@ describe('KdbxGroup', () => {
 
   it('should check expiry status', () => {
     // 默认不过期
-    expect(rootGroup.isExpired()).toBe(false);
+    expect(rootGroup.isExpired()).assertEqual(false);
 
     // 设置过期时间为过去
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1); // 昨天
     rootGroup.expires = true;
     rootGroup.expiryTime = pastDate;
-    expect(rootGroup.isExpired()).toBe(true);
+    expect(rootGroup.isExpired()).assertEqual(true);
 
     // 设置过期时间为未来
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 1); // 明天
     rootGroup.expiryTime = futureDate;
-    expect(rootGroup.isExpired()).toBe(false);
+    expect(rootGroup.isExpired()).assertEqual(false);
 
     // 禁用过期
     rootGroup.expires = false;
-    expect(rootGroup.isExpired()).toBe(false);
+    expect(rootGroup.isExpired()).assertEqual(false);
   });
 
   it('should handle deep group hierarchies', () => {
@@ -256,15 +256,15 @@ describe('KdbxGroup', () => {
     // 验证层次结构
     currentGroup = rootGroup;
     for (let i = 0; i < 10; i++) {
-      expect(currentGroup.groups.length).toBe(1);
+      expect(currentGroup.groups.length).assertEqual(1);
       currentGroup = currentGroup.groups[0];
-      expect(currentGroup.uuid).toBe(`group${i}-uuid`);
-      expect(currentGroup.name).toBe(`Group ${i}`);
-      expect(currentGroup.parentGroup).toBe(i === 0 ? ROOT_UUID : `group${i-1}-uuid`);
+      expect(currentGroup.uuid).assertEqual(`group${i}-uuid`);
+      expect(currentGroup.name).assertEqual(`Group ${i}`);
+      expect(currentGroup.parentGroup).assertEqual(i === 0 ? ROOT_UUID : `group${i-1}-uuid`);
     }
 
     // 验证查找功能在深层结构中工作
-    expect(rootGroup.findGroup('group9-uuid')).toBe(groups[9]);
+    expect(rootGroup.findGroup('group9-uuid')).assertEqual(groups[9]);
 
     // 验证遍历功能在深层结构中工作
     const visitedGroups: string[] = [];
@@ -272,10 +272,10 @@ describe('KdbxGroup', () => {
       visitedGroups.push(group.uuid);
     });
 
-    expect(visitedGroups.length).toBe(11); // root + 10 groups
-    expect(visitedGroups[0]).toBe(ROOT_UUID);
+    expect(visitedGroups.length).assertEqual(11); // root + 10 groups
+    expect(visitedGroups[0]).assertEqual(ROOT_UUID);
     for (let i = 0; i < 10; i++) {
-      expect(visitedGroups[i + 1]).toBe(`group${i}-uuid`);
+      expect(visitedGroups[i + 1]).assertEqual(`group${i}-uuid`);
     }
   });
 
@@ -288,17 +288,17 @@ describe('KdbxGroup', () => {
     // 同时添加组和条目
     rootGroup.addGroup(subGroup1);
     rootGroup.addEntry(entry1);
-    expect(rootGroup.groups.length).toBe(1);
-    expect(rootGroup.entries.length).toBe(1);
+    expect(rootGroup.groups.length).assertEqual(1);
+    expect(rootGroup.entries.length).assertEqual(1);
 
     // 同时删除和添加
     rootGroup.removeGroup('sub1-uuid');
     rootGroup.addGroup(subGroup2);
     rootGroup.removeEntry('entry1-uuid');
     rootGroup.addEntry(entry2);
-    expect(rootGroup.groups.length).toBe(1);
-    expect(rootGroup.groups[0].uuid).toBe('sub2-uuid');
-    expect(rootGroup.entries.length).toBe(1);
-    expect(rootGroup.entries[0].uuid).toBe('entry2-uuid');
+    expect(rootGroup.groups.length).assertEqual(1);
+    expect(rootGroup.groups[0].uuid).assertEqual('sub2-uuid');
+    expect(rootGroup.entries.length).assertEqual(1);
+    expect(rootGroup.entries[0].uuid).assertEqual('entry2-uuid');
   });
 });

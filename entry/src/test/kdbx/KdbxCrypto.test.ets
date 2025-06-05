@@ -48,7 +48,7 @@ describe('KdbxCrypto', () => {
 
     const masterKey = await KdbxCrypto.computeMasterKey(testPassword, null, testMasterSeed, kdfParameters);
     expect(masterKey).toBeInstanceOf(Uint8Array);
-    expect(masterKey.length).toBe(32); // SHA-256输出长度
+    expect(masterKey.length).assertEqual(32); // SHA-256输出长度
   });
 
   it('should compute master key with password and key file', async () => {
@@ -58,7 +58,7 @@ describe('KdbxCrypto', () => {
 
     const masterKey = await KdbxCrypto.computeMasterKey(testPassword, testKeyFile, testMasterSeed, kdfParameters);
     expect(masterKey).toBeInstanceOf(Uint8Array);
-    expect(masterKey.length).toBe(32);
+    expect(masterKey.length).assertEqual(32);
 
     // 验证使用相同参数生成相同的密钥
     const masterKey2 = await KdbxCrypto.computeMasterKey(testPassword, testKeyFile, testMasterSeed, kdfParameters);
@@ -78,7 +78,7 @@ describe('KdbxCrypto', () => {
     // 解密
     const decrypted = await KdbxCrypto.aes256CbcDecrypt(encrypted, key, iv);
     expect(decrypted).toBeDefined();
-    expect(new util.TextDecoder().decode(decrypted)).toBe('Hello, World!');
+    expect(new util.TextDecoder().decode(decrypted)).assertEqual('Hello, World!');
   });
 
   it('should calculate HMAC-SHA-256', async () => {
@@ -87,7 +87,7 @@ describe('KdbxCrypto', () => {
 
     const hmac = await KdbxCrypto.hmacSha256(data, key);
     expect(hmac).toBeInstanceOf(Uint8Array);
-    expect(hmac.length).toBe(32);
+    expect(hmac.length).assertEqual(32);
 
     // 验证相同输入产生相同输出
     const hmac2 = await KdbxCrypto.hmacSha256(data, key);
@@ -102,7 +102,7 @@ describe('KdbxCrypto', () => {
 
     const derivedKey = await KdbxCrypto.pbkdf2(password, salt, iterations, keyLength);
     expect(derivedKey).toBeInstanceOf(Uint8Array);
-    expect(derivedKey.length).toBe(keyLength);
+    expect(derivedKey.length).assertEqual(keyLength);
 
     // 验证相同参数产生相同密钥
     const derivedKey2 = await KdbxCrypto.pbkdf2(password, salt, iterations, keyLength);
@@ -120,7 +120,7 @@ describe('KdbxCrypto', () => {
 
     const aesResult = await KdbxCrypto.computeMasterKey(testPassword, null, testMasterSeed, aesKdfParams);
     expect(aesResult).toBeDefined();
-    expect(aesResult.length).toBe(32);
+    expect(aesResult.length).assertEqual(32);
 
     // 测试Argon2id（会回退到PBKDF2）
     const argon2Params = new Map<string, any>();
@@ -131,7 +131,7 @@ describe('KdbxCrypto', () => {
 
     const argon2Result = await KdbxCrypto.computeMasterKey(testPassword, null, testMasterSeed, argon2Params);
     expect(argon2Result).toBeDefined();
-    expect(argon2Result.length).toBe(32);
+    expect(argon2Result.length).assertEqual(32);
   });
 
   it('should create and use protected stream encryptor', () => {
@@ -198,7 +198,7 @@ describe('KdbxCrypto', () => {
     // 测试大数据的HMAC计算
     const hmac = await KdbxCrypto.hmacSha256(largeData, key);
     expect(hmac).toBeDefined();
-    expect(hmac.length).toBe(32);
+    expect(hmac.length).assertEqual(32);
   });
 
   it('should maintain constant time operations', async () => {
