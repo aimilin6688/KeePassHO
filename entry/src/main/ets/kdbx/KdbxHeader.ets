@@ -59,12 +59,12 @@ export class KdbxHeader {
   /**
    * KDF参数（KDBX4）
    */
-  kdfParameters?: Map<string, any>;
+  kdfParameters?: Map<string, ESObject>;
 
   /**
    * 公共自定义数据
    */
-  publicCustomData?: Map<string, any>;
+  publicCustomData?: Map<string, ESObject>;
 
   /**
    * 构造函数
@@ -182,7 +182,7 @@ export class KdbxHeader {
         break;
 
       case HeaderFieldID.TRANSFORM_ROUNDS:
-        this.transformRounds = new DataView(data.buffer).getUint64(0, true);
+        this.transformRounds = new DataView(data.buffer).getUint16(0, true);
         break;
 
       case HeaderFieldID.ENCRYPTION_IV:

@@ -6,7 +6,7 @@ import Salsa20UnitTest from './kdbx/crypto/Salsa20.test';
 import KdbxErrorUnitTest from './kdbx/KdbxError.test';
 // import KdbxFileUnitTest from './kdbx/KdbxFile.test';
 // import KdbxFormatUnitTest from './kdbx/KdbxFormat.test';
-// import KdbxHeaderUnitTest from './kdbx/KdbxHeader.test';
+import KdbxHeaderUnitTest from './kdbx/KdbxHeader.test';
 // import KdbxManagerUnitTest from './kdbx/KdbxManager.test';
 // import KdbxReaderUnitTest from './kdbx/KdbxReader.test';
 // import KdbxWriterUnitTest from './kdbx/KdbxWriter.test';
@@ -29,7 +29,7 @@ export default function testsuite() {
   KdbxErrorUnitTest();
   // KdbxFileUnitTest();
   // KdbxFormatUnitTest();
-  // KdbxHeaderUnitTest();
+  KdbxHeaderUnitTest();
   // KdbxManagerUnitTest();
   // KdbxReaderUnitTest();
   // KdbxWriterUnitTest();
