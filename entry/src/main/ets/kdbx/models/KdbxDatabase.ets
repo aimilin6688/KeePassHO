@@ -314,28 +314,49 @@ export class KdbxDatabase {
 
     const caseSensitive = options?.caseSensitive || false,
       includeProtected = options?.includeProtected || false,
-      fieldNames = options?.includeProtected || undefined,
+      fieldNames = options?.fieldNames || undefined,  // 修复参数赋值错误
       searchInGroups = options?.searchInGroups || undefined,
       excludeGroups = options?.excludeGroups || undefined;
 
     const searchQuery = caseSensitive ? query : query.toLowerCase();
     const results: KdbxEntry[] = [];
 
-    // 递归搜索组
-    const searchGroup = (group: KdbxGroup) => {
-      // 如果指定了搜索组且当前组不在其中，跳过
-      if (searchInGroups && !searchInGroups.some(uuid => uuid === group.uuid)) {
-        return;
+    // 如果指定了搜索组，只在这些组中搜索
+    if (searchInGroups && searchInGroups.length > 0) {
+      for (const groupUuid of searchInGroups) {
+        const group = this.findGroup(groupUuid);
+        if (group) {
+          // 只搜索指定组中的条目，不递归搜索子组
+          for (const entry of group.entries) {
+            const matchingFields = entry.searchFields(query, {
+              caseSensitive,
+              includeProtected,
+              fieldNames
+            });
+            if (matchingFields.length > 0 && 
+                (!excludeGroups || !excludeGroups.includes(entry.parentGroup))) {
+              results.push(entry);
+            }
+          }
+        }
       }
+      return results;
+    }
 
-      // 如果指定了排除组且当前组在其中，跳过
-      if (excludeGroups && excludeGroups.some(uuid => uuid === group.uuid)) {
+    // 如果没有指定搜索组，则递归搜索所有组
+    const searchGroup = (group: KdbxGroup) => {
+      // 如果在排除列表中，跳过该组及其子组
+      if (excludeGroups && excludeGroups.includes(group.uuid)) {
         return;
       }
 
       // 搜索当前组中的条目
       for (const entry of group.entries) {
-        const matchingFields = entry.searchFields(query, options);
+        const matchingFields = entry.searchFields(query, {
+          caseSensitive,
+          includeProtected,
+          fieldNames
+        });
         if (matchingFields.length > 0) {
           results.push(entry);
         }
