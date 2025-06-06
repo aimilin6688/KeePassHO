@@ -129,7 +129,7 @@ export class KdbxDatabase {
     }
 
     // 不能移动到自己或子组中
-    if (group.uuid === newParent.uuid || newParent.findGroup(group.uuid)) {
+    if (group.uuid === newParent.uuid || group.findGroup(newParent.uuid)) {
       return false;
     }
 
