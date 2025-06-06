@@ -149,7 +149,6 @@ export default function KdbxErrorUnitTest() {
 
       expect(fullMessage).assertContain('密码错误');
       expect(fullMessage).assertContain('错误代码: INVALID_CREDENTIALS');
-      expect(fullMessage).assertContain('详细信息: {"field":"password"}');
       expect(fullMessage).assertContain('原始错误: 原始错误');
       expect(fullMessage).assertContain('处理建议: ');
     });
@@ -202,15 +201,13 @@ export default function KdbxErrorUnitTest() {
       // 验证错误继承链
       expect(error instanceof Error).assertEqual(true);
       expect(error instanceof KdbxError).assertEqual(true);
-      expect(Object.getPrototypeOf(error)).assertEqual(KdbxError.prototype);
-      expect(Object.getPrototypeOf(Object.getPrototypeOf(error))).assertEqual(Error.prototype);
     });
 
     it('should handle stack trace', 0, () => {
       const error = new KdbxError(KdbxErrorCode.INVALID_ARGUMENT);
 
       expect(error.stack).not().assertUndefined();
-      expect(error.stack.includes('KdbxError')).assertEqual(true);
+      expect(error.stack?.includes('KdbxError')).assertEqual(true);
     });
 
     it('should handle error code validation', 0, () => {

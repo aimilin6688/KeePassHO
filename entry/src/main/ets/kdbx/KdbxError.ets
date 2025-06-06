@@ -64,12 +64,10 @@ export class KdbxError extends Error {
    * 错误代码
    */
   code: KdbxErrorCode;
-
   /**
    * 原始错误
    */
   originalError?: Error;
-
   /**
    * 额外信息
    */
@@ -112,7 +110,7 @@ export class KdbxError extends Error {
       case KdbxErrorCode.OPERATION_FAILED:
         return '操作失败';
 
-      // 文件相关错误
+    // 文件相关错误
       case KdbxErrorCode.FILE_NOT_FOUND:
         return '文件未找到';
       case KdbxErrorCode.FILE_ACCESS_DENIED:
@@ -126,7 +124,7 @@ export class KdbxError extends Error {
       case KdbxErrorCode.FILE_LOCKED:
         return '文件已被锁定';
 
-      // 加密相关错误
+    // 加密相关错误
       case KdbxErrorCode.ENCRYPTION_FAILED:
         return '加密失败';
       case KdbxErrorCode.DECRYPTION_FAILED:
@@ -140,13 +138,13 @@ export class KdbxError extends Error {
       case KdbxErrorCode.INVALID_KEYFILE:
         return '无效的密钥文件';
 
-      // 压缩相关错误
+    // 压缩相关错误
       case KdbxErrorCode.COMPRESSION_FAILED:
         return '压缩失败';
       case KdbxErrorCode.DECOMPRESSION_FAILED:
         return '解压缩失败';
 
-      // XML相关错误
+    // XML相关错误
       case KdbxErrorCode.XML_PARSING_FAILED:
         return 'XML解析失败';
       case KdbxErrorCode.XML_WRITING_FAILED:
@@ -154,7 +152,7 @@ export class KdbxError extends Error {
       case KdbxErrorCode.INVALID_XML_STRUCTURE:
         return '无效的XML结构';
 
-      // 数据库相关错误
+    // 数据库相关错误
       case KdbxErrorCode.DATABASE_CORRUPTED:
         return '数据库已损坏';
       case KdbxErrorCode.INVALID_DATABASE_STRUCTURE:
@@ -170,19 +168,19 @@ export class KdbxError extends Error {
       case KdbxErrorCode.INVALID_FIELD:
         return '无效的字段';
 
-      // 内存相关错误
+    // 内存相关错误
       case KdbxErrorCode.OUT_OF_MEMORY:
         return '内存不足';
       case KdbxErrorCode.MEMORY_CORRUPTION:
         return '内存损坏';
 
-      // 并发相关错误
+    // 并发相关错误
       case KdbxErrorCode.CONCURRENT_ACCESS:
         return '并发访问冲突';
       case KdbxErrorCode.TRANSACTION_FAILED:
         return '事务失败';
 
-      // 网络相关错误
+    // 网络相关错误
       case KdbxErrorCode.NETWORK_ERROR:
         return '网络错误';
       case KdbxErrorCode.CONNECTION_FAILED:
@@ -267,7 +265,7 @@ export class KdbxError extends Error {
     code: KdbxErrorCode,
     message?: string,
     originalError?: Error,
-    details?: object
+    details?: ESObject
   ): KdbxError {
     return new KdbxError(code, message, originalError, details);
   }
@@ -284,7 +282,7 @@ export class KdbxError extends Error {
     error: Error,
     code: KdbxErrorCode = KdbxErrorCode.UNKNOWN,
     message?: string,
-    details?: object
+    details?: ESObject
   ): KdbxError {
     return new KdbxError(
       code,
