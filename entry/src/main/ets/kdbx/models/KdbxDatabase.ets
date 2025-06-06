@@ -214,14 +214,35 @@ export class KdbxDatabase {
       }
     }
 
-    // 直接删除
-    parent.removeGroup(group.uuid);
+    // 添加所有子组和条目到已删除对象列表
+    const now = new Date();
+    
+    // 递归添加所有子组
+    group.traverseGroups(subGroup => {
+      if (subGroup.uuid !== group.uuid) { // 避免重复添加当前组
+        this.deletedObjects.push({
+          uuid: subGroup.uuid,
+          deletionTime: now
+        });
+      }
+    });
 
-    // 添加到已删除对象列表
+    // 递归添加所有条目
+    group.traverseEntries(entry => {
+      this.deletedObjects.push({
+        uuid: entry.uuid,
+        deletionTime: now
+      });
+    });
+
+    // 添加当前组到已删除对象列表
     this.deletedObjects.push({
       uuid: group.uuid,
-      deletionTime: new Date()
+      deletionTime: now
     });
+
+    // 从父组中移除
+    parent.removeGroup(group.uuid);
 
     return true;
   }
