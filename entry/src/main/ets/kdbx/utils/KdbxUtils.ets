@@ -1,6 +1,7 @@
 import cryptoFramework from '@ohos.security.cryptoFramework';
 import { buffer, util } from '@kit.ArkTS';
 import { UUID } from '../models/KdbxTypes';
+import { RandomUtils } from './RandomUtils';
 
 
 export class KdbxUtils {
@@ -92,7 +93,6 @@ export class KdbxUtils {
    * @returns
    */
   static createUUID(): UUID {
-    return util.generateRandomUUID();
+    return util.generateRandomUUID() || RandomUtils.generateRandomString(16);
   }
-
 }
