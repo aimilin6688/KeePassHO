@@ -3,7 +3,7 @@ import ChaCha20UnitTest from './kdbx/crypto/ChaCha20.test';
 import Salsa20UnitTest from './kdbx/crypto/Salsa20.test';
 // import KdbxCredentialsUnitTest from './kdbx/KdbxCredentials.test';
 // import KdbxCryptoUnitTest from './kdbx/KdbxCrypto.test';
-// import KdbxErrorUnitTest from './kdbx/KdbxError.test';
+import KdbxErrorUnitTest from './kdbx/KdbxError.test';
 // import KdbxFileUnitTest from './kdbx/KdbxFile.test';
 // import KdbxFormatUnitTest from './kdbx/KdbxFormat.test';
 // import KdbxHeaderUnitTest from './kdbx/KdbxHeader.test';
@@ -26,7 +26,7 @@ export default function testsuite() {
   // KdbxXmlProcessorUnitTest();
   // KdbxCredentialsUnitTest();
   // KdbxCryptoUnitTest();
-  // KdbxErrorUnitTest();
+  KdbxErrorUnitTest();
   // KdbxFileUnitTest();
   // KdbxFormatUnitTest();
   // KdbxHeaderUnitTest();
