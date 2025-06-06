@@ -47,7 +47,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(db.protectedStreamKey).assertInstanceOf('Uint8Array');
       expect(db.protectedStreamKey.length).assertEqual(32);
       expect(db.root instanceof  KdbxGroup).assertEqual(true);
-      expect(db.deletedObjects).assertEqual([]);
+      expect(db.deletedObjects).assertDeepEquals([]);
 
       // 验证元数据
       expect(db.meta).not().assertNull();
@@ -55,7 +55,7 @@ export default function KdbxDatabaseUnitTest() {
       expect(db.meta.historyMaxItems).assertEqual(10);
       expect(db.meta.historyMaxSize).assertEqual(6 * 1024 * 1024);
       expect(db.meta.recycleBinEnabled).assertEqual(true);
-      expect(db.meta.recycleBinUUID).assertInstanceOf('Uint8Array');
+      expect(db.meta.recycleBinUUID).assertInstanceOf('String');
       expect(db.meta.masterKeyChanged).assertInstanceOf('Date');
 
       // 验证内存保护设置

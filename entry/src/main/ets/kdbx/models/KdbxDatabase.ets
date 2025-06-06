@@ -43,8 +43,7 @@ export class KdbxDatabase {
     this.protectedStreamKey = KdbxUtils.generateRandom(new Uint8Array(32));
 
     // 创建根组
-    const rootUuid = KdbxUtils.generateRandom(new Uint8Array(16));
-    this.root = new KdbxGroup(KdbxUtils.bytesToStr(rootUuid), 'Root');
+    this.root = new KdbxGroup(KdbxUtils.createUUID(), 'Root');
 
     // 初始化元数据
     this.meta = {
@@ -54,7 +53,7 @@ export class KdbxDatabase {
       historyMaxItems: 10,
       historyMaxSize: 6 * 1024 * 1024, // 6MB
       recycleBinEnabled: true,
-      recycleBinUUID: KdbxUtils.bytesToStr(KdbxUtils.generateRandom(new Uint8Array(16))),
+      recycleBinUUID: KdbxUtils.createUUID(),
       recycleBinChanged: new Date(),
       masterKeyChanged: new Date(),
       memoryProtection: {
@@ -82,7 +81,7 @@ export class KdbxDatabase {
    * @returns 新创建的组
    */
   createGroup(name: string, parentGroup: KdbxGroup = this.root): KdbxGroup {
-    const uuid = KdbxUtils.bytesToStr(KdbxUtils.generateRandom(new Uint8Array(16)));
+    const uuid = KdbxUtils.createUUID();
     const group = new KdbxGroup(uuid, name);
     parentGroup.addGroup(group);
     return group;
@@ -94,7 +93,7 @@ export class KdbxDatabase {
    * @returns 新创建的条目
    */
   createEntry(parentGroup: KdbxGroup = this.root): KdbxEntry {
-    const uuid = KdbxUtils.bytesToStr(KdbxUtils.generateRandom(new Uint8Array(16)));
+    const uuid = KdbxUtils.createUUID();
     const entry = new KdbxEntry(uuid, parentGroup.uuid);
     parentGroup.addEntry(entry);
     return entry;
