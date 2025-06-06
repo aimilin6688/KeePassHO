@@ -473,6 +473,391 @@ export default function KdbxDatabaseUnitTest() {
       const group = customDb.createGroup('Test Group');
       expect(customDb.findGroup(group.uuid)).assertEqual(group);
     });
+
+    it('should handle edge cases in search', 0, () => {
+      const group = db.createGroup('Test Group');
+      const entry = db.createEntry(group);
+      entry.title = 'Test Entry @#$%';
+      entry.username = 'user.name+email@example.com';
+      entry.notes = 'Special chars: !@#$%^&*()';
+
+      // 空搜索字符串
+      const emptyResults = db.searchEntries('');
+      expect(emptyResults.length).assertEqual(0);
+
+      // 特殊字符搜索
+      const specialResults = db.searchEntries('@#$%');
+      expect(specialResults.length).assertEqual(1);
+      expect(specialResults[0]).assertEqual(entry);
+
+      // 搜索不存在的组UUID
+      const nonExistentResults = db.searchEntries('test', {
+        searchInGroups: ['non-existent-uuid']
+      });
+      expect(nonExistentResults.length).assertEqual(0);
+
+      // 组合搜索选项
+      const combinedResults = db.searchEntries('user', {
+        caseSensitive: true,
+        includeProtected: false,
+        fieldNames: ['UserName'],
+        excludeGroups: ['non-existent-uuid']
+      });
+      expect(combinedResults.length).assertEqual(1);
+      expect(combinedResults[0]).assertEqual(entry);
+    });
+
+    it('should handle edge cases in group operations', 0, () => {
+      const group = db.createGroup('Test Group');
+      
+      // 移动到不存在的组
+      const nonExistentGroup = new KdbxGroup('non-existent-uuid', 'Non-existent');
+      expect(db.moveGroup(group, nonExistentGroup)).assertEqual(false);
+      
+      // 移动到回收站
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin) {
+          expect(db.moveGroup(group, recycleBin)).assertEqual(true);
+          expect(group.parentGroup).assertEqual(recycleBin.uuid);
+        }
+      }
+      
+      // 尝试移动回收站（应该失败，因为回收站必须保持在根目录下）
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        const newGroup = db.createGroup('New Group');
+        if (recycleBin) {
+          // 回收站不应该被移动到其他组
+          expect(db.moveGroup(recycleBin, newGroup)).assertEqual(false);
+          // 回收站应该仍然在根目录下
+          expect(recycleBin.parentGroup).assertEqual(db.root.uuid);
+        }
+      }
+    });
+
+    it('should handle recycle bin edge cases', 0, () => {
+      // 在回收站中创建和删除项目
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin) {
+          // 在回收站中创建条目
+          const entry = db.createEntry(recycleBin);
+          entry.title = 'Recycled Entry';
+          
+          // 删除回收站中的条目（应该直接删除，不会再次移动到回收站）
+          expect(db.deleteEntry(entry, true)).assertEqual(true);
+          expect(recycleBin.entries.length).assertEqual(0);
+          // 验证删除的条目在 deletedObjects 中
+          const deletedEntry = db.deletedObjects.find(obj => obj.uuid === entry.uuid);
+          expect(deletedEntry).not().assertUndefined();
+          expect(deletedEntry?.uuid).assertEqual(entry.uuid);
+          expect(deletedEntry?.deletionTime).assertInstanceOf('Date');
+
+          // 删除并重新创建回收站
+          const oldRecycleBinUuid = db.meta.recycleBinUUID;
+          expect(db.deleteGroup(recycleBin, false)).assertEqual(true);
+          expect(db.findGroup(oldRecycleBinUuid)).assertUndefined();
+
+          // 创建新条目并删除（应该创建新的回收站）
+          const newGroup = db.createGroup('New Group');
+          const newEntry = db.createEntry(newGroup);
+          expect(db.deleteEntry(newEntry, true)).assertEqual(true);
+
+          // 验证新回收站
+          expect(db.meta.recycleBinUUID).not().assertEqual(oldRecycleBinUuid);
+          const newRecycleBin = db.findGroup(db.meta.recycleBinUUID!);
+          expect(newRecycleBin).not().assertUndefined();
+          if (newRecycleBin) {
+            expect(newRecycleBin.name).assertEqual('回收站');
+            expect(newRecycleBin.entries).assertContain(newEntry);
+          }
+        }
+      }
+    });
+
+    it('should handle statistics edge cases', 0, () => {
+      // 空数据库统计
+      const emptyStats = db.getStatistics();
+      expect(emptyStats.groupCount).assertEqual(1); // 只有回收站
+      expect(emptyStats.entryCount).assertEqual(0);
+      expect(emptyStats.attachmentCount).assertEqual(0);
+      expect(emptyStats.attachmentSize).assertEqual(0);
+      expect(emptyStats.passwordCount).assertEqual(0);
+      expect(emptyStats.expiredEntryCount).assertEqual(0);
+
+      // 创建大量数据
+      const group = db.createGroup('Test Group');
+      for (let i = 0; i < 100; i++) {
+        const entry = db.createEntry(group);
+        entry.title = `Entry ${i}`;
+        if (i % 2 === 0) {
+          entry.password = `password${i}`;
+        }
+        if (i % 3 === 0) {
+          entry.addAttachment(`file${i}.txt`, new Uint8Array(i + 1));
+        }
+        if (i % 4 === 0) {
+          entry.expires = true;
+          const pastDate = new Date();
+          pastDate.setDate(pastDate.getDate() - 1);
+          entry.expiryTime = pastDate;
+        }
+      }
+
+      const stats = db.getStatistics();
+      expect(stats.groupCount).assertEqual(2); // 测试组 + 回收站
+      expect(stats.entryCount).assertEqual(100);
+      expect(stats.passwordCount).assertEqual(50); // 偶数索引的条目有密码
+      expect(stats.attachmentCount).assertEqual(34); // 每3个条目有一个附件
+      expect(stats.expiredEntryCount).assertEqual(25); // 每4个条目过期
+    });
+
+    it('should handle entry move edge cases', 0, () => {
+      const group1 = db.createGroup('Group 1');
+      const group2 = db.createGroup('Group 2');
+      const entry = db.createEntry(group1);
+      entry.title = 'Test Entry';
+
+      // 移动到不存在的组
+      const nonExistentGroup = new KdbxGroup('non-existent-uuid', 'Non-existent');
+      expect(db.moveEntry(entry, nonExistentGroup)).assertEqual(false);
+      expect(entry.parentGroup).assertEqual(group1.uuid);
+
+      // 移动到回收站
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin) {
+          expect(db.moveEntry(entry, recycleBin)).assertEqual(true);
+          expect(entry.parentGroup).assertEqual(recycleBin.uuid);
+          expect(recycleBin.entries).assertContain(entry);
+          expect(group1.entries).not().assertContain(entry);
+        }
+      }
+
+      // 从回收站移动到普通组
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin && recycleBin.entries.includes(entry)) {
+          expect(db.moveEntry(entry, group2)).assertEqual(true);
+          expect(entry.parentGroup).assertEqual(group2.uuid);
+          expect(group2.entries).assertContain(entry);
+          expect(recycleBin.entries).not().assertContain(entry);
+        }
+      }
+    });
+
+    it('should handle advanced search scenarios', 0, () => {
+      // 创建测试数据
+      const group1 = db.createGroup('Search Group 1');
+      const group2 = db.createGroup('Search Group 2');
+      const subGroup = db.createGroup('Sub Search Group', group1);
+
+      // 创建具有各种特殊字段的条目
+      const entry1 = db.createEntry(group1);
+      entry1.title = 'Test Entry 123';
+      entry1.username = 'user@example.com';
+      entry1.password = 'p@ssw0rd!';
+      entry1.url = 'https://example.com';
+      entry1.notes = 'This is a test note with some keywords: test123';
+      entry1.setCustomField('CustomField1', 'CustomValue1');
+      entry1.setCustomField('CustomField2', 'CustomValue2');
+
+      const entry2 = db.createEntry(subGroup);
+      entry2.title = 'Another Test';
+      entry2.username = 'another-user';
+      entry2.password = 'another-password';
+      entry2.url = 'https://another-example.com';
+      entry2.notes = 'Another test note';
+      entry2.setCustomField('CustomField1', 'AnotherCustomValue');
+
+      const entry3 = db.createEntry(group2);
+      entry3.title = 'Third Test Entry';
+      entry3.username = 'third-user';
+      entry3.password = 'third-password';
+      entry3.url = 'https://third-example.com';
+      entry3.notes = 'Third test note with CustomValue1 text';
+
+      // 测试搜索自定义字段
+      const customFieldResults = db.searchEntries('CustomValue1');
+      expect(customFieldResults.length).assertEqual(2); // entry1 和 entry3 (entry3 的 notes 中包含)
+      expect(customFieldResults).assertContain(entry1);
+      expect(customFieldResults).assertContain(entry3);
+
+      // 测试搜索多个字段
+      const multiFieldResults = db.searchEntries('test', {
+        fieldNames: ['Title', 'Notes']
+      });
+      expect(multiFieldResults.length).assertEqual(3); // 所有条目的标题或备注中都包含 "test"
+      expect(multiFieldResults).assertContain(entry1);
+      expect(multiFieldResults).assertContain(entry2);
+      expect(multiFieldResults).assertContain(entry3);
+
+      // 测试搜索特定组及其子组
+      const groupSearchResults = db.searchEntries('test', {
+        searchInGroups: [group1.uuid]
+      });
+      expect(groupSearchResults.length).assertEqual(2); // entry1 和 entry2
+      expect(groupSearchResults).assertContain(entry1);
+      expect(groupSearchResults).assertContain(entry2);
+
+      // 测试搜索数字
+      const numberResults = db.searchEntries('123');
+      expect(numberResults.length).assertEqual(1);
+      expect(numberResults[0]).assertEqual(entry1);
+
+      // 测试搜索 URL
+      const urlResults = db.searchEntries('https://');
+      expect(urlResults.length).assertEqual(3); // 所有条目都有 URL
+      expect(urlResults).assertContain(entry1);
+      expect(urlResults).assertContain(entry2);
+      expect(urlResults).assertContain(entry3);
+
+      // 测试复杂组合搜索
+      const complexResults = db.searchEntries('test', {
+        caseSensitive: true,
+        includeProtected: false,
+        fieldNames: ['Title', 'Notes'],
+        searchInGroups: [group1.uuid],
+        excludeGroups: [subGroup.uuid]
+      });
+      expect(complexResults.length).assertEqual(1); // 只有 entry1
+      expect(complexResults[0]).assertEqual(entry1);
+    });
+
+    it('should handle meta data operations', 0, () => {
+      // 测试修改元数据
+      db.meta.databaseName = 'Test Database';
+      expect(db.meta.databaseName).assertEqual('Test Database');
+
+      db.meta.databaseDescription = 'This is a test database';
+      expect(db.meta.databaseDescription).assertEqual('This is a test database');
+
+      // 测试修改历史设置
+      db.meta.historyMaxItems = 20;
+      expect(db.meta.historyMaxItems).assertEqual(20);
+
+      db.meta.historyMaxSize = 10 * 1024 * 1024; // 10MB
+      expect(db.meta.historyMaxSize).assertEqual(10 * 1024 * 1024);
+
+      // 测试修改内存保护设置
+      if (db.meta.memoryProtection) {
+        db.meta.memoryProtection.protectTitle = true;
+        expect(db.meta.memoryProtection.protectTitle).assertEqual(true);
+
+        db.meta.memoryProtection.protectUserName = true;
+        expect(db.meta.memoryProtection.protectUserName).assertEqual(true);
+
+        db.meta.memoryProtection.protectPassword = false;
+        expect(db.meta.memoryProtection.protectPassword).assertEqual(false);
+      }
+
+      // 测试禁用回收站
+      db.meta.recycleBinEnabled = false;
+      expect(db.meta.recycleBinEnabled).assertEqual(false);
+
+      // 测试启用回收站
+      db.meta.recycleBinEnabled = true;
+      expect(db.meta.recycleBinEnabled).assertEqual(true);
+      expect(db.meta.recycleBinUUID).not().assertUndefined();
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        expect(recycleBin).not().assertUndefined();
+        if (recycleBin) {
+          expect(recycleBin.name).assertEqual('回收站');
+        }
+      }
+    });
+
+    it('should handle recycle bin operations', 0, () => {
+      // 创建测试数据
+      const group1 = db.createGroup('Test Group 1');
+      const subGroup = db.createGroup('Sub Group', group1);
+      const entry1 = db.createEntry(group1);
+      entry1.title = 'Entry 1';
+      const entry2 = db.createEntry(subGroup);
+      entry2.title = 'Entry 2';
+
+      // 测试禁用回收站时的删除操作
+      db.meta.recycleBinEnabled = false;
+      expect(db.deleteGroup(group1, true)).assertEqual(true);
+      expect(db.findGroup(group1.uuid)).assertUndefined();
+      expect(db.findGroup(subGroup.uuid)).assertUndefined();
+      expect(db.findEntry(entry1.uuid)).assertUndefined();
+      expect(db.findEntry(entry2.uuid)).assertUndefined();
+      // 验证所有对象都被添加到已删除对象列表
+      expect(db.deletedObjects.find(obj => obj.uuid === group1.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === subGroup.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === entry1.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === entry2.uuid)).not().assertUndefined();
+
+      // 重新启用回收站
+      db.meta.recycleBinEnabled = true;
+      const group2 = db.createGroup('Test Group 2');
+      const entry3 = db.createEntry(group2);
+      entry3.title = 'Entry 3';
+
+      // 测试回收站操作
+      if (db.meta.recycleBinUUID) {
+        const recycleBin = db.findGroup(db.meta.recycleBinUUID);
+        if (recycleBin) {
+          // 测试移动到回收站
+          expect(db.deleteGroup(group2, true)).assertEqual(true);
+          expect(group2.parentGroup).assertEqual(recycleBin.uuid);
+          expect(recycleBin.groups).assertContain(group2);
+
+          // 测试清空回收站
+          expect(db.emptyRecycleBin()).assertEqual(true);
+          expect(recycleBin.groups.length).assertEqual(0);
+          expect(recycleBin.entries.length).assertEqual(0);
+          // 验证所有对象都被添加到已删除对象列表
+          expect(db.deletedObjects.find(obj => obj.uuid === group2.uuid)).not().assertUndefined();
+          expect(db.deletedObjects.find(obj => obj.uuid === entry3.uuid)).not().assertUndefined();
+        }
+      }
+    });
+
+    it('should handle delete operations edge cases', 0, () => {
+      // 测试删除根组（应该失败）
+      expect(db.deleteGroup(db.root, true)).assertEqual(false);
+      expect(db.root).not().assertUndefined();
+
+      // 测试删除不存在的组
+      const nonExistentGroup = new KdbxGroup('non-existent-uuid', 'Non-existent');
+      expect(db.deleteGroup(nonExistentGroup, true)).assertEqual(false);
+
+      // 测试删除包含子组和条目的组
+      const parentGroup = db.createGroup('Parent Group');
+      const childGroup1 = db.createGroup('Child Group 1', parentGroup);
+      const childGroup2 = db.createGroup('Child Group 2', parentGroup);
+      const entry1 = db.createEntry(parentGroup);
+      entry1.title = 'Parent Entry';
+      const entry2 = db.createEntry(childGroup1);
+      entry2.title = 'Child Entry 1';
+      const entry3 = db.createEntry(childGroup2);
+      entry3.title = 'Child Entry 2';
+
+      // 删除父组
+      expect(db.deleteGroup(parentGroup, false)).assertEqual(true);
+      // 验证所有子组和条目都被删除
+      expect(db.findGroup(parentGroup.uuid)).assertUndefined();
+      expect(db.findGroup(childGroup1.uuid)).assertUndefined();
+      expect(db.findGroup(childGroup2.uuid)).assertUndefined();
+      expect(db.findEntry(entry1.uuid)).assertUndefined();
+      expect(db.findEntry(entry2.uuid)).assertUndefined();
+      expect(db.findEntry(entry3.uuid)).assertUndefined();
+      // 验证所有对象都被添加到已删除对象列表
+      expect(db.deletedObjects.find(obj => obj.uuid === parentGroup.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === childGroup1.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === childGroup2.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === entry1.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === entry2.uuid)).not().assertUndefined();
+      expect(db.deletedObjects.find(obj => obj.uuid === entry3.uuid)).not().assertUndefined();
+
+      // 测试删除不存在的条目
+      const nonExistentEntry = new KdbxEntry('non-existent-uuid', db.root.uuid);
+      expect(db.deleteEntry(nonExistentEntry, true)).assertEqual(false);
+    });
   });
 }
 
