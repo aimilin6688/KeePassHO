@@ -18,6 +18,25 @@ import {
  */
 export class KdbxEntry {
   /**
+   * 标准字段名称常量
+   */
+  static readonly FIELD_TITLE: string = 'Title';
+  static readonly FIELD_USERNAME: string = 'UserName';
+  static readonly FIELD_PASSWORD: string = 'Password';
+  static readonly FIELD_URL: string = 'URL';
+  static readonly FIELD_NOTES: string = 'Notes';
+  
+  /**
+   * 标准字段名称数组
+   */
+  static readonly STANDARD_FIELDS: string[] = [
+    KdbxEntry.FIELD_TITLE,
+    KdbxEntry.FIELD_USERNAME,
+    KdbxEntry.FIELD_PASSWORD,
+    KdbxEntry.FIELD_URL,
+    KdbxEntry.FIELD_NOTES
+  ];
+  /**
    * 条目UUID
    */
   uuid: UUID;
@@ -97,11 +116,11 @@ export class KdbxEntry {
 
     // 初始化标准字段
     this.fields = [
-      { name: 'Title', value: '', protected: false },
-      { name: 'UserName', value: '', protected: false },
-      { name: 'Password', value: '', protected: true },
-      { name: 'URL', value: '', protected: false },
-      { name: 'Notes', value: '', protected: false }
+      { name: KdbxEntry.FIELD_TITLE, value: '', protected: false },
+      { name: KdbxEntry.FIELD_USERNAME, value: '', protected: false },
+      { name: KdbxEntry.FIELD_PASSWORD, value: '', protected: true },
+      { name: KdbxEntry.FIELD_URL, value: '', protected: false },
+      { name: KdbxEntry.FIELD_NOTES, value: '', protected: false }
     ];
   }
 
@@ -230,43 +249,43 @@ export class KdbxEntry {
   // 标准字段访问方法
 
   get title(): string {
-    return this.getField('Title') || '';
+    return this.getField(KdbxEntry.FIELD_TITLE) || '';
   }
 
   set title(value: string) {
-    this.setField('Title', value);
+    this.setField(KdbxEntry.FIELD_TITLE, value);
   }
 
   get username(): string {
-    return this.getField('UserName') || '';
+    return this.getField(KdbxEntry.FIELD_USERNAME) || '';
   }
 
   set username(value: string) {
-    this.setField('UserName', value);
+    this.setField(KdbxEntry.FIELD_USERNAME, value);
   }
 
   get password(): string {
-    return this.getField('Password') || '';
+    return this.getField(KdbxEntry.FIELD_PASSWORD) || '';
   }
 
   set password(value: string) {
-    this.setField('Password', value, true); // 密码默认受保护
+    this.setField(KdbxEntry.FIELD_PASSWORD, value, true); // 密码默认受保护
   }
 
   get url(): string {
-    return this.getField('URL') || '';
+    return this.getField(KdbxEntry.FIELD_URL) || '';
   }
 
   set url(value: string) {
-    this.setField('URL', value);
+    this.setField(KdbxEntry.FIELD_URL, value);
   }
 
   get notes(): string {
-    return this.getField('Notes') || '';
+    return this.getField(KdbxEntry.FIELD_NOTES) || '';
   }
 
   set notes(value: string) {
-    this.setField('Notes', value);
+    this.setField(KdbxEntry.FIELD_NOTES, value);
   }
 
   /**
@@ -512,6 +531,59 @@ export class KdbxEntry {
     });
   }
 
+
+  /**
+   * 设置自定义字段
+   * @param name 字段名
+   * @param value 字段值
+   * @param protect 是否保护字段值
+   * @throws Error 当尝试设置标准字段时抛出错误
+   */
+  setCustomField(name: string, value: string, protect: boolean = false): void {
+    // 检查是否是标准字段
+    if (KdbxEntry.STANDARD_FIELDS.includes(name)) {
+      throw new Error(`Cannot set standard field "${name}" as custom field`);
+    }
+
+    this.setField(name, value, protect);
+  }
+
+  /**
+   * 获取自定义字段
+   * @param name 字段名
+   * @returns 字段值
+   */
+  getCustomField(name: string): string | undefined {
+    // 检查是否是标准字段
+    if (KdbxEntry.STANDARD_FIELDS.includes(name)) {
+      throw new Error(`Cannot get standard field "${name}" as custom field`);
+    }
+
+    return this.getField(name);
+  }
+
+  /**
+   * 删除自定义字段
+   * @param name 字段名
+   * @throws Error 当尝试删除标准字段时抛出错误
+   */
+  deleteCustomField(name: string): void {
+    // 检查是否是标准字段
+    if (KdbxEntry.STANDARD_FIELDS.includes(name)) {
+      throw new Error(`Cannot delete standard field "${name}"`);
+    }
+
+    this.deleteField(name);
+  }
+
+  /**
+   * 获取所有自定义字段
+   * @returns 自定义字段列表
+   */
+  getCustomFields(): Field[] {
+    return this.fields.filter(f => !KdbxEntry.STANDARD_FIELDS.includes(f.name));
+  }
+
   /**
    * 导出条目数据
    * @param format 导出格式
@@ -526,9 +598,7 @@ export class KdbxEntry {
           url: this.url,
           notes: this.notes,
           tags: this.tags,
-          customFields: this.fields.filter(f =>
-          !['Title', 'UserName', 'Password', 'URL', 'Notes'].includes(f.name)
-          ),
+          customFields: this.fields.filter(f => !KdbxEntry.STANDARD_FIELDS.includes(f.name)),
           creationTime: this.creationTime,
           lastModifiedTime: this.lastModifiedTime
         }, null, 2);
