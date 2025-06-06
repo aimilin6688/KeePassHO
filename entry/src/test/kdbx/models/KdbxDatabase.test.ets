@@ -409,6 +409,62 @@ export default function KdbxDatabaseUnitTest() {
       expect(result2).assertEqual(false);
     });
 
+    it('should record all deleted objects when deleting a group with subgroups and entries', 0, () => {
+      // 禁用回收站
+      db.meta.recycleBinEnabled = false;
+
+      // 创建一个复杂的组结构
+      const mainGroup = db.createGroup('Main Group');
+      
+      // 创建两个子组
+      const subGroup1 = db.createGroup('Sub Group 1', mainGroup);
+      const subGroup2 = db.createGroup('Sub Group 2', mainGroup);
+      
+      // 在主组中创建一个条目
+      const mainEntry = db.createEntry(mainGroup);
+      mainEntry.title = 'Main Entry';
+      
+      // 在第一个子组中创建两个条目
+      const subEntry1 = db.createEntry(subGroup1);
+      subEntry1.title = 'Sub Entry 1';
+      const subEntry2 = db.createEntry(subGroup1);
+      subEntry2.title = 'Sub Entry 2';
+      
+      // 在第二个子组中创建一个条目
+      const subEntry3 = db.createEntry(subGroup2);
+      subEntry3.title = 'Sub Entry 3';
+
+      // 删除主组
+      const result = db.deleteGroup(mainGroup, false);
+      expect(result).assertEqual(true);
+
+      // 验证组被删除
+      expect(db.root.groups).not().assertContain(mainGroup);
+      expect(db.findGroup(mainGroup.uuid)).assertUndefined();
+
+      // 验证deletedObjects中的记录
+      // 应该包含：
+      // 1个主组 + 2个子组 + 4个条目 = 7条记录
+      expect(db.deletedObjects.length).assertEqual(7);
+
+      // 验证所有UUID都被记录
+      const deletedUuids = db.deletedObjects.map(obj => obj.uuid);
+      expect(deletedUuids).assertContain(mainGroup.uuid);
+      expect(deletedUuids).assertContain(subGroup1.uuid);
+      expect(deletedUuids).assertContain(subGroup2.uuid);
+      expect(deletedUuids).assertContain(mainEntry.uuid);
+      expect(deletedUuids).assertContain(subEntry1.uuid);
+      expect(deletedUuids).assertContain(subEntry2.uuid);
+      expect(deletedUuids).assertContain(subEntry3.uuid);
+
+      // 验证删除时间
+      for (const obj of db.deletedObjects) {
+        expect(obj.deletionTime).assertInstanceOf('Date');
+        // 所有对象应该在同一时间被删除
+        expect(obj.deletionTime.getTime()).assertEqual(db.deletedObjects[0].deletionTime.getTime());
+      }
+    });
+
     it('should handle database with custom version', 0, () => {
       const customDb = new KdbxDatabase(0x00030001); // KeePass 3.1
       expect(customDb.version).assertEqual(0x00030001);
