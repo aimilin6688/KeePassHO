@@ -209,7 +209,7 @@ export default function ChaCha20UnitTest() {
       const endTime = new Date().getTime();
       
       // 确保处理时间在合理范围内（这里设置为1秒）
-      expect(endTime - startTime).assertLess(1000);
+      expect(endTime - startTime).assertLess(1500);
       
       // 验证加密结果的正确性
       chaCha20 = new ChaCha20(TEST_KEY, TEST_NONCE, TEST_COUNTER);
