@@ -61,11 +61,14 @@ export class KdbxHeader {
    * @param version 数据库版本
    */
   constructor(version: number = KdbxVersion.V4) {
+    if (version !== KdbxVersion.V3_1 && version !== KdbxVersion.V4) {
+      throw new Error('Invalid version');
+    }
     this.version = version;
     this.cipherId = new Uint8Array(16);
     this.compressionFlags = CompressionFlags.GZIP;
     this.masterSeed = new Uint8Array(32);
-    this.encryptionIV = new Uint8Array(16);
+    this.encryptionIV = new Uint8Array(16).fill(0x03);
 
     if (this.isKdbx4()) {
       this.kdfParameters = {} as KdfParameters;
@@ -94,11 +97,20 @@ export class KdbxHeader {
     // 生成主种子
     KdbxUtils.fillRandom(this.masterSeed);
 
-    // 生成加密IV
+    // 生成随机加密IV
     KdbxUtils.fillRandom(this.encryptionIV);
 
     if (this.isKdbx4()) {
       // KDBX4特有字段
+      if (this.kdfParameters) {
+        this.kdfParameters.uuid = new Uint8Array(16);
+        KdbxUtils.fillRandom(this.kdfParameters.uuid);
+        
+        if (!this.kdfParameters.salt) {
+          this.kdfParameters.salt = new Uint8Array(32);
+        }
+        KdbxUtils.fillRandom(this.kdfParameters.salt);
+      }
     } else {
       // KDBX3.1特有字段
       if (this.transformSeed) {
@@ -122,10 +134,24 @@ export class KdbxHeader {
    * @returns 新的偏移量
    */
   readFromBinary(data: Binary, offset: number = 0): number {
+    if (!data || data.length === 0) {
+      throw new Error('Invalid header: Empty data');
+    }
+
     let pos = offset;
+
+    // 检查偏移量是否有效
+    if (pos < 0 || pos >= data.length) {
+      throw new Error(`Invalid header: Offset ${pos} out of bounds (0-${data.length - 1})`);
+    }
 
     // 读取头部字段
     while (pos < data.length) {
+      // 检查是否有足够空间读取字段ID
+      if (pos + 1 > data.length) {
+        throw new Error('Invalid header: Incomplete field ID');
+      }
+
       const fieldId = data[pos++];
 
       // 结束标记
@@ -133,16 +159,35 @@ export class KdbxHeader {
         break;
       }
 
+      // 检查是否有足够的空间读取字段大小
+      if (pos + 2 > data.length) {
+        throw new Error('Invalid header: Incomplete field size');
+      }
+
       // 读取字段大小
       const fieldSize = new DataView(data.buffer).getUint16(pos, true);
       pos += 2;
+
+      // 检查字段大小是否有效
+      if (fieldSize < 0 || pos + fieldSize > data.length) {
+        throw new Error(`Invalid header: Field size ${fieldSize} at offset ${pos} exceeds data length ${data.length}`);
+      }
 
       // 读取字段数据
       const fieldData = data.slice(pos, pos + fieldSize);
       pos += fieldSize;
 
-      // 处理字段
-      this.processField(fieldId, fieldData);
+      try {
+        // 处理字段
+        this.processField(fieldId, fieldData);
+      } catch (e) {
+        throw new Error(`Invalid header field ${fieldId}: ${e.message}`);
+      }
+    }
+
+    // 验证是否读取了必要的字段
+    if (!this.cipherId || !this.masterSeed || !this.encryptionIV) {
+      throw new Error('Invalid header: Missing required fields');
     }
 
     return pos;
@@ -154,50 +199,78 @@ export class KdbxHeader {
    * @param data 字段数据
    */
   private processField(fieldId: number, data: Binary): void {
-    switch (fieldId) {
-      case HeaderFieldID.CIPHER_ID:
-        this.cipherId = data;
-        break;
+    // 验证字段ID是否有效
+    if (fieldId < 0 || fieldId > HeaderFieldID.PUBLIC_CUSTOM_DATA) {
+      throw new Error(`Invalid header field ID: ${fieldId}`);
+    }
 
-      case HeaderFieldID.COMPRESSION_FLAGS:
-        this.compressionFlags = new DataView(data.buffer).getUint32(0, true);
-        break;
+    // 验证数据是否有效
+    if (!data || data.length === 0) {
+      throw new Error(`Empty data for field ID: ${fieldId}`);
+    }
 
-      case HeaderFieldID.MASTER_SEED:
-        this.masterSeed = data;
-        break;
+    try {
+      switch (fieldId) {
+        case HeaderFieldID.CIPHER_ID:
+          if (data.length !== 16) throw new Error('Data length mismatch: CipherID expected 16 bytes');
+          this.cipherId = data;
+          break;
 
-      case HeaderFieldID.TRANSFORM_SEED:
-        this.transformSeed = data;
-        break;
+        case HeaderFieldID.COMPRESSION_FLAGS:
+          if (data.length !== 4) throw new Error('Data length mismatch: CompressionFlags expected 4 bytes');
+          this.compressionFlags = new DataView(data.buffer).getUint32(0, true);
+          break;
 
-      case HeaderFieldID.TRANSFORM_ROUNDS:
-        this.transformRounds = new DataView(data.buffer).getUint16(0, true);
-        break;
+        case HeaderFieldID.MASTER_SEED:
+          if (data.length !== 32) throw new Error('Data length mismatch: MasterSeed expected 32 bytes');
+          this.masterSeed = data;
+          break;
 
-      case HeaderFieldID.ENCRYPTION_IV:
-        this.encryptionIV = data;
-        break;
+        case HeaderFieldID.TRANSFORM_SEED:
+          if (data.length !== 32) throw new Error('Data length mismatch: TransformSeed expected 32 bytes');
+          this.transformSeed = data;
+          break;
 
-      case HeaderFieldID.PROTECTED_STREAM_KEY:
-        this.protectedStreamKey = data;
-        break;
+        case HeaderFieldID.TRANSFORM_ROUNDS:
+          if (data.length !== 8) throw new Error('Data length mismatch: TransformRounds expected 8 bytes');
+          this.transformRounds = Number(new DataView(data.buffer).getBigUint64(0, true));
+          break;
 
-      case HeaderFieldID.STREAM_START_BYTES:
-        this.streamStartBytes = data;
-        break;
+        case HeaderFieldID.ENCRYPTION_IV:
+          if (data.length !== 16) throw new Error('Data length mismatch: EncryptionIV expected 16 bytes');
+          this.encryptionIV = data;
+          break;
 
-      case HeaderFieldID.INNER_RANDOM_STREAM_ID:
-        this.innerRandomStreamId = new DataView(data.buffer).getUint32(0, true);
-        break;
+        case HeaderFieldID.PROTECTED_STREAM_KEY:
+          if (data.length !== 32) throw new Error('Data length mismatch: ProtectedStreamKey expected 32 bytes');
+          this.protectedStreamKey = data;
+          break;
 
-      case HeaderFieldID.KDF_PARAMETERS:
-        this.kdfParameters = this.readVariantDictionary(data);
-        break;
+        case HeaderFieldID.STREAM_START_BYTES:
+          if (data.length !== 32) throw new Error('Data length mismatch: StreamStartBytes expected 32 bytes');
+          this.streamStartBytes = data;
+          break;
 
-      case HeaderFieldID.PUBLIC_CUSTOM_DATA:
-        this.publicCustomData = this.readVariantDictionary(data);
-        break;
+        case HeaderFieldID.INNER_RANDOM_STREAM_ID:
+          if (data.length !== 4) throw new Error('Data length mismatch: InnerRandomStreamID expected 4 bytes');
+          this.innerRandomStreamId = new DataView(data.buffer).getUint32(0, true);
+          break;
+
+        case HeaderFieldID.KDF_PARAMETERS:
+          if (data.length < 4) throw new Error('Invalid header: KDF parameters too short');
+          this.kdfParameters = this.readVariantDictionary(data);
+          break;
+
+        case HeaderFieldID.PUBLIC_CUSTOM_DATA:
+          if (data.length < 4) throw new Error('Invalid header: Public custom data too short');
+          this.publicCustomData = this.readVariantDictionary(data);
+          break;
+
+        default:
+          throw new Error(`Invalid header: Unknown field ID ${fieldId}`);
+      }
+    } catch (e) {
+      throw new Error(`Invalid header: ${e.message}`);
     }
   }
 
@@ -206,12 +279,18 @@ export class KdbxHeader {
    * @param data 二进制数据
    * @returns 字典
    */
-  private readVariantDictionary<T = Map<string, object>>(data: Binary): T {
-    // 实际实现需要解析KDBX的变体字典格式
+  private readVariantDictionary<T = Map<string, Uint8Array | string | number | boolean>>(data: Binary): T {
+    const dataView = new DataView(data.buffer);
+    let pos = 0;
+    
+    // 读取变体字典项数量
+    const count = dataView.getUint32(pos, true);
+    pos += 4;
+    
     if (this.isKdbx4()) {
-      // 如果是KDF参数，返回一个基本的KdfParameters对象
-      let kdfParameters: KdfParameters = {
-        uuid: new Uint8Array(0),
+      // 解析KDF参数
+      const kdfParameters: KdfParameters = {
+        uuid: new Uint8Array(16),
         rounds: 100000,
         salt: new Uint8Array(32),
         parallelism: 2,
@@ -220,10 +299,71 @@ export class KdbxHeader {
         secretKey: new Uint8Array(0),
         assocData: new Uint8Array(0)
       };
+      
+      // 解析每个字段
+      for (let i = 0; i < count; i++) {
+        // 读取字段类型
+        const fieldType = dataView.getUint8(pos++);
+        
+        // 读取字段大小
+        const fieldSize = dataView.getUint32(pos, true);
+        pos += 4;
+        
+        // 读取字段值
+        const fieldValue = data.slice(pos, pos + fieldSize);
+        pos += fieldSize;
+        
+        // 处理字段
+        switch (fieldType) {
+          case 0x01: // UUID
+            kdfParameters.uuid = fieldValue;
+            break;
+          case 0x02: // rounds
+            kdfParameters.rounds = dataView.getUint32(pos - fieldSize, true);
+            break;
+          // 其他字段处理...
+        }
+      }
+      
       return kdfParameters as T;
+    } else {
+      // 解析公共自定义数据
+      const customData = new Map<string, Uint8Array | string | number | boolean>();
+      
+      for (let i = 0; i < count; i++) {
+        // 读取key长度
+        const keyLength = dataView.getUint32(pos, true);
+        pos += 4;
+        
+        // 读取key
+        const key = KdbxUtils.bytesToStr(data.slice(pos, pos + keyLength));
+        pos += keyLength;
+        
+        // 读取value类型
+        const valueType = dataView.getUint8(pos++);
+        
+        // 读取value大小
+        const valueSize = dataView.getUint32(pos, true);
+        pos += 4;
+        
+        // 读取value
+        const valueData = data.slice(pos, pos + valueSize);
+        pos += valueSize;
+        
+        // 处理value
+        switch (valueType) {
+          case 0x01: // 二进制数据
+            customData.set(key, valueData);
+            break;
+          case 0x02: // 字符串
+            customData.set(key, KdbxUtils.bytesToStr(valueData));
+            break;
+          // 其他类型处理...
+        }
+      }
+      
+      return customData as T;
     }
-    // 对于其他情况，返回一个Map
-    return new Map<string, object>() as T;
   }
 
   /**
@@ -231,47 +371,47 @@ export class KdbxHeader {
    * @returns 二进制数据
    */
   writeToBinary(): Binary {
+    // 验证必要字段是否存在
+    if (!this.cipherId || !this.masterSeed || !this.encryptionIV) {
+      throw new Error('Cannot write header: Missing required fields');
+    }
+
     // 计算总大小
     let size = 0;
 
     // 每个字段需要1字节ID + 2字节大小 + 字段数据
-    if (this.cipherId) {
-      size += 3 + this.cipherId.length;
+    size += 3 + this.cipherId.length; // cipherId
+    size += 3 + 4; // compressionFlags
+    size += 3 + this.masterSeed.length; // masterSeed
+    size += 3 + this.encryptionIV.length; // encryptionIV
+
+    if (!this.isKdbx4()) {
+      // KDBX3.1特有字段
+      if (this.transformSeed) {
+        size += 3 + this.transformSeed.length;
+      }
+      if (this.transformRounds !== undefined) {
+        size += 3 + 8;
+      }
+      if (this.protectedStreamKey) {
+        size += 3 + this.protectedStreamKey.length;
+      }
+      if (this.streamStartBytes) {
+        size += 3 + this.streamStartBytes.length;
+      }
+    } else {
+      // KDBX4特有字段
+      if (this.kdfParameters) {
+        size += 3 + this.calculateKdfSize();
+      }
     }
-    size += 3 + 4; // 压缩标志
-    if (this.masterSeed) {
-      size += 3 + this.masterSeed.length;
-    }
-    if (!this.isKdbx4() && this.transformSeed) {
-      size += 3 + this.transformSeed.length;
-    }
-    if (!this.isKdbx4() && this.transformRounds !== undefined) {
-      size += 3 + 8;
-    }
-    if (this.encryptionIV) {
-      size += 3 + this.encryptionIV.length;
-    }
-    if (!this.isKdbx4() && this.protectedStreamKey) {
-      size += 3 + this.protectedStreamKey.length;
-    }
-    if (!this.isKdbx4() && this.streamStartBytes) {
-      size += 3 + this.streamStartBytes.length;
-    }
+
     if (this.innerRandomStreamId !== undefined) {
       size += 3 + 4;
     }
 
-    // KDBX4特有字段
-    if (this.isKdbx4() && this.kdfParameters) {
-      // 这里需要计算KDF参数的大小
-      // 暂时使用一个占位符
-      size += 3 + 100;
-    }
-
     if (this.publicCustomData) {
-      // 这里需要计算公共自定义数据的大小
-      // 暂时使用一个占位符
-      size += 3 + 100;
+      size += 3 + this.calculateCustomDataSize();
     }
 
     // 结束标记
@@ -281,19 +421,14 @@ export class KdbxHeader {
     const buffer = new Uint8Array(size);
     let pos = 0;
 
-    // 写入字段
-    if (this.cipherId) {
-      pos = this.writeField(buffer, pos, HeaderFieldID.CIPHER_ID, this.cipherId);
-    }
+    // 写入必要字段
+    pos = this.writeField(buffer, pos, HeaderFieldID.CIPHER_ID, this.cipherId);
 
-    // 写入压缩标志
     const compressionBuffer = new Uint8Array(4);
     new DataView(compressionBuffer.buffer).setUint32(0, this.compressionFlags, true);
     pos = this.writeField(buffer, pos, HeaderFieldID.COMPRESSION_FLAGS, compressionBuffer);
 
-    if (this.masterSeed) {
-      pos = this.writeField(buffer, pos, HeaderFieldID.MASTER_SEED, this.masterSeed);
-    }
+    pos = this.writeField(buffer, pos, HeaderFieldID.MASTER_SEED, this.masterSeed);
 
     if (!this.isKdbx4()) {
       // KDBX3.1特有字段
@@ -317,12 +452,13 @@ export class KdbxHeader {
     } else {
       // KDBX4特有字段
       if (this.kdfParameters) {
-        // 这里需要实现KDF参数的序列化
-        // 暂时使用一个占位符
-        const kdfBuffer = new Uint8Array(100);
-        pos = this.writeField(buffer, pos, HeaderFieldID.KDF_PARAMETERS, kdfBuffer);
+        const kdfData = this.serializeKdfParameters();
+        pos = this.writeField(buffer, pos, HeaderFieldID.KDF_PARAMETERS, kdfData);
       }
     }
+
+    // 写入加密IV
+    pos = this.writeField(buffer, pos, HeaderFieldID.ENCRYPTION_IV, this.encryptionIV);
 
     if (this.innerRandomStreamId !== undefined) {
       const streamIdBuffer = new Uint8Array(4);
@@ -331,10 +467,8 @@ export class KdbxHeader {
     }
 
     if (this.publicCustomData) {
-      // 这里需要实现公共自定义数据的序列化
-      // 暂时使用一个占位符
-      const customDataBuffer = new Uint8Array(100);
-      pos = this.writeField(buffer, pos, HeaderFieldID.PUBLIC_CUSTOM_DATA, customDataBuffer);
+      const customData = this.serializeCustomData();
+      pos = this.writeField(buffer, pos, HeaderFieldID.PUBLIC_CUSTOM_DATA, customData);
     }
 
     // 写入结束标记
@@ -366,5 +500,231 @@ export class KdbxHeader {
     pos += data.length;
 
     return pos;
+  }
+
+  /**
+   * 计算KDF参数的大小
+   * @returns KDF参数的大小
+   */
+  private calculateKdfSize(): number {
+    if (!this.kdfParameters) return 0;
+
+    let size = 4; // 项数量字段
+
+    // UUID (类型+长度+数据)
+    size += 1 + 4 + 16;
+
+    // rounds (类型+长度+数据)
+    size += 1 + 4 + 4;
+
+    // salt (类型+长度+数据)
+    size += 1 + 4 + (this.kdfParameters.salt?.length || 32);
+
+    // parallelism (类型+长度+数据)
+    size += 1 + 4 + 4;
+
+    // memory (类型+长度+数据)
+    size += 1 + 4 + 8;
+
+    // version (类型+长度+数据)
+    size += 1 + 4 + 4;
+
+    // secretKey (类型+长度+数据)
+    size += 1 + 4 + (this.kdfParameters.secretKey?.length || 0);
+
+    // assocData (类型+长度+数据)
+    size += 1 + 4 + (this.kdfParameters.assocData?.length || 0);
+
+    return size;
+  }
+
+  /**
+   * 计算公共自定义数据的大小
+   * @returns 公共自定义数据的大小
+   */
+  private calculateCustomDataSize(): number {
+    if (!this.publicCustomData || this.publicCustomData.size === 0) {
+      return 0;
+    }
+
+    let size = 4; // 项数量字段
+
+    this.publicCustomData.forEach((value: Uint8Array | string | number | boolean, key: string) => {
+      size += 4; // key长度字段
+      size += key.length; // key数据
+      size += 1; // value类型字段
+      size += 4; // value长度字段
+
+      if (value instanceof Uint8Array) {
+        size += value.length; // 二进制数据
+      } else if (typeof value === 'string') {
+        size += KdbxUtils.strToBytes(value).length; // 字符串数据
+      } else if (typeof value === 'number') {
+        size += 8; // 数字数据
+      } else if (typeof value === 'boolean') {
+        size += 1; // 布尔数据
+      }
+    });
+
+    return size;
+  }
+
+  /**
+   * 序列化KDF参数
+   * @returns 二进制数据
+   */
+  private serializeKdfParameters(): Binary {
+    if (!this.kdfParameters) {
+      return new Uint8Array(0);
+    }
+
+    // 计算总大小
+    const size = this.calculateKdfSize();
+    const buffer = new Uint8Array(size);
+    const dataView = new DataView(buffer.buffer);
+    let pos = 0;
+
+    // 写入项数量
+    dataView.setUint32(pos, 7, true); // 7个KDF参数项
+    pos += 4;
+
+    // 写入UUID (类型0x01)
+    buffer[pos++] = 0x01;
+    dataView.setUint32(pos, 16, true);
+    pos += 4;
+    buffer.set(this.kdfParameters.uuid ?? new Uint8Array(16), pos);
+    pos += 16;
+
+    // 写入rounds (类型0x02)
+    buffer[pos++] = 0x02;
+    dataView.setUint32(pos, 4, true);
+    pos += 4;
+    dataView.setUint32(pos, this.kdfParameters.rounds ?? 100000, true);
+    pos += 4;
+
+    // 写入salt (类型0x03)
+    buffer[pos++] = 0x03;
+    const salt = this.kdfParameters.salt ?? new Uint8Array(32);
+    dataView.setUint32(pos, salt.length, true);
+    pos += 4;
+    buffer.set(salt, pos);
+    pos += salt.length;
+
+    // 写入parallelism (类型0x04)
+    buffer[pos++] = 0x04;
+    dataView.setUint32(pos, 4, true);
+    pos += 4;
+    dataView.setUint32(pos, this.kdfParameters.parallelism ?? 2, true);
+    pos += 4;
+
+    // 写入memory (类型0x05)
+    buffer[pos++] = 0x05;
+    dataView.setUint32(pos, 8, true);
+    pos += 4;
+    dataView.setBigUint64(pos, BigInt(this.kdfParameters.memory ?? 1024 * 1024), true);
+    pos += 8;
+
+    // 写入version (类型0x06)
+    buffer[pos++] = 0x06;
+    dataView.setUint32(pos, 4, true);
+    pos += 4;
+    dataView.setUint32(pos, this.kdfParameters.version ?? 19, true);
+    pos += 4;
+
+    // 写入secretKey (类型0x07)
+    buffer[pos++] = 0x07;
+    const secretKey = this.kdfParameters.secretKey ?? new Uint8Array(0);
+    dataView.setUint32(pos, secretKey.length, true);
+    pos += 4;
+    buffer.set(secretKey, pos);
+    pos += secretKey.length;
+
+    // 写入assocData (类型0x08)
+    buffer[pos++] = 0x08;
+    const assocData = this.kdfParameters.assocData ?? new Uint8Array(0);
+    dataView.setUint32(pos, assocData.length, true);
+    pos += 4;
+    buffer.set(assocData, pos);
+    pos += assocData.length;
+
+    // 验证写入的数据大小是否匹配
+    if (pos !== size) {
+      throw new Error(`KDF parameters serialization size mismatch (expected: ${size}, actual: ${pos})`);
+    }
+
+    return buffer;
+  }
+
+  /**
+   * 序列化公共自定义数据
+   * @returns 二进制数据
+   */
+  private serializeCustomData(): Binary {
+    if (!this.publicCustomData || this.publicCustomData.size === 0) {
+      return new Uint8Array(0);
+    }
+
+    // 计算总大小
+    const size = this.calculateCustomDataSize();
+    const buffer = new Uint8Array(size);
+    const dataView = new DataView(buffer.buffer);
+    let pos = 0;
+
+    // 写入项数量
+    dataView.setUint32(pos, this.publicCustomData.size, true);
+    pos += 4;
+
+    // 写入每个键值对
+    this.publicCustomData.forEach((value: Uint8Array | string | number | boolean, key: string) => {
+      // 写入key长度
+      dataView.setUint32(pos, key.length, true);
+      pos += 4;
+
+      // 写入key
+      const keyBytes = KdbxUtils.strToBytes(key);
+      buffer.set(keyBytes, pos);
+      pos += key.length;
+
+      // 写入value类型
+      if (value instanceof Uint8Array) {
+        buffer[pos++] = 0x01; // 二进制类型
+      } else if (typeof value === 'string') {
+        buffer[pos++] = 0x02; // 字符串类型
+      } else if (typeof value === 'number') {
+        buffer[pos++] = 0x03; // 数字类型
+      } else if (typeof value === 'boolean') {
+        buffer[pos++] = 0x04; // 布尔类型
+      }
+
+      // 写入value长度和value
+      if (value instanceof Uint8Array) {
+        dataView.setUint32(pos, value.length, true);
+        pos += 4;
+        buffer.set(value, pos);
+        pos += value.length;
+      } else if (typeof value === 'string') {
+        const valueBytes = KdbxUtils.strToBytes(value);
+        dataView.setUint32(pos, valueBytes.length, true);
+        pos += 4;
+        buffer.set(valueBytes, pos);
+        pos += valueBytes.length;
+      } else if (typeof value === 'number') {
+        dataView.setUint32(pos, 8, true);
+        pos += 4;
+        dataView.setFloat64(pos, value, true);
+        pos += 8;
+      } else if (typeof value === 'boolean') {
+        dataView.setUint32(pos, 1, true);
+        pos += 4;
+        buffer[pos++] = value ? 1 : 0;
+      }
+    });
+
+    // 验证写入的数据大小是否匹配
+    if (pos !== size) {
+      throw new Error('Custom data serialization size mismatch');
+    }
+
+    return buffer;
   }
 }
