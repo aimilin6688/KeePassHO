@@ -14,8 +14,8 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxGroup } from '../../../main/ets/kdbx/models/KdbxGroup';
-import { KdbxEntry } from '../../../main/ets/kdbx/models/KdbxEntry';
+import { KdbxGroup } from '../../../../../main/ets/kdbx/models/KdbxGroup';
+import { KdbxEntry } from '../../../../../main/ets/kdbx/models/KdbxEntry';
 export default function KdbxGroupUnitTest() {
   describe('KdbxGroup', () => {
     const ROOT_UUID = 'root-uuid';

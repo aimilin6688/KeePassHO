@@ -14,10 +14,10 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxDatabase } from '../../../main/ets/kdbx/models/KdbxDatabase';
-import { KdbxGroup } from '../../../main/ets/kdbx/models/KdbxGroup';
-import { KdbxEntry } from '../../../main/ets/kdbx/models/KdbxEntry';
-import { InnerRandomStreamID } from '../../../main/ets/kdbx/KdbxFormat';
+import { KdbxDatabase } from '../../../../../main/ets/kdbx/models/KdbxDatabase';
+import { KdbxGroup } from '../../../../../main/ets/kdbx/models/KdbxGroup';
+import { KdbxEntry } from '../../../../../main/ets/kdbx/models/KdbxEntry';
+import { InnerRandomStreamID } from '../../../../../main/ets/kdbx/KdbxFormat';
 
 export default function KdbxDatabaseUnitTest() {
   describe('KdbxDatabase', () => {

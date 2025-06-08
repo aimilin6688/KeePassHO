@@ -14,10 +14,10 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxCrypto } from '../../main/ets/kdbx/KdbxCrypto';
+import { KdbxCrypto } from '../../../../main/ets/kdbx/KdbxCrypto';
 import util from '@ohos.util';
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
-import { KdfParameters } from '../../main/ets/kdbx/models/KdbxTypes';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
+import { KdfParameters } from '../../../../main/ets/kdbx/models/KdbxTypes';
 
 export default function KdbxCryptoUnitTest() {
   describe('KdbxCrypto', () => {

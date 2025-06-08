@@ -14,7 +14,7 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxError, KdbxErrorCode } from '../../main/ets/kdbx/KdbxError';
+import { KdbxError, KdbxErrorCode } from '../../../../main/ets/kdbx/KdbxError';
 
 interface KdbxErrorData {
   code: KdbxErrorCode;
