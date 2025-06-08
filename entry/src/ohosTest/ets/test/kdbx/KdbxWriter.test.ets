@@ -14,9 +14,9 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxReader } from '../../main/ets/kdbx/KdbxReader';
-import { KdbxWriter } from '../../main/ets/kdbx/KdbxWriter';
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { KdbxReader } from '../../../../main/ets/kdbx/KdbxReader';
+import { KdbxWriter } from '../../../../main/ets/kdbx/KdbxWriter';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxWriterUnitTest() {
   describe('KdbxWriter', () => {
     let writer: KdbxWriter;

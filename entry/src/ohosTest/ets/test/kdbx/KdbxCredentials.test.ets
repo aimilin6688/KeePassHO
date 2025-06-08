@@ -16,7 +16,7 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
 import { KdbxCredentials, KeyFileFormat } from '../../../main/ets/kdbx/KdbxCredentials';
 import util from '@ohos.util';
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxCredentialsUnitTest() {
   describe('KdbxCredentials', () => {
     let credentials: KdbxCredentials;

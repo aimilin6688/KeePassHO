@@ -14,10 +14,10 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { InnerRandomStreamID, KdbxDatabase, KdbxHeader } from '../../main/ets/kdbx/Index';
-import { KdbxCredentials } from '../../main/ets/kdbx/KdbxCredentials';
-import { KdbxFile } from '../../main/ets/kdbx/KdbxFile';
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { InnerRandomStreamID, KdbxDatabase, KdbxHeader } from '../../../../main/ets/kdbx/Index';
+import { KdbxCredentials } from '../../../../main/ets/kdbx/KdbxCredentials';
+import { KdbxFile } from '../../../../main/ets/kdbx/KdbxFile';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxFileUnitTest() {
   describe('KdbxFile', () => {
     let credentials: KdbxCredentials;

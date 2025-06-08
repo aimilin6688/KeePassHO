@@ -14,7 +14,7 @@
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
-import { ARC4 } from '../../../main/ets/kdbx/crypto/ARC4';
+import { ARC4 } from '../../../../../main/ets/kdbx/crypto/ARC4';
 import { util,buffer } from '@kit.ArkTS';
 
 

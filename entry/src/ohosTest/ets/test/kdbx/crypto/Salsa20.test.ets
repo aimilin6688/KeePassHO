@@ -14,8 +14,8 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { Salsa20 } from '../../../main/ets/kdbx/crypto/Salsa20';
-import { KdbxUtils } from '../../../main/ets/kdbx/utils/KdbxUtils';
+import { Salsa20 } from '../../../../../main/ets/kdbx/crypto/Salsa20';
+import { KdbxUtils } from '../../../../../main/ets/kdbx/utils/KdbxUtils';
 
 const hexToBytes = (hex: string): Uint8Array => {
   const bytes = new Uint8Array(hex.length / 2);

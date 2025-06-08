@@ -14,7 +14,7 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxEntry } from '../../../main/ets/kdbx/models/KdbxEntry';
+import { KdbxEntry } from '../../../../../main/ets/kdbx/models/KdbxEntry';
 
 export default function KdbxEntryUnitTest() {
   describe('KdbxEntry', () => {

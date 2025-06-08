@@ -1,9 +1,9 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from '../../main/ets/kdbx/KdbxFormat';
-import { KdbxHeader } from '../../main/ets/kdbx/KdbxHeader';
-import { Binary } from '../../main/ets/kdbx/models/KdbxTypes';
+import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from '../../../../main/ets/kdbx/KdbxFormat';
+import { KdbxHeader } from '../../../../main/ets/kdbx/KdbxHeader';
+import { Binary } from '../../../../main/ets/kdbx/models/KdbxTypes';
 
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
 
 
 // 创建测试用的二进制数据

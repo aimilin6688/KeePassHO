@@ -14,9 +14,9 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { Binary } from '../../main/ets/kdbx/Index';
-import { KdbxReader } from '../../main/ets/kdbx/KdbxReader';
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { Binary } from '../../../../main/ets/kdbx/Index';
+import { KdbxReader } from '../../../../main/ets/kdbx/KdbxReader';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxReaderUnitTest() {
   describe('KdbxReader', () => {
     // 辅助函数：创建测试用的KDBX文件数据

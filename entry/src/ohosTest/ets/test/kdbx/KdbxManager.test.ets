@@ -14,9 +14,9 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { KdbxManager } from '../../main/ets/kdbx/KdbxManager';
-import { KeePassDatabase } from '../../main/ets/kdbx/models/KeePassDatabase';
-import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { KdbxManager } from '../../../../main/ets/kdbx/KdbxManager';
+import { KeePassDatabase } from '../../../../main/ets/kdbx/models/KeePassDatabase';
+import { KdbxUtils } from '../../../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxManagerUnitTest() {
   describe('KdbxManager', () => {
     // 测试数据

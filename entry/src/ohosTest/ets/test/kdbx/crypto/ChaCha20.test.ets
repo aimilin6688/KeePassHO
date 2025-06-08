@@ -14,8 +14,8 @@
  */
 
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { ChaCha20 } from '../../../main/ets/kdbx/crypto/ChaCha20';
-import { KdbxUtils } from '../../../main/ets/kdbx/utils/KdbxUtils';
+import { ChaCha20 } from '../../../../../main/ets/kdbx/crypto/ChaCha20';
+import { KdbxUtils } from '../../../../../main/ets/kdbx/utils/KdbxUtils';
 
 const hexToBytes = (hex: string): Uint8Array => {
   const bytes = new Uint8Array(hex.length / 2);

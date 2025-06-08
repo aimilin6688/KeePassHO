@@ -18,7 +18,7 @@ import { KdbxXmlProcessor } from '../../../../main/ets/kdbx/xml/KdbxXmlProcessor
 import { InnerRandomStreamID } from '../../../../main/ets/kdbx/KdbxFormat';
 import { KdbxCrypto } from '../../../../main/ets/kdbx/KdbxCrypto';
 import util from '@ohos.util';
-import { KdbxUtils } from '../../../main/ets/kdbx/utils/KdbxUtils';
+import { KdbxUtils } from '../../../../../main/ets/kdbx/utils/KdbxUtils';
 export default function KdbxXmlProcessorUnitTest() {
   describe('KdbxXmlProcessor', () => {
     // 测试数据
