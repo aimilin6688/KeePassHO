@@ -27,7 +27,7 @@ export class KdbxCrypto {
     try {
       // 1. 计算密码哈希
       const passwordData = new util.TextEncoder().encode(password);
-      const passwordHash = await this.sha256(passwordData);
+      const passwordHash = await KdbxCrypto.sha256(passwordData);
 
       // 2. 计算密钥文件哈希（如果有）
       let compositeKey: Binary;
@@ -37,7 +37,7 @@ export class KdbxCrypto {
         const combined = new Uint8Array(64);
         combined.set(passwordHash, 0);
         combined.set(keyFileHash, 32);
-        compositeKey = await this.sha256(combined);
+        compositeKey = await KdbxCrypto.sha256(combined);
       } else {
         compositeKey = passwordHash;
       }
@@ -51,7 +51,7 @@ export class KdbxCrypto {
       finalKey.set(transformedKey, masterSeed.length);
 
       // 5. 计算最终的主密钥
-      return await this.sha256(finalKey);
+      return await KdbxCrypto.sha256(finalKey);
     } catch (error) {
       console.error('Failed to compute master key:', error);
       throw error;

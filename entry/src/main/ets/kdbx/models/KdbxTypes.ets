@@ -560,7 +560,7 @@ export interface KdfParameters {
    * - 9e298b19-56db-4773-b23d-fc3ec6f0a1e6: Argon2id
    * - 7c02bb82-79a7-4ac0-927d-114a00648238: AES-KDF
    */
-  uuid: Uint8Array;
+  uuid?: Uint8Array;
 
   /**
    * 盐值
