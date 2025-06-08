@@ -548,3 +548,62 @@ export interface DatabaseStatistics {
    */
   expiredEntryCount: number;
 }
+
+
+/**
+ * KDF（密钥派生函数）参数接口
+ */
+export interface KdfParameters {
+  /**
+   * KDF类型的UUID
+   * - ef636ddf-8c29-444b-91f7-a9a403e30a0c: Argon2d
+   * - 9e298b19-56db-4773-b23d-fc3ec6f0a1e6: Argon2id
+   * - 7c02bb82-79a7-4ac0-927d-114a00648238: AES-KDF
+   */
+  uuid: Uint8Array;
+
+  /**
+   * 盐值
+   */
+  salt?: Uint8Array;
+
+  /**
+   * 迭代次数（用于PBKDF2和AES-KDF）
+   */
+  rounds?: number;
+
+  /**
+   * Argon2参数：迭代次数
+   */
+  iterations?: number;
+
+  /**
+   * Argon2参数：内存大小（字节）
+   */
+  memory?: number;
+
+  /**
+   * AES-KDF参数：种子
+   */
+  seed?: Uint8Array;
+
+  /**
+   * 并行度
+   */
+  parallelism?: number;
+
+  /**
+   * KDF版本
+   */
+  version?: number;
+
+  /**
+   * 密钥
+   */
+  secretKey?: Uint8Array;
+
+  /**
+   * 关联数据
+   */
+  assocData?: Uint8Array;
+}
