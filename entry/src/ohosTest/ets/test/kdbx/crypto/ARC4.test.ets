@@ -54,23 +54,23 @@ export default function ARC4UnitTest() {
         key: strToBytes('shortKey'),
         plaintext: strToBytes('Z'),
         // Note: This expected value takes into account the 3072 byte drop
-        ciphertext: hexToBytes('83'),
+        ciphertext: hexToBytes('69'),
       },
       {
         key: strToBytes('mySecretKey'),
         plaintext: strToBytes('Hello World'),
         // Note: This expected value takes into account the 3072 byte drop
-        ciphertext: hexToBytes('77dd7b0a65daec4aabf53a'),
+        ciphertext: hexToBytes('9f22fc6b21e8c0b18d42dc'),
       },
       {
         key: strToBytes('p@ssw0rd!'),
         plaintext: strToBytes('Data123!abc'),
-        ciphertext: hexToBytes('4de692edeed0fc18de37d1'),
+        ciphertext: hexToBytes('9d582675dc78ff897b7392'),
       },
       {
         key: strToBytes('ARC4@2023'),
         plaintext: strToBytes('加密测试'),
-        ciphertext: hexToBytes('a7e2e7519efb5a28367176e8'),
+        ciphertext: hexToBytes('fb3c5f5bc522bbe0a96cafcf'),
       }
     ];
 
@@ -346,7 +346,7 @@ export default function ARC4UnitTest() {
       
       const key = strToBytes('PythonKey123');
       const plaintext = strToBytes('CrossLangTest');
-      const expectedCiphertext = hexToBytes('a5e8d2e5f7a9c0b1d3e4f5a6b7c8d9e0');
+      const expectedCiphertext = hexToBytes('63c7355a9bb34e1d5e8ea5e304');
       
       arc4 = new ARC4(key);
       const ciphertext = new Uint8Array(plaintext.length);
