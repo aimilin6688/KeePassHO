@@ -23,7 +23,7 @@ export class KdbxXmlProcessor {
     compressed: boolean,
     protectedStreamKey: Binary,
     streamId: InnerRandomStreamID
-  ): Promise<any> {
+  ): Promise<ESObject> {
     try {
       // 1. 解压数据（如果需要）
       let xmlData = compressed ? await this.decompress(data) : data;
