@@ -1,6 +1,6 @@
-export { KdbxDatabase } from './KdbxDatabase';
-export { KdbxEntry } from './KdbxEntry';
-export { KdbxGroup } from './KdbxGroup';
+export { KdbxDatabase } from './models/KdbxDatabase';
+export { KdbxEntry } from './models/KdbxEntry';
+export { KdbxGroup } from './models/KdbxGroup';
 export { KdbxFile } from './KdbxFile';
 export { KdbxCredentials } from './KdbxCredentials';
 export { KdbxError, KdbxErrorCode } from './KdbxError';

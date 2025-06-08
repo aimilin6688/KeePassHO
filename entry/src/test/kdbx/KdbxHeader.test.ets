@@ -18,6 +18,7 @@ import { Binary, CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersi
 import { KdbxHeader } from '../../main/ets/kdbx/KdbxHeader';
 
 import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
+import { KdfParameters } from '../../main/ets/kdbx/models/KdbxTypes';
 
 
 // 创建测试用的二进制数据
@@ -74,7 +75,7 @@ function createTestHeaderData(version: number = KdbxVersion.V4): Binary {
       0x0A, // 名称长度
       ...Array.from('iterations').map(c => c.charCodeAt(0)), // 名称
       0x04, // 值长度
-      0xA0, 0x86, 0x01, 0x00 // 值 (100000)
+      0xA0, 0x86, 0x01, 0x00// 值 (100000)
     ];
     chunks.push([kdfData.length, 0]); // 长度
     chunks.push(kdfData); // 数据
@@ -122,7 +123,7 @@ export default function KdbxHeaderUnitTest() {
       // 测试套件结束后的清理
     });
 
-    it('should create header with default values',0, () => {
+    it('should create header with default values', 0, () => {
       expect(header).not().assertUndefined();
       expect(header.version).assertEqual(KdbxVersion.V4);
       expect(header.cipherId).assertInstanceOf('Uint8Array');
@@ -144,7 +145,7 @@ export default function KdbxHeaderUnitTest() {
       expect(header.streamStartBytes).assertUndefined();
     });
 
-    it('should create KDBX3.1 header', 0,() => {
+    it('should create KDBX3.1 header', 0, () => {
       header = new KdbxHeader(KdbxVersion.V3_1);
 
       expect(header.version).assertEqual(KdbxVersion.V3_1);
@@ -161,7 +162,7 @@ export default function KdbxHeaderUnitTest() {
       expect(header.kdfParameters).assertUndefined();
     });
 
-    it('should generate random fields',0, () => {
+    it('should generate random fields', 0, () => {
       const originalMasterSeed = new Uint8Array(header.masterSeed);
       const originalEncryptionIV = new Uint8Array(header.encryptionIV);
 
@@ -172,7 +173,7 @@ export default function KdbxHeaderUnitTest() {
       expect(header.encryptionIV).not().assertDeepEquals(originalEncryptionIV);
     });
 
-    it('should read KDBX4 header from binary', 0,() => {
+    it('should read KDBX4 header from binary', 0, () => {
       const data = createTestHeaderData(KdbxVersion.V4);
       const offset = header.readFromBinary(data);
 
@@ -185,7 +186,7 @@ export default function KdbxHeaderUnitTest() {
       expect(header.kdfParameters).not().assertUndefined();
     });
 
-    it('should read KDBX3.1 header from binary',0, () => {
+    it('should read KDBX3.1 header from binary', 0, () => {
       header = new KdbxHeader(KdbxVersion.V3_1);
       const data = createTestHeaderData(KdbxVersion.V3_1);
       const offset = header.readFromBinary(data);
@@ -201,7 +202,7 @@ export default function KdbxHeaderUnitTest() {
       expect(header.streamStartBytes).assertEqual(new Uint8Array(Array(32).fill(0x06)));
     });
 
-    it('should write KDBX4 header to binary',0, () => {
+    it('should write KDBX4 header to binary', 0, () => {
       // 设置测试数据
       header.cipherId = new Uint8Array(Array(16).fill(0x01));
       header.compressionFlags = CompressionFlags.GZIP;
@@ -224,7 +225,7 @@ export default function KdbxHeaderUnitTest() {
       expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
     });
 
-    it('should write KDBX3.1 header to binary', 0,() => {
+    it('should write KDBX3.1 header to binary', 0, () => {
       header = new KdbxHeader(KdbxVersion.V3_1);
 
       // 设置测试数据
@@ -257,7 +258,7 @@ export default function KdbxHeaderUnitTest() {
       expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
     });
 
-    it('should handle custom data', 0,() => {
+    it('should handle custom data', 0, () => {
       // 设置自定义数据
       header.publicCustomData = new Map<string, Object>([
         ['TestKey1', 'TestValue1'],
@@ -278,7 +279,7 @@ export default function KdbxHeaderUnitTest() {
       expect(newHeader.publicCustomData?.get('TestKey3')).assertEqual(new Uint8Array([1, 2, 3]));
     });
 
-    it('should handle error conditions gracefully',0, () => {
+    it('should handle error conditions gracefully', 0, () => {
       // 测试无效的二进制数据
       const invalidData = new Uint8Array([0xFF, 0xFF, 0xFF]);
       expect(() => header.readFromBinary(invalidData)).assertThrowError('Invalid header')
@@ -292,9 +293,9 @@ export default function KdbxHeaderUnitTest() {
       expect(() => header.readFromBinary(dataWithInvalidField)).assertThrowError('Invalid header');
     });
 
-    it('should handle large custom data', 0,() => {
+    it('should handle large custom data', 0, () => {
       // 创建大量自定义数据
-      const customData = new Map<string,Object>();
+      const customData = new Map<string, Object>();
       for (let i = 0; i < 1000; i++) {
         customData.set(`Key${i}`, `Value${i}`);
       }
@@ -315,18 +316,19 @@ export default function KdbxHeaderUnitTest() {
       }
     });
 
-    it('should maintain data integrity through binary conversion',0, () => {
+    it('should maintain data integrity through binary conversion', 0, () => {
       // 设置所有可能的字段
       header.cipherId = KdbxUtils.generateRandom(new Uint8Array(16));
       header.compressionFlags = CompressionFlags.GZIP;
       header.masterSeed = KdbxUtils.generateRandom(new Uint8Array(32));
       header.encryptionIV = KdbxUtils.generateRandom(new Uint8Array(16));
       header.innerRandomStreamId = InnerRandomStreamID.CHACHA20;
-      header.kdfParameters = new Map<string,Object>([
-        ['iterations', 100000],
-        ['salt', KdbxUtils.generateRandom(new Uint8Array(32))]
-      ]);
-      header.publicCustomData = new Map<string,Object>([
+      header.kdfParameters = {
+        uuid: KdbxUtils.generateRandom(new Uint8Array(16)),
+        iterations: 100000,
+        salt: KdbxUtils.generateRandom(new Uint8Array(32))
+      };
+      header.publicCustomData = new Map<string, Object>([
         ['test', 'value'],
         ['binary', KdbxUtils.generateRandom(new Uint8Array(10))]
       ]);

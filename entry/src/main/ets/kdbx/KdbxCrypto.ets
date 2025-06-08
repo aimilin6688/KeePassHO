@@ -63,7 +63,7 @@ export class KdbxCrypto {
    * @param data 输入数据
    * @returns 哈希值
    */
-  private async sha256(data: Uint8Array): Promise<Uint8Array> {
+  private static async sha256(data: Uint8Array): Promise<Uint8Array> {
     try {
       const md = await cryptoFramework.createMd("SHA-256");
       await md.update(data);
@@ -124,7 +124,7 @@ export class KdbxCrypto {
    * @param key 密钥
    * @returns HMAC值
    */
-  async hmacSha256(data: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
+  static async hmacSha256(data: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
     try {
       const mac = await cryptoFramework.createMac('HMAC256');
       await mac.init(key);
@@ -144,7 +144,7 @@ export class KdbxCrypto {
    * @param keyLength 密钥长度（字节）
    * @returns 派生的密钥
    */
-  async pbkdf2(password: Uint8Array, salt: Uint8Array, iterations: number, keyLength: number): Promise<Uint8Array> {
+  static async pbkdf2(password: Uint8Array, salt: Uint8Array, iterations: number, keyLength: number): Promise<Uint8Array> {
     try {
       const params = {
         iterations: iterations,
@@ -198,7 +198,7 @@ export class KdbxCrypto {
    * @param variant Argon2变体（Argon2d或Argon2id）
    * @returns 转换后的密钥
    */
-  private  async transformKeyArgon2(
+  private static async transformKeyArgon2(
     key: Uint8Array,
     kdfParameters: KdfParameters,
     variant: 'Argon2d' | 'Argon2id'
