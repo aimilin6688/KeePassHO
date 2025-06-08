@@ -40,7 +40,7 @@ function createTestHeaderData(version: number = KdbxVersion.V4): Binary {
     // 添加转换轮数
     chunks.push([HeaderFieldID.TRANSFORM_ROUNDS]);
     chunks.push([8, 0]); // 长度
-    chunks.push([0x40, 0x42, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00]); // 数据 (1000000)
+    chunks.push([0xA0, 0x86, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]); // 数据 (100000)
 
     // 添加保护流密钥
     chunks.push([HeaderFieldID.PROTECTED_STREAM_KEY]);
@@ -86,6 +86,55 @@ function createTestHeaderData(version: number = KdbxVersion.V4): Binary {
   return result;
 }
 
+// 创建不完整的头部数据
+function createIncompleteHeaderData(): Binary {
+  const chunks: number[][] = [];
+
+  // 只添加部分必需字段
+  chunks.push([HeaderFieldID.CIPHER_ID]);
+  chunks.push([16, 0]);
+  chunks.push(Array(16).fill(0x01));
+
+  chunks.push([HeaderFieldID.COMPRESSION_FLAGS]);
+  chunks.push([4, 0]);
+  chunks.push([CompressionFlags.GZIP, 0, 0, 0]);
+
+  // 缺少其他必需字段
+
+  chunks.push([HeaderFieldID.END]);
+
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return result;
+}
+
+// 创建损坏的头部数据
+function createCorruptedHeaderData(): Binary {
+  const chunks: number[][] = [];
+
+  // 添加字段但长度与实际数据不匹配
+  chunks.push([HeaderFieldID.CIPHER_ID]);
+  chunks.push([32, 0]); // 声明32字节长度
+  chunks.push(Array(16).fill(0x01)); // 实际只有16字节
+
+  chunks.push([HeaderFieldID.END]);
+
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return result;
+}
 
 export default function KdbxHeaderUnitTest() {
   describe('KdbxHeader', () => {
@@ -182,7 +231,7 @@ export default function KdbxHeaderUnitTest() {
       expect(header.masterSeed).assertDeepEquals(new Uint8Array(Array(32).fill(0x02)));
       expect(header.encryptionIV).assertDeepEquals(new Uint8Array(Array(16).fill(0x03)));
       expect(header.transformSeed).assertDeepEquals(new Uint8Array(Array(32).fill(0x04)));
-      expect(header.transformRounds).assertEqual(1000000);
+      expect(header.transformRounds).assertEqual(100000);
       expect(header.protectedStreamKey).assertDeepEquals(new Uint8Array(Array(32).fill(0x05)));
       expect(header.streamStartBytes).assertDeepEquals(new Uint8Array(Array(32).fill(0x06)));
     });
@@ -203,11 +252,12 @@ export default function KdbxHeaderUnitTest() {
       const newHeader = new KdbxHeader(KdbxVersion.V4);
       newHeader.readFromBinary(binary);
 
-      expect(newHeader.cipherId).assertEqual(header.cipherId);
-      expect(newHeader.compressionFlags).assertEqual(header.compressionFlags);
-      expect(newHeader.masterSeed).assertEqual(header.masterSeed);
-      expect(newHeader.encryptionIV).assertEqual(header.encryptionIV);
-      expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
+      // 比较关键字段而不是整个对象
+      expect(newHeader.cipherId).assertDeepEquals(new Uint8Array(Array(16).fill(0x01)));
+      expect(newHeader.compressionFlags).assertEqual(CompressionFlags.GZIP);
+      expect(newHeader.masterSeed).assertDeepEquals(new Uint8Array(Array(32).fill(0x02)));
+      expect(newHeader.encryptionIV).assertDeepEquals(new Uint8Array(Array(16).fill(0x03)));
+      expect(newHeader.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
     });
 
     it('should write KDBX3.1 header to binary', 0, () => {
@@ -219,7 +269,7 @@ export default function KdbxHeaderUnitTest() {
       header.masterSeed = new Uint8Array(Array(32).fill(0x02));
       header.encryptionIV = new Uint8Array(Array(16).fill(0x03));
       header.transformSeed = new Uint8Array(Array(32).fill(0x04));
-      header.transformRounds = 1000000;
+      header.transformRounds = 100000;
       header.protectedStreamKey = new Uint8Array(Array(32).fill(0x05));
       header.streamStartBytes = new Uint8Array(Array(32).fill(0x06));
       header.innerRandomStreamId = InnerRandomStreamID.SALSA20;
@@ -232,14 +282,14 @@ export default function KdbxHeaderUnitTest() {
       const newHeader = new KdbxHeader(KdbxVersion.V3_1);
       newHeader.readFromBinary(binary);
 
-      expect(newHeader.cipherId).assertEqual(header.cipherId);
+      expect(newHeader.cipherId).assertDeepEquals(header.cipherId);
       expect(newHeader.compressionFlags).assertEqual(header.compressionFlags);
-      expect(newHeader.masterSeed).assertEqual(header.masterSeed);
-      expect(newHeader.encryptionIV).assertEqual(header.encryptionIV);
-      expect(newHeader.transformSeed).assertEqual(header.transformSeed);
+      expect(newHeader.masterSeed).assertDeepEquals(header.masterSeed);
+      expect(newHeader.encryptionIV).assertDeepEquals(header.encryptionIV);
+      expect(newHeader.transformSeed).assertDeepEquals(header.transformSeed);
       expect(newHeader.transformRounds).assertEqual(header.transformRounds);
-      expect(newHeader.protectedStreamKey).assertEqual(header.protectedStreamKey);
-      expect(newHeader.streamStartBytes).assertEqual(header.streamStartBytes);
+      expect(newHeader.protectedStreamKey).assertDeepEquals(header.protectedStreamKey);
+      expect(newHeader.streamStartBytes).assertDeepEquals(header.streamStartBytes);
       expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
     });
 
@@ -267,7 +317,7 @@ export default function KdbxHeaderUnitTest() {
     it('should handle error conditions gracefully', 0, () => {
       // 测试无效的二进制数据
       const invalidData = new Uint8Array([0xFF, 0xFF, 0xFF]);
-      expect(() => header.readFromBinary(invalidData)).assertThrowError('Invalid header')
+      expect(() => header.readFromBinary(invalidData)).assertThrowError('Invalid header');
 
       // 测试缺少必需字段
       // header.masterSeed = null;
@@ -325,14 +375,68 @@ export default function KdbxHeaderUnitTest() {
       const newHeader = new KdbxHeader(KdbxVersion.V4);
       newHeader.readFromBinary(binary);
 
-      expect(newHeader.cipherId).assertEqual(header.cipherId);
+      expect(newHeader.cipherId).assertDeepEquals(header.cipherId);
       expect(newHeader.compressionFlags).assertEqual(header.compressionFlags);
-      expect(newHeader.masterSeed).assertEqual(header.masterSeed);
-      expect(newHeader.encryptionIV).assertEqual(header.encryptionIV);
+      expect(newHeader.masterSeed).assertDeepEquals(header.masterSeed);
+      expect(newHeader.encryptionIV).assertDeepEquals(header.encryptionIV);
       expect(newHeader.innerRandomStreamId).assertEqual(header.innerRandomStreamId);
       expect(newHeader.kdfParameters).assertEqual(header.kdfParameters);
       expect(newHeader.publicCustomData).assertEqual(header.publicCustomData);
     });
+
+    // 新增的边界条件测试
+    it('should handle invalid version numbers', 0, () => {
+      // 测试无效的版本号
+      expect(() => new KdbxHeader(0)).assertThrowError('Invalid version');
+      expect(() => new KdbxHeader(999)).assertThrowError('Invalid version');
+    });
+
+    it('should handle empty or null fields', 0, () => {
+      // 测试空字段
+      header.cipherId = new Uint8Array(0);
+      expect(() => header.writeToBinary()).assertThrowError('Cannot write header: Missing required fields');
+
+      // 测试null字段
+      header.masterSeed = new Uint8Array(0);
+      expect(() => header.writeToBinary()).assertThrowError('Cannot write header: Missing required fields');
+    });
+
+    it('should handle minimum and maximum values', 0, () => {
+      // 测试最小值
+      header = new KdbxHeader(KdbxVersion.V3_1);
+      header.transformRounds = 1;
+      const minBinary = header.writeToBinary();
+      const minHeader = new KdbxHeader(KdbxVersion.V3_1);
+      minHeader.readFromBinary(minBinary);
+      expect(minHeader.transformRounds).assertEqual(1);
+
+      // 测试最大值
+      header.transformRounds = Number.MAX_SAFE_INTEGER;
+      const maxBinary = header.writeToBinary();
+      const maxHeader = new KdbxHeader(KdbxVersion.V3_1);
+      maxHeader.readFromBinary(maxBinary);
+      expect(maxHeader.transformRounds).assertEqual(Number.MAX_SAFE_INTEGER);
+    });
+
+    // 新增的特殊情况测试
+    it('should handle incomplete header data', 0, () => {
+      const incompleteData = createIncompleteHeaderData();
+      expect(() => header.readFromBinary(incompleteData)).assertThrowError('Missing required fields');
+    });
+
+    it('should handle corrupted header data', 0, () => {
+      const corruptedData = createCorruptedHeaderData();
+      expect(() => header.readFromBinary(corruptedData)).assertThrowError('Data length mismatch');
+    });
+
+    it('should handle field length mismatches', 0, () => {
+      // 创建字段长度与实际数据不匹配的测试数据
+      const data = new Uint8Array([
+        HeaderFieldID.CIPHER_ID,
+        32, 0, // 声明32字节长度
+        ...Array(16).fill(0x01) // 实际只有16字节
+      ]);
+      expect(() => header.readFromBinary(data)).assertThrowError('Data length mismatch');
+    });
   });
 }
-
