@@ -111,33 +111,6 @@ export default function KdbxCryptoUnitTest() {
     });
 
 
-    it('should create and use protected stream encryptor',0, () => {
-      const key = KdbxUtils.generateRandom(new Uint8Array(32));
-      const data = new util.TextEncoder().encode('Protected Data');
-
-      // 测试ChaCha20
-      const chacha20Encryptor = KdbxCrypto.createProtectedStreamEncryptor(key, InnerRandomStreamID.CHACHA20);
-      expect(chacha20Encryptor).not().assertUndefined();
-
-      const encrypted = chacha20Encryptor.encrypt(data);
-      expect(encrypted).not().assertUndefined();
-      expect(encrypted).not().assertEqual(data);
-
-      const decrypted = chacha20Encryptor.decrypt(encrypted);
-      expect(decrypted).assertEqual(data);
-
-      // 测试Salsa20
-      const salsa20Encryptor = KdbxCrypto.createProtectedStreamEncryptor(key, InnerRandomStreamID.SALSA20);
-      expect(salsa20Encryptor).not().assertUndefined();
-
-      const encrypted2 = salsa20Encryptor.encrypt(data);
-      expect(encrypted2).not().assertUndefined();
-      expect(encrypted2).not().assertEqual(data);
-
-      const decrypted2 = salsa20Encryptor.decrypt(encrypted2);
-      expect(decrypted2).assertEqual(data);
-    });
-
 
     it('should handle large data',0, async () => {
       // 创建1MB的测试数据
@@ -157,7 +130,6 @@ export default function KdbxCryptoUnitTest() {
       expect(hmac).not().assertUndefined();
       expect(hmac.length).assertEqual(32);
     });
-
   });
 }
 

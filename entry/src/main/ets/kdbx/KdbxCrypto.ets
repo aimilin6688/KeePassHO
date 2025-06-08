@@ -7,8 +7,33 @@ import { Salsa20 } from './crypto/Salsa20';
 import { KdbxUtils } from './utils/KdbxUtils';
 
 /**
+ * 保护字段加密器接口
+ */
+export interface ProtectedStreamEncryptor {
+  /**
+   * 加密数据
+   * @param data 要加密的数据
+   * @returns 加密后的数据
+   */
+  encrypt(data: Uint8Array): Uint8Array;
+
+  /**
+   * 解密数据
+   * @param data 要解密的数据
+   * @returns 解密后的数据
+   */
+  decrypt(data: Uint8Array): Uint8Array;
+}
+
+/**
+ * Argon2变体类型
+ */
+type Argon2Variant = 'Argon2d' | 'Argon2id';
+
+/**
  * KDBX4加密相关功能实现
  */
+@Observed
 export class KdbxCrypto {
   /**
    * 计算主密钥
@@ -17,8 +42,9 @@ export class KdbxCrypto {
    * @param masterSeed 主种子
    * @param kdfParameters KDF参数
    * @returns 主密钥
+   * @throws Error 当计算失败时抛出错误
    */
-  static async computeMasterKey(
+  public static async computeMasterKey(
     password: string,
     keyFile: Binary | null,
     masterSeed: Binary,
@@ -54,7 +80,7 @@ export class KdbxCrypto {
       return await KdbxCrypto.sha256(finalKey);
     } catch (error) {
       console.error('Failed to compute master key:', error);
-      throw error;
+      throw new Error(`Failed to compute master key: ${error.message}`);
     }
   }
 
@@ -62,6 +88,7 @@ export class KdbxCrypto {
    * 使用SHA-256计算哈希
    * @param data 输入数据
    * @returns 哈希值
+   * @throws Error 当计算失败时抛出错误
    */
   private static async sha256(data: Uint8Array): Promise<Uint8Array> {
     try {
@@ -70,7 +97,7 @@ export class KdbxCrypto {
       return new Uint8Array(await md.digest());
     } catch (error) {
       console.error('SHA-256 calculation failed:', error);
-      throw error;
+      throw new Error(`SHA-256 calculation failed: ${error.message}`);
     }
   }
 
@@ -80,8 +107,9 @@ export class KdbxCrypto {
    * @param key 密钥
    * @param iv 初始化向量
    * @returns 加密后的数据
+   * @throws Error 当加密失败时抛出错误
    */
-  static async aes256CbcEncrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Promise<Uint8Array> {
+  public static async aes256CbcEncrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Promise<Uint8Array> {
     try {
       const cipher = await cryptoFramework.createCipher('AES-256-CBC');
       const params = {
@@ -92,7 +120,7 @@ export class KdbxCrypto {
       return new Uint8Array(await cipher.update(data));
     } catch (error) {
       console.error('AES-256-CBC encryption failed:', error);
-      throw error;
+      throw new Error(`AES-256-CBC encryption failed: ${error.message}`);
     }
   }
 
@@ -102,8 +130,9 @@ export class KdbxCrypto {
    * @param key 密钥
    * @param iv 初始化向量
    * @returns 解密后的数据
+   * @throws Error 当解密失败时抛出错误
    */
-  static async aes256CbcDecrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Promise<Uint8Array> {
+  public static async aes256CbcDecrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Promise<Uint8Array> {
     try {
       const decipher = await cryptoFramework.createDecipher('AES-256-CBC');
       const params = {
@@ -114,7 +143,7 @@ export class KdbxCrypto {
       return new Uint8Array(await decipher.update(data));
     } catch (error) {
       console.error('AES-256-CBC decryption failed:', error);
-      throw error;
+      throw new Error(`AES-256-CBC decryption failed: ${error.message}`);
     }
   }
 
@@ -123,8 +152,9 @@ export class KdbxCrypto {
    * @param data 输入数据
    * @param key 密钥
    * @returns HMAC值
+   * @throws Error 当计算失败时抛出错误
    */
-  static async hmacSha256(data: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
+  public static async hmacSha256(data: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
     try {
       const mac = await cryptoFramework.createMac('HMAC256');
       await mac.init(key);
@@ -132,7 +162,7 @@ export class KdbxCrypto {
       return new Uint8Array(await mac.doFinal());
     } catch (error) {
       console.error('HMAC-SHA-256 calculation failed:', error);
-      throw error;
+      throw new Error(`HMAC-SHA-256 calculation failed: ${error.message}`);
     }
   }
 
@@ -143,8 +173,9 @@ export class KdbxCrypto {
    * @param iterations 迭代次数
    * @param keyLength 密钥长度（字节）
    * @returns 派生的密钥
+   * @throws Error 当派生失败时抛出错误
    */
-  static async pbkdf2(password: Uint8Array, salt: Uint8Array, iterations: number, keyLength: number): Promise<Uint8Array> {
+  public static async pbkdf2(password: Uint8Array, salt: Uint8Array, iterations: number, keyLength: number): Promise<Uint8Array> {
     try {
       const params = {
         iterations: iterations,
@@ -155,16 +186,16 @@ export class KdbxCrypto {
       return new Uint8Array(derivedKey);
     } catch (error) {
       console.error('PBKDF2 key derivation failed:', error);
-      throw error;
+      throw new Error(`PBKDF2 key derivation failed: ${error.message}`);
     }
   }
-
 
   /**
    * 使用KDF进行密钥转换
    * @param key 输入密钥
    * @param kdfParameters KDF参数
    * @returns 转换后的密钥
+   * @throws Error 当转换失败时抛出错误
    */
   private static async transformKey(key: Uint8Array, kdfParameters: KdfParameters): Promise<Uint8Array> {
     const kdfUuid = kdfParameters.uuid;
@@ -172,19 +203,19 @@ export class KdbxCrypto {
     // 检查KDF类型
     if (KdbxUtils.bytesToHex(kdfUuid) === 'ef636ddf8c29444b91f7a9a403e30a0c') {
       // Argon2d
-      console.log('Using Argon2d KDF');
+      console.info('Using Argon2d KDF');
       return await this.transformKeyArgon2(key, kdfParameters, 'Argon2d');
     } else if (KdbxUtils.bytesToHex(kdfUuid) === '9e298b1956db4773b23dfc3ec6f0a1e6') {
       // Argon2id
-      console.log('Using Argon2id KDF');
+      console.info('Using Argon2id KDF');
       return await this.transformKeyArgon2(key, kdfParameters, 'Argon2id');
     } else if (KdbxUtils.bytesToHex(kdfUuid) === '7c02bb8279a74ac0927d114a00648238') {
       // AES-KDF
-      console.log('Using AES-KDF');
+      console.info('Using AES-KDF');
       return await this.transformKeyAes(key, kdfParameters);
     } else {
       // 默认使用PBKDF2
-      console.log('Using PBKDF2 as fallback KDF');
+      console.info('Using PBKDF2 as fallback KDF');
       const iterations = kdfParameters.rounds || 60000;
       const salt = kdfParameters.salt || KdbxUtils.generateRandom(new Uint8Array(32));
       return await this.pbkdf2(key, salt, iterations, 32);
@@ -197,11 +228,12 @@ export class KdbxCrypto {
    * @param kdfParameters KDF参数
    * @param variant Argon2变体（Argon2d或Argon2id）
    * @returns 转换后的密钥
+   * @throws Error 当转换失败时抛出错误
    */
   private static async transformKeyArgon2(
     key: Uint8Array,
     kdfParameters: KdfParameters,
-    variant: 'Argon2d' | 'Argon2id'
+    variant: Argon2Variant
   ): Promise<Uint8Array> {
     // 由于OpenHarmony目前不直接支持Argon2，我们使用PBKDF2作为替代
     // 在实际应用中，应该实现或引入Argon2库
@@ -224,6 +256,7 @@ export class KdbxCrypto {
    * @param key 输入密钥
    * @param kdfParameters KDF参数
    * @returns 转换后的密钥
+   * @throws Error 当转换失败时抛出错误
    */
   private static async transformKeyAes(key: Uint8Array, kdfParameters: KdfParameters): Promise<Uint8Array> {
     const rounds = kdfParameters.rounds || 60000;
@@ -251,8 +284,9 @@ export class KdbxCrypto {
    * @param key 密钥
    * @param streamId 流ID
    * @returns 加密器对象
+   * @throws Error 当不支持的流密码类型时抛出错误
    */
-  static createProtectedStreamEncryptor(key: Binary, streamId: InnerRandomStreamID): ProtectedStreamEncryptor {
+  public static createProtectedStreamEncryptor(key: Binary, streamId: InnerRandomStreamID): ProtectedStreamEncryptor {
     switch (streamId) {
       case InnerRandomStreamID.CHACHA20:
         return new ChaCha20Encryptor(key);
@@ -265,9 +299,10 @@ export class KdbxCrypto {
 }
 
 /**
- * ChaCha20加密器
+ * ChaCha20加密器实现
  */
-class ChaCha20Encryptor implements ProtectedStreamEncryptor{
+@Observed
+class ChaCha20Encryptor implements ProtectedStreamEncryptor {
   private cipher: ChaCha20;
 
   constructor(key: Binary) {
@@ -276,30 +311,21 @@ class ChaCha20Encryptor implements ProtectedStreamEncryptor{
     this.cipher = new ChaCha20(key, nonce);
   }
 
-  /**
-   * 加密数据
-   * @param data 待加密数据
-   * @returns 加密后的数据
-   */
-  encrypt(data: Uint8Array): Uint8Array {
+  public encrypt(data: Uint8Array): Uint8Array {
     return this.cipher.process(data);
   }
 
-  /**
-   * 解密数据
-   * @param data 待解密数据
-   * @returns 解密后的数据
-   */
-  decrypt(data: Uint8Array): Uint8Array {
+  public decrypt(data: Uint8Array): Uint8Array {
     // ChaCha20是对称的，加密和解密使用相同的操作
     return this.cipher.process(data);
   }
 }
 
 /**
- * Salsa20加密器
+ * Salsa20加密器实现
  */
-class Salsa20Encryptor implements ProtectedStreamEncryptor{
+@Observed
+class Salsa20Encryptor implements ProtectedStreamEncryptor {
   private cipher: Salsa20;
 
   constructor(key: Binary) {
@@ -308,41 +334,12 @@ class Salsa20Encryptor implements ProtectedStreamEncryptor{
     this.cipher = new Salsa20(key, nonce);
   }
 
-  /**
-   * 加密数据
-   * @param data 待加密数据
-   * @returns 加密后的数据
-   */
-  encrypt(data: Uint8Array): Uint8Array {
+  public encrypt(data: Uint8Array): Uint8Array {
     return this.cipher.process(data);
   }
 
-  /**
-   * 解密数据
-   * @param data 待解密数据
-   * @returns 解密后的数据
-   */
-  decrypt(data: Uint8Array): Uint8Array {
+  public decrypt(data: Uint8Array): Uint8Array {
     // Salsa20是对称的，加密和解密使用相同的操作
     return this.cipher.process(data);
   }
-}
-
-/**
- * 保护字段加密器接口
- */
-export interface ProtectedStreamEncryptor {
-  /**
-   * 加密数据
-   * @param data 要加密的数据
-   * @returns 加密后的数据
-   */
-  encrypt(data: Uint8Array): Uint8Array;
-
-  /**
-   * 解密数据
-   * @param data 要解密的数据
-   * @returns 解密后的数据
-   */
-  decrypt(data: Uint8Array): Uint8Array;
 }
