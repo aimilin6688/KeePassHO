@@ -163,10 +163,10 @@ export default function KdbxHeaderUnitTest() {
       const offset = header.readFromBinary(data);
 
       expect(offset).assertLarger(0);
-      expect(header.cipherId).assertEqual(new Uint8Array(Array(16).fill(0x01)));
+      expect(header.cipherId).assertDeepEquals(new Uint8Array(Array(16).fill(0x01)));
       expect(header.compressionFlags).assertEqual(CompressionFlags.GZIP);
-      expect(header.masterSeed).assertEqual(new Uint8Array(Array(32).fill(0x02)));
-      expect(header.encryptionIV).assertEqual(new Uint8Array(Array(16).fill(0x03)));
+      expect(header.masterSeed).assertDeepEquals(new Uint8Array(Array(32).fill(0x02)));
+      expect(header.encryptionIV).assertDeepEquals(new Uint8Array(Array(16).fill(0x03)));
       expect(header.innerRandomStreamId).assertEqual(InnerRandomStreamID.CHACHA20);
       expect(header.kdfParameters).not().assertUndefined();
     });
@@ -177,14 +177,14 @@ export default function KdbxHeaderUnitTest() {
       const offset = header.readFromBinary(data);
 
       expect(offset).assertLarger(0);
-      expect(header.cipherId).assertEqual(new Uint8Array(Array(16).fill(0x01)));
+      expect(header.cipherId).assertDeepEquals(new Uint8Array(Array(16).fill(0x01)));
       expect(header.compressionFlags).assertEqual(CompressionFlags.GZIP);
-      expect(header.masterSeed).assertEqual(new Uint8Array(Array(32).fill(0x02)));
-      expect(header.encryptionIV).assertEqual(new Uint8Array(Array(16).fill(0x03)));
-      expect(header.transformSeed).assertEqual(new Uint8Array(Array(32).fill(0x04)));
+      expect(header.masterSeed).assertDeepEquals(new Uint8Array(Array(32).fill(0x02)));
+      expect(header.encryptionIV).assertDeepEquals(new Uint8Array(Array(16).fill(0x03)));
+      expect(header.transformSeed).assertDeepEquals(new Uint8Array(Array(32).fill(0x04)));
       expect(header.transformRounds).assertEqual(1000000);
-      expect(header.protectedStreamKey).assertEqual(new Uint8Array(Array(32).fill(0x05)));
-      expect(header.streamStartBytes).assertEqual(new Uint8Array(Array(32).fill(0x06)));
+      expect(header.protectedStreamKey).assertDeepEquals(new Uint8Array(Array(32).fill(0x05)));
+      expect(header.streamStartBytes).assertDeepEquals(new Uint8Array(Array(32).fill(0x06)));
     });
 
     it('should write KDBX4 header to binary', 0, () => {
