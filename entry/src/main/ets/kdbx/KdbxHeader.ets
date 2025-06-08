@@ -1,6 +1,7 @@
 import { Binary } from './models/KdbxTypes';
-import { HeaderFieldID, CompressionFlags, InnerRandomStreamID, KdbxVersion } from './KdbxFormat';
+import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from './KdbxFormat';
 import { KdbxUtils } from './utils/KdbxUtils';
+import { KdfParameters } from './models/KdbxTypes';
 
 /**
  * KDBX文件头部
@@ -10,57 +11,46 @@ export class KdbxHeader {
    * 数据库版本
    */
   version: number;
-
   /**
    * 密码加密ID
    */
   cipherId: Binary;
-
   /**
    * 压缩标志
    */
   compressionFlags: CompressionFlags;
-
   /**
    * 主种子
    */
   masterSeed: Binary;
-
   /**
    * 转换种子（KDBX3.1）
    */
   transformSeed?: Binary;
-
   /**
    * 转换轮数（KDBX3.1）
    */
   transformRounds?: number;
-
   /**
    * 加密IV
    */
   encryptionIV: Binary;
-
   /**
    * 保护流密钥
    */
   protectedStreamKey?: Binary;
-
   /**
    * 流起始字节
    */
   streamStartBytes?: Binary;
-
   /**
    * 内部随机流ID
    */
   innerRandomStreamId?: InnerRandomStreamID;
-
   /**
    * KDF参数（KDBX4）
    */
-  kdfParameters?: Map<string, ESObject>;
-
+  kdfParameters?: KdfParameters;
   /**
    * 公共自定义数据
    */
@@ -78,7 +68,7 @@ export class KdbxHeader {
     this.encryptionIV = new Uint8Array(16);
 
     if (this.isKdbx4()) {
-      this.kdfParameters = new Map();
+      this.kdfParameters = {} as KdfParameters;
       this.innerRandomStreamId = InnerRandomStreamID.CHACHA20;
     } else {
       this.transformSeed = new Uint8Array(32);
@@ -216,11 +206,24 @@ export class KdbxHeader {
    * @param data 二进制数据
    * @returns 字典
    */
-  private readVariantDictionary(data: Binary): Map<string, object> {
-    const result = new Map<string, object>();
+  private readVariantDictionary<T = Map<string, object>>(data: Binary): T {
     // 实际实现需要解析KDBX的变体字典格式
-    // 这里只是一个占位符
-    return result;
+    if (this.isKdbx4()) {
+      // 如果是KDF参数，返回一个基本的KdfParameters对象
+      let kdfParameters: KdfParameters = {
+        uuid: new Uint8Array(0),
+        rounds: 100000,
+        salt: new Uint8Array(32),
+        parallelism: 2,
+        memory: 1024 * 1024,
+        version: 19,
+        secretKey: new Uint8Array(0),
+        assocData: new Uint8Array(0)
+      };
+      return kdfParameters as T;
+    }
+    // 对于其他情况，返回一个Map
+    return new Map<string, object>() as T;
   }
 
   /**
@@ -232,15 +235,31 @@ export class KdbxHeader {
     let size = 0;
 
     // 每个字段需要1字节ID + 2字节大小 + 字段数据
-    if (this.cipherId) size += 3 + this.cipherId.length;
+    if (this.cipherId) {
+      size += 3 + this.cipherId.length;
+    }
     size += 3 + 4; // 压缩标志
-    if (this.masterSeed) size += 3 + this.masterSeed.length;
-    if (!this.isKdbx4() && this.transformSeed) size += 3 + this.transformSeed.length;
-    if (!this.isKdbx4() && this.transformRounds !== undefined) size += 3 + 8;
-    if (this.encryptionIV) size += 3 + this.encryptionIV.length;
-    if (!this.isKdbx4() && this.protectedStreamKey) size += 3 + this.protectedStreamKey.length;
-    if (!this.isKdbx4() && this.streamStartBytes) size += 3 + this.streamStartBytes.length;
-    if (this.innerRandomStreamId !== undefined) size += 3 + 4;
+    if (this.masterSeed) {
+      size += 3 + this.masterSeed.length;
+    }
+    if (!this.isKdbx4() && this.transformSeed) {
+      size += 3 + this.transformSeed.length;
+    }
+    if (!this.isKdbx4() && this.transformRounds !== undefined) {
+      size += 3 + 8;
+    }
+    if (this.encryptionIV) {
+      size += 3 + this.encryptionIV.length;
+    }
+    if (!this.isKdbx4() && this.protectedStreamKey) {
+      size += 3 + this.protectedStreamKey.length;
+    }
+    if (!this.isKdbx4() && this.streamStartBytes) {
+      size += 3 + this.streamStartBytes.length;
+    }
+    if (this.innerRandomStreamId !== undefined) {
+      size += 3 + 4;
+    }
 
     // KDBX4特有字段
     if (this.isKdbx4() && this.kdfParameters) {

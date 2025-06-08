@@ -1,5 +1,5 @@
 import cryptoFramework from '@ohos.security.cryptoFramework';
-import { Binary } from './models/KdbxTypes';
+import { Binary, KdfParameters} from './models/KdbxTypes';
 import { InnerRandomStreamID } from './KdbxFormat';
 import util from '@ohos.util';
 import { ChaCha20 } from './crypto/ChaCha20';
@@ -22,7 +22,7 @@ export class KdbxCrypto {
     password: string,
     keyFile: Binary | null,
     masterSeed: Binary,
-    kdfParameters: Map<string, any>
+    kdfParameters: KdfParameters
   ): Promise<Binary> {
     try {
       // 1. 计算密码哈希
@@ -63,7 +63,7 @@ export class KdbxCrypto {
    * @param data 输入数据
    * @returns 哈希值
    */
-  private static async sha256(data: Uint8Array): Promise<Uint8Array> {
+  private async sha256(data: Uint8Array): Promise<Uint8Array> {
     try {
       const md = await cryptoFramework.createMd("SHA-256");
       await md.update(data);
@@ -124,7 +124,7 @@ export class KdbxCrypto {
    * @param key 密钥
    * @returns HMAC值
    */
-  static async hmacSha256(data: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
+  async hmacSha256(data: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
     try {
       const mac = await cryptoFramework.createMac('HMAC256');
       await mac.init(key);
@@ -144,7 +144,7 @@ export class KdbxCrypto {
    * @param keyLength 密钥长度（字节）
    * @returns 派生的密钥
    */
-  static async pbkdf2(password: Uint8Array, salt: Uint8Array, iterations: number, keyLength: number): Promise<Uint8Array> {
+  async pbkdf2(password: Uint8Array, salt: Uint8Array, iterations: number, keyLength: number): Promise<Uint8Array> {
     try {
       const params = {
         iterations: iterations,
@@ -166,27 +166,27 @@ export class KdbxCrypto {
    * @param kdfParameters KDF参数
    * @returns 转换后的密钥
    */
-  private static async transformKey(key: Uint8Array, kdfParameters: Map<string, any>): Promise<Uint8Array> {
-    const kdfUuid = kdfParameters.get('$UUID');
-    
+  private static async transformKey(key: Uint8Array, kdfParameters: KdfParameters): Promise<Uint8Array> {
+    const kdfUuid = kdfParameters.uuid;
+
     // 检查KDF类型
-    if (kdfUuid === 'ef636ddf-8c29-444b-91f7-a9a403e30a0c') {
+    if (KdbxUtils.bytesToHex(kdfUuid) === 'ef636ddf8c29444b91f7a9a403e30a0c') {
       // Argon2d
       console.log('Using Argon2d KDF');
       return await this.transformKeyArgon2(key, kdfParameters, 'Argon2d');
-    } else if (kdfUuid === '9e298b19-56db-4773-b23d-fc3ec6f0a1e6') {
+    } else if (KdbxUtils.bytesToHex(kdfUuid) === '9e298b1956db4773b23dfc3ec6f0a1e6') {
       // Argon2id
       console.log('Using Argon2id KDF');
       return await this.transformKeyArgon2(key, kdfParameters, 'Argon2id');
-    } else if (kdfUuid === '7c02bb82-79a7-4ac0-927d-114a00648238') {
+    } else if (KdbxUtils.bytesToHex(kdfUuid) === '7c02bb8279a74ac0927d114a00648238') {
       // AES-KDF
       console.log('Using AES-KDF');
       return await this.transformKeyAes(key, kdfParameters);
     } else {
       // 默认使用PBKDF2
       console.log('Using PBKDF2 as fallback KDF');
-      const iterations = kdfParameters.get('rounds') || 60000;
-      const salt = kdfParameters.get('salt') || KdbxUtils.generateRandom(new Uint8Array(32));
+      const iterations = kdfParameters.rounds || 60000;
+      const salt = kdfParameters.salt || KdbxUtils.generateRandom(new Uint8Array(32));
       return await this.pbkdf2(key, salt, iterations, 32);
     }
   }
@@ -198,23 +198,24 @@ export class KdbxCrypto {
    * @param variant Argon2变体（Argon2d或Argon2id）
    * @returns 转换后的密钥
    */
-  private static async transformKeyArgon2(
-    key: Uint8Array, 
-    kdfParameters: Map<string, any>,
+  private  async transformKeyArgon2(
+    key: Uint8Array,
+    kdfParameters: KdfParameters,
     variant: 'Argon2d' | 'Argon2id'
   ): Promise<Uint8Array> {
     // 由于OpenHarmony目前不直接支持Argon2，我们使用PBKDF2作为替代
     // 在实际应用中，应该实现或引入Argon2库
     console.warn(`${variant} not directly supported, using PBKDF2 as fallback`);
-    
+
     // 从KDF参数中提取值
-    const salt = kdfParameters.get('salt') || KdbxUtils.generateRandom(new Uint8Array(32));
-    const iterations = kdfParameters.get('iterations') || 10;
-    const memory = kdfParameters.get('memory') || 1024 * 1024; // 默认1MB
-    
+    const salt = kdfParameters.salt || KdbxUtils.generateRandom(new Uint8Array(32));
+    const rounds = kdfParameters.rounds || 10;
+    const memory = kdfParameters.memory || 1024 * 1024; // 默认1MB
+    const parallelism = kdfParameters.parallelism || 2;
+
     // 使用PBKDF2作为替代，增加迭代次数以提高安全性
     // 注意：这不是Argon2的安全等效，仅用于开发
-    const enhancedIterations = iterations * 1000; // 增加迭代次数作为补偿
+    const enhancedIterations = rounds * 1000; // 增加迭代次数作为补偿
     return await this.pbkdf2(key, salt, enhancedIterations, 32);
   }
 
@@ -224,23 +225,23 @@ export class KdbxCrypto {
    * @param kdfParameters KDF参数
    * @returns 转换后的密钥
    */
-  private static async transformKeyAes(key: Uint8Array, kdfParameters: Map<string, any>): Promise<Uint8Array> {
-    const rounds = kdfParameters.get('rounds') || 60000;
-    const seed = kdfParameters.get('seed');
-    
-    if (!seed) {
-      throw new Error('AES-KDF requires a seed parameter');
+  private static async transformKeyAes(key: Uint8Array, kdfParameters: KdfParameters): Promise<Uint8Array> {
+    const rounds = kdfParameters.rounds || 60000;
+    const secretKey = kdfParameters.secretKey;
+
+    if (!secretKey) {
+      throw new Error('AES-KDF requires a secretKey parameter');
     }
-    
+
     let result = key;
-    
+
     // 使用AES-ECB模式进行多轮转换
     for (let i = 0; i < rounds; i++) {
       // 由于OpenHarmony可能不直接支持AES-ECB，我们使用CBC模式并将IV设置为全零
       const zeroIv = new Uint8Array(16);
-      result = await this.aes256CbcEncrypt(result, seed, zeroIv);
+      result = await this.aes256CbcEncrypt(result, secretKey, zeroIv);
     }
-    
+
     // 最后进行SHA-256哈希
     return await this.sha256(result);
   }
