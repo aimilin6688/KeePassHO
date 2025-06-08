@@ -1,24 +1,9 @@
-/*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-import { Binary, CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from '../../main/ets/kdbx/Index';
+import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from '../../main/ets/kdbx/KdbxFormat';
 import { KdbxHeader } from '../../main/ets/kdbx/KdbxHeader';
+import { Binary } from '../../main/ets/kdbx/models/KdbxTypes';
 
 import { KdbxUtils } from '../../main/ets/kdbx/utils/KdbxUtils';
-import { KdfParameters } from '../../main/ets/kdbx/models/KdbxTypes';
 
 
 // 创建测试用的二进制数据
