@@ -229,6 +229,11 @@ export interface VariantDictionaryItem {
 }
 
 /**
+ * 变体字典值
+ */
+export type VariantDictionaryValue = string | number | boolean | Binary;
+
+/**
  * 变体字典
  */
 export type VariantDictionary = Map<string, VariantDictionaryItem>;
