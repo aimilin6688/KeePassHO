@@ -1,5 +1,5 @@
 import { Binary, KdfParameters, VariantDictionaryValue } from './models/KdbxTypes';
-import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from './KdbxFormat';
+import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion, KdfAlgorithm } from './KdbxFormat';
 import { KdbxUtils } from './utils/KdbxUtils';
 
 // KDBX 头部常量
@@ -30,7 +30,7 @@ enum KdfParameterType {
 /**
  * 字段读取
  */
-interface ReadField {
+interface FieldHeader {
   fieldType: number;
   fieldSize: number;
   newPos: number
@@ -392,7 +392,7 @@ export class KdbxHeader {
 
     for (let i = 0; i < count; i++) {
       // 读取字段类型和大小
-      const fieldHeader: ReadField = this.readFieldHeader(data, dataView, pos);
+      const fieldHeader: FieldHeader = this.readFieldHeader(data, dataView, pos);
       const fieldType = fieldHeader.fieldType;
       const fieldSize = fieldHeader.fieldSize;
       const newPos = fieldHeader.newPos;
@@ -504,7 +504,7 @@ export class KdbxHeader {
       pos += keyLength;
 
       // 读取value类型和大小
-      const fieldHeader:ReadField = this.readFieldHeader(data, dataView, pos);
+      const fieldHeader:FieldHeader = this.readFieldHeader(data, dataView, pos);
       const fieldType = fieldHeader.fieldType;
       const fieldSize = fieldHeader.fieldSize;
       const newPos = fieldHeader.newPos;
@@ -553,7 +553,7 @@ export class KdbxHeader {
    * @returns 字段类型、字段大小和新的读取位置
    * @throws 如果数据不完整
    */
-  private readFieldHeader(data: Binary, dataView: DataView, pos: number): ReadField {
+  private readFieldHeader(data: Binary, dataView: DataView, pos: number): FieldHeader {
     if (pos + 5 > data.length) {
       throw new Error('Incomplete field header');
     }
