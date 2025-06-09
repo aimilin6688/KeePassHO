@@ -300,8 +300,18 @@ export class KdbxHeader {
         assocData: new Uint8Array(0)
       };
       
+      // 验证字典项数量
+      if (count < 0 || count > 100) {
+        throw new Error(`Invalid KDF parameters count: ${count}`);
+      }
+      
       // 解析每个字段
       for (let i = 0; i < count; i++) {
+        // 检查剩余数据是否足够
+        if (pos + 5 > data.length) {
+          throw new Error('Incomplete KDF parameter data');
+        }
+        
         // 读取字段类型
         const fieldType = dataView.getUint8(pos++);
         
@@ -309,20 +319,95 @@ export class KdbxHeader {
         const fieldSize = dataView.getUint32(pos, true);
         pos += 4;
         
+        // 验证字段大小
+        if (fieldSize < 0 || pos + fieldSize > data.length) {
+          throw new Error(`Invalid KDF parameter field size: ${fieldSize}`);
+        }
+        
         // 读取字段值
         const fieldValue = data.slice(pos, pos + fieldSize);
         pos += fieldSize;
         
-        // 处理字段
-        switch (fieldType) {
-          case 0x01: // UUID
-            kdfParameters.uuid = fieldValue;
-            break;
-          case 0x02: // rounds
-            kdfParameters.rounds = dataView.getUint32(pos - fieldSize, true);
-            break;
-          // 其他字段处理...
+        try {
+          // 处理字段
+          switch (fieldType) {
+            case 0x01: // UUID
+              if (fieldSize !== 16) {
+                throw new Error(`Invalid UUID size: ${fieldSize}`);
+              }
+              kdfParameters.uuid = fieldValue;
+              break;
+              
+            case 0x02: // rounds
+              if (fieldSize !== 4) {
+                throw new Error(`Invalid rounds size: ${fieldSize}`);
+              }
+              const rounds = dataView.getUint32(pos - fieldSize, true);
+              if (rounds < 1) {
+                throw new Error(`Invalid rounds value: ${rounds}`);
+              }
+              kdfParameters.rounds = rounds;
+              break;
+              
+            case 0x03: // salt
+              if (fieldSize !== 32) {
+                throw new Error(`Invalid salt size: ${fieldSize}`);
+              }
+              kdfParameters.salt = fieldValue;
+              break;
+              
+            case 0x04: // parallelism
+              if (fieldSize !== 4) {
+                throw new Error(`Invalid parallelism size: ${fieldSize}`);
+              }
+              const parallelism = dataView.getUint32(pos - fieldSize, true);
+              if (parallelism < 1) {
+                throw new Error(`Invalid parallelism value: ${parallelism}`);
+              }
+              kdfParameters.parallelism = parallelism;
+              break;
+              
+            case 0x05: // memory
+              if (fieldSize !== 8) {
+                throw new Error(`Invalid memory size: ${fieldSize}`);
+              }
+              const memory = Number(dataView.getBigUint64(pos - fieldSize, true));
+              if (memory < 1024) {
+                throw new Error(`Invalid memory value: ${memory}`);
+              }
+              kdfParameters.memory = memory;
+              break;
+              
+            case 0x06: // version
+              if (fieldSize !== 4) {
+                throw new Error(`Invalid version size: ${fieldSize}`);
+              }
+              const version = dataView.getUint32(pos - fieldSize, true);
+              if (version < 19) {
+                throw new Error(`Invalid version value: ${version}`);
+              }
+              kdfParameters.version = version;
+              break;
+              
+            case 0x07: // secretKey
+              kdfParameters.secretKey = fieldValue;
+              break;
+              
+            case 0x08: // assocData
+              kdfParameters.assocData = fieldValue;
+              break;
+              
+            default:
+              throw new Error(`Unknown KDF parameter type: ${fieldType}`);
+          }
+        } catch (e) {
+          throw new Error(`Error processing KDF parameter type ${fieldType}: ${e.message}`);
         }
+      }
+      
+      // 验证必要字段
+      if (!kdfParameters.uuid || !kdfParameters.salt) {
+        throw new Error('Missing required KDF parameters');
       }
       
       return kdfParameters as T;

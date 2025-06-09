@@ -2,6 +2,7 @@ import { Binary } from './models/KdbxTypes';
 import { KdbxCrypto } from './KdbxCrypto';
 import { InnerRandomStreamID } from './KdbxFormat';
 import { KdbxXmlProcessor } from './xml/KdbxXmlProcessor';
+import { KdbxUtils } from './utils/KdbxUtils';
 import util from '@ohos.util';
 
 /**
@@ -25,9 +26,19 @@ export class KdbxWriter {
    * @param password 密码
    * @param keyFile 密钥文件（可选）
    * @returns 写入的文件数据
+   * @throws 如果写入过程中发生错误
    */
   async write(database: any, password: string, keyFile: Binary | null = null): Promise<Uint8Array> {
     try {
+      // 验证输入参数
+      if (!database) {
+        throw new Error('数据库对象不能为空');
+      }
+      
+      if (!password && !keyFile) {
+        throw new Error('必须提供密码或密钥文件');
+      }
+
       // 1. 生成加密参数
       const masterSeed = KdbxUtils.generateRandom(new Uint8Array(32));
       const encryptionIV = KdbxUtils.generateRandom(new Uint8Array(16));
@@ -56,8 +67,16 @@ export class KdbxWriter {
         kdfParameters
       );
 
+      if (!masterKey || masterKey.length !== 32) {
+        throw new Error('主密钥计算失败或长度不正确');
+      }
+
       // 5. 准备XML内容
       const xmlContent = await this.prepareXmlContent(database, protectedStreamKey, innerRandomStreamID);
+
+      if (!xmlContent || xmlContent.length === 0) {
+        throw new Error('XML内容生成失败');
+      }
 
       // 6. 加密内容
       const encryptedContent = await KdbxCrypto.aes256CbcEncrypt(
@@ -66,14 +85,18 @@ export class KdbxWriter {
         encryptionIV
       );
 
+      if (!encryptedContent || encryptedContent.length === 0) {
+        throw new Error('内容加密失败');
+      }
+
       // 7. 将加密内容添加到缓冲区
       this.buffer.push(encryptedContent);
 
       // 8. 合并所有缓冲区并返回
       return this.concatUint8Arrays(this.buffer);
     } catch (error) {
-      console.error('Failed to write KDBX file:', error);
-      throw error;
+      console.error('KDBX文件写入失败:', error instanceof Error ? error.message : String(error));
+      throw new Error(`KDBX文件写入失败: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
