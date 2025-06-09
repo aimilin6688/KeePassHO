@@ -1,7 +1,40 @@
-import { Binary } from './models/KdbxTypes';
+import { Binary, KdfParameters, VariantDictionaryValue } from './models/KdbxTypes';
 import { CompressionFlags, HeaderFieldID, InnerRandomStreamID, KdbxVersion } from './KdbxFormat';
 import { KdbxUtils } from './utils/KdbxUtils';
-import { KdfParameters } from './models/KdbxTypes';
+
+// KDBX 头部常量
+const KDBX_SIGNATURE_1 = 0x9AA2D903;
+const KDBX_SIGNATURE_2 = 0xB54BFB67;
+const KDBX_VERSION_32 = 0x00030001;
+const KDBX_VERSION_CRITICAL_MASK = 0xFFFF0000;
+const KDBX_HEADER_END_BYTES = [0x0D, 0x0A, 0x0D, 0x0A];
+
+// 变长字典类型
+enum VariantDictionaryType {
+  KdfParameters = 0,
+  PublicCustomData = 1
+}
+
+// KDF 参数字段类型
+enum KdfParameterType {
+  UUID = 0x01,
+  Rounds = 0x02,
+  Salt = 0x03,
+  Parallelism = 0x04,
+  Memory = 0x05,
+  Version = 0x06,
+  SecretKey = 0x07,
+  AssocData = 0x08
+}
+
+/**
+ * 字段读取
+ */
+interface ReadField {
+  fieldType: number;
+  fieldSize: number;
+  newPos: number
+}
 
 /**
  * KDBX文件头部
@@ -105,7 +138,7 @@ export class KdbxHeader {
       if (this.kdfParameters) {
         this.kdfParameters.uuid = new Uint8Array(16);
         KdbxUtils.fillRandom(this.kdfParameters.uuid);
-        
+
         if (!this.kdfParameters.salt) {
           this.kdfParameters.salt = new Uint8Array(32);
         }
@@ -212,57 +245,79 @@ export class KdbxHeader {
     try {
       switch (fieldId) {
         case HeaderFieldID.CIPHER_ID:
-          if (data.length !== 16) throw new Error('Data length mismatch: CipherID expected 16 bytes');
+          if (data.length !== 16) {
+            throw new Error('Data length mismatch: CipherID expected 16 bytes');
+          }
           this.cipherId = data;
           break;
 
         case HeaderFieldID.COMPRESSION_FLAGS:
-          if (data.length !== 4) throw new Error('Data length mismatch: CompressionFlags expected 4 bytes');
+          if (data.length !== 4) {
+            throw new Error('Data length mismatch: CompressionFlags expected 4 bytes');
+          }
           this.compressionFlags = new DataView(data.buffer).getUint32(0, true);
           break;
 
         case HeaderFieldID.MASTER_SEED:
-          if (data.length !== 32) throw new Error('Data length mismatch: MasterSeed expected 32 bytes');
+          if (data.length !== 32) {
+            throw new Error('Data length mismatch: MasterSeed expected 32 bytes');
+          }
           this.masterSeed = data;
           break;
 
         case HeaderFieldID.TRANSFORM_SEED:
-          if (data.length !== 32) throw new Error('Data length mismatch: TransformSeed expected 32 bytes');
+          if (data.length !== 32) {
+            throw new Error('Data length mismatch: TransformSeed expected 32 bytes');
+          }
           this.transformSeed = data;
           break;
 
         case HeaderFieldID.TRANSFORM_ROUNDS:
-          if (data.length !== 8) throw new Error('Data length mismatch: TransformRounds expected 8 bytes');
+          if (data.length !== 8) {
+            throw new Error('Data length mismatch: TransformRounds expected 8 bytes');
+          }
           this.transformRounds = Number(new DataView(data.buffer).getBigUint64(0, true));
           break;
 
         case HeaderFieldID.ENCRYPTION_IV:
-          if (data.length !== 16) throw new Error('Data length mismatch: EncryptionIV expected 16 bytes');
+          if (data.length !== 16) {
+            throw new Error('Data length mismatch: EncryptionIV expected 16 bytes');
+          }
           this.encryptionIV = data;
           break;
 
         case HeaderFieldID.PROTECTED_STREAM_KEY:
-          if (data.length !== 32) throw new Error('Data length mismatch: ProtectedStreamKey expected 32 bytes');
+          if (data.length !== 32) {
+            throw new Error('Data length mismatch: ProtectedStreamKey expected 32 bytes');
+          }
           this.protectedStreamKey = data;
           break;
 
         case HeaderFieldID.STREAM_START_BYTES:
-          if (data.length !== 32) throw new Error('Data length mismatch: StreamStartBytes expected 32 bytes');
+          if (data.length !== 32) {
+            throw new Error('Data length mismatch: StreamStartBytes expected 32 bytes');
+          }
           this.streamStartBytes = data;
           break;
 
         case HeaderFieldID.INNER_RANDOM_STREAM_ID:
-          if (data.length !== 4) throw new Error('Data length mismatch: InnerRandomStreamID expected 4 bytes');
+          if (data.length !== 4) {
+            throw new Error('Data length mismatch: InnerRandomStreamID expected 4 bytes');
+          }
           this.innerRandomStreamId = new DataView(data.buffer).getUint32(0, true);
           break;
 
         case HeaderFieldID.KDF_PARAMETERS:
-          if (data.length < 4) throw new Error('Invalid header: KDF parameters too short');
+          if (data.length < 4) {
+            throw new Error('Invalid header: KDF parameters too short');
+          }
           this.kdfParameters = this.readVariantDictionary(data);
           break;
 
         case HeaderFieldID.PUBLIC_CUSTOM_DATA:
-          if (data.length < 4) throw new Error('Invalid header: Public custom data too short');
+          if (data.length < 4) {
+            throw new Error('Invalid header: Public custom data too short');
+          }
           this.publicCustomData = this.readVariantDictionary(data);
           break;
 
@@ -277,177 +332,266 @@ export class KdbxHeader {
   /**
    * 读取变体字典
    * @param data 二进制数据
-   * @returns 字典
+   * @param type 字典类型 (KDF参数或公共自定义数据)
+   * @returns 解析后的字典数据
+   * @throws 如果数据格式无效或缺少必要字段
    */
-  private readVariantDictionary<T = Map<string, Uint8Array | string | number | boolean>>(data: Binary): T {
+  private readVariantDictionary<T = Map<string, VariantDictionaryValue> | KdfParameters>(
+    data: Binary,
+    type: VariantDictionaryType = VariantDictionaryType.KdfParameters
+  ): T {
     const dataView = new DataView(data.buffer);
     let pos = 0;
-    
+
+    // 验证输入数据
+    if (!data || data.length < 4) {
+      throw new Error(`Invalid variant dictionary: data too short (${data?.length ?? 0} bytes)`);
+    }
+
     // 读取变体字典项数量
     const count = dataView.getUint32(pos, true);
     pos += 4;
-    
-    if (this.isKdbx4()) {
-      // 解析KDF参数
-      const kdfParameters: KdfParameters = {
-        uuid: new Uint8Array(16),
-        rounds: 100000,
-        salt: new Uint8Array(32),
-        parallelism: 2,
-        memory: 1024 * 1024,
-        version: 19,
-        secretKey: new Uint8Array(0),
-        assocData: new Uint8Array(0)
-      };
-      
-      // 验证字典项数量
-      if (count < 0 || count > 100) {
-        throw new Error(`Invalid KDF parameters count: ${count}`);
-      }
-      
-      // 解析每个字段
-      for (let i = 0; i < count; i++) {
-        // 检查剩余数据是否足够
-        if (pos + 5 > data.length) {
-          throw new Error('Incomplete KDF parameter data');
-        }
-        
-        // 读取字段类型
-        const fieldType = dataView.getUint8(pos++);
-        
-        // 读取字段大小
-        const fieldSize = dataView.getUint32(pos, true);
-        pos += 4;
-        
-        // 验证字段大小
-        if (fieldSize < 0 || pos + fieldSize > data.length) {
-          throw new Error(`Invalid KDF parameter field size: ${fieldSize}`);
-        }
-        
-        // 读取字段值
-        const fieldValue = data.slice(pos, pos + fieldSize);
-        pos += fieldSize;
-        
-        try {
-          // 处理字段
-          switch (fieldType) {
-            case 0x01: // UUID
-              if (fieldSize !== 16) {
-                throw new Error(`Invalid UUID size: ${fieldSize}`);
-              }
-              kdfParameters.uuid = fieldValue;
-              break;
-              
-            case 0x02: // rounds
-              if (fieldSize !== 4) {
-                throw new Error(`Invalid rounds size: ${fieldSize}`);
-              }
-              const rounds = dataView.getUint32(pos - fieldSize, true);
-              if (rounds < 1) {
-                throw new Error(`Invalid rounds value: ${rounds}`);
-              }
-              kdfParameters.rounds = rounds;
-              break;
-              
-            case 0x03: // salt
-              if (fieldSize !== 32) {
-                throw new Error(`Invalid salt size: ${fieldSize}`);
-              }
-              kdfParameters.salt = fieldValue;
-              break;
-              
-            case 0x04: // parallelism
-              if (fieldSize !== 4) {
-                throw new Error(`Invalid parallelism size: ${fieldSize}`);
-              }
-              const parallelism = dataView.getUint32(pos - fieldSize, true);
-              if (parallelism < 1) {
-                throw new Error(`Invalid parallelism value: ${parallelism}`);
-              }
-              kdfParameters.parallelism = parallelism;
-              break;
-              
-            case 0x05: // memory
-              if (fieldSize !== 8) {
-                throw new Error(`Invalid memory size: ${fieldSize}`);
-              }
-              const memory = Number(dataView.getBigUint64(pos - fieldSize, true));
-              if (memory < 1024) {
-                throw new Error(`Invalid memory value: ${memory}`);
-              }
-              kdfParameters.memory = memory;
-              break;
-              
-            case 0x06: // version
-              if (fieldSize !== 4) {
-                throw new Error(`Invalid version size: ${fieldSize}`);
-              }
-              const version = dataView.getUint32(pos - fieldSize, true);
-              if (version < 19) {
-                throw new Error(`Invalid version value: ${version}`);
-              }
-              kdfParameters.version = version;
-              break;
-              
-            case 0x07: // secretKey
-              kdfParameters.secretKey = fieldValue;
-              break;
-              
-            case 0x08: // assocData
-              kdfParameters.assocData = fieldValue;
-              break;
-              
-            default:
-              throw new Error(`Unknown KDF parameter type: ${fieldType}`);
-          }
-        } catch (e) {
-          throw new Error(`Error processing KDF parameter type ${fieldType}: ${e.message}`);
-        }
-      }
-      
-      // 验证必要字段
-      if (!kdfParameters.uuid || !kdfParameters.salt) {
-        throw new Error('Missing required KDF parameters');
-      }
-      
-      return kdfParameters as T;
+
+    // 验证项数量
+    if (count < 0 || count > 100) {
+      throw new Error(`Invalid variant dictionary: invalid item count ${count}`);
+    }
+
+    if (type === VariantDictionaryType.KdfParameters) {
+      return this.readKdfParameters(data, dataView, pos, count) as T;
     } else {
-      // 解析公共自定义数据
-      const customData = new Map<string, Uint8Array | string | number | boolean>();
-      
-      for (let i = 0; i < count; i++) {
-        // 读取key长度
-        const keyLength = dataView.getUint32(pos, true);
-        pos += 4;
-        
-        // 读取key
-        const key = KdbxUtils.bytesToStr(data.slice(pos, pos + keyLength));
-        pos += keyLength;
-        
-        // 读取value类型
-        const valueType = dataView.getUint8(pos++);
-        
-        // 读取value大小
-        const valueSize = dataView.getUint32(pos, true);
-        pos += 4;
-        
-        // 读取value
-        const valueData = data.slice(pos, pos + valueSize);
-        pos += valueSize;
-        
-        // 处理value
-        switch (valueType) {
-          case 0x01: // 二进制数据
-            customData.set(key, valueData);
+      return this.readPublicCustomData(data, dataView, pos, count) as T;
+    }
+  }
+
+  /**
+   * 读取KDF参数
+   * @param data 二进制数据
+   * @param dataView DataView对象
+   * @param pos 当前读取位置
+   * @param count 参数项数量
+   * @returns 解析后的KDF参数
+   * @throws 如果数据格式无效或缺少必要字段
+   */
+  private readKdfParameters(
+    data: Binary,
+    dataView: DataView,
+    pos: number,
+    count: number
+  ): KdfParameters {
+    const kdfParameters: KdfParameters = {
+      uuid: new Uint8Array(16),
+      rounds: 100000,
+      salt: new Uint8Array(32),
+      parallelism: 2,
+      memory: 1024 * 1024,
+      version: 19,
+      secretKey: new Uint8Array(0),
+      assocData: new Uint8Array(0)
+    };
+
+    for (let i = 0; i < count; i++) {
+      // 读取字段类型和大小
+      const fieldHeader: ReadField = this.readFieldHeader(data, dataView, pos);
+      const fieldType = fieldHeader.fieldType;
+      const fieldSize = fieldHeader.fieldSize;
+      const newPos = fieldHeader.newPos;
+      pos = newPos;
+
+      // 读取字段值
+      const fieldValue = data.slice(pos, pos + fieldSize);
+      pos += fieldSize;
+
+      try {
+        switch (fieldType) {
+          case KdfParameterType.UUID:
+            this.validateFieldSize(fieldSize, 16, 'UUID');
+            kdfParameters.uuid = fieldValue;
             break;
-          case 0x02: // 字符串
-            customData.set(key, KdbxUtils.bytesToStr(valueData));
+
+          case KdfParameterType.Rounds:
+            this.validateFieldSize(fieldSize, 4, 'rounds');
+            const rounds = dataView.getUint32(pos - fieldSize, true);
+            this.validatePositiveNumber(rounds, 'rounds');
+            kdfParameters.rounds = rounds;
             break;
-          // 其他类型处理...
+
+          case KdfParameterType.Salt:
+            this.validateFieldSize(fieldSize, 32, 'salt');
+            kdfParameters.salt = fieldValue;
+            break;
+
+          case KdfParameterType.Parallelism:
+            this.validateFieldSize(fieldSize, 4, 'parallelism');
+            const parallelism = dataView.getUint32(pos - fieldSize, true);
+            this.validatePositiveNumber(parallelism, 'parallelism');
+            kdfParameters.parallelism = parallelism;
+            break;
+
+          case KdfParameterType.Memory:
+            this.validateFieldSize(fieldSize, 8, 'memory');
+            const memory = Number(dataView.getBigUint64(pos - fieldSize, true));
+            this.validatePositiveNumber(memory, 'memory', 1024);
+            kdfParameters.memory = memory;
+            break;
+
+          case KdfParameterType.Version:
+            this.validateFieldSize(fieldSize, 4, 'version');
+            const version = dataView.getUint32(pos - fieldSize, true);
+            if (version < 19) {
+              throw new Error(`Invalid KDF version ${version}, minimum is 19`);
+            }
+            kdfParameters.version = version;
+            break;
+
+          case KdfParameterType.SecretKey:
+            kdfParameters.secretKey = fieldValue;
+            break;
+
+          case KdfParameterType.AssocData:
+            kdfParameters.assocData = fieldValue;
+            break;
+
+          default:
+            throw new Error(`Unknown KDF parameter type 0x${fieldType.toString(16)}`);
         }
+      } catch (e) {
+        throw new Error(`Error processing KDF parameter type 0x${fieldType.toString(16)}: ${e.message}`);
       }
-      
-      return customData as T;
+    }
+
+    // 验证必要字段
+    if (!kdfParameters.uuid || kdfParameters.uuid.length !== 16) {
+      throw new Error('Missing or invalid required KDF parameter: UUID');
+    }
+    if (!kdfParameters.salt || kdfParameters.salt.length !== 32) {
+      throw new Error('Missing or invalid required KDF parameter: salt');
+    }
+
+    return kdfParameters;
+  }
+
+  /**
+   * 读取公共自定义数据
+   * @param data 二进制数据
+   * @param dataView DataView对象
+   * @param pos 当前读取位置
+   * @param count 数据项数量
+   * @returns 解析后的公共自定义数据
+   * @throws 如果数据格式无效
+   */
+  private readPublicCustomData(
+    data: Binary,
+    dataView: DataView,
+    pos: number,
+    count: number
+  ): Map<string, VariantDictionaryValue> {
+    const customData = new Map<string, VariantDictionaryValue>();
+
+    for (let i = 0; i < count; i++) {
+      // 读取key长度
+      if (pos + 4 > data.length) {
+        throw new Error('Incomplete public custom data: missing key length');
+      }
+      const keyLength = dataView.getUint32(pos, true);
+      pos += 4;
+
+      // 读取key
+      if (pos + keyLength > data.length) {
+        throw new Error('Incomplete public custom data: missing key data');
+      }
+      const key = KdbxUtils.bytesToStr(data.slice(pos, pos + keyLength));
+      pos += keyLength;
+
+      // 读取value类型和大小
+      const fieldHeader:ReadField = this.readFieldHeader(data, dataView, pos);
+      const fieldType = fieldHeader.fieldType;
+      const fieldSize = fieldHeader.fieldSize;
+      const newPos = fieldHeader.newPos;
+      pos = newPos;
+
+      // 读取value
+      if (pos + fieldSize > data.length) {
+        throw new Error('Incomplete public custom data: missing value data');
+      }
+      const valueData = data.slice(pos, pos + fieldSize);
+      pos += fieldSize;
+
+      // 处理value
+      switch (fieldType) {
+        case 0x01: // 二进制数据
+          customData.set(key, valueData);
+          break;
+        case 0x02: // 字符串
+          customData.set(key, KdbxUtils.bytesToStr(valueData));
+          break;
+        case 0x03: // 数字
+          if (fieldSize !== 8) {
+            throw new Error(`Invalid number size ${fieldSize}, expected 8 bytes`);
+          }
+          customData.set(key, dataView.getFloat64(pos - fieldSize, true));
+          break;
+        case 0x04: // 布尔值
+          if (fieldSize !== 1) {
+            throw new Error(`Invalid boolean size ${fieldSize}, expected 1 byte`);
+          }
+          customData.set(key, dataView.getUint8(pos - fieldSize) !== 0);
+          break;
+        default:
+          throw new Error(`Unknown public custom data type 0x${fieldType.toString(16)}`);
+      }
+    }
+
+    return customData;
+  }
+
+  /**
+   * 读取字段头部信息
+   * @param data 二进制数据
+   * @param dataView DataView对象
+   * @param pos 当前读取位置
+   * @returns 字段类型、字段大小和新的读取位置
+   * @throws 如果数据不完整
+   */
+  private readFieldHeader(data: Binary, dataView: DataView, pos: number): ReadField {
+    if (pos + 5 > data.length) {
+      throw new Error('Incomplete field header');
+    }
+
+    const fieldType = dataView.getUint8(pos++);
+    const fieldSize = dataView.getUint32(pos, true);
+    pos += 4;
+
+    if (fieldSize < 0 || pos + fieldSize > data.length) {
+      throw new Error(`Invalid field size ${fieldSize} at position ${pos}`);
+    }
+
+    return { fieldType:fieldType ,fieldSize:fieldSize, newPos:pos };
+  }
+
+  /**
+   * 验证字段大小
+   * @param actual 实际大小
+   * @param expected 预期大小
+   * @param fieldName 字段名称
+   * @throws 如果大小不匹配
+   */
+  private validateFieldSize(actual: number, expected: number, fieldName: string): void {
+    if (actual !== expected) {
+      throw new Error(`Invalid ${fieldName} size ${actual}, expected ${expected}`);
+    }
+  }
+
+  /**
+   * 验证正数
+   * @param value 要验证的值
+   * @param fieldName 字段名称
+   * @param min 最小值 (默认为1)
+   * @throws 如果值无效
+   */
+  private validatePositiveNumber(value: number, fieldName: string, min: number = 1): void {
+    if (value < min) {
+      throw new Error(`Invalid ${fieldName} value ${value}, minimum is ${min}`);
     }
   }
 
@@ -592,7 +736,9 @@ export class KdbxHeader {
    * @returns KDF参数的大小
    */
   private calculateKdfSize(): number {
-    if (!this.kdfParameters) return 0;
+    if (!this.kdfParameters) {
+      return 0;
+    }
 
     let size = 4; // 项数量字段
 
