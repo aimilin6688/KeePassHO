@@ -17,7 +17,7 @@ export class KdbxHeader {
     this.model = {
       version: version,
       cipherId: new Uint8Array(16),
-      compressionFlags: 0,
+      compressionFlags: 1,
       masterSeed: new Uint8Array(32),
       encryptionIV: new Uint8Array(16),
       innerRandomStreamId: 0
