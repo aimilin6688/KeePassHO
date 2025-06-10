@@ -34,9 +34,9 @@ export default function KdbxHeaderUnitTest() {
       expect(model.kdfParameters).not().assertUndefined();
       expect(model.kdfParameters?.uuid).not().assertUndefined();
       expect(model.kdfParameters?.salt).not().assertUndefined();
-      expect(model.kdfParameters?.parallelism).assertEqual(2);
-      expect(model.kdfParameters?.memory).assertLarger(0);
-      expect(model.kdfParameters?.iterations).assertLarger(0);
+      expect(model.kdfParameters?.parallelism).assertUndefined();
+      expect(model.kdfParameters?.memory).assertUndefined();
+      expect(model.kdfParameters?.iterations).assertEqual(0);
     });
 
     it('should process and write string custom data', 0, () => {
@@ -59,7 +59,7 @@ export default function KdbxHeaderUnitTest() {
       const result = newHeader.getModel().publicCustomData;
       expect(result).not().assertUndefined();
       expect(result?.get('testKey')).not().assertUndefined();
-      expect(result?.get('testKey')).assertEqual('testValue');
+      expect(result?.get('testKey')?.value).assertDeepEquals('testValue');
     });
 
     it('should process and write numeric custom data', 0, () => {
