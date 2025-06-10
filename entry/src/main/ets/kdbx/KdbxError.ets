@@ -53,7 +53,8 @@ export enum KdbxErrorCode {
   // 网络相关错误
   NETWORK_ERROR = 'NETWORK_ERROR',
   CONNECTION_FAILED = 'CONNECTION_FAILED',
-  TIMEOUT = 'TIMEOUT'
+  TIMEOUT = 'TIMEOUT',
+  INVALID_IV = "INVALID_IV"
 }
 
 /**

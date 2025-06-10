@@ -69,11 +69,33 @@ export class KdbxFile {
         );
       }
 
-      // TODO: 解密文件内容
-      // 这里需要实现解密逻辑
+      // 解密文件内容
+      const compositeKey = await credentials.getCompositeKey();
+      if (!compositeKey) {
+        throw new KdbxError(
+          KdbxErrorCode.INVALID_CREDENTIALS,
+          '无效的凭证'
+        );
+      }
+
+      // 计算主密钥
+      const masterKey = await KdbxCrypto.computeMasterKey(
+        compositeKey,
+        header.masterSeed,
+        header.kdfParameters
+      );
+
+      // 解密文件内容
+      const encryptedData = data.slice(offset);
+      const decryptedData = await KdbxCrypto.decrypt(
+        encryptedData,
+        masterKey,
+        header.encryptionIV,
+        header.cipherId
+      );
 
       // 解析XML内容
-      const xmlData = new TextDecoder().decode(data.slice(offset));
+      const xmlData = new TextDecoder().decode(decryptedData);
       const serializer = new KdbxSerializer(
         header.protectedStreamKey,
         header.innerRandomStreamId
@@ -106,13 +128,35 @@ export class KdbxFile {
       // 生成头部数据
       const headerData = this.header.writeToBinary();
 
-      // TODO: 加密文件内容
-      // 这里需要实现加密逻辑
+      // 加密文件内容
+      const compositeKey = await this.credentials.getCompositeKey();
+      if (!compositeKey) {
+        throw new KdbxError(
+          KdbxErrorCode.INVALID_CREDENTIALS,
+          '无效的凭证'
+        );
+      }
+
+      // 计算主密钥
+      const masterKey = await KdbxCrypto.computeMasterKey(
+        compositeKey,
+        this.header.masterSeed,
+        this.header.kdfParameters
+      );
+
+      // 加密XML内容
+      const xmlBytes = new TextEncoder().encode(xml);
+      const encryptedData = await KdbxCrypto.encrypt(
+        xmlBytes,
+        masterKey,
+        this.header.encryptionIV,
+        this.header.cipherId
+      );
 
       // 合并头部和内容
-      const result = new Uint8Array(headerData.length + xml.length);
+      const result = new Uint8Array(headerData.length + encryptedData.length);
       result.set(headerData, 0);
-      result.set(new TextEncoder().encode(xml), headerData.length);
+      result.set(encryptedData, headerData.length);
 
       return result;
     } catch (error) {
