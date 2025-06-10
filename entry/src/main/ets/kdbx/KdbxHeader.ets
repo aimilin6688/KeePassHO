@@ -191,7 +191,7 @@ export class KdbxHeader {
    * 处理公共自定义数据
    * @param data 自定义数据
    */
-  private processPublicCustomData(data: Binary): void {
+  public processPublicCustomData(data: Binary): void {
     const customData = new Map<string, VariantDictionaryItem>();
     let offset = 0;
 
@@ -364,7 +364,7 @@ export class KdbxHeader {
    * 写入公共自定义数据
    * @returns 自定义数据的二进制数据
    */
-  private writePublicCustomData(): Binary {
+  public writePublicCustomData(): Binary {
     const chunks: Binary[] = [];
 
     if (this.model.publicCustomData) {
