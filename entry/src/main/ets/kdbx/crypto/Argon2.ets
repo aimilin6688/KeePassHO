@@ -109,35 +109,35 @@ export class Argon2 {
     if (params.iterations < 1) {
       throw new KdbxError(
         KdbxErrorCode.INVALID_ARGUMENT,
-        'Argon2迭代次数必须至少为1'
+        'Invalid iterations'
       );
     }
 
     if (params.memory < 8) {
       throw new KdbxError(
         KdbxErrorCode.INVALID_ARGUMENT,
-        'Argon2内存大小必须至少为8KB'
+        'Invalid memory'
       );
     }
 
     if (params.parallelism < 1) {
       throw new KdbxError(
         KdbxErrorCode.INVALID_ARGUMENT,
-        'Argon2并行度必须至少为1'
+        'Invalid parallelism'
       );
     }
 
     if (params.salt.length < 8) {
       throw new KdbxError(
         KdbxErrorCode.INVALID_ARGUMENT,
-        'Argon2盐值必须至少为8字节'
+        'Salt must be at least 8 bytes'
       );
     }
 
     if (params.outputLength < 4) {
       throw new KdbxError(
         KdbxErrorCode.INVALID_ARGUMENT,
-        'Argon2输出长度必须至少为4字节'
+        'Output length must be at least 4 bytes'
       );
     }
   }
@@ -182,8 +182,18 @@ export class Argon2 {
    */
   private async computeInitialHash(params: Argon2Params, password: Uint8Array): Promise<Uint8Array> {
     // 创建初始哈希输入
-    const input = new Uint8Array(4 + 4 + 4 + 4 + 4 + 4 + password.length + params.salt.length +
-      (params.key ? params.key.length : 0) + (params.associatedData ? params.associatedData.length : 0));
+    const input = new Uint8Array(
+      4 + // parallelism
+      4 + // outputLength
+      4 + // memory
+      4 + // iterations
+      4 + // version
+      4 + // variant
+      4 + password.length + // password length + password
+      4 + params.salt.length + // salt length + salt
+      4 + (params.key ? params.key.length : 0) + // key length + key
+      4 + (params.associatedData ? params.associatedData.length : 0) // associatedData length + associatedData
+    );
 
     let offset = 0;
 
