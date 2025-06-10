@@ -4,6 +4,8 @@ import { InnerRandomStreamID } from './KdbxFormat';
 import util from '@ohos.util';
 import { ChaCha20 } from './crypto/ChaCha20';
 import { Salsa20 } from './crypto/Salsa20';
+import { ARC4 } from './crypto/ARC4';
+import { Argon2, Argon2Params, Argon2Variant } from './crypto/Argon2';
 import { KdbxUtils } from './utils/KdbxUtils';
 
 /**
@@ -235,20 +237,24 @@ export class KdbxCrypto {
     kdfParameters: KdfParameters,
     variant: Argon2Variant
   ): Promise<Uint8Array> {
-    // 由于OpenHarmony目前不直接支持Argon2，我们使用PBKDF2作为替代
-    // 在实际应用中，应该实现或引入Argon2库
-    console.warn(`${variant} not directly supported, using PBKDF2 as fallback`);
-
     // 从KDF参数中提取值
     const salt = kdfParameters.salt || KdbxUtils.generateRandom(new Uint8Array(32));
-    const rounds = kdfParameters.rounds || 10;
+    const iterations = kdfParameters.rounds || 10;
     const memory = kdfParameters.memory || 1024 * 1024; // 默认1MB
     const parallelism = kdfParameters.parallelism || 2;
 
-    // 使用PBKDF2作为替代，增加迭代次数以提高安全性
-    // 注意：这不是Argon2的安全等效，仅用于开发
-    const enhancedIterations = rounds * 1000; // 增加迭代次数作为补偿
-    return await this.pbkdf2(key, salt, enhancedIterations, 32);
+    // 设置Argon2参数
+    const params: Argon2Params = {
+      variant: variant === 'Argon2d' ? Argon2Variant.Argon2d : Argon2Variant.Argon2id,
+      iterations: iterations,
+      memory: memory / 1024, // 转换为KB
+      parallelism: parallelism,
+      salt: salt,
+      outputLength: 32 // 256位输出
+    };
+
+    // 使用Argon2派生密钥
+    return await Argon2.deriveKey(params, key);
   }
 
   /**
@@ -280,6 +286,56 @@ export class KdbxCrypto {
   }
 
   /**
+   * 加密数据
+   * @param data 待加密数据
+   * @param key 密钥
+   * @param iv 初始化向量
+   * @param cipherId 加密算法ID
+   * @returns 加密后的数据
+   * @throws Error 当加密失败或不支持的算法时抛出错误
+   */
+  public static async encrypt(
+    data: Uint8Array,
+    key: Uint8Array,
+    iv: Uint8Array,
+    cipherId: Binary
+  ): Promise<Uint8Array> {
+    const cipherUuid = KdbxUtils.bytesToHex(cipherId);
+    
+    // 目前只支持AES-256-CBC
+    if (cipherUuid === '31c1f2e6bf714350be5805216afc5aff') {
+      return await this.aes256CbcEncrypt(data, key, iv);
+    }
+    
+    throw new Error(`Unsupported cipher: ${cipherUuid}`);
+  }
+
+  /**
+   * 解密数据
+   * @param data 待解密数据
+   * @param key 密钥
+   * @param iv 初始化向量
+   * @param cipherId 加密算法ID
+   * @returns 解密后的数据
+   * @throws Error 当解密失败或不支持的算法时抛出错误
+   */
+  public static async decrypt(
+    data: Uint8Array,
+    key: Uint8Array,
+    iv: Uint8Array,
+    cipherId: Binary
+  ): Promise<Uint8Array> {
+    const cipherUuid = KdbxUtils.bytesToHex(cipherId);
+    
+    // 目前只支持AES-256-CBC
+    if (cipherUuid === '31c1f2e6bf714350be5805216afc5aff') {
+      return await this.aes256CbcDecrypt(data, key, iv);
+    }
+    
+    throw new Error(`Unsupported cipher: ${cipherUuid}`);
+  }
+
+  /**
    * 创建受保护字段加密器
    * @param key 密钥
    * @param streamId 流ID
@@ -292,6 +348,8 @@ export class KdbxCrypto {
         return new ChaCha20Encryptor(key);
       case InnerRandomStreamID.SALSA20:
         return new Salsa20Encryptor(key);
+      case InnerRandomStreamID.ARC4VARIANT:
+        return new ARC4Encryptor(key);
       default:
         throw new Error(`Unsupported stream cipher: ${streamId}`);
     }
@@ -304,20 +362,25 @@ export class KdbxCrypto {
 @Observed
 class ChaCha20Encryptor implements ProtectedStreamEncryptor {
   private cipher: ChaCha20;
+  private nonce: Uint8Array;
 
   constructor(key: Binary) {
     // 生成随机的12字节nonce
-    const nonce = KdbxUtils.generateRandom(new Uint8Array(12));
-    this.cipher = new ChaCha20(key, nonce);
+    this.nonce = KdbxUtils.generateRandom(new Uint8Array(12));
+    this.cipher = new ChaCha20(key);
   }
 
   public encrypt(data: Uint8Array): Uint8Array {
-    return this.cipher.process(data);
+    const output = new Uint8Array(data.length);
+    this.cipher.process(this.nonce, data, output);
+    return output;
   }
 
   public decrypt(data: Uint8Array): Uint8Array {
     // ChaCha20是对称的，加密和解密使用相同的操作
-    return this.cipher.process(data);
+    const output = new Uint8Array(data.length);
+    this.cipher.process(this.nonce, data, output);
+    return output;
   }
 }
 
@@ -327,19 +390,49 @@ class ChaCha20Encryptor implements ProtectedStreamEncryptor {
 @Observed
 class Salsa20Encryptor implements ProtectedStreamEncryptor {
   private cipher: Salsa20;
+  private nonce: Uint8Array;
 
   constructor(key: Binary) {
     // 生成随机的8字节nonce
-    const nonce = KdbxUtils.generateRandom(new Uint8Array(8));
-    this.cipher = new Salsa20(key, nonce);
+    this.nonce = KdbxUtils.generateRandom(new Uint8Array(8));
+    this.cipher = new Salsa20(key);
   }
 
   public encrypt(data: Uint8Array): Uint8Array {
-    return this.cipher.process(data);
+    const output = new Uint8Array(data.length);
+    this.cipher.process(this.nonce, data, output);
+    return output;
   }
 
   public decrypt(data: Uint8Array): Uint8Array {
     // Salsa20是对称的，加密和解密使用相同的操作
-    return this.cipher.process(data);
+    const output = new Uint8Array(data.length);
+    this.cipher.process(this.nonce, data, output);
+    return output;
+  }
+}
+
+/**
+ * ARC4加密器实现
+ */
+@Observed
+class ARC4Encryptor implements ProtectedStreamEncryptor {
+  private cipher: ARC4;
+
+  constructor(key: Binary) {
+    this.cipher = new ARC4(key);
+  }
+
+  public encrypt(data: Uint8Array): Uint8Array {
+    const output = new Uint8Array(data.length);
+    this.cipher.process(data, output);
+    return output;
+  }
+
+  public decrypt(data: Uint8Array): Uint8Array {
+    // ARC4是对称的，加密和解密使用相同的操作
+    const output = new Uint8Array(data.length);
+    this.cipher.process(data, output);
+    return output;
   }
 }
