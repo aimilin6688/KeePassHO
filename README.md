@@ -35,3 +35,7 @@ ThemeManager：主题管理工具类
 2. 然后增加数据加密模块
 
 3. 最后实现云同步功能
+
+结合 KeePassXC 文档接口定义与 搜索了解Kdbx4文档格式定义，修改本项目中的 KdbxHeader相关代码使其能够完成 kdbx4 文件头相关的功能。涉及到的鸿蒙语法参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/introduction-to-arkts     涉及到鸿蒙加解密的API文档：https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-cryptoframework   ， 系统核心API：  https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-util
+
+要充分了解现有所有代码，避免重复定义，尽量修改已有代码
