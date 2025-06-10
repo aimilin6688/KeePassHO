@@ -71,7 +71,7 @@ export class Argon2 {
    * @param password 密码
    * @returns 派生的密钥
    */
-  async deriveKey(params: Argon2Params, password: Uint8Array): Promise<Uint8Array> {
+  public async deriveKey(params: Argon2Params, password: Uint8Array): Promise<Uint8Array> {
     // 如果鸿蒙OS的CryptoFramework不支持Argon2，使用纯JavaScript实现
     return await this.deriveKeyJS(params, password);
   }
