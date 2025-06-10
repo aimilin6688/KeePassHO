@@ -1,5 +1,4 @@
 import { KdbxError, KdbxErrorCode } from '../KdbxError';
-import { KdbxUtils } from '../utils/KdbxUtils';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
 /**
@@ -72,31 +71,9 @@ export class Argon2 {
    * @param password 密码
    * @returns 派生的密钥
    */
-  static async deriveKey(params: Argon2Params, password: Uint8Array): Promise<Uint8Array> {
-    try {
-      // 使用鸿蒙OS的CryptoFramework进行Argon2计算
-      // 注意：这里假设CryptoFramework支持Argon2，如果不支持，需要使用纯JavaScript实现
-      const kdf = cryptoFramework.createKdf('ARGON2');
-
-      // 设置Argon2参数
-      const kdfParams:Argon2Params = {
-        variant: params.variant === Argon2Variant.Argon2d ? Argon2Variant.Argon2d : Argon2Variant.Argon2id,
-        iterations: params.iterations,
-        memory: params.memory,
-        parallelism: params.parallelism,
-        salt: params.salt,
-        key: params.key || new Uint8Array(0),
-        associatedData: params.associatedData || new Uint8Array(0),
-        outputLength: params.outputLength
-      };
-
-      // 派生密钥
-      const derivedKey = await kdf.generateSecretSync(password, kdfParams);
-      return derivedKey;
-    } catch (error) {
-      // 如果鸿蒙OS的CryptoFramework不支持Argon2，使用纯JavaScript实现
-      return await this.deriveKeyJS(params, password);
-    }
+  async deriveKey(params: Argon2Params, password: Uint8Array): Promise<Uint8Array> {
+    // 如果鸿蒙OS的CryptoFramework不支持Argon2，使用纯JavaScript实现
+    return await this.deriveKeyJS(params, password);
   }
 
   /**
@@ -211,41 +188,58 @@ export class Argon2 {
     let offset = 0;
 
     // 写入参数
-    new DataView(input.buffer).setUint32(offset, params.parallelism, true); offset += 4;
-    new DataView(input.buffer).setUint32(offset, params.outputLength, true); offset += 4;
-    new DataView(input.buffer).setUint32(offset, params.memory, true); offset += 4;
-    new DataView(input.buffer).setUint32(offset, params.iterations, true); offset += 4;
-    new DataView(input.buffer).setUint32(offset, 0x13, true); offset += 4; // 版本号
-    new DataView(input.buffer).setUint32(offset, params.variant, true); offset += 4;
+    new DataView(input.buffer).setUint32(offset, params.parallelism, true);
+    offset += 4;
+    new DataView(input.buffer).setUint32(offset, params.outputLength, true);
+    offset += 4;
+    new DataView(input.buffer).setUint32(offset, params.memory, true);
+    offset += 4;
+    new DataView(input.buffer).setUint32(offset, params.iterations, true);
+    offset += 4;
+    new DataView(input.buffer).setUint32(offset, 0x13, true);
+    offset += 4; // 版本号
+    new DataView(input.buffer).setUint32(offset, params.variant, true);
+    offset += 4;
 
     // 写入密码长度和密码
-    new DataView(input.buffer).setUint32(offset, password.length, true); offset += 4;
-    input.set(password, offset); offset += password.length;
+    new DataView(input.buffer).setUint32(offset, password.length, true);
+    offset += 4;
+    input.set(password, offset);
+    offset += password.length;
 
     // 写入盐值长度和盐值
-    new DataView(input.buffer).setUint32(offset, params.salt.length, true); offset += 4;
-    input.set(params.salt, offset); offset += params.salt.length;
+    new DataView(input.buffer).setUint32(offset, params.salt.length, true);
+    offset += 4;
+    input.set(params.salt, offset);
+    offset += params.salt.length;
 
     // 写入密钥（如果有）
     if (params.key && params.key.length > 0) {
-      new DataView(input.buffer).setUint32(offset, params.key.length, true); offset += 4;
-      input.set(params.key, offset); offset += params.key.length;
+      new DataView(input.buffer).setUint32(offset, params.key.length, true);
+      offset += 4;
+      input.set(params.key, offset);
+      offset += params.key.length;
     } else {
-      new DataView(input.buffer).setUint32(offset, 0, true); offset += 4;
+      new DataView(input.buffer).setUint32(offset, 0, true);
+      offset += 4;
     }
 
     // 写入关联数据（如果有）
     if (params.associatedData && params.associatedData.length > 0) {
-      new DataView(input.buffer).setUint32(offset, params.associatedData.length, true); offset += 4;
-      input.set(params.associatedData, offset); offset += params.associatedData.length;
+      new DataView(input.buffer).setUint32(offset, params.associatedData.length, true);
+      offset += 4;
+      input.set(params.associatedData, offset);
+      offset += params.associatedData.length;
     } else {
-      new DataView(input.buffer).setUint32(offset, 0, true); offset += 4;
+      new DataView(input.buffer).setUint32(offset, 0, true);
+      offset += 4;
     }
 
     // 计算哈希
-    const hash = cryptoFramework.createHash('SHA512');
-    await hash.update(input);
-    return await hash.digest();
+    const hash = cryptoFramework.createMd('SHA512');
+    await hash.update({ data: input });
+    let mdResult = await hash.digest();
+    return mdResult.data;
   }
 
   /**
@@ -262,9 +256,10 @@ export class Argon2 {
 
     // 简化实现：对每个块应用哈希函数
     for (let i = 0; i < blocks.length; i++) {
-      const hash = cryptoFramework.createHash('SHA512');
-      await hash.update(blocks[i]);
-      const digest = await hash.digest();
+      const hash = cryptoFramework.createMd('SHA512');
+      await hash.update({ data: blocks[i] });
+      let mdResult = await hash.digest();
+      const digest = mdResult.data;
 
       // 将哈希结果与块进行XOR操作
       for (let j = 0; j < blocks[i].length; j++) {
