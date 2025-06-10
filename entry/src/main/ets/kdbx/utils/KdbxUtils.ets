@@ -5,8 +5,39 @@ import { RandomUtils } from './RandomUtils';
 
 
 export class KdbxUtils {
+  // AES-256 UUID常量
+  static readonly AES256_CIPHER_UUID = new Uint8Array([
+    0x31, 0xC1, 0xF2, 0xE6, 0xBF, 0x71, 0x43, 0x50,
+    0xBE, 0x58, 0x05, 0x21, 0x6A, 0xFC, 0x5A, 0xFF
+  ]);
+
   // 创建随机数生成器
   private static rand: cryptoFramework.Random = cryptoFramework.createRandom();
+  
+  /**
+   * 生成指定长度的随机字节数组
+   * @param length 字节长度
+   * @returns 随机字节数组
+   */
+  static async getRandomBytes(length: number): Promise<Uint8Array> {
+    const bytes = new Uint8Array(length);
+    KdbxUtils.fillRandom(bytes);
+    return bytes;
+  }
+  
+  /**
+   * 比较两个字节数组是否相等
+   * @param a 第一个字节数组
+   * @param b 第二个字节数组
+   * @returns 是否相等
+   */
+  static arrayEquals(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
 
   /**
    * 生成随机数填充 Uint8Array
