@@ -9,6 +9,7 @@ import KdbxEntryUnitTest from './kdbx/models/KdbxEntry.test';
 import KdbxGroupUnitTest from './kdbx/models/KdbxGroup.test';
 import KdbxErrorUnitTest from './kdbx/KdbxError.test';
 import KdbxHeaderUnitTest from './kdbx/KdbxHeader.test';
+import Argon2UnitTest from './kdbx/crypto/Argon2.test';
 
 // import KdbxCryptoUnitTest from './kdbx/KdbxCrypto.test';
 // import KdbxCredentialsUnitTest from './kdbx/KdbxCredentials.test';
@@ -32,6 +33,7 @@ export default function testsuite() {
   KdbxGroupUnitTest();
   KdbxErrorUnitTest();
   KdbxHeaderUnitTest();
+  Argon2UnitTest();
 
   // KdbxCryptoUnitTest();
   // KdbxXmlProcessorUnitTest();
