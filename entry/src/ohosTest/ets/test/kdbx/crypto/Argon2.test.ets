@@ -162,17 +162,17 @@ export default function Argon2UnitTest() {
       }
     });
 
-    // 测试空密码和盐
-    it('should handle empty password and salt', 0, async () => {
+    // 测试空密码和最小盐值
+    it('should handle empty password and minimum salt', 0, async () => {
       const emptyPassword = new Uint8Array(0);
-      const emptySalt = new Uint8Array(0);
+      const minSalt = new Uint8Array(8); // 最小8字节的盐值
 
       const params: Argon2Params = {
         variant: Argon2Variant.Argon2d,
         iterations: 3,
         memory: 32,
         parallelism: 4,
-        salt: emptySalt,
+        salt: minSalt,
         outputLength: 32
       };
 
