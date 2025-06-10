@@ -1,79 +1,69 @@
-import { UUID, Binary } from './KdbxTypes';
+import { Binary } from './KdbxTypes';
 
 /**
- * KDBX4 文件头部实体定义
- * 包含数据库文件的基本信息和加密参数
+ * KDBX文件头部模型
  */
-export interface KdbxHeader {
-  /**
-   * 文件签名1
-   * 用于标识文件格式
-   */
-  signature1: number;
-
-  /**
-   * 文件签名2
-   * 用于标识文件格式
-   */
-  signature2: number;
-
-  /**
-   * 版本号
-   * 标识KDBX文件格式的版本
-   */
+export interface KdbxHeaderModel {
+  // 通用字段
   version: number;
-
-  /**
-   * 加密算法ID
-   * 用于标识使用的加密算法
-   */
-  cipherID: UUID;
-
-  /**
-   * 压缩标志
-   * 指示是否使用压缩以及使用的压缩算法
-   */
+  cipherId: Binary;
   compressionFlags: number;
-
-  /**
-   * 主种子
-   * 用于密钥派生
-   */
   masterSeed: Binary;
-
-  /**
-   * 转换种子
-   * 用于密钥转换
-   */
-  transformSeed: Binary;
-
-  /**
-   * 转换轮数
-   * 密钥转换的迭代次数
-   */
-  transformRounds: number;
-
-  /**
-   * 加密IV
-   * 初始化向量，用于加密
-   */
   encryptionIV: Binary;
+  innerRandomStreamId: number;
+  publicCustomData?: Map<string, Object>;
 
-  /**
-   * 受保护流密钥
-   * 用于保护敏感字段
-   */
-  protectedStreamKey: Binary;
+  // KDBX4特有字段
+  kdfParameters?: KdfParameters;
 
-  /**
-   * 流起始字节
-   * 用于验证解密是否成功
-   */
-  streamStartBytes: Binary;
+  // KDBX3.1特有字段
+  transformSeed?: Binary;
+  transformRounds?: number;
+  protectedStreamKey?: Binary;
+  streamStartBytes?: Binary;
+}
 
-  /**
-   * 内部随机流ID
-   * 用于标识内部随机流的类型
-   */
-  innerRandomStreamID: number;
+/*
+ * KDBX4特有字段
+ */
+export interface KdfParameters{
+  uuid: Binary;
+  iterations: number;
+  salt: Binary;
+  memory?: number;
+  parallelism?: number;
+  version?: number;
+}
+
+/**
+ * KDBX头部字段类型
+ */
+export enum KdbxHeaderFieldType {
+  END = 0,
+  COMMENT = 1,
+  CIPHER_ID = 2,
+  COMPRESSION_FLAGS = 3,
+  MASTER_SEED = 4,
+  TRANSFORM_SEED = 5,
+  TRANSFORM_ROUNDS = 6,
+  ENCRYPTION_IV = 7,
+  PROTECTED_STREAM_KEY = 8,
+  STREAM_START_BYTES = 9,
+  INNER_RANDOM_STREAM_ID = 10,
+  KDF_PARAMETERS = 11,
+  PUBLIC_CUSTOM_DATA = 12
+}
+
+/**
+ * KDF参数类型
+ */
+export enum KdfParameterType {
+  END = 0,
+  UUID = 1,
+  SALT = 2,
+  PARALLELISM = 3,
+  MEMORY = 4,
+  ITERATIONS = 5,
+  VERSION = 6,
+  SECRET_KEY = 7
 }
