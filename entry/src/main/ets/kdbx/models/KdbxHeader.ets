@@ -1,4 +1,4 @@
-import { Binary } from './KdbxTypes';
+import { Any, Binary, VariantDictionaryItem } from './KdbxTypes';
 
 /**
  * KDBX文件头部模型
@@ -11,7 +11,7 @@ export interface KdbxHeaderModel {
   masterSeed: Binary;
   encryptionIV: Binary;
   innerRandomStreamId: number;
-  publicCustomData?: Map<string, Object>;
+  publicCustomData?: Map<string, VariantDictionaryItem>;
 
   // KDBX4特有字段
   kdfParameters?: KdfParameters;
@@ -33,6 +33,7 @@ export interface KdfParameters{
   memory?: number;
   parallelism?: number;
   version?: number;
+  rounds?: number;
 }
 
 /**
