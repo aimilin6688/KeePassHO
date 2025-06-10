@@ -141,6 +141,10 @@ export default function KdbxHeaderUnitTest() {
 
     it('should handle unknown value types in custom data', 0, () => {
       const customData = new Map<string, VariantDictionaryItem>();
+      customData.set('validType', {
+        type: 0x05, // 有效的字符串类型
+        value: 'valid value'
+      });
       customData.set('invalidType', {
         type: 0xFF, // 未知类型
         value: 'some value'
@@ -148,7 +152,18 @@ export default function KdbxHeaderUnitTest() {
       header.getModel().publicCustomData = customData;
 
       const binary = header.writePublicCustomData();
-      expect(binary.length).assertEqual(0); // 应该跳过未知类型
+      // 现在应该包含有效数据的二进制表示
+      expect(binary.length).assertLarger(0);
+      
+      const newHeader = new KdbxHeader();
+      newHeader.processPublicCustomData(binary);
+
+      const result = newHeader.getModel().publicCustomData;
+      // 验证只有有效的数据被处理
+      expect(result?.size).assertEqual(1);
+      expect(result?.has('validType')).assertTrue();
+      expect(result?.has('invalidType')).assertFalse();
+      expect(result?.get('validType')?.value).assertEqual('valid value');
     });
 
     it('should correctly handle binary data in custom data', 0, () => {
