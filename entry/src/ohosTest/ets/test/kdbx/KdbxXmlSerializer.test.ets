@@ -300,6 +300,162 @@ export default function KdbxXmlSerializerUnitTest() {
       
       // 测试null数据库
       expect(() => serializer.serializeToXml(null)).toThrow();
+      
+      // 测试无效的UUID格式
+      const invalidUuidXml = `
+        <KeePassFile>
+          <Meta>
+            <Generator>KeePassHO</Generator>
+          </Meta>
+          <Root>
+            <Group>
+              <UUID>invalid-uuid</UUID>
+              <Name>测试组</Name>
+            </Group>
+          </Root>
+        </KeePassFile>
+      `;
+      expect(() => serializer.deserializeFromXml(invalidUuidXml)).toThrow();
+      
+      // 测试无效的日期格式
+      const invalidDateXml = `
+        <KeePassFile>
+          <Meta>
+            <Generator>KeePassHO</Generator>
+          </Meta>
+          <Root>
+            <Group>
+              <UUID>${serializer['uuidToString'](new Uint8Array(16))}</UUID>
+              <Name>测试组</Name>
+              <Times>
+                <CreationTime>invalid-date</CreationTime>
+              </Times>
+            </Group>
+          </Root>
+        </KeePassFile>
+      `;
+      const dbWithInvalidDate = serializer.deserializeFromXml(invalidDateXml);
+      expect(dbWithInvalidDate.root.creationTime instanceof Date).assertTrue();
+    });
+
+    it('should handle special characters in field values', 0, () => {
+      // 创建包含特殊字符的条目
+      const entry = db.root.groups[0].entries[0];
+      entry.fields = [
+        { name: 'Title', value: '<特殊>字符&测试"\'', protected: false },
+        { name: 'Notes', value: '包含换行符\n和制表符\t的内容', protected: false },
+        { name: 'XML', value: '<?xml version="1.0"?><test>内容</test>', protected: false }
+      ];
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+      
+      // 验证特殊字符是否正确保留
+      const deserializedEntry = deserializedDb.root.groups[0].entries[0];
+      expect(deserializedEntry.fields[0].value).assertEqual('<特殊>字符&测试"\'');
+      expect(deserializedEntry.fields[1].value).assertEqual('包含换行符\n和制表符\t的内容');
+      expect(deserializedEntry.fields[2].value).assertEqual('<?xml version="1.0"?><test>内容</test>');
+    });
+
+    it('should handle different inner random stream types', 0, () => {
+      // 测试不同的内部随机流类型
+      const streamTypes = [
+        InnerRandomStreamID.CHACHA20,
+        InnerRandomStreamID.SALSA20,
+        InnerRandomStreamID.ARC4VARIANT
+      ];
+
+      for (const streamType of streamTypes) {
+        // 创建使用特定流类型的序列化器
+        const streamKey = new Uint8Array(32);
+        KdbxUtils.fillRandom(streamKey);
+        const typeSerializer = new KdbxXmlSerializer(streamKey, streamType);
+
+        // 创建包含受保护字段的条目
+        const entry = db.root.groups[0].entries[0];
+        const testValue = '受保护的测试值';
+        entry.fields = [
+          { name: 'Password', value: testValue, protected: true }
+        ];
+
+        // 序列化和反序列化
+        const xml = typeSerializer.serializeToXml(db);
+        
+        // 验证受保护的值在XML中被加密（不应该包含原始值）
+        expect(xml).assertNotContain(testValue);
+
+        // 反序列化并验证值是否正确恢复
+        const deserializedDb = typeSerializer.deserializeFromXml(xml);
+        const deserializedEntry = deserializedDb.root.groups[0].entries[0];
+        expect(deserializedEntry.fields[0].value).assertEqual(testValue);
+        expect(deserializedEntry.fields[0].protected).assertTrue();
+      }
+    });
+
+    it('should handle large binary attachments', 0, () => {
+      // 创建大型二进制附件（1MB）
+      const attachmentSize = 1024 * 1024;
+      const attachmentData = new Uint8Array(attachmentSize);
+      KdbxUtils.fillRandom(attachmentData);
+
+      // 添加附件到数据库
+      const attachmentId = '1';
+      db.binaries.set(attachmentId, attachmentData);
+
+      // 添加附件引用到条目
+      const entry = db.root.groups[0].entries[0];
+      entry.binaries.set('large-file.bin', { id: attachmentId });
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+
+      // 验证附件数据
+      const deserializedAttachmentData = deserializedDb.binaries.get(attachmentId);
+      expect(deserializedAttachmentData).not().assertUndefined();
+      expect(deserializedAttachmentData.length).assertEqual(attachmentSize);
+
+      // 验证数据内容
+      for (let i = 0; i < attachmentSize; i += 1024) {
+        expect(deserializedAttachmentData[i]).assertEqual(attachmentData[i]);
+      }
+
+      // 验证条目的附件引用
+      const deserializedEntry = deserializedDb.root.groups[0].entries[0];
+      expect(deserializedEntry.binaries.has('large-file.bin')).assertTrue();
+      expect(deserializedEntry.binaries.get('large-file.bin').id).assertEqual(attachmentId);
+    });
+
+    it('should handle empty and null values correctly', 0, () => {
+      // 创建包含空值和未定义值的条目
+      const entry = db.root.groups[0].entries[0];
+      entry.fields = [
+        { name: 'EmptyString', value: '', protected: false },
+        { name: 'Whitespace', value: '   ', protected: false },
+        { name: 'EmptyProtected', value: '', protected: true }
+      ];
+
+      // 添加空二进制附件
+      const emptyAttachmentId = 'empty';
+      db.binaries.set(emptyAttachmentId, new Uint8Array(0));
+      entry.binaries.set('empty.bin', { id: emptyAttachmentId });
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+
+      // 验证字段值
+      const deserializedEntry = deserializedDb.root.groups[0].entries[0];
+      expect(deserializedEntry.fields[0].value).assertEqual('');
+      expect(deserializedEntry.fields[1].value).assertEqual('   ');
+      expect(deserializedEntry.fields[2].value).assertEqual('');
+      expect(deserializedEntry.fields[2].protected).assertTrue();
+
+      // 验证空附件
+      const deserializedAttachmentData = deserializedDb.binaries.get(emptyAttachmentId);
+      expect(deserializedAttachmentData).not().assertUndefined();
+      expect(deserializedAttachmentData.length).assertEqual(0);
     });
     
     it('should deserialize entry string fields correctly', 0, () => {
@@ -339,6 +495,142 @@ export default function KdbxXmlSerializerUnitTest() {
         expect(deserializedField.value).assertEqual(field.value);
         expect(deserializedField.protected).assertEqual(field.protected);
       }
+    });
+
+    it('should handle custom data correctly', 0, () => {
+      // 添加自定义数据到数据库元数据
+      db.meta.customData = [
+        { key: 'CustomKey1', value: 'CustomValue1', lastModified: new Date(2023, 0, 1) },
+        { key: 'CustomKey2', value: 'CustomValue2', lastModified: new Date(2023, 0, 2) }
+      ];
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+
+      // 验证自定义数据
+      expect(deserializedDb.meta.customData).not().assertUndefined();
+      expect(deserializedDb.meta.customData.length).assertEqual(2);
+
+      // 验证每个自定义数据项
+      const customData1 = deserializedDb.meta.customData.find(d => d.key === 'CustomKey1');
+      expect(customData1).not().assertUndefined();
+      expect(customData1.value).assertEqual('CustomValue1');
+      expect(customData1.lastModified instanceof Date).assertTrue();
+
+      const customData2 = deserializedDb.meta.customData.find(d => d.key === 'CustomKey2');
+      expect(customData2).not().assertUndefined();
+      expect(customData2.value).assertEqual('CustomValue2');
+      expect(customData2.lastModified instanceof Date).assertTrue();
+    });
+
+    it('should handle deleted objects correctly', 0, () => {
+      // 创建删除对象
+      const deletedUuid1 = new Uint8Array(16);
+      KdbxUtils.fillRandom(deletedUuid1);
+      const deletedUuid2 = new Uint8Array(16);
+      KdbxUtils.fillRandom(deletedUuid2);
+
+      // 添加删除对象到数据库
+      db.deletedObjects = [
+        { uuid: deletedUuid1, deletionTime: new Date(2023, 0, 1) },
+        { uuid: deletedUuid2, deletionTime: new Date(2023, 0, 2) }
+      ];
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+
+      // 验证删除对象
+      expect(deserializedDb.deletedObjects).not().assertUndefined();
+      expect(deserializedDb.deletedObjects.length).assertEqual(2);
+
+      // 验证每个删除对象
+      expect(deserializedDb.deletedObjects[0].deletionTime instanceof Date).assertTrue();
+      expect(deserializedDb.deletedObjects[1].deletionTime instanceof Date).assertTrue();
+    });
+
+    it('should handle entry history correctly', 0, () => {
+      // 创建条目
+      const entryUuid = new Uint8Array(16);
+      KdbxUtils.fillRandom(entryUuid);
+      const entry = new KdbxEntry(entryUuid, db.root.uuid);
+      entry.fields = [
+        { name: 'Title', value: '当前版本', protected: false },
+        { name: 'Password', value: '当前密码', protected: true }
+      ];
+
+      // 创建历史条目
+      const historyEntry1 = new KdbxEntry(entryUuid, db.root.uuid);
+      historyEntry1.fields = [
+        { name: 'Title', value: '历史版本1', protected: false },
+        { name: 'Password', value: '历史密码1', protected: true }
+      ];
+      historyEntry1.creationTime = new Date(2022, 0, 1);
+      historyEntry1.lastModifiedTime = new Date(2022, 0, 1);
+
+      const historyEntry2 = new KdbxEntry(entryUuid, db.root.uuid);
+      historyEntry2.fields = [
+        { name: 'Title', value: '历史版本2', protected: false },
+        { name: 'Password', value: '历史密码2', protected: true }
+      ];
+      historyEntry2.creationTime = new Date(2022, 6, 1);
+      historyEntry2.lastModifiedTime = new Date(2022, 6, 1);
+
+      // 添加历史条目
+      entry.history = [historyEntry1, historyEntry2];
+      db.root.addEntry(entry);
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+
+      // 获取反序列化后的条目
+      const deserializedEntry = deserializedDb.root.entries.find(e => 
+        e.fields.some(f => f.name === 'Title' && f.value === '当前版本'));
+      
+      expect(deserializedEntry).not().assertUndefined();
+      expect(deserializedEntry.history).not().assertUndefined();
+      expect(deserializedEntry.history.length).assertEqual(2);
+
+      // 验证历史条目
+      const deserializedHistoryEntry1 = deserializedEntry.history[0];
+      const titleField1 = deserializedHistoryEntry1.fields.find(f => f.name === 'Title');
+      expect(titleField1).not().assertUndefined();
+      expect(titleField1.value).assertEqual('历史版本1');
+
+      const passwordField1 = deserializedHistoryEntry1.fields.find(f => f.name === 'Password');
+      expect(passwordField1).not().assertUndefined();
+      expect(passwordField1.value).assertEqual('历史密码1');
+      expect(passwordField1.protected).assertTrue();
+
+      const deserializedHistoryEntry2 = deserializedEntry.history[1];
+      const titleField2 = deserializedHistoryEntry2.fields.find(f => f.name === 'Title');
+      expect(titleField2).not().assertUndefined();
+      expect(titleField2.value).assertEqual('历史版本2');
+    });
+
+    it('should handle meta memory protection settings', 0, () => {
+      // 设置内存保护设置
+      db.meta.memoryProtection = {
+        protectTitle: false,
+        protectUserName: false,
+        protectPassword: true,
+        protectUrl: false,
+        protectNotes: false
+      };
+
+      // 序列化和反序列化
+      const xml = serializer.serializeToXml(db);
+      const deserializedDb = serializer.deserializeFromXml(xml);
+
+      // 验证内存保护设置
+      expect(deserializedDb.meta.memoryProtection).not().assertUndefined();
+      expect(deserializedDb.meta.memoryProtection.protectTitle).assertEqual(false);
+      expect(deserializedDb.meta.memoryProtection.protectUserName).assertEqual(false);
+      expect(deserializedDb.meta.memoryProtection.protectPassword).assertEqual(true);
+      expect(deserializedDb.meta.memoryProtection.protectUrl).assertEqual(false);
+      expect(deserializedDb.meta.memoryProtection.protectNotes).assertEqual(false);
     });
   });
 }
