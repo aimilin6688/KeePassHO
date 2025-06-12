@@ -6,6 +6,8 @@ import { KdbxError, KdbxErrorCode } from './KdbxError';
 import { InnerRandomStreamID } from './KdbxFormat';
 import { ARC4 } from './crypto/ARC4';
 
+import { xml, util } from '@kit.ArkTS';
+
 /**
  * KDBX序列化器
  */
@@ -41,6 +43,7 @@ export class KdbxSerializer {
     try {
       // 创建XML文档
       const doc = this.createXmlDocument();
+      xml.XmlSerializer()
 
       // 创建根元素
       const rootElement = doc.createElement('KeePassFile');
