@@ -11,7 +11,7 @@ import { xml, util } from '@kit.ArkTS';
 /**
  * KDBX序列化器
  */
-export class KdbxSerializer {
+export class KdbxXmlSerializer {
   /**
    * 保护流密钥
    */
@@ -41,30 +41,35 @@ export class KdbxSerializer {
    */
   serializeToXml(db: KdbxDatabase): string {
     try {
-      // 创建XML文档
-      const doc = this.createXmlDocument();
-      xml.XmlSerializer()
+      // 创建XML序列化器
+      const buffer = new ArrayBuffer(1024 * 1024); // 1MB初始大小
+      const serializer = new xml.XmlSerializer(buffer, 'utf-8');
+
+      // 写入XML声明
+      serializer.setDeclaration();
 
       // 创建根元素
-      const rootElement = doc.createElement('KeePassFile');
-      doc.appendChild(rootElement);
+      serializer.startElement('KeePassFile');
+      
+      // 添加XML命名空间
+      serializer.setNamespace('', 'http://www.keepassdx.com/ns/kdbx');
 
       // 添加元数据
-      this.serializeMeta(doc, rootElement, db.meta);
+      this.serializeMeta(serializer, db.meta);
 
       // 添加根组
-      const rootGroupElement = this.serializeGroup(doc, db.root);
-
-      // 创建组元素
-      const groupsElement = doc.createElement('Root');
-      groupsElement.appendChild(rootGroupElement);
-      rootElement.appendChild(groupsElement);
+      serializer.startElement('Root');
+      this.serializeGroup(serializer, db.root);
+      serializer.endElement(); // 结束Root元素
 
       // 添加已删除对象
-      this.serializeDeletedObjects(doc, rootElement, db.deletedObjects);
+      this.serializeDeletedObjects(serializer, db.deletedObjects);
+
+      // 结束根元素
+      serializer.endElement(); // 结束KeePassFile元素
 
       // 返回XML字符串
-      return this.xmlToString(doc);
+      return buffer.toString();
     } catch (error) {
       throw KdbxError.wrap(
         error as Error,
@@ -76,49 +81,81 @@ export class KdbxSerializer {
 
   /**
    * 从XML反序列化数据库
-   * @param xml XML字符串
+   * @param xmlString XML字符串
    * @returns 数据库
    */
-  deserializeFromXml(xml: string): KdbxDatabase {
+  deserializeFromXml(xmlString: string): KdbxDatabase {
     try {
-      // 解析XML文档
-      const doc = this.parseXmlDocument(xml);
-
-      // 获取根元素
-      const rootElement = doc.documentElement;
-      if (!rootElement || rootElement.nodeName !== 'KeePassFile') {
-        throw new KdbxError(
-          KdbxErrorCode.INVALID_XML_STRUCTURE,
-          '无效的KeePass XML结构'
-        );
-      }
-
       // 创建数据库
       const db = new KdbxDatabase();
-
-      // 解析元数据
-      const metaElement = rootElement.querySelector('Meta');
-      if (metaElement) {
-        db.meta = this.deserializeMeta(metaElement);
-      }
-
-      // 解析根组
-      const rootGroupElement = rootElement.querySelector('Root > Group');
-      if (rootGroupElement) {
-        db.root = this.deserializeGroup(rootGroupElement);
-      } else {
+      
+      // 创建XML解析器
+      const buffer = new ArrayBuffer(xmlString.length * 2); // 确保足够大的缓冲区
+      const dataView = new DataView(buffer);
+      
+      // 将字符串写入缓冲区
+      const encoder = new util.TextEncoder();
+      const encodedData = encoder.encodeInto(xmlString);
+      
+      // 创建解析器
+      const parser = new xml.XmlPullParser(encodedData.buffer);
+      
+      // 解析XML
+      let inMeta = false;
+      let inRoot = false;
+      let inDeletedObjects = false;
+      
+      parser.parseXml({
+        supportDoctype: true,
+        ignoreNameSpace: false,
+        tokenValueCallbackFunction: (eventType, value) => {
+          if (eventType === xml.EventType.START_TAG) {
+            const tagName = value.getName();
+            
+            if (tagName === 'KeePassFile') {
+              // 开始解析数据库
+              return true;
+            } else if (tagName === 'Meta') {
+              inMeta = true;
+              db.meta = this.deserializeMeta(parser);
+              inMeta = false;
+              return true;
+            } else if (tagName === 'Root') {
+              inRoot = true;
+              return true;
+            } else if (inRoot && tagName === 'Group') {
+              db.root = this.deserializeGroup(parser);
+              return true;
+            } else if (tagName === 'DeletedObjects') {
+              inDeletedObjects = true;
+              db.deletedObjects = this.deserializeDeletedObjects(parser);
+              inDeletedObjects = false;
+              return true;
+            }
+          } else if (eventType === xml.EventType.END_TAG) {
+            const tagName = value.getName();
+            
+            if (tagName === 'Root') {
+              inRoot = false;
+              return true;
+            } else if (tagName === 'KeePassFile') {
+              // 结束解析数据库
+              return true;
+            }
+          }
+          
+          return true;
+        }
+      });
+      
+      // 验证数据库结构
+      if (!db.root) {
         throw new KdbxError(
           KdbxErrorCode.INVALID_XML_STRUCTURE,
           '未找到根组'
         );
       }
-
-      // 解析已删除对象
-      const deletedObjectsElement = rootElement.querySelector('DeletedObjects');
-      if (deletedObjectsElement) {
-        db.deletedObjects = this.deserializeDeletedObjects(deletedObjectsElement);
-      }
-
+      
       return db;
     } catch (error) {
       throw KdbxError.wrap(
@@ -130,42 +167,26 @@ export class KdbxSerializer {
   }
 
   /**
-   * 创建XML文档
-   * @returns XML文档
-   */
-  private createXmlDocument(): Document {
-    return new DOMParser().parseFromString('<?xml version="1.0" encoding="utf-8" standalone="yes"?>',
-      'application/xml');
-  }
-
-  /**
    * 解析XML文档
-   * @param xml XML字符串
-   * @returns XML文档
+   * @param xmlString XML字符串
+   * @returns XML解析器
    */
-  private parseXmlDocument(xml: string): Document {
-    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-
-    // 检查解析错误
-    const parseError = doc.querySelector('parsererror');
-    if (parseError) {
-      throw new KdbxError(
+  private parseXmlDocument(xmlString: string): xml.XmlPullParser {
+    try {
+      // 创建XML解析器
+      const parser = new xml.XmlPullParser();
+      
+      // 设置输入
+      parser.parse(xmlString);
+      
+      return parser;
+    } catch (error) {
+      throw KdbxError.wrap(
+        error as Error,
         KdbxErrorCode.XML_PARSING_FAILED,
-        `XML解析错误: ${parseError.textContent}`
+        'XML解析错误'
       );
     }
-
-    return doc;
-  }
-
-  /**
-   * 将XML文档转换为字符串
-   * @param doc XML文档
-   * @returns XML字符串
-   */
-  private xmlToString(doc: Document): string {
-    const serializer = new XMLSerializer();
-    return serializer.serializeToString(doc);
   }
 
   /**
@@ -174,59 +195,67 @@ export class KdbxSerializer {
    * @param parentElement 父元素
    * @param meta 元数据
    */
-  private serializeMeta(doc: Document, parentElement: Element, meta: Meta): void {
-    const metaElement = doc.createElement('Meta');
+  private serializeMeta(serializer: xml.XmlSerializer, meta: Meta): void {
+    // 开始Meta元素
+    serializer.startElement('Meta');
 
     // 添加基本元数据
-    this.appendTextElement(doc, metaElement, 'DatabaseName', meta.databaseName);
-    this.appendTextElement(doc, metaElement, 'DatabaseDescription', meta.databaseDescription);
-    this.appendTextElement(doc, metaElement, 'DefaultUserName', meta.defaultUserName);
-    this.appendTextElement(doc, metaElement, 'HistoryMaxItems', meta.historyMaxItems.toString());
-    this.appendTextElement(doc, metaElement, 'HistoryMaxSize', meta.historyMaxSize.toString());
+    this.appendTextElement(serializer, 'DatabaseName', meta.databaseName);
+    this.appendTextElement(serializer, 'DatabaseDescription', meta.databaseDescription);
+    this.appendTextElement(serializer, 'DefaultUserName', meta.defaultUserName);
+    this.appendTextElement(serializer, 'HistoryMaxItems', meta.historyMaxItems.toString());
+    this.appendTextElement(serializer, 'HistoryMaxSize', meta.historyMaxSize.toString());
 
     // 添加回收站设置
-    this.appendTextElement(doc, metaElement, 'RecycleBinEnabled', meta.recycleBinEnabled ? 'True' : 'False');
+    this.appendTextElement(serializer, 'RecycleBinEnabled', meta.recycleBinEnabled ? 'True' : 'False');
     if (meta.recycleBinUUID) {
-      this.appendTextElement(doc, metaElement, 'RecycleBinUUID', this.uuidToString(meta.recycleBinUUID));
+      this.appendTextElement(serializer, 'RecycleBinUUID', this.uuidToString(meta.recycleBinUUID));
     }
     if (meta.recycleBinChanged) {
-      this.appendTextElement(doc, metaElement, 'RecycleBinChanged', this.dateToString(meta.recycleBinChanged));
+      this.appendTextElement(serializer, 'RecycleBinChanged', this.dateToString(meta.recycleBinChanged));
     }
 
     // 添加主密钥更改时间
     if (meta.masterKeyChanged) {
-      this.appendTextElement(doc, metaElement, 'MasterKeyChanged', this.dateToString(meta.masterKeyChanged));
+      this.appendTextElement(serializer, 'MasterKeyChanged', this.dateToString(meta.masterKeyChanged));
     }
 
     // 添加内存保护设置
-    const memoryProtectionElement = doc.createElement('MemoryProtection');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectTitle',
-      meta.memoryProtection.protectTitle ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectUserName',
-      meta.memoryProtection.protectUserName ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectPassword',
-      meta.memoryProtection.protectPassword ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectURL',
-      meta.memoryProtection.protectUrl ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectNotes',
-      meta.memoryProtection.protectNotes ? 'True' : 'False');
-    metaElement.appendChild(memoryProtectionElement);
+    serializer.startElement('MemoryProtection');
+    this.appendTextElement(serializer, 'ProtectTitle', meta.memoryProtection.protectTitle ? 'True' : 'False');
+    this.appendTextElement(serializer, 'ProtectUserName', meta.memoryProtection.protectUserName ? 'True' : 'False');
+    this.appendTextElement(serializer, 'ProtectPassword', meta.memoryProtection.protectPassword ? 'True' : 'False');
+    this.appendTextElement(serializer, 'ProtectURL', meta.memoryProtection.protectUrl ? 'True' : 'False');
+    this.appendTextElement(serializer, 'ProtectNotes', meta.memoryProtection.protectNotes ? 'True' : 'False');
+    serializer.endElement(); // 结束MemoryProtection元素
 
     // 添加自定义图标
     if (meta.customIcons.size > 0) {
-      const customIconsElement = doc.createElement('CustomIcons');
+      serializer.startElement('CustomIcons');
 
       meta.customIcons.forEach((data, uuid) => {
-        const iconElement = doc.createElement('Icon');
-        this.appendTextElement(doc, iconElement, 'UUID', this.uuidToString(uuid));
-        this.appendTextElement(doc, iconElement, 'Data', this.binaryToBase64(data));
-        customIconsElement.appendChild(iconElement);
+        serializer.startElement('Icon');
+        this.appendTextElement(serializer, 'UUID', this.uuidToString(uuid));
+        this.appendTextElement(serializer, 'Data', this.binaryToBase64(data));
+        serializer.endElement(); // 结束Icon元素
       });
 
-      metaElement.appendChild(customIconsElement);
+      serializer.endElement(); // 结束CustomIcons元素
     }
 
-    parentElement.appendChild(metaElement);
+    serializer.endElement(); // 结束Meta元素
+  }
+
+  /**
+   * 添加文本元素
+   * @param serializer XML序列化器
+   * @param name 元素名称
+   * @param value 元素值
+   */
+  private appendTextElement(serializer: xml.XmlSerializer, name: string, value: string): void {
+    serializer.startElement(name);
+    serializer.setText(value);
+    serializer.endElement();
   }
 
   /**
@@ -286,49 +315,49 @@ export class KdbxSerializer {
 
   /**
    * 序列化组
-   * @param doc XML文档
+   * @param serializer XML序列化器
    * @param group 组
-   * @returns 组元素
    */
-  private serializeGroup(doc: Document, group: KdbxGroup): Element {
-    const groupElement = doc.createElement('Group');
+  private serializeGroup(serializer: xml.XmlSerializer, group: KdbxGroup): void {
+    // 开始Group元素
+    serializer.startElement('Group');
 
     // 添加基本属性
-    this.appendTextElement(doc, groupElement, 'UUID', this.uuidToString(group.uuid));
-    this.appendTextElement(doc, groupElement, 'Name', group.name);
-    this.appendTextElement(doc, groupElement, 'Notes', '');
+    this.appendTextElement(serializer, 'UUID', this.uuidToString(group.uuid));
+    this.appendTextElement(serializer, 'Name', group.name);
+    this.appendTextElement(serializer, 'Notes', '');
 
     // 添加图标
-    this.appendTextElement(doc, groupElement, 'IconID', group.icon.id.toString());
+    this.appendTextElement(serializer, 'IconID', group.icon.id.toString());
     if (group.icon.uuid) {
-      this.appendTextElement(doc, groupElement, 'CustomIconUUID', this.uuidToString(group.icon.uuid));
+      this.appendTextElement(serializer, 'CustomIconUUID', this.uuidToString(group.icon.uuid));
     }
 
     // 添加时间信息
-    const timesElement = doc.createElement('Times');
-    this.appendTextElement(doc, timesElement, 'CreationTime', this.dateToString(group.creationTime));
-    this.appendTextElement(doc, timesElement, 'LastModificationTime', this.dateToString(group.lastModifiedTime));
-    this.appendTextElement(doc, timesElement, 'LastAccessTime', this.dateToString(group.lastAccessTime));
-    this.appendTextElement(doc, timesElement, 'ExpiryTime', this.dateToString(group.expiryTime || new Date(0)));
-    this.appendTextElement(doc, timesElement, 'Expires', group.expires ? 'True' : 'False');
-    this.appendTextElement(doc, timesElement, 'UsageCount', '0');
-    this.appendTextElement(doc, timesElement, 'LocationChanged', this.dateToString(group.lastModifiedTime));
-    groupElement.appendChild(timesElement);
+    serializer.startElement('Times');
+    this.appendTextElement(serializer, 'CreationTime', this.dateToString(group.creationTime));
+    this.appendTextElement(serializer, 'LastModificationTime', this.dateToString(group.lastModifiedTime));
+    this.appendTextElement(serializer, 'LastAccessTime', this.dateToString(group.lastAccessTime));
+    this.appendTextElement(serializer, 'ExpiryTime', this.dateToString(group.expiryTime || new Date(0)));
+    this.appendTextElement(serializer, 'Expires', group.expires ? 'True' : 'False');
+    this.appendTextElement(serializer, 'UsageCount', '0');
+    this.appendTextElement(serializer, 'LocationChanged', this.dateToString(group.lastModifiedTime));
+    serializer.endElement(); // 结束Times元素
 
     // 添加是否展开
-    this.appendTextElement(doc, groupElement, 'IsExpanded', group.isExpanded ? 'True' : 'False');
+    this.appendTextElement(serializer, 'IsExpanded', group.isExpanded ? 'True' : 'False');
 
     // 添加子组
     for (const childGroup of group.groups) {
-      groupElement.appendChild(this.serializeGroup(doc, childGroup));
+      this.serializeGroup(serializer, childGroup);
     }
 
     // 添加条目
     for (const entry of group.entries) {
-      groupElement.appendChild(this.serializeEntry(doc, entry));
+      this.serializeEntry(serializer, entry);
     }
 
-    return groupElement;
+    serializer.endElement(); // 结束Group元素
   }
 
   /**
@@ -380,258 +409,379 @@ export class KdbxSerializer {
 
   /**
    * 序列化条目
-   * @param doc XML文档
+   * @param serializer XML序列化器
    * @param entry 条目
-   * @returns 条目元素
    */
-  private serializeEntry(doc: Document, entry: KdbxEntry): Element {
-    const entryElement = doc.createElement('Entry');
+  private serializeEntry(serializer: xml.XmlSerializer, entry: KdbxEntry): void {
+    // 开始Entry元素
+    serializer.startElement('Entry');
 
     // 添加基本属性
-    this.appendTextElement(doc, entryElement, 'UUID', this.uuidToString(entry.uuid));
+    this.appendTextElement(serializer, 'UUID', this.uuidToString(entry.uuid));
 
     // 添加图标
-    this.appendTextElement(doc, entryElement, 'IconID', entry.icon.id.toString());
+    this.appendTextElement(serializer, 'IconID', entry.icon.id.toString());
     if (entry.icon.uuid) {
-      this.appendTextElement(doc, entryElement, 'CustomIconUUID', this.uuidToString(entry.icon.uuid));
+      this.appendTextElement(serializer, 'CustomIconUUID', this.uuidToString(entry.icon.uuid));
     }
 
     // 添加时间信息
-    const timesElement = doc.createElement('Times');
-    this.appendTextElement(doc, timesElement, 'CreationTime', this.dateToString(entry.creationTime));
-    this.appendTextElement(doc, timesElement, 'LastModificationTime', this.dateToString(entry.lastModifiedTime));
-    this.appendTextElement(doc, timesElement, 'LastAccessTime', this.dateToString(entry.lastAccessTime));
-    this.appendTextElement(doc, timesElement, 'ExpiryTime', this.dateToString(entry.expiryTime || new Date(0)));
-    this.appendTextElement(doc, timesElement, 'Expires', entry.expires ? 'True' : 'False');
-    this.appendTextElement(doc, timesElement, 'UsageCount', '0');
-    this.appendTextElement(doc, timesElement, 'LocationChanged', this.dateToString(entry.lastModifiedTime));
-    entryElement.appendChild(timesElement);
+    serializer.startElement('Times');
+    this.appendTextElement(serializer, 'CreationTime', this.dateToString(entry.creationTime));
+    this.appendTextElement(serializer, 'LastModificationTime', this.dateToString(entry.lastModifiedTime));
+    this.appendTextElement(serializer, 'LastAccessTime', this.dateToString(entry.lastAccessTime));
+    this.appendTextElement(serializer, 'ExpiryTime', this.dateToString(entry.expiryTime || new Date(0)));
+    this.appendTextElement(serializer, 'Expires', entry.expires ? 'True' : 'False');
+    this.appendTextElement(serializer, 'UsageCount', '0');
+    this.appendTextElement(serializer, 'LocationChanged', this.dateToString(entry.lastModifiedTime));
+    serializer.endElement(); // 结束Times元素
 
     // 添加字段
     for (const field of entry.fields) {
-      const stringElement = doc.createElement('String');
-
-      const keyElement = doc.createElement('Key');
-      keyElement.textContent = field.name;
-      stringElement.appendChild(keyElement);
-
-      const valueElement = doc.createElement('Value');
+      serializer.startElement('String');
+      
+      this.appendTextElement(serializer, 'Key', field.name);
+      
+      serializer.startElement('Value');
       if (field.protected) {
-        valueElement.setAttribute('Protected', 'True');
-        valueElement.textContent = this.protectValue(field.value);
+        serializer.setAttributes([{ name: 'Protected', value: 'True' }]);
+        serializer.setText(this.protectValue(field.value));
       } else {
-        valueElement.textContent = field.value;
+        serializer.setText(field.value);
       }
-      stringElement.appendChild(valueElement);
-
-      entryElement.appendChild(stringElement);
+      serializer.endElement(); // 结束Value元素
+      
+      serializer.endElement(); // 结束String元素
     }
 
     // 添加二进制附件
     for (const attachment of entry.attachments) {
-      const binaryElement = doc.createElement('Binary');
-
-      const keyElement = doc.createElement('Key');
-      keyElement.textContent = attachment.name;
-      binaryElement.appendChild(keyElement);
-
-      const valueElement = doc.createElement('Value');
-      valueElement.setAttribute('Ref', attachment.ref || '0');
-      binaryElement.appendChild(valueElement);
-
-      entryElement.appendChild(binaryElement);
+      serializer.startElement('Binary');
+      
+      this.appendTextElement(serializer, 'Key', attachment.name);
+      
+      serializer.startElement('Value');
+      serializer.setAttributes([{ name: 'Ref', value: attachment.ref || '0' }]);
+      serializer.endElement(); // 结束Value元素
+      
+      serializer.endElement(); // 结束Binary元素
     }
 
     // 添加自动类型
     if (entry.autoType && entry.autoType.enabled) {
-      const autoTypeElement = doc.createElement('AutoType');
-      this.appendTextElement(doc, autoTypeElement, 'Enabled', entry.autoType.enabled ? 'True' : 'False');
-      this.appendTextElement(doc, autoTypeElement, 'DataTransferObfuscation', '0');
-      this.appendTextElement(doc, autoTypeElement, 'DefaultSequence', entry.autoType.defaultSequence || '');
+      serializer.startElement('AutoType');
+      this.appendTextElement(serializer, 'Enabled', entry.autoType.enabled ? 'True' : 'False');
+      this.appendTextElement(serializer, 'DataTransferObfuscation', '0');
+      this.appendTextElement(serializer, 'DefaultSequence', entry.autoType.defaultSequence || '');
 
       // 添加自动类型关联
       if (entry.autoType.associations && entry.autoType.associations.length > 0) {
-        const associationsElement = doc.createElement('Association');
+        serializer.startElement('Association');
 
         for (const assoc of entry.autoType.associations) {
-          const associationElement = doc.createElement('Association');
-          this.appendTextElement(doc, associationElement, 'Window', assoc.window || '');
-          this.appendTextElement(doc, associationElement, 'KeystrokeSequence', assoc.keystrokeSequence || '');
-          associationsElement.appendChild(associationElement);
+          serializer.startElement('Association');
+          this.appendTextElement(serializer, 'Window', assoc.window || '');
+          this.appendTextElement(serializer, 'KeystrokeSequence', assoc.keystrokeSequence || '');
+          serializer.endElement(); // 结束Association元素
         }
 
-        autoTypeElement.appendChild(associationsElement);
+        serializer.endElement(); // 结束Association元素
       }
 
-      entryElement.appendChild(autoTypeElement);
+      serializer.endElement(); // 结束AutoType元素
     }
 
     // 添加历史
     if (entry.history && entry.history.length > 0) {
-      const historyElement = doc.createElement('History');
+      serializer.startElement('History');
 
       for (const historyEntry of entry.history) {
-        historyElement.appendChild(this.serializeEntry(doc, historyEntry));
+        this.serializeEntry(serializer, historyEntry);
       }
 
-      entryElement.appendChild(historyElement);
+      serializer.endElement(); // 结束History元素
     }
 
-    return entryElement;
+    serializer.endElement(); // 结束Entry元素
   }
 
   /**
    * 反序列化条目
-   * @param entryElement 条目元素
+   * @param parser XML解析器
    * @returns 条目
    */
-  private deserializeEntry(entryElement: Element): KdbxEntry {
-    const uuid = this.stringToUuid(this.getElementText(entryElement, 'UUID'));
-    const entry = new KdbxEntry(uuid, new Uint8Array(16)); // 临时父组UUID，将在添加到组时更新
+  private deserializeEntry(parser: xml.XmlPullParser): KdbxEntry {
+    let uuid: UUID | undefined;
+    let iconId = 0;
+    let customIconUUID: UUID | undefined;
+    let entry: KdbxEntry | undefined;
 
-    // 解析图标
-    const iconId = parseInt(this.getElementText(entryElement, 'IconID') || '0', 10);
-    const customIconUUID = this.stringToUuid(this.getElementText(entryElement, 'CustomIconUUID'));
-    entry.icon = { id: iconId, uuid: customIconUUID };
+    // 读取基本属性
+    while (parser.next() !== xml.EventType.END_DOCUMENT) {
+      if (parser.getEventType() === xml.EventType.START_TAG) {
+        const tagName = parser.getName();
+        
+        switch (tagName) {
+          case 'UUID':
+            parser.next();
+            if (parser.getEventType() === xml.EventType.TEXT) {
+              uuid = this.stringToUuid(parser.getText());
+            }
+            break;
+            
+          case 'IconID':
+            parser.next();
+            if (parser.getEventType() === xml.EventType.TEXT) {
+              iconId = parseInt(parser.getText() || '0', 10);
+            }
+            break;
+            
+          case 'CustomIconUUID':
+            parser.next();
+            if (parser.getEventType() === xml.EventType.TEXT) {
+              customIconUUID = this.stringToUuid(parser.getText());
+            }
+            break;
 
-    // 解析时间信息
-    const timesElement = entryElement.querySelector('Times');
-    if (timesElement) {
-      entry.creationTime = this.stringToDate(this.getElementText(timesElement, 'CreationTime')) || new Date();
-      entry.lastModifiedTime =
-        this.stringToDate(this.getElementText(timesElement, 'LastModificationTime')) || new Date();
-      entry.lastAccessTime = this.stringToDate(this.getElementText(timesElement, 'LastAccessTime')) || new Date();
-      entry.expiryTime = this.stringToDate(this.getElementText(timesElement, 'ExpiryTime'));
-      entry.expires = this.getElementText(timesElement, 'Expires') === 'True';
-    }
+          case 'Times':
+            // 创建条目（如果还没有创建）
+            if (!entry) {
+              entry = new KdbxEntry(uuid, new Uint8Array(16)); // 临时父组UUID
+              entry.icon = { id: iconId, uuid: customIconUUID };
+            }
+            this.deserializeEntryTimes(parser, entry);
+            break;
+            
+          case 'String':
+            // 创建条目（如果还没有创建）
+            if (!entry) {
+              entry = new KdbxEntry(uuid, new Uint8Array(16));
+              entry.icon = { id: iconId, uuid: customIconUUID };
+              entry.fields = [];
+            } else if (!entry.fields) {
+              entry.fields = [];
+            }
+            this.deserializeEntryString(parser, entry);
+            break;
 
-    // 解析字段
-    const stringElements = entryElement.querySelectorAll('String');
-    entry.fields = [];
+          case 'Binary':
+            // 创建条目（如果还没有创建）
+            if (!entry) {
+              entry = new KdbxEntry(uuid, new Uint8Array(16));
+              entry.icon = { id: iconId, uuid: customIconUUID };
+              entry.attachments = [];
+            } else if (!entry.attachments) {
+              entry.attachments = [];
+            }
+            this.deserializeEntryBinary(parser, entry);
+            break;
+            
+          case 'AutoType':
+            // 创建条目（如果还没有创建）
+            if (!entry) {
+              entry = new KdbxEntry(uuid, new Uint8Array(16));
+              entry.icon = { id: iconId, uuid: customIconUUID };
+            }
+            this.deserializeEntryAutoType(parser, entry);
+            break;
 
-    stringElements.forEach(stringElement => {
-      const name = this.getElementText(stringElement, 'Key');
-      const valueElement = stringElement.querySelector('Value');
-
-      if (name && valueElement) {
-        const protected = valueElement.getAttribute('Protected') === 'True';
-        let value = valueElement.textContent || '';
-
-        if (protected) {
-          value = this.unprotectValue(value);
+          case 'History':
+            // 创建条目（如果还没有创建）
+            if (!entry) {
+              entry = new KdbxEntry(uuid, new Uint8Array(16));
+              entry.icon = { id: iconId, uuid: customIconUUID };
+              entry.history = [];
+            } else if (!entry.history) {
+              entry.history = [];
+            }
+            this.deserializeEntryHistory(parser, entry);
+            break;
         }
-
-        entry.fields.push({ name, value, protected });
+      } else if (parser.getEventType() === xml.EventType.END_TAG && parser.getName() === 'Entry') {
+        break;
       }
-    });
-
-    // 解析二进制附件
-    const binaryElements = entryElement.querySelectorAll('Binary');
-    entry.attachments = [];
-
-    binaryElements.forEach(binaryElement => {
-      const name = this.getElementText(binaryElement, 'Key');
-      const valueElement = binaryElement.querySelector('Value');
-
-      if (name && valueElement) {
-        const ref = valueElement.getAttribute('Ref');
-        const data = valueElement.textContent ? this.base64ToBinary(valueElement.textContent) : new Uint8Array(0);
-
-        entry.attachments.push({ name, data, ref });
-      }
-    });
-
-    // 解析自动类型
-    const autoTypeElement = entryElement.querySelector('AutoType');
-    if (autoTypeElement) {
-      entry.autoType = {
-        enabled: this.getElementText(autoTypeElement, 'Enabled') === 'True',
-        defaultSequence: this.getElementText(autoTypeElement, 'DefaultSequence') || '',
-        associations: []
-      };
-
-      // 解析自动类型关联
-      const associationElements = autoTypeElement.querySelectorAll('Association');
-      associationElements.forEach(associationElement => {
-        const window = this.getElementText(associationElement, 'Window') || '';
-        const keystrokeSequence = this.getElementText(associationElement, 'KeystrokeSequence') || '';
-
-        entry.autoType.associations.push({ window, keystrokeSequence });
-      });
     }
 
-    // 解析历史
-    const historyElement = entryElement.querySelector('History');
-    if (historyElement) {
-      const historyEntryElements = historyElement.querySelectorAll('Entry');
-      entry.history = [];
-
-      historyEntryElements.forEach(historyEntryElement => {
-        const historyEntry = this.deserializeEntry(historyEntryElement);
-        entry.history.push(historyEntry);
-      });
+    // 如果没有创建条目（没有任何子元素），创建一个基本条目
+    if (!entry) {
+      entry = new KdbxEntry(uuid, new Uint8Array(16));
+      entry.icon = { id: iconId, uuid: customIconUUID };
     }
 
     return entry;
   }
+  
+  /**
+   * 反序列化条目时间信息
+   * @param parser XML解析器
+   * @param entry 条目
+   */
+  private deserializeEntryTimes(parser: xml.XmlPullParser, entry: KdbxEntry): void {
+    while (parser.next() !== xml.EventType.END_DOCUMENT) {
+      if (parser.getEventType() === xml.EventType.START_TAG) {
+        const tagName = parser.getName();
+        parser.next(); // 移动到文本内容
+        
+        if (parser.getEventType() === xml.EventType.TEXT) {
+          const text = parser.getText();
+          switch (tagName) {
+            case 'CreationTime':
+              entry.creationTime = this.stringToDate(text) || new Date();
+              break;
+            case 'LastModificationTime':
+              entry.lastModifiedTime = this.stringToDate(text) || new Date();
+              break;
+            case 'LastAccessTime':
+              entry.lastAccessTime = this.stringToDate(text) || new Date();
+              break;
+            case 'ExpiryTime':
+              entry.expiryTime = this.stringToDate(text);
+              break;
+            case 'Expires':
+              entry.expires = text === 'True';
+              break;
+          }
+        }
+      } else if (parser.getEventType() === xml.EventType.END_TAG && parser.getName() === 'Times') {
+        break;
+      }
+    }
+  }
+  
+  /**
+   * 反序列化条目字符串字段
+   * @param parser XML解析器
+   * @param entry 条目
+   */
+  private deserializeEntryString(parser: xml.XmlPullParser, entry: KdbxEntry): void {
+    let key = '';
+    let value = '';
+    let protected = false;
+    
+    while (parser.next() !== xml.EventType.END_DOCUMENT) {
+      if (parser.getEventType() === xml.EventType.START_TAG) {
+        const tagName = parser.getName();
+        
+        if (tagName === 'Key') {
+          parser.next(); // 移动到文本内容
+          if (parser.getEventType() === xml.EventType.TEXT) {
+            key = parser.getText();
+          }
+        } else if (tagName === 'Value') {
+          // 检查是否有Protected属性
+          for (let i = 0; i < parser.getAttributeCount(); i++) {
+            if (parser.getAttributeName(i) === 'Protected' && 
+                parser.getAttributeValue(i) === 'True') {
+              protected = true;
+            }
+          }
+          
+          parser.next(); // 移动到文本内容
+          if (parser.getEventType() === xml.EventType.TEXT) {
+            value = parser.getText();
+            
+            // 如果是受保护的字段，解密它
+            if (protected && this.protectedStreamKey) {
+              try {
+                value = this.unprotectValue(value);
+              } catch (error) {
+                console.error('解密受保护字段失败:', error);
+              }
+            }
+          }
+        }
+      } else if (parser.getEventType() === xml.EventType.END_TAG && parser.getName() === 'String') {
+        // 添加字段到条目
+        if (key) {
+          entry.fields.push({
+            name: key,
+            value: value,
+            protected: protected
+          });
+        }
+        break;
+      }
+    }
+  }
 
   /**
    * 序列化已删除对象
-   * @param doc XML文档
-   * @param parentElement 父元素
-   * @param deletedObjects 已删除对象
+   * @param serializer XML序列化器
+   * @param deletedObjects 已删除对象列表
    */
-  private serializeDeletedObjects(doc: Document, parentElement: Element, deletedObjects: DeletedObject[]): void {
+  private serializeDeletedObjects(serializer: xml.XmlSerializer, deletedObjects: DeletedObject[]): void {
     if (deletedObjects.length === 0) {
       return;
     }
 
-    const deletedObjectsElement = doc.createElement('DeletedObjects');
+    serializer.startElement('DeletedObjects');
 
     for (const obj of deletedObjects) {
-      const deletedObjectElement = doc.createElement('DeletedObject');
-
-      this.appendTextElement(doc, deletedObjectElement, 'UUID', this.uuidToString(obj.uuid));
-      this.appendTextElement(doc, deletedObjectElement, 'DeletionTime', this.dateToString(obj.deletionTime));
-
-      deletedObjectsElement.appendChild(deletedObjectElement);
+      serializer.startElement('DeletedObject');
+      this.appendTextElement(serializer, 'UUID', this.uuidToString(obj.uuid));
+      this.appendTextElement(serializer, 'DeletionTime', this.dateToString(obj.deletionTime));
+      serializer.endElement(); // 结束DeletedObject元素
     }
 
-    parentElement.appendChild(deletedObjectsElement);
+    serializer.endElement(); // 结束DeletedObjects元素
   }
 
   /**
    * 反序列化已删除对象
-   * @param deletedObjectsElement 已删除对象元素
+   * @param parser XML解析器
    * @returns 已删除对象列表
    */
-  private deserializeDeletedObjects(deletedObjectsElement: Element): DeletedObject[] {
+  private deserializeDeletedObjects(parser: xml.XmlPullParser): DeletedObject[] {
     const deletedObjects: DeletedObject[] = [];
-
-    const deletedObjectElements = deletedObjectsElement.querySelectorAll('DeletedObject');
-    deletedObjectElements.forEach(element => {
-      const uuid = this.stringToUuid(this.getElementText(element, 'UUID'));
-      const deletionTime = this.stringToDate(this.getElementText(element, 'DeletionTime')) || new Date();
-
-      if (uuid) {
-        deletedObjects.push({ uuid, deletionTime });
+    
+    // 解析DeletedObjects元素下的所有DeletedObject元素
+    while (parser.next() !== xml.EventType.END_DOCUMENT) {
+      if (parser.getEventType() === xml.EventType.START_TAG && parser.getName() === 'DeletedObject') {
+        let uuid: UUID | undefined;
+        let deletionTime: Date = new Date();
+        
+        // 解析DeletedObject的子元素
+        while (parser.next() !== xml.EventType.END_DOCUMENT) {
+          if (parser.getEventType() === xml.EventType.START_TAG) {
+            const tagName = parser.getName();
+            
+            if (tagName === 'UUID') {
+              parser.next(); // 移动到文本内容
+              if (parser.getEventType() === xml.EventType.TEXT) {
+                uuid = this.stringToUuid(parser.getText());
+              }
+            } else if (tagName === 'DeletionTime') {
+              parser.next(); // 移动到文本内容
+              if (parser.getEventType() === xml.EventType.TEXT) {
+                deletionTime = this.stringToDate(parser.getText()) || new Date();
+              }
+            }
+          } else if (parser.getEventType() === xml.EventType.END_TAG && parser.getName() === 'DeletedObject') {
+            break; // 结束当前DeletedObject元素的解析
+          }
+        }
+        
+        if (uuid) {
+          deletedObjects.push({ uuid, deletionTime });
+        }
+      } else if (parser.getEventType() === xml.EventType.END_TAG && parser.getName() === 'DeletedObjects') {
+        break; // 结束DeletedObjects元素的解析
       }
-    });
-
+    }
+    
     return deletedObjects;
   }
 
   /**
    * 添加文本元素
-   * @param doc XML文档
-   * @param parentElement 父元素
+   * @param serializer XML序列化器
    * @param name 元素名称
    * @param value 元素值
    */
-  private appendTextElement(doc: Document, parentElement: Element, name: string, value: string): void {
-    const element = doc.createElement(name);
-    element.textContent = value;
-    parentElement.appendChild(element);
+  private appendTextElement(serializer: xml.XmlSerializer, name: string, value: string): void {
+    serializer.startElement(name);
+    serializer.setText(value);
+    serializer.endElement();
   }
 
   /**
