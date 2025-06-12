@@ -14,7 +14,6 @@ export class KdbxSerializer {
    * 保护流密钥
    */
   private protectedStreamKey?: Binary;
-
   /**
    * 内部随机流ID
    */
@@ -132,7 +131,8 @@ export class KdbxSerializer {
    * @returns XML文档
    */
   private createXmlDocument(): Document {
-    return new DOMParser().parseFromString('<?xml version="1.0" encoding="utf-8" standalone="yes"?>', 'application/xml');
+    return new DOMParser().parseFromString('<?xml version="1.0" encoding="utf-8" standalone="yes"?>',
+      'application/xml');
   }
 
   /**
@@ -197,11 +197,16 @@ export class KdbxSerializer {
 
     // 添加内存保护设置
     const memoryProtectionElement = doc.createElement('MemoryProtection');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectTitle', meta.memoryProtection.protectTitle ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectUserName', meta.memoryProtection.protectUserName ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectPassword', meta.memoryProtection.protectPassword ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectURL', meta.memoryProtection.protectUrl ? 'True' : 'False');
-    this.appendTextElement(doc, memoryProtectionElement, 'ProtectNotes', meta.memoryProtection.protectNotes ? 'True' : 'False');
+    this.appendTextElement(doc, memoryProtectionElement, 'ProtectTitle',
+      meta.memoryProtection.protectTitle ? 'True' : 'False');
+    this.appendTextElement(doc, memoryProtectionElement, 'ProtectUserName',
+      meta.memoryProtection.protectUserName ? 'True' : 'False');
+    this.appendTextElement(doc, memoryProtectionElement, 'ProtectPassword',
+      meta.memoryProtection.protectPassword ? 'True' : 'False');
+    this.appendTextElement(doc, memoryProtectionElement, 'ProtectURL',
+      meta.memoryProtection.protectUrl ? 'True' : 'False');
+    this.appendTextElement(doc, memoryProtectionElement, 'ProtectNotes',
+      meta.memoryProtection.protectNotes ? 'True' : 'False');
     metaElement.appendChild(memoryProtectionElement);
 
     // 添加自定义图标
@@ -343,7 +348,8 @@ export class KdbxSerializer {
     const timesElement = groupElement.querySelector('Times');
     if (timesElement) {
       group.creationTime = this.stringToDate(this.getElementText(timesElement, 'CreationTime')) || new Date();
-      group.lastModifiedTime = this.stringToDate(this.getElementText(timesElement, 'LastModificationTime')) || new Date();
+      group.lastModifiedTime =
+        this.stringToDate(this.getElementText(timesElement, 'LastModificationTime')) || new Date();
       group.lastAccessTime = this.stringToDate(this.getElementText(timesElement, 'LastAccessTime')) || new Date();
       group.expiryTime = this.stringToDate(this.getElementText(timesElement, 'ExpiryTime'));
       group.expires = this.getElementText(timesElement, 'Expires') === 'True';
@@ -489,7 +495,8 @@ export class KdbxSerializer {
     const timesElement = entryElement.querySelector('Times');
     if (timesElement) {
       entry.creationTime = this.stringToDate(this.getElementText(timesElement, 'CreationTime')) || new Date();
-      entry.lastModifiedTime = this.stringToDate(this.getElementText(timesElement, 'LastModificationTime')) || new Date();
+      entry.lastModifiedTime =
+        this.stringToDate(this.getElementText(timesElement, 'LastModificationTime')) || new Date();
       entry.lastAccessTime = this.stringToDate(this.getElementText(timesElement, 'LastAccessTime')) || new Date();
       entry.expiryTime = this.stringToDate(this.getElementText(timesElement, 'ExpiryTime'));
       entry.expires = this.getElementText(timesElement, 'Expires') === 'True';
@@ -847,15 +854,15 @@ export class KdbxSerializer {
       const chacha = new ChaCha20(key);
       const nonce = new Uint8Array(12); // 12字节随机数
       KdbxUtils.generateRandom(nonce);
-      
+
       const encrypted = new Uint8Array(data.length);
       chacha.process(nonce, data, encrypted);
-      
+
       // 合并nonce和加密数据
       const result = new Uint8Array(nonce.length + encrypted.length);
       result.set(nonce);
       result.set(encrypted, nonce.length);
-      
+
       return result;
     } catch (error) {
       throw KdbxError.wrap(
@@ -885,14 +892,14 @@ export class KdbxSerializer {
       // 分离nonce和加密数据
       const nonce = data.slice(0, 12);
       const encrypted = data.slice(12);
-      
+
       // 使用相同的密钥初始化
       const chacha = new ChaCha20(key);
       const decrypted = new Uint8Array(encrypted.length);
-      
+
       // 解密过程(加密和解密使用相同方法)
       chacha.process(nonce, encrypted, decrypted);
-      
+
       return decrypted;
     } catch (error) {
       throw KdbxError.wrap(
@@ -915,15 +922,15 @@ export class KdbxSerializer {
       const salsa = new Salsa20(key);
       const nonce = new Uint8Array(8); // 8字节随机数
       KdbxUtils.generateRandom(nonce);
-      
+
       const encrypted = new Uint8Array(data.length);
       salsa.process(nonce, data, encrypted);
-      
+
       // 合并nonce和加密数据
       const result = new Uint8Array(nonce.length + encrypted.length);
       result.set(nonce);
       result.set(encrypted, nonce.length);
-      
+
       return result;
     } catch (error) {
       throw KdbxError.wrap(
@@ -953,14 +960,14 @@ export class KdbxSerializer {
       // 分离nonce和加密数据
       const nonce = data.slice(0, 8);
       const encrypted = data.slice(8);
-      
+
       // 使用相同的密钥初始化
       const salsa = new Salsa20(key);
       const decrypted = new Uint8Array(encrypted.length);
-      
+
       // 解密过程(加密和解密使用相同方法)
       salsa.process(nonce, encrypted, decrypted);
-      
+
       return decrypted;
     } catch (error) {
       throw KdbxError.wrap(
@@ -981,14 +988,14 @@ export class KdbxSerializer {
     try {
       // 使用ARC4变体实现
       const arc4 = new ARC4(key);
-      
+
       // 加密数据
       const encrypted = new Uint8Array(data.length);
       arc4.process(data, encrypted);
-      
+
       // 清理敏感数据
       arc4.clear();
-      
+
       return encrypted;
     } catch (error) {
       throw KdbxError.wrap(
@@ -1017,14 +1024,14 @@ export class KdbxSerializer {
 
       // 使用ARC4变体实现（解密过程与加密相同）
       const arc4 = new ARC4(key);
-      
+
       // 解密数据
       const decrypted = new Uint8Array(data.length);
       arc4.process(data, decrypted);
-      
+
       // 清理敏感数据
       arc4.clear();
-      
+
       return decrypted;
     } catch (error) {
       throw KdbxError.wrap(
@@ -1034,3 +1041,4 @@ export class KdbxSerializer {
       );
     }
   }
+}
