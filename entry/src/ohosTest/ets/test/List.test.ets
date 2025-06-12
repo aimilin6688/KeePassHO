@@ -1,6 +1,5 @@
 import abilityTest from './Ability.test';
 
-
 import ARC4UnitTest from './kdbx/crypto/ARC4.test';
 import ChaCha20UnitTest from './kdbx/crypto/ChaCha20.test';
 import Salsa20UnitTest from './kdbx/crypto/Salsa20.test';
@@ -10,6 +9,7 @@ import KdbxGroupUnitTest from './kdbx/models/KdbxGroup.test';
 import KdbxErrorUnitTest from './kdbx/KdbxError.test';
 import KdbxHeaderUnitTest from './kdbx/KdbxHeader.test';
 import Argon2UnitTest from './kdbx/crypto/Argon2.test';
+import KdbxXmlSerializerUnitTest  from './kdbx/KdbxXmlSerializer.test';
 
 // import KdbxCryptoUnitTest from './kdbx/KdbxCrypto.test';
 // import KdbxCredentialsUnitTest from './kdbx/KdbxCredentials.test';
@@ -19,7 +19,6 @@ import Argon2UnitTest from './kdbx/crypto/Argon2.test';
 // import KdbxReaderUnitTest from './kdbx/KdbxReader.test';
 // import KdbxWriterUnitTest from './kdbx/KdbxWriter.test';
 // import KdbxXmlProcessorUnitTest from './kdbx/xml/KdbxXmlProcessor.test';
-
 
 
 export default function testsuite() {
@@ -34,6 +33,7 @@ export default function testsuite() {
   KdbxErrorUnitTest();
   KdbxHeaderUnitTest();
   Argon2UnitTest();
+  KdbxXmlSerializerUnitTest();
 
   // KdbxCryptoUnitTest();
   // KdbxXmlProcessorUnitTest();
