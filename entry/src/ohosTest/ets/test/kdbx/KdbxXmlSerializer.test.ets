@@ -146,8 +146,8 @@ export default function KdbxXmlSerializerUnitTest() {
       for (const field of originalEntry.fields) {
         const deserializedField = deserializedEntry.fields.find(f => f.name === field.name);
         expect(deserializedField).not().assertUndefined();
-        expect(deserializedField.value).assertEqual(field.value);
-        expect(deserializedField.protected).assertEqual(field.protected);
+        expect(deserializedField?.value).assertEqual(field.value);
+        expect(deserializedField?.protected).assertEqual(field.protected);
       }
     });
     
@@ -164,7 +164,7 @@ export default function KdbxXmlSerializerUnitTest() {
       expect(deserializedEntry.creationTime.getTime()).assertEqual(originalEntry.creationTime.getTime());
       expect(deserializedEntry.lastModifiedTime.getTime()).assertEqual(originalEntry.lastModifiedTime.getTime());
       expect(deserializedEntry.lastAccessTime.getTime()).assertEqual(originalEntry.lastAccessTime.getTime());
-      expect(deserializedEntry.expiryTime.getTime()).assertEqual(originalEntry.expiryTime.getTime());
+      expect(deserializedEntry.expiryTime?.getTime()).assertEqual(originalEntry.expiryTime?.getTime());
       expect(deserializedEntry.expires).assertEqual(originalEntry.expires);
     });
     
@@ -174,7 +174,7 @@ export default function KdbxXmlSerializerUnitTest() {
       
       // 验证受保护字段被加密
       expect(xml).assertContain('Protected="True"');
-      expect(xml).assertNotContain('testpass'); // 密码不应该以明文形式出现
+      expect(xml).not().assertContain('testpass'); // 密码不应该以明文形式出现
       
       // 反序列化并验证字段被正确解密
       const deserializedDb = serializer.deserializeFromXml(xml);
@@ -182,8 +182,8 @@ export default function KdbxXmlSerializerUnitTest() {
       const passwordField = deserializedEntry.fields.find(f => f.name === 'Password');
       
       expect(passwordField).not().assertUndefined();
-      expect(passwordField.value).assertEqual('testpass');
-      expect(passwordField.protected).assertEqual(true);
+      expect(passwordField?.value).assertEqual('testpass');
+      expect(passwordField?.protected).assertEqual(true);
     });
     
     it('should handle custom icons', 0, () => {
@@ -207,7 +207,7 @@ export default function KdbxXmlSerializerUnitTest() {
       
       // 反序列化并验证自定义图标
       const deserializedDb = serializer.deserializeFromXml(xml);
-      expect(deserializedDb.meta.customIcons.size).assertGreaterThan(0);
+      expect(deserializedDb.meta.customIcons?.size).assertLarger(0);
       
       // 验证根组使用了自定义图标
       expect(deserializedDb.root.icon).not().assertUndefined();
