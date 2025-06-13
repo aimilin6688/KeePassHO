@@ -73,19 +73,14 @@ export class ProtectedValue {
  */
 export interface Icon {
   /**
-   * 图标ID
-   */
-  id: number;
-
-  /**
    * 自定义图标UUID
    */
-  uuid?: UUID;
+  uuid: UUID;
 
   /**
    * 自定义图标数据
    */
-  data?: Binary;
+  data: Binary;
 }
 
 /**
