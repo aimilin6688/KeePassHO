@@ -1,3 +1,4 @@
+import { ByteUtils } from '../utils/ByteUtils';
 import { KdbxUtils } from '../utils/KdbxUtils';
 import {
   BinaryAttachment,
@@ -106,8 +107,8 @@ export class KdbxEntry {
    * @param uuid 条目UUID
    * @param parentGroup 所属组UUID
    */
-  constructor(uuid: UUID, parentGroup: UUID) {
-    this.uuid = uuid;
+  constructor(uuid: UUID | Uint8Array, parentGroup: UUID) {
+    this.uuid =  uuid instanceof  Uint8Array ? ByteUtils.bytesToString(uuid) : uuid;
     this.parentGroup = parentGroup;
     this.creationTime = new Date();
     this.lastModifiedTime = new Date();
