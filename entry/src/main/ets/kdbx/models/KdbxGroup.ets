@@ -1,5 +1,6 @@
 import { UUID, TimeStamp, Icon } from './KdbxTypes';
 import { KdbxEntry } from './KdbxEntry';
+import { ByteUtils } from '../utils/ByteUtils';
 
 /**
  * 数据库分组
@@ -63,8 +64,8 @@ export class KdbxGroup {
    * @param uuid 组UUID
    * @param name 组名
    */
-  constructor(uuid: UUID, name: string) {
-    this.uuid = uuid;
+  constructor(uuid: UUID | Uint8Array, name: string) {
+    this.uuid = uuid instanceof  Uint8Array ? ByteUtils.bytesToString(uuid) : uuid;
     this.name = name;
     this.creationTime = new Date();
     this.lastModifiedTime = new Date();
