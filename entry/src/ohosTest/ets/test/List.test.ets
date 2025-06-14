@@ -1,6 +1,8 @@
-import abilityTest from './Ability.test';
+import ActsAbilityTest from './ActsAbility.test';
+import KdbxErrorTest from './kdbx/error/KdbxError.test';
 
 
 export default function testsuite() {
-  abilityTest();
+  ActsAbilityTest();
+  KdbxErrorTest();
 }

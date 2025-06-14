@@ -37,6 +37,10 @@
           ]
         }
       ]
+    },
+    {
+      "name": "kdbxweb",
+      "srcPath": "./kdbxweb",
     }
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "name": "kdbxweb",
+  "version": "3.0.0",
+  "description": "Kdbx KeePass database reader for web",
+  "main": "src/main/ets/index.ts",
+  "private": false,
+  "license": "MIT",
+  "homepage": "https://keeweb.info",
+  "repository": "https://github.com/keeweb/kdbxweb.git",
+  "author": {
+    "name": "Antelle, Aimilin",
+    "email": "keeweb@keeweb.info,aimilin@yeah.net",
+    "url": "https://antelle.net"
+  },
+  "readme": "README.md",
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.8",
+    "fflate": "^0.8.2",
+    "@ohos/crypto-js": "^2.0.4"
+  },
+  "devDependencies": {},
+  "dynamicDependencies": {},
+  "keywords": [
+    "keepass",
+    "kdbx",
+    "kdbxweb",
+    "kdbxweb-oh"
+  ]
+}
