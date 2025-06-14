@@ -20,7 +20,7 @@ export type Binary = Uint8Array;
 /**
  * UUID类型
  */
-export type UUID = string;
+export type UUID = Uint8Array;
 
 /**
  * 时间戳类型
