@@ -3,6 +3,7 @@
   "version": "3.0.0",
   "description": "Kdbx KeePass database reader for web",
   "main": "src/main/ets/index.ts",
+  "typings": "dist/index.d.ts",
   "private": false,
   "license": "MIT",
   "homepage": "https://keeweb.info",

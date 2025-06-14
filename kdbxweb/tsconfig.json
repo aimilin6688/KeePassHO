@@ -5,5 +5,5 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["test/**/*.ts", "scripts/**/*.ts", "conf/**/*.ts"]
+  "include": ["src/ohosTest/ets/**/*.ts", "conf/**/*.ts"]
 }
