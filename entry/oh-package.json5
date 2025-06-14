@@ -6,7 +6,6 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "kdbxweb": "file:../har/kdbxweb.har"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
