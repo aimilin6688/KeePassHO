@@ -1,4 +1,4 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
 import { argon2 } from '../test-support/argon2';
 import { TestResources } from '../test-support/test-resources';
@@ -29,20 +29,20 @@ describe('Kdbx', () => {
         kdbxweb.CryptoEngine.argon2 = cryptoEngineArgon2;
     });
 
-    it('sets all imports without issues', () => {
+    it('sets all imports without issues', 0,() => {
         for (const value of Object.values(kdbxweb)) {
             expect(value).to.be.ok();
         }
     });
 
-    it('loads simple file', () => {
+    it('loads simple file', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
         );
         return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.meta.generator).to.be('KeePass');
+            expect(db.meta.generator).assertEqual('KeePass');
             checkDb(db);
         });
     });
@@ -53,28 +53,28 @@ describe('Kdbx', () => {
             TestResources.demoKey
         );
         const db = await kdbxweb.Kdbx.load(TestResources.demoKdbx, cred);
-        expect(db.versionMajor).to.be(3);
-        expect(db.versionMinor).to.be(1);
-        expect(db.versionIsAtLeast(1, 0)).to.be(true);
-        expect(db.versionIsAtLeast(3, 0)).to.be(true);
-        expect(db.versionIsAtLeast(3, 1)).to.be(true);
-        expect(db.versionIsAtLeast(3, 2)).to.be(false);
-        expect(db.versionIsAtLeast(4, 0)).to.be(false);
-        expect(db.versionIsAtLeast(4, 1)).to.be(false);
-        expect(db.versionIsAtLeast(4, 2)).to.be(false);
+        expect(db.versionMajor).assertEqual(3);
+        expect(db.versionMinor).assertEqual(1);
+        expect(db.versionIsAtLeast(1, 0)).assertEqual(true);
+        expect(db.versionIsAtLeast(3, 0)).assertEqual(true);
+        expect(db.versionIsAtLeast(3, 1)).assertEqual(true);
+        expect(db.versionIsAtLeast(3, 2)).assertEqual(false);
+        expect(db.versionIsAtLeast(4, 0)).assertEqual(false);
+        expect(db.versionIsAtLeast(4, 1)).assertEqual(false);
+        expect(db.versionIsAtLeast(4, 2)).assertEqual(false);
     });
 
-    it('loads simple xml file', () => {
+    it('loads simple xml file', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(''));
         const xml = kdbxweb.ByteUtils.bytesToString(TestResources.demoXml).toString();
         return kdbxweb.Kdbx.loadXml(xml, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.meta.generator).to.be('KeePass');
+            expect(db.meta.generator).assertEqual('KeePass');
             checkDb(db);
         });
     });
 
-    it('generates error for malformed xml file', () => {
+    it('generates error for malformed xml file', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(''));
         return kdbxweb.Kdbx.loadXml('malformed-xml', cred)
             .then(() => {
@@ -82,19 +82,19 @@ describe('Kdbx', () => {
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.FileCorrupt);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
                 expect(e.message).to.contain('bad xml');
             });
     });
 
-    it('loads utf8 uncompressed file', () => {
+    it('loads utf8 uncompressed file', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('пароль'));
         return kdbxweb.Kdbx.load(TestResources.cyrillicKdbx, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
         });
     });
 
-    it('loads a file with binary key', () => {
+    it('loads a file with binary key', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('test'),
             TestResources.binKeyKey
@@ -104,14 +104,14 @@ describe('Kdbx', () => {
         });
     });
 
-    it('loads a file with empty pass', () => {
+    it('loads a file with empty pass', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(''));
         return kdbxweb.Kdbx.load(TestResources.emptyPass, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
         });
     });
 
-    it('loads a file with empty pass and keyfile', () => {
+    it('loads a file with empty pass and keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString(''),
             TestResources.emptyPassWithKeyFileKey
@@ -121,14 +121,14 @@ describe('Kdbx', () => {
         });
     });
 
-    it('loads a file with no pass and keyfile', () => {
+    it('loads a file with no pass and keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(null, TestResources.noPassWithKeyFileKey);
         return kdbxweb.Kdbx.load(TestResources.noPassWithKeyFile, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
         });
     });
 
-    it('loads a 32-byte keyfile', () => {
+    it('loads a 32-byte keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('test'),
             TestResources.key32KeyFile
@@ -138,7 +138,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('loads a 64-byte keyfile', () => {
+    it('loads a 64-byte keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('test'),
             TestResources.key64KeyFile
@@ -148,7 +148,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('loads a xml-bom keyfile', () => {
+    it('loads a xml-bom keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('test'),
             TestResources.keyWithBomKeyFile
@@ -158,14 +158,14 @@ describe('Kdbx', () => {
         });
     });
 
-    it('loads a V2 keyfile', () => {
+    it('loads a V2 keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(null, TestResources.keyV2KeyFile);
         return kdbxweb.Kdbx.load(TestResources.keyV2, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
         });
     });
 
-    it('successfully loads saved file', () => {
+    it('successfully loads saved file', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -175,7 +175,7 @@ describe('Kdbx', () => {
             checkDb(db);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
                     checkDb(db);
                 });
             });
@@ -193,7 +193,7 @@ describe('Kdbx', () => {
             checkDb(db);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
                     checkDb(db);
                 });
             });
@@ -211,7 +211,7 @@ describe('Kdbx', () => {
             checkDb(db);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
                     checkDb(db);
                 });
             });
@@ -226,12 +226,12 @@ describe('Kdbx', () => {
         );
         return kdbxweb.Kdbx.load(TestResources.aesChaCha, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.header.dataCipherUuid!.toString()).to.be(kdbxweb.Consts.CipherId.ChaCha20);
+            expect(db.header.dataCipherUuid!.toString()).assertEqual(kdbxweb.Consts.CipherId.ChaCha20);
             checkDb(db);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
-                    expect(db.header.dataCipherUuid!.toString()).to.be(
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
+                    expect(db.header.dataCipherUuid!.toString()).assertEqual(
                         kdbxweb.Consts.CipherId.ChaCha20
                     );
                     checkDb(db);
@@ -245,11 +245,11 @@ describe('Kdbx', () => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
         return kdbxweb.Kdbx.load(TestResources.aesKdfKdbx4, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.header.dataCipherUuid!.toString()).to.be(kdbxweb.Consts.CipherId.Aes);
+            expect(db.header.dataCipherUuid!.toString()).assertEqual(kdbxweb.Consts.CipherId.Aes);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
-                    expect(db.header.dataCipherUuid!.toString()).to.be(kdbxweb.Consts.CipherId.Aes);
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
+                    expect(db.header.dataCipherUuid!.toString()).assertEqual(kdbxweb.Consts.CipherId.Aes);
                 });
             });
         });
@@ -266,7 +266,7 @@ describe('Kdbx', () => {
             checkDb(db);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
                     checkDb(db);
                 });
             });
@@ -282,7 +282,7 @@ describe('Kdbx', () => {
         );
         return kdbxweb.Kdbx.load(TestResources.yubikey3, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.meta.generator).to.be('Strongbox');
+            expect(db.meta.generator).assertEqual('Strongbox');
         });
     });
 
@@ -295,7 +295,7 @@ describe('Kdbx', () => {
         );
         return kdbxweb.Kdbx.load(TestResources.yubikey4, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.meta.generator).to.be('KeePassXC');
+            expect(db.meta.generator).assertEqual('KeePassXC');
         });
     });
 
@@ -311,12 +311,12 @@ describe('Kdbx', () => {
             db.upgrade();
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.header.versionMajor).to.be(4);
+                    expect(db.header.versionMajor).assertEqual(4);
                     expect(
                         kdbxweb.ByteUtils.bytesToBase64(
                             db.header.kdfParameters!.get('$UUID') as ArrayBuffer
                         )
-                    ).to.be(kdbxweb.Consts.KdfId.Argon2);
+                    ).assertEqual(kdbxweb.Consts.KdfId.Argon2);
                     checkDb(db);
                 });
             });
@@ -336,12 +336,12 @@ describe('Kdbx', () => {
             db.setKdf(kdbxweb.Consts.KdfId.Aes);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.header.versionMajor).to.be(4);
+                    expect(db.header.versionMajor).assertEqual(4);
                     expect(
                         kdbxweb.ByteUtils.bytesToBase64(
                             db.header.kdfParameters!.get('$UUID') as ArrayBuffer
                         )
-                    ).to.be(kdbxweb.Consts.KdfId.Aes);
+                    ).assertEqual(kdbxweb.Consts.KdfId.Aes);
                     checkDb(db);
                 });
             });
@@ -361,12 +361,12 @@ describe('Kdbx', () => {
             db.setKdf(kdbxweb.Consts.KdfId.Argon2id);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.header.versionMajor).to.be(4);
+                    expect(db.header.versionMajor).assertEqual(4);
                     expect(
                         kdbxweb.ByteUtils.bytesToBase64(
                             db.header.kdfParameters!.get('$UUID') as ArrayBuffer
                         )
-                    ).to.be(kdbxweb.Consts.KdfId.Argon2id);
+                    ).assertEqual(kdbxweb.Consts.KdfId.Argon2id);
                     checkDb(db);
                 });
             });
@@ -385,14 +385,14 @@ describe('Kdbx', () => {
             db.setVersion(3);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.header.versionMajor).to.be(3);
+                    expect(db.header.versionMajor).assertEqual(3);
                     checkDb(db);
                 });
             });
         });
     });
 
-    it('saves kdbx4 to xml and loads it back', () => {
+    it('saves kdbx4 to xml and loads it back', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -425,7 +425,7 @@ describe('Kdbx', () => {
             db.getDefaultGroup().entries[0].customData = new Map([['custom', { value: 'entry' }]]);
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.header.versionMajor).to.be(4);
+                    expect(db.header.versionMajor).assertEqual(4);
                     expect([...db.getDefaultGroup().groups[0].customData!]).to.eql([
                         ['custom', { value: 'group' }]
                     ]);
@@ -441,7 +441,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('creates new database', () => {
+    it('creates new database', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile(1).then((keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -474,11 +474,11 @@ describe('Kdbx', () => {
                     entry.times.update();
                     return db.save().then((ab) => {
                         return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                            expect(db.meta.generator).to.be('KdbxWeb');
-                            expect(db.meta.customData.get('key')?.value).to.be('val');
-                            expect(db.groups.length).to.be(1);
-                            expect(db.groups[0].groups.length).to.be(2);
-                            expect(db.getGroup(db.meta.recycleBinUuid!)).to.be(
+                            expect(db.meta.generator).assertEqual('KdbxWeb');
+                            expect(db.meta.customData.get('key')?.value).assertEqual('val');
+                            expect(db.groups.length).assertEqual(1);
+                            expect(db.groups[0].groups.length).assertEqual(2);
+                            expect(db.getGroup(db.meta.recycleBinUuid!)).assertEqual(
                                 db.groups[0].groups[0]
                             );
                         });
@@ -487,7 +487,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('creates random keyfile v2', () => {
+    it('creates random keyfile v2', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile(2).then((keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -498,26 +498,26 @@ describe('Kdbx', () => {
             expect(keyFileStr).to.contain('<Version>2.0</Version>');
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.meta.generator).to.be('KdbxWeb');
+                    expect(db.meta.generator).assertEqual('KdbxWeb');
                 });
             });
         });
     });
 
-    it('generates error for bad file', () => {
-        // @ts-ignore
+    it('generates error for bad file', 0,() => {
+        // @ets-ignore
         return kdbxweb.Kdbx.load('file')
             .then(() => {
                 throw 'Not expected';
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                 expect(e.message).to.contain('data');
             });
     });
 
-    it('generates an error for too high major version', () => {
+    it('generates an error for too high major version', 0,() => {
         const file = new Uint8Array(TestResources.demoKdbx.byteLength);
         file.set(new Uint8Array(TestResources.demoKdbx));
         file[10] = 5;
@@ -530,11 +530,11 @@ describe('Kdbx', () => {
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidVersion);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidVersion);
             });
     });
 
-    it('generates an error for too high major version', () => {
+    it('generates an error for too high major version', 0,() => {
         const file = new Uint8Array(TestResources.demoKdbx.byteLength);
         file.set(new Uint8Array(TestResources.demoKdbx));
         file[10] = 2;
@@ -547,11 +547,11 @@ describe('Kdbx', () => {
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidVersion);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidVersion);
             });
     });
 
-    it('generates an error for too high minor version', () => {
+    it('generates an error for too high minor version', 0,() => {
         const file = new Uint8Array(TestResources.demoKdbx.byteLength);
         file.set(new Uint8Array(TestResources.demoKdbx));
         file[11] = 10;
@@ -564,11 +564,11 @@ describe('Kdbx', () => {
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidVersion);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidVersion);
             });
     });
 
-    it('generates error for bad header hash', () => {
+    it('generates error for bad header hash', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -582,12 +582,12 @@ describe('Kdbx', () => {
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.FileCorrupt);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
                 expect(e.message).to.contain('header hash mismatch');
             });
     });
 
-    it('generates error for bad header hmac', () => {
+    it('generates error for bad header hmac', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -601,11 +601,11 @@ describe('Kdbx', () => {
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidKey);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidKey);
             });
     });
 
-    it('generates error for saving bad version', () => {
+    it('generates error for saving bad version', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile().then((keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -621,109 +621,109 @@ describe('Kdbx', () => {
                 })
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
-                    expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidVersion);
+                    expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidVersion);
                 });
         });
     });
 
-    it('generates error for bad credentials', () => {
-        // @ts-ignore
+    it('generates error for bad credentials', 0,() => {
+        // @ets-ignore
         return kdbxweb.Kdbx.load(new ArrayBuffer(0), '123')
             .then(() => {
                 throw 'Not expected';
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                 expect(e.message).to.contain('credentials');
             });
     });
 
-    it('generates error for null credentials', () => {
-        // @ts-ignore
+    it('generates error for null credentials', 0,() => {
+        // @ets-ignore
         return kdbxweb.Kdbx.load(new ArrayBuffer(0), null)
             .then(() => {
                 throw 'Not expected';
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                 expect(e.message).to.contain('credentials');
             });
     });
 
-    it('generates error for bad password', () => {
+    it('generates error for bad password', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
         return (
             cred
-                // @ts-ignore
+                // @ets-ignore
                 .setPassword('string')
                 .then(() => {
                     throw 'Not expected';
                 })
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
-                    expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                    expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                     expect(e.message).to.contain('password');
                 })
         );
     });
 
-    it('generates error for bad keyfile', () => {
+    it('generates error for bad keyfile', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
         return (
             cred
-                // @ts-ignore
+                // @ets-ignore
                 .setKeyFile('123')
                 .then(() => {
                     throw 'Not expected';
                 })
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
-                    expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                    expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                     expect(e.message).to.contain('keyFile');
                 })
         );
     });
 
-    it('generates error for create with bad credentials', () => {
+    it('generates error for create with bad credentials', 0,() => {
         expect(() => {
-            // @ts-ignore
+            // @ets-ignore
             kdbxweb.Kdbx.create('file');
         }).to.throwException((e) => {
             expect(e).to.be.a(kdbxweb.KdbxError);
-            expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+            expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
             expect(e.message).to.contain('credentials');
         });
     });
 
-    it('generates loadXml error for bad data', () => {
-        // @ts-ignore
+    it('generates loadXml error for bad data', 0,() => {
+        // @ets-ignore
         return kdbxweb.Kdbx.loadXml(new ArrayBuffer(0))
             .then(() => {
                 throw 'Not expected';
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                 expect(e.message).to.contain('data');
             });
     });
 
-    it('generates loadXml error for bad credentials', () => {
-        // @ts-ignore
+    it('generates loadXml error for bad credentials', 0,() => {
+        // @ets-ignore
         return kdbxweb.Kdbx.loadXml('str', null)
             .then(() => {
                 throw 'Not expected';
             })
             .catch((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidArg);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
                 expect(e.message).to.contain('credentials');
             });
     });
 
-    it('generates error for bad password', () => {
+    it('generates error for bad password', 0,() => {
         return kdbxweb.Kdbx.load(
             TestResources.demoKdbx,
             new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('badpass'))
@@ -734,11 +734,11 @@ describe('Kdbx', () => {
             .catch((e) => {
                 expect(e).to.be.ok();
                 expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidKey);
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidKey);
             });
     });
 
-    it('deletes and restores an entry', () => {
+    it('deletes and restores an entry', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -750,22 +750,22 @@ describe('Kdbx', () => {
             const recycleBinLength = recycleBin!.groups.length;
             const groupLength = parentGroup.groups.length;
             db.remove(group);
-            expect(recycleBin!.groups.length).to.be(recycleBinLength + 1);
-            expect(group.groups.length).to.be(groupLength - 1);
+            expect(recycleBin!.groups.length).assertEqual(recycleBinLength + 1);
+            expect(group.groups.length).assertEqual(groupLength - 1);
 
             const parentGroupsBackup = group.parentGroup!.groups;
             group.parentGroup!.groups = [];
             db.move(group, parentGroup); // fake move; should not happen
             group.parentGroup!.groups = parentGroupsBackup;
-            expect(recycleBin!.groups.length).to.be(recycleBinLength + 1);
+            expect(recycleBin!.groups.length).assertEqual(recycleBinLength + 1);
 
             db.move(group, parentGroup);
-            expect(recycleBin!.groups.length).to.be(recycleBinLength);
+            expect(recycleBin!.groups.length).assertEqual(recycleBinLength);
             checkDb(db);
         });
     });
 
-    it('changes group order', () => {
+    it('changes group order', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -789,7 +789,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('deletes entry without recycle bin', () => {
+    it('deletes entry without recycle bin', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -800,12 +800,12 @@ describe('Kdbx', () => {
             const deletedObjectsLength = db.deletedObjects.length;
             db.meta.recycleBinEnabled = false;
             db.remove(group);
-            expect(db.deletedObjects.length).to.be(deletedObjectsLength + 1);
-            expect(db.deletedObjects[db.deletedObjects.length - 1].uuid).to.be(group.uuid);
+            expect(db.deletedObjects.length).assertEqual(deletedObjectsLength + 1);
+            expect(db.deletedObjects[db.deletedObjects.length - 1].uuid).assertEqual(group.uuid);
         });
     });
 
-    it('creates a recycle bin if it is enabled but not created', () => {
+    it('creates a recycle bin if it is enabled but not created', 0,() => {
         const cred = new kdbxweb.Credentials(
             kdbxweb.ProtectedValue.fromString('demo'),
             TestResources.demoKey
@@ -814,20 +814,20 @@ describe('Kdbx', () => {
             const parentGroup = db.getDefaultGroup().groups[1];
             const group = parentGroup.groups[parentGroup.groups.length - 1];
             db.meta.recycleBinUuid = new kdbxweb.KdbxUuid();
-            expect(db.meta.recycleBinUuid.empty).to.be(true);
+            expect(db.meta.recycleBinUuid.empty).assertEqual(true);
             let recycleBin = db.getGroup(db.meta.recycleBinUuid);
-            expect(recycleBin).to.be(undefined);
+            expect(recycleBin).assertEqual(undefined);
             const groupLength = parentGroup.groups.length;
             db.remove(group);
-            expect(db.meta.recycleBinUuid.empty).to.be(false);
+            expect(db.meta.recycleBinUuid.empty).assertEqual(false);
             recycleBin = db.getGroup(db.meta.recycleBinUuid);
             expect(recycleBin).to.be.ok();
-            expect(recycleBin!.groups.length).to.be(1);
-            expect(group.groups.length).to.be(groupLength - 1);
+            expect(recycleBin!.groups.length).assertEqual(1);
+            expect(group.groups.length).assertEqual(groupLength - 1);
         });
     });
 
-    it('saves db to xml', () => {
+    it('saves db to xml', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile().then((keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -848,7 +848,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('cleanups by history rules', () => {
+    it('cleanups by history rules', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile().then((keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -862,54 +862,54 @@ describe('Kdbx', () => {
                 entry.fields.set('Title', i.toString());
                 entry.pushHistory();
             }
-            expect(entry.history[0].fields.get('Title')).to.be('0');
-            expect(entry.history.length).to.be(3);
+            expect(entry.history[0].fields.get('Title')).assertEqual('0');
+            expect(entry.history.length).assertEqual(3);
             db.cleanup({ historyRules: true });
-            expect(entry.history.length).to.be(3);
+            expect(entry.history.length).assertEqual(3);
             for (i = 3; i < 10; i++) {
                 entry.fields.set('Title', i.toString());
                 entry.pushHistory();
             }
-            expect(entry.history[0].fields.get('Title')).to.be('0');
-            expect(entry.history.length).to.be(10);
-            expect(entry.history[0].fields.get('Title')).to.be('0');
+            expect(entry.history[0].fields.get('Title')).assertEqual('0');
+            expect(entry.history.length).assertEqual(10);
+            expect(entry.history[0].fields.get('Title')).assertEqual('0');
             db.cleanup({ historyRules: true });
-            expect(entry.history[0].fields.get('Title')).to.be('0');
-            expect(entry.history.length).to.be(10);
+            expect(entry.history[0].fields.get('Title')).assertEqual('0');
+            expect(entry.history.length).assertEqual(10);
             for (i = 10; i < 11; i++) {
                 entry.fields.set('Title', i.toString());
                 entry.pushHistory();
             }
-            expect(entry.history.length).to.be(11);
+            expect(entry.history.length).assertEqual(11);
             db.cleanup({ historyRules: true });
-            expect(entry.history[0].fields.get('Title')).to.be('1');
-            expect(entry.history.length).to.be(10);
+            expect(entry.history[0].fields.get('Title')).assertEqual('1');
+            expect(entry.history.length).assertEqual(10);
             for (i = 11; i < 20; i++) {
                 entry.fields.set('Title', i.toString());
                 entry.pushHistory();
             }
             db.cleanup({ historyRules: true });
-            expect(entry.history[0].fields.get('Title')).to.be('10');
-            expect(entry.history.length).to.be(10);
+            expect(entry.history[0].fields.get('Title')).assertEqual('10');
+            expect(entry.history.length).assertEqual(10);
             for (i = 20; i < 30; i++) {
                 entry.fields.set('Title', i.toString());
                 entry.pushHistory();
             }
             db.meta.historyMaxItems = -1;
             db.cleanup({ historyRules: true });
-            expect(entry.history[0].fields.get('Title')).to.be('10');
-            expect(entry.history.length).to.be(20);
+            expect(entry.history[0].fields.get('Title')).assertEqual('10');
+            expect(entry.history.length).assertEqual(20);
             db.cleanup();
             db.cleanup({});
-            expect(entry.history.length).to.be(20);
+            expect(entry.history.length).assertEqual(20);
             db.meta.historyMaxItems = undefined;
             db.cleanup({ historyRules: true });
-            expect(entry.history[0].fields.get('Title')).to.be('10');
-            expect(entry.history.length).to.be(20);
+            expect(entry.history[0].fields.get('Title')).assertEqual('10');
+            expect(entry.history.length).assertEqual(20);
         });
     });
 
-    it('cleanups custom icons', () => {
+    it('cleanups custom icons', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile().then((keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -957,7 +957,7 @@ describe('Kdbx', () => {
         });
     });
 
-    it('cleanups binaries', () => {
+    it('cleanups binaries', 0,() => {
         return kdbxweb.Credentials.createRandomKeyFile().then(async (keyFile) => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
@@ -994,7 +994,7 @@ describe('Kdbx', () => {
             const sourceEntryWithCustomIcon = sourceDb.groups[0].entries[0];
             const sourceEntryWithBinaries = sourceDb.groups[0].groups[0].entries[0];
 
-            expect(sourceDb.groups[0].entries.length).to.be(2);
+            expect(sourceDb.groups[0].entries.length).assertEqual(2);
             expect(sourceEntryWithCustomIcon.customIcon).to.be.ok();
             expect([...sourceEntryWithBinaries.binaries.keys()]).to.eql(['attachment']);
 
@@ -1014,7 +1014,7 @@ describe('Kdbx', () => {
 
             return db.save().then((ab) => {
                 return kdbxweb.Kdbx.load(ab, cred).then((db) => {
-                    expect(db.groups[0].entries.length).to.be(2);
+                    expect(db.groups[0].entries.length).assertEqual(2);
 
                     const withCustomIcon = db.groups[0].entries[0];
                     const withBinaries = db.groups[0].entries[1];
@@ -1030,12 +1030,12 @@ describe('Kdbx', () => {
         });
     });
 
-    it('creates missing uuids', () => {
+    it('creates missing uuids', 0,() => {
         const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(''));
         const xml = kdbxweb.ByteUtils.bytesToString(TestResources.emptyUuidXml).toString();
         return kdbxweb.Kdbx.loadXml(xml, cred).then((db) => {
             expect(db).to.be.a(kdbxweb.Kdbx);
-            expect(db.groups.length).to.be(1);
+            expect(db.groups.length).assertEqual(1);
             expect(db.groups[0].uuid).to.be.ok();
             expect(db.groups[0].uuid.id).to.be.ok();
             const entry = db.groups[0].groups[0].entries[0];
@@ -1045,7 +1045,7 @@ describe('Kdbx', () => {
             for (let i = 0; i < entry.history.length; i++) {
                 const he = entry.history[i];
                 expect(he.uuid).to.be.ok();
-                expect(he.uuid.id).to.be(entry.uuid.id);
+                expect(he.uuid.id).assertEqual(entry.uuid.id);
             }
         });
     });
@@ -1064,43 +1064,43 @@ describe('Kdbx', () => {
         function check(db: kdbxweb.Kdbx) {
             const groupWithTags = db.groups[0].groups[0].groups[0];
             expect(groupWithTags).to.be.ok();
-            expect(groupWithTags.name).to.be('With tags');
+            expect(groupWithTags.name).assertEqual('With tags');
             expect(groupWithTags.tags).to.eql(['Another tag', 'Tag1']);
-            expect(groupWithTags.previousParentGroup).to.be(undefined);
+            expect(groupWithTags.previousParentGroup).assertEqual(undefined);
 
             const regularEntry = db.groups[0].entries[0];
-            expect(regularEntry.qualityCheck).to.be(undefined);
+            expect(regularEntry.qualityCheck).assertEqual(undefined);
 
             const entryWithDisabledPasswordQuality = db.groups[0].entries[1];
             expect(entryWithDisabledPasswordQuality).to.be.ok();
-            expect(entryWithDisabledPasswordQuality.fields.get('Title')).to.be('DisabledQ');
-            expect(entryWithDisabledPasswordQuality.qualityCheck).to.be(false);
+            expect(entryWithDisabledPasswordQuality.fields.get('Title')).assertEqual('DisabledQ');
+            expect(entryWithDisabledPasswordQuality.qualityCheck).assertEqual(false);
 
             const previousParentGroup = db.groups[0].groups[0].groups[1];
             expect(previousParentGroup).to.be.ok();
-            expect(previousParentGroup.name).to.be('Inside');
+            expect(previousParentGroup.name).assertEqual('Inside');
 
             const groupMovedFromInside = db.groups[0].groups[0].groups[2];
             expect(groupMovedFromInside).to.be.ok();
-            expect(groupMovedFromInside.name).to.be('New group was inside');
+            expect(groupMovedFromInside.name).assertEqual('New group was inside');
             expect(
                 previousParentGroup.uuid.equals(groupMovedFromInside.previousParentGroup)
             ).to.be.ok();
 
             const entryMovedFromInside = db.groups[0].groups[0].entries[0];
             expect(entryMovedFromInside).to.be.ok();
-            expect(entryMovedFromInside.fields.get('Title')).to.be('Was inside');
+            expect(entryMovedFromInside.fields.get('Title')).assertEqual('Was inside');
             expect(
                 previousParentGroup.uuid.equals(entryMovedFromInside.previousParentGroup)
             ).to.be.ok();
 
-            expect(db.meta.customIcons.size).to.be(2);
+            expect(db.meta.customIcons.size).assertEqual(2);
             const icon1 = db.meta.customIcons.get('3q2nWI0en0W/wvhaCFJsnw==');
             expect(icon1).to.be.ok();
-            expect(icon1!.name).to.be('Bulb icon');
-            expect(icon1!.lastModified?.toISOString()).to.be('2021-05-05T18:28:34.000Z');
+            expect(icon1!.name).assertEqual('Bulb icon');
+            expect(icon1!.lastModified?.toISOString()).assertEqual('2021-05-05T18:28:34.000Z');
 
-            expect(db.meta.customData.size).to.be(4);
+            expect(db.meta.customData.size).assertEqual(4);
             expect(db.meta.customData.get('Test_A')).to.eql({
                 value: 'NmL56onQIqdk1WSt',
                 lastModified: new Date('2021-01-20T18:10:44.000Z')
@@ -1109,44 +1109,44 @@ describe('Kdbx', () => {
     });
 
     function checkDb(db: any) {
-        expect(db.meta.name).to.be('demo');
-        expect(db.meta.nameChanged.toISOString()).to.be('2015-08-16T14:45:23.000Z');
-        expect(db.meta.desc).to.be('demo db');
-        expect(db.meta.descChanged.toISOString()).to.be('2015-08-16T14:45:23.000Z');
-        expect(db.meta.defaultUser).to.be('me');
-        expect(db.meta.defaultUserChanged.toISOString()).to.be('2015-08-16T14:45:23.000Z');
-        expect(db.meta.mntncHistoryDays).to.be(365);
-        expect(db.meta.color).to.be('#FF0000');
-        expect(db.meta.keyChanged.toISOString()).to.be('2015-08-16T14:53:28.000Z');
-        expect(db.meta.keyChangeRec).to.be(-1);
-        expect(db.meta.keyChangeForce).to.be(-1);
-        expect(db.meta.recycleBinEnabled).to.be(true);
-        expect(db.meta.recycleBinUuid.id).to.be('fZ7q9U4TBU+5VomeW3BZOQ==');
-        expect(db.meta.recycleBinChanged.toISOString()).to.be('2015-08-16T14:44:42.000Z');
-        expect(db.meta.entryTemplatesGroup.empty).to.be(true);
-        expect(db.meta.entryTemplatesGroupChanged.toISOString()).to.be('2015-08-16T14:44:42.000Z');
-        expect(db.meta.historyMaxItems).to.be(10);
-        expect(db.meta.historyMaxSize).to.be(6291456);
-        expect(db.meta.lastSelectedGroup.id).to.be('LWIve8M1xUuvrORCdYeRgA==');
-        expect(db.meta.lastTopVisibleGroup.id).to.be('LWIve8M1xUuvrORCdYeRgA==');
-        expect(db.meta.memoryProtection.title).to.be(false);
-        expect(db.meta.memoryProtection.userName).to.be(false);
-        expect(db.meta.memoryProtection.password).to.be(true);
-        expect(db.meta.memoryProtection.url).to.be(false);
-        expect(db.meta.memoryProtection.notes).to.be(false);
-        expect(db.meta.customIcons.size).to.be(1);
+        expect(db.meta.name).assertEqual('demo');
+        expect(db.meta.nameChanged.toISOString()).assertEqual('2015-08-16T14:45:23.000Z');
+        expect(db.meta.desc).assertEqual('demo db');
+        expect(db.meta.descChanged.toISOString()).assertEqual('2015-08-16T14:45:23.000Z');
+        expect(db.meta.defaultUser).assertEqual('me');
+        expect(db.meta.defaultUserChanged.toISOString()).assertEqual('2015-08-16T14:45:23.000Z');
+        expect(db.meta.mntncHistoryDays).assertEqual(365);
+        expect(db.meta.color).assertEqual('#FF0000');
+        expect(db.meta.keyChanged.toISOString()).assertEqual('2015-08-16T14:53:28.000Z');
+        expect(db.meta.keyChangeRec).assertEqual(-1);
+        expect(db.meta.keyChangeForce).assertEqual(-1);
+        expect(db.meta.recycleBinEnabled).assertEqual(true);
+        expect(db.meta.recycleBinUuid.id).assertEqual('fZ7q9U4TBU+5VomeW3BZOQ==');
+        expect(db.meta.recycleBinChanged.toISOString()).assertEqual('2015-08-16T14:44:42.000Z');
+        expect(db.meta.entryTemplatesGroup.empty).assertEqual(true);
+        expect(db.meta.entryTemplatesGroupChanged.toISOString()).assertEqual('2015-08-16T14:44:42.000Z');
+        expect(db.meta.historyMaxItems).assertEqual(10);
+        expect(db.meta.historyMaxSize).assertEqual(6291456);
+        expect(db.meta.lastSelectedGroup.id).assertEqual('LWIve8M1xUuvrORCdYeRgA==');
+        expect(db.meta.lastTopVisibleGroup.id).assertEqual('LWIve8M1xUuvrORCdYeRgA==');
+        expect(db.meta.memoryProtection.title).assertEqual(false);
+        expect(db.meta.memoryProtection.userName).assertEqual(false);
+        expect(db.meta.memoryProtection.password).assertEqual(true);
+        expect(db.meta.memoryProtection.url).assertEqual(false);
+        expect(db.meta.memoryProtection.notes).assertEqual(false);
+        expect(db.meta.customIcons.size).assertEqual(1);
         expect(db.meta.customIcons.get('rr3vZ1ozek+R4pAcLeqw5w==')).to.be.ok();
 
         const binaries = db.binaries.getAll();
-        expect(binaries.length).to.be(1);
+        expect(binaries.length).assertEqual(1);
         expect(binaries[0].ref).to.be.ok();
         expect(binaries[0].value).to.be.ok();
 
-        expect(db.deletedObjects.length).to.be(1);
-        expect(db.deletedObjects[0].uuid.id).to.be('LtoeZ26BBkqtr93N9tqO4g==');
-        expect(db.deletedObjects[0].deletionTime.toISOString()).to.be('2015-08-16T14:50:13.000Z');
+        expect(db.deletedObjects.length).assertEqual(1);
+        expect(db.deletedObjects[0].uuid.id).assertEqual('LtoeZ26BBkqtr93N9tqO4g==');
+        expect(db.deletedObjects[0].deletionTime.toISOString()).assertEqual('2015-08-16T14:50:13.000Z');
 
-        expect(db.groups.length).to.be(1);
+        expect(db.groups.length).assertEqual(1);
         checkGroup(db.groups[0], {
             uuid: 'LWIve8M1xUuvrORCdYeRgA==',
             name: 'sample',
@@ -1291,53 +1291,53 @@ describe('Kdbx', () => {
 
     function checkGroup(group: kdbxweb.KdbxGroup, exp: any) {
         expect(group).to.be.ok();
-        expect(group.uuid?.id).to.be(exp.uuid);
-        expect(group.name).to.be(exp.name);
-        expect(group.notes).to.be(exp.notes);
-        expect(group.icon).to.be(exp.icon);
-        expect(group.expanded).to.be(exp.expanded);
-        expect(group.defaultAutoTypeSeq).to.be(exp.defaultAutoTypeSeq);
-        expect(group.enableAutoType).to.be(exp.enableAutoType);
-        expect(group.enableSearching).to.be(exp.enableSearching);
-        expect(group.lastTopVisibleEntry?.id).to.be(exp.lastTopVisibleEntry);
-        expect(group.groups.length).to.be(exp.groups);
-        expect(group.entries.length).to.be(exp.entries);
+        expect(group.uuid?.id).assertEqual(exp.uuid);
+        expect(group.name).assertEqual(exp.name);
+        expect(group.notes).assertEqual(exp.notes);
+        expect(group.icon).assertEqual(exp.icon);
+        expect(group.expanded).assertEqual(exp.expanded);
+        expect(group.defaultAutoTypeSeq).assertEqual(exp.defaultAutoTypeSeq);
+        expect(group.enableAutoType).assertEqual(exp.enableAutoType);
+        expect(group.enableSearching).assertEqual(exp.enableSearching);
+        expect(group.lastTopVisibleEntry?.id).assertEqual(exp.lastTopVisibleEntry);
+        expect(group.groups.length).assertEqual(exp.groups);
+        expect(group.entries.length).assertEqual(exp.entries);
         if (exp.times) {
-            expect(group.times).to.be.eql(exp.times);
+            expect(group.times).assertDeepEquals(exp.times);
         }
-        expect(group.enableAutoType).to.be.eql(exp.enableAutoType);
-        expect(group.defaultAutoTypeSeq).to.be.eql(exp.defaultAutoTypeSeq);
+        expect(group.enableAutoType).assertDeepEquals(exp.enableAutoType);
+        expect(group.defaultAutoTypeSeq).assertDeepEquals(exp.defaultAutoTypeSeq);
     }
 
     function checkEntry(entry: kdbxweb.KdbxEntry, exp: any) {
         expect(entry).to.be.ok();
-        expect(entry.uuid.id).to.be(exp.uuid);
-        expect(entry.icon).to.be(exp.icon);
-        expect(entry.customIcon).to.be(exp.customIcon);
-        expect(entry.fgColor).to.be(exp.fgColor);
-        expect(entry.bgColor).to.be(exp.bgColor);
-        expect(entry.overrideUrl).to.be(exp.overrideUrl);
-        expect(entry.tags).to.be.eql(exp.tags);
+        expect(entry.uuid.id).assertEqual(exp.uuid);
+        expect(entry.icon).assertEqual(exp.icon);
+        expect(entry.customIcon).assertEqual(exp.customIcon);
+        expect(entry.fgColor).assertEqual(exp.fgColor);
+        expect(entry.bgColor).assertEqual(exp.bgColor);
+        expect(entry.overrideUrl).assertEqual(exp.overrideUrl);
+        expect(entry.tags).assertDeepEquals(exp.tags);
         if (exp.times) {
-            expect(entry.times).to.be.eql(exp.times);
+            expect(entry.times).assertDeepEquals(exp.times);
         }
         expect(entry.fields.size).to.be((exp.fields.size | 0) + (exp.prFields.size | 0));
         for (const [field, value] of exp.fields.entries()) {
-            expect(entry.fields.get(field)).to.be(value);
+            expect(entry.fields.get(field)).assertEqual(value);
         }
         for (const [field, value] of exp.prFields.entries()) {
-            expect((entry.fields.get(field) as kdbxweb.ProtectedValue).getText()).to.be(value);
+            expect((entry.fields.get(field) as kdbxweb.ProtectedValue).getText()).assertEqual(value);
         }
-        expect(entry.binaries.size).to.be(exp.binaries.size);
+        expect(entry.binaries.size).assertEqual(exp.binaries.size);
         for (const [field, value] of exp.binaries.entries()) {
-            expect((entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).hash).to.be(
+            expect((entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).hash).assertEqual(
                 value.hash
             );
-            expect(!!(entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).value).to.be(
+            expect(!!(entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).value).assertEqual(
                 !!value.value
             );
         }
-        expect(entry.autoType).to.be.eql(exp.autoType);
-        expect(entry.history.length).to.be(exp.history);
+        expect(entry.autoType).assertDeepEquals(exp.autoType);
+        expect(entry.history.length).assertEqual(exp.history);
     }
 });

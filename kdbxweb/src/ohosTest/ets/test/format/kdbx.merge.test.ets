@@ -1,4 +1,4 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
 
 describe('Kdbx.merge', () => {
@@ -49,14 +49,14 @@ describe('Kdbx.merge', () => {
         icon2: kdbxweb.ByteUtils.stringToBytes('icon2')
     } as const;
 
-    it('tests can check database structure', () => {
+    it('tests can check database structure', 0,() => {
         const db = getTestDb();
         assertDbEquals(db, getTestDbStructure());
     });
 
     // self-merge
 
-    it('merges itself', () => {
+    it('merges itself', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.merge(remote);
@@ -65,7 +65,7 @@ describe('Kdbx.merge', () => {
 
     // errors
 
-    it('generates merge error when merging db without root', () => {
+    it('generates merge error when merging db without root', 0,() => {
         const db = getTestDb(),
             remote = kdbxweb.Kdbx.create(
                 new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo')),
@@ -76,12 +76,12 @@ describe('Kdbx.merge', () => {
             db.merge(remote);
         }).to.throwException((e) => {
             expect(e).to.be.a(kdbxweb.KdbxError);
-            expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.InvalidState);
+            expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidState);
             expect(e.message).to.contain('empty default group');
         });
     });
 
-    it('generates merge error when merging another db', () => {
+    it('generates merge error when merging another db', 0,() => {
         const db = getTestDb(),
             remote = kdbxweb.Kdbx.create(
                 new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo')),
@@ -91,14 +91,14 @@ describe('Kdbx.merge', () => {
             db.merge(remote);
         }).to.throwException((e) => {
             expect(e).to.be.a(kdbxweb.KdbxError);
-            expect(e.code).to.be(kdbxweb.Consts.ErrorCodes.MergeError);
+            expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.MergeError);
             expect(e.message).to.contain('default group is different');
         });
     });
 
     // deletedObjects
 
-    it('merges deleted objects', () => {
+    it('merges deleted objects', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const delObj = new kdbxweb.KdbxDeletedObject();
@@ -116,7 +116,7 @@ describe('Kdbx.merge', () => {
 
     // meta
 
-    it('merges metadata when remote is later', () => {
+    it('merges metadata when remote is later', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.meta.name = 'name1';
@@ -164,7 +164,7 @@ describe('Kdbx.merge', () => {
         });
     });
 
-    it('merges metadata when local is later', () => {
+    it('merges metadata when local is later', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.meta.name = 'name1';
@@ -210,7 +210,7 @@ describe('Kdbx.merge', () => {
         });
     });
 
-    it('merges binaries', () => {
+    it('merges binaries', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const binaries = new kdbxweb.KdbxBinaries();
@@ -238,7 +238,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, { binaries });
     });
 
-    it('merges custom icons', () => {
+    it('merges custom icons', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const d1 = new Date();
@@ -270,7 +270,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, { meta: { customIcons } });
     });
 
-    it('merges custom data', () => {
+    it('merges custom data', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
 
@@ -297,7 +297,7 @@ describe('Kdbx.merge', () => {
 
     // groups: remote
 
-    it('changes remote group', () => {
+    it('changes remote group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const grp = remote.getDefaultGroup();
@@ -328,7 +328,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds new remote group to root', () => {
+    it('adds new remote group to root', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const group = remote.createGroup(remote.getDefaultGroup(), 'newgrp');
@@ -338,7 +338,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds new remote group to deep group', () => {
+    it('adds new remote group to deep group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const group = remote.createGroup(remote.getDefaultGroup().groups[1].groups[0], 'newgrp');
@@ -348,7 +348,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes remote group', () => {
+    it('deletes remote group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(remote.getDefaultGroup().groups[1].groups[0], null);
@@ -359,7 +359,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves remote group to root', () => {
+    it('moves remote group to root', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(remote.getDefaultGroup().groups[1].groups[0], remote.getDefaultGroup());
@@ -370,7 +370,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves remote group to deep group', () => {
+    it('moves remote group to deep group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(
@@ -386,7 +386,7 @@ describe('Kdbx.merge', () => {
 
     // groups: local
 
-    it('changes local group', () => {
+    it('changes local group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const grp = db.getDefaultGroup();
@@ -417,7 +417,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds new local group to root', () => {
+    it('adds new local group to root', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const group = db.createGroup(db.getDefaultGroup(), 'newgrp');
@@ -427,7 +427,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds new local group to deep group', () => {
+    it('adds new local group to deep group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const group = db.createGroup(db.getDefaultGroup().groups[1].groups[0], 'newgrp');
@@ -437,7 +437,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes local group', () => {
+    it('deletes local group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(db.getDefaultGroup().groups[1].groups[0], null);
@@ -448,7 +448,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves local group to root', () => {
+    it('moves local group to root', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup());
@@ -459,7 +459,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves local group to deep group', () => {
+    it('moves local group to deep group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup().groups[3]);
@@ -472,7 +472,7 @@ describe('Kdbx.merge', () => {
 
     // groups: local+remote
 
-    it('deletes group moved to subgroup of locally deleted group', () => {
+    it('deletes group moved to subgroup of locally deleted group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(
@@ -489,7 +489,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes group moved to subgroup of remotely deleted group', () => {
+    it('deletes group moved to subgroup of remotely deleted group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup().groups[3].groups[1]);
@@ -503,7 +503,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes group moved out of subgroup of locally deleted group', () => {
+    it('deletes group moved out of subgroup of locally deleted group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(
@@ -519,7 +519,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes group moved out of subgroup of remotely deleted group', () => {
+    it('deletes group moved out of subgroup of remotely deleted group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup().groups[3].groups[1]);
@@ -532,7 +532,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves group moved to locally moved group', () => {
+    it('moves group moved to locally moved group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(
@@ -551,7 +551,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves group moved to remotely moved group', () => {
+    it('moves group moved to remotely moved group', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(remote.getDefaultGroup().groups[3], remote.getDefaultGroup().groups[2]);
@@ -569,7 +569,7 @@ describe('Kdbx.merge', () => {
 
     // groups: reorder
 
-    it('moves group back', () => {
+    it('moves group back', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
 
@@ -603,7 +603,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves group forward', () => {
+    it('moves group forward', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
 
@@ -637,7 +637,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('inserts group at start', () => {
+    it('inserts group at start', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
 
@@ -655,7 +655,7 @@ describe('Kdbx.merge', () => {
 
     // entries
 
-    it('adds remote entry', () => {
+    it('adds remote entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const entry = remote.createEntry(remote.getDefaultGroup());
@@ -666,7 +666,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes remote entry', () => {
+    it('deletes remote entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(remote.getDefaultGroup().entries[0], null);
@@ -679,7 +679,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes local entry', () => {
+    it('deletes local entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.move(db.getDefaultGroup().entries[0], null);
@@ -692,7 +692,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves remote entry', () => {
+    it('moves remote entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.move(remote.getDefaultGroup().entries[0], remote.getDefaultGroup().groups[1]);
@@ -705,7 +705,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('moves local entry', () => {
+    it('moves local entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.move(db.getDefaultGroup().entries[0], db.getDefaultGroup().groups[1]);
@@ -718,7 +718,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('changes remote entry', () => {
+    it('changes remote entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const ab = new ArrayBuffer(0);
@@ -758,7 +758,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('ignores remote entry with same date', () => {
+    it('ignores remote entry with same date', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const ab = new ArrayBuffer(0);
@@ -782,7 +782,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('changes local entry', () => {
+    it('changes local entry', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const ab = new ArrayBuffer(0);
@@ -823,7 +823,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes history state remotely', () => {
+    it('deletes history state remotely', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.getDefaultGroup().entries[0].removeHistory(0);
@@ -833,7 +833,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes history state locally', () => {
+    it('deletes history state locally', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.getDefaultGroup().entries[0].removeHistory(0);
@@ -843,7 +843,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes all history states remotely', () => {
+    it('deletes all history states remotely', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         remote.getDefaultGroup().entries[0].removeHistory(0, 5);
@@ -853,7 +853,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('deletes all history states locally', () => {
+    it('deletes all history states locally', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         db.getDefaultGroup().entries[0].removeHistory(0, 5);
@@ -863,7 +863,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds past history state remotely', () => {
+    it('adds past history state remotely', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const remoteEntry = remote.getDefaultGroup().entries[0];
@@ -879,7 +879,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds future history state remotely and converts current state into history', () => {
+    it('adds future history state remotely and converts current state into history', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const remoteEntry = remote.getDefaultGroup().entries[0];
@@ -899,7 +899,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('adds history state locally and converts remote state into history', () => {
+    it('adds history state locally and converts remote state into history', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const remoteEntry = remote.getDefaultGroup().entries[0];
@@ -920,7 +920,7 @@ describe('Kdbx.merge', () => {
         assertDbEquals(db, exp);
     });
 
-    it('can merge with old entry state without state deletions', () => {
+    it('can merge with old entry state without state deletions', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
         const entry = db.getDefaultGroup().entries[0];
@@ -941,7 +941,7 @@ describe('Kdbx.merge', () => {
 
     // edit state management
 
-    it('saves and restores edit state', () => {
+    it('saves and restores edit state', 0,() => {
         const db = getTestDb(),
             remote = getTestDb();
 
@@ -1274,7 +1274,7 @@ describe('Kdbx.merge', () => {
             expect(db.binaries.getAll()).to.eql(exp.binaries.getAll());
         }
         if (exp.del) {
-            expect(db.deletedObjects.length).to.be(Object.keys(exp.del).length);
+            expect(db.deletedObjects.length).assertEqual(Object.keys(exp.del).length);
             const del: { [id: string]: Date | undefined } = {};
             for (const d of db.deletedObjects) {
                 del[d.uuid!.id] = d.deletionTime;
@@ -1282,7 +1282,7 @@ describe('Kdbx.merge', () => {
             expect(del).to.eql(exp.del);
         }
         if (exp.root) {
-            expect(db.getDefaultGroup().parentGroup).to.be(undefined);
+            expect(db.getDefaultGroup().parentGroup).assertEqual(undefined);
             assertGroupEquals(db.getDefaultGroup(), exp.root);
         }
     }
@@ -1322,16 +1322,16 @@ describe('Kdbx.merge', () => {
             expect(group.lastTopVisibleEntry).to.eql(exp.lastTopVisibleEntry);
         }
         if (exp.groups) {
-            expect(group.groups.length).to.be(exp.groups.length);
+            expect(group.groups.length).assertEqual(exp.groups.length);
             group.groups.forEach((grp, ix) => {
-                expect(grp.parentGroup).to.be(group);
+                expect(grp.parentGroup).assertEqual(group);
                 assertGroupEquals(grp, exp.groups[ix]);
             });
         }
         if (exp.entries) {
-            expect(group.entries.length).to.be(exp.entries.length);
+            expect(group.entries.length).assertEqual(exp.entries.length);
             group.entries.forEach((entry, ix) => {
-                expect(entry.parentGroup).to.be(group);
+                expect(entry.parentGroup).assertEqual(group);
                 assertEntryEquals(entry, exp.entries[ix]);
             });
         }
@@ -1369,7 +1369,7 @@ describe('Kdbx.merge', () => {
             expect(entry.binaries).to.eql(exp.binaries);
         }
         if (exp.history) {
-            expect(entry.history.length).to.be(exp.history.length);
+            expect(entry.history.length).assertEqual(exp.history.length);
             entry.history.forEach((historyEntry, ix) => {
                 assertEntryEquals(historyEntry, exp.history[ix]);
             });

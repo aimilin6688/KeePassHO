@@ -1,11 +1,11 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import { Kdbx, KdbxContext, KdbxCustomData, KdbxCustomDataItem, XmlUtils } from '../../../../main/ets/index';
 
 describe('KdbxCustomData', () => {
     const kdbx = new Kdbx();
     const ctx = new KdbxContext({ kdbx });
 
-    it('reads custom data from xml', () => {
+    it('reads custom data from xml', 0,() => {
         const xml = XmlUtils.parse(
             '<CustomData>' +
                 '<Item><Key>k1</Key><Value>v1</Value></Item>' +
@@ -19,13 +19,13 @@ describe('KdbxCustomData', () => {
         ]);
     });
 
-    it('reads empty custom data from empty xml', () => {
+    it('reads empty custom data from empty xml', 0,() => {
         const xml = XmlUtils.parse('<CustomData></CustomData>');
         const cd = KdbxCustomData.read(xml.documentElement);
         expect(cd).to.eql({});
     });
 
-    it('skips unknown tags', () => {
+    it('skips unknown tags', 0,() => {
         const xml = XmlUtils.parse(
             '<CustomData><Item><Key>k</Key><Value>v</Value><x></x></Item><Something></Something></CustomData>'
         );
@@ -33,7 +33,7 @@ describe('KdbxCustomData', () => {
         expect([...cd.entries()]).to.eql([['k', { value: 'v' }]]);
     });
 
-    it('skips empty keys', () => {
+    it('skips empty keys', 0,() => {
         const xml = XmlUtils.parse(
             '<CustomData><Item><Key></Key><Value>v</Value></Item></CustomData>'
         );
@@ -41,7 +41,7 @@ describe('KdbxCustomData', () => {
         expect(cd).to.eql({});
     });
 
-    it('writes custom data to xml', () => {
+    it('writes custom data to xml', 0,() => {
         const xml = XmlUtils.create('root');
         KdbxCustomData.write(
             xml.documentElement,
@@ -59,7 +59,7 @@ describe('KdbxCustomData', () => {
         );
     });
 
-    it('writes empty custom data to xml', () => {
+    it('writes empty custom data to xml', 0,() => {
         const xml = XmlUtils.create('root');
         KdbxCustomData.write(xml.documentElement, ctx, new Map());
         expect(
@@ -67,7 +67,7 @@ describe('KdbxCustomData', () => {
         ).to.eql('<root><CustomData/></root>');
     });
 
-    it('does not create tag for empty custom data', () => {
+    it('does not create tag for empty custom data', 0,() => {
         const xml = XmlUtils.create('root');
         KdbxCustomData.write(xml.documentElement, ctx, undefined);
         expect(
@@ -75,7 +75,7 @@ describe('KdbxCustomData', () => {
         ).to.eql('<root/>');
     });
 
-    it('skips keys without values', () => {
+    it('skips keys without values', 0,() => {
         const xml = XmlUtils.create('root');
         KdbxCustomData.write(
             xml.documentElement,
