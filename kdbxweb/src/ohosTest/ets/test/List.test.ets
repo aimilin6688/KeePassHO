@@ -16,7 +16,7 @@ import ProtectSaltGeneratorTest from './crypto/protected-salt-generator.test';
 // import KdbxCredentialsTest from './format/kdbx-credentials.test';
 // import KdbxCustomDataTest from './format/kdbx-custom-data.test';
 // import KdbxHeaderTest from './format/kdbx-header.test';
-// import KdbxUuidTest from './format/kdbx-uuid.test';
+import KdbxUuidTest from './format/kdbx-uuid.test';
 
 
 
@@ -38,5 +38,5 @@ export default function testsuite() {
   // KdbxCredentialsTest();
   // KdbxCustomDataTest();
   // KdbxHeaderTest();
-  // KdbxUuidTest();
+  KdbxUuidTest();
 }
