@@ -138,7 +138,7 @@ export function getText(node: Node | null): string | undefined {
   if (!node?.childNodes) {
     return undefined;
   }
-  return node.protectedValue ? node.protectedValue.getText() : node.textContent ?? undefined;
+  return (node as any).protectedValue ? (node as any).protectedValue.getText() : node.textContent ?? undefined;
 }
 
 export function setText(node: Node, text: string | undefined): void {
@@ -250,12 +250,12 @@ export function setUuid(
 }
 
 export function getProtectedText(node: Node): ProtectedValue | string | undefined {
-  return (node.protectedValue || node.textContent) ?? undefined;
+  return ((node as any).protectedValue || node.textContent) ?? undefined;
 }
 
 export function setProtectedText(node: Node, text: ProtectedValue | string): void {
   if (text instanceof ProtectedValue) {
-    node.protectedValue = text;
+    (node as any).protectedValue = text;
     (<Element> node).setAttribute(XmlNames.Attr.Protected, 'True');
   } else {
     setText(node, text);
@@ -263,8 +263,8 @@ export function setProtectedText(node: Node, text: ProtectedValue | string): voi
 }
 
 export function getProtectedBinary(node: Node): KdbxBinaryOrRef | undefined {
-  if (node.protectedValue) {
-    return node.protectedValue;
+  if ((node as any).protectedValue) {
+    return (node as any).protectedValue;
   }
   const text = node.textContent;
   const ref = (<Element> node).getAttribute(XmlNames.Attr.Ref);
@@ -284,7 +284,7 @@ export function getProtectedBinary(node: Node): KdbxBinaryOrRef | undefined {
 
 export function setProtectedBinary(node: Node, binary: KdbxBinaryOrRef): void {
   if (binary instanceof ProtectedValue) {
-    node.protectedValue = binary;
+    (node as any).protectedValue = binary;
     (<Element> node).setAttribute(XmlNames.Attr.Protected, 'True');
   } else if (KdbxBinaries.isKdbxBinaryRef(binary)) {
     (<Element> node).setAttribute(XmlNames.Attr.Ref, binary.ref);
@@ -310,7 +310,7 @@ export function setProtectedValues(node: Node, protectSaltGenerator: ProtectSalt
         const value = arrayToBuffer(base64ToBytes(node.textContent || ''));
         if (value.byteLength) {
           const salt = protectSaltGenerator.getSalt(value.byteLength);
-          node.protectedValue = new ProtectedValue(value, salt);
+          (node as any).protectedValue = new ProtectedValue(value, salt);
         }
       } catch (e) {
         throw new KdbxError(
@@ -327,20 +327,20 @@ export function updateProtectedValuesSalt(
   protectSaltGenerator: ProtectSaltGenerator
 ): void {
   traverse(node, (node) => {
-    if (strToBoolean(node.getAttribute(XmlNames.Attr.Protected)) && node.protectedValue) {
-      const newSalt = protectSaltGenerator.getSalt(node.protectedValue.byteLength);
-      node.protectedValue.setSalt(newSalt);
-      node.textContent = node.protectedValue.toString();
+    if (strToBoolean(node.getAttribute(XmlNames.Attr.Protected)) && (node as any).protectedValue) {
+      const newSalt = protectSaltGenerator.getSalt((node as any).protectedValue.byteLength);
+      (node as any).protectedValue.setSalt(newSalt);
+      node.textContent = (node as any).protectedValue.toString();
     }
   });
 }
 
 export function unprotectValues(node: Node): void {
   traverse(node, (node) => {
-    if (strToBoolean(node.getAttribute(XmlNames.Attr.Protected)) && node.protectedValue) {
+    if (strToBoolean(node.getAttribute(XmlNames.Attr.Protected)) && (node as any).protectedValue) {
       node.removeAttribute(XmlNames.Attr.Protected);
       node.setAttribute(XmlNames.Attr.ProtectedInMemPlainXml, 'True');
-      node.textContent = node.protectedValue.getText();
+      node.textContent = (node as any).protectedValue.getText();
     }
   });
 }
@@ -349,11 +349,11 @@ export function protectUnprotectedValues(node: Node): void {
   traverse(node, (node) => {
     if (
       strToBoolean(node.getAttribute(XmlNames.Attr.ProtectedInMemPlainXml)) &&
-      node.protectedValue
+      (node as any).protectedValue
     ) {
       node.removeAttribute(XmlNames.Attr.ProtectedInMemPlainXml);
       node.setAttribute(XmlNames.Attr.Protected, 'True');
-      node.textContent = node.protectedValue.toString();
+      node.textContent = (node as any).protectedValue.toString();
     }
   });
 }
@@ -361,8 +361,8 @@ export function protectUnprotectedValues(node: Node): void {
 export function protectPlainValues(node: Node): void {
   traverse(node, (node) => {
     if (strToBoolean(node.getAttribute(XmlNames.Attr.ProtectedInMemPlainXml))) {
-      node.protectedValue = ProtectedValue.fromString(node.textContent || '');
-      node.textContent = node.protectedValue.toString();
+      (node as any).protectedValue = ProtectedValue.fromString(node.textContent || '');
+      node.textContent = (node as any).protectedValue.toString();
       node.removeAttribute(XmlNames.Attr.ProtectedInMemPlainXml);
       node.setAttribute(XmlNames.Attr.Protected, 'True');
     }

@@ -13,7 +13,7 @@
     // "level": "info"                          /* Define the log level. Value: [ "debug" | "info" | "warn" | "error" ]. Default: "info" */
   },
   "debugging": {
-    // "stacktrace": false                      /* Disable stacktrace compilation. Value: [ true | false ]. Default: false */
+    "stacktrace": true                      /* Disable stacktrace compilation. Value: [ true | false ]. Default: false */
   },
   "nodeOptions": {
     // "maxOldSpaceSize": 8192                  /* Enable nodeOptions maxOldSpaceSize compilation. Unit M. Used for the daemon process. Default: 8192*/
