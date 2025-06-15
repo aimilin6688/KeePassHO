@@ -7,7 +7,7 @@ import { KdbxCustomData, KdbxCustomDataMap } from './kdbx-custom-data';
 import { Icons } from '../defs/consts';
 import { KdbxContext } from './kdbx-context';
 import { MergeObjectMap } from './kdbx';
-import { Element } from '@xmldom/xmldom';
+import { Element, Node } from '@xmldom/xmldom';
 
 export class KdbxGroup {
     uuid = new KdbxUuid();

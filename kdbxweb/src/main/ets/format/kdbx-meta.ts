@@ -7,7 +7,7 @@ import { KdbxError } from '../errors/kdbx-error';
 import { Defaults, ErrorCodes } from '../defs/consts';
 import { MergeObjectMap } from './kdbx';
 import { KdbxBinaries } from './kdbx-binaries';
-import { Element } from '@xmldom/xmldom';
+import { Element,Node } from '@xmldom/xmldom';
 
 const MetaConst = {
     Generator: 'KdbxWeb'

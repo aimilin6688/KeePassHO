@@ -10,7 +10,7 @@ import { KdbxBinaries, KdbxBinary, KdbxBinaryOrRef, KdbxBinaryWithHash } from '.
 import { KdbxMeta } from './kdbx-meta';
 import { KdbxGroup } from './kdbx-group';
 import { MergeObjectMap } from './kdbx';
-import { Element } from '@xmldom/xmldom';
+import { Element, Node } from '@xmldom/xmldom';
 
 export type KdbxEntryField = string | ProtectedValue;
 
