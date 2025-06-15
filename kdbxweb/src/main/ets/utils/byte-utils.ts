@@ -1,4 +1,5 @@
 import util from '@ohos.util';
+import { CryptoJS } from '@ohos/crypto-js';
 
 const textEncoder = new util.TextEncoder();
 const textDecoder = new util.TextDecoder();

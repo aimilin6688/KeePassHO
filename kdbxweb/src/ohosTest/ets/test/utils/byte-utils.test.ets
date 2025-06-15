@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils } from '../../../../main/ets/index';
+import { CryptoJS } from '@ohos/crypto-js';
+
 export default function ByteUtilsTest() {
     describe('ByteUtils', () => {
         describe('arrayBufferEquals', () => {
@@ -135,6 +137,232 @@ export default function ByteUtilsTest() {
                 expect(ab instanceof  ArrayBuffer).assertTrue();
                 expect(ab.byteLength).assertEqual(4);
                 expect(new Uint8Array(ab)[0]).assertEqual(1);
+            });
+        });
+
+        describe('bytesToBuffer', () => {
+            it('converts Uint8Array to buffer', 0,() => {
+                const bytes = new Uint8Array([1, 2, 3, 4, 5]);
+                const buffer = ByteUtils.bytesToBuffer(bytes);
+                expect(buffer instanceof ArrayBuffer).assertTrue();
+                expect(buffer.byteLength).assertEqual(5);
+                const view = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.length; i++) {
+                    expect(view[i]).assertEqual(bytes[i]);
+                }
+            });
+        });
+
+        describe('stringToBuffer', () => {
+            it('converts string to buffer', 0,() => {
+                const testStr = 'Hello, World!';
+                const buffer = ByteUtils.stringToBuffer(testStr);
+                expect(buffer instanceof ArrayBuffer).assertTrue();
+                expect(buffer.byteLength).assertEqual(testStr.length);
+                const bytes = ByteUtils.stringToBytes(testStr);
+                const view = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.length; i++) {
+                    expect(view[i]).assertEqual(bytes[i]);
+                }
+            });
+
+            it('converts unicode string to buffer', 0,() => {
+                const buffer = ByteUtils.stringToBuffer(str);
+                expect(buffer instanceof ArrayBuffer).assertTrue();
+                expect(buffer.byteLength).assertEqual(strBytes.length);
+                const view = new Uint8Array(buffer);
+                for (let i = 0; i < strBytes.length; i++) {
+                    expect(view[i]).assertEqual(strBytes[i]);
+                }
+            });
+        });
+
+        describe('arrayBufferToWordArray and wordArrayToArrayBuffer', () => {
+            it('converts ArrayBuffer to WordArray', 0, () => {
+                const testData = new Uint8Array([1, 2, 3, 4, 5]);
+                const buffer = testData.buffer;
+                const wordArray = ByteUtils.arrayBufferToWordArray(buffer);
+                
+                // 验证 WordArray 的属性
+                expect(wordArray.sigBytes).assertEqual(5);
+            });
+
+            it('converts WordArray to ArrayBuffer', 0, () => {
+                // 创建一个已知的 WordArray
+                const words = [0x01020304, 0x05000000];  // 对应字节：[1,2,3,4,5]
+                const wordArray = CryptoJS.lib.WordArray.create(words, 5);  // sigBytes=5 表示只使用5个字节
+                
+                const buffer = ByteUtils.wordArrayToArrayBuffer(wordArray);
+                expect(buffer instanceof ArrayBuffer).assertTrue();
+                expect(buffer.byteLength).assertEqual(5);
+                
+                const resultBytes = new Uint8Array(buffer);
+                expect(resultBytes[0]).assertEqual(1);
+                expect(resultBytes[1]).assertEqual(2);
+                expect(resultBytes[2]).assertEqual(3);
+                expect(resultBytes[3]).assertEqual(4);
+                expect(resultBytes[4]).assertEqual(5);
+            });
+
+            it('roundtrip conversion preserves data', 0, () => {
+                // 创建测试数据
+                const originalData = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+                const originalBuffer = originalData.buffer;
+
+                // ArrayBuffer -> WordArray -> ArrayBuffer
+                const wordArray = ByteUtils.arrayBufferToWordArray(originalBuffer);
+                const resultBuffer = ByteUtils.wordArrayToArrayBuffer(wordArray);
+
+                // 验证结果
+                expect(resultBuffer.byteLength).assertEqual(originalBuffer.byteLength);
+                const resultData = new Uint8Array(resultBuffer);
+                for (let i = 0; i < originalData.length; i++) {
+                    expect(resultData[i]).assertEqual(originalData[i]);
+                }
+            });
+        });
+
+        describe('arrayBufferEquals', () => {
+            it('returns true for equal buffers', 0, () => {
+                const buffer1 = new Uint8Array([1, 2, 3, 4, 5]).buffer;
+                const buffer2 = new Uint8Array([1, 2, 3, 4, 5]).buffer;
+                expect(ByteUtils.arrayBufferEquals(buffer1, buffer2)).assertTrue();
+            });
+
+            it('returns false for buffers with different lengths', 0, () => {
+                const buffer1 = new Uint8Array([1, 2, 3, 4, 5]).buffer;
+                const buffer2 = new Uint8Array([1, 2, 3, 4]).buffer;
+                expect(ByteUtils.arrayBufferEquals(buffer1, buffer2)).assertFalse();
+            });
+
+            it('returns false for buffers with different content', 0, () => {
+                const buffer1 = new Uint8Array([1, 2, 3, 4, 5]).buffer;
+                const buffer2 = new Uint8Array([1, 2, 3, 4, 6]).buffer;
+                expect(ByteUtils.arrayBufferEquals(buffer1, buffer2)).assertFalse();
+            });
+        });
+
+        describe('zeroBuffer', () => {
+            it('zeros ArrayBuffer', 0, () => {
+                const buffer = new Uint8Array([1, 2, 3, 4, 5]).buffer;
+                ByteUtils.zeroBuffer(buffer);
+                const view = new Uint8Array(buffer);
+                for (let i = 0; i < view.length; i++) {
+                    expect(view[i]).assertEqual(0);
+                }
+            });
+
+            it('zeros Uint8Array', 0, () => {
+                const array = new Uint8Array([1, 2, 3, 4, 5]);
+                ByteUtils.zeroBuffer(array);
+                for (let i = 0; i < array.length; i++) {
+                    expect(array[i]).assertEqual(0);
+                }
+            });
+        });
+
+        describe('base64ToBytes and bytesToBase64', () => {
+            it('converts base64 to bytes', 0, () => {
+                const base64Str = 'SGVsbG8gV29ybGQ='; // "Hello World"
+                const bytes = ByteUtils.base64ToBytes(base64Str);
+                expect(bytes instanceof Uint8Array).assertTrue();
+                expect(bytes.length).assertEqual(11);
+                expect(ByteUtils.bytesToString(bytes)).assertEqual('Hello World');
+            });
+
+            it('converts bytes to base64', 0, () => {
+                const text = 'Hello World';
+                const bytes = ByteUtils.stringToBytes(text);
+                const base64Str = ByteUtils.bytesToBase64(bytes);
+                expect(base64Str).assertEqual('SGVsbG8gV29ybGQ=');
+            });
+
+            it('roundtrip conversion preserves data', 0, () => {
+                const originalText = 'Hello World';
+                const bytes = ByteUtils.stringToBytes(originalText);
+                const base64Str = ByteUtils.bytesToBase64(bytes);
+                const resultBytes = ByteUtils.base64ToBytes(base64Str);
+                const resultText = ByteUtils.bytesToString(resultBytes);
+                expect(resultText).assertEqual(originalText);
+            });
+        });
+
+        describe('hexToBytes and bytesToHex', () => {
+            it('converts hex to bytes', 0, () => {
+                const hexStr = '48656c6c6f20576f726c64'; // "Hello World"
+                const bytes = ByteUtils.hexToBytes(hexStr);
+                expect(bytes instanceof Uint8Array).assertTrue();
+                expect(bytes.length).assertEqual(11);
+                expect(ByteUtils.bytesToString(bytes)).assertEqual('Hello World');
+            });
+
+            it('converts bytes to hex', 0, () => {
+                const text = 'Hello World';
+                const bytes = ByteUtils.stringToBytes(text);
+                const hexStr = ByteUtils.bytesToHex(bytes);
+                expect(hexStr).assertEqual('48656c6c6f20576f726c64');
+            });
+
+            it('handles single digit hex values correctly', 0, () => {
+                const bytes = new Uint8Array([1, 10, 15]);
+                const hexStr = ByteUtils.bytesToHex(bytes);
+                expect(hexStr).assertEqual('010a0f');
+            });
+
+            it('roundtrip conversion preserves data', 0, () => {
+                const originalText = 'Hello World';
+                const bytes = ByteUtils.stringToBytes(originalText);
+                const hexStr = ByteUtils.bytesToHex(bytes);
+                const resultBytes = ByteUtils.hexToBytes(hexStr);
+                const resultText = ByteUtils.bytesToString(resultBytes);
+                expect(resultText).assertEqual(originalText);
+            });
+        });
+
+        describe('bytesToString and stringToBytes', () => {
+            it('converts basic ASCII string', 0, () => {
+                const text = 'Hello World';
+                const bytes = ByteUtils.stringToBytes(text);
+                expect(bytes instanceof Uint8Array).assertTrue();
+                expect(bytes.length).assertEqual(11);
+                const resultText = ByteUtils.bytesToString(bytes);
+                expect(resultText).assertEqual(text);
+            });
+
+            it('handles special characters', 0, () => {
+                const text = 'Hello\nWorld\t!@#$%^&*()';
+                const bytes = ByteUtils.stringToBytes(text);
+                const resultText = ByteUtils.bytesToString(bytes);
+                expect(resultText).assertEqual(text);
+            });
+
+            it('handles Unicode characters', 0, () => {
+                const text = '你好，世界！🌍';
+                const bytes = ByteUtils.stringToBytes(text);
+                const resultText = ByteUtils.bytesToString(bytes);
+                expect(resultText).assertEqual(text);
+            });
+
+            it('handles empty string', 0, () => {
+                const text = '';
+                const bytes = ByteUtils.stringToBytes(text);
+                expect(bytes).assertUndefined();
+                const resultText = ByteUtils.bytesToString(bytes);
+                expect(resultText).assertEqual(text);
+            });
+
+            it('converts ArrayBuffer to string', 0, () => {
+                const text = 'Hello World';
+                const bytes = ByteUtils.stringToBytes(text);
+                const resultText = ByteUtils.bytesToString(bytes.buffer);
+                expect(resultText).assertEqual(text);
+            });
+
+            it('roundtrip conversion preserves all characters', 0, () => {
+                const text = 'Hello, 世界! 🌍\n\t!@#$%^&*()';
+                const bytes = ByteUtils.stringToBytes(text);
+                const resultText = ByteUtils.bytesToString(bytes);
+                expect(resultText).assertEqual(text);
             });
         });
     });
