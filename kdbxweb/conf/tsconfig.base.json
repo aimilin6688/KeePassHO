@@ -7,8 +7,7 @@
     "baseUrl": "../src/main/ets",
     "noEmitOnError": true,
     "types": ["node"],
-    "outDir": "../dist",
-    "declaration": true
+    "outDir": "../dist"
   },
   "include": ["../src/main/ets/**/*.ts"]
 }

@@ -8,7 +8,7 @@ import {
     BinaryStream,
     KdbxContext,
     KdbxHeader
-} from '../../../main/ets/index';
+} from '../src/main/ets';
 
 if (process.argv.length < 3) {
     console.log('Usage: npm run script:dump-header path/to-file.kdbx');

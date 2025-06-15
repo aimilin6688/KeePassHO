@@ -1,5 +1,5 @@
-import { Credentials, CryptoEngine, Kdbx, ProtectedValue } from '../../../main/ets/index';
-import { argon2 } from '../test/test-support/argon2';
+import { Credentials, CryptoEngine, Kdbx, ProtectedValue } from '../src/main/ets';
+import { argon2 } from '../src/ohosTest/ets/test/test-support/argon2';
 
 CryptoEngine.setArgon2Impl(argon2);
 

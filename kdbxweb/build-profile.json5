@@ -6,9 +6,6 @@
     {
       "name": "release",
       "arkOptions": {
-        "types": [
-          "./src/main/ets/defs/global"
-        ],
         "obfuscation": {
           "ruleOptions": {
             "enable": false,

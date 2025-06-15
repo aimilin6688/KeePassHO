@@ -1,30 +1,54 @@
 {
-  "name": "kdbxweb",
-  "version": "3.0.0",
-  "description": "Kdbx KeePass database reader for web",
-  "main": "src/main/ets/index.ts",
-  "typings": "dist/index.d.ts",
-  "private": false,
-  "license": "MIT",
-  "homepage": "https://keeweb.info",
-  "repository": "https://github.com/keeweb/kdbxweb.git",
-  "author": {
-    "name": "Antelle, Aimilin",
-    "email": "keeweb@keeweb.info,aimilin@yeah.net",
-    "url": "https://antelle.net"
-  },
-  "readme": "README.md",
-  "dependencies": {
-    "@xmldom/xmldom": "^0.9.8",
-    "fflate": "^0.8.2",
-    "@ohos/crypto-js": "^2.0.4"
-  },
-  "devDependencies": {},
-  "dynamicDependencies": {},
-  "keywords": [
-    "keepass",
-    "kdbx",
-    "kdbxweb",
-    "kdbxweb-oh"
-  ]
+    "name": "kdbxweb",
+    "version": "3.0.0",
+    "description": "Kdbx KeePass database reader for web",
+    "main": "src/main/ets/index.ts",
+    "private": false,
+    "homepage": "https://keeweb.info",
+    "repository": "https://github.com/keeweb/kdbxweb.git",
+    "author": {
+        "name": "Antelle",
+        "email": "keeweb@keeweb.info",
+        "url": "https://antelle.net"
+    },
+    "engines": {
+        "node": "^18.18.0"
+    },
+    "license": "MIT",
+    "readme": "README.md",
+    "funding": {
+        "type": "github",
+        "url": "https://github.com/sponsors/antelle"
+    },
+    "scripts": {
+        "test": "npm run tests:node",
+        "start": "npm run eslint && npm run build",
+        "tsc": "tsc",
+        "eslint": "eslint lib test conf scripts",
+        "build": "npm run clean && npm run tests:cover && npm run pack:tests && npm run pack:dist-debug && npm run pack:dist-prod",
+        "clean": "rimraf dist .nyc_output coverage",
+        "pack:dist-prod": "webpack --progress --mode=production --config conf/webpack.config.ts --mode production",
+        "pack:dist-debug": "webpack --progress --mode=development --devtool source-map --config conf/webpack.config.ts --mode development",
+        "webpack-stats": "webpack --mode=production --json --config conf/webpack.config.ts > dist/stats.json",
+        "pack:tests": "webpack --progress --config conf/webpack.tests.config.ts",
+        "tests:node": "mocha --require ts-node/register --recursive --reporter spec test/**/*.spec.ts",
+        "tests:cover": "nyc --reporter=lcov npm run tests:node",
+        "script:dump-header": "ts-node scripts/dump-header",
+        "script:kdbx-size-profiler": "ts-node scripts/kdbx-size-profiler",
+        "script:kdbx-to-xml": "ts-node scripts/kdbx-to-xml",
+        "script:make-big-files": "ts-node scripts/make-big-files",
+        "script:save-perf-test": "ts-node scripts/save-perf-test"
+    },
+    "keywords": [
+        "kdbx",
+        "keepass"
+    ],
+    "devDependencies": {
+
+    },
+    "dependencies": {
+        "@xmldom/xmldom": "^0.9.8",
+        "fflate": "^0.8.2",
+        "@ohos/crypto-js": "^2.0.4"
+    }
 }
