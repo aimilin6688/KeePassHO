@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from '@ohos/hypium';
 import { BinaryStream, ByteUtils, Consts, Int64, VarDictionary } from '../../../../main/ets/index';
-import { ValueType } from '../../lib/utils/var-dictionary';
+import { ValueType } from '../../../../main/ets/utils/var-dictionary';
 
 describe('VarDictionary', () => {
     const data =
