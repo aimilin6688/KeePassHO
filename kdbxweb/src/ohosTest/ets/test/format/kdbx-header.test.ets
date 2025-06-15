@@ -1,4 +1,4 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import {
     BinaryStream,
     ByteUtils,
@@ -17,12 +17,12 @@ import { ValueType } from '../../../../main/ets/utils/var-dictionary';
 describe('KdbxHeader', () => {
     const kdbx = new Kdbx();
 
-    it('writes and reads header v3', () => {
+    it('writes and reads header v3', 0,() => {
         const ctx = new KdbxContext({ kdbx });
         const header = KdbxHeader.create();
-        expect(header.versionMajor).to.be(4);
+        expect(header.versionMajor).assertEqual(4);
         header.setVersion(3);
-        expect(header.versionMajor).to.be(3);
+        expect(header.versionMajor).assertEqual(3);
         header.masterSeed = new Uint32Array([1, 1, 1, 1]).buffer;
         header.transformSeed = new Uint32Array([2, 2, 2, 2]).buffer;
         header.streamStartBytes = new Uint32Array([3, 3, 3, 3]).buffer;
@@ -33,27 +33,27 @@ describe('KdbxHeader', () => {
         header.write(headerStm);
         const newHeader = KdbxHeader.read(new BinaryStream(headerStm.getWrittenBytes()), ctx);
 
-        expect(newHeader.versionMajor).to.be(header.versionMajor);
-        expect(newHeader.versionMinor).to.be(header.versionMinor);
-        expect(newHeader.dataCipherUuid!.toString()).to.be(Consts.CipherId.Aes);
-        expect(newHeader.crsAlgorithm).to.be(Consts.CrsAlgorithm.Salsa20);
-        expect(newHeader.compression).to.be(Consts.CompressionAlgorithm.GZip);
-        expect(newHeader.endPos).to.be(headerStm.getWrittenBytes().byteLength);
-        expect(ByteUtils.bytesToHex(newHeader.masterSeed!)).to.be(
+        expect(newHeader.versionMajor).assertEqual(header.versionMajor);
+        expect(newHeader.versionMinor).assertEqual(header.versionMinor);
+        expect(newHeader.dataCipherUuid!.toString()).assertEqual(Consts.CipherId.Aes);
+        expect(newHeader.crsAlgorithm).assertEqual(Consts.CrsAlgorithm.Salsa20);
+        expect(newHeader.compression).assertEqual(Consts.CompressionAlgorithm.GZip);
+        expect(newHeader.endPos).assertEqual(headerStm.getWrittenBytes().byteLength);
+        expect(ByteUtils.bytesToHex(newHeader.masterSeed!)).assertEqual(
             '01000000010000000100000001000000'
         );
-        expect(ByteUtils.bytesToHex(newHeader.transformSeed!)).to.be(
+        expect(ByteUtils.bytesToHex(newHeader.transformSeed!)).assertEqual(
             '02000000020000000200000002000000'
         );
-        expect(ByteUtils.bytesToHex(newHeader.streamStartBytes!)).to.be(
+        expect(ByteUtils.bytesToHex(newHeader.streamStartBytes!)).assertEqual(
             '03000000030000000300000003000000'
         );
-        expect(ByteUtils.bytesToHex(newHeader.protectedStreamKey!)).to.be(
+        expect(ByteUtils.bytesToHex(newHeader.protectedStreamKey!)).assertEqual(
             '04000000040000000400000004000000'
         );
-        expect(ByteUtils.bytesToHex(newHeader.encryptionIV!)).to.be('0500000005000000');
-        expect(newHeader.kdfParameters).to.be(undefined);
-        expect(newHeader.publicCustomData).to.be(undefined);
+        expect(ByteUtils.bytesToHex(newHeader.encryptionIV!)).assertEqual('0500000005000000');
+        expect(newHeader.kdfParameters).assertEqual(undefined);
+        expect(newHeader.publicCustomData).assertEqual(undefined);
     });
 
     it('writes and reads header v4', async () => {
@@ -64,7 +64,7 @@ describe('KdbxHeader', () => {
         await kdbx.binaries.computeHashes();
 
         const header = KdbxHeader.create();
-        expect(header.versionMajor).to.be(4);
+        expect(header.versionMajor).assertEqual(4);
         header.masterSeed = new Uint32Array([1, 1, 1, 1]).buffer;
         header.transformSeed = new Uint32Array([2, 2, 2, 2]).buffer;
         header.streamStartBytes = new Uint32Array([3, 3, 3, 3]).buffer;
@@ -86,32 +86,32 @@ describe('KdbxHeader', () => {
             new KdbxContext({ kdbx: newKdbx })
         );
 
-        expect(newHeader.versionMajor).to.be(header.versionMajor);
-        expect(newHeader.versionMinor).to.be(header.versionMinor);
-        expect(newHeader.dataCipherUuid!.toString()).to.be(Consts.CipherId.Aes);
-        expect(newHeader.crsAlgorithm).to.be(undefined);
-        expect(newHeader.compression).to.be(Consts.CompressionAlgorithm.GZip);
-        expect(newHeader.endPos).to.be(headerStm.getWrittenBytes().byteLength);
-        expect(ByteUtils.bytesToHex(newHeader.masterSeed!)).to.be(
+        expect(newHeader.versionMajor).assertEqual(header.versionMajor);
+        expect(newHeader.versionMinor).assertEqual(header.versionMinor);
+        expect(newHeader.dataCipherUuid!.toString()).assertEqual(Consts.CipherId.Aes);
+        expect(newHeader.crsAlgorithm).assertEqual(undefined);
+        expect(newHeader.compression).assertEqual(Consts.CompressionAlgorithm.GZip);
+        expect(newHeader.endPos).assertEqual(headerStm.getWrittenBytes().byteLength);
+        expect(ByteUtils.bytesToHex(newHeader.masterSeed!)).assertEqual(
             '01000000010000000100000001000000'
         );
-        expect(newHeader.transformSeed).to.be(undefined);
-        expect(newHeader.streamStartBytes).to.be(undefined);
-        expect(newHeader.protectedStreamKey).to.be(undefined);
-        expect(ByteUtils.bytesToHex(newHeader.encryptionIV!)).to.be('0500000005000000');
-        expect(newHeader.kdfParameters!.length).to.be(6);
-        expect(ByteUtils.bytesToBase64(newHeader.kdfParameters!.get('$UUID') as ArrayBuffer)).to.be(
+        expect(newHeader.transformSeed).assertEqual(undefined);
+        expect(newHeader.streamStartBytes).assertEqual(undefined);
+        expect(newHeader.protectedStreamKey).assertEqual(undefined);
+        expect(ByteUtils.bytesToHex(newHeader.encryptionIV!)).assertEqual('0500000005000000');
+        expect(newHeader.kdfParameters!.length).assertEqual(6);
+        expect(ByteUtils.bytesToBase64(newHeader.kdfParameters!.get('$UUID') as ArrayBuffer)).assertEqual(
             Consts.KdfId.Argon2
         );
-        expect(ByteUtils.bytesToHex(newHeader.kdfParameters!.get('S') as ArrayBuffer)).to.be(
+        expect(ByteUtils.bytesToHex(newHeader.kdfParameters!.get('S') as ArrayBuffer)).assertEqual(
             '06000000060000000600000006000000'
         );
-        expect(newHeader.kdfParameters!.get('P')).to.be(1);
-        expect(newHeader.kdfParameters!.get('V')).to.be(0x13);
-        expect((newHeader.kdfParameters!.get('I') as Int64).value).to.be(2);
-        expect((newHeader.kdfParameters!.get('M') as Int64).value).to.be(1024 * 1024);
-        expect(newHeader.publicCustomData!.length).to.be(1);
-        expect(newHeader.publicCustomData!.get('custom')).to.be('val');
+        expect(newHeader.kdfParameters!.get('P')).assertEqual(1);
+        expect(newHeader.kdfParameters!.get('V')).assertEqual(0x13);
+        expect((newHeader.kdfParameters!.get('I') as Int64).value).assertEqual(2);
+        expect((newHeader.kdfParameters!.get('M') as Int64).value).assertEqual(1024 * 1024);
+        expect(newHeader.publicCustomData!.length).assertEqual(1);
+        expect(newHeader.publicCustomData!.get('custom')).assertEqual('val');
         expect(newKdbx.binaries.getAll()).to.eql([]);
 
         newHeader.readInnerHeader(
@@ -121,8 +121,8 @@ describe('KdbxHeader', () => {
 
         await newKdbx.binaries.computeHashes();
 
-        expect(newHeader.crsAlgorithm).to.be(Consts.CrsAlgorithm.ChaCha20);
-        expect(ByteUtils.bytesToHex(newHeader.protectedStreamKey!)).to.be(
+        expect(newHeader.crsAlgorithm).assertEqual(Consts.CrsAlgorithm.ChaCha20);
+        expect(ByteUtils.bytesToHex(newHeader.protectedStreamKey!)).assertEqual(
             '04000000040000000400000004000000'
         );
 
@@ -131,34 +131,34 @@ describe('KdbxHeader', () => {
         expect(newBinaries.length).to.eql(2);
         expect(newBinaries[0].ref).to.eql('0');
         expect(newBinaries[0].value).to.be.an(ArrayBuffer);
-        expect(ByteUtils.bytesToHex(newBinaries[0].value as ArrayBuffer)).to.be(
+        expect(ByteUtils.bytesToHex(newBinaries[0].value as ArrayBuffer)).assertEqual(
             ByteUtils.bytesToHex(oldBinaries[0].value as ArrayBuffer)
         );
         expect(newBinaries[1].ref).to.eql('1');
         expect(newBinaries[1].value).to.be.a(ProtectedValue);
-        expect(ByteUtils.bytesToHex((newBinaries[1].value as ProtectedValue).getBinary())).to.be(
+        expect(ByteUtils.bytesToHex((newBinaries[1].value as ProtectedValue).getBinary())).assertEqual(
             ByteUtils.bytesToHex((oldBinaries[1].value as ProtectedValue).getBinary())
         );
     });
 
-    it('generates salts v3', () => {
+    it('generates salts v3', 0,() => {
         const header = new KdbxHeader();
         header.versionMajor = 3;
         header.generateSalts();
 
         expect(header.masterSeed).to.be.ok();
-        expect(header.masterSeed!.byteLength).to.be(32);
+        expect(header.masterSeed!.byteLength).assertEqual(32);
         expect(header.transformSeed).to.be.ok();
-        expect(header.transformSeed!.byteLength).to.be(32);
+        expect(header.transformSeed!.byteLength).assertEqual(32);
         expect(header.streamStartBytes).to.be.ok();
-        expect(header.streamStartBytes!.byteLength).to.be(32);
+        expect(header.streamStartBytes!.byteLength).assertEqual(32);
         expect(header.protectedStreamKey).to.be.ok();
-        expect(header.protectedStreamKey!.byteLength).to.be(32);
+        expect(header.protectedStreamKey!.byteLength).assertEqual(32);
         expect(header.encryptionIV).to.be.ok();
-        expect(header.encryptionIV!.byteLength).to.be(16);
+        expect(header.encryptionIV!.byteLength).assertEqual(16);
     });
 
-    it('generates salts v4', () => {
+    it('generates salts v4', 0,() => {
         const header = new KdbxHeader();
         header.versionMajor = 4;
         header.dataCipherUuid = new KdbxUuid(Consts.CipherId.ChaCha20);
@@ -166,15 +166,15 @@ describe('KdbxHeader', () => {
         header.generateSalts();
 
         expect(header.protectedStreamKey).to.be.ok();
-        expect(header.protectedStreamKey!.byteLength).to.be(64);
+        expect(header.protectedStreamKey!.byteLength).assertEqual(64);
         expect(header.kdfParameters.get('S')).to.be.ok();
-        expect((header.kdfParameters.get('S') as ArrayBuffer).byteLength).to.be(32);
+        expect((header.kdfParameters.get('S') as ArrayBuffer).byteLength).assertEqual(32);
         expect(header.encryptionIV).to.be.ok();
-        expect(header.encryptionIV!.byteLength).to.be(12);
+        expect(header.encryptionIV!.byteLength).assertEqual(12);
 
         header.dataCipherUuid = new KdbxUuid(Consts.CipherId.Aes);
         header.generateSalts();
-        expect(header.encryptionIV!.byteLength).to.be(16);
+        expect(header.encryptionIV!.byteLength).assertEqual(16);
     });
 
     it('skips binaries for v3', async () => {
@@ -185,9 +185,9 @@ describe('KdbxHeader', () => {
         const header = KdbxHeader.create();
         header.setVersion(3);
         const stm = new BinaryStream();
-        // @ts-ignore
+        // @ets-ignore
         header.writeBinary(stm, ctx);
-        expect(stm.pos).to.be(0);
+        expect(stm.pos).assertEqual(0);
     });
 
     it('writes header without public custom data', async () => {
@@ -205,10 +205,10 @@ describe('KdbxHeader', () => {
         stm = new BinaryStream(stm.getWrittenBytes());
         const newHeader = KdbxHeader.read(stm, ctx);
         newHeader.readInnerHeader(stm, ctx);
-        expect(newHeader.publicCustomData).to.be(undefined);
+        expect(newHeader.publicCustomData).assertEqual(undefined);
     });
 
-    it('validates header cipher', () => {
+    it('validates header cipher', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -216,12 +216,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no cipher in header');
         });
     });
 
-    it('validates header cipher', () => {
+    it('validates header cipher', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -229,12 +229,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no compression in header');
         });
     });
 
-    it('validates master seed cipher', () => {
+    it('validates master seed cipher', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -242,12 +242,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no master seed in header');
         });
     });
 
-    it('validates header encryption iv', () => {
+    it('validates header encryption iv', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -255,12 +255,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no encryption iv in header');
         });
     });
 
-    it('validates header kdf parameters', () => {
+    it('validates header kdf parameters', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -268,12 +268,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no kdf parameters in header');
         });
     });
 
-    it('validates header transform seed', () => {
+    it('validates header transform seed', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(3);
         header.generateSalts();
@@ -281,12 +281,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no transform seed in header');
         });
     });
 
-    it('validates header key encryption rounds', () => {
+    it('validates header key encryption rounds', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(3);
         header.generateSalts();
@@ -294,12 +294,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no key encryption rounds in header');
         });
     });
 
-    it('validates header protected stream key', () => {
+    it('validates header protected stream key', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(3);
         header.generateSalts();
@@ -307,12 +307,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no protected stream key in header');
         });
     });
 
-    it('validates header stream start bytes', () => {
+    it('validates header stream start bytes', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(3);
         header.generateSalts();
@@ -320,12 +320,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no stream start bytes in header');
         });
     });
 
-    it('validates header crs algorithm', () => {
+    it('validates header crs algorithm', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(3);
         header.generateSalts();
@@ -333,12 +333,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.write(new BinaryStream());
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no crs algorithm in header');
         });
     });
 
-    it('validates inner header protected straem key', () => {
+    it('validates inner header protected straem key', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -346,12 +346,12 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.writeInnerHeader(new BinaryStream(), new KdbxContext({ kdbx }));
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no protected stream key in header');
         });
     });
 
-    it('validates inner header crs algorithm', () => {
+    it('validates inner header crs algorithm', 0,() => {
         const header = KdbxHeader.create();
         header.setVersion(KdbxHeader.MaxFileVersion);
         header.generateSalts();
@@ -359,34 +359,34 @@ describe('KdbxHeader', () => {
         expect(() => {
             header.writeInnerHeader(new BinaryStream(), new KdbxContext({ kdbx }));
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('no crs algorithm in header');
         });
     });
 
-    it('throws error for bad signature', () => {
+    it('throws error for bad signature', 0,() => {
         expect(() => {
             KdbxHeader.read(
                 new BinaryStream(ByteUtils.hexToBytes('0000000000000000').buffer),
                 new KdbxContext({ kdbx })
             );
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.BadSignature);
+            expect(e.code).assertEqual(Consts.ErrorCodes.BadSignature);
         });
     });
 
-    it('throws error for bad version', () => {
+    it('throws error for bad version', 0,() => {
         expect(() => {
             KdbxHeader.read(
                 new BinaryStream(ByteUtils.hexToBytes('03d9a29a67fb4bb501000500').buffer),
                 new KdbxContext({ kdbx })
             );
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.InvalidVersion);
+            expect(e.code).assertEqual(Consts.ErrorCodes.InvalidVersion);
         });
     });
 
-    it('throws error for bad cipher', () => {
+    it('throws error for bad cipher', 0,() => {
         expect(() => {
             KdbxHeader.read(
                 new BinaryStream(
@@ -395,12 +395,12 @@ describe('KdbxHeader', () => {
                 new KdbxContext({ kdbx })
             );
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.Unsupported);
+            expect(e.code).assertEqual(Consts.ErrorCodes.Unsupported);
             expect(e.message).to.contain('cipher');
         });
     });
 
-    it('throws error for bad compression flags', () => {
+    it('throws error for bad compression flags', 0,() => {
         expect(() => {
             KdbxHeader.read(
                 new BinaryStream(
@@ -409,35 +409,35 @@ describe('KdbxHeader', () => {
                 new KdbxContext({ kdbx })
             );
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.Unsupported);
+            expect(e.code).assertEqual(Consts.ErrorCodes.Unsupported);
             expect(e.message).to.contain('compression');
         });
     });
 
-    it('throws error for empty files', () => {
+    it('throws error for empty files', 0,() => {
         expect(() => {
             KdbxHeader.read(new BinaryStream(new ArrayBuffer(0)), new KdbxContext({ kdbx }));
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.FileCorrupt);
+            expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
             expect(e.message).to.contain('not enough data');
         });
     });
 
-    it('throws error for bad version in setVersion', () => {
+    it('throws error for bad version in setVersion', 0,() => {
         const header = KdbxHeader.create();
         expect(() => {
             header.setVersion(2);
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.InvalidArg);
+            expect(e.code).assertEqual(Consts.ErrorCodes.InvalidArg);
         });
     });
 
-    it('throws error for bad KDF in setKdf', () => {
+    it('throws error for bad KDF in setKdf', 0,() => {
         const header = KdbxHeader.create();
         expect(() => {
             header.setKdf('unknown');
         }).to.throwException((e) => {
-            expect(e.code).to.be(Consts.ErrorCodes.InvalidArg);
+            expect(e.code).assertEqual(Consts.ErrorCodes.InvalidArg);
         });
     });
 });

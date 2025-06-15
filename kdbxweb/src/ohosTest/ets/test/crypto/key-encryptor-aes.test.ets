@@ -1,4 +1,4 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils, KeyEncryptorAes } from '../../../../main/ets/index';
 
 describe('KeyEncryptorAes', () => {
@@ -9,25 +9,25 @@ describe('KeyEncryptorAes', () => {
         'ee66af917de0b0336e659fe6bd40a337d04e3c2b3635210fa16f28fb24d563ac'
     );
 
-    it('decrypts one round', () => {
+    it('decrypts one round', 0,() => {
         return KeyEncryptorAes.encrypt(data, key, 1).then((res) => {
-            expect(ByteUtils.bytesToHex(res)).to.be(
+            expect(ByteUtils.bytesToHex(res)).assertEqual(
                 '46e891c182a31d005a8990ac5d61bb2124ffe5927fa008a739a9b0d217c79717'
             );
         });
     });
 
-    it('decrypts two rounds', () => {
+    it('decrypts two rounds', 0,() => {
         return KeyEncryptorAes.encrypt(data, key, 2).then((res) => {
-            expect(ByteUtils.bytesToHex(res)).to.be(
+            expect(ByteUtils.bytesToHex(res)).assertEqual(
                 '1818f732cb1a933911ec90baed252d388980cd3665e1009705e5007aa48ad916'
             );
         });
     });
 
-    it('decrypts many rounds', () => {
+    it('decrypts many rounds', 0,() => {
         return KeyEncryptorAes.encrypt(data, key, 10021).then((res) => {
-            expect(ByteUtils.bytesToHex(res)).to.be(
+            expect(ByteUtils.bytesToHex(res)).assertEqual(
                 '64d62f7ec4a363ff0fbb4520163b478ef4d0d631b690a2e7daa6bc09bca092df'
             );
         });

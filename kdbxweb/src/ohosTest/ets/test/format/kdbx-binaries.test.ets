@@ -1,4 +1,4 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils, KdbxBinaries, ProtectedValue } from '../../../../main/ets/index';
 
 describe('KdbxBinaries', () => {
@@ -12,7 +12,7 @@ describe('KdbxBinaries', () => {
             const binaries = new KdbxBinaries();
             const bin = await binaries.add(protectedBinary);
             expect(bin).to.be.ok();
-            expect(bin.hash).to.be(hash);
+            expect(bin.hash).assertEqual(hash);
             expect(binaries.getAllWithHashes()).to.eql([{ hash, value: protectedBinary }]);
         });
 
@@ -21,7 +21,7 @@ describe('KdbxBinaries', () => {
             const ab = ByteUtils.arrayToBuffer(protectedBinary.getBinary());
             const bin = await binaries.add(ab);
             expect(bin).to.be.ok();
-            expect(bin.hash).to.be(hash);
+            expect(bin.hash).assertEqual(hash);
             expect(binaries.getAllWithHashes()).to.eql([{ hash, value: ab }]);
         });
 
@@ -30,7 +30,7 @@ describe('KdbxBinaries', () => {
             const arr = protectedBinary.getBinary();
             const bin = await binaries.add(arr);
             expect(bin).to.be.ok();
-            expect(bin.hash).to.be(hash);
+            expect(bin.hash).assertEqual(hash);
             expect(binaries.getAllWithHashes()).to.eql([{ hash, value: arr.buffer }]);
         });
     });
@@ -45,14 +45,14 @@ describe('KdbxBinaries', () => {
 
             const found1 = binaries.getByRef({ ref: '0' });
             expect(found1).to.be.ok();
-            expect(found1!.hash).to.be(hash);
+            expect(found1!.hash).assertEqual(hash);
 
             const found2 = binaries.getByRef({ ref: '1' });
             expect(found2).to.be.ok();
-            expect(found2!.hash).to.be(hash2);
+            expect(found2!.hash).assertEqual(hash2);
 
             const notFound = binaries.getByRef({ ref: '2' });
-            expect(notFound).to.be(undefined);
+            expect(notFound).assertEqual(undefined);
         });
     });
 
@@ -66,15 +66,15 @@ describe('KdbxBinaries', () => {
 
             const found2 = binaries.getByRef({ ref: '0' });
             expect(found2).to.be.ok();
-            expect(found2!.hash).to.be(hash2);
+            expect(found2!.hash).assertEqual(hash2);
 
             const notFound = binaries.getByRef({ ref: '1' });
-            expect(notFound).to.be(undefined);
+            expect(notFound).assertEqual(undefined);
         });
     });
 
     describe('addWithHash', () => {
-        it('adds a binary with the specified hash', () => {
+        it('adds a binary with the specified hash', 0,() => {
             const binaries = new KdbxBinaries();
             binaries.addWithHash({ hash, value: protectedBinary });
 
@@ -83,7 +83,7 @@ describe('KdbxBinaries', () => {
     });
 
     describe('deleteWithHash', () => {
-        it('adds a binary with the specified hash', () => {
+        it('adds a binary with the specified hash', 0,() => {
             const binaries = new KdbxBinaries();
             binaries.addWithHash({ hash, value: protectedBinary });
             binaries.addWithHash({ hash: hash2, value: protectedBinary2 });
@@ -105,10 +105,10 @@ describe('KdbxBinaries', () => {
 
             const found1 = binaries.getByRef({ ref: '0' });
             expect(found1).to.be.ok();
-            expect(found1!.hash).to.be(hash);
+            expect(found1!.hash).assertEqual(hash);
 
-            expect(binaries.getByRef({ ref: '1' })).to.be(undefined);
-            expect(binaries.getByRef({ ref: '2' })).to.be(undefined);
+            expect(binaries.getByRef({ ref: '1' })).assertEqual(undefined);
+            expect(binaries.getByRef({ ref: '2' })).assertEqual(undefined);
         });
     });
 
@@ -122,14 +122,14 @@ describe('KdbxBinaries', () => {
 
             const ref1 = binaries.getRefByHash(hash);
             expect(ref1).to.be.ok();
-            expect(ref1?.ref).to.be('0');
+            expect(ref1?.ref).assertEqual('0');
 
             const ref2 = binaries.getRefByHash(hash2);
             expect(ref2).to.be.ok();
-            expect(ref2?.ref).to.be('1');
+            expect(ref2?.ref).assertEqual('1');
 
             const refNotExisting = binaries.getRefByHash('boo');
-            expect(refNotExisting).to.be(undefined);
+            expect(refNotExisting).assertEqual(undefined);
 
             const all = binaries.getAll();
             expect(all).to.eql([
@@ -143,48 +143,48 @@ describe('KdbxBinaries', () => {
                 { hash: hash2, value: protectedBinary2 }
             ]);
 
-            expect(binaries.getValueByHash(hash)).to.be(protectedBinary);
-            expect(binaries.getValueByHash(hash2)).to.be(protectedBinary2);
-            expect(binaries.getValueByHash('boo')).to.be(undefined);
+            expect(binaries.getValueByHash(hash)).assertEqual(protectedBinary);
+            expect(binaries.getValueByHash(hash2)).assertEqual(protectedBinary2);
+            expect(binaries.getValueByHash('boo')).assertEqual(undefined);
         });
     });
 
     describe('isKdbxBinaryRef', () => {
-        it('returns true for KdbxBinaryRef', () => {
+        it('returns true for KdbxBinaryRef', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryRef({ ref: '1' });
-            expect(isRef).to.be(true);
+            expect(isRef).assertEqual(true);
         });
 
-        it('returns false for a ProtectedValue', () => {
+        it('returns false for a ProtectedValue', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryRef(protectedBinary);
-            expect(isRef).to.be(false);
+            expect(isRef).assertEqual(false);
         });
 
-        it('returns false for undefined', () => {
+        it('returns false for undefined', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryRef(undefined);
-            expect(isRef).to.be(false);
+            expect(isRef).assertEqual(false);
         });
     });
 
     describe('isKdbxBinaryWithHash', () => {
-        it('returns true for KdbxBinaryWithHash', () => {
+        it('returns true for KdbxBinaryWithHash', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryWithHash({ ref: '1', hash });
-            expect(isRef).to.be(true);
+            expect(isRef).assertEqual(true);
         });
 
-        it('returns false for KdbxBinaryRef', () => {
+        it('returns false for KdbxBinaryRef', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryWithHash({ ref: '1' });
-            expect(isRef).to.be(false);
+            expect(isRef).assertEqual(false);
         });
 
-        it('returns false for a ProtectedValue', () => {
+        it('returns false for a ProtectedValue', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryWithHash(protectedBinary);
-            expect(isRef).to.be(false);
+            expect(isRef).assertEqual(false);
         });
 
-        it('returns false for undefined', () => {
+        it('returns false for undefined', 0,() => {
             const isRef = KdbxBinaries.isKdbxBinaryWithHash(undefined);
-            expect(isRef).to.be(false);
+            expect(isRef).assertEqual(false);
         });
     });
 });

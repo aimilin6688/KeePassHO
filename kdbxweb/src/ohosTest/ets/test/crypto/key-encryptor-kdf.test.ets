@@ -1,4 +1,4 @@
-import expect from 'expect.js';
+import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils, Consts, CryptoEngine, Int64, KeyEncryptorKdf, VarDictionary } from '../../../../main/ets/index';
 import { ValueType } from '../../lib/utils/var-dictionary';
 
@@ -32,7 +32,7 @@ describe('KeyEncryptorKdf', () => {
         CryptoEngine.argon2 = cryptoEngineArgon2;
     });
 
-    it('calls argon2 function', () => {
+    it('calls argon2 function', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         const saltArr = new Uint8Array(32);
@@ -44,11 +44,11 @@ describe('KeyEncryptorKdf', () => {
         params.set('M', ValueType.UInt64, new Int64(1024 * 4));
         params.set('V', ValueType.UInt32, 0x13);
         return KeyEncryptorKdf.encrypt(data, params).then((res) => {
-            expect(ByteUtils.bytesToHex(res)).to.be(exp);
+            expect(ByteUtils.bytesToHex(res)).assertEqual(exp);
         });
     });
 
-    it('throws error for no uuid', () => {
+    it('throws error for no uuid', 0,() => {
         const params = new VarDictionary();
         return KeyEncryptorKdf.encrypt(data, params)
             .then(() => {
@@ -59,7 +59,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for invalid uuid', () => {
+    it('throws error for invalid uuid', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, new ArrayBuffer(32));
         return KeyEncryptorKdf.encrypt(data, params)
@@ -71,7 +71,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad salt', () => {
+    it('throws error for bad salt', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(10));
@@ -84,7 +84,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad parallelism', () => {
+    it('throws error for bad parallelism', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -98,7 +98,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad parallelism type', () => {
+    it('throws error for bad parallelism type', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -112,7 +112,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad iterations', () => {
+    it('throws error for bad iterations', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -127,7 +127,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad memory', () => {
+    it('throws error for bad memory', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -143,7 +143,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad version', () => {
+    it('throws error for bad version', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -160,7 +160,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for secret key', () => {
+    it('throws error for secret key', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -178,7 +178,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for assoc data', () => {
+    it('throws error for assoc data', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Argon2));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));
@@ -196,7 +196,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('calls aes function', () => {
+    it('calls aes function', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Aes));
         const key = ByteUtils.hexToBytes(
@@ -209,11 +209,11 @@ describe('KeyEncryptorKdf', () => {
         params.set('S', ValueType.Bytes, salt);
         params.set('R', ValueType.Int64, new Int64(2));
         return KeyEncryptorKdf.encrypt(key, params).then((res) => {
-            expect(ByteUtils.bytesToHex(res)).to.be(result);
+            expect(ByteUtils.bytesToHex(res)).assertEqual(result);
         });
     });
 
-    it('throws error for bad aes salt', () => {
+    it('throws error for bad aes salt', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Aes));
         params.set('S', ValueType.Bytes, new ArrayBuffer(10));
@@ -226,7 +226,7 @@ describe('KeyEncryptorKdf', () => {
             });
     });
 
-    it('throws error for bad aes rounds', () => {
+    it('throws error for bad aes rounds', 0,() => {
         const params = new VarDictionary();
         params.set('$UUID', ValueType.Bytes, ByteUtils.base64ToBytes(Consts.KdfId.Aes));
         params.set('S', ValueType.Bytes, new ArrayBuffer(32));

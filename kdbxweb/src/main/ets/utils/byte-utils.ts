@@ -59,6 +59,10 @@ export function bytesToHex(arr: ArrayBufferOrArray): string {
     return str;
 }
 
+export function bytesToBuffer(arr: ArrayBufferOrArray): ArrayBuffer {
+    return arrayToBuffer(arr);
+}
+
 export function arrayToBuffer(arr: ArrayBufferOrArray): ArrayBuffer {
     if (arr instanceof ArrayBuffer) {
         return arr;
@@ -77,4 +81,38 @@ export function stringToBuffer(str: string): ArrayBuffer {
 export function zeroBuffer(arr: ArrayBufferOrArray): void {
     const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
     intArr.fill(0);
+}
+
+/**
+ * 工具函数：ArrayBuffer 转 CryptoJS WordArray
+ * @param buffer 输入的 ArrayBuffer
+ * @returns CryptoJS WordArray 对象
+ */
+export function arrayBufferToWordArray(buffer: ArrayBuffer): CryptoJS.lib.WordArray {
+    const u8 = new Uint8Array(buffer);
+    const len = u8.length;
+    const words: number[] = [];
+
+    for (let i = 0; i < len; i++) {
+        words[i >>> 2] |= u8[i] << (24 - (i % 4) * 8);
+    }
+
+    return CryptoJS.lib.WordArray.create(words, len);
+}
+
+/**
+ * 工具函数：CryptoJS WordArray 转 ArrayBuffer
+ * @param wordArray 输入的 WordArray
+ * @returns ArrayBuffer 对象
+ */
+export function wordArrayToArrayBuffer(wordArray: CryptoJS.lib.WordArray): ArrayBuffer {
+    const words = wordArray.words;
+    const sigBytes = wordArray.sigBytes;
+    const u8 = new Uint8Array(sigBytes);
+
+    for (let i = 0; i < sigBytes; i++) {
+        u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    }
+
+    return u8.buffer;
 }
