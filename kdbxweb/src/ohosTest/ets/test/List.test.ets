@@ -9,6 +9,17 @@ import KeyEncryptorAesTest from './crypto/key-encryptor-aes.test';
 import KeyEncryptorKdfTest from './crypto/key-encryptor-kdf.test';
 import ProtectSaltGeneratorTest from './crypto/protected-salt-generator.test';
 
+
+// import KdbxMergeTest from './format/kdbx.merge.test';
+// import KdbxTest from './format/kdbx.test';
+// import KdbxBinariesTest from './format/kdbx-binaries.test';
+// import KdbxCredentialsTest from './format/kdbx-credentials.test';
+// import KdbxCustomDataTest from './format/kdbx-custom-data.test';
+// import KdbxHeaderTest from './format/kdbx-header.test';
+// import KdbxUuidTest from './format/kdbx-uuid.test';
+
+
+
 export default function testsuite() {
   KdbxErrorTest();
   ChaCha20Test();
@@ -20,4 +31,12 @@ export default function testsuite() {
   KeyEncryptorAesTest();
   KeyEncryptorKdfTest();
   ProtectSaltGeneratorTest();
+
+  // KdbxMergeTest();
+  // KdbxTest();
+  // KdbxBinariesTest();
+  // KdbxCredentialsTest();
+  // KdbxCustomDataTest();
+  // KdbxHeaderTest();
+  // KdbxUuidTest();
 }
