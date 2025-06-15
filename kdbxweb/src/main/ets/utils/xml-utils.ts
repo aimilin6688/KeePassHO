@@ -8,13 +8,19 @@ import { KdbxUuid } from '../format/kdbx-uuid';
 import { ProtectedValue } from '../crypto/protected-value';
 import { ProtectSaltGenerator } from '../crypto/protect-salt-generator';
 import { KdbxBinaries, KdbxBinaryOrRef } from '../format/kdbx-binaries';
-import { Document, DOMParser, DOMParserOptions, XMLSerializer, Element } from '@xmldom/xmldom';
+import { Document, DOMParser, DOMParserOptions, XMLSerializer, Element, Node } from '@xmldom/xmldom';
 
 
 const DateRegex = /\.\d\d\d/;
 const EpochSeconds = 62135596800;
 const TagsSplitRegex = /\s*[;,:]\s*/;
 
+declare global {
+  interface Node {
+    protectedValue: ProtectedValue | undefined;
+    lineNumber: number | undefined;
+  }
+}
 
 function createDOMParser() {
   const parserArg: DOMParserOptions = {
