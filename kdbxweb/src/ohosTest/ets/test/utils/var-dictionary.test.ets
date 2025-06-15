@@ -9,7 +9,7 @@
 import { describe, expect, it } from '@ohos/hypium';
 import { BinaryStream, ByteUtils, Consts, Int64, KdbxError, VarDictionary } from '../../../../main/ets/index';
 import { ValueType } from '../../../../main/ets/utils/var-dictionary';
-import { expects } from '../Asserts';
+import { expects } from '../test-support/Asserts';
 
 export default function VarDictionaryTest() {
   describe('VarDictionary', () => {
