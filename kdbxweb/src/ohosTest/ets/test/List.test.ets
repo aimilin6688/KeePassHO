@@ -19,6 +19,7 @@ import ProtectSaltGeneratorTest from './crypto/protected-salt-generator.test';
 import KdbxUuidTest from './format/kdbx-uuid.test';
 import ByteUtilsTest from './utils/byte-utils.test';
 import Int64Test from './utils/int64.test';
+import VarDictionaryTest from './utils/var-dictionary.test';
 
 
 export default function testsuite() {
@@ -43,4 +44,5 @@ export default function testsuite() {
 
   ByteUtilsTest();
   Int64Test();
+  VarDictionaryTest();
 }
