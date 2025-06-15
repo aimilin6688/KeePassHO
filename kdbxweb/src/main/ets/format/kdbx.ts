@@ -12,7 +12,7 @@ import { KdbxFormat } from './kdbx-format';
 import { KdbxEntry, KdbxEntryEditState } from './kdbx-entry';
 import { KdbxUuid } from './kdbx-uuid';
 import { KdbxContext } from './kdbx-context';
-import { Document, Element } from '@xmldom/xmldom';
+import { Document, Element , Node} from '@xmldom/xmldom';
 
 export interface KdbxEditState {
     entries?: { [name: string]: KdbxEntryEditState };

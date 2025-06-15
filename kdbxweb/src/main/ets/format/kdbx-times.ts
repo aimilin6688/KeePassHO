@@ -1,4 +1,4 @@
-import { Element } from '@xmldom/xmldom';
+import { Element, Node } from '@xmldom/xmldom';
 import * as XmlNames from './../defs/xml-names';
 import * as XmlUtils from '../utils/xml-utils';
 import { KdbxContext } from './kdbx-context';

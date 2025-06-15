@@ -4,8 +4,15 @@
   },
   "buildOptionSet": [
     {
+      "name": "debug",
+      "arkOptions": {
+        "types": ["./src/main/ets/types/global"],
+      }
+    },
+    {
       "name": "release",
       "arkOptions": {
+        "types": ["./src/main/ets/types/global"],
         "obfuscation": {
           "ruleOptions": {
             "enable": false,

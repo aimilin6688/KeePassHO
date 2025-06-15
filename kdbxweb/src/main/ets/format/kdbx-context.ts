@@ -1,5 +1,6 @@
 import * as XmlUtils from '../utils/xml-utils';
 import { Kdbx } from './kdbx';
+import { Node } from '@xmldom/xmldom';
 
 export class KdbxContext {
     readonly kdbx: Kdbx;

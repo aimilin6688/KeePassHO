@@ -15,13 +15,6 @@ const DateRegex = /\.\d\d\d/;
 const EpochSeconds = 62135596800;
 const TagsSplitRegex = /\s*[;,:]\s*/;
 
-declare global {
-  interface Node {
-    protectedValue: ProtectedValue | undefined;
-    lineNumber: number | undefined;
-  }
-}
-
 function createDOMParser() {
   const parserArg: DOMParserOptions = {
     errorHandler: (level, msg, context) => {
@@ -138,7 +131,7 @@ export function getChildNode(
 }
 
 export function addChildNode(node: Node, tagName: string): Element {
-  return node.appendChild((node.ownerDocument || <Document> node).createElement(tagName));
+  return node.appendChild((node.ownerDocument || <Document> node).createElement(tagName)) as Element;
 }
 
 export function getText(node: Node | null): string | undefined {

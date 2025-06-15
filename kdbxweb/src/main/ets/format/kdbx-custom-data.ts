@@ -1,7 +1,7 @@
 import * as XmlUtils from '../utils/xml-utils';
 import * as XmlNames from '../defs/xml-names';
 import { KdbxContext } from './kdbx-context';
-import { Element } from '@xmldom/xmldom';
+import { Element,Node } from '@xmldom/xmldom';
 
 export type KdbxCustomDataItem = { value: string | undefined; lastModified?: Date | undefined };
 
