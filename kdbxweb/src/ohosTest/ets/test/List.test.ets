@@ -11,7 +11,7 @@ import Salsa20Test from './crypto/salsa20.test';
 import KdbxErrorTest from './errors/kdbx-error.test';
 
 
-// import KdbxMergeTest from './format/kdbx.merge.test';
+import KdbxMergeTest from './format/kdbx.merge.test';
 // import KdbxTest from './format/kdbx.test';
 import KdbxBinariesTest from './format/kdbx-binaries.test';
 import KdbxCredentialsTest from './format/kdbx-credentials.test';
@@ -48,7 +48,7 @@ export default function testsuite() {
   KdbxErrorTest();
 
   // ------- format tests ----------------
-  // KdbxMergeTest();
+  KdbxMergeTest();
   // KdbxTest();
   KdbxBinariesTest();
   KdbxCredentialsTest();
