@@ -33,7 +33,7 @@ export default function KdbxTest() {
 
         it('sets all imports without issues', 0,() => {
             for (const value of Object.values(kdbxweb)) {
-                expect(value).to.be.ok();
+                expect(value).not().assertNull();
             }
         });
 
@@ -734,7 +734,7 @@ export default function KdbxTest() {
                     throw 'Not expected';
                 })
                 .catch((e) => {
-                    expect(e).to.be.ok();
+                    expect(e).not().assertNull();
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidKey);
                 });
@@ -823,7 +823,7 @@ export default function KdbxTest() {
                 db.remove(group);
                 expect(db.meta.recycleBinUuid.empty).assertEqual(false);
                 recycleBin = db.getGroup(db.meta.recycleBinUuid);
-                expect(recycleBin).to.be.ok();
+                expect(recycleBin).not().assertNull();
                 expect(recycleBin!.groups.length).assertEqual(1);
                 expect(group.groups.length).assertEqual(groupLength - 1);
             });
@@ -997,7 +997,7 @@ export default function KdbxTest() {
                 const sourceEntryWithBinaries = sourceDb.groups[0].groups[0].entries[0];
 
                 expect(sourceDb.groups[0].entries.length).assertEqual(2);
-                expect(sourceEntryWithCustomIcon.customIcon).to.be.ok();
+                expect(sourceEntryWithCustomIcon.customIcon).not().assertNull();
                 expect([...sourceEntryWithBinaries.binaries.keys()]).assertDeepEquals(['attachment']);
 
                 const importedEntryWithCustomIcon = db.importEntry(
@@ -1022,8 +1022,8 @@ export default function KdbxTest() {
                         const withBinaries = db.groups[0].entries[1];
 
                         expect(withCustomIcon.uuid).assertDeepEquals(importedEntryWithCustomIcon.uuid);
-                        expect(withCustomIcon.customIcon).to.be.ok();
-                        expect(db.meta.customIcons.get(withCustomIcon.customIcon!.id)).to.be.ok();
+                        expect(withCustomIcon.customIcon).not().assertNull();
+                        expect(db.meta.customIcons.get(withCustomIcon.customIcon!.id)).not().assertNull();
 
                         expect(withBinaries.uuid).assertDeepEquals(importedEntryWithBinaries.uuid);
                         expect([...withBinaries.binaries.keys()]).assertDeepEquals(['attachment']);
@@ -1038,15 +1038,15 @@ export default function KdbxTest() {
             return kdbxweb.Kdbx.loadXml(xml, cred).then((db) => {
                 expect(db).to.be.a(kdbxweb.Kdbx);
                 expect(db.groups.length).assertEqual(1);
-                expect(db.groups[0].uuid).to.be.ok();
-                expect(db.groups[0].uuid.id).to.be.ok();
+                expect(db.groups[0].uuid).not().assertNull();
+                expect(db.groups[0].uuid.id).not().assertNull();
                 const entry = db.groups[0].groups[0].entries[0];
-                expect(entry.uuid).to.be.ok();
-                expect(entry.uuid.id).to.be.ok();
+                expect(entry.uuid).not().assertNull();
+                expect(entry.uuid.id).not().assertNull();
                 expect(entry.history.length).to.be.greaterThan(0);
                 for (let i = 0; i < entry.history.length; i++) {
                     const he = entry.history[i];
-                    expect(he.uuid).to.be.ok();
+                    expect(he.uuid).not().assertNull();
                     expect(he.uuid.id).assertEqual(entry.uuid.id);
                 }
             });
@@ -1065,7 +1065,7 @@ export default function KdbxTest() {
 
             function check(db: kdbxweb.Kdbx) {
                 const groupWithTags = db.groups[0].groups[0].groups[0];
-                expect(groupWithTags).to.be.ok();
+                expect(groupWithTags).not().assertNull();
                 expect(groupWithTags.name).assertEqual('With tags');
                 expect(groupWithTags.tags).assertDeepEquals(['Another tag', 'Tag1']);
                 expect(groupWithTags.previousParentGroup).assertEqual(undefined);
@@ -1074,31 +1074,31 @@ export default function KdbxTest() {
                 expect(regularEntry.qualityCheck).assertEqual(undefined);
 
                 const entryWithDisabledPasswordQuality = db.groups[0].entries[1];
-                expect(entryWithDisabledPasswordQuality).to.be.ok();
+                expect(entryWithDisabledPasswordQuality).not().assertNull();
                 expect(entryWithDisabledPasswordQuality.fields.get('Title')).assertEqual('DisabledQ');
                 expect(entryWithDisabledPasswordQuality.qualityCheck).assertEqual(false);
 
                 const previousParentGroup = db.groups[0].groups[0].groups[1];
-                expect(previousParentGroup).to.be.ok();
+                expect(previousParentGroup).not().assertNull();
                 expect(previousParentGroup.name).assertEqual('Inside');
 
                 const groupMovedFromInside = db.groups[0].groups[0].groups[2];
-                expect(groupMovedFromInside).to.be.ok();
+                expect(groupMovedFromInside).not().assertNull();
                 expect(groupMovedFromInside.name).assertEqual('New group was inside');
                 expect(
                     previousParentGroup.uuid.equals(groupMovedFromInside.previousParentGroup)
-                ).to.be.ok();
+                ).not().assertNull();
 
                 const entryMovedFromInside = db.groups[0].groups[0].entries[0];
-                expect(entryMovedFromInside).to.be.ok();
+                expect(entryMovedFromInside).not().assertNull();
                 expect(entryMovedFromInside.fields.get('Title')).assertEqual('Was inside');
                 expect(
                     previousParentGroup.uuid.equals(entryMovedFromInside.previousParentGroup)
-                ).to.be.ok();
+                ).not().assertNull();
 
                 expect(db.meta.customIcons.size).assertEqual(2);
                 const icon1 = db.meta.customIcons.get('3q2nWI0en0W/wvhaCFJsnw==');
-                expect(icon1).to.be.ok();
+                expect(icon1).not().assertNull();
                 expect(icon1!.name).assertEqual('Bulb icon');
                 expect(icon1!.lastModified?.toISOString()).assertEqual('2021-05-05T18:28:34.000Z');
 
@@ -1137,12 +1137,12 @@ export default function KdbxTest() {
             expect(db.meta.memoryProtection.url).assertEqual(false);
             expect(db.meta.memoryProtection.notes).assertEqual(false);
             expect(db.meta.customIcons.size).assertEqual(1);
-            expect(db.meta.customIcons.get('rr3vZ1ozek+R4pAcLeqw5w==')).to.be.ok();
+            expect(db.meta.customIcons.get('rr3vZ1ozek+R4pAcLeqw5w==')).not().assertNull();
 
             const binaries = db.binaries.getAll();
             expect(binaries.length).assertEqual(1);
-            expect(binaries[0].ref).to.be.ok();
-            expect(binaries[0].value).to.be.ok();
+            expect(binaries[0].ref).not().assertNull();
+            expect(binaries[0].value).not().assertNull();
 
             expect(db.deletedObjects.length).assertEqual(1);
             expect(db.deletedObjects[0].uuid.id).assertEqual('LtoeZ26BBkqtr93N9tqO4g==');
@@ -1292,7 +1292,7 @@ export default function KdbxTest() {
         }
 
         function checkGroup(group: kdbxweb.KdbxGroup, exp: any) {
-            expect(group).to.be.ok();
+            expect(group).not().assertNull();
             expect(group.uuid?.id).assertEqual(exp.uuid);
             expect(group.name).assertEqual(exp.name);
             expect(group.notes).assertEqual(exp.notes);
@@ -1312,7 +1312,7 @@ export default function KdbxTest() {
         }
 
         function checkEntry(entry: kdbxweb.KdbxEntry, exp: any) {
-            expect(entry).to.be.ok();
+            expect(entry).not().assertNull();
             expect(entry.uuid.id).assertEqual(exp.uuid);
             expect(entry.icon).assertEqual(exp.icon);
             expect(entry.customIcon).assertEqual(exp.customIcon);
