@@ -85,7 +85,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
-                    expect(e.message).to.contain('bad xml');
+                    expect(e.message).assertContain('bad xml');
                 });
         });
 
@@ -497,7 +497,7 @@ export default function KdbxTest() {
                 );
                 const db = kdbxweb.Kdbx.create(cred, 'example');
                 const keyFileStr = kdbxweb.ByteUtils.bytesToString(keyFile).toString();
-                expect(keyFileStr).to.contain('<Version>2.0</Version>');
+                expect(keyFileStr).assertContain('<Version>2.0</Version>');
                 return db.save().then((ab) => {
                     return kdbxweb.Kdbx.load(ab, cred).then((db) => {
                         expect(db.meta.generator).assertEqual('KdbxWeb');
@@ -515,7 +515,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('data');
+                    expect(e.message).assertContain('data');
                 });
         });
 
@@ -585,7 +585,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
-                    expect(e.message).to.contain('header hash mismatch');
+                    expect(e.message).assertContain('header hash mismatch');
                 });
         });
 
@@ -637,7 +637,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('credentials');
+                    expect(e.message).assertContain('credentials');
                 });
         });
 
@@ -650,7 +650,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('credentials');
+                    expect(e.message).assertContain('credentials');
                 });
         });
 
@@ -666,7 +666,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('password');
+                    expect(e.message).assertContain('password');
                 })
             );
         });
@@ -683,7 +683,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('keyFile');
+                    expect(e.message).assertContain('keyFile');
                 })
             );
         });
@@ -695,7 +695,7 @@ export default function KdbxTest() {
             }).to.throwException((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
                 expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                expect(e.message).to.contain('credentials');
+                expect(e.message).assertContain('credentials');
             });
         });
 
@@ -708,7 +708,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('data');
+                    expect(e.message).assertContain('data');
                 });
         });
 
@@ -721,7 +721,7 @@ export default function KdbxTest() {
                 .catch((e) => {
                     expect(e).to.be.a(kdbxweb.KdbxError);
                     expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).to.contain('credentials');
+                    expect(e.message).assertContain('credentials');
                 });
         });
 
@@ -845,7 +845,7 @@ export default function KdbxTest() {
                 entry.fields.set('URL', 'url');
                 entry.times.update();
                 return db.saveXml().then((xml) => {
-                    expect(xml).to.contain('<Value ProtectInMemory="True">pass</Value>');
+                    expect(xml).assertContain('<Value ProtectInMemory="True">pass</Value>');
                 });
             });
         });
