@@ -27,15 +27,24 @@ export function bytesToString(arr: ArrayBufferOrArray): string {
 }
 
 export function stringToBytes(str: string): Uint8Array {
+    if(str === null || str.length === 0){
+        return new Uint8Array(0);
+    }
     return textEncoder.encodeInto(str);
 }
 
 export function base64ToBytes(str: string): Uint8Array {
+    if(str === null || str.length === 0){
+        return new Uint8Array(0);
+    }
     return base64.decodeSync(str);
 }
 
 export function bytesToBase64(arr: ArrayBufferOrArray): string {
     const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+    if(intArr.length === 0){
+        return '';
+    }
     return bytesToString(base64.encodeSync(intArr));
 }
 
