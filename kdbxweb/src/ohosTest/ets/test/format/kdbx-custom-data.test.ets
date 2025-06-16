@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@ohos/hypium';
+import { Document } from '@xmldom/xmldom';
 import { Kdbx, KdbxContext, KdbxCustomData, KdbxCustomDataItem, XmlUtils } from '../../../../main/ets/index';
 export default function KdbxCustomDataTest() {
     describe('KdbxCustomData', () => {
@@ -13,7 +14,7 @@ export default function KdbxCustomDataTest() {
                     '</CustomData>'
             );
             const cd = KdbxCustomData.read(xml.documentElement);
-            expect([...cd.entries()]).assertDeepEquals([
+            expect(Array.from(cd.entries())).assertDeepEquals([
                 ['k1', { value: 'v1' }],
                 ['k2', { value: 'v2' }]
             ]);
@@ -30,7 +31,7 @@ export default function KdbxCustomDataTest() {
                 '<CustomData><Item><Key>k</Key><Value>v</Value><x></x></Item><Something></Something></CustomData>'
             );
             const cd = KdbxCustomData.read(xml.documentElement);
-            expect([...cd.entries()]).assertDeepEquals([['k', { value: 'v' }]]);
+            expect(Array.from(cd.entries())).assertDeepEquals([['k', { value: 'v' }]]);
         });
 
         it('skips empty keys', 0,() => {
@@ -47,11 +48,11 @@ export default function KdbxCustomDataTest() {
                 xml.documentElement,
                 ctx,
                 new Map([
-                    ['k1', { value: 'v1' }],
-                    ['k2', { value: 'v2' }]
+                    ['k1', { value: 'v1' } as KdbxCustomDataItem],
+                    ['k2', { value: 'v2' } as KdbxCustomDataItem]
                 ])
             );
-            expect(XmlUtils.serialize(<Document>(<unknown>xml.documentElement))).assertDeepEquals(
+            expect(XmlUtils.serialize(xml as Document)).assertDeepEquals(
                 '<root><CustomData>' +
                     '<Item><Key>k1</Key><Value>v1</Value></Item>' +
                     '<Item><Key>k2</Key><Value>v2</Value></Item>' +
@@ -63,7 +64,7 @@ export default function KdbxCustomDataTest() {
             const xml = XmlUtils.create('root');
             KdbxCustomData.write(xml.documentElement, ctx, new Map());
             expect(
-                XmlUtils.serialize(<Document>(<unknown>xml.documentElement)).replace(/\s/g, '')
+                XmlUtils.serialize(xml as Document).replace(/\s/g, '')
             ).assertDeepEquals('<root><CustomData/></root>');
         });
 
@@ -71,7 +72,7 @@ export default function KdbxCustomDataTest() {
             const xml = XmlUtils.create('root');
             KdbxCustomData.write(xml.documentElement, ctx, undefined);
             expect(
-                XmlUtils.serialize(<Document>(<unknown>xml.documentElement)).replace(/\s/g, '')
+                XmlUtils.serialize(xml as Document).replace(/\s/g, '')
             ).assertDeepEquals('<root/>');
         });
 
@@ -86,7 +87,7 @@ export default function KdbxCustomDataTest() {
                     ['k3', { value: undefined }]
                 ])
             );
-            expect(XmlUtils.serialize(<Document>(<unknown>xml.documentElement))).assertDeepEquals(
+            expect(XmlUtils.serialize(xml as Document)).assertDeepEquals(
                 '<root><CustomData>' +
                     '<Item><Key>k1</Key><Value>v1</Value></Item>' +
                     '</CustomData></root>'
