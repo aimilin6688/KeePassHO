@@ -8,7 +8,7 @@ import { KdbxUuid } from '../format/kdbx-uuid';
 import { ProtectedValue } from '../crypto/protected-value';
 import { ProtectSaltGenerator } from '../crypto/protect-salt-generator';
 import { KdbxBinaries, KdbxBinaryOrRef } from '../format/kdbx-binaries';
-import { Document, DOMParser, DOMParserOptions, XMLSerializer, Element, Node } from '@xmldom/xmldom';
+import { Document, DOMParser, DOMParserOptions, Element, Node, XMLSerializer } from '@xmldom/xmldom';
 
 
 const DateRegex = /\.\d\d\d/;
@@ -17,7 +17,7 @@ const TagsSplitRegex = /\s*[;,:]\s*/;
 
 function createDOMParser() {
   const parserArg: DOMParserOptions = {
-    errorHandler: (level, msg, context) => {
+    onError: (level, msg, context) => {
       throw new KdbxError(ErrorCodes.FileCorrupt, `bad xml level:${level}, msg${msg}`);
     }
   };
@@ -166,8 +166,12 @@ export function getBytes(node: Node): ArrayBuffer | undefined {
 }
 
 export function setBytes(node: Node, bytes: ArrayBuffer | Uint8Array | string | undefined): void {
-  if (typeof bytes === 'string') {
+  if (typeof bytes === 'string' && bytes !== '') {
     bytes = base64ToBytes(bytes);
+  }
+  if (bytes instanceof Uint8Array && bytes.length == 0) {
+    setText(node, undefined);
+    return;
   }
   setText(node, bytes ? bytesToBase64(arrayToBuffer(bytes)) : undefined);
 }
