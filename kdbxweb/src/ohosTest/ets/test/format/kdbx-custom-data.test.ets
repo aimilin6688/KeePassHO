@@ -13,7 +13,7 @@ export default function KdbxCustomDataTest() {
                     '</CustomData>'
             );
             const cd = KdbxCustomData.read(xml.documentElement);
-            expect([...cd.entries()]).to.eql([
+            expect([...cd.entries()]).assertDeepEquals([
                 ['k1', { value: 'v1' }],
                 ['k2', { value: 'v2' }]
             ]);
@@ -22,7 +22,7 @@ export default function KdbxCustomDataTest() {
         it('reads empty custom data from empty xml', 0,() => {
             const xml = XmlUtils.parse('<CustomData></CustomData>');
             const cd = KdbxCustomData.read(xml.documentElement);
-            expect(cd).to.eql({});
+            expect(cd).assertDeepEquals({});
         });
 
         it('skips unknown tags', 0,() => {
@@ -30,7 +30,7 @@ export default function KdbxCustomDataTest() {
                 '<CustomData><Item><Key>k</Key><Value>v</Value><x></x></Item><Something></Something></CustomData>'
             );
             const cd = KdbxCustomData.read(xml.documentElement);
-            expect([...cd.entries()]).to.eql([['k', { value: 'v' }]]);
+            expect([...cd.entries()]).assertDeepEquals([['k', { value: 'v' }]]);
         });
 
         it('skips empty keys', 0,() => {
@@ -38,7 +38,7 @@ export default function KdbxCustomDataTest() {
                 '<CustomData><Item><Key></Key><Value>v</Value></Item></CustomData>'
             );
             const cd = KdbxCustomData.read(xml.documentElement);
-            expect(cd).to.eql({});
+            expect(cd).assertDeepEquals({});
         });
 
         it('writes custom data to xml', 0,() => {
@@ -51,7 +51,7 @@ export default function KdbxCustomDataTest() {
                     ['k2', { value: 'v2' }]
                 ])
             );
-            expect(XmlUtils.serialize(<Document>(<unknown>xml.documentElement))).to.eql(
+            expect(XmlUtils.serialize(<Document>(<unknown>xml.documentElement))).assertDeepEquals(
                 '<root><CustomData>' +
                     '<Item><Key>k1</Key><Value>v1</Value></Item>' +
                     '<Item><Key>k2</Key><Value>v2</Value></Item>' +
@@ -64,7 +64,7 @@ export default function KdbxCustomDataTest() {
             KdbxCustomData.write(xml.documentElement, ctx, new Map());
             expect(
                 XmlUtils.serialize(<Document>(<unknown>xml.documentElement)).replace(/\s/g, '')
-            ).to.eql('<root><CustomData/></root>');
+            ).assertDeepEquals('<root><CustomData/></root>');
         });
 
         it('does not create tag for empty custom data', 0,() => {
@@ -72,7 +72,7 @@ export default function KdbxCustomDataTest() {
             KdbxCustomData.write(xml.documentElement, ctx, undefined);
             expect(
                 XmlUtils.serialize(<Document>(<unknown>xml.documentElement)).replace(/\s/g, '')
-            ).to.eql('<root/>');
+            ).assertDeepEquals('<root/>');
         });
 
         it('skips keys without values', 0,() => {
@@ -86,7 +86,7 @@ export default function KdbxCustomDataTest() {
                     ['k3', { value: undefined }]
                 ])
             );
-            expect(XmlUtils.serialize(<Document>(<unknown>xml.documentElement))).to.eql(
+            expect(XmlUtils.serialize(<Document>(<unknown>xml.documentElement))).assertDeepEquals(
                 '<root><CustomData>' +
                     '<Item><Key>k1</Key><Value>v1</Value></Item>' +
                     '</CustomData></root>'
