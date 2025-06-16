@@ -1,3 +1,5 @@
+import { ByteUtils } from "../../../../main/ets";
+
 /**
  * 自定义断言
  * @file: Asserts.ets
@@ -88,5 +90,18 @@ export class Asserts {
       return;
     }
     throw new Error(message || `Expected ${func} to throw an error`);
+  }
+
+  /**
+   * 验证数组是否相等
+   * @param actual
+   * @param expected
+   * @param message
+   */
+  public assertArrayEqual(expected: Uint8Array, message?: string): void {
+    const actual = this.actual as Uint8Array;
+    if(!ByteUtils.arrayBufferEquals(actual, expected)){
+      throw new Error(message || `Expected ${actual} equal to ${expected}`);
+    }
   }
 }
