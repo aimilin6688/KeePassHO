@@ -78,7 +78,7 @@ export default function KdbxMergeTest() {
             }).to.throwException((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
                 expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidState);
-                expect(e.message).to.contain('empty default group');
+                expect(e.message).assertContain('empty default group');
             });
         });
 
@@ -93,7 +93,7 @@ export default function KdbxMergeTest() {
             }).to.throwException((e) => {
                 expect(e).to.be.a(kdbxweb.KdbxError);
                 expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.MergeError);
-                expect(e.message).to.contain('default group is different');
+                expect(e.message).assertContain('default group is different');
             });
         });
 
