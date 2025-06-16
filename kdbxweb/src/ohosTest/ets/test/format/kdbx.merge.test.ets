@@ -52,7 +52,7 @@ const bin:BinContainer = {
 
 export default function KdbxMergeTest() {
     describe('Kdbx.merge', () => {
-        it('tests can check database structure', 0,() => {
+        it('tests can check database structure', 0, () => {
             const db = getTestDb();
             assertDbEquals(db, getTestDbStructure());
         });
@@ -356,7 +356,7 @@ export default function KdbxMergeTest() {
             remote.move(remote.getDefaultGroup().groups[1].groups[0], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
         });
@@ -445,7 +445,7 @@ export default function KdbxMergeTest() {
             remote.move(db.getDefaultGroup().groups[1].groups[0], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
         });
@@ -485,7 +485,7 @@ export default function KdbxMergeTest() {
             db.move(db.getDefaultGroup().groups[3], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups.splice(3, 1);
             assertDbEquals(db, exp);
@@ -499,7 +499,7 @@ export default function KdbxMergeTest() {
             remote.move(remote.getDefaultGroup().groups[3], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups.splice(3, 1);
             assertDbEquals(db, exp);
@@ -516,7 +516,7 @@ export default function KdbxMergeTest() {
             db.move(db.getDefaultGroup().groups[1], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups.splice(1, 1);
             assertDbEquals(db, exp);
         });
@@ -529,7 +529,7 @@ export default function KdbxMergeTest() {
             remote.move(remote.getDefaultGroup().groups[1], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups.splice(1, 1);
             assertDbEquals(db, exp);
         });
@@ -545,7 +545,7 @@ export default function KdbxMergeTest() {
             db.move(db.getDefaultGroup().groups[3], db.getDefaultGroup().groups[2]);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups[3].groups[0].groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups[2].groups.push(exp.root.groups[3]);
@@ -561,7 +561,7 @@ export default function KdbxMergeTest() {
             db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup().groups[3].groups[0]);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
+            exp.del = undefined;
             exp.root.groups[3].groups[0].groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups[2].groups.push(exp.root.groups[3]);
@@ -674,8 +674,8 @@ export default function KdbxMergeTest() {
             remote.move(remote.getDefaultGroup().entries[0], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.entries.splice(0, 1);
             exp.binaries = new kdbxweb.KdbxBinaries();
             assertDbEquals(db, exp);
@@ -687,8 +687,8 @@ export default function KdbxMergeTest() {
             db.move(db.getDefaultGroup().entries[0], null);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.entries.splice(0, 1);
             exp.binaries = new kdbxweb.KdbxBinaries();
             assertDbEquals(db, exp);
@@ -700,8 +700,8 @@ export default function KdbxMergeTest() {
             remote.move(remote.getDefaultGroup().entries[0], remote.getDefaultGroup().groups[1]);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.groups[1].entries.push(exp.root.entries[0]);
             exp.root.entries.splice(0, 1);
             assertDbEquals(db, exp);
@@ -713,8 +713,8 @@ export default function KdbxMergeTest() {
             db.move(db.getDefaultGroup().entries[0], db.getDefaultGroup().groups[1]);
             db.merge(remote);
             const exp:ESObject = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.groups[1].entries.push(exp.root.entries[0]);
             exp.root.entries.splice(0, 1);
             assertDbEquals(db, exp);
@@ -970,7 +970,8 @@ export default function KdbxMergeTest() {
 }
 
 function getTestDbStructure(): ESObject {
-    const exp = {
+    // @ark-ignore
+    const exp:ESObject = {
         meta: {
             name: 'name',
             nameChanged: dt.created,
@@ -993,9 +994,9 @@ function getTestDbStructure(): ESObject {
             customData: new Map<string, kdbxweb.KdbxCustomDataItem>([
                 ['cd1', { value: 'data1' }]
             ])
-        },
+        } as ESObject,
         binaries: new kdbxweb.KdbxBinaries(),
-        del: {} as { [id: string]: Date },
+        del: {} as Record<string, Date | undefined>,
         root: {
             uuid: id.gRoot,
             name: 'root',
@@ -1014,7 +1015,7 @@ function getTestDbStructure(): ESObject {
                     name: 'trash',
                     groups: [],
                     entries: []
-                },
+                } as ESObject ,
                 {
                     uuid: id.g1,
                     name: 'g1',
@@ -1029,29 +1030,29 @@ function getTestDbStructure(): ESObject {
                                     name: 'g111',
                                     groups: [],
                                     entries: []
-                                },
+                                } as ESObject ,
                                 {
                                     uuid: id.g112,
                                     name: 'g112',
                                     groups: [],
                                     entries: []
-                                }
-                            ]
+                                } as ESObject
+                            ] as ESObject[]
                         },
                         {
                             uuid: id.g12,
                             name: 'g12',
                             groups: [],
                             entries: []
-                        }
-                    ]
+                        } as ESObject
+                    ] as ESObject[]
                 },
                 {
                     uuid: id.g2,
                     name: 'g2',
                     groups: [],
                     entries: []
-                },
+                } as ESObject,
                 {
                     uuid: id.g3,
                     name: 'g3',
@@ -1061,10 +1062,10 @@ function getTestDbStructure(): ESObject {
                             name: 'g31',
                             groups: [],
                             entries: []
-                        }
-                    ]
+                        } as ESObject
+                    ] as ESObject[]
                 }
-            ],
+            ] as ESObject [],
             entries: [
                 {
                     uuid: id.er1,
@@ -1079,7 +1080,7 @@ function getTestDbStructure(): ESObject {
                         ['Title', 'er1'],
                         ['Password', 'pass']
                     ]),
-                    binaries: new Map([['bin1', { ref: id.bin1 }]]),
+                    binaries: new Map([['bin1', { ref: id.bin1 } as ESObject]]),
                     history: [
                         {
                             modified: dt.upd1,
@@ -1089,10 +1090,10 @@ function getTestDbStructure(): ESObject {
                             modified: dt.upd2,
                             tags: ['tags2']
                         }
-                    ]
+                    ] as ESObject[]
                 }
-            ]
-        }
+            ] as ESObject[]
+        } as ESObject
     };
     exp.del[id.eDel.id] = dt.upd1;
     exp.binaries.addWithHash({ hash: id.bin1.id, value: bin.bin1 });
