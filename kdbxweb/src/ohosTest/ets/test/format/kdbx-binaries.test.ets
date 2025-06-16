@@ -16,7 +16,7 @@ export default function KdbxBinariesTest() {
                 const bin = await binaries.add(protectedBinary);
                 expect(bin).to.be.ok();
                 expect(bin.hash).assertEqual(hash);
-                expect(binaries.getAllWithHashes()).to.eql([{ hash, value: protectedBinary }]);
+                expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: protectedBinary }]);
             });
 
             it('adds an ArrayBuffer',  0,async () => {
@@ -25,7 +25,7 @@ export default function KdbxBinariesTest() {
                 const bin = await binaries.add(ab);
                 expect(bin).to.be.ok();
                 expect(bin.hash).assertEqual(hash);
-                expect(binaries.getAllWithHashes()).to.eql([{ hash, value: ab }]);
+                expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: ab }]);
             });
 
             it('adds an Uint8Array',  0,async () => {
@@ -34,7 +34,7 @@ export default function KdbxBinariesTest() {
                 const bin = await binaries.add(arr);
                 expect(bin).to.be.ok();
                 expect(bin.hash).assertEqual(hash);
-                expect(binaries.getAllWithHashes()).to.eql([{ hash, value: arr.buffer }]);
+                expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: arr.buffer }]);
             });
         });
 
@@ -81,7 +81,7 @@ export default function KdbxBinariesTest() {
                 const binaries = new KdbxBinaries();
                 binaries.addWithHash({ hash, value: protectedBinary });
 
-                expect(binaries.getAllWithHashes()).to.eql([{ hash, value: protectedBinary }]);
+                expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: protectedBinary }]);
             });
         });
 
@@ -92,7 +92,7 @@ export default function KdbxBinariesTest() {
                 binaries.addWithHash({ hash: hash2, value: protectedBinary2 });
                 binaries.deleteWithHash(hash2);
 
-                expect(binaries.getAllWithHashes()).to.eql([{ hash, value: protectedBinary }]);
+                expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: protectedBinary }]);
             });
         });
 
@@ -135,13 +135,13 @@ export default function KdbxBinariesTest() {
                 expect(refNotExisting).assertEqual(undefined);
 
                 const all = binaries.getAll();
-                expect(all).to.eql([
+                expect(all).assertDeepEquals([
                     { ref: '0', value: protectedBinary },
                     { ref: '1', value: protectedBinary2 }
                 ]);
 
                 const allWithHashes = binaries.getAllWithHashes();
-                expect(allWithHashes).to.eql([
+                expect(allWithHashes).assertDeepEquals([
                     { hash, value: protectedBinary },
                     { hash: hash2, value: protectedBinary2 }
                 ]);
