@@ -106,7 +106,7 @@ export default function KdbxCredentialsTest() {
             } catch (e) {
                 expect(e).to.be.a(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
-                expect((e as KdbxError).message).to.contain('key file without meta');
+                expect((e as KdbxError).message).assertContain('key file without meta');
                 return;
             }
             expect().fail();
@@ -120,7 +120,7 @@ export default function KdbxCredentialsTest() {
             } catch (e) {
                 expect(e).to.be.a(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
-                expect((e as KdbxError).message).to.contain('key file without version');
+                expect((e as KdbxError).message).assertContain('key file without version');
                 return;
             }
             expect().fail();
@@ -136,7 +136,7 @@ export default function KdbxCredentialsTest() {
             } catch (e) {
                 expect(e).to.be.a(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.FileCorrupt);
-                expect((e as KdbxError).message).to.contain('bad keyfile version');
+                expect((e as KdbxError).message).assertContain('bad keyfile version');
                 return;
             }
             expect().fail();
@@ -152,7 +152,7 @@ export default function KdbxCredentialsTest() {
             } catch (e) {
                 expect(e).to.be.a(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
-                expect((e as KdbxError).message).to.contain('key file without key');
+                expect((e as KdbxError).message).assertContain('key file without key');
                 return;
             }
             expect().fail();
@@ -168,7 +168,7 @@ export default function KdbxCredentialsTest() {
             } catch (e) {
                 expect(e).to.be.a(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
-                expect((e as KdbxError).message).to.contain('key file without key data');
+                expect((e as KdbxError).message).assertContain('key file without key data');
                 return;
             }
             expect().fail();
@@ -206,7 +206,7 @@ export default function KdbxCredentialsTest() {
             } catch (e) {
                 expect(e).to.be.a(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.FileCorrupt);
-                expect((e as KdbxError).message).to.contain('key file data hash mismatch');
+                expect((e as KdbxError).message).assertContain('key file data hash mismatch');
                 return;
             }
             expect().fail();
