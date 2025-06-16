@@ -15,7 +15,7 @@ import KdbxErrorTest from './errors/kdbx-error.test';
 // import KdbxTest from './format/kdbx.test';
 // import KdbxBinariesTest from './format/kdbx-binaries.test';
 // import KdbxCredentialsTest from './format/kdbx-credentials.test';
-// import KdbxCustomDataTest from './format/kdbx-custom-data.test';
+import KdbxCustomDataTest from './format/kdbx-custom-data.test';
 import KdbxHeaderTest from './format/kdbx-header.test';
 import KdbxUuidTest from './format/kdbx-uuid.test';
 
@@ -52,7 +52,7 @@ export default function testsuite() {
   // KdbxTest();
   // KdbxBinariesTest();
   // KdbxCredentialsTest();
-  // KdbxCustomDataTest();
+  KdbxCustomDataTest();
   KdbxHeaderTest();
   KdbxUuidTest();
 
