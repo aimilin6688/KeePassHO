@@ -428,13 +428,13 @@ export default function KdbxTest() {
                 return db.save().then((ab) => {
                     return kdbxweb.Kdbx.load(ab, cred).then((db) => {
                         expect(db.header.versionMajor).assertEqual(4);
-                        expect([...db.getDefaultGroup().groups[0].customData!]).to.eql([
+                        expect([...db.getDefaultGroup().groups[0].customData!]).assertDeepEquals([
                             ['custom', { value: 'group' }]
                         ]);
-                        expect(db.getDefaultGroup().groups[0].customIcon!.toString()).to.eql(
+                        expect(db.getDefaultGroup().groups[0].customIcon!.toString()).assertDeepEquals(
                             iconId.toString()
                         );
-                        expect([...db.getDefaultGroup().entries[0].customData!]).to.eql([
+                        expect([...db.getDefaultGroup().entries[0].customData!]).assertDeepEquals([
                             ['custom', { value: 'entry' }]
                         ]);
                         checkDb(db);
@@ -785,7 +785,7 @@ export default function KdbxTest() {
                 const newGroupNames = defaultGroup.groups.map((g) => {
                     return g.name;
                 });
-                expect(newGroupNames).to.eql(groupNames);
+                expect(newGroupNames).assertDeepEquals(groupNames);
                 db.move(defaultGroup.groups[fromIndex], defaultGroup, toIndex);
                 checkDb(db);
             });
@@ -951,7 +951,7 @@ export default function KdbxTest() {
                 db.meta.customIcons.set(ids[4].id, { data: rem2 });
                 db.meta.customIcons.set(ids[5].id, { data: rem3 });
                 db.cleanup({ customIcons: true });
-                expect([...db.meta.customIcons]).to.eql([
+                expect([...db.meta.customIcons]).assertDeepEquals([
                     [ids[0].id, { data: icon1 }],
                     [ids[1].id, { data: icon2 }],
                     [ids[2].id, { data: icon3 }]
@@ -981,7 +981,7 @@ export default function KdbxTest() {
                 await db.createBinary(new Uint8Array([4]));
                 await db.createBinary(new Uint8Array([5]));
                 db.cleanup({ binaries: true });
-                expect(db.binaries.getAll().map((e) => e.value)).to.eql([b1, b2]);
+                expect(db.binaries.getAll().map((e) => e.value)).assertDeepEquals([b1, b2]);
             });
         });
 
@@ -998,7 +998,7 @@ export default function KdbxTest() {
 
                 expect(sourceDb.groups[0].entries.length).assertEqual(2);
                 expect(sourceEntryWithCustomIcon.customIcon).to.be.ok();
-                expect([...sourceEntryWithBinaries.binaries.keys()]).to.eql(['attachment']);
+                expect([...sourceEntryWithBinaries.binaries.keys()]).assertDeepEquals(['attachment']);
 
                 const importedEntryWithCustomIcon = db.importEntry(
                     sourceEntryWithCustomIcon,
@@ -1011,8 +1011,8 @@ export default function KdbxTest() {
                     sourceDb
                 );
 
-                expect(importedEntryWithCustomIcon.uuid).not.to.eql(sourceEntryWithCustomIcon.uuid);
-                expect(importedEntryWithBinaries.uuid).not.to.eql(sourceEntryWithBinaries.uuid);
+                expect(importedEntryWithCustomIcon.uuid).not.assertDeepEquals(sourceEntryWithCustomIcon.uuid);
+                expect(importedEntryWithBinaries.uuid).not.assertDeepEquals(sourceEntryWithBinaries.uuid);
 
                 return db.save().then((ab) => {
                     return kdbxweb.Kdbx.load(ab, cred).then((db) => {
@@ -1021,12 +1021,12 @@ export default function KdbxTest() {
                         const withCustomIcon = db.groups[0].entries[0];
                         const withBinaries = db.groups[0].entries[1];
 
-                        expect(withCustomIcon.uuid).to.eql(importedEntryWithCustomIcon.uuid);
+                        expect(withCustomIcon.uuid).assertDeepEquals(importedEntryWithCustomIcon.uuid);
                         expect(withCustomIcon.customIcon).to.be.ok();
                         expect(db.meta.customIcons.get(withCustomIcon.customIcon!.id)).to.be.ok();
 
-                        expect(withBinaries.uuid).to.eql(importedEntryWithBinaries.uuid);
-                        expect([...withBinaries.binaries.keys()]).to.eql(['attachment']);
+                        expect(withBinaries.uuid).assertDeepEquals(importedEntryWithBinaries.uuid);
+                        expect([...withBinaries.binaries.keys()]).assertDeepEquals(['attachment']);
                     });
                 });
             });
@@ -1067,7 +1067,7 @@ export default function KdbxTest() {
                 const groupWithTags = db.groups[0].groups[0].groups[0];
                 expect(groupWithTags).to.be.ok();
                 expect(groupWithTags.name).assertEqual('With tags');
-                expect(groupWithTags.tags).to.eql(['Another tag', 'Tag1']);
+                expect(groupWithTags.tags).assertDeepEquals(['Another tag', 'Tag1']);
                 expect(groupWithTags.previousParentGroup).assertEqual(undefined);
 
                 const regularEntry = db.groups[0].entries[0];
@@ -1103,7 +1103,7 @@ export default function KdbxTest() {
                 expect(icon1!.lastModified?.toISOString()).assertEqual('2021-05-05T18:28:34.000Z');
 
                 expect(db.meta.customData.size).assertEqual(4);
-                expect(db.meta.customData.get('Test_A')).to.eql({
+                expect(db.meta.customData.get('Test_A')).assertDeepEquals({
                     value: 'NmL56onQIqdk1WSt',
                     lastModified: new Date('2021-01-20T18:10:44.000Z')
                 });

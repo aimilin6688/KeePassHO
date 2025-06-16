@@ -1205,74 +1205,74 @@ export default function KdbxMergeTest() {
         function assertDbEquals(db: kdbxweb.Kdbx, exp: any) {
             if (exp.meta) {
                 if (exp.meta.name) {
-                    expect(db.meta.name).to.eql(exp.meta.name);
+                    expect(db.meta.name).assertDeepEquals(exp.meta.name);
                 }
                 if (exp.meta.nameChanged) {
-                    expect(db.meta.nameChanged).to.eql(exp.meta.nameChanged);
+                    expect(db.meta.nameChanged).assertDeepEquals(exp.meta.nameChanged);
                 }
                 if (exp.meta.desc) {
-                    expect(db.meta.desc).to.eql(exp.meta.desc);
+                    expect(db.meta.desc).assertDeepEquals(exp.meta.desc);
                 }
                 if (exp.meta.descChanged) {
-                    expect(db.meta.descChanged).to.eql(exp.meta.descChanged);
+                    expect(db.meta.descChanged).assertDeepEquals(exp.meta.descChanged);
                 }
                 if (exp.meta.defaultUser) {
-                    expect(db.meta.defaultUser).to.eql(exp.meta.defaultUser);
+                    expect(db.meta.defaultUser).assertDeepEquals(exp.meta.defaultUser);
                 }
                 if (exp.meta.defaultUserChanged) {
-                    expect(db.meta.defaultUserChanged).to.eql(exp.meta.defaultUserChanged);
+                    expect(db.meta.defaultUserChanged).assertDeepEquals(exp.meta.defaultUserChanged);
                 }
                 if (exp.meta.mntncHistoryDays) {
-                    expect(db.meta.mntncHistoryDays).to.eql(exp.meta.mntncHistoryDays);
+                    expect(db.meta.mntncHistoryDays).assertDeepEquals(exp.meta.mntncHistoryDays);
                 }
                 if (exp.meta.settingsChanged) {
-                    expect(db.meta.settingsChanged).to.eql(exp.meta.settingsChanged);
+                    expect(db.meta.settingsChanged).assertDeepEquals(exp.meta.settingsChanged);
                 }
                 if (exp.meta.keyChanged) {
-                    expect(db.meta.keyChanged).to.eql(exp.meta.keyChanged);
+                    expect(db.meta.keyChanged).assertDeepEquals(exp.meta.keyChanged);
                 }
                 if (exp.meta.keyChangeRec) {
-                    expect(db.meta.keyChangeRec).to.eql(exp.meta.keyChangeRec);
+                    expect(db.meta.keyChangeRec).assertDeepEquals(exp.meta.keyChangeRec);
                 }
                 if (exp.meta.keyChangeForce) {
-                    expect(db.meta.keyChangeForce).to.eql(exp.meta.keyChangeForce);
+                    expect(db.meta.keyChangeForce).assertDeepEquals(exp.meta.keyChangeForce);
                 }
                 if (exp.meta.recycleBinEnabled) {
-                    expect(db.meta.recycleBinEnabled).to.eql(exp.meta.recycleBinEnabled);
+                    expect(db.meta.recycleBinEnabled).assertDeepEquals(exp.meta.recycleBinEnabled);
                 }
                 if (exp.meta.recycleBinUuid) {
-                    expect(db.meta.recycleBinUuid).to.eql(exp.meta.recycleBinUuid);
+                    expect(db.meta.recycleBinUuid).assertDeepEquals(exp.meta.recycleBinUuid);
                 }
                 if (exp.meta.recycleBinChanged) {
-                    expect(db.meta.recycleBinChanged).to.eql(exp.meta.recycleBinChanged);
+                    expect(db.meta.recycleBinChanged).assertDeepEquals(exp.meta.recycleBinChanged);
                 }
                 if (exp.meta.entryTemplatesGroup) {
-                    expect(db.meta.entryTemplatesGroup).to.eql(exp.meta.entryTemplatesGroup);
+                    expect(db.meta.entryTemplatesGroup).assertDeepEquals(exp.meta.entryTemplatesGroup);
                 }
                 if (exp.meta.entryTemplatesGroupChanged) {
-                    expect(db.meta.entryTemplatesGroupChanged).to.eql(
+                    expect(db.meta.entryTemplatesGroupChanged).assertDeepEquals(
                         exp.meta.entryTemplatesGroupChanged
                     );
                 }
                 if (exp.meta.historyMaxItems) {
-                    expect(db.meta.historyMaxItems).to.eql(exp.meta.historyMaxItems);
+                    expect(db.meta.historyMaxItems).assertDeepEquals(exp.meta.historyMaxItems);
                 }
                 if (exp.meta.historyMaxSize) {
-                    expect(db.meta.historyMaxSize).to.eql(exp.meta.historyMaxSize);
+                    expect(db.meta.historyMaxSize).assertDeepEquals(exp.meta.historyMaxSize);
                 }
                 if (exp.meta.customData) {
-                    expect([...db.meta.customData.entries()]).to.eql([
+                    expect([...db.meta.customData.entries()]).assertDeepEquals([
                         ...exp.meta.customData.entries()
                     ]);
                 }
                 if (exp.meta.customIcons) {
-                    expect([...db.meta.customIcons.entries()]).to.eql([
+                    expect([...db.meta.customIcons.entries()]).assertDeepEquals([
                         ...exp.meta.customIcons.entries()
                     ]);
                 }
             }
             if (exp.binaries) {
-                expect(db.binaries.getAll()).to.eql(exp.binaries.getAll());
+                expect(db.binaries.getAll()).assertDeepEquals(exp.binaries.getAll());
             }
             if (exp.del) {
                 expect(db.deletedObjects.length).assertEqual(Object.keys(exp.del).length);
@@ -1280,7 +1280,7 @@ export default function KdbxMergeTest() {
                 for (const d of db.deletedObjects) {
                     del[d.uuid!.id] = d.deletionTime;
                 }
-                expect(del).to.eql(exp.del);
+                expect(del).assertDeepEquals(exp.del);
             }
             if (exp.root) {
                 expect(db.getDefaultGroup().parentGroup).assertEqual(undefined);
@@ -1290,37 +1290,37 @@ export default function KdbxMergeTest() {
 
         function assertGroupEquals(group: kdbxweb.KdbxGroup, exp: any) {
             if (exp.uuid) {
-                expect(group.uuid).to.eql(exp.uuid);
+                expect(group.uuid).assertDeepEquals(exp.uuid);
             }
             if (exp.name) {
-                expect(group.name).to.eql(exp.name);
+                expect(group.name).assertDeepEquals(exp.name);
             }
             if (exp.notes) {
-                expect(group.notes).to.eql(exp.notes);
+                expect(group.notes).assertDeepEquals(exp.notes);
             }
             if (exp.icon) {
-                expect(group.icon).to.eql(exp.icon);
+                expect(group.icon).assertDeepEquals(exp.icon);
             }
             if (exp.customIcon) {
-                expect(group.customIcon).to.eql(exp.customIcon);
+                expect(group.customIcon).assertDeepEquals(exp.customIcon);
             }
             if (exp.modified) {
-                expect(group.times.lastModTime).to.eql(exp.modified);
+                expect(group.times.lastModTime).assertDeepEquals(exp.modified);
             }
             if (exp.expanded) {
-                expect(group.expanded).to.eql(exp.expanded);
+                expect(group.expanded).assertDeepEquals(exp.expanded);
             }
             if (exp.defaultAutoTypeSeq) {
-                expect(group.defaultAutoTypeSeq).to.eql(exp.defaultAutoTypeSeq);
+                expect(group.defaultAutoTypeSeq).assertDeepEquals(exp.defaultAutoTypeSeq);
             }
             if (exp.enableAutoType) {
-                expect(group.enableAutoType).to.eql(exp.enableAutoType);
+                expect(group.enableAutoType).assertDeepEquals(exp.enableAutoType);
             }
             if (exp.enableSearching) {
-                expect(group.enableSearching).to.eql(exp.enableSearching);
+                expect(group.enableSearching).assertDeepEquals(exp.enableSearching);
             }
             if (exp.lastTopVisibleEntry) {
-                expect(group.lastTopVisibleEntry).to.eql(exp.lastTopVisibleEntry);
+                expect(group.lastTopVisibleEntry).assertDeepEquals(exp.lastTopVisibleEntry);
             }
             if (exp.groups) {
                 expect(group.groups.length).assertEqual(exp.groups.length);
@@ -1340,34 +1340,34 @@ export default function KdbxMergeTest() {
 
         function assertEntryEquals(entry: kdbxweb.KdbxEntry, exp: any) {
             if (exp.uuid) {
-                expect(entry.uuid).to.eql(exp.uuid);
+                expect(entry.uuid).assertDeepEquals(exp.uuid);
             }
             if (exp.icon) {
-                expect(entry.icon).to.eql(exp.icon);
+                expect(entry.icon).assertDeepEquals(exp.icon);
             }
             if (exp.customIcon) {
-                expect(entry.customIcon).to.eql(exp.customIcon);
+                expect(entry.customIcon).assertDeepEquals(exp.customIcon);
             }
             if (exp.fgColor) {
-                expect(entry.fgColor).to.eql(exp.fgColor);
+                expect(entry.fgColor).assertDeepEquals(exp.fgColor);
             }
             if (exp.bgColor) {
-                expect(entry.bgColor).to.eql(exp.bgColor);
+                expect(entry.bgColor).assertDeepEquals(exp.bgColor);
             }
             if (exp.overrideUrl) {
-                expect(entry.overrideUrl).to.eql(exp.overrideUrl);
+                expect(entry.overrideUrl).assertDeepEquals(exp.overrideUrl);
             }
             if (exp.tags) {
-                expect(entry.tags).to.eql(exp.tags);
+                expect(entry.tags).assertDeepEquals(exp.tags);
             }
             if (exp.modified) {
-                expect(entry.times.lastModTime).to.eql(exp.modified);
+                expect(entry.times.lastModTime).assertDeepEquals(exp.modified);
             }
             if (exp.fields) {
-                expect([...entry.fields.entries()]).to.eql([...exp.fields.entries()]);
+                expect([...entry.fields.entries()]).assertDeepEquals([...exp.fields.entries()]);
             }
             if (exp.binaries) {
-                expect(entry.binaries).to.eql(exp.binaries);
+                expect(entry.binaries).assertDeepEquals(exp.binaries);
             }
             if (exp.history) {
                 expect(entry.history.length).assertEqual(exp.history.length);
