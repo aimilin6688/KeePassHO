@@ -26,6 +26,7 @@ import Int64Test from './utils/int64.test';
 import VarDictionaryTest from './utils/var-dictionary.test';
 import XmlUtilsTest from './utils/xml-utils.test';
 // import ResourcesTest from './test-support/test-resources.test';
+import FileUtilsTest from './utils/file-utils.test';
 
 
 export default function testsuite() {
@@ -59,4 +60,5 @@ export default function testsuite() {
   VarDictionaryTest();
   XmlUtilsTest();
   // ResourcesTest();
+  FileUtilsTest();
 }
