@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils, Consts, KdbxCredentials, KdbxError, ProtectedValue } from '../../../../main/ets/index';
+import { expects } from '../test-support/Asserts';
+
 export default function KdbxCredentialsTest() {
     describe('KdbxCredentials', () => {
         it('calculates hash for null password', 0, async () => {
@@ -70,7 +72,7 @@ export default function KdbxCredentialsTest() {
         });
 
         it('calculates hash for a bad xml key file',  0,async () => {
-            const keyFile = new TextEncoder().encode('boo');
+            const keyFile = ByteUtils.stringToBytes('boo');
             const cred = new KdbxCredentials(null, keyFile);
             const hash = await cred.getHash();
             expect(ByteUtils.bytesToHex(hash)).assertEqual(
@@ -79,7 +81,7 @@ export default function KdbxCredentialsTest() {
         });
 
         it('calculates hash for a plaintext key file',  0,async () => {
-            const keyFile = new Uint8Array(32).fill(1).buffer;
+            const keyFile = ByteUtils.bytesToBuffer(new Uint8Array(32).fill(1));
             const cred = new KdbxCredentials(null, keyFile);
             const hash = await cred.getHash();
             expect(ByteUtils.bytesToHex(hash)).assertEqual(
@@ -88,7 +90,7 @@ export default function KdbxCredentialsTest() {
         });
 
         it('calculates hash for a hex key file',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 'DEADbeef0a0f0212812374283418418237418734873829748917389472314243'
             );
             const cred = new KdbxCredentials(null, keyFile);
@@ -99,83 +101,83 @@ export default function KdbxCredentialsTest() {
         });
 
         it('throws an error for a key file without meta', 0, async () => {
-            const keyFile = new TextEncoder().encode('<KeyFile/>');
+            const keyFile =  ByteUtils.stringToBytes('<KeyFile/>');
             const cred = new KdbxCredentials(null, keyFile);
             try {
                 await cred.getHash();
             } catch (e) {
-                expect(e).to.be.a(KdbxError);
+                expects(e).assertInstanceOf(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
                 expect((e as KdbxError).message).assertContain('key file without meta');
                 return;
             }
-            expect().fail();
+            expect().assertFail();
         });
 
         it('throws an error for a key file without version',  0,async () => {
-            const keyFile = new TextEncoder().encode('<data><Meta></Meta></data>');
+            const keyFile = ByteUtils.stringToBytes('<data><Meta></Meta></data>');
             const cred = new KdbxCredentials(null, keyFile);
             try {
                 await cred.getHash();
             } catch (e) {
-                expect(e).to.be.a(KdbxError);
+                expects(e).assertInstanceOf(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
                 expect((e as KdbxError).message).assertContain('key file without version');
                 return;
             }
-            expect().fail();
+            expect().assertFail();
         });
 
         it('throws an error for a key file with bad version', 0, async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>10.0</Version></Meta><Key><Data>00</Data></Key></KeyFile>'
             );
             const cred = new KdbxCredentials(null, keyFile);
             try {
                 await cred.getHash();
             } catch (e) {
-                expect(e).to.be.a(KdbxError);
+                expects(e).assertInstanceOf(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.FileCorrupt);
                 expect((e as KdbxError).message).assertContain('bad keyfile version');
                 return;
             }
-            expect().fail();
+            expect().assertFail();
         });
 
         it('throws an error for a key file without key',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>1.0</Version></Meta></KeyFile>'
             );
             const cred = new KdbxCredentials(null, keyFile);
             try {
                 await cred.getHash();
             } catch (e) {
-                expect(e).to.be.a(KdbxError);
+                expects(e).assertInstanceOf(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
                 expect((e as KdbxError).message).assertContain('key file without key');
                 return;
             }
-            expect().fail();
+            expect().assertFail();
         });
 
         it('throws an error for a key file without data',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>1.0</Version></Meta><Key></Key></KeyFile>'
             );
             const cred = new KdbxCredentials(null, keyFile);
             try {
                 await cred.getHash();
             } catch (e) {
-                expect(e).to.be.a(KdbxError);
+                expects(e).assertInstanceOf(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.InvalidArg);
                 expect((e as KdbxError).message).assertContain('key file without key data');
                 return;
             }
-            expect().fail();
+            expect().assertFail();
         });
 
         it('calculates hash for a v1 key file',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>1.0</Version></Meta><Key><Data>AtY2GR2pVt6aWz2ugfxfSQWjRId9l0JWe/LEMJWVJ1k=</Data></Key></KeyFile>'
             );
             const cred = new KdbxCredentials(null, keyFile);
@@ -186,7 +188,7 @@ export default function KdbxCredentialsTest() {
         });
 
         it('calculates hash for a v2 key file',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>2.0</Version></Meta><Key><Data Hash="FE2949B8">A7007945 D07D54BA 28DF6434 1B4500FC 9750DFB1 D36ADA2D 9C32DC19 4C7AB01B</Data></Key></KeyFile>'
             );
             const cred = new KdbxCredentials(null, keyFile);
@@ -197,23 +199,23 @@ export default function KdbxCredentialsTest() {
         });
 
         it('throws an error for a v2 key file with bad hash',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>2.0</Version></Meta><Key><Data Hash="AABBCCDD">A7007945 D07D54BA 28DF6434 1B4500FC 9750DFB1 D36ADA2D 9C32DC19 4C7AB01B</Data></Key></KeyFile>'
             );
             const cred = new KdbxCredentials(null, keyFile);
             try {
                 await cred.getHash();
             } catch (e) {
-                expect(e).to.be.a(KdbxError);
+                expects(e).assertInstanceOf(KdbxError);
                 expect((e as KdbxError).code).assertEqual(Consts.ErrorCodes.FileCorrupt);
                 expect((e as KdbxError).message).assertContain('key file data hash mismatch');
                 return;
             }
-            expect().fail();
+            expect().assertFail();
         });
 
         it('sets passwordHash and keyFileHash',  0,async () => {
-            const keyFile = new TextEncoder().encode(
+            const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>2.0</Version></Meta><Key><Data Hash="FE2949B8">A7007945 D07D54BA 28DF6434 1B4500FC 9750DFB1 D36ADA2D 9C32DC19 4C7AB01B</Data></Key></KeyFile>'
             );
             const cred = new KdbxCredentials(ProtectedValue.fromString('123'), keyFile);
@@ -221,8 +223,8 @@ export default function KdbxCredentialsTest() {
             expect(ByteUtils.bytesToHex(hash)).assertEqual(
                 '4ecd13e7ea764ce2909e460864f4d4a513b07f612a1adb013770a40bb1cf77fc'
             );
-            expect(cred.passwordHash).to.be.ok();
-            expect(cred.keyFileHash).to.be.ok();
+            expect(cred.passwordHash).not().assertNull();
+            expect(cred.keyFileHash).not().assertNull();
             expect(ByteUtils.bytesToHex(cred.passwordHash!.getBinary())).assertEqual(
                 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3'
             );

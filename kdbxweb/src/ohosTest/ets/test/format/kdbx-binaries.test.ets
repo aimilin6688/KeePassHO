@@ -5,8 +5,8 @@ import { ByteUtils, KdbxBinaries, ProtectedValue } from '../../../../main/ets/in
 export default function KdbxBinariesTest() {
 
     describe('KdbxBinaries', () => {
-        const protectedBinary = ProtectedValue.fromBinary(new TextEncoder().encode('bin'));
-        const protectedBinary2 = ProtectedValue.fromBinary(new TextEncoder().encode('another'));
+        const protectedBinary = ProtectedValue.fromBinary(ByteUtils.stringToBytes('bin'));
+        const protectedBinary2 = ProtectedValue.fromBinary(ByteUtils.stringToBytes('another'));
         const hash = '51a1f05af85e342e3c849b47d387086476282d5f50dc240c19216d6edfb1eb5a';
         const hash2 = 'ae448ac86c4e8e4dec645729708ef41873ae79c6dff84eff73360989487f08e5';
 
@@ -14,7 +14,7 @@ export default function KdbxBinariesTest() {
             it('adds a ProtectedValue', 0, async () => {
                 const binaries = new KdbxBinaries();
                 const bin = await binaries.add(protectedBinary);
-                expect(bin).to.be.ok();
+                expect(bin).not().assertNull();
                 expect(bin.hash).assertEqual(hash);
                 expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: protectedBinary }]);
             });
@@ -23,7 +23,7 @@ export default function KdbxBinariesTest() {
                 const binaries = new KdbxBinaries();
                 const ab = ByteUtils.arrayToBuffer(protectedBinary.getBinary());
                 const bin = await binaries.add(ab);
-                expect(bin).to.be.ok();
+                expect(bin).not().assertNull();
                 expect(bin.hash).assertEqual(hash);
                 expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: ab }]);
             });
@@ -32,7 +32,7 @@ export default function KdbxBinariesTest() {
                 const binaries = new KdbxBinaries();
                 const arr = protectedBinary.getBinary();
                 const bin = await binaries.add(arr);
-                expect(bin).to.be.ok();
+                expect(bin).not().assertNull();
                 expect(bin.hash).assertEqual(hash);
                 expect(binaries.getAllWithHashes()).assertDeepEquals([{ hash, value: arr.buffer }]);
             });
@@ -47,11 +47,11 @@ export default function KdbxBinariesTest() {
                 await binaries.computeHashes();
 
                 const found1 = binaries.getByRef({ ref: '0' });
-                expect(found1).to.be.ok();
+                expect(found1).not().assertNull();
                 expect(found1!.hash).assertEqual(hash);
 
                 const found2 = binaries.getByRef({ ref: '1' });
-                expect(found2).to.be.ok();
+                expect(found2).not().assertNull();
                 expect(found2!.hash).assertEqual(hash2);
 
                 const notFound = binaries.getByRef({ ref: '2' });
@@ -68,7 +68,7 @@ export default function KdbxBinariesTest() {
                 await binaries.computeHashes();
 
                 const found2 = binaries.getByRef({ ref: '0' });
-                expect(found2).to.be.ok();
+                expect(found2).not().assertNull();
                 expect(found2!.hash).assertEqual(hash2);
 
                 const notFound = binaries.getByRef({ ref: '1' });
@@ -107,7 +107,7 @@ export default function KdbxBinariesTest() {
                 binaries.deleteWithHash(hash2);
 
                 const found1 = binaries.getByRef({ ref: '0' });
-                expect(found1).to.be.ok();
+                expect(found1).not().assertNull();
                 expect(found1!.hash).assertEqual(hash);
 
                 expect(binaries.getByRef({ ref: '1' })).assertEqual(undefined);
@@ -124,11 +124,11 @@ export default function KdbxBinariesTest() {
                 await binaries.computeHashes();
 
                 const ref1 = binaries.getRefByHash(hash);
-                expect(ref1).to.be.ok();
+                expect(ref1).not().assertNull();
                 expect(ref1?.ref).assertEqual('0');
 
                 const ref2 = binaries.getRefByHash(hash2);
-                expect(ref2).to.be.ok();
+                expect(ref2).not().assertNull();
                 expect(ref2?.ref).assertEqual('1');
 
                 const refNotExisting = binaries.getRefByHash('boo');
