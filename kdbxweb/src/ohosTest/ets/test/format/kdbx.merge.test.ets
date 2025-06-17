@@ -1,56 +1,58 @@
 import { describe, expect, it } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
+import { expects } from '../test-support/Asserts';
+
+
+const dt:DateContainer = {
+    pre1: new Date(2014, 1, 1),
+    created: new Date(2015, 1, 1),
+    upd1: new Date(2015, 1, 2),
+    upd2: new Date(2015, 1, 3),
+    upd3: new Date(2015, 1, 4),
+    upd4: new Date(2015, 1, 5),
+    upd5: new Date(2015, 1, 6),
+    upd6: new Date(2015, 1, 7)
+};
+
+const id: IdContainer = {
+    trash: kdbxweb.KdbxUuid.random(),
+    name: kdbxweb.KdbxUuid.random(),
+    tpl: kdbxweb.KdbxUuid.random(),
+    eDel: kdbxweb.KdbxUuid.random(),
+    eDel1: kdbxweb.KdbxUuid.random(),
+    icon1: kdbxweb.KdbxUuid.random(),
+    icon2: kdbxweb.KdbxUuid.random(),
+    cd1: kdbxweb.KdbxUuid.random(),
+    bin1: kdbxweb.KdbxUuid.random(),
+    bin2: kdbxweb.KdbxUuid.random(),
+    bin3: kdbxweb.KdbxUuid.random(),
+    bin4: kdbxweb.KdbxUuid.random(),
+    gRoot: kdbxweb.KdbxUuid.random(),
+    g1: kdbxweb.KdbxUuid.random(),
+    g11: kdbxweb.KdbxUuid.random(),
+    g111: kdbxweb.KdbxUuid.random(),
+    g112: kdbxweb.KdbxUuid.random(),
+    g12: kdbxweb.KdbxUuid.random(),
+    g2: kdbxweb.KdbxUuid.random(),
+    g3: kdbxweb.KdbxUuid.random(),
+    g31: kdbxweb.KdbxUuid.random(),
+    g4: kdbxweb.KdbxUuid.random(),
+    g5: kdbxweb.KdbxUuid.random(),
+    er1: kdbxweb.KdbxUuid.random()
+};
+
+const bin:BinContainer = {
+    bin1: kdbxweb.ByteUtils.stringToBytes('bin1'),
+    bin2: kdbxweb.ByteUtils.stringToBytes('bin2'),
+    bin3: kdbxweb.ByteUtils.stringToBytes('bin3'),
+    bin4: kdbxweb.ByteUtils.stringToBytes('bin4'),
+    icon1: kdbxweb.ByteUtils.stringToBytes('icon1'),
+    icon2: kdbxweb.ByteUtils.stringToBytes('icon2')
+};
 
 export default function KdbxMergeTest() {
     describe('Kdbx.merge', () => {
-        const dt = {
-            pre1: new Date(2014, 1, 1),
-            created: new Date(2015, 1, 1),
-            upd1: new Date(2015, 1, 2),
-            upd2: new Date(2015, 1, 3),
-            upd3: new Date(2015, 1, 4),
-            upd4: new Date(2015, 1, 5),
-            upd5: new Date(2015, 1, 6),
-            upd6: new Date(2015, 1, 7)
-        };
-
-        const id = {
-            trash: kdbxweb.KdbxUuid.random(),
-            name: kdbxweb.KdbxUuid.random(),
-            tpl: kdbxweb.KdbxUuid.random(),
-            eDel: kdbxweb.KdbxUuid.random(),
-            eDel1: kdbxweb.KdbxUuid.random(),
-            icon1: kdbxweb.KdbxUuid.random(),
-            icon2: kdbxweb.KdbxUuid.random(),
-            cd1: kdbxweb.KdbxUuid.random(),
-            bin1: kdbxweb.KdbxUuid.random(),
-            bin2: kdbxweb.KdbxUuid.random(),
-            bin3: kdbxweb.KdbxUuid.random(),
-            bin4: kdbxweb.KdbxUuid.random(),
-            gRoot: kdbxweb.KdbxUuid.random(),
-            g1: kdbxweb.KdbxUuid.random(),
-            g11: kdbxweb.KdbxUuid.random(),
-            g111: kdbxweb.KdbxUuid.random(),
-            g112: kdbxweb.KdbxUuid.random(),
-            g12: kdbxweb.KdbxUuid.random(),
-            g2: kdbxweb.KdbxUuid.random(),
-            g3: kdbxweb.KdbxUuid.random(),
-            g31: kdbxweb.KdbxUuid.random(),
-            g4: kdbxweb.KdbxUuid.random(),
-            g5: kdbxweb.KdbxUuid.random(),
-            er1: kdbxweb.KdbxUuid.random()
-        } as const;
-
-        const bin = {
-            bin1: kdbxweb.ByteUtils.stringToBytes('bin1'),
-            bin2: kdbxweb.ByteUtils.stringToBytes('bin2'),
-            bin3: kdbxweb.ByteUtils.stringToBytes('bin3'),
-            bin4: kdbxweb.ByteUtils.stringToBytes('bin4'),
-            icon1: kdbxweb.ByteUtils.stringToBytes('icon1'),
-            icon2: kdbxweb.ByteUtils.stringToBytes('icon2')
-        } as const;
-
-        it('tests can check database structure', 0,() => {
+        it('tests can check database structure', 0, () => {
             const db = getTestDb();
             assertDbEquals(db, getTestDbStructure());
         });
@@ -73,11 +75,11 @@ export default function KdbxMergeTest() {
                     'demo'
                 );
             remote.groups = [];
-            expect(() => {
+            expects(() => {
                 db.merge(remote);
-            }).to.throwException((e) => {
-                expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidState);
+            }).assertThrowError((e:Error) => {
+                expects(e).assertInstanceOf(kdbxweb.KdbxError);
+                expect((e as kdbxweb.KdbxError).code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidState);
                 expect(e.message).assertContain('empty default group');
             });
         });
@@ -88,11 +90,11 @@ export default function KdbxMergeTest() {
                     new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo')),
                     'demo'
                 );
-            expect(() => {
+            expects(() => {
                 db.merge(remote);
-            }).to.throwException((e) => {
-                expect(e).to.be.a(kdbxweb.KdbxError);
-                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.MergeError);
+            }).assertThrowError((e:Error) => {
+                expects(e).assertInstanceOf(kdbxweb.KdbxError);
+                expect((e as kdbxweb.KdbxError).code).assertEqual(kdbxweb.Consts.ErrorCodes.MergeError);
                 expect(e.message).assertContain('default group is different');
             });
         });
@@ -108,10 +110,9 @@ export default function KdbxMergeTest() {
             remote.deletedObjects.splice(0, 1);
             remote.deletedObjects.push(delObj);
             db.merge(remote);
-            const del = {
-                [id.eDel.id]: dt.upd1,
-                [id.eDel1.id]: dt.upd2
-            };
+            const del:Record<string, Date | undefined>  = {};
+            del[id.eDel.id]=dt.upd1;
+            del[id.eDel1.id]=dt.upd2;
             assertDbEquals(db, { del });
         });
 
@@ -161,7 +162,7 @@ export default function KdbxMergeTest() {
                     historyMaxItems: 100,
                     historyMaxSize: 100000000,
                     color: '#ff0000'
-                }
+                } as kdbxweb.KdbxMeta
             });
         });
 
@@ -207,8 +208,8 @@ export default function KdbxMergeTest() {
                     historyMaxItems: 100,
                     historyMaxSize: 100000000,
                     color: '#ff0000'
-                }
-            });
+                } as kdbxweb.KdbxMeta
+            } );
         });
 
         it('merges binaries', 0,() => {
@@ -268,7 +269,7 @@ export default function KdbxMergeTest() {
             db.groups[0].groups[1].customIcon = id.bin4;
             db.groups[0].groups[1].times.update();
             db.merge(remote);
-            assertDbEquals(db, { meta: { customIcons } });
+            assertDbEquals(db, { meta: { customIcons } as kdbxweb.KdbxMeta});
         });
 
         it('merges custom data', 0,() => {
@@ -293,7 +294,7 @@ export default function KdbxMergeTest() {
             remote.meta.customData.set('1', { value: 'remoteNew', lastModified: dNew });
             remote.meta.customData.set('2', { value: 'remoteOld', lastModified: dOld });
             db.merge(remote);
-            assertDbEquals(db, { meta: { customData } });
+            assertDbEquals(db, { meta: { customData } as kdbxweb.KdbxMeta });
         });
 
         // groups: remote
@@ -315,7 +316,7 @@ export default function KdbxMergeTest() {
             grp.groups[1].customIcon = id.icon1;
             grp.groups[1].times.lastModTime = dt.upd2;
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.name = 'root1';
             exp.root.notes = 'notes1';
             exp.root.icon = 1;
@@ -334,7 +335,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             const group = remote.createGroup(remote.getDefaultGroup(), 'newgrp');
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.push({ uuid: group.uuid, name: group.name });
             assertDbEquals(db, exp);
         });
@@ -344,7 +345,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             const group = remote.createGroup(remote.getDefaultGroup().groups[1].groups[0], 'newgrp');
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups[1].groups[0].groups.push({ uuid: group.uuid, name: group.name });
             assertDbEquals(db, exp);
         });
@@ -354,8 +355,8 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.move(remote.getDefaultGroup().groups[1].groups[0], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
         });
@@ -365,7 +366,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.move(remote.getDefaultGroup().groups[1].groups[0], remote.getDefaultGroup());
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
@@ -379,7 +380,7 @@ export default function KdbxMergeTest() {
                 remote.getDefaultGroup().groups[3]
             );
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups[3].groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
@@ -404,7 +405,7 @@ export default function KdbxMergeTest() {
             grp.groups[1].customIcon = id.icon1;
             grp.groups[1].times.lastModTime = dt.upd2;
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.name = 'root1';
             exp.root.notes = 'notes1';
             exp.root.icon = 1;
@@ -423,7 +424,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             const group = db.createGroup(db.getDefaultGroup(), 'newgrp');
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.push({ uuid: group.uuid, name: group.name });
             assertDbEquals(db, exp);
         });
@@ -433,7 +434,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             const group = db.createGroup(db.getDefaultGroup().groups[1].groups[0], 'newgrp');
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups[1].groups[0].groups.push({ uuid: group.uuid, name: group.name });
             assertDbEquals(db, exp);
         });
@@ -443,8 +444,8 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.move(db.getDefaultGroup().groups[1].groups[0], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
         });
@@ -454,7 +455,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup());
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
@@ -465,7 +466,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup().groups[3]);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups[3].groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             assertDbEquals(db, exp);
@@ -483,8 +484,8 @@ export default function KdbxMergeTest() {
             tick();
             db.move(db.getDefaultGroup().groups[3], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups.splice(3, 1);
             assertDbEquals(db, exp);
@@ -497,8 +498,8 @@ export default function KdbxMergeTest() {
             tick();
             remote.move(remote.getDefaultGroup().groups[3], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups.splice(3, 1);
             assertDbEquals(db, exp);
@@ -514,8 +515,8 @@ export default function KdbxMergeTest() {
             tick();
             db.move(db.getDefaultGroup().groups[1], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups.splice(1, 1);
             assertDbEquals(db, exp);
         });
@@ -527,8 +528,8 @@ export default function KdbxMergeTest() {
             tick();
             remote.move(remote.getDefaultGroup().groups[1], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups.splice(1, 1);
             assertDbEquals(db, exp);
         });
@@ -543,8 +544,8 @@ export default function KdbxMergeTest() {
             tick();
             db.move(db.getDefaultGroup().groups[3], db.getDefaultGroup().groups[2]);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups[3].groups[0].groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups[2].groups.push(exp.root.groups[3]);
@@ -559,8 +560,8 @@ export default function KdbxMergeTest() {
             tick();
             db.move(db.getDefaultGroup().groups[1].groups[0], db.getDefaultGroup().groups[3].groups[0]);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
             exp.root.groups[3].groups[0].groups.push(exp.root.groups[1].groups[0]);
             exp.root.groups[1].groups.splice(0, 1);
             exp.root.groups[2].groups.push(exp.root.groups[3]);
@@ -596,7 +597,7 @@ export default function KdbxMergeTest() {
             group4.times.lastModTime = group4.times.locationChanged = dt.upd1;
 
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.splice(1, 2, exp.root.groups[2], exp.root.groups[1]);
             exp.root.groups[1].modified = dt.upd3;
             exp.root.groups.push({ uuid: id.g5, name: 'g5' });
@@ -630,7 +631,7 @@ export default function KdbxMergeTest() {
             group4.times.lastModTime = group4.times.locationChanged = dt.upd2;
 
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.splice(1, 2, exp.root.groups[2], exp.root.groups[1]);
             exp.root.groups[2].modified = dt.upd3;
             exp.root.groups.push({ uuid: id.g5, name: 'g5' });
@@ -649,7 +650,7 @@ export default function KdbxMergeTest() {
             remote.getDefaultGroup().groups.unshift(group4);
 
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.groups.unshift({ uuid: id.g4, name: 'g4' });
             assertDbEquals(db, exp);
         });
@@ -662,7 +663,7 @@ export default function KdbxMergeTest() {
             const entry = remote.createEntry(remote.getDefaultGroup());
             entry.fields.set('added', 'field');
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries.push({ fields: entry.fields });
             assertDbEquals(db, exp);
         });
@@ -672,9 +673,9 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.move(remote.getDefaultGroup().entries[0], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.entries.splice(0, 1);
             exp.binaries = new kdbxweb.KdbxBinaries();
             assertDbEquals(db, exp);
@@ -685,9 +686,9 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             db.move(db.getDefaultGroup().entries[0], null);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.entries.splice(0, 1);
             exp.binaries = new kdbxweb.KdbxBinaries();
             assertDbEquals(db, exp);
@@ -698,9 +699,9 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.move(remote.getDefaultGroup().entries[0], remote.getDefaultGroup().groups[1]);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.groups[1].entries.push(exp.root.entries[0]);
             exp.root.entries.splice(0, 1);
             assertDbEquals(db, exp);
@@ -711,9 +712,9 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             db.move(db.getDefaultGroup().entries[0], db.getDefaultGroup().groups[1]);
             db.merge(remote);
-            const exp = getTestDbStructure();
-            delete exp.del;
-            delete exp.meta.customIcons;
+            const exp:ESObject = getTestDbStructure();
+            exp.del = undefined;
+            exp.meta.customIcons = undefined;
             exp.root.groups[1].entries.push(exp.root.entries[0]);
             exp.root.entries.splice(0, 1);
             assertDbEquals(db, exp);
@@ -740,7 +741,7 @@ export default function KdbxMergeTest() {
             entry.binaries.set('bin2', bin.bin2);
             entry.binaries.set('ab', ab);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].icon = 21;
             exp.root.entries[0].fgColor = '#aa0000';
             exp.root.entries[0].bgColor = '#00aa00';
@@ -779,7 +780,7 @@ export default function KdbxMergeTest() {
             entry.binaries.set('bin2', bin.bin2);
             entry.binaries.set('ab', ab);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             assertDbEquals(db, exp);
         });
 
@@ -805,7 +806,7 @@ export default function KdbxMergeTest() {
             entry.binaries.set('bin2', bin.bin2);
             entry.binaries.set('ab', ab);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].icon = 21;
             exp.root.entries[0].fgColor = '#aa0000';
             exp.root.entries[0].bgColor = '#00aa00';
@@ -829,7 +830,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.getDefaultGroup().entries[0].removeHistory(0);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].history.splice(0, 1);
             assertDbEquals(db, exp);
         });
@@ -839,7 +840,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             db.getDefaultGroup().entries[0].removeHistory(0);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].history.splice(0, 1);
             assertDbEquals(db, exp);
         });
@@ -849,7 +850,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             remote.getDefaultGroup().entries[0].removeHistory(0, 5);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].history = [];
             assertDbEquals(db, exp);
         });
@@ -859,7 +860,7 @@ export default function KdbxMergeTest() {
                 remote = getTestDb();
             db.getDefaultGroup().entries[0].removeHistory(0, 5);
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].history = [];
             assertDbEquals(db, exp);
         });
@@ -874,7 +875,7 @@ export default function KdbxMergeTest() {
             remoteEntry.pushHistory();
             remoteEntry.times.lastModTime = dt.upd4;
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].modified = dt.upd4;
             exp.root.entries[0].history.push({ modified: dt.upd3, tags: ['tags'] });
             assertDbEquals(db, exp);
@@ -892,7 +893,7 @@ export default function KdbxMergeTest() {
             remoteEntry.tags = ['tRemote'];
             entry.tags = ['tLocal'];
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].modified = dt.upd5;
             exp.root.entries[0].tags = ['tRemote'];
             exp.root.entries[0].history.push({ modified: dt.upd3, tags: ['tLocal'] });
@@ -913,7 +914,7 @@ export default function KdbxMergeTest() {
             entry.tags = ['tLocal'];
             entry.times.lastModTime = dt.upd6;
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].modified = dt.upd6;
             exp.root.entries[0].tags = ['tLocal'];
             exp.root.entries[0].history.push({ modified: dt.upd4, tags: ['t4'] });
@@ -932,7 +933,7 @@ export default function KdbxMergeTest() {
             entry.times.lastModTime = dt.upd5;
             entry._editState = undefined;
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             exp.root.entries[0].tags = ['tLocal'];
             exp.root.entries[0].modified = dt.upd5;
             exp.root.entries[0].history.push({ modified: dt.upd3, tags: ['tags'] });
@@ -951,7 +952,7 @@ export default function KdbxMergeTest() {
 
             db.removeLocalEditState();
             db.merge(remote);
-            const exp = getTestDbStructure();
+            const exp:ESObject = getTestDbStructure();
             assertDbEquals(db, exp);
 
             db.getDefaultGroup().entries[0].removeHistory(0);
@@ -965,424 +966,469 @@ export default function KdbxMergeTest() {
             exp.meta.historyMaxItems = 500;
             exp.root.entries[0].history.splice(0, 1);
         });
-
-        function getTestDbStructure(): any {
-            const exp = {
-                meta: {
-                    name: 'name',
-                    nameChanged: dt.created,
-                    desc: 'desc',
-                    descChanged: dt.created,
-                    defaultUser: 'user',
-                    defaultUserChanged: dt.created,
-                    mntncHistoryDays: 10,
-                    keyChanged: dt.created,
-                    keyChangeRec: 100,
-                    keyChangeForce: 200,
-                    recycleBinEnabled: true,
-                    recycleBinUuid: id.trash,
-                    recycleBinChanged: dt.created,
-                    entryTemplatesGroup: id.tpl,
-                    entryTemplatesGroupChanged: dt.created,
-                    historyMaxItems: 10,
-                    historyMaxSize: 10000,
-                    customIcons: new Map<string, kdbxweb.KdbxCustomIcon>(),
-                    customData: new Map<string, kdbxweb.KdbxCustomDataItem>([
-                        ['cd1', { value: 'data1' }]
-                    ])
-                },
-                binaries: new kdbxweb.KdbxBinaries(),
-                del: {} as { [id: string]: Date },
-                root: {
-                    uuid: id.gRoot,
-                    name: 'root',
-                    notes: 'notes',
-                    icon: 1,
-                    customIcon: id.icon1,
-                    modified: dt.upd1,
-                    expanded: false,
-                    defaultAutoTypeSeq: 'seq',
-                    enableAutoType: true,
-                    enableSearching: true,
-                    lastTopVisibleEntry: null,
-                    groups: [
-                        {
-                            uuid: id.trash,
-                            name: 'trash',
-                            groups: [],
-                            entries: []
-                        },
-                        {
-                            uuid: id.g1,
-                            name: 'g1',
-                            entries: [],
-                            groups: [
-                                {
-                                    uuid: id.g11,
-                                    name: 'g11',
-                                    groups: [
-                                        {
-                                            uuid: id.g111,
-                                            name: 'g111',
-                                            groups: [],
-                                            entries: []
-                                        },
-                                        {
-                                            uuid: id.g112,
-                                            name: 'g112',
-                                            groups: [],
-                                            entries: []
-                                        }
-                                    ]
-                                },
-                                {
-                                    uuid: id.g12,
-                                    name: 'g12',
-                                    groups: [],
-                                    entries: []
-                                }
-                            ]
-                        },
-                        {
-                            uuid: id.g2,
-                            name: 'g2',
-                            groups: [],
-                            entries: []
-                        },
-                        {
-                            uuid: id.g3,
-                            name: 'g3',
-                            groups: [
-                                {
-                                    uuid: id.g31,
-                                    name: 'g31',
-                                    groups: [],
-                                    entries: []
-                                }
-                            ]
-                        }
-                    ],
-                    entries: [
-                        {
-                            uuid: id.er1,
-                            icon: 2,
-                            customIcon: id.icon2,
-                            fgColor: '#ff0000',
-                            bgColor: '#00ff00',
-                            overrideUrl: '123',
-                            tags: ['tags'],
-                            modified: dt.upd3,
-                            fields: new Map([
-                                ['Title', 'er1'],
-                                ['Password', 'pass']
-                            ]),
-                            binaries: new Map([['bin1', { ref: id.bin1 }]]),
-                            history: [
-                                {
-                                    modified: dt.upd1,
-                                    tags: ['tags1']
-                                },
-                                {
-                                    modified: dt.upd2,
-                                    tags: ['tags2']
-                                }
-                            ]
-                        }
-                    ]
-                }
-            };
-            exp.del[id.eDel.id] = dt.upd1;
-            exp.binaries.addWithHash({ hash: id.bin1.id, value: bin.bin1 });
-            exp.meta.customIcons.set(id.icon1.id, { data: bin.icon1 });
-            exp.meta.customIcons.set(id.icon2.id, { data: bin.icon2 });
-            return exp;
-        }
-
-        function getTestDb() {
-            const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
-            const db = kdbxweb.Kdbx.create(cred, 'demo');
-
-            db.meta._name = 'name';
-            db.meta.nameChanged = dt.created;
-            db.meta._desc = 'desc';
-            db.meta.descChanged = dt.created;
-            db.meta._defaultUser = 'user';
-            db.meta.defaultUserChanged = dt.created;
-            db.meta._mntncHistoryDays = 10;
-            db.meta.settingsChanged = dt.created;
-            db.meta.keyChanged = dt.created;
-            db.meta._keyChangeRec = 100;
-            db.meta._keyChangeForce = 200;
-            db.meta._recycleBinEnabled = true;
-            db.meta._recycleBinUuid = id.trash;
-            db.meta.recycleBinChanged = dt.created;
-            db.meta._entryTemplatesGroup = id.tpl;
-            db.meta.entryTemplatesGroupChanged = dt.created;
-            db.meta._historyMaxItems = 10;
-            db.meta._historyMaxSize = 10000;
-            db.meta.customIcons.set(id.icon1.id, { data: bin.icon1 });
-            db.meta.customIcons.set(id.icon2.id, { data: bin.icon2 });
-            db.meta.customData.set('cd1', { value: 'data1' });
-            db.meta._editState = undefined;
-            db.binaries.addWithHash({ hash: id.bin1.id, value: bin.bin1 });
-
-            const root = db.getDefaultGroup();
-            root.uuid = id.gRoot;
-            root.name = 'root';
-            root.notes = 'notes';
-            root.icon = 1;
-            root.customIcon = id.icon1;
-            root.times.lastModTime = dt.upd1;
-            root.times.locationChanged = dt.upd1;
-            root.expanded = false;
-            root.defaultAutoTypeSeq = 'seq';
-            root.enableAutoType = true;
-            root.enableSearching = true;
-            root.lastTopVisibleEntry = undefined;
-
-            const recycleBin = root.groups[0];
-            recycleBin.uuid = id.trash;
-            recycleBin.name = 'trash';
-            recycleBin.times.lastModTime = dt.upd1;
-            recycleBin.times.locationChanged = dt.upd1;
-
-            let entry = db.createEntry(root);
-            entry.uuid = id.eDel;
-            db.move(entry, undefined);
-            db.deletedObjects[0].deletionTime = dt.upd1;
-
-            entry = db.createEntry(root);
-            entry.uuid = id.er1;
-            entry.icon = 2;
-            entry.customIcon = id.icon2;
-            entry.fgColor = '#ff0000';
-            entry.bgColor = '#00ff00';
-            entry.overrideUrl = '123';
-            entry.tags = ['tags1'];
-            entry.times.lastModTime = dt.upd3;
-            entry.times.locationChanged = dt.upd1;
-            entry.fields = new Map([
-                ['Title', 'er1'],
-                ['Password', 'pass']
-            ]);
-            entry.binaries.set('bin1', { hash: id.bin1.id, value: bin.bin1 });
-            entry.pushHistory();
-            entry.tags = ['tags2'];
-            entry.history[0].times.lastModTime = dt.upd1;
-            entry.pushHistory();
-            entry.tags = ['tags'];
-            entry.history[1].times.lastModTime = dt.upd2;
-            entry._editState = undefined;
-
-            const group1 = db.createGroup(root, 'g1');
-            group1.uuid = id.g1;
-            group1.times.lastModTime = group1.times.locationChanged = dt.upd1;
-            const group11 = db.createGroup(group1, 'g11');
-            group11.uuid = id.g11;
-            group11.times.lastModTime = group11.times.locationChanged = dt.upd1;
-            const group111 = db.createGroup(group11, 'g111');
-            group111.uuid = id.g111;
-            group111.times.lastModTime = group111.times.locationChanged = dt.upd1;
-            const group112 = db.createGroup(group11, 'g112');
-            group112.uuid = id.g112;
-            group112.times.lastModTime = group112.times.locationChanged = dt.upd1;
-            const group12 = db.createGroup(group1, 'g12');
-            group12.uuid = id.g12;
-            group12.times.lastModTime = group12.times.locationChanged = dt.upd1;
-            const group2 = db.createGroup(root, 'g2');
-            group2.uuid = id.g2;
-            group2.times.lastModTime = group2.times.locationChanged = dt.upd1;
-            const group3 = db.createGroup(root, 'g3');
-            group3.uuid = id.g3;
-            group3.times.lastModTime = group3.times.locationChanged = dt.upd1;
-            const group31 = db.createGroup(group3, 'g31');
-            group31.uuid = id.g31;
-            group31.times.lastModTime = group31.times.locationChanged = dt.upd1;
-
-            return db;
-        }
-
-        function assertDbEquals(db: kdbxweb.Kdbx, exp: any) {
-            if (exp.meta) {
-                if (exp.meta.name) {
-                    expect(db.meta.name).assertDeepEquals(exp.meta.name);
-                }
-                if (exp.meta.nameChanged) {
-                    expect(db.meta.nameChanged).assertDeepEquals(exp.meta.nameChanged);
-                }
-                if (exp.meta.desc) {
-                    expect(db.meta.desc).assertDeepEquals(exp.meta.desc);
-                }
-                if (exp.meta.descChanged) {
-                    expect(db.meta.descChanged).assertDeepEquals(exp.meta.descChanged);
-                }
-                if (exp.meta.defaultUser) {
-                    expect(db.meta.defaultUser).assertDeepEquals(exp.meta.defaultUser);
-                }
-                if (exp.meta.defaultUserChanged) {
-                    expect(db.meta.defaultUserChanged).assertDeepEquals(exp.meta.defaultUserChanged);
-                }
-                if (exp.meta.mntncHistoryDays) {
-                    expect(db.meta.mntncHistoryDays).assertDeepEquals(exp.meta.mntncHistoryDays);
-                }
-                if (exp.meta.settingsChanged) {
-                    expect(db.meta.settingsChanged).assertDeepEquals(exp.meta.settingsChanged);
-                }
-                if (exp.meta.keyChanged) {
-                    expect(db.meta.keyChanged).assertDeepEquals(exp.meta.keyChanged);
-                }
-                if (exp.meta.keyChangeRec) {
-                    expect(db.meta.keyChangeRec).assertDeepEquals(exp.meta.keyChangeRec);
-                }
-                if (exp.meta.keyChangeForce) {
-                    expect(db.meta.keyChangeForce).assertDeepEquals(exp.meta.keyChangeForce);
-                }
-                if (exp.meta.recycleBinEnabled) {
-                    expect(db.meta.recycleBinEnabled).assertDeepEquals(exp.meta.recycleBinEnabled);
-                }
-                if (exp.meta.recycleBinUuid) {
-                    expect(db.meta.recycleBinUuid).assertDeepEquals(exp.meta.recycleBinUuid);
-                }
-                if (exp.meta.recycleBinChanged) {
-                    expect(db.meta.recycleBinChanged).assertDeepEquals(exp.meta.recycleBinChanged);
-                }
-                if (exp.meta.entryTemplatesGroup) {
-                    expect(db.meta.entryTemplatesGroup).assertDeepEquals(exp.meta.entryTemplatesGroup);
-                }
-                if (exp.meta.entryTemplatesGroupChanged) {
-                    expect(db.meta.entryTemplatesGroupChanged).assertDeepEquals(
-                        exp.meta.entryTemplatesGroupChanged
-                    );
-                }
-                if (exp.meta.historyMaxItems) {
-                    expect(db.meta.historyMaxItems).assertDeepEquals(exp.meta.historyMaxItems);
-                }
-                if (exp.meta.historyMaxSize) {
-                    expect(db.meta.historyMaxSize).assertDeepEquals(exp.meta.historyMaxSize);
-                }
-                if (exp.meta.customData) {
-                    expect([...db.meta.customData.entries()]).assertDeepEquals([
-                        ...exp.meta.customData.entries()
-                    ]);
-                }
-                if (exp.meta.customIcons) {
-                    expect([...db.meta.customIcons.entries()]).assertDeepEquals([
-                        ...exp.meta.customIcons.entries()
-                    ]);
-                }
-            }
-            if (exp.binaries) {
-                expect(db.binaries.getAll()).assertDeepEquals(exp.binaries.getAll());
-            }
-            if (exp.del) {
-                expect(db.deletedObjects.length).assertEqual(Object.keys(exp.del).length);
-                const del: { [id: string]: Date | undefined } = {};
-                for (const d of db.deletedObjects) {
-                    del[d.uuid!.id] = d.deletionTime;
-                }
-                expect(del).assertDeepEquals(exp.del);
-            }
-            if (exp.root) {
-                expect(db.getDefaultGroup().parentGroup).assertEqual(undefined);
-                assertGroupEquals(db.getDefaultGroup(), exp.root);
-            }
-        }
-
-        function assertGroupEquals(group: kdbxweb.KdbxGroup, exp: any) {
-            if (exp.uuid) {
-                expect(group.uuid).assertDeepEquals(exp.uuid);
-            }
-            if (exp.name) {
-                expect(group.name).assertDeepEquals(exp.name);
-            }
-            if (exp.notes) {
-                expect(group.notes).assertDeepEquals(exp.notes);
-            }
-            if (exp.icon) {
-                expect(group.icon).assertDeepEquals(exp.icon);
-            }
-            if (exp.customIcon) {
-                expect(group.customIcon).assertDeepEquals(exp.customIcon);
-            }
-            if (exp.modified) {
-                expect(group.times.lastModTime).assertDeepEquals(exp.modified);
-            }
-            if (exp.expanded) {
-                expect(group.expanded).assertDeepEquals(exp.expanded);
-            }
-            if (exp.defaultAutoTypeSeq) {
-                expect(group.defaultAutoTypeSeq).assertDeepEquals(exp.defaultAutoTypeSeq);
-            }
-            if (exp.enableAutoType) {
-                expect(group.enableAutoType).assertDeepEquals(exp.enableAutoType);
-            }
-            if (exp.enableSearching) {
-                expect(group.enableSearching).assertDeepEquals(exp.enableSearching);
-            }
-            if (exp.lastTopVisibleEntry) {
-                expect(group.lastTopVisibleEntry).assertDeepEquals(exp.lastTopVisibleEntry);
-            }
-            if (exp.groups) {
-                expect(group.groups.length).assertEqual(exp.groups.length);
-                group.groups.forEach((grp, ix) => {
-                    expect(grp.parentGroup).assertEqual(group);
-                    assertGroupEquals(grp, exp.groups[ix]);
-                });
-            }
-            if (exp.entries) {
-                expect(group.entries.length).assertEqual(exp.entries.length);
-                group.entries.forEach((entry, ix) => {
-                    expect(entry.parentGroup).assertEqual(group);
-                    assertEntryEquals(entry, exp.entries[ix]);
-                });
-            }
-        }
-
-        function assertEntryEquals(entry: kdbxweb.KdbxEntry, exp: any) {
-            if (exp.uuid) {
-                expect(entry.uuid).assertDeepEquals(exp.uuid);
-            }
-            if (exp.icon) {
-                expect(entry.icon).assertDeepEquals(exp.icon);
-            }
-            if (exp.customIcon) {
-                expect(entry.customIcon).assertDeepEquals(exp.customIcon);
-            }
-            if (exp.fgColor) {
-                expect(entry.fgColor).assertDeepEquals(exp.fgColor);
-            }
-            if (exp.bgColor) {
-                expect(entry.bgColor).assertDeepEquals(exp.bgColor);
-            }
-            if (exp.overrideUrl) {
-                expect(entry.overrideUrl).assertDeepEquals(exp.overrideUrl);
-            }
-            if (exp.tags) {
-                expect(entry.tags).assertDeepEquals(exp.tags);
-            }
-            if (exp.modified) {
-                expect(entry.times.lastModTime).assertDeepEquals(exp.modified);
-            }
-            if (exp.fields) {
-                expect([...entry.fields.entries()]).assertDeepEquals([...exp.fields.entries()]);
-            }
-            if (exp.binaries) {
-                expect(entry.binaries).assertDeepEquals(exp.binaries);
-            }
-            if (exp.history) {
-                expect(entry.history.length).assertEqual(exp.history.length);
-                entry.history.forEach((historyEntry, ix) => {
-                    assertEntryEquals(historyEntry, exp.history[ix]);
-                });
-            }
-        }
-
-        function tick() {
-            const dt = new Date();
-            while (new Date() <= dt) {
-                continue;
-            }
-        }
     });
 }
 
+function getTestDbStructure(): ESObject {
+    // @ark-ignore
+    const exp:ESObject = {
+        meta: {
+            name: 'name',
+            nameChanged: dt.created,
+            desc: 'desc',
+            descChanged: dt.created,
+            defaultUser: 'user',
+            defaultUserChanged: dt.created,
+            mntncHistoryDays: 10,
+            keyChanged: dt.created,
+            keyChangeRec: 100,
+            keyChangeForce: 200,
+            recycleBinEnabled: true,
+            recycleBinUuid: id.trash,
+            recycleBinChanged: dt.created,
+            entryTemplatesGroup: id.tpl,
+            entryTemplatesGroupChanged: dt.created,
+            historyMaxItems: 10,
+            historyMaxSize: 10000,
+            customIcons: new Map<string, kdbxweb.KdbxCustomIcon>(),
+            customData: new Map<string, kdbxweb.KdbxCustomDataItem>([
+                ['cd1', { value: 'data1' }]
+            ])
+        } as ESObject,
+        binaries: new kdbxweb.KdbxBinaries(),
+        del: {} as Record<string, Date | undefined>,
+        root: {
+            uuid: id.gRoot,
+            name: 'root',
+            notes: 'notes',
+            icon: 1,
+            customIcon: id.icon1,
+            modified: dt.upd1,
+            expanded: false,
+            defaultAutoTypeSeq: 'seq',
+            enableAutoType: true,
+            enableSearching: true,
+            lastTopVisibleEntry: null,
+            groups: [
+                {
+                    uuid: id.trash,
+                    name: 'trash',
+                    groups: [],
+                    entries: []
+                } as ESObject ,
+                {
+                    uuid: id.g1,
+                    name: 'g1',
+                    entries: [],
+                    groups: [
+                        {
+                            uuid: id.g11,
+                            name: 'g11',
+                            groups: [
+                                {
+                                    uuid: id.g111,
+                                    name: 'g111',
+                                    groups: [],
+                                    entries: []
+                                } as ESObject ,
+                                {
+                                    uuid: id.g112,
+                                    name: 'g112',
+                                    groups: [],
+                                    entries: []
+                                } as ESObject
+                            ] as ESObject[]
+                        },
+                        {
+                            uuid: id.g12,
+                            name: 'g12',
+                            groups: [],
+                            entries: []
+                        } as ESObject
+                    ] as ESObject[]
+                },
+                {
+                    uuid: id.g2,
+                    name: 'g2',
+                    groups: [],
+                    entries: []
+                } as ESObject,
+                {
+                    uuid: id.g3,
+                    name: 'g3',
+                    groups: [
+                        {
+                            uuid: id.g31,
+                            name: 'g31',
+                            groups: [],
+                            entries: []
+                        } as ESObject
+                    ] as ESObject[]
+                }
+            ] as ESObject [],
+            entries: [
+                {
+                    uuid: id.er1,
+                    icon: 2,
+                    customIcon: id.icon2,
+                    fgColor: '#ff0000',
+                    bgColor: '#00ff00',
+                    overrideUrl: '123',
+                    tags: ['tags'],
+                    modified: dt.upd3,
+                    fields: new Map([
+                        ['Title', 'er1'],
+                        ['Password', 'pass']
+                    ]),
+                    binaries: new Map([['bin1', { ref: id.bin1 } as ESObject]]),
+                    history: [
+                        {
+                            modified: dt.upd1,
+                            tags: ['tags1']
+                        },
+                        {
+                            modified: dt.upd2,
+                            tags: ['tags2']
+                        }
+                    ] as ESObject[]
+                }
+            ] as ESObject[]
+        } as ESObject
+    };
+    exp.del[id.eDel.id] = dt.upd1;
+    exp.binaries.addWithHash({ hash: id.bin1.id, value: bin.bin1 });
+    exp.meta.customIcons.set(id.icon1.id, { data: bin.icon1 });
+    exp.meta.customIcons.set(id.icon2.id, { data: bin.icon2 });
+    return exp;
+}
+
+function getTestDb() {
+    const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
+    const db = kdbxweb.Kdbx.create(cred, 'demo');
+
+    db.meta._name = 'name';
+    db.meta.nameChanged = dt.created;
+    db.meta._desc = 'desc';
+    db.meta.descChanged = dt.created;
+    db.meta._defaultUser = 'user';
+    db.meta.defaultUserChanged = dt.created;
+    db.meta._mntncHistoryDays = 10;
+    db.meta.settingsChanged = dt.created;
+    db.meta.keyChanged = dt.created;
+    db.meta._keyChangeRec = 100;
+    db.meta._keyChangeForce = 200;
+    db.meta._recycleBinEnabled = true;
+    db.meta._recycleBinUuid = id.trash;
+    db.meta.recycleBinChanged = dt.created;
+    db.meta._entryTemplatesGroup = id.tpl;
+    db.meta.entryTemplatesGroupChanged = dt.created;
+    db.meta._historyMaxItems = 10;
+    db.meta._historyMaxSize = 10000;
+    db.meta.customIcons.set(id.icon1.id, { data: bin.icon1 });
+    db.meta.customIcons.set(id.icon2.id, { data: bin.icon2 });
+    db.meta.customData.set('cd1', { value: 'data1' });
+    db.meta._editState = undefined;
+    db.binaries.addWithHash({ hash: id.bin1.id, value: bin.bin1 });
+
+    const root = db.getDefaultGroup();
+    root.uuid = id.gRoot;
+    root.name = 'root';
+    root.notes = 'notes';
+    root.icon = 1;
+    root.customIcon = id.icon1;
+    root.times.lastModTime = dt.upd1;
+    root.times.locationChanged = dt.upd1;
+    root.expanded = false;
+    root.defaultAutoTypeSeq = 'seq';
+    root.enableAutoType = true;
+    root.enableSearching = true;
+    root.lastTopVisibleEntry = undefined;
+
+    const recycleBin = root.groups[0];
+    recycleBin.uuid = id.trash;
+    recycleBin.name = 'trash';
+    recycleBin.times.lastModTime = dt.upd1;
+    recycleBin.times.locationChanged = dt.upd1;
+
+    let entry = db.createEntry(root);
+    entry.uuid = id.eDel;
+    db.move(entry, undefined);
+    db.deletedObjects[0].deletionTime = dt.upd1;
+
+    entry = db.createEntry(root);
+    entry.uuid = id.er1;
+    entry.icon = 2;
+    entry.customIcon = id.icon2;
+    entry.fgColor = '#ff0000';
+    entry.bgColor = '#00ff00';
+    entry.overrideUrl = '123';
+    entry.tags = ['tags1'];
+    entry.times.lastModTime = dt.upd3;
+    entry.times.locationChanged = dt.upd1;
+    entry.fields = new Map([
+        ['Title', 'er1'],
+        ['Password', 'pass']
+    ]);
+    entry.binaries.set('bin1', { hash: id.bin1.id, value: bin.bin1 });
+    entry.pushHistory();
+    entry.tags = ['tags2'];
+    entry.history[0].times.lastModTime = dt.upd1;
+    entry.pushHistory();
+    entry.tags = ['tags'];
+    entry.history[1].times.lastModTime = dt.upd2;
+    entry._editState = undefined;
+
+    const group1 = db.createGroup(root, 'g1');
+    group1.uuid = id.g1;
+    group1.times.lastModTime = group1.times.locationChanged = dt.upd1;
+    const group11 = db.createGroup(group1, 'g11');
+    group11.uuid = id.g11;
+    group11.times.lastModTime = group11.times.locationChanged = dt.upd1;
+    const group111 = db.createGroup(group11, 'g111');
+    group111.uuid = id.g111;
+    group111.times.lastModTime = group111.times.locationChanged = dt.upd1;
+    const group112 = db.createGroup(group11, 'g112');
+    group112.uuid = id.g112;
+    group112.times.lastModTime = group112.times.locationChanged = dt.upd1;
+    const group12 = db.createGroup(group1, 'g12');
+    group12.uuid = id.g12;
+    group12.times.lastModTime = group12.times.locationChanged = dt.upd1;
+    const group2 = db.createGroup(root, 'g2');
+    group2.uuid = id.g2;
+    group2.times.lastModTime = group2.times.locationChanged = dt.upd1;
+    const group3 = db.createGroup(root, 'g3');
+    group3.uuid = id.g3;
+    group3.times.lastModTime = group3.times.locationChanged = dt.upd1;
+    const group31 = db.createGroup(group3, 'g31');
+    group31.uuid = id.g31;
+    group31.times.lastModTime = group31.times.locationChanged = dt.upd1;
+
+    return db;
+}
+
+function assertDbEquals(db: kdbxweb.Kdbx, exp: ESObject) {
+    if (exp.meta) {
+        if (exp.meta.name) {
+            expect(db.meta.name).assertDeepEquals(exp.meta.name);
+        }
+        if (exp.meta.nameChanged) {
+            expect(db.meta.nameChanged).assertDeepEquals(exp.meta.nameChanged);
+        }
+        if (exp.meta.desc) {
+            expect(db.meta.desc).assertDeepEquals(exp.meta.desc);
+        }
+        if (exp.meta.descChanged) {
+            expect(db.meta.descChanged).assertDeepEquals(exp.meta.descChanged);
+        }
+        if (exp.meta.defaultUser) {
+            expect(db.meta.defaultUser).assertDeepEquals(exp.meta.defaultUser);
+        }
+        if (exp.meta.defaultUserChanged) {
+            expect(db.meta.defaultUserChanged).assertDeepEquals(exp.meta.defaultUserChanged);
+        }
+        if (exp.meta.mntncHistoryDays) {
+            expect(db.meta.mntncHistoryDays).assertDeepEquals(exp.meta.mntncHistoryDays);
+        }
+        if (exp.meta.settingsChanged) {
+            expect(db.meta.settingsChanged).assertDeepEquals(exp.meta.settingsChanged);
+        }
+        if (exp.meta.keyChanged) {
+            expect(db.meta.keyChanged).assertDeepEquals(exp.meta.keyChanged);
+        }
+        if (exp.meta.keyChangeRec) {
+            expect(db.meta.keyChangeRec).assertDeepEquals(exp.meta.keyChangeRec);
+        }
+        if (exp.meta.keyChangeForce) {
+            expect(db.meta.keyChangeForce).assertDeepEquals(exp.meta.keyChangeForce);
+        }
+        if (exp.meta.recycleBinEnabled) {
+            expect(db.meta.recycleBinEnabled).assertDeepEquals(exp.meta.recycleBinEnabled);
+        }
+        if (exp.meta.recycleBinUuid) {
+            expect(db.meta.recycleBinUuid).assertDeepEquals(exp.meta.recycleBinUuid);
+        }
+        if (exp.meta.recycleBinChanged) {
+            expect(db.meta.recycleBinChanged).assertDeepEquals(exp.meta.recycleBinChanged);
+        }
+        if (exp.meta.entryTemplatesGroup) {
+            expect(db.meta.entryTemplatesGroup).assertDeepEquals(exp.meta.entryTemplatesGroup);
+        }
+        if (exp.meta.entryTemplatesGroupChanged) {
+            expect(db.meta.entryTemplatesGroupChanged).assertDeepEquals(
+                exp.meta.entryTemplatesGroupChanged
+            );
+        }
+        if (exp.meta.historyMaxItems) {
+            expect(db.meta.historyMaxItems).assertDeepEquals(exp.meta.historyMaxItems);
+        }
+        if (exp.meta.historyMaxSize) {
+            expect(db.meta.historyMaxSize).assertDeepEquals(exp.meta.historyMaxSize);
+        }
+        if (exp.meta.customData) {
+            expect(Array.from(db.meta.customData.entries())).assertDeepEquals(
+                Array.from<[string, kdbxweb.KdbxCustomDataItem]>(exp.meta.customData.entries())
+            );
+        }
+        if (exp.meta.customIcons) {
+            expect(Array.from(db.meta.customIcons.entries())).assertDeepEquals(Array.from<[string, kdbxweb.KdbxCustomIcon]>(exp.meta.customIcons.entries()));
+        }
+    }
+    if (exp.binaries) {
+        expect(db.binaries.getAll()).assertDeepEquals(exp.binaries.getAll());
+    }
+    if (exp.del) {
+        expect(db.deletedObjects.length).assertEqual(Object.keys(exp.del).length);
+        const del: Record<string, Date | undefined> = {};
+        for (const d of db.deletedObjects) {
+            del[d.uuid!.id] = d.deletionTime;
+        }
+        expect(del).assertDeepEquals(exp.del);
+    }
+    if (exp.root) {
+        expect(db.getDefaultGroup().parentGroup).assertEqual(undefined);
+        assertGroupEquals(db.getDefaultGroup(), exp.root);
+    }
+}
+
+function assertGroupEquals(group: kdbxweb.KdbxGroup, exp: ESObject) {
+    if (exp.uuid) {
+        expect(group.uuid).assertDeepEquals(exp.uuid);
+    }
+    if (exp.name) {
+        expect(group.name).assertDeepEquals(exp.name);
+    }
+    if (exp.notes) {
+        expect(group.notes).assertDeepEquals(exp.notes);
+    }
+    if (exp.icon) {
+        expect(group.icon).assertDeepEquals(exp.icon);
+    }
+    if (exp.customIcon) {
+        expect(group.customIcon).assertDeepEquals(exp.customIcon);
+    }
+    if (exp.modified) {
+        expect(group.times.lastModTime).assertDeepEquals(exp.modified);
+    }
+    if (exp.expanded) {
+        expect(group.expanded).assertDeepEquals(exp.expanded);
+    }
+    if (exp.defaultAutoTypeSeq) {
+        expect(group.defaultAutoTypeSeq).assertDeepEquals(exp.defaultAutoTypeSeq);
+    }
+    if (exp.enableAutoType) {
+        expect(group.enableAutoType).assertDeepEquals(exp.enableAutoType);
+    }
+    if (exp.enableSearching) {
+        expect(group.enableSearching).assertDeepEquals(exp.enableSearching);
+    }
+    if (exp.lastTopVisibleEntry) {
+        expect(group.lastTopVisibleEntry).assertDeepEquals(exp.lastTopVisibleEntry);
+    }
+    if (exp.groups) {
+        expect(group.groups.length).assertEqual(exp.groups.length);
+        group.groups.forEach((grp, ix) => {
+            expect(grp.parentGroup).assertEqual(group);
+            assertGroupEquals(grp, exp.groups[ix]);
+        });
+    }
+    if (exp.entries) {
+        expect(group.entries.length).assertEqual(exp.entries.length);
+        group.entries.forEach((entry, ix) => {
+            expect(entry.parentGroup).assertEqual(group);
+            assertEntryEquals(entry, exp.entries[ix]);
+        });
+    }
+}
+
+function assertEntryEquals(entry: kdbxweb.KdbxEntry, exp: ESObject) {
+    if (exp.uuid) {
+        expect(entry.uuid).assertDeepEquals(exp.uuid);
+    }
+    if (exp.icon) {
+        expect(entry.icon).assertDeepEquals(exp.icon);
+    }
+    if (exp.customIcon) {
+        expect(entry.customIcon).assertDeepEquals(exp.customIcon);
+    }
+    if (exp.fgColor) {
+        expect(entry.fgColor).assertDeepEquals(exp.fgColor);
+    }
+    if (exp.bgColor) {
+        expect(entry.bgColor).assertDeepEquals(exp.bgColor);
+    }
+    if (exp.overrideUrl) {
+        expect(entry.overrideUrl).assertDeepEquals(exp.overrideUrl);
+    }
+    if (exp.tags) {
+        expect(entry.tags).assertDeepEquals(exp.tags);
+    }
+    if (exp.modified) {
+        expect(entry.times.lastModTime).assertDeepEquals(exp.modified);
+    }
+    if (exp.fields) {
+        expect(Array.from(entry.fields.entries())).assertDeepEquals(Array.from<[string, kdbxweb.KdbxEntryField]>(exp.fields.entries()));
+    }
+    if (exp.binaries) {
+        expect(entry.binaries).assertDeepEquals(exp.binaries);
+    }
+    if (exp.history) {
+        expect(entry.history.length).assertEqual(exp.history.length);
+        entry.history.forEach((historyEntry, ix) => {
+            assertEntryEquals(historyEntry, exp.history[ix]);
+        });
+    }
+}
+
+function tick() {
+    const dt = new Date();
+    while (new Date() <= dt) {
+        continue;
+    }
+}
+
+
+interface DateContainer {
+    readonly pre1: Date;
+    readonly created: Date;
+    readonly upd1: Date;
+    readonly upd2: Date;
+    readonly upd3: Date;
+    readonly upd4: Date;
+    readonly upd5: Date;
+    readonly upd6: Date;
+}
+interface IdContainer {
+    readonly trash: kdbxweb.KdbxUuid;
+    readonly name: kdbxweb.KdbxUuid;
+    readonly tpl: kdbxweb.KdbxUuid;
+    readonly eDel: kdbxweb.KdbxUuid;
+    readonly eDel1: kdbxweb.KdbxUuid;
+    readonly icon1: kdbxweb.KdbxUuid;
+    readonly icon2: kdbxweb.KdbxUuid;
+    readonly cd1: kdbxweb.KdbxUuid;
+    readonly bin1: kdbxweb.KdbxUuid;
+    readonly bin2: kdbxweb.KdbxUuid;
+    readonly bin3: kdbxweb.KdbxUuid;
+    readonly bin4: kdbxweb.KdbxUuid;
+    readonly gRoot: kdbxweb.KdbxUuid;
+    readonly g1: kdbxweb.KdbxUuid;
+    readonly g11: kdbxweb.KdbxUuid;
+    readonly g111: kdbxweb.KdbxUuid;
+    readonly g112: kdbxweb.KdbxUuid;
+    readonly g12: kdbxweb.KdbxUuid;
+    readonly g2: kdbxweb.KdbxUuid;
+    readonly g3: kdbxweb.KdbxUuid;
+    readonly g31: kdbxweb.KdbxUuid;
+    readonly g4: kdbxweb.KdbxUuid;
+    readonly g5: kdbxweb.KdbxUuid;
+    readonly er1:kdbxweb.KdbxUuid;
+}
+
+interface BinContainer {
+  readonly bin1: Uint8Array;
+  readonly bin2: Uint8Array;
+  readonly bin3: Uint8Array;
+  readonly bin4: Uint8Array;
+  readonly icon1: Uint8Array;
+  readonly icon2: Uint8Array;
+}
