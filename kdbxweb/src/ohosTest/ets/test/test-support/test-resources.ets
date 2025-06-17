@@ -1,7 +1,5 @@
 import { ByteUtils } from '../../../../main/ets/index';
 import fs from '@ohos.file.fs';
-import util from '@ohos.util';
-
 
 export class TestResources {
   static demoKdbx: ArrayBuffer = TestResources.readFile('demo.kdbx');
@@ -34,8 +32,7 @@ export class TestResources {
   static kdbx41: ArrayBuffer = TestResources.readFile('KDBX4.1.kdbx');
 
   public static readFile(name: string): ArrayBuffer {
-    let path = '../../../resources/rawfile/' + name;
-
+    let path = '/resources/rawfile/' + name;
     // 3. 打开文件
     const file: fs.File = fs.openSync(path, fs.OpenMode.READ_ONLY);
     // 4. 获取文件大小

@@ -120,6 +120,11 @@ It's not compiled into the library because there's no universal way to provide a
 
 <br />
 
+###  Install
+```shell
+ohpm install kdbxweb
+```
+
 ## Usage
 
 This section gives usage examples on how you can implement kdbxweb into your project.
