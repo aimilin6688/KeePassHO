@@ -177,7 +177,7 @@ export default function ByteUtilsTest() {
             });
         });
 
-        describe('arrayBufferToWordArray and wordArrayToArrayBuffer', () => {
+        describe('arrayBufferToWordArray', () => {
             it('converts ArrayBuffer to WordArray', 0, () => {
                 const testData = new Uint8Array([1, 2, 3, 4, 5]);
                 const buffer = testData.buffer;
@@ -261,7 +261,7 @@ export default function ByteUtilsTest() {
             });
         });
 
-        describe('base64ToBytes and bytesToBase64', () => {
+        describe('Base64Convert', () => {
             it('converts base64 to bytes', 0, () => {
                 const base64Str = 'SGVsbG8gV29ybGQ='; // "Hello World"
                 const bytes = ByteUtils.base64ToBytes(base64Str);
@@ -287,7 +287,7 @@ export default function ByteUtilsTest() {
             });
         });
 
-        describe('hexToBytes and bytesToHex', () => {
+        describe('HexToBytes', () => {
             it('converts hex to bytes', 0, () => {
                 const hexStr = '48656c6c6f20576f726c64'; // "Hello World"
                 const bytes = ByteUtils.hexToBytes(hexStr);
@@ -319,7 +319,7 @@ export default function ByteUtilsTest() {
             });
         });
 
-        describe('bytesToString and stringToBytes', () => {
+        describe('bytesToString', () => {
             it('converts basic ASCII string', 0, () => {
                 const text = 'Hello World';
                 const bytes = ByteUtils.stringToBytes(text);
@@ -346,7 +346,7 @@ export default function ByteUtilsTest() {
             it('handles empty string', 0, () => {
                 const text = '';
                 const bytes = ByteUtils.stringToBytes(text);
-                expect(bytes).assertUndefined();
+                expect(bytes).assertDeepEquals(new Uint8Array(0));
                 const resultText = ByteUtils.bytesToString(bytes);
                 expect(resultText).assertEqual(text);
             });
