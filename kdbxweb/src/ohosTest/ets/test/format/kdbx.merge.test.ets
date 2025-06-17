@@ -753,7 +753,7 @@ export default function KdbxMergeTest() {
                 ['Another', 'field'],
                 ['Protected', prVal]
             ]);
-            exp.root.entries[0].binaries.set('bin1', { ref: id.bin1 });
+            exp.root.entries[0].binaries.set('bin1', { hash: id.bin1.id, value: bin.bin1 });
             exp.root.entries[0].binaries.set('bin2', bin.bin2);
             exp.root.entries[0].binaries.set('ab', ab);
             exp.root.entries[0].history.push({ modified: dt.upd3, tags: ['tags'] });
@@ -818,7 +818,7 @@ export default function KdbxMergeTest() {
                 ['Another', 'field'],
                 ['Protected', prVal]
             ]);
-            exp.root.entries[0].binaries.set('bin1', { ref: id.bin1 });
+            exp.root.entries[0].binaries.set('bin1', { hash: id.bin1.id, value: bin.bin1 });
             exp.root.entries[0].binaries.set('bin2', bin.bin2);
             exp.root.entries[0].binaries.set('ab', ab);
             exp.root.entries[0].history.push({ modified: dt.upd3, tags: ['tags'] });
@@ -1080,7 +1080,7 @@ function getTestDbStructure(): ESObject {
                         ['Title', 'er1'],
                         ['Password', 'pass']
                     ]),
-                    binaries: new Map([['bin1', { ref: id.bin1 } as ESObject]]),
+                    binaries: new Map([['bin1', { hash: id.bin1.id, value: bin.bin1 } as ESObject]]),
                     history: [
                         {
                             modified: dt.upd1,
