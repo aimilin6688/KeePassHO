@@ -12,7 +12,7 @@ import KdbxErrorTest from './errors/kdbx-error.test';
 
 
 import KdbxMergeTest from './format/kdbx.merge.test';
-// import KdbxTest from './format/kdbx.test';
+import KdbxTest from './format/kdbx.test';
 import KdbxBinariesTest from './format/kdbx-binaries.test';
 import KdbxCredentialsTest from './format/kdbx-credentials.test';
 import KdbxCustomDataTest from './format/kdbx-custom-data.test';
@@ -25,7 +25,6 @@ import ByteUtilsTest from './utils/byte-utils.test';
 import Int64Test from './utils/int64.test';
 import VarDictionaryTest from './utils/var-dictionary.test';
 import XmlUtilsTest from './utils/xml-utils.test';
-// import ResourcesTest from './test-support/test-resources.test';
 import FileUtilsTest from './utils/file-utils.test';
 
 
@@ -46,7 +45,7 @@ export default function testsuite() {
 
   // ------- format tests ----------------
   KdbxMergeTest();
-  // KdbxTest();
+  KdbxTest();
   KdbxBinariesTest();
   KdbxCredentialsTest();
   KdbxCustomDataTest();
@@ -59,6 +58,5 @@ export default function testsuite() {
   Int64Test();
   VarDictionaryTest();
   XmlUtilsTest();
-  // ResourcesTest();
   FileUtilsTest();
 }
