@@ -1,5 +1,5 @@
-import { ByteUtils } from '../../../../main/ets/index';
-import fs from '@ohos.file.fs';
+import { readFileToBuffer } from './file-utils';
+
 
 export class TestResources {
   static demoKdbx: ArrayBuffer = TestResources.readFile('demo.kdbx');
@@ -32,22 +32,7 @@ export class TestResources {
   static kdbx41: ArrayBuffer = TestResources.readFile('KDBX4.1.kdbx');
 
   public static readFile(name: string): ArrayBuffer {
-    let path = '/resources/rawfile/' + name;
-    // 3. 打开文件
-    const file: fs.File = fs.openSync(path, fs.OpenMode.READ_ONLY);
-    // 4. 获取文件大小
-    const stats: fs.Stat = fs.statSync(path);
-    const bufferSize: number = stats.size;
-
-    // 5. 创建缓冲区并读取文件
-    const arrayBuffer: ArrayBuffer = new ArrayBuffer(bufferSize);
-    const readLen: number = fs.readSync(file.fd, arrayBuffer);
-    // 6. 转换为base64
-    const base64Str: string = ByteUtils.bytesToBase64(arrayBuffer);
-
-    // 7. 关闭文件
-    fs.closeSync(file);
-    return  ByteUtils.arrayToBuffer(ByteUtils.base64ToBytes(base64Str));
+    return readFileToBuffer(name);
   }
 }
 

@@ -1,7 +1,7 @@
 {
   "extends": "./conf/tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node", "mocha"],
+    "types": ["node", "mocha", "@ohos"],
     "typeRoots": ["./oh_modules/@types/", "./src/main/ets/types/"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
