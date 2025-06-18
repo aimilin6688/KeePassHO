@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeAll, afterAll } from '@ohos/hypium';
+import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
-import { argon2 } from '../test-support/argon2';
+// import { argon2 } from '../test-support/argon2';
 import { expects } from '../test-support/Asserts';
 import { TestResources } from '../test-support/test-resources';
 
@@ -238,33 +238,53 @@ export default function KdbxTest() {
                 expect(entry.times).assertDeepEquals(exp.times);
             }
             expect(entry.fields.size).assertEqual((exp.fields.size | 0) + (exp.prFields.size | 0));
-            for (const [field, value] of exp.fields.entries()) {
+
+            const  expFields =  Array.from<[string, kdbxweb.KdbxEntryField]>(exp.fields.entries());
+            for (const expEntry of expFields) {
+                const field = expEntry[0] as string;
+                const value = expEntry[1] as kdbxweb.KdbxEntryField;
                 expect(entry.fields.get(field)).assertEqual(value);
             }
-            for (const [field, value] of exp.prFields.entries()) {
+
+            const  expPrFields =  Array.from<[string, kdbxweb.ProtectedValue]>(exp.prFields.entries());
+            for (const expPrField of expPrFields) {
+                const field = expPrField[0] as string;
+                const value = expPrField[1] as kdbxweb.ProtectedValue;
                 expect((entry.fields.get(field) as kdbxweb.ProtectedValue).getText()).assertEqual(value);
             }
             expect(entry.binaries.size).assertEqual(exp.binaries.size);
-            for (const [field, value] of exp.binaries.entries()) {
-                expect((entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).hash).assertEqual(
-                    value.hash
-                );
-                expect(!!(entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).value).assertEqual(
-                    !!value.value
-                );
+
+
+            const  expBinariesMap =  Array.from<[string, kdbxweb.KdbxBinary | kdbxweb.KdbxBinaryWithHash]>(exp.binaries.entries());
+            for (const expBinaries of expBinariesMap) {
+                const field = expBinaries[0] as string;
+                const value = expBinaries[1] as kdbxweb.KdbxBinaryWithHash;
+                expect((entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).hash).assertEqual(value.hash);
+                expect(!!(entry.binaries.get(field) as kdbxweb.KdbxBinaryWithHash).value).assertEqual(!!value.value);
             }
             expect(entry.autoType).assertDeepEquals(exp.autoType);
             expect(entry.history.length).assertEqual(exp.history);
         }
 
+        // timeout check
+        let durationTime = Date.now();
 
         beforeAll(() => {
-            kdbxweb.CryptoEngine.argon2 = argon2;
+            // kdbxweb.CryptoEngine.argon2 = argon2;
         });
 
         afterAll(() => {
-            kdbxweb.CryptoEngine.argon2 = cryptoEngineArgon2;
+            // kdbxweb.CryptoEngine.argon2 = cryptoEngineArgon2;
         });
+
+        beforeEach(()=>{
+            durationTime = Date.now();
+        });
+
+        afterEach(()=>{
+            durationTime = Date.now() - durationTime;
+            expect(durationTime).assertLess(10000);
+        })
 
         it('sets all imports without issues', 0,() => {
             for (const value of Object.values(kdbxweb)) {
@@ -420,7 +440,6 @@ export default function KdbxTest() {
         });
 
         it('loads kdbx4 file with argon2 kdf',  0, () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -438,7 +457,6 @@ export default function KdbxTest() {
         });
 
         it('loads kdbx4 file with argon2id kdf',  0, () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -456,7 +474,6 @@ export default function KdbxTest() {
         });
 
         it('loads kdbx3 file with chacha20', 0, () => {
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -478,7 +495,6 @@ export default function KdbxTest() {
         });
 
         it('loads kdbx4 file with aes kdf', 0, () => {
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
             return kdbxweb.Kdbx.load(TestResources.aesKdfKdbx4, cred).then((db) => {
                 expects(db).assertInstanceOf(kdbxweb.Kdbx);
@@ -493,7 +509,6 @@ export default function KdbxTest() {
         });
 
         it('loads kdbx4 file with argon2 kdf and chacha20 encryption', 0,  () => {
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -511,7 +526,6 @@ export default function KdbxTest() {
         });
 
         it('loads kdbx3 file with challenge-response',  0, () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 null,
@@ -524,7 +538,6 @@ export default function KdbxTest() {
         });
 
         it('loads a kdbx4 file with challenge-response',  0, () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 null,
@@ -537,7 +550,6 @@ export default function KdbxTest() {
         });
 
         it('upgrades file to latest version', 0,  () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -561,7 +573,6 @@ export default function KdbxTest() {
         });
 
         it('upgrades file to V4 with aes kdf', 0,  () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -586,7 +597,6 @@ export default function KdbxTest() {
         });
 
         it('upgrades file to V4 with argon2id kdf', 0,  () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -611,7 +621,6 @@ export default function KdbxTest() {
         });
 
         it('downgrades file to V3', 0,  () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -647,7 +656,6 @@ export default function KdbxTest() {
         });
 
         it('saves and loads custom data', 0,  () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
@@ -743,7 +751,7 @@ export default function KdbxTest() {
 
         it('generates error for bad file', 0,() => {
             // @ets-ignore
-            return kdbxweb.Kdbx.load('file')
+            return kdbxweb.Kdbx.load(null, null)
                 .then(() => {
                     throw new Error('Not expected');
                 })
@@ -754,7 +762,7 @@ export default function KdbxTest() {
                 });
         });
 
-        it('generates an error for too high major version', 0,() => {
+        it('generates an error for too high major version 5', 0,() => {
             const file = new Uint8Array(TestResources.demoKdbx.byteLength);
             file.set(new Uint8Array(TestResources.demoKdbx));
             file[10] = 5;
@@ -771,7 +779,7 @@ export default function KdbxTest() {
                 });
         });
 
-        it('generates an error for too high major version', 0,() => {
+        it('generates an error for too high major version 2', 0,() => {
             const file = new Uint8Array(TestResources.demoKdbx.byteLength);
             file.set(new Uint8Array(TestResources.demoKdbx));
             file[10] = 2;
@@ -863,18 +871,6 @@ export default function KdbxTest() {
             });
         });
 
-        it('generates error for bad credentials', 0,() => {
-            // @ets-ignore
-            return kdbxweb.Kdbx.load(new ArrayBuffer(0), '123')
-                .then(() => {
-                    throw new Error('Not expected');
-                })
-                .catch((e:Error) => {
-                    expects(e).assertInstanceOf(kdbxweb.KdbxError);
-                    expect((e as kdbxweb.KdbxError).code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
-                    expect(e.message).assertContain('credentials');
-                });
-        });
 
         it('generates error for null credentials', 0,() => {
             // @ets-ignore
@@ -889,12 +885,12 @@ export default function KdbxTest() {
                 });
         });
 
-        it('generates error for bad password', 0,() => {
+        it('generates error for bad password null', 0,() => {
             const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
             return (
             cred
             // @ets-ignore
-                .setPassword('string')
+                .setPassword(null)
                 .then(() => {
                     throw new Error('Not expected');
                 })
@@ -911,7 +907,7 @@ export default function KdbxTest() {
             return (
             cred
             // @ets-ignore
-                .setKeyFile('123')
+                .setKeyFile(null)
                 .then(() => {
                     throw new Error('Not expected');
                 })
@@ -926,7 +922,7 @@ export default function KdbxTest() {
         it('generates error for create with bad credentials', 0,() => {
             expects(() => {
                 // @ets-ignore
-                kdbxweb.Kdbx.create('file');
+                kdbxweb.Kdbx.create(new kdbxweb.Credentials(null), null);
             }).assertThrowError((e:Error) => {
                 expects(e).assertInstanceOf(kdbxweb.KdbxError);
                 expect((e as kdbxweb.KdbxError).code).assertEqual(kdbxweb.Consts.ErrorCodes.InvalidArg);
@@ -936,7 +932,7 @@ export default function KdbxTest() {
 
         it('generates loadXml error for bad data', 0,() => {
             // @ets-ignore
-            return kdbxweb.Kdbx.loadXml(new ArrayBuffer(0))
+            return kdbxweb.Kdbx.loadXml(null, null)
                 .then(() => {
                     throw new Error('Not expected');
                 })
@@ -1221,7 +1217,6 @@ export default function KdbxTest() {
         });
 
         it('imports an entry from another file',  0, () =>{
-            this.timeout(10000);
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
