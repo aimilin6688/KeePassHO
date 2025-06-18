@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { KdbxError } from 'kdbxweb';
 
 export default function KdbxErrorTest() {
-  describe('KdbxErrorTest', () => {
+  describe('KdbxError', () => {
     beforeAll(() => {
     })
     beforeEach(() => {
