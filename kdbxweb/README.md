@@ -455,7 +455,9 @@ npm test
 kdbxweb includes these 3rd party libraries:
 - [fflate](https://github.com/101arrowz/fflate)
 - [xmldom](https://github.com/xmldom/xmldom)
-- [crypto-js](https://ohpm.openharmony.cn/#/cn/detail/@ohos%2Fcrypto-js)
+- [crypto-js](https://github.com/brix/crypto-js)
+
+
 <br />
 
 ---
