@@ -1,10 +1,9 @@
 Release notes
 -------------
 
-##### v3.0.0 (2025-06-14)
+##### v2.2.0 (2025-06-14)
 `-` updated dependencies  
 `+` Upgrade directly to HarmonyOS
-
 
 ##### v2.1.1 (2021-09-06)
 `-` updated dependencies
