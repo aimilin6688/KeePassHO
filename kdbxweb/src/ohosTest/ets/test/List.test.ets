@@ -1,3 +1,4 @@
+import Argon2Test from './crypto/argon2.test';
 import ChaCha20Test from './crypto/chacha20.test';
 import CryptoEngineTest from './crypto/crypto-engine.test';
 import HashedBlockTransformTest from './crypto/hashed-block-transform.test';
@@ -30,6 +31,7 @@ import FileUtilsTest from './utils/file-utils.test';
 
 export default function testsuite() {
   // ------- crypto tests ----------------
+  Argon2Test();
   ChaCha20Test();
   CryptoEngineTest();
   HashedBlockTransformTest();
