@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
-// import { argon2 } from '../test-support/argon2';
+import { ohosArgon2 } from '../../../../main/ets/crypto/argon2';
 import { expects } from '../test-support/Asserts';
 import { TestResources } from '../test-support/test-resources';
 
@@ -270,11 +270,11 @@ export default function KdbxTest() {
         let durationTime = Date.now();
 
         beforeAll(() => {
-            // kdbxweb.CryptoEngine.argon2 = argon2;
+            kdbxweb.CryptoEngine.setArgon2Impl(ohosArgon2);
         });
 
         afterAll(() => {
-            // kdbxweb.CryptoEngine.argon2 = cryptoEngineArgon2;
+            kdbxweb.CryptoEngine.argon2 = cryptoEngineArgon2;
         });
 
         beforeEach(()=>{
