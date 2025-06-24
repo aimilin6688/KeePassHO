@@ -1,5 +1,7 @@
 Release notes
 -------------
+##### v2.2.1 (2025-06-24)
+`+` 增加对argon2算法支持
 
 ##### v2.2.0 (2025-06-14)
 `-` updated dependencies  
