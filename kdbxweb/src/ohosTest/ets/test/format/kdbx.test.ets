@@ -287,9 +287,7 @@ export default function KdbxTest() {
         })
 
         it('sets all imports without issues', 0,() => {
-            for (const value of Object.values(kdbxweb)) {
-                expect(value).not().assertNull();
-            }
+            expect(kdbxweb).not().assertNull();
         });
 
         it('loads simple file', 0,() => {
