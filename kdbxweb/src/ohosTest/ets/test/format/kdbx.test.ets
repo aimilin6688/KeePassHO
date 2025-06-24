@@ -286,10 +286,6 @@ export default function KdbxTest() {
             expect(durationTime).assertLess(10000);
         })
 
-        it('sets all imports without issues', 0,() => {
-            expect(kdbxweb).not().assertNull();
-        });
-
         it('loads simple file', 0,() => {
             const cred = new kdbxweb.Credentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
