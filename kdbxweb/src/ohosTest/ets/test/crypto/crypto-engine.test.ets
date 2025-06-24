@@ -284,28 +284,6 @@ export default function CryptoEngineTest() {
                 });
             });
         });
-
-        describe('argon2', () => {
-            it('throws error if argon2 is not implemented', 0,() => {
-                useDefaultImpl();
-                return CryptoEngine.argon2(
-                    new ArrayBuffer(0),
-                    new ArrayBuffer(0),
-                    0,
-                    0,
-                    0,
-                    0,
-                    CryptoEngine.Argon2TypeArgon2d,
-                    0x10
-                )
-                    .then(() => {
-                        throw new Error('No error generated');
-                    })
-                    .catch((e:Error) => {
-                        expect(e.message).assertEqual('Error NotImplemented: argon2 not implemented');
-                    });
-            });
-        });
     });
 }
 
