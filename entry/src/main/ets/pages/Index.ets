@@ -90,9 +90,13 @@ struct Index {
           this.getUIContext().getRouter().pushUrl({ url: 'pages/open/OpenDatabase' })
         })
 
-        this.MainButton($r('app.media.ic_add_file'), '创建新的数据库', () => {
-          this.getUIContext().getRouter().pushUrl({ url: 'pages/open/CreateDatabase' })
-        }).margin({ top: 24 })
+        // 添加间距
+        Column() {
+          this.MainButton($r('app.media.ic_add_file'), '创建新的数据库', () => {
+            this.getUIContext().getRouter().pushUrl({ url: 'pages/open/CreateDatabase' })
+          })
+        }
+        .margin({ top: 24 })
       }
       .width('100%')
       .layoutWeight(1)
