@@ -28,7 +28,6 @@ struct Index {
           .width(24)
           .height(24)
           .margin({ right: 8 })
-          .fillColor($r('app.color.text_primary'))
         Text(text)
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
