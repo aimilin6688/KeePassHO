@@ -1,4 +1,3 @@
-import router from '@ohos.router';
 import ThemeManager from '../common/utils/ThemeManager';
 
 @Entry
@@ -22,7 +21,7 @@ struct Index {
   @State private updateUI: boolean = false;
 
   @Builder
-  MainButton(icon: Resource, text: string, onClick: () => void) {
+  MainButton(icon: Resource, text: string, onClick: () => void){
     Button() {
       Row() {
         Image(icon)
@@ -58,7 +57,7 @@ struct Index {
           .height(24)
           .margin({ right: 16 })
           .onClick(() => {
-            router.pushUrl({ url: 'pages/Settings' })
+            this.getUIContext().getRouter().pushUrl({ url: 'pages/Settings' })
           })
       }
       .width('100%')
@@ -88,13 +87,12 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), '打开数据库', () => {
-          router.pushUrl({ url: 'pages/open/OpenDatabase' })
+          this.getUIContext().getRouter().pushUrl({ url: 'pages/open/OpenDatabase' })
         })
 
         this.MainButton($r('app.media.ic_add_file'), '创建新的数据库', () => {
-          // TODO: 创建新数据库的功能将在后续实现
-          router.pushUrl({ url: 'pages/open/CreateDatabase' })
-        })
+          this.getUIContext().getRouter().pushUrl({ url: 'pages/open/CreateDatabase' })
+        }).margin({ top: 24 })
       }
       .width('100%')
       .layoutWeight(1)
