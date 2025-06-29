@@ -74,7 +74,7 @@ struct OpenDatabase {
         Column() {
           // 打开方式
           Column() {
-            Text('选择打开方式')
+            Text('请选择打开方式')
               .fontSize(14)
               .opacity(0.6)
               .padding({ left: 16, top: 16, bottom: 8 })
