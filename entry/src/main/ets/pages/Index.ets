@@ -1,30 +1,33 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import router from '@ohos.router';
 import ThemeManager from '../common/utils/ThemeManager';
-import {PwGroup} from '../kdbx/models/PwGroup';
+import { KdbxGroup, KdbxUuid, KdbxTimes } from 'kdbxweb'
 
 @Entry
 @Component
 struct Index {
-  @State newGroupName: string = ""
+  @State newGroupName: string | undefined = ""
   @State editingGroupIndex: number = -1
-  @State data: Array<PwGroup> = [
+  @State data: Array<KdbxGroup> = [
     {
-      uuid: new Uint8Array(0),
-      title: '组1',
-      icon: $r('app.media.startIcon'),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+      uuid: KdbxUuid.random(),
+      name: '组1',
+      icon: 11,
+      times: {
+        creationTime: new Date(),
+        lastModTime: new Date(),
+      } as KdbxTimes
+    } as KdbxGroup,
     {
-      uuid: new Uint8Array(1),
-      title: '组2',
-      icon: $r('app.media.startIcon'),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
+      uuid:KdbxUuid.random(),
+      name: '组2',
+      icon: 12,
+      times: {
+        creationTime: new Date(),
+        lastModTime: new Date(),
+      } as KdbxTimes
+    } as KdbxGroup
   ]
-
   dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
@@ -38,11 +41,11 @@ struct Index {
     alignment: DialogAlignment.Default,
     autoCancel: true
   })
-  
+
   @Builder
   SwipeActionButtons(index: number) {
     Row() {
-      Button("编辑", {type:  ButtonType.Normal})
+      Button("编辑", { type: ButtonType.Normal })
         .width(80)
         .height(60)
         .backgroundColor($r('app.color.accent'))
@@ -50,11 +53,11 @@ struct Index {
         .fontSize(14)
         .onClick(() => {
           this.editingGroupIndex = index
-          this.newGroupName = this.data[index].title
+          this.newGroupName = this.data[index].name;
           this.dialogController.open()
         })
-      
-      Button("删除", {type:  ButtonType.Normal})
+
+      Button("删除", { type: ButtonType.Normal })
         .width(80)
         .height(60)
         .backgroundColor($r('app.color.danger'))
@@ -66,7 +69,8 @@ struct Index {
             message: '确定要删除这个分组吗？',
             primaryButton: {
               value: '取消',
-              action: () => {}
+              action: () => {
+              }
             },
             secondaryButton: {
               value: '删除',
@@ -78,25 +82,34 @@ struct Index {
         })
     }
   }
-  
+
   handleAddGroup() {
-    if (!this.newGroupName.trim()) {
+    if (this.newGroupName === undefined ||  !this.newGroupName.trim()) {
       return
     }
 
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
       let oldData = this.data[this.editingGroupIndex]
       // 编辑现有分组
-      this.data.splice(this.editingGroupIndex, 1, {'uuid': oldData.uuid, 'title': this.newGroupName.trim(), 'icon': oldData.icon,  'createdAt': oldData.createdAt, 'updatedAt': new Date()})
+      this.data.splice(this.editingGroupIndex, 1, {
+        'uuid': oldData.uuid,
+        'name': this.newGroupName.trim(),
+        'icon': oldData.icon,
+        'times': {
+          creationTime: oldData.times.creationTime,
+          lastModTime: new Date(),
+        } as KdbxTimes
+      } as KdbxGroup)
     } else {
       // 添加新分组
       this.data.push({
-        uuid: new Uint8Array(Math.random()),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        title: this.newGroupName.trim(),
-        icon: $r('app.media.startIcon')
-      })
+        uuid: KdbxUuid.random(),
+        name: this.newGroupName.trim(),
+        'times': {
+          creationTime: new Date(),
+          lastModTime: new Date(),
+        } as KdbxTimes
+      } as KdbxGroup)
     }
 
     // 重置状态
@@ -143,15 +156,16 @@ struct Index {
         .width('100%')
         .height(56)
         .backgroundColor($r('app.color.card_background'))
+
         List({ space: 8 }) {
-          ForEach(this.data, (itemGroup: PwGroup, index: number) => {
-            ListItem(){
+          ForEach(this.data, (itemGroup: KdbxGroup, index: number) => {
+            ListItem() {
               Row() {
                 Image(itemGroup.icon)
                   .width(40)
                   .height(40)
                   .margin(10)
-                Text(itemGroup.title)
+                Text(itemGroup.name)
                   .fontSize(20)
                   .textAlign(TextAlign.Start)
                   .flexGrow(1)
@@ -172,7 +186,7 @@ struct Index {
                 builder: this.SwipeActionButtons(index)
               }
             })
-          }, (item: PwGroup, index: number) => `${index}-${item.title}`)
+          }, (item: KdbxGroup, index: number) => `${index}-${item.name}`)
         }
         .width('100%')
         .height('100%')
@@ -192,7 +206,7 @@ struct Index {
       .height(60)
       .borderRadius(30)
       .backgroundColor($r('app.color.accent'))
-      .position({right: 12, bottom: 12})
+      .position({ right: 12, bottom: 12 })
       .onClick(() => {
         this.editingGroupIndex = -1
         this.newGroupName = ""
