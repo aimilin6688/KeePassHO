@@ -2,6 +2,10 @@
   "src": [
     "pages/Index",
     "pages/DatabaseShow",
-    "pages/Settings"
+    "pages/Settings",
+    "pages/open/OpenDatabase",
+    "pages/open/LocalFile",
+    "pages/open/WebDAV",
+    "pages/open/CreateDatabase"
   ]
 }
