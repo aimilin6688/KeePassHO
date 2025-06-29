@@ -1,5 +1,6 @@
 {
   "src": [
+    "pages/Index",
     "pages/DatabaseShow",
     "pages/Settings"
   ]
