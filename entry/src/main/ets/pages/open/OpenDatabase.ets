@@ -86,7 +86,7 @@ struct OpenDatabase {
               '本地文件',
               '从设备存储中选择数据库文件',
               () => {
-                router.pushUrl({ url: 'pages/open/LocalFile' })
+                this.getUIContext().getRouter().pushUrl({ url: 'pages/open/LocalFile' })
               }
             )
 
@@ -95,9 +95,10 @@ struct OpenDatabase {
               'WebDAV',
               '从WebDAV服务器打开数据库文件',
               () => {
-                router.pushUrl({ url: 'pages/open/WebDAV' })
+                this.getUIContext().getRouter().pushUrl({ url: 'pages/open/WebDAV' })
               }
             )
+
           }
           .backgroundColor($r('app.color.card_background'))
           .margin({ top: 16 })
