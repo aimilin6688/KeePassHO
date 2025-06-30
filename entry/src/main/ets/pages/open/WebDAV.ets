@@ -1,6 +1,9 @@
+import { Router } from '@kit.ArkUI';
+
 @Entry
 @Component
 struct WebDAV {
+  private router: Router = this.getUIContext().getRouter();
   build() {
     Column() {
       // 顶部导航栏
@@ -11,7 +14,7 @@ struct WebDAV {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.getUIContext().getRouter().back()
+            this.router.back()
           })
 
         Text('WebDAV')

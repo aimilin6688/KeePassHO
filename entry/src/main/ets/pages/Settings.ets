@@ -1,7 +1,7 @@
 import { ThemeConstants, ThemeMode } from '../common/constants/ThemeConstants';
 import { SettingsService } from '../services/SettingsService';
-import router from '@ohos.router';
 import { ConfigurationConstant } from '@kit.AbilityKit';
+import { Router } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -11,6 +11,7 @@ struct Settings {
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
   private settingsService: SettingsService = SettingsService.getInstance();
+  private router: Router = this.getUIContext().getRouter();
 
   onColorModeChange(): void {
     // 系统主题变化时应用对应的主题
@@ -45,7 +46,7 @@ struct Settings {
           .height(24)
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.getUIContext().getRouter().back())
+          .onClick(() => this.router.back())
         Text('设置')
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
