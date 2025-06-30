@@ -1,6 +1,5 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { IFileStorage, FileInfo } from '../IFileStorage';
-import { fileUri } from '@kit.CoreFileKit';
 
 /**
  * 本地文件存储实现
