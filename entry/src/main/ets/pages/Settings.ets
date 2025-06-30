@@ -45,7 +45,7 @@ struct Settings {
           .height(24)
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
-          .onClick(() => router.back())
+          .onClick(() => this.getUIContext().getRouter().back())
         Text('设置')
           .fontSize(20)
           .fontWeight(FontWeight.Medium)

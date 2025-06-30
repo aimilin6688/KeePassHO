@@ -56,7 +56,7 @@ struct OpenDatabase {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            router.back()
+            this.getUIContext().getRouter().back()
           })
 
         Text('打开数据库')
