@@ -1,8 +1,11 @@
 import router from '@ohos.router';
+import { Router } from '@kit.ArkUI';
 
 @Entry
 @Component
 struct OpenDatabase {
+  private router: Router = this.getUIContext().getRouter();
+
   @Builder
   OpenMethodButton(icon: Resource, title: string, description: string, onClick: () => void) {
     Button() {
@@ -56,7 +59,7 @@ struct OpenDatabase {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.getUIContext().getRouter().back()
+            this.router.back()
           })
 
         Text('打开数据库')
@@ -86,7 +89,7 @@ struct OpenDatabase {
               '本地文件',
               '从设备存储中选择数据库文件',
               () => {
-                this.getUIContext().getRouter().pushUrl({ url: 'pages/open/LocalFile' })
+                this.router.pushUrl({ url: 'pages/open/LocalFile' })
               }
             )
 
@@ -95,7 +98,7 @@ struct OpenDatabase {
               'WebDAV',
               '从WebDAV服务器打开数据库文件',
               () => {
-                this.getUIContext().getRouter().pushUrl({ url: 'pages/open/WebDAV' })
+                this.router.pushUrl({ url: 'pages/open/WebDAV' })
               }
             )
 

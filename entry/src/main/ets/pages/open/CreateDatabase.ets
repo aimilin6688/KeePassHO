@@ -1,8 +1,10 @@
 import router from '@ohos.router';
+import { Router } from '@kit.ArkUI';
 
 @Entry
 @Component
 struct CreateDatabase {
+  private router: Router = this.getUIContext().getRouter();
   build() {
     Column() {
       // 顶部导航栏
@@ -13,7 +15,7 @@ struct CreateDatabase {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.getUIContext().getRouter().back()
+            this.router.back()
           })
 
         Text('创建新数据库')
