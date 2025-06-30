@@ -1,8 +1,10 @@
 import ThemeManager from '../common/utils/ThemeManager';
+import { Router } from '@kit.ArkUI';
 
 @Entry
 @Component
 struct Index {
+  private router: Router = this.getUIContext().getRouter();
   aboutToAppear() {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
@@ -56,7 +58,7 @@ struct Index {
           .height(24)
           .margin({ right: 16 })
           .onClick(() => {
-            this.getUIContext().getRouter().pushUrl({ url: 'pages/Settings' })
+            this.router.pushUrl({ url: 'pages/Settings' })
           })
       }
       .width('100%')
@@ -86,13 +88,13 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), '打开数据库', () => {
-          this.getUIContext().getRouter().pushUrl({ url: 'pages/open/OpenDatabase' })
+          this.router.pushUrl({ url: 'pages/open/OpenDatabase' })
         })
 
         // 添加间距
         Column() {
           this.MainButton($r('app.media.ic_add_file'), '创建新的数据库', () => {
-            this.getUIContext().getRouter().pushUrl({ url: 'pages/open/CreateDatabase' })
+            this.router.pushUrl({ url: 'pages/open/CreateDatabase' })
           })
         }
         .margin({ top: 24 })
