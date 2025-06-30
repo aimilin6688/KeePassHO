@@ -1,5 +1,6 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { IFileStorage, FileInfo } from '../IFileStorage';
+import { fileUri } from '@kit.CoreFileKit';
 
 /**
  * 本地文件存储实现
@@ -78,7 +79,10 @@ export class LocalFileStorage implements IFileStorage {
    */
   async getFileInfo(path: string): Promise<FileInfo> {
     try {
-      const stat = await fs.stat(path);
+      // 打开文件
+      const file = await fs.open(path, fs.OpenMode.READ_ONLY);
+      const stat = await fs.stat(file.fd);
+      await fs.close(file.fd);
       return {
         name: path.split('/').pop() || '',
         size: stat.size,
