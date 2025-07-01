@@ -5,6 +5,10 @@
       "value": "#FFFFFF"
     },
     {
+      "name": "primary",
+      "value": "#000000"
+    },
+    {
       "name": "background_primary",
       "value": "#F1F3F5"
     },
