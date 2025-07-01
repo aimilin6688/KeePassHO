@@ -1,5 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue, ByteUtils } from 'kdbxweb';
 import { FileParam, DbFileParam, AuthType } from '../services/TypeDefined';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
@@ -37,12 +37,38 @@ struct Password {
     return true;
   }
 
+  // 获取认证类型的索引，用于Select组件
+  private getAuthTypeIndex(): number {
+    switch (this.authType) {
+      case AuthType.PASSWORD:
+        return 0;
+      case AuthType.PASSWORD_KEYFILE:
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  // 获取认证类型的文本描述，用于Select组件
+  private getAuthTypeText(): string {
+    switch (this.authType) {
+      case AuthType.PASSWORD:
+        return '仅密码';
+      case AuthType.PASSWORD_KEYFILE:
+        return '密码 + 密钥文件';
+      default:
+        return '仅密码';
+    }
+  }
+
   aboutToAppear() {
     // 获取从LocalFile页面传递的参数
     const params = this.router.getParams() as FileParam;
     this.filePath = params?.filePath ?? '';
     this.fileContent = params?.fileContent ?? null;
     this.fileName = params?.fileName ?? '未知文件';
+
+    console.info('文件路径', ByteUtils.bytesToBase64(this.fileContent));
 
     if (!this.filePath || !this.fileContent) {
       this.promptAction.showToast({
@@ -65,6 +91,7 @@ struct Password {
       // 创建凭证
       let credentials: KdbxCredentials;
       if (this.authType === AuthType.PASSWORD_KEYFILE && this.keyFileContent) {
+        console.info('使用密码和密钥文件进行验证', this.keyFilePath);
         // 使用密码和密钥文件
         credentials = new KdbxCredentials(
           ProtectedValue.fromString(this.password),
@@ -74,7 +101,9 @@ struct Password {
         // 仅使用密码
         credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
       }
-
+      console.log('使用密码进行验证', this.password, this.keyFilePath)
+      console.info('keyFileContent', ByteUtils.bytesToBase64(this.keyFileContent));
+      console.info('fileContent', ByteUtils.bytesToBase64(this.fileContent));
       // 加载数据库
       const database = await Kdbx.load(this.fileContent, credentials);
       console.info('数据库加载成功');
@@ -85,7 +114,7 @@ struct Password {
 
       if (error instanceof KdbxError) {
         if (error.code === 'InvalidKey') {
-          errorMessage = this.authType === 'password_keyfile' ? 
+          errorMessage = this.authType === AuthType.PASSWORD_KEYFILE ? 
             '密码或密钥文件错误，请重试' : '密码错误，请重试';
         } else {
           errorMessage = `数据库错误: ${error.message}`;
@@ -145,6 +174,37 @@ struct Password {
   /**
    * 验证密码并打开数据库
    */
+  // 密钥文件选择器组件
+  @Builder
+  KeyFileSelector() {
+    Column() {
+      Text('密钥文件')
+        .fontSize(16)
+        .fontColor($r('app.color.text_primary'))
+        .margin({ bottom: 16 })
+        .alignSelf(ItemAlign.Start)
+
+      Button(this.keyFileName ? '重新选择密钥文件' : '选择密钥文件')
+        .width('100%')
+        .height(48)
+        .backgroundColor($r('app.color.button_background'))
+        .onClick(() => {
+          this.selectKeyFile();
+        })
+
+      if (this.keyFileName) {
+        Text(this.keyFileName)
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+          .margin({ top: 8 })
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+    }
+    .width('90%')
+    .padding({ left: 16, right: 16, bottom: 24 })
+  }
+
   async verifyAndOpenDatabase() {
     // 验证输入
     if (!this.password) {
@@ -155,7 +215,7 @@ struct Password {
       return;
     }
 
-    if (this.authType === 'password_keyfile' && !this.keyFileContent) {
+    if (this.authType === AuthType.PASSWORD_KEYFILE && !this.keyFileContent) {
       this.promptAction.showToast({
         message: '请选择密钥文件',
         duration: 2000
@@ -236,37 +296,27 @@ struct Password {
             .margin({ bottom: 16 })
             .alignSelf(ItemAlign.Start)
 
-          Row() {
-            Radio({ value: 'password', group: 'authType' })
-              .checked(this.authType === AuthType.PASSWORD)
-              .onChange((isChecked: boolean) => {
-                if (isChecked) {
-                  this.authType = AuthType.PASSWORD;
-                  this.keyFileContent = null;
-                  this.keyFilePath = '';
-                  this.keyFileName = '';
-                }
-              })
-            Text('仅密码')
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .margin({ left: 8 })
-          }
-          .margin({ bottom: 12 })
-
-          Row() {
-            Radio({ value: 'password_keyfile', group: 'authType' })
-              .checked(this.authType === AuthType.PASSWORD_KEYFILE)
-              .onChange((isChecked: boolean) => {
-                if (isChecked) {
-                  this.authType = AuthType.PASSWORD_KEYFILE;
-                }
-              })
-            Text('密码 + 密钥文件')
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .margin({ left: 8 })
-          }
+          Select([
+            { value: '仅密码' },
+            { value: '密码 + 密钥文件' }
+          ])
+            .selected(this.getAuthTypeIndex())
+            .value(this.getAuthTypeText())
+            .font({ size: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .selectedOptionFont({ size: 16 })
+            .optionFont({ size: 16 })
+            .width('100%')
+            .onSelect((index: number, value: string) => {
+              if (index === 0) {
+                this.authType = AuthType.PASSWORD;
+                this.keyFileContent = null;
+                this.keyFilePath = '';
+                this.keyFileName = '';
+              } else if (index === 1) {
+                this.authType = AuthType.PASSWORD_KEYFILE;
+              }
+            })
         }
         .width('90%')
         .padding({ left: 16, right: 16, bottom: 24 })
@@ -292,31 +342,11 @@ struct Password {
           width: { bottom: 1 },
           color: $r('app.color.divider')
         })
+        .margin({ bottom: 16 })
 
         // 密钥文件选择（仅在选择密码+密钥文件时显示）
-        if (this.authType === 'password_keyfile') {
-          Column() {
-            Button(this.keyFileName ? '重新选择密钥文件' : '选择密钥文件')
-              .width('90%')
-              .height(48)
-              .margin({ top: 16 })
-              .backgroundColor($r('app.color.text_secondary'))
-              .fontColor($r('app.color.text_primary'))
-              .onClick(() => {
-                this.selectKeyFile();
-              })
-
-            if (this.keyFileName) {
-              Text(this.keyFileName)
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-                .margin({ top: 8 })
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-            }
-          }
-          .width('90%')
-          .margin({ top: 8 })
+        if (this.authType === AuthType.PASSWORD_KEYFILE) {
+          this.KeyFileSelector()
         }
 
         // 确认按钮
