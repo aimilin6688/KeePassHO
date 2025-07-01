@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "KeePassHO"
+    },
+    {
+      "name": "reason",
+      "value": "访问与存储kdbx数据文件"
     }
   ]
 }

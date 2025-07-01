@@ -2,17 +2,19 @@ import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
-import promptAction from '@ohos.promptAction';
-import { Router } from '@kit.ArkUI';
+import { PromptAction, Router } from '@kit.ArkUI';
+import { fileShare } from '@kit.CoreFileKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 @Entry
 @Component
 struct LocalFile {
   @State selectedFile: string = '';
   @State isLoading: boolean = false;
-  private context = this.getUIContext().getHostContext()  as common.UIAbilityContext;
+  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL);
   private router: Router = this.getUIContext().getRouter();
+  private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   /**
    * 打开文件选择器
@@ -23,7 +25,7 @@ struct LocalFile {
       const options = new picker.DocumentSelectOptions();
       options.fileSuffixFilters = ['.kdbx']; // 只显示kdbx文件
       options.maxSelectNumber = 1; // 只允许选择一个文件
-      
+
       const result = await documentPicker.select(options);
       if (result && result.length > 0) {
         this.selectedFile = result[0];
@@ -31,7 +33,7 @@ struct LocalFile {
       }
     } catch (error) {
       console.error(`Failed to pick file: ${error}`);
-      promptAction.showToast({
+      this.promptAction.showToast({
         message: `选择文件失败: ${error}`,
         duration: 2000
       });
@@ -45,26 +47,44 @@ struct LocalFile {
   async loadKdbxFile(path: string) {
     this.isLoading = true;
     try {
-      // 获取文件信息
-      const fileInfo = await this.fileManager.getKdbxFileInfo(path);
-      console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-      
-      // 加载文件内容
-      const content = await this.fileManager.loadKdbxFile(path);
-      console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
-      
-      // 导航到密码输入页面，并传递文件内容
-      this.router.pushUrl({
-        url: 'pages/open/Password',
-        params: {
-          filePath: path,
-          fileContent: content,
-          fileName: fileInfo.name
-        }
+      if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+        this.promptAction.showToast({
+          message: '当前设备不支持文件操作',
+          duration: 2000
+        });
+        return;
+      }
+      // 永久授权文件访问权限
+      let policyInfo: fileShare.PolicyInfo = {
+        uri: path,
+        operationMode: fileShare.OperationMode.WRITE_MODE,
+      };
+      let policies: Array<fileShare.PolicyInfo> = [policyInfo];
+
+      fileShare.persistPermission(policies).then(async () => {
+        // 获取文件信息
+        const fileInfo = await this.fileManager.getKdbxFileInfo(path);
+        console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+
+        // 加载文件内容
+        const content = await this.fileManager.loadKdbxFile(path);
+        console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
+
+        // 导航到密码输入页面，并传递文件内容
+        this.router.pushUrl({
+          url: 'pages/open/Password',
+          params: {
+            filePath: path,
+            fileContent: content,
+            fileName: fileInfo.name
+          }
+        });
+      }).catch((err: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
+        console.error("persistPermission failed with error message: " + err.message + ", error code: " + err.code);
       });
     } catch (error) {
       console.error(`Failed to load KDBX file: ${error}`);
-      promptAction.showToast({
+      this.promptAction.showToast({
         message: `加载文件失败: ${error}`,
         duration: 2000
       });
@@ -104,7 +124,7 @@ struct LocalFile {
             .width(50)
             .height(50)
             .color($r('app.color.text_primary'))
-          
+
           Text('正在加载文件...')
             .fontSize(16)
             .margin({ top: 16 })
@@ -115,7 +135,7 @@ struct LocalFile {
             .width(64)
             .height(64)
             .margin({ top: 40 })
-          
+
           Text(this.selectedFile.split('/').pop() || '')
             .fontSize(18)
             .fontWeight(FontWeight.Medium)
@@ -125,7 +145,7 @@ struct LocalFile {
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('80%')
-          
+
           Button('重新选择文件')
             .margin({ top: 24 })
             .onClick(() => this.openFilePicker())
@@ -136,12 +156,12 @@ struct LocalFile {
             .height(80)
             .margin({ top: 60 })
             .fillColor($r('app.color.text_secondary'))
-          
+
           Text('点击选择KDBX文件')
             .fontSize(16)
             .margin({ top: 16 })
             .fontColor($r('app.color.text_primary'))
-          
+
           Button('选择文件')
             .margin({ top: 24 })
             .onClick(() => this.openFilePicker())
