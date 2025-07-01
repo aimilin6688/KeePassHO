@@ -43,4 +43,22 @@ export interface DbFileParam {
    * 已解密的数据库对象
    */
   database: Kdbx;
+
+  /**
+   * 认证密码文件路径
+   */
+  keyFilePath?: string;
+
+  /**
+   * 认证方式
+   */
+  authType?:AuthType;
+}
+
+/**
+ * 认证方式
+ */
+export enum AuthType{
+  PASSWORD = 'password',
+  PASSWORD_KEYFILE = 'password_keyfile'
 }
