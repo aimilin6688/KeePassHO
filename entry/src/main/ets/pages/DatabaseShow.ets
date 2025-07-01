@@ -1,7 +1,7 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import ThemeManager from '../common/utils/ThemeManager';
 import { Kdbx, KdbxGroup, KdbxUuid, KdbxTimes, ProtectedValue, KdbxError,KdbxCredentials } from 'kdbxweb';
-import { KdbxDbFile } from '../services/TypeDefined';
+import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
 
 @Entry
@@ -14,7 +14,6 @@ struct DatabaseShow {
   @State data: Array<KdbxGroup> = [];
 
   private filePath: string = '';
-  private fileContent: ArrayBuffer | null = null;
   private password: string = '';
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
@@ -36,13 +35,13 @@ struct DatabaseShow {
 
   aboutToAppear() {
     // 获取从Password页面传递的参数
-    const params = this.router.getParams() as KdbxDbFile;
+    const params = this.router.getParams() as DbFileParam;
     this.filePath = params?.filePath ?? '';
-    this.fileContent = params?.fileContent ?? null;
     this.password = params?.password ?? '';
     this.fileName = params?.fileName ?? '未知数据库';
+    this.database = params?.database ?? null;
 
-    if (!this.filePath || !this.fileContent || !this.password) {
+    if (!this.database) {
       this.promptAction.showToast({
         message: '无效的数据库信息',
         duration: 2000
@@ -51,31 +50,8 @@ struct DatabaseShow {
       return;
     }
 
-    // 加载数据库
-    this.loadDatabase();
-
-    // 监听主题变化
-    ThemeManager.getInstance().addThemeChangeListener(() => {
-      this.onThemeChanged();
-    });
-  }
-
-  /**
-   * 加载并解密数据库
-   */
-  async loadDatabase() {
     this.isLoading = true;
     try {
-      if (!this.fileContent) {
-        throw new Error('文件内容为空');
-      }
-
-      // 使用kdbxweb库加载数据库
-      const credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
-
-      this.database = await Kdbx.load(this.fileContent, credentials);
-      console.info('数据库加载成功');
-
       // 获取根分组下的所有子分组
       if (this.database.groups && this.database.groups.length > 0) {
         const rootGroup = this.database.getDefaultGroup();
@@ -86,19 +62,9 @@ struct DatabaseShow {
 
       console.info(`加载了 ${this.data.length} 个分组`);
     } catch (error) {
-      console.error(`加载数据库失败: ${error}`);
-      let errorMessage = '加载数据库失败';
-
-      if (error instanceof KdbxError) {
-        if (error.code === 'InvalidKey') {
-          errorMessage = '密码错误，请重试';
-        } else {
-          errorMessage = `数据库错误: ${error.message}`;
-        }
-      }
-
+      console.error(`处理数据库失败: ${error}`);
       this.promptAction.showToast({
-        message: errorMessage,
+        message: `处理数据库失败: ${error}`,
         duration: 2000
       });
 
@@ -109,6 +75,11 @@ struct DatabaseShow {
     } finally {
       this.isLoading = false;
     }
+
+    // 监听主题变化
+    ThemeManager.getInstance().addThemeChangeListener(() => {
+      this.onThemeChanged();
+    });
   }
 
   @Builder
