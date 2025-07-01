@@ -5,6 +5,7 @@ import { StorageType } from '../../services/kdbx/interfaces';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { fileShare } from '@kit.CoreFileKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { FileParam } from '../../services/TypeDefined';
 
 @Entry
 @Component
@@ -77,7 +78,7 @@ struct LocalFile {
             filePath: path,
             fileContent: content,
             fileName: fileInfo.name
-          }
+          } as FileParam
         });
       }).catch((err: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
         console.error("persistPermission failed with error message: " + err.message + ", error code: " + err.code);
