@@ -72,7 +72,7 @@ struct LocalFile {
 
         // 导航到密码输入页面，并传递文件内容
         this.router.pushUrl({
-          url: 'pages/open/Password',
+          url: 'pages/Password',
           params: {
             filePath: path,
             fileContent: content,

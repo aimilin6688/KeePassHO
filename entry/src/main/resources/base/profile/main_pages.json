@@ -3,6 +3,7 @@
     "pages/Index",
     "pages/DatabaseShow",
     "pages/Settings",
+    "pages/Password",
     "pages/open/OpenDatabase",
     "pages/open/LocalFile",
     "pages/open/WebDAV",
