@@ -1,5 +1,6 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { KdbxDbFile } from '../services/TypeDefined';
+import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
+import { FileParam , DbFileParam} from '../services/TypeDefined';
 
 @Entry
 @Component
@@ -15,7 +16,7 @@ struct Password {
 
   aboutToAppear() {
     // 获取从LocalFile页面传递的参数
-    const params = this.router.getParams() as KdbxDbFile;
+    const params = this.router.getParams() as FileParam;
     this.filePath = params?.filePath ?? '';
     this.fileContent = params?.fileContent ?? null;
     this.fileName = params?.fileName ?? '未知文件';
@@ -26,6 +27,40 @@ struct Password {
         duration: 2000
       });
       this.router.back();
+    }
+  }
+
+  /**
+   * 加载并解密数据库
+   */
+  private async loadDatabase(): Promise<Kdbx | null> {
+    try {
+      if (!this.fileContent) {
+        throw new Error('文件内容为空');
+      }
+
+      // 使用kdbxweb库加载数据库
+      const credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
+      const database = await Kdbx.load(this.fileContent, credentials);
+      console.info('数据库加载成功');
+      return database;
+    } catch (error) {
+      console.error(`加载数据库失败: ${error}`);
+      let errorMessage = '加载数据库失败';
+
+      if (error instanceof KdbxError) {
+        if (error.code === 'InvalidKey') {
+          errorMessage = '密码错误，请重试';
+        } else {
+          errorMessage = `数据库错误: ${error.message}`;
+        }
+      }
+
+      this.promptAction.showToast({
+        message: errorMessage,
+        duration: 2000
+      });
+      return null;
     }
   }
 
@@ -43,38 +78,30 @@ struct Password {
 
     this.isLoading = true;
     try {
-      // TODO: 在这里添加实际的密码验证逻辑
-      // 目前为了演示，我们直接跳转到DatabaseShow页面
-      await this.simulatePasswordVerification();
+      // 加载并验证数据库
+      const database = await this.loadDatabase();
+      if (!database) {
+        return;
+      }
 
       // 验证成功，跳转到数据库展示页面
       this.router.pushUrl({
         url: 'pages/DatabaseShow',
         params: {
           filePath: this.filePath,
-          fileContent: this.fileContent,
           password: this.password,
-          fileName: this.fileName
-        }
+          fileName: this.fileName,
+          database: database
+        } as DbFileParam
       });
     } catch (error) {
       this.promptAction.showToast({
-        message: `密码验证失败: ${error}`,
+        message: `数据库加载失败: ${error}`,
         duration: 2000
       });
     } finally {
       this.isLoading = false;
     }
-  }
-
-  /**
-   * 模拟密码验证过程
-   * TODO: 替换为实际的密码验证逻辑
-   */
-  private simulatePasswordVerification(): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, 1000);
-    });
   }
 
   build() {
