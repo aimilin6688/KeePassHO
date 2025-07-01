@@ -117,7 +117,7 @@ struct Password {
             this.router.back();
           })
 
-        Text('输入密码')
+        Text('解锁数据库')
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
