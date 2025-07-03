@@ -5,7 +5,7 @@ import { StorageType } from '../../services/kdbx/interfaces';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { fileShare } from '@kit.CoreFileKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { FileParam } from '../../services/TypeDefined';
+import { FileService } from '../../services/FileService';
 
 @Entry
 @Component
@@ -71,14 +71,10 @@ struct LocalFile {
         const content = await this.fileManager.loadKdbxFile(path);
         console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
 
+        FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content});
         // 导航到密码输入页面，并传递文件内容
         this.router.pushUrl({
-          url: 'pages/Password',
-          params: {
-            filePath: path,
-            fileContent: content,
-            fileName: fileInfo.name
-          } as FileParam
+          url: 'pages/Password'
         });
       }).catch((err: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
         console.error("persistPermission failed with error message: " + err.message + ", error code: " + err.code);

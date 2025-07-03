@@ -1,8 +1,8 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import ThemeManager from '../common/utils/ThemeManager';
-import { Kdbx, KdbxGroup, KdbxUuid, KdbxTimes, ProtectedValue, KdbxError,KdbxCredentials } from 'kdbxweb';
-import { DbFileParam } from '../services/TypeDefined';
+import { Kdbx, KdbxGroup, KdbxTimes, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
+import { FileService } from '../services/FileService';
 
 @Entry
 @Component
@@ -12,13 +12,9 @@ struct DatabaseShow {
   @State isLoading: boolean = true;
   @State fileName: string = '';
   @State data: Array<KdbxGroup> = [];
-
-  private filePath: string = '';
-  private password: string = '';
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-
   dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
@@ -35,9 +31,7 @@ struct DatabaseShow {
 
   aboutToAppear() {
     // 获取从Password页面传递的参数
-    const params = this.router.getParams() as DbFileParam;
-    this.filePath = params?.filePath ?? '';
-    this.password = params?.password ?? '';
+    const params = FileService.getInstance().getDbFileParam();
     this.fileName = params?.fileName ?? '未知数据库';
     this.database = params?.database ?? null;
 
@@ -127,7 +121,7 @@ struct DatabaseShow {
                   this.database.save().then(savedDb => {
                     console.info('数据库已更新');
                     // TODO: 保存数据库到文件
-                  }).catch((error:Error) => {
+                  }).catch((error: Error) => {
                     console.error(`保存数据库失败: ${error}`);
                   });
                 } else {
@@ -159,7 +153,7 @@ struct DatabaseShow {
         this.database.save().then(savedDb => {
           console.info('数据库已更新');
           // TODO: 保存数据库到文件
-        }).catch((error:Error) => {
+        }).catch((error: Error) => {
           console.error(`保存数据库失败: ${error}`);
         });
       } else {
@@ -175,7 +169,7 @@ struct DatabaseShow {
           this.database.save().then(savedDb => {
             console.info('数据库已更新');
             // TODO: 保存数据库到文件
-          }).catch((error:Error) => {
+          }).catch((error: Error) => {
             console.error(`保存数据库失败: ${error}`);
           });
         }

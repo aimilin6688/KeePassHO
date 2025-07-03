@@ -1,12 +1,11 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue, ByteUtils } from 'kdbxweb';
-import { FileParam, DbFileParam, AuthType } from '../services/TypeDefined';
+import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
+import { AuthType, FileParam } from '../services/TypeDefined';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
-import { fileShare } from '@kit.CoreFileKit';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { FileService } from '../services/FileService';
 
 @Entry
 @Component
@@ -18,9 +17,7 @@ struct Password {
   @State keyFilePath: string = '';
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
-
   private filePath: string = '';
-  private fileContent: ArrayBuffer | null = null;
   private keyFileContent: ArrayBuffer | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -62,15 +59,12 @@ struct Password {
   }
 
   aboutToAppear() {
+    let fileParam: FileParam = FileService.getInstance().getFileParam();
     // 获取从LocalFile页面传递的参数
-    const params = this.router.getParams() as FileParam;
-    this.filePath = params?.filePath ?? '';
-    this.fileContent = params?.fileContent ?? null;
-    this.fileName = params?.fileName ?? '未知文件';
+    this.filePath = fileParam.filePath ?? '';
+    this.fileName = fileParam.fileName ?? '未知文件';
 
-    console.info('文件路径', ByteUtils.bytesToBase64(this.fileContent));
-
-    if (!this.filePath || !this.fileContent) {
+    if (!this.filePath || !fileParam.fileContent) {
       this.promptAction.showToast({
         message: '无效的数据文件',
         duration: 2000
@@ -84,14 +78,13 @@ struct Password {
    */
   private async loadDatabase(): Promise<Kdbx | null> {
     try {
-      if (!this.fileContent) {
+      if (!FileService.getInstance().getFileContent()) {
         throw new Error('文件内容为空');
       }
 
       // 创建凭证
       let credentials: KdbxCredentials;
       if (this.authType === AuthType.PASSWORD_KEYFILE && this.keyFileContent) {
-        console.info('使用密码和密钥文件进行验证', this.keyFilePath);
         // 使用密码和密钥文件
         credentials = new KdbxCredentials(
           ProtectedValue.fromString(this.password),
@@ -101,11 +94,8 @@ struct Password {
         // 仅使用密码
         credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
       }
-      console.log('使用密码进行验证', this.password, this.keyFilePath)
-      console.info('keyFileContent', ByteUtils.bytesToBase64(this.keyFileContent));
-      console.info('fileContent', ByteUtils.bytesToBase64(this.fileContent));
       // 加载数据库
-      const database = await Kdbx.load(this.fileContent, credentials);
+      const database = await Kdbx.load(FileService.getInstance().getFileContent(), credentials);
       console.info('数据库加载成功');
       return database;
     } catch (error) {
@@ -114,7 +104,7 @@ struct Password {
 
       if (error instanceof KdbxError) {
         if (error.code === 'InvalidKey') {
-          errorMessage = this.authType === AuthType.PASSWORD_KEYFILE ? 
+          errorMessage = this.authType === AuthType.PASSWORD_KEYFILE ?
             '密码或密钥文件错误，请重试' : '密码错误，请重试';
         } else {
           errorMessage = `数据库错误: ${error.message}`;
@@ -231,17 +221,17 @@ struct Password {
         return;
       }
 
+      FileService.getInstance().setDbFileParam({
+        filePath: this.filePath,
+        password: this.password,
+        fileName: this.fileName,
+        database: database,
+        keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
+        authType: this.authType // 添加认证类型
+      })
       // 验证成功，跳转到数据库展示页面
       this.router.pushUrl({
-        url: 'pages/DatabaseShow',
-        params: {
-          filePath: this.filePath,
-          password: this.password,
-          fileName: this.fileName,
-          database: database,
-          keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
-          authType: this.authType // 添加认证类型
-        } as DbFileParam
+        url: 'pages/DatabaseShow'
       });
     } catch (error) {
       this.promptAction.showToast({
