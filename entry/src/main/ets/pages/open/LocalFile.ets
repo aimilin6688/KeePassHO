@@ -6,6 +6,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { fileShare } from '@kit.CoreFileKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { FileService } from '../../services/FileService';
+import { RecentFilesService } from '../../services/RecentFilesService';
 
 @Entry
 @Component
@@ -71,7 +72,11 @@ struct LocalFile {
         const content = await this.fileManager.loadKdbxFile(path);
         console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
 
-        FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content});
+        FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content });
+
+        // 添加到最近打开的文件列表
+        await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL });
+
         // 导航到密码输入页面，并传递文件内容
         this.router.pushUrl({
           url: 'pages/Password'
