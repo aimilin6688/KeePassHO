@@ -68,11 +68,6 @@ export interface AuthTypeInfo {
    * 认证方式的描述，用于UI显示
    */
   description: string;
-  
-  /**
-   * 国际化资源key
-   */
-  i18nKey: string;
 }
 
 /**
@@ -84,17 +79,63 @@ export class AuthType {
    */
   public static readonly PASSWORD: AuthTypeInfo = {
     type: 'password',
-    description: '仅密码',
-    i18nKey: 'auth_type_password'
+    description: '仅密码'
   };
   
   /**
-   * 使用密码和密钥文件认证
+   * 密码 + 密钥文件
    */
   public static readonly PASSWORD_KEYFILE: AuthTypeInfo = {
     type: 'password_keyfile',
-    description: '密码和密钥文件',
-    i18nKey: 'auth_type_password_keyfile'
+    description: '密码 + 密钥文件'
+  };
+  
+  /**
+   * 密码 + 一次性密码
+   */
+  public static readonly PASSWORD_OTP: AuthTypeInfo = {
+    type: 'password_otp',
+    description: '密码 + 一次性密码'
+  };
+  
+  /**
+   * 密码 + 一次密码（恢复模式）
+   */
+  public static readonly PASSWORD_OTP_RECOVERY: AuthTypeInfo = {
+    type: 'password_otp_recovery',
+    description: '密码 + 一次性密码（恢复模式）'
+  };
+  
+  /**
+   * 密码 + 挑战-响应
+   */
+  public static readonly PASSWORD_CHALLENGE_RESPONSE: AuthTypeInfo = {
+    type: 'password_challenge_response',
+    description: '密码 + 挑战-响应'
+  };
+  
+  /**
+   * 密码 + 挑战-响应（恢复模式）
+   */
+  public static readonly PASSWORD_CHALLENGE_RESPONSE_RECOVERY: AuthTypeInfo = {
+    type: 'password_challenge_response_recovery',
+    description: '密码 + 挑战-响应（恢复模式）'
+  };
+  
+  /**
+   * 密码 + 挑战-应答（Keepass XC）
+   */
+  public static readonly PASSWORD_CHALLENGE_RESPONSE_XC: AuthTypeInfo = {
+    type: 'password_challenge_response_xc',
+    description: '密码 + 挑战-应答（Keepass XC）'
+  };
+  
+  /**
+   * 密码 + 密钥文件 + 挑战应答（Keepass XC）
+   */
+  public static readonly PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC: AuthTypeInfo = {
+    type: 'password_keyfile_challenge_response_xc',
+    description: '密码 + 密钥文件 + 挑战应答（Keepass XC）'
   };
   
   /**
@@ -103,7 +144,13 @@ export class AuthType {
   public static getAllTypes(): AuthTypeInfo[] {
     return [
       AuthType.PASSWORD,
-      AuthType.PASSWORD_KEYFILE
+      AuthType.PASSWORD_KEYFILE,
+      AuthType.PASSWORD_OTP,
+      AuthType.PASSWORD_OTP_RECOVERY,
+      AuthType.PASSWORD_CHALLENGE_RESPONSE,
+      AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY,
+      AuthType.PASSWORD_CHALLENGE_RESPONSE_XC,
+      AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC
     ];
   }
   
