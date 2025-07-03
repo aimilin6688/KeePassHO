@@ -17,21 +17,27 @@ struct Password {
   @State keyFilePath: string = '';
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
+  @State hasKeyFileContent: boolean = false; // 添加状态变量跟踪密钥文件是否已加载
+  @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
+
   private filePath: string = '';
   private keyFileContent: ArrayBuffer | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
-  // 计算按钮是否可用
-  get isButtonEnabled(): boolean {
+  // 更新按钮状态
+  private updateButtonState(): void {
+    console.log('updateButtonState-----------》', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType)
     if (this.isLoading || this.password.length === 0) {
-      return false;
+      this.buttonEnabled = false;
+      return;
     }
-    if (this.authType === AuthType.PASSWORD_KEYFILE && !this.keyFileContent) {
-      return false;
+    if (this.authType === AuthType.PASSWORD_KEYFILE && !this.hasKeyFileContent) {
+      this.buttonEnabled = false;
+      return;
     }
-    return true;
+    this.buttonEnabled = true;
   }
 
   // 获取认证类型的索引，用于Select组件
@@ -71,6 +77,8 @@ struct Password {
       });
       this.router.back();
     }
+    
+    this.updateButtonState(); // 初始化按钮状态
   }
 
   /**
@@ -140,6 +148,8 @@ struct Password {
         try {
           const fileManager = new KdbxFileManager(StorageType.LOCAL);
           this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
+          this.hasKeyFileContent = true; // 更新状态变量
+          this.updateButtonState(); // 更新按钮状态
           console.info('密钥文件读取成功');
         } catch (error) {
           console.error(`读取密钥文件失败: ${error}`);
@@ -148,8 +158,10 @@ struct Password {
             duration: 2000
           });
           this.keyFileContent = null;
+          this.hasKeyFileContent = false; // 更新状态变量
           this.keyFilePath = '';
           this.keyFileName = '';
+          this.updateButtonState(); // 更新按钮状态
         }
       }
     } catch (error) {
@@ -214,6 +226,7 @@ struct Password {
     }
 
     this.isLoading = true;
+    this.updateButtonState(); // 更新按钮状态
     try {
       // 加载并验证数据库
       const database = await this.loadDatabase();
@@ -240,6 +253,7 @@ struct Password {
       });
     } finally {
       this.isLoading = false;
+      this.updateButtonState(); // 更新按钮状态
     }
   }
 
@@ -301,11 +315,13 @@ struct Password {
               if (index === 0) {
                 this.authType = AuthType.PASSWORD;
                 this.keyFileContent = null;
+                this.hasKeyFileContent = false; // 更新状态变量
                 this.keyFilePath = '';
                 this.keyFileName = '';
               } else if (index === 1) {
                 this.authType = AuthType.PASSWORD_KEYFILE;
               }
+              this.updateButtonState(); // 更新按钮状态
             })
         }
         .width('90%')
@@ -324,6 +340,7 @@ struct Password {
             .height(48)
             .onChange((value) => {
               this.password = value;
+              this.updateButtonState(); // 更新按钮状态
             })
         }
         .width('90%')
@@ -344,8 +361,8 @@ struct Password {
           .width('90%')
           .height(48)
           .margin({ top: 32 })
-          .enabled(this.isButtonEnabled)
-          .backgroundColor(this.isButtonEnabled ? $r('app.color.button_background') : $r('app.color.button_disabled_background'))
+          .enabled(this.buttonEnabled)
+          .backgroundColor(this.buttonEnabled ? $r('app.color.button_background') : $r('app.color.button_disabled_background'))
           .onClick(() => {
             this.verifyAndOpenDatabase();
           })
