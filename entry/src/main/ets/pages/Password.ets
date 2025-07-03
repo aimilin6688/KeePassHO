@@ -1,6 +1,6 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
-import { AuthType, FileParam } from '../services/TypeDefined';
+import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
@@ -13,7 +13,7 @@ struct Password {
   @State password: string = '';
   @State isLoading: boolean = false;
   @State fileName: string = '';
-  @State authType: AuthType = AuthType.PASSWORD;
+  @State authType: AuthTypeInfo = AuthType.PASSWORD;
   @State keyFilePath: string = '';
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
@@ -33,7 +33,7 @@ struct Password {
       this.buttonEnabled = false;
       return;
     }
-    if (this.authType === AuthType.PASSWORD_KEYFILE && !this.hasKeyFileContent) {
+    if (this.authType.type === AuthType.PASSWORD_KEYFILE.type && !this.hasKeyFileContent) {
       this.buttonEnabled = false;
       return;
     }
@@ -42,26 +42,14 @@ struct Password {
 
   // 获取认证类型的索引，用于Select组件
   private getAuthTypeIndex(): number {
-    switch (this.authType) {
-      case AuthType.PASSWORD:
-        return 0;
-      case AuthType.PASSWORD_KEYFILE:
-        return 1;
-      default:
-        return 0;
-    }
+    const allTypes = AuthType.getAllTypes();
+    const index = allTypes.findIndex(item => item.type === this.authType.type);
+    return index >= 0 ? index : 0;
   }
 
   // 获取认证类型的文本描述，用于Select组件
   private getAuthTypeText(): string {
-    switch (this.authType) {
-      case AuthType.PASSWORD:
-        return '仅密码';
-      case AuthType.PASSWORD_KEYFILE:
-        return '密码 + 密钥文件';
-      default:
-        return '仅密码';
-    }
+    return this.authType.description;
   }
 
   aboutToAppear() {
@@ -92,7 +80,7 @@ struct Password {
 
       // 创建凭证
       let credentials: KdbxCredentials;
-      if (this.authType === AuthType.PASSWORD_KEYFILE && this.keyFileContent) {
+      if (this.authType.type === AuthType.PASSWORD_KEYFILE.type && this.keyFileContent) {
         // 使用密码和密钥文件
         credentials = new KdbxCredentials(
           ProtectedValue.fromString(this.password),
@@ -312,14 +300,15 @@ struct Password {
             .optionFont({ size: 16 })
             .width('100%')
             .onSelect((index: number, value: string) => {
-              if (index === 0) {
-                this.authType = AuthType.PASSWORD;
-                this.keyFileContent = null;
-                this.hasKeyFileContent = false; // 更新状态变量
-                this.keyFilePath = '';
-                this.keyFileName = '';
-              } else if (index === 1) {
-                this.authType = AuthType.PASSWORD_KEYFILE;
+              const allTypes = AuthType.getAllTypes();
+              if (index >= 0 && index < allTypes.length) {
+                this.authType = allTypes[index];
+                if (index === 0) { // 仅密码
+                  this.keyFileContent = null;
+                  this.hasKeyFileContent = false; // 更新状态变量
+                  this.keyFilePath = '';
+                  this.keyFileName = '';
+                }
               }
               this.updateButtonState(); // 更新按钮状态
             })
