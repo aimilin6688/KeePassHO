@@ -352,7 +352,7 @@ struct Password {
         }
 
         // 确认按钮
-        Button(this.isLoading ? '验证中...' : '确认')
+        Button(this.isLoading ? '验证中...' : '解锁')
           .width('90%')
           .height(48)
           .margin({ top: 32 })
