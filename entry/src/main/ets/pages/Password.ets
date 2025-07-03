@@ -33,7 +33,9 @@ struct Password {
       this.buttonEnabled = false;
       return;
     }
-    if (this.authType.type === AuthType.PASSWORD_KEYFILE.type && !this.hasKeyFileContent) {
+    if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
+         this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && 
+        !this.hasKeyFileContent) {
       this.buttonEnabled = false;
       return;
     }
@@ -80,7 +82,9 @@ struct Password {
 
       // 创建凭证
       let credentials: KdbxCredentials;
-      if (this.authType.type === AuthType.PASSWORD_KEYFILE.type && this.keyFileContent) {
+      if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
+           this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && 
+          this.keyFileContent) {
         // 使用密码和密钥文件
         credentials = new KdbxCredentials(
           ProtectedValue.fromString(this.password),
@@ -205,7 +209,9 @@ struct Password {
       return;
     }
 
-    if (this.authType === AuthType.PASSWORD_KEYFILE && !this.keyFileContent) {
+    if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
+         this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && 
+        !this.keyFileContent) {
       this.promptAction.showToast({
         message: '请选择密钥文件',
         duration: 2000
@@ -288,10 +294,7 @@ struct Password {
             .margin({ bottom: 16 })
             .alignSelf(ItemAlign.Start)
 
-          Select([
-            { value: '仅密码' },
-            { value: '密码 + 密钥文件' }
-          ])
+          Select(AuthType.getAllTypes().map(type => ({ value: type.description } as SelectOption)))
             .selected(this.getAuthTypeIndex())
             .value(this.getAuthTypeText())
             .font({ size: 16 })
@@ -303,7 +306,9 @@ struct Password {
               const allTypes = AuthType.getAllTypes();
               if (index >= 0 && index < allTypes.length) {
                 this.authType = allTypes[index];
-                if (index === 0) { // 仅密码
+                // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
+                if (this.authType.type !== AuthType.PASSWORD_KEYFILE.type && 
+                    this.authType.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
                   this.keyFileContent = null;
                   this.hasKeyFileContent = false; // 更新状态变量
                   this.keyFilePath = '';
@@ -340,8 +345,9 @@ struct Password {
         })
         .margin({ bottom: 16 })
 
-        // 密钥文件选择（仅在选择密码+密钥文件时显示）
-        if (this.authType === AuthType.PASSWORD_KEYFILE) {
+        // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
+        if (this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
+            this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
           this.KeyFileSelector()
         }
 
