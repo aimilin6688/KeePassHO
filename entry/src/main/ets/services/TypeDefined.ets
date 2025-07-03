@@ -1,4 +1,5 @@
 import { Kdbx } from 'kdbxweb';
+import { StorageType } from './kdbx/interfaces';
 
 /**
  * kdbx文件定义
@@ -162,4 +163,24 @@ export class AuthType {
   public static getByType(type: string): AuthTypeInfo | null {
     return AuthType.getAllTypes().find(item => item.type === type) || null;
   }
+}
+
+/**
+ * 最近打开文件定义
+ */
+export interface RecentFile {
+  /**
+   * 文件路径
+   */
+  filePath: string;
+
+  /**
+   * 文件名
+   */
+  fileName: string;
+
+  /**
+   * 存储类型
+   */
+  storageType: StorageType;
 }

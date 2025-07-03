@@ -4,6 +4,7 @@
     "pages/DatabaseShow",
     "pages/Settings",
     "pages/Password",
+    "pages/RecentFiles",
     "pages/open/OpenDatabase",
     "pages/open/LocalFile",
     "pages/open/WebDAV",

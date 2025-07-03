@@ -1,15 +1,40 @@
 import ThemeManager from '../common/utils/ThemeManager';
 import { Router } from '@kit.ArkUI';
+import { RecentFilesService } from '../services/RecentFilesService';
 
 @Entry
 @Component
 struct Index {
   private router: Router = this.getUIContext().getRouter();
+
   aboutToAppear() {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
+
+    // 检查是否有最近打开的文件
+    this.checkRecentFiles();
+  }
+
+  /**
+   * 检查是否有最近打开的文件
+   */
+  async checkRecentFiles() {
+    try {
+      // 加载最近打开的文件
+      const recentFile = await RecentFilesService.getInstance().loadMostRecentFile();
+      if (recentFile) {
+        // 设置文件参数
+        RecentFilesService.getInstance().readRecentFile(recentFile);
+        // 导航到密码输入页面
+        this.router.pushUrl({
+          url: 'pages/Password'
+        });
+      }
+    } catch (error) {
+      console.error(`检查最近文件失败: ${error}`);
+    }
   }
 
   aboutToDisappear() {
@@ -23,7 +48,7 @@ struct Index {
   @State private updateUI: boolean = false;
 
   @Builder
-  MainButton(icon: Resource, text: string, onClick: () => void){
+  MainButton(icon: Resource, text: string, onClick: () => void) {
     Button() {
       Row() {
         Image(icon)
@@ -95,6 +120,14 @@ struct Index {
         Column() {
           this.MainButton($r('app.media.ic_add_file'), '创建新的数据库', () => {
             this.router.pushUrl({ url: 'pages/open/CreateDatabase' })
+          })
+        }
+        .margin({ top: 24 })
+
+        // 最近打开的文件按钮
+        Column() {
+          this.MainButton($r('app.media.ic_history'), '最近打开的文件', () => {
+            this.router.pushUrl({ url: 'pages/RecentFiles' })
           })
         }
         .margin({ top: 24 })
