@@ -199,6 +199,17 @@ struct Password {
     .padding({ left: 16, right: 16, bottom: 24 })
   }
 
+  /**
+   * 更改数据库
+   */
+  changeDatabase() {
+    // 返回到文件选择页面
+    this.router.pushUrl({ url: 'pages/open/OpenDatabase' })
+  }
+
+  /**
+   * 验证密码并打开数据库
+   */
   async verifyAndOpenDatabase() {
     // 验证输入
     if (!this.password) {
@@ -351,16 +362,34 @@ struct Password {
           this.KeyFileSelector()
         }
 
-        // 确认按钮
-        Button(this.isLoading ? '验证中...' : '解锁')
-          .width('90%')
-          .height(48)
-          .margin({ top: 32 })
-          .enabled(this.buttonEnabled)
-          .backgroundColor(this.buttonEnabled ? $r('app.color.button_background') : $r('app.color.button_disabled_background'))
-          .onClick(() => {
-            this.verifyAndOpenDatabase();
-          })
+        // 底部固定按钮栏
+        Row() {
+          // 左侧 - 更改数据库按钮
+          Button('更改数据库')
+            .height(48)
+            .layoutWeight(1)
+            .margin({ left: 16, right: 8 })
+            .backgroundColor('#E0E0E0')  // 浅灰色背景
+            .fontColor('#333333')        // 深灰色文字
+            .onClick(() => {
+              this.changeDatabase();
+            })
+
+          // 右侧 - 解锁按钮
+          Button(this.isLoading ? '验证中...' : '解锁')
+            .height(48)
+            .layoutWeight(1)
+            .margin({ left: 8, right: 16 })
+            .enabled(this.buttonEnabled)
+            .backgroundColor(this.buttonEnabled ? $r('app.color.button_background') : $r('app.color.button_disabled_background'))
+            .onClick(() => {
+              this.verifyAndOpenDatabase();
+            })
+        }
+        .width('100%')
+        .padding({ top: 12, bottom: 12 })
+        .position({ x: 0, y: '100%' })
+        .translate({ y: -74 })  // 调整位置，确保正确显示
 
         if (this.isLoading) {
           LoadingProgress()
