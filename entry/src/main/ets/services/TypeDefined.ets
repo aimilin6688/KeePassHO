@@ -10,14 +10,14 @@ export interface FileParam {
   filePath: string;
 
   /**
-   * 文件内容
-   */
-  fileContent: ArrayBuffer;
-
-  /**
    * 文件名
    */
   fileName: string;
+
+  /**
+   * 文件内容
+   */
+  fileContent: ArrayBuffer;
 }
 
 /**
