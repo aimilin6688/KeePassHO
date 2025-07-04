@@ -23,15 +23,16 @@ struct Index {
   async checkRecentFiles() {
     try {
       // 加载最近打开的文件
-      const recentFile = await RecentFilesService.getInstance().loadMostRecentFile();
-      if (recentFile) {
-        // 设置文件参数
-        RecentFilesService.getInstance().readRecentFile(recentFile);
-        // 导航到密码输入页面
-        this.router.pushUrl({
-          url: 'pages/Password'
-        });
-      }
+      RecentFilesService.getInstance().loadMostRecentFile().then((recentFile) => {
+        if (recentFile) {
+          // 设置文件参数
+          RecentFilesService.getInstance().readRecentFile(recentFile);
+          // 导航到密码输入页面
+          this.router.pushUrl({
+            url: 'pages/Password'
+          });
+        }
+      });
     } catch (error) {
       console.error(`检查最近文件失败: ${error}`);
     }
