@@ -3,9 +3,11 @@ import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
 import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
+import { fileShare } from '@kit.CoreFileKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 @Entry
 @Component
@@ -136,25 +138,35 @@ struct Password {
         this.keyFileName = fileNameMatch ? fileNameMatch[0] : '未知文件';
         this.keyFilePath = fileUri;
 
-        // 读取文件内容
-        try {
-          const fileManager = new KdbxFileManager(StorageType.LOCAL);
-          this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
-          this.hasKeyFileContent = true; // 更新状态变量
-          this.updateButtonState(); // 更新按钮状态
-          console.info('密钥文件读取成功');
-        } catch (error) {
-          console.error(`读取密钥文件失败: ${error}`);
-          this.promptAction.showToast({
-            message: '读取密钥文件失败',
-            duration: 2000
-          });
-          this.keyFileContent = null;
-          this.hasKeyFileContent = false; // 更新状态变量
-          this.keyFilePath = '';
-          this.keyFileName = '';
-          this.updateButtonState(); // 更新按钮状态
-        }
+        // 永久授权文件访问权限
+        let policyInfo: fileShare.PolicyInfo = {
+          uri: this.keyFilePath,
+          operationMode: fileShare.OperationMode.READ_MODE,
+        };
+        let policies: Array<fileShare.PolicyInfo> = [policyInfo];
+        fileShare.persistPermission(policies).then(async () => {
+          // 读取文件内容
+          try {
+            const fileManager = new KdbxFileManager(StorageType.LOCAL);
+            this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
+            this.hasKeyFileContent = true; // 更新状态变量
+            this.updateButtonState(); // 更新按钮状态
+            console.info('密钥文件读取成功');
+          } catch (error) {
+            console.error(`读取密钥文件失败: ${error}`);
+            this.promptAction.showToast({
+              message: '读取密钥文件失败',
+              duration: 2000
+            });
+            this.keyFileContent = null;
+            this.hasKeyFileContent = false; // 更新状态变量
+            this.keyFilePath = '';
+            this.keyFileName = '';
+            this.updateButtonState(); // 更新按钮状态
+          }
+        }).catch((err: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
+          console.error("persistPermission failed with error message: " + err.message + ", error code: " + err.code);
+        });
       }
     } catch (error) {
       console.error(`选择密钥文件失败: ${error}`);

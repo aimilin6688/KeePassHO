@@ -1,11 +1,34 @@
-import { fileIo as fs } from '@kit.CoreFileKit';
-import { IFileStorage, FileInfo } from '../IFileStorage';
+import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
+import { FileInfo, IFileStorage } from '../IFileStorage';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 /**
  * 本地文件存储实现
  * 使用鸿蒙系统的文件API实现本地文件的读写操作
  */
 export class LocalFileStorage implements IFileStorage {
+  /**
+   * 激活文件权限
+   * @param path 文件路径
+   * @returns 结果
+   */
+  async activatePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
+    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+      throw new Error('this api is not supported on this device');
+    }
+    let policyInfo: fileShare.PolicyInfo = {
+      uri: path,
+      operationMode: operationMode,
+    };
+    let policies: Array<fileShare.PolicyInfo> = [policyInfo];
+    fileShare.activatePermission(policies).then(() => {
+      return Promise.resolve();
+    }).catch((error: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
+      console.error("activatePermission failed with error message: " + error.message + ", error code: " + error.code);
+      throw new Error(`Failed to activate Permission file: ${error.message}`);
+    });
+  }
+
   /**
    * 读取文件内容
    * @param path 文件路径
@@ -14,6 +37,7 @@ export class LocalFileStorage implements IFileStorage {
    */
   async readFile(path: string): Promise<ArrayBuffer> {
     try {
+      await this.activatePermission(path, fileShare.OperationMode.READ_MODE);
       // 打开文件
       const file = await fs.open(path, fs.OpenMode.READ_ONLY);
 
@@ -43,6 +67,8 @@ export class LocalFileStorage implements IFileStorage {
    */
   async writeFile(path: string, content: ArrayBuffer): Promise<void> {
     try {
+      await this.activatePermission(path, fileShare.OperationMode.WRITE_MODE);
+
       // 打开文件（如果不存在则创建）
       const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
 
