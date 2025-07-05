@@ -1,8 +1,9 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import ThemeManager from '../common/utils/ThemeManager';
-import { Kdbx, KdbxGroup, KdbxTimes, KdbxUuid } from 'kdbxweb';
+import { Kdbx, KdbxGroup } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
+import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 
 @Entry
 @Component
@@ -113,17 +114,10 @@ struct DatabaseShow {
                   // 从数据库中删除分组
                   const group = this.data[index];
                   group.parentGroup?.groups.splice(group.parentGroup.groups.indexOf(group), 1);
-
                   // 更新UI
                   this.data.splice(index, 1);
 
-                  // 保存数据库
-                  this.database.save().then(savedDb => {
-                    console.info('数据库已更新');
-                    // TODO: 保存数据库到文件
-                  }).catch((error: Error) => {
-                    console.error(`保存数据库失败: ${error}`);
-                  });
+                  this.saveDatabase();
                 } else {
                   this.data.splice(index, 1);
                 }
@@ -134,73 +128,57 @@ struct DatabaseShow {
     }
   }
 
-  handleAddGroup() {
+  /**
+   * 保存数据库
+   */
+  private saveDatabase() {
+    if (this.database) {
+      this.database.groups = this.data;
+      const dbFileParam = FileService.getInstance().getDbFileParam();
+      this.database.save().then(async savedDb => {
+        const fileManager = new KdbxFileManager(dbFileParam.storageType);
+        fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
+          this.promptAction.showToast({ message: `保存成功` });
+        }).catch((error: Error) => {
+          console.error(`保存数据库失败: ${error}`);
+          this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
+        });
+      }).catch((error: Error) => {
+        console.error(`保存数据库失败: ${error}`);
+        this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
+      });
+    }
+  }
+
+  private handleAddGroup() {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
     }
-
-    if (this.database) {
-      if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
-        // 编辑现有分组
-        const group = this.data[this.editingGroupIndex];
-        group.name = this.newGroupName.trim();
-        group.times.lastModTime = new Date();
-
-        // 更新UI
-        this.data = [...this.data];
-
-        // 保存数据库
-        this.database.save().then(savedDb => {
-          console.info('数据库已更新');
-          // TODO: 保存数据库到文件
-        }).catch((error: Error) => {
-          console.error(`保存数据库失败: ${error}`);
-        });
-      } else {
-        // 添加新分组
-        const rootGroup = this.database.getDefaultGroup();
-        if (rootGroup) {
-          const newGroup = this.database.createGroup(rootGroup, this.newGroupName.trim());
-
-          // 更新UI
-          this.data.push(newGroup);
-
-          // 保存数据库
-          this.database.save().then(savedDb => {
-            console.info('数据库已更新');
-            // TODO: 保存数据库到文件
-          }).catch((error: Error) => {
-            console.error(`保存数据库失败: ${error}`);
-          });
-        }
-      }
-    } else {
-      // 如果数据库对象不可用，仅更新UI
-      if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
-        let oldData = this.data[this.editingGroupIndex];
-        // 编辑现有分组
-        this.data.splice(this.editingGroupIndex, 1, {
-          'uuid': oldData.uuid,
-          'name': this.newGroupName.trim(),
-          'icon': oldData.icon,
-          'times': {
-            creationTime: oldData.times.creationTime,
-            lastModTime: new Date(),
-          } as KdbxTimes
-        } as KdbxGroup);
-      } else {
-        // 添加新分组
-        this.data.push({
-          uuid: KdbxUuid.random(),
-          name: this.newGroupName.trim(),
-          'times': {
-            creationTime: new Date(),
-            lastModTime: new Date(),
-          } as KdbxTimes
-        } as KdbxGroup);
-      }
+    if(!this.database){
+      this.promptAction.showToast({
+        message: '无效的数据库信息'
+      });
+      return;
     }
 
+    if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
+      // 编辑现有分组
+      const group = this.data[this.editingGroupIndex];
+      group.name = this.newGroupName.trim();
+      group.times.lastModTime = new Date();
+      // 更新UI
+      this.data = [...this.data];
+      this.saveDatabase();
+    } else {
+      // 添加新分组
+      const rootGroup = this.database.getDefaultGroup();
+      if (rootGroup) {
+        const newGroup = this.database.createGroup(rootGroup, this.newGroupName.trim());
+        // 更新UI
+        this.data.push(newGroup);
+        this.saveDatabase();
+      }
+    }
     // 重置状态
     this.newGroupName = "";
     this.editingGroupIndex = -1;
