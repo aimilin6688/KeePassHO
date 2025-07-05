@@ -130,8 +130,7 @@ export class RecentFilesService {
    */
   public async checkFileExists(recentFile: RecentFile): Promise<boolean> {
     try {
-      // TODO 添加文件存在性检查逻辑
-      return true;
+      return new KdbxFileManager(recentFile.storageType).exists(recentFile.filePath);
     } catch (error) {
       return false;
     }
