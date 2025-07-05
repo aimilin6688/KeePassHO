@@ -116,7 +116,6 @@ struct DatabaseShow {
                   group.parentGroup?.groups.splice(group.parentGroup.groups.indexOf(group), 1);
                   // 更新UI
                   this.data.splice(index, 1);
-
                   this.saveDatabase();
                 } else {
                   this.data.splice(index, 1);
@@ -133,7 +132,6 @@ struct DatabaseShow {
    */
   private saveDatabase() {
     if (this.database) {
-      this.database.groups = this.data;
       const dbFileParam = FileService.getInstance().getDbFileParam();
       this.database.save().then(async savedDb => {
         const fileManager = new KdbxFileManager(dbFileParam.storageType);
@@ -173,9 +171,8 @@ struct DatabaseShow {
       // 添加新分组
       const rootGroup = this.database.getDefaultGroup();
       if (rootGroup) {
-        const newGroup = this.database.createGroup(rootGroup, this.newGroupName.trim());
-        // 更新UI
-        this.data.push(newGroup);
+        this.database.createGroup(rootGroup, this.newGroupName.trim());
+        this.data = this.database.getDefaultGroup().groups;
         this.saveDatabase();
       }
     }
