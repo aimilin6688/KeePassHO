@@ -6,7 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "kdbxweb": "^2.2.0"
+    "kdbxweb": "^2.2.1"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
