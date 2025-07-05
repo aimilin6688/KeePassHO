@@ -4,9 +4,9 @@ import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { fileShare } from '@kit.CoreFileKit';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { FileService } from '../../services/FileService';
 import { RecentFilesService } from '../../services/RecentFilesService';
+import FileUtils from '../../common/utils/FIleUtils';
 
 @Entry
 @Component
@@ -49,21 +49,8 @@ struct LocalFile {
   async loadKdbxFile(path: string) {
     this.isLoading = true;
     try {
-      if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
-        this.promptAction.showToast({
-          message: '当前设备不支持文件操作',
-          duration: 2000
-        });
-        return;
-      }
       // 永久授权文件访问权限
-      let policyInfo: fileShare.PolicyInfo = {
-        uri: path,
-        operationMode: fileShare.OperationMode.WRITE_MODE,
-      };
-      let policies: Array<fileShare.PolicyInfo> = [policyInfo];
-
-      fileShare.persistPermission(policies).then(async () => {
+      FileUtils.persistPermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
         // 获取文件信息
         const fileInfo = await this.fileManager.getKdbxFileInfo(path);
         console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
@@ -81,9 +68,7 @@ struct LocalFile {
         this.router.pushUrl({
           url: 'pages/Password'
         });
-      }).catch((err: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
-        console.error("persistPermission failed with error message: " + err.message + ", error code: " + err.code);
-      });
+      })
     } catch (error) {
       console.error(`Failed to load KDBX file: ${error}`);
       this.promptAction.showToast({
