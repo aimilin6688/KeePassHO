@@ -264,13 +264,12 @@ struct DatabaseShow {
             ForEach(this.data, (itemGroup: KdbxGroup, index: number) => {
               ListItem() {
                 Row() {
-                  Image($r('app.media.ic_folder'))
-                    .width(40)
-                    .height(40)
+                  Image($r('app.media.ic_folder_open'))
+                    .width(28)
+                    .height(28)
                     .margin(10)
-                    .fillColor($r('app.color.text_primary'))
                   Text(itemGroup.name)
-                    .fontSize(20)
+                    .fontSize(14)
                     .textAlign(TextAlign.Start)
                     .flexGrow(1)
                   Image($r('app.media.ic_arrow_right'))
@@ -280,7 +279,7 @@ struct DatabaseShow {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .width('100%')
-                .height(60)
+                .height(50)
                 .borderRadius(8)
                 .backgroundColor($r('app.color.card_background'))
                 .padding({ left: 10, right: 10 })
