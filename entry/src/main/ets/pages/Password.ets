@@ -418,6 +418,9 @@ struct Password {
               this.password = value;
               this.updateButtonState(); // 更新按钮状态
             })
+            .onSubmit(()=>{
+              this.verifyAndOpenDatabase();
+            })
         }
         .width('90%')
         .padding({ left: 16, right: 16 })
