@@ -1,6 +1,6 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
 import { FileInfo, IFileStorage } from '../IFileStorage';
-import { BusinessError } from '@kit.BasicServicesKit';
+import FileUtils from '../../../../common/utils/FIleUtils';
 
 /**
  * 本地文件存储实现
@@ -8,55 +8,30 @@ import { BusinessError } from '@kit.BasicServicesKit';
  */
 export class LocalFileStorage implements IFileStorage {
   /**
-   * 激活文件权限
-   * @param path 文件路径
-   * @returns 结果
-   */
-  async activatePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
-    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
-      throw new Error('this api is not supported on this device');
-    }
-    let policyInfo: fileShare.PolicyInfo = {
-      uri: path,
-      operationMode: operationMode,
-    };
-    let policies: Array<fileShare.PolicyInfo> = [policyInfo];
-    fileShare.activatePermission(policies).then(() => {
-      return Promise.resolve();
-    }).catch((error: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
-      console.error("activatePermission failed with error message: " + error.message + ", error code: " + error.code);
-      throw new Error(`Failed to activate Permission file: ${error.message}`);
-    });
-  }
-
-  /**
    * 读取文件内容
    * @param path 文件路径
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果读取失败则抛出异常
    */
   async readFile(path: string): Promise<ArrayBuffer> {
-    try {
-      await this.activatePermission(path, fileShare.OperationMode.READ_MODE);
-      // 打开文件
-      const file = await fs.open(path, fs.OpenMode.READ_ONLY);
 
-      // 获取文件信息
-      const fileInfo = await fs.stat(file.fd);
-
-      // 创建缓冲区
-      const buffer = new ArrayBuffer(fileInfo.size);
-
-      // 读取文件内容
-      await fs.read(file.fd, buffer);
-
-      // 关闭文件
-      await fs.close(file.fd);
-
-      return buffer;
-    } catch (error) {
-      throw new Error(`Failed to read file: ${error.message}`);
-    }
+    return FileUtils.activatePermission(path, fileShare.OperationMode.READ_MODE).then(async () => {
+      try {
+        // 打开文件
+        const file = await fs.open(path, fs.OpenMode.READ_ONLY);
+        // 获取文件信息
+        const fileInfo = await fs.stat(file.fd);
+        // 创建缓冲区
+        const buffer = new ArrayBuffer(fileInfo.size);
+        // 读取文件内容
+        await fs.read(file.fd, buffer);
+        // 关闭文件
+        await fs.close(file.fd);
+        return buffer;
+      } catch (error) {
+        throw new Error(`Failed to read file: ${error.message}`);
+      }
+    });
   }
 
   /**
@@ -66,20 +41,18 @@ export class LocalFileStorage implements IFileStorage {
    * @throws 如果写入失败则抛出异常
    */
   async writeFile(path: string, content: ArrayBuffer): Promise<void> {
-    try {
-      await this.activatePermission(path, fileShare.OperationMode.WRITE_MODE);
-
-      // 打开文件（如果不存在则创建）
-      const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-
-      // 写入内容
-      await fs.write(file.fd, content);
-
-      // 关闭文件
-      await fs.close(file.fd);
-    } catch (error) {
-      throw new Error(`Failed to write file: ${error.message}`);
-    }
+    FileUtils.activatePermission(path, fileShare.OperationMode.WRITE_MODE).then(async ()=>{
+      try {
+        // 打开文件（如果不存在则创建）
+        const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+        // 写入内容
+        await fs.write(file.fd, content);
+        // 关闭文件
+        await fs.close(file.fd);
+      } catch (error) {
+        throw new Error(`Failed to write file: ${error.message}`);
+      }
+    });
   }
 
   /**

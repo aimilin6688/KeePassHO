@@ -172,4 +172,19 @@ export class RecentFilesService {
       throw new Error(error);
     }
   }
+
+  /**
+   * 获取最近打开的文件
+   * @param filePath 文件路径
+   */
+  public async getRecentFile(filePath: string): Promise<RecentFile | null> {
+    // 遍历最近打开的文件路径，找到匹配的文件
+    for (const recentFile of await this.getRecentFiles()) {
+      if (recentFile.filePath === filePath) {
+        // 如果找到匹配的文件，返回该文件
+        return recentFile;
+      }
+    }
+    return null;
+  }
 }
