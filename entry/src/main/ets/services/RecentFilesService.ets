@@ -1,7 +1,7 @@
 import preferences from '@ohos.data.preferences';
 import { FileService } from './FileService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
-import { FileParam, RecentFile } from './TypeDefined';
+import { RecentFile } from './TypeDefined';
 
 /**
  * 最近打开的文件服务
@@ -84,15 +84,15 @@ export class RecentFilesService {
    * 读取最近打开的文件的内容
    * @param filePath 文件路径
    */
-  public async readRecentFile(recentFile: RecentFile): Promise<FileParam> {
+  public async readRecentFile(recentFile: RecentFile): Promise<void> {
     const fileContent = await new KdbxFileManager(recentFile.storageType).loadKdbxFile(recentFile.filePath);
     // 设置文件参数
     FileService.getInstance().setFileParam({
       filePath: recentFile.filePath,
       fileName: recentFile.fileName,
-      fileContent: fileContent
+      fileContent: fileContent,
+      storageType: recentFile.storageType
     });
-    return FileService.getInstance().getFileParam();
   }
 
   /**
