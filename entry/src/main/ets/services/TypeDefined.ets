@@ -19,6 +19,11 @@ export interface FileParam {
    * 文件内容
    */
   fileContent: ArrayBuffer;
+
+  /**
+   * 存储类型
+   */
+  storageType: StorageType;
 }
 
 /**
@@ -46,14 +51,19 @@ export interface DbFileParam {
   database: Kdbx;
 
   /**
+   * 认证方式
+   */
+  authType: AuthTypeInfo;
+
+  /**
+   * 存储类型
+   */
+  storageType: StorageType;
+
+  /**
    * 认证密码文件路径
    */
   keyFilePath?: string;
-
-  /**
-   * 认证方式
-   */
-  authType?: AuthTypeInfo;
 }
 
 /**

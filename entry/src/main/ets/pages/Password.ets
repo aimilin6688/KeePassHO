@@ -24,6 +24,7 @@ struct Password {
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
   private filePath: string = '';
   private keyFileContent: ArrayBuffer | null = null;
+  private storageType: StorageType | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -79,6 +80,7 @@ struct Password {
     // 获取从LocalFile页面传递的参数
     this.filePath = fileParam.filePath ?? '';
     this.fileName = fileParam.fileName ?? '未知文件';
+    this.storageType = fileParam.storageType;
 
     if (!this.filePath || !fileParam.fileContent) {
       this.promptAction.showToast({
@@ -102,6 +104,7 @@ struct Password {
       if (recentFile) {
         this.fileName = recentFile.fileName;
         this.filePath = recentFile.filePath;
+        this.storageType = recentFile.storageType;
         // 读取最近打开的文件内容
         this.recentFileService.readRecentFile(recentFile);
         // 设置认证类型
@@ -289,6 +292,12 @@ struct Password {
 
     this.isLoading = true;
     this.updateButtonState(); // 更新按钮状态
+    if (this.storageType === null) {
+      this.promptAction.showToast({
+        message: `存储类型为空`,
+      });
+      return;
+    }
     try {
       // 加载并验证数据库
       const database = await this.loadDatabase();
@@ -302,7 +311,8 @@ struct Password {
         fileName: this.fileName,
         database: database,
         keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
-        authType: this.authType // 添加认证类型
+        authType: this.authType, // 添加认证类型
+        storageType: this.storageType
       })
 
       // 添加到最近打开的文件列表，包含认证方式和认证文件信息
@@ -418,7 +428,7 @@ struct Password {
               this.password = value;
               this.updateButtonState(); // 更新按钮状态
             })
-            .onSubmit(()=>{
+            .onSubmit(() => {
               this.verifyAndOpenDatabase();
             })
         }
