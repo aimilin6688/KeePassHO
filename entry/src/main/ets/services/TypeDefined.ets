@@ -183,4 +183,14 @@ export interface RecentFile {
    * 存储类型
    */
   storageType: StorageType;
+  
+  /**
+   * 认证方式
+   */
+  authType?: AuthTypeInfo;
+  
+  /**
+   * 认证密钥文件路径
+   */
+  keyFilePath?: string;
 }
