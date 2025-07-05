@@ -41,18 +41,17 @@ export class LocalFileStorage implements IFileStorage {
    * @throws 如果写入失败则抛出异常
    */
   async writeFile(path: string, content: ArrayBuffer): Promise<void> {
-    FileUtils.activatePermission(path, fileShare.OperationMode.WRITE_MODE).then(async ()=>{
-      try {
-        // 打开文件（如果不存在则创建）
-        const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-        // 写入内容
-        await fs.write(file.fd, content);
-        // 关闭文件
-        await fs.close(file.fd);
-      } catch (error) {
-        throw new Error(`Failed to write file: ${error.message}`);
-      }
-    });
+    try {
+      // 打开文件（如果不存在则创建）
+      const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      // 写入内容
+      await fs.write(file.fd, content);
+      // 关闭文件
+      await fs.close(file.fd);
+      return Promise.resolve();
+    } catch (error) {
+      throw new Error(`Failed to write file: ${error.message}`);
+    }
   }
 
   /**
