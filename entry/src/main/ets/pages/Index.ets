@@ -7,13 +7,12 @@ import { RecentFilesService } from '../services/RecentFilesService';
 struct Index {
   private router: Router = this.getUIContext().getRouter();
 
+
   aboutToAppear() {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
-
-    // 检查是否有最近打开的文件
     this.checkRecentFiles();
   }
 
@@ -25,11 +24,12 @@ struct Index {
       // 加载最近打开的文件
       RecentFilesService.getInstance().loadMostRecentFile().then((recentFile) => {
         if (recentFile) {
-          // 设置文件参数
-          RecentFilesService.getInstance().readRecentFile(recentFile);
           // 导航到密码输入页面
           this.router.pushUrl({
-            url: 'pages/Password'
+            url: 'pages/Password',
+            params: {
+              filePath: recentFile.filePath
+            }
           });
         }
       });

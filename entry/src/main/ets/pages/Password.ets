@@ -1,13 +1,14 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
 import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
+import { RecentFilesService } from '../services/RecentFilesService';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
 import { fileShare } from '@kit.CoreFileKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
-import { BusinessError } from '@kit.BasicServicesKit';
+import FileUtils from '../common/utils/FIleUtils';
 
 @Entry
 @Component
@@ -21,12 +22,12 @@ struct Password {
   @State showPassword: boolean = false;
   @State hasKeyFileContent: boolean = false; // 添加状态变量跟踪密钥文件是否已加载
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
-
   private filePath: string = '';
   private keyFileContent: ArrayBuffer | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+  private recentFileService = RecentFilesService.getInstance();
 
   // 更新按钮状态
   private updateButtonState(): void {
@@ -35,9 +36,9 @@ struct Password {
       this.buttonEnabled = false;
       return;
     }
-    if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
-         this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && 
-        !this.hasKeyFileContent) {
+    if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
+      this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
+      !this.hasKeyFileContent) {
       this.buttonEnabled = false;
       return;
     }
@@ -57,6 +58,23 @@ struct Password {
   }
 
   aboutToAppear() {
+    const params = this.router.getParams() as Record<string, string>;
+    // 通过最近文件打开
+    if (params && params.filePath) {
+      this.openRecentFile(params.filePath);
+    }
+    // 数据库选择器打开
+    else {
+      this.openFileParam();
+    }
+    // 初始化按钮状态
+    this.updateButtonState();
+  }
+
+  /**
+   * 数据库选择器打开
+   */
+  private openFileParam() {
     let fileParam: FileParam = FileService.getInstance().getFileParam();
     // 获取从LocalFile页面传递的参数
     this.filePath = fileParam.filePath ?? '';
@@ -69,8 +87,42 @@ struct Password {
       });
       this.router.back();
     }
-    
-    this.updateButtonState(); // 初始化按钮状态
+  }
+
+  /**
+   * 通过最近文件打开
+   */
+  private openRecentFile(filePath: string) {
+    if (!filePath) {
+      this.promptAction.showToast({ message: '无效的数据文件', duration: 2000 });
+      this.router.back();
+    }
+    // 获取最近打开记录
+    this.recentFileService.getRecentFile(filePath).then(recentFile => {
+      if (recentFile) {
+        this.filePath = filePath;
+        this.fileName = recentFile.fileName;
+        FileUtils.activatePermission(this.filePath, fileShare.OperationMode.READ_MODE).then(async () => {
+          // 加载密钥文件内容
+          if (recentFile.keyFilePath) {
+            this.loadKeyFileContent(recentFile.keyFilePath);
+          }
+        });
+        // 读取最近打开的文件内容
+        this.recentFileService.readRecentFile(recentFile);
+        // 设置认证类型
+        if (recentFile.authType) {
+          this.authType = recentFile.authType;
+        }
+        // 获取密钥文件路径
+        if (recentFile.keyFilePath) {
+          this.keyFilePath = recentFile.keyFilePath;
+          FileUtils.activatePermission(this.keyFilePath, fileShare.OperationMode.READ_MODE).then(async () => {
+            this.loadKeyFileContent(this.keyFilePath);
+          })
+        }
+      }
+    });
   }
 
   /**
@@ -84,9 +136,9 @@ struct Password {
 
       // 创建凭证
       let credentials: KdbxCredentials;
-      if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
-           this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && 
-          this.keyFileContent) {
+      if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
+        this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
+      this.keyFileContent) {
         // 使用密码和密钥文件
         credentials = new KdbxCredentials(
           ProtectedValue.fromString(this.password),
@@ -134,38 +186,12 @@ struct Password {
       if (result && result.length > 0) {
         const fileUri = result[0];
         // 获取文件名
-        const fileNameMatch = fileUri.match(/[^/]+$/);
-        this.keyFileName = fileNameMatch ? fileNameMatch[0] : '未知文件';
+        this.keyFileName = FileUtils.getFileName(fileUri);
         this.keyFilePath = fileUri;
 
         // 永久授权文件访问权限
-        let policyInfo: fileShare.PolicyInfo = {
-          uri: this.keyFilePath,
-          operationMode: fileShare.OperationMode.READ_MODE,
-        };
-        let policies: Array<fileShare.PolicyInfo> = [policyInfo];
-        fileShare.persistPermission(policies).then(async () => {
-          // 读取文件内容
-          try {
-            const fileManager = new KdbxFileManager(StorageType.LOCAL);
-            this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
-            this.hasKeyFileContent = true; // 更新状态变量
-            this.updateButtonState(); // 更新按钮状态
-            console.info('密钥文件读取成功');
-          } catch (error) {
-            console.error(`读取密钥文件失败: ${error}`);
-            this.promptAction.showToast({
-              message: '读取密钥文件失败',
-              duration: 2000
-            });
-            this.keyFileContent = null;
-            this.hasKeyFileContent = false; // 更新状态变量
-            this.keyFilePath = '';
-            this.keyFileName = '';
-            this.updateButtonState(); // 更新按钮状态
-          }
-        }).catch((err: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
-          console.error("persistPermission failed with error message: " + err.message + ", error code: " + err.code);
+        FileUtils.persistPermission(fileUri, fileShare.OperationMode.READ_MODE).then(async () => {
+          this.loadKeyFileContent(fileUri);
         });
       }
     } catch (error) {
@@ -174,6 +200,33 @@ struct Password {
         message: '选择密钥文件失败',
         duration: 2000
       });
+    }
+  }
+
+  /**
+   * 读取密钥文件内容
+   * @param fileUri 文件路径
+   */
+  private async loadKeyFileContent(fileUri: string) {
+    console.log('loadKeyFileContent----------->', fileUri);
+    // 读取文件内容
+    try {
+      const fileManager = new KdbxFileManager(StorageType.LOCAL);
+      this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
+      this.hasKeyFileContent = true; // 更新状态变量
+      this.updateButtonState(); // 更新按钮状态
+      console.info('密钥文件读取成功');
+    } catch (error) {
+      console.error(`读取密钥文件失败: ${error}`);
+      this.promptAction.showToast({
+        message: '读取密钥文件失败',
+        duration: 2000
+      });
+      this.keyFileContent = null;
+      this.hasKeyFileContent = false; // 更新状态变量
+      this.keyFilePath = '';
+      this.keyFileName = '';
+      this.updateButtonState(); // 更新按钮状态
     }
   }
 
@@ -232,9 +285,9 @@ struct Password {
       return;
     }
 
-    if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
-         this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && 
-        !this.keyFileContent) {
+    if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
+      this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
+      !this.keyFileContent) {
       this.promptAction.showToast({
         message: '请选择密钥文件',
         duration: 2000
@@ -259,6 +312,20 @@ struct Password {
         keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
         authType: this.authType // 添加认证类型
       })
+
+      // 添加到最近打开的文件列表，包含认证方式和认证文件信息
+      this.recentFileService.getRecentFile(this.filePath).then((recentFile) => {
+        if (recentFile) {
+          this.recentFileService.addRecentFile({
+            filePath: recentFile.filePath,
+            fileName: recentFile.fileName,
+            storageType: recentFile.storageType, // 假设是本地存储
+            authType: this.authType,
+            keyFilePath: this.keyFilePath
+          });
+        }
+      })
+
       // 验证成功，跳转到数据库展示页面
       this.router.pushUrl({
         url: 'pages/DatabaseShow'
@@ -330,8 +397,8 @@ struct Password {
               if (index >= 0 && index < allTypes.length) {
                 this.authType = allTypes[index];
                 // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-                if (this.authType.type !== AuthType.PASSWORD_KEYFILE.type && 
-                    this.authType.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+                if (this.authType.type !== AuthType.PASSWORD_KEYFILE.type &&
+                  this.authType.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
                   this.keyFileContent = null;
                   this.hasKeyFileContent = false; // 更新状态变量
                   this.keyFilePath = '';
@@ -369,8 +436,8 @@ struct Password {
         .margin({ bottom: 16 })
 
         // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
-        if (this.authType.type === AuthType.PASSWORD_KEYFILE.type || 
-            this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+        if (this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
+          this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
           this.KeyFileSelector()
         }
 
@@ -401,7 +468,7 @@ struct Password {
         .width('100%')
         .padding({ top: 12, bottom: 12 })
         .position({ x: 0, y: '100%' })
-        .translate({ y: -74 })  // 调整位置，确保正确显示
+        .translate({ y: -74 }) // 调整位置，确保正确显示
 
         if (this.isLoading) {
           LoadingProgress()
