@@ -59,7 +59,7 @@ struct LocalFile {
         const content = await this.fileManager.loadKdbxFile(path);
         console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
 
-        FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content });
+        FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content, storageType: StorageType.LOCAL });
 
         // 添加到最近打开的文件列表
         await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL });
