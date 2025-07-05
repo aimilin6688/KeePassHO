@@ -7,6 +7,7 @@ import { StorageType } from '../../services/kdbx/interfaces';
 import { BusinessError } from '@kit.BasicServicesKit';
 import * as kdbxweb from 'kdbxweb';
 import { RecentFilesService } from '../../services/RecentFilesService';
+import FileUtils from '../../common/utils/FIleUtils';
 
 
 @Entry
@@ -222,7 +223,6 @@ struct CreateDatabase {
 
   private async saveKdbxFile(filePath: string) {
     console.info(`Selected URI: ${filePath}`);
-
     let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password));
     // 将kdbx对象转换为ArrayBuffer
     let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
@@ -236,7 +236,7 @@ struct CreateDatabase {
         await RecentFilesService.getInstance()
           .addRecentFile({
             filePath: filePath,
-            fileName: this.databaseName,
+            fileName: FileUtils.getFileName(filePath),
             storageType: StorageType.LOCAL,
             authType: AuthType.PASSWORD
           });
@@ -248,8 +248,12 @@ struct CreateDatabase {
           }
         });
       }).catch((error: Error) => {
-        this.promptAction.showToast({ message: '数据库创建失败' });
+        console.log(`Failed to save database: ${error}`);
+        this.promptAction.showToast({ message: '数据库保存失败' });
       });
+    }).catch((error: Error) => {
+      console.error(`Failed to create database: ${error}`);
+      this.promptAction.showToast({ message: '数据库创建失败' });
     });
   }
 }
