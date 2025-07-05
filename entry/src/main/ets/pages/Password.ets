@@ -29,6 +29,20 @@ struct Password {
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private recentFileService = RecentFilesService.getInstance();
 
+  aboutToAppear() {
+    const params = this.router.getParams() as Record<string, string>;
+    // 通过最近文件打开
+    if (params && params.filePath) {
+      this.openRecentFile(params.filePath);
+    }
+    // 数据库选择器打开
+    else {
+      this.openFileParam();
+    }
+    // 初始化按钮状态
+    this.updateButtonState();
+  }
+
   // 更新按钮状态
   private updateButtonState(): void {
     console.log('updateButtonState-----------》', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType)
@@ -55,20 +69,6 @@ struct Password {
   // 获取认证类型的文本描述，用于Select组件
   private getAuthTypeText(): string {
     return this.authType.description;
-  }
-
-  aboutToAppear() {
-    const params = this.router.getParams() as Record<string, string>;
-    // 通过最近文件打开
-    if (params && params.filePath) {
-      this.openRecentFile(params.filePath);
-    }
-    // 数据库选择器打开
-    else {
-      this.openFileParam();
-    }
-    // 初始化按钮状态
-    this.updateButtonState();
   }
 
   /**
@@ -100,14 +100,8 @@ struct Password {
     // 获取最近打开记录
     this.recentFileService.getRecentFile(filePath).then(recentFile => {
       if (recentFile) {
-        this.filePath = filePath;
         this.fileName = recentFile.fileName;
-        FileUtils.activatePermission(this.filePath, fileShare.OperationMode.READ_MODE).then(async () => {
-          // 加载密钥文件内容
-          if (recentFile.keyFilePath) {
-            this.loadKeyFileContent(recentFile.keyFilePath);
-          }
-        });
+        this.filePath = recentFile.filePath;
         // 读取最近打开的文件内容
         this.recentFileService.readRecentFile(recentFile);
         // 设置认证类型
@@ -185,10 +179,6 @@ struct Password {
       });
       if (result && result.length > 0) {
         const fileUri = result[0];
-        // 获取文件名
-        this.keyFileName = FileUtils.getFileName(fileUri);
-        this.keyFilePath = fileUri;
-
         // 永久授权文件访问权限
         FileUtils.persistPermission(fileUri, fileShare.OperationMode.READ_MODE).then(async () => {
           this.loadKeyFileContent(fileUri);
@@ -211,11 +201,13 @@ struct Password {
     console.log('loadKeyFileContent----------->', fileUri);
     // 读取文件内容
     try {
+      // 获取文件名
+      this.keyFilePath = fileUri;
+      this.keyFileName = FileUtils.getFileName(fileUri);
       const fileManager = new KdbxFileManager(StorageType.LOCAL);
       this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
       this.hasKeyFileContent = true; // 更新状态变量
       this.updateButtonState(); // 更新按钮状态
-      console.info('密钥文件读取成功');
     } catch (error) {
       console.error(`读取密钥文件失败: ${error}`);
       this.promptAction.showToast({

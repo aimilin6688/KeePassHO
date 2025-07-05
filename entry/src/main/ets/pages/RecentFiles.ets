@@ -1,7 +1,5 @@
 import { RecentFilesService } from '../services/RecentFilesService';
-import { FileService } from '../services/FileService';
 import { RecentFile } from '../services/TypeDefined';
-import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { PromptAction, Router } from '@kit.ArkUI';
 
 @Entry
@@ -9,7 +7,6 @@ import { PromptAction, Router } from '@kit.ArkUI';
 struct RecentFiles {
   @State recentFiles: RecentFile [] = [];
   @State isLoading: boolean = true;
-
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
@@ -41,34 +38,27 @@ struct RecentFiles {
    * @param fileName 文件名
    */
   async openFile(recentFile: RecentFile) {
-    try {
-      let recentFilesService:RecentFilesService = RecentFilesService.getInstance() ;
-      // 检查文件是否存在
-      const fileExists = await recentFilesService.checkFileExists(recentFile);
-      if (!fileExists) {
-        this.promptAction.showToast({
-          message: '文件不存在或已被移动',
-          duration: 2000
-        });
-        // 移除不存在的文件记录
-        await recentFilesService.removeRecentFile(recentFile);
-        // 重新加载列表
-        this.loadRecentFiles();
-        return;
-      }
-      // 读取文件内容
-      await recentFilesService.readRecentFile(recentFile);
-      // 导航到密码输入页面
-      this.router.pushUrl({
-        url: 'pages/Password'
-      });
-    } catch (error) {
-      console.error(`打开文件失败: ${error}`);
+    let recentFilesService: RecentFilesService = RecentFilesService.getInstance();
+    // 检查文件是否存在
+    const fileExists = await recentFilesService.checkFileExists(recentFile);
+    if (!fileExists) {
       this.promptAction.showToast({
-        message: '打开文件失败',
+        message: '文件不存在或已被移动',
         duration: 2000
       });
+      // 移除不存在的文件记录
+      await recentFilesService.removeRecentFile(recentFile);
+      // 重新加载列表
+      this.loadRecentFiles();
+      return;
     }
+    // 导航到密码输入页面
+    this.router.pushUrl({
+      url: 'pages/Password',
+      params: {
+        filePath: recentFile.filePath
+      }
+    });
   }
 
   /**
