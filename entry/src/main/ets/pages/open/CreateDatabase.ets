@@ -226,23 +226,30 @@ struct CreateDatabase {
     let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password));
     // 将kdbx对象转换为ArrayBuffer
     let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
-    let dbContent = await newDb.save();
-    console.log('saveKdbxFile: ', dbContent.byteLength);
-    // 保存数据库文件
-    this.fileManager.saveKdbxFile(filePath,  dbContent).then(async () => {
-      console.log('Database saved successfully: ', filePath);
-      // 显示成功提示
-      this.promptAction.showToast({ message: '数据库创建成功' });
-      await RecentFilesService.getInstance().addRecentFile({ filePath: filePath, fileName: this.databaseName, storageType: StorageType.LOCAL, authType: AuthType.PASSWORD });
-      // 跳转到密码页面
-      this.router.replaceUrl({
-        url: 'pages/Password',
-        params: {
-          filePath: filePath
-        }
+    newDb.save().then((dbContent: ArrayBuffer) => {
+      console.log('saveKdbxFile: ', dbContent.byteLength);
+      // 保存数据库文件
+      this.fileManager.saveKdbxFile(filePath, dbContent).then(async () => {
+        console.log('Database saved successfully: ', filePath);
+        // 显示成功提示
+        this.promptAction.showToast({ message: '数据库创建成功' });
+        await RecentFilesService.getInstance()
+          .addRecentFile({
+            filePath: filePath,
+            fileName: this.databaseName,
+            storageType: StorageType.LOCAL,
+            authType: AuthType.PASSWORD
+          });
+        // 跳转到密码页面
+        this.router.replaceUrl({
+          url: 'pages/Password',
+          params: {
+            filePath: filePath
+          }
+        });
+      }).catch((error: Error) => {
+        this.promptAction.showToast({ message: '数据库创建失败' });
       });
-    }).catch((error:Error) => {
-      this.promptAction.showToast({ message: '数据库创建失败' });
     });
   }
 }
