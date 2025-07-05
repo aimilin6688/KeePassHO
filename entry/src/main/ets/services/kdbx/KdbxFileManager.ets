@@ -47,7 +47,7 @@ export class KdbxFileManager {
   async saveKdbxFile(path: string, content: ArrayBuffer): Promise<void> {
     try {
       // 写入文件内容
-      await this.storage.writeFile(path, content);
+      return this.storage.writeFile(path, content);
     } catch (error) {
       throw new Error(`Failed to save KDBX file: ${error.message}`);
     }
