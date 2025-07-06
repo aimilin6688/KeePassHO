@@ -162,6 +162,27 @@ struct Settings {
               url: 'pages/open/OpenDatabase'
             }, router.RouterMode.Single);
           })
+
+          // 最近打开
+          ListItem() {
+            Row() {
+              Text('最近打开')
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .backgroundColor($r('app.color.card_background'))
+          .onClick(()=>{
+            this.router.pushUrl({
+              url: 'pages/RecentFiles'
+            }, router.RouterMode.Single);
+          })
         }
       }
       .width('100%')

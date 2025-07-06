@@ -47,9 +47,6 @@ struct DatabaseShow {
     });
   }
 
-  onPageShow(): void {
-  }
-
   private initData(dbShowParam: DatabaseShowParam | undefined) {
     if (!this.database) {
       this.promptAction.showToast({
