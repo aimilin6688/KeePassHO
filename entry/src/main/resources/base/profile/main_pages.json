@@ -5,6 +5,7 @@
     "pages/Settings",
     "pages/Password",
     "pages/RecentFiles",
+    "pages/EntryEdit",
     "pages/open/OpenDatabase",
     "pages/open/LocalFile",
     "pages/open/WebDAV",

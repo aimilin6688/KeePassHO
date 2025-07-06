@@ -211,3 +211,11 @@ export interface RecentFile {
 export interface DatabaseShowParam{
   groupId?: string;
 }
+
+/**
+ * 数据库显示参数定义
+ */
+export interface EntryEditParam{
+  groupId?: string;
+  entryId?: string;
+}

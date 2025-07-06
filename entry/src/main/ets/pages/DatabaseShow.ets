@@ -104,7 +104,14 @@ struct DatabaseShow {
         .fontSize(14)
         .onClick(() => {
           if (item instanceof KdbxEntry) {
-            // 跳转到 Item 编辑页面
+            // 跳转到条目编辑页面
+            this.router.pushUrl({
+              url: 'pages/EntryEdit',
+              params: {
+                groupId: this.currentGroup?.uuid.id,
+                entryId: item.uuid.id
+              }
+            });
           }
           if (item instanceof KdbxGroup) {
             this.editingGroupIndex = index
@@ -237,6 +244,56 @@ struct DatabaseShow {
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
   }
 
+  /**
+   * 显示添加选项菜单
+   */
+  private showAddOptions() {
+    if (!this.database || !this.currentGroup) {
+      this.promptAction.showToast({
+        message: '无效的数据库或分组信息',
+        duration: 2000
+      });
+      return;
+    }
+
+    // 显示选项菜单
+    this.promptAction.showDialog({
+      title: '添加',
+      message: '请选择要添加的类型',
+      buttons: [
+        {
+          text: '添加分组',
+          color: $r('app.color.primary')
+        },
+        {
+          text: '添加条目',
+          color: $r('app.color.primary')
+        },
+        {
+          text: '取消',
+          color: $r('app.color.text_secondary')
+        }
+      ],
+      alignment: DialogAlignment.Bottom,
+      offset: { dx: 0, dy: -20 }
+    }).then((result) => {
+      if (result.index === 0) {
+        // 添加分组
+        this.editingGroupIndex = -1;
+        this.newGroupName = "";
+        this.dialogController.open();
+      } else if (result.index === 1) {
+        // 添加条目
+        this.router.pushUrl({
+          url: 'pages/EntryEdit',
+          params: {
+            groupId: this.currentGroup?.uuid.id
+          }
+        });
+      }
+    });
+  }
+
   build() {
     Stack() {
       Column() {
@@ -366,6 +423,9 @@ struct DatabaseShow {
                 .borderRadius(8)
                 .backgroundColor($r('app.color.card_background'))
                 .padding({ left: 10, right: 10 })
+                .onClick(() => {
+                  this.router.pushUrl({ url: 'pages/EntryEdit', params: { entryId: itemEntry.uuid.id, groupId: this.currentGroup?.uuid.id } });
+                })
               }
               .swipeAction({
                 end: {
@@ -398,9 +458,7 @@ struct DatabaseShow {
       .enabled(!this.isLoading)
       .opacity(this.isLoading ? 0.5 : 1)
       .onClick(() => {
-        this.editingGroupIndex = -1
-        this.newGroupName = ""
-        this.dialogController.open()
+        this.showAddOptions();
       })
     }
     .width('100%')
