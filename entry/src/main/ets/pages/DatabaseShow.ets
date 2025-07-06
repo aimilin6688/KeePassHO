@@ -196,10 +196,9 @@ struct DatabaseShow {
       // 添加新分组
       this.database.createGroup(this.currentGroup, this.newGroupName.trim());
     }
-    if(this.currentGroup){
-      this.groups = [...this.currentGroup.groups];
-    }
+    // 保存数据库
     this.saveDatabase();
+    this.updateUI();
     // 重置状态
     this.newGroupName = "";
     this.editingGroupIndex = -1;
@@ -212,8 +211,21 @@ struct DatabaseShow {
 
   onThemeChanged() {
     // 强制组件刷新以应用新主题
-    this.groups = [...this.groups];
-    this.entries = [...this.entries];
+    this.updateUI();
+  }
+
+  /**
+   * 强制组件刷新
+   */
+  private updateUI(){
+    // 强制刷新UI - 先清空数组，再重新加载
+    this.groups = [];
+    this.entries = [];
+    // 延迟一帧后重新加载数据，确保UI更新
+    setTimeout(() => {
+      this.groups = [...this.currentGroup?.groups || []];
+      this.entries = [...this.currentGroup?.entries || []];
+    }, 10);
   }
 
   /**
