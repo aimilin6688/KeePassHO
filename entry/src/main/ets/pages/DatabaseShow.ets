@@ -195,7 +195,9 @@ struct DatabaseShow {
     } else {
       // 添加新分组
       this.database.createGroup(this.currentGroup, this.newGroupName.trim());
-      this.groups = [...this.groups];
+    }
+    if(this.currentGroup){
+      this.groups = [...this.currentGroup.groups];
     }
     this.saveDatabase();
     // 重置状态
