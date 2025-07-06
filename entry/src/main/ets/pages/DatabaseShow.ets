@@ -17,7 +17,6 @@ struct DatabaseShow {
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
-
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -74,7 +73,7 @@ struct DatabaseShow {
       }
 
       // 判断分组是否有效
-      if(this.currentGroup === undefined){
+      if (this.currentGroup === undefined) {
         this.promptAction.showToast({
           message: '无效的分组',
           duration: 2000
@@ -98,7 +97,7 @@ struct DatabaseShow {
   }
 
   @Builder
-  SwipeActionButtons(index: number) {
+  SwipeActionButtons(index: number, item: KdbxGroup | KdbxEntry) {
     Row() {
       Button("编辑", { type: ButtonType.Normal })
         .width(80)
@@ -107,9 +106,14 @@ struct DatabaseShow {
         .fontColor(Color.White)
         .fontSize(14)
         .onClick(() => {
-          this.editingGroupIndex = index
-          this.newGroupName = this.groups[index].name;
-          this.dialogController.open()
+          if (item instanceof KdbxEntry) {
+            // 跳转到 Item 编辑页面
+          }
+          if (item instanceof KdbxGroup) {
+            this.editingGroupIndex = index
+            this.newGroupName = this.groups[index].name;
+            this.dialogController.open()
+          }
         })
 
       Button("删除", { type: ButtonType.Normal })
@@ -130,16 +134,20 @@ struct DatabaseShow {
             secondaryButton: {
               value: '删除',
               action: () => {
-                if (this.database) {
-                  // 从数据库中删除分组
-                  const group = this.groups[index];
-                  group.parentGroup?.groups.splice(group.parentGroup.groups.indexOf(group), 1);
-                  // 更新UI
-                  this.groups.splice(index, 1);
-                  this.saveDatabase();
-                } else {
+                if (this.database === null) {
+                  return;
+                }
+                let deleteObj: KdbxGroup | KdbxEntry = null;
+                if (item instanceof KdbxGroup) {
+                  deleteObj = this.groups[index];
                   this.groups.splice(index, 1);
                 }
+                if (item instanceof KdbxEntry) {
+                  deleteObj = this.entries[index];
+                  this.entries.splice(index, 1);
+                }
+                this.database.remove(deleteObj);
+                this.saveDatabase();
               }
             }
           })
@@ -183,16 +191,12 @@ struct DatabaseShow {
       // 编辑现有分组
       const group = this.groups[this.editingGroupIndex];
       group.name = this.newGroupName.trim();
-      group.times.lastModTime = new Date();
-      // 更新UI
-      this.groups = [...this.groups];
-      this.saveDatabase();
+      group.times.update();
     } else {
       // 添加新分组
       this.database.createGroup(this.currentGroup, this.newGroupName.trim());
-      this.groups = this.currentGroup?.groups || [];
-      this.saveDatabase();
     }
+    this.saveDatabase();
     // 重置状态
     this.newGroupName = "";
     this.editingGroupIndex = -1;
@@ -226,7 +230,7 @@ struct DatabaseShow {
       Column() {
         // 顶部导航栏
         Row() {
-          if(this.showBack){
+          if (this.showBack) {
             Image($r('app.media.ic_back'))
               .width(24)
               .height(24)
@@ -309,12 +313,12 @@ struct DatabaseShow {
                 .backgroundColor($r('app.color.card_background'))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/DatabaseShow', params: { groupId: itemGroup.uuid.id }});
+                  this.router.pushUrl({ url: 'pages/DatabaseShow', params: { groupId: itemGroup.uuid.id } });
                 })
               }
               .swipeAction({
                 end: {
-                  builder: this.SwipeActionButtons(index)
+                  builder: this.SwipeActionButtons(index, itemGroup)
                 }
               })
             }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
@@ -353,7 +357,7 @@ struct DatabaseShow {
               }
               .swipeAction({
                 end: {
-                  builder: this.SwipeActionButtons(index)
+                  builder: this.SwipeActionButtons(index, itemEntry)
                 }
               })
             }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
