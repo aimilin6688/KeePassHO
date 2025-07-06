@@ -195,6 +195,7 @@ struct DatabaseShow {
     } else {
       // 添加新分组
       this.database.createGroup(this.currentGroup, this.newGroupName.trim());
+      this.groups = [...this.groups];
     }
     this.saveDatabase();
     // 重置状态
@@ -370,6 +371,7 @@ struct DatabaseShow {
         }
       }
       .width('100%')
+      .margin({ bottom: 80 })
 
       Button() {
         Image($r('app.media.ic_add'))
