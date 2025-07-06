@@ -1,7 +1,7 @@
 import { ThemeConstants, ThemeMode } from '../common/constants/ThemeConstants';
 import { SettingsService } from '../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
-import { Router } from '@kit.ArkUI';
+import { router, Router } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -58,84 +58,111 @@ struct Settings {
 
       // 设置列表
       List() {
-        // 主题设置
-        ListItem() {
-          Column() {
+        ListItemGroup() {
+          // 主题设置
+          ListItem() {
+            Column() {
+              Row() {
+                Text('主题')
+                  .fontSize(16)
+                Blank()
+                Select(ThemeConstants.THEME_OPTIONS)
+                  .value(this.currentThemeMode)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r('app.color.card_background'))
+                  .onSelect(async (index: number) => {
+                    const selectedMode = ThemeConstants.THEME_OPTIONS[index].value;
+                    this.applyThemeMode(selectedMode)
+                  })
+              }
+              .width('100%')
+              .height(48)
+              .padding({ left: 16, right: 16 })
+            }
+            .backgroundColor($r('app.color.card_background'))
+          }
+
+          // 网格视图
+          ListItem() {
             Row() {
-              Text('主题')
+              Text('网格视图')
                 .fontSize(16)
-              Blank()
-              Select(ThemeConstants.THEME_OPTIONS)
-                .value(this.currentThemeMode)
-                .font({ size: 16 })
-                .selectedOptionFont({ size: 16 })
-                .optionFont({ size: 16 })
-                .backgroundColor($r('app.color.card_background'))
-                .onSelect(async (index: number) => {
-                  const selectedMode = ThemeConstants.THEME_OPTIONS[index].value;
-                  this.applyThemeMode(selectedMode)
+                .flexGrow(1)
+              Toggle({ type: ToggleType.Switch, isOn: this.isGridView })
+                .onChange((isOn: boolean) => {
+                  this.isGridView = isOn
+                  this.settingsService.setGridView(isOn);
                 })
             }
             .width('100%')
-            .height(48)
-            .padding({ left: 16, right: 16 })
+            .padding(16)
+          }
+          .backgroundColor($r('app.color.card_background'))
+
+          // 排序方式
+          ListItem() {
+            Column() {
+              Text('排序方式')
+                .fontSize(16)
+                .width('100%')
+                .margin({ bottom: 8 })
+              Blank()
+
+              Row() {
+                Radio({ value: 'name', group: 'sortBy' })
+                  .checked(this.sortBy === 'name')
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.sortBy = 'name'
+                      this.settingsService.setSortBy('name');
+                    }
+                  })
+                Text('按名称')
+                  .fontSize(14)
+                  .margin({ left: 8, right: 16 })
+                Radio({ value: 'time', group: 'sortBy' })
+                  .checked(this.sortBy === 'time')
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.sortBy = 'time'
+                      this.settingsService.setSortBy('time');
+                    }
+                  })
+                Text('按时间')
+                  .fontSize(14)
+                  .margin({ left: 8 })
+              }
+            }
+            .width('100%')
+            .padding(16)
           }
           .backgroundColor($r('app.color.card_background'))
         }
 
-        // 网格视图
-        ListItem() {
-          Row() {
-            Text('网格视图')
-              .fontSize(16)
-              .flexGrow(1)
-            Toggle({ type: ToggleType.Switch, isOn: this.isGridView })
-              .onChange((isOn: boolean) => {
-                this.isGridView = isOn
-                this.settingsService.setGridView(isOn);
-              })
-          }
-          .width('100%')
-          .padding(16)
-        }
-        .backgroundColor($r('app.color.card_background'))
-
-        // 排序方式
-        ListItem() {
-          Column() {
-            Text('排序方式')
-              .fontSize(16)
-              .width('100%')
-              .margin({ bottom: 8 })
+        ListItemGroup() {
+          // 更换数据库
+          ListItem() {
             Row() {
-              Radio({ value: 'name', group: 'sortBy' })
-                .checked(this.sortBy === 'name')
-                .onChange((isChecked: boolean) => {
-                  if (isChecked) {
-                    this.sortBy = 'name'
-                    this.settingsService.setSortBy('name');
-                  }
-                })
-              Text('按名称')
-                .fontSize(14)
-                .margin({ left: 8, right: 16 })
-              Radio({ value: 'time', group: 'sortBy' })
-                .checked(this.sortBy === 'time')
-                .onChange((isChecked: boolean) => {
-                  if (isChecked) {
-                    this.sortBy = 'time'
-                    this.settingsService.setSortBy('time');
-                  }
-                })
-              Text('按时间')
-                .fontSize(14)
-                .margin({ left: 8 })
+              Text('更换数据库')
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
             }
+            .width('100%')
+            .padding(16)
           }
-          .width('100%')
-          .padding(16)
+          .backgroundColor($r('app.color.card_background'))
+          .onClick(()=>{
+            this.router.pushUrl({
+              url: 'pages/open/OpenDatabase'
+            }, router.RouterMode.Single);
+          })
         }
-        .backgroundColor($r('app.color.card_background'))
       }
       .width('100%')
       .layoutWeight(1)

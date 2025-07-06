@@ -1,5 +1,5 @@
 import ThemeManager from '../common/utils/ThemeManager';
-import { Router } from '@kit.ArkUI';
+import { router, Router } from '@kit.ArkUI';
 import { RecentFilesService } from '../services/RecentFilesService';
 
 @Entry
@@ -114,7 +114,7 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), '打开数据库', () => {
-          this.router.pushUrl({ url: 'pages/open/OpenDatabase' })
+          this.router.pushUrl({ url: 'pages/open/OpenDatabase' }, router.RouterMode.Single)
         })
 
         // 添加间距

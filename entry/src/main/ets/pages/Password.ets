@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction, router, Router } from '@kit.ArkUI';
 import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
 import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
@@ -264,7 +264,7 @@ struct Password {
    */
   changeDatabase() {
     // 返回到文件选择页面
-    this.router.pushUrl({ url: 'pages/open/OpenDatabase' })
+    this.router.pushUrl({ url: 'pages/open/OpenDatabase' }, router.RouterMode.Single)
   }
 
   /**
