@@ -165,6 +165,7 @@ struct Settings {
         }
       }
       .width('100%')
+      .height('auto')
       .layoutWeight(1)
       .margin({ top: 12 })
       .divider({
