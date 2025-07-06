@@ -1,4 +1,4 @@
-import { Kdbx } from 'kdbxweb';
+import { Kdbx, KdbxGroup } from 'kdbxweb';
 import { StorageType } from './kdbx/interfaces';
 
 /**
@@ -203,4 +203,11 @@ export interface RecentFile {
    * 认证密钥文件路径
    */
   keyFilePath?: string;
+}
+
+/**
+ * 数据库显示参数定义
+ */
+export interface DatabaseShowParam{
+  groupId?: string;
 }
