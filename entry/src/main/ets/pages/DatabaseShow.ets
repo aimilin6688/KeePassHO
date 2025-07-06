@@ -1,9 +1,11 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import ThemeManager from '../common/utils/ThemeManager';
-import { Kdbx, KdbxGroup } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import KdbxUtils from '../common/utils/KdbxUtils';
+import { DatabaseShowParam } from '../services/TypeDefined';
 
 @Entry
 @Component
@@ -11,11 +13,15 @@ struct DatabaseShow {
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
   @State isLoading: boolean = true;
-  @State fileName: string = '';
-  @State data: Array<KdbxGroup> = [];
+  @State titleName: string = '';
+  @State groups: Array<KdbxGroup> = [];
+  @State entries: Array<KdbxEntry> = [];
+  @State showBack: boolean = false;
+
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private currentGroup: KdbxGroup | undefined = undefined;
   dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
@@ -33,12 +39,22 @@ struct DatabaseShow {
   aboutToAppear() {
     // 获取从Password页面传递的参数
     const params = FileService.getInstance().getDbFileParam();
-    this.fileName = params?.fileName ?? '未知数据库';
-    this.database = params?.database ?? null;
+    this.titleName = params.fileName ?? '未知数据库';
+    this.database = params.database ?? null;
+    this.initData(this.router.getParams() as DatabaseShowParam);
+    // 监听主题变化
+    ThemeManager.getInstance().addThemeChangeListener(() => {
+      this.onThemeChanged();
+    });
+  }
 
+  onPageShow(): void {
+  }
+
+  private initData(dbShowParam: DatabaseShowParam | undefined) {
     if (!this.database) {
       this.promptAction.showToast({
-        message: '无效的数据库信息',
+        message: '无效的数据库',
         duration: 2000
       });
       this.router.back();
@@ -47,22 +63,31 @@ struct DatabaseShow {
 
     this.isLoading = true;
     try {
-      // 获取根分组下的所有子分组
-      if (this.database.groups && this.database.groups.length > 0) {
-        const rootGroup = this.database.getDefaultGroup();
-        if (rootGroup && rootGroup.groups) {
-          this.data = rootGroup.groups;
-        }
+      if (dbShowParam && dbShowParam.groupId) {
+        this.currentGroup = this.database.getGroup(dbShowParam.groupId);
+        this.titleName = this.currentGroup?.name || '';
+        this.showBack = true;
+      } else {
+        // 获取根分组下的所有子分组
+        this.currentGroup = this.database.getDefaultGroup();
+        this.showBack = false;
       }
 
-      console.info(`加载了 ${this.data.length} 个分组`);
+      // 判断分组是否有效
+      if(this.currentGroup === undefined){
+        this.promptAction.showToast({
+          message: '无效的分组',
+          duration: 2000
+        });
+        this.router.back();
+        return;
+      }
+      this.groups = this.currentGroup.groups;
+      this.entries = this.currentGroup.entries;
+      console.info(`加载了 ${this.groups.length} 个分组, ${this.entries.length} 个条目`);
     } catch (error) {
       console.error(`处理数据库失败: ${error}`);
-      this.promptAction.showToast({
-        message: `处理数据库失败: ${error}`,
-        duration: 2000
-      });
-
+      this.promptAction.showToast({ message: `处理数据库失败: ${error}`, duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
         this.router.back();
@@ -70,11 +95,6 @@ struct DatabaseShow {
     } finally {
       this.isLoading = false;
     }
-
-    // 监听主题变化
-    ThemeManager.getInstance().addThemeChangeListener(() => {
-      this.onThemeChanged();
-    });
   }
 
   @Builder
@@ -88,7 +108,7 @@ struct DatabaseShow {
         .fontSize(14)
         .onClick(() => {
           this.editingGroupIndex = index
-          this.newGroupName = this.data[index].name;
+          this.newGroupName = this.groups[index].name;
           this.dialogController.open()
         })
 
@@ -112,13 +132,13 @@ struct DatabaseShow {
               action: () => {
                 if (this.database) {
                   // 从数据库中删除分组
-                  const group = this.data[index];
+                  const group = this.groups[index];
                   group.parentGroup?.groups.splice(group.parentGroup.groups.indexOf(group), 1);
                   // 更新UI
-                  this.data.splice(index, 1);
+                  this.groups.splice(index, 1);
                   this.saveDatabase();
                 } else {
-                  this.data.splice(index, 1);
+                  this.groups.splice(index, 1);
                 }
               }
             }
@@ -152,29 +172,26 @@ struct DatabaseShow {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
     }
-    if(!this.database){
+    if (!this.database) {
       this.promptAction.showToast({
         message: '无效的数据库信息'
       });
       return;
     }
 
-    if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.data.length) {
+    if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length) {
       // 编辑现有分组
-      const group = this.data[this.editingGroupIndex];
+      const group = this.groups[this.editingGroupIndex];
       group.name = this.newGroupName.trim();
       group.times.lastModTime = new Date();
       // 更新UI
-      this.data = [...this.data];
+      this.groups = [...this.groups];
       this.saveDatabase();
     } else {
       // 添加新分组
-      const rootGroup = this.database.getDefaultGroup();
-      if (rootGroup) {
-        this.database.createGroup(rootGroup, this.newGroupName.trim());
-        this.data = this.database.getDefaultGroup().groups;
-        this.saveDatabase();
-      }
+      this.database.createGroup(this.currentGroup, this.newGroupName.trim());
+      this.groups = this.currentGroup?.groups || [];
+      this.saveDatabase();
     }
     // 重置状态
     this.newGroupName = "";
@@ -188,7 +205,20 @@ struct DatabaseShow {
 
   onThemeChanged() {
     // 强制组件刷新以应用新主题
-    this.data = [...this.data];
+    this.groups = [...this.groups];
+    this.entries = [...this.entries];
+  }
+
+  /**
+   * 获取分组下的条目数量
+   * @param kdbxGroup 分组
+   * @returns 分组下的条目数量
+   */
+  private groupItemCount(kdbxGroup: KdbxGroup) {
+    if (!kdbxGroup) {
+      return 0;
+    }
+    return kdbxGroup.groups.length + kdbxGroup.entries.length;
   }
 
   build() {
@@ -196,7 +226,17 @@ struct DatabaseShow {
       Column() {
         // 顶部导航栏
         Row() {
-          Text(this.fileName)
+          if(this.showBack){
+            Image($r('app.media.ic_back'))
+              .width(24)
+              .height(24)
+              .margin({ left: 16 })
+              .fillColor($r('app.color.text_primary'))
+              .onClick(() => {
+                this.router.back();
+              })
+          }
+          Text(this.titleName)
             .fontSize(20)
             .fontWeight(FontWeight.Medium)
             .margin({ left: 16 })
@@ -236,17 +276,69 @@ struct DatabaseShow {
         } else {
           // 数据库内容
           List({ space: 8 }) {
-            ForEach(this.data, (itemGroup: KdbxGroup, index: number) => {
+            ForEach(this.groups, (itemGroup: KdbxGroup, index: number) => {
               ListItem() {
                 Row() {
                   Image($r('app.media.ic_folder_open'))
                     .width(28)
                     .height(28)
                     .margin(10)
-                  Text(itemGroup.name)
-                    .fontSize(18)
-                    .textAlign(TextAlign.Start)
-                    .flexGrow(1)
+                  Column() {
+                    Text(itemGroup.name)
+                      .fontSize(18)
+                      .textAlign(TextAlign.Start)
+                      .flexGrow(1)
+                    Text(`组群 ${this.groupItemCount(itemGroup)} 个条目`)
+                      .fontSize(12)
+                      .textAlign(TextAlign.Start)
+                      .flexGrow(1)
+                      .margin({ top: 4 })
+                  }
+                  .flexGrow(1)
+                  .alignItems(HorizontalAlign.Start)
+
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(20)
+                    .height(20)
+                    .margin({ right: 10 })
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+                .height(60)
+                .borderRadius(8)
+                .backgroundColor($r('app.color.card_background'))
+                .padding({ left: 10, right: 10 })
+                .onClick(() => {
+                  this.router.pushUrl({ url: 'pages/DatabaseShow', params: { groupId: itemGroup.uuid.id }});
+                })
+              }
+              .swipeAction({
+                end: {
+                  builder: this.SwipeActionButtons(index)
+                }
+              })
+            }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
+
+            ForEach(this.entries, (itemEntry: KdbxEntry, index: number) => {
+              ListItem() {
+                Row() {
+                  Image($r('app.media.ic_file'))
+                    .width(28)
+                    .height(28)
+                    .margin(10)
+                  Column() {
+                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, "Title"))
+                      .fontSize(18)
+                      .textAlign(TextAlign.Start)
+                      .flexGrow(1)
+                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, "UserName"))
+                      .fontSize(12)
+                      .textAlign(TextAlign.Start)
+                      .flexGrow(1)
+                  }
+                  .flexGrow(1)
+                  .alignItems(HorizontalAlign.Start)
+
                   Image($r('app.media.ic_arrow_right'))
                     .width(20)
                     .height(20)
@@ -264,7 +356,7 @@ struct DatabaseShow {
                   builder: this.SwipeActionButtons(index)
                 }
               })
-            }, (item: KdbxGroup, index: number) => `${index}-${item.name}`)
+            }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
           }
           .width('100%')
           .height('100%')
