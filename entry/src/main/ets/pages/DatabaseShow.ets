@@ -338,7 +338,7 @@ struct DatabaseShow {
                 this.searchText = '';
               })
             // 搜索框
-            TextInput({ placeholder: '搜索整个数据库（包括自定义字段）...', text: this.searchText })
+            TextInput({ placeholder: '请输入关键词...', text: this.searchText })
               .width('70%')
               .height(40)
               .borderRadius(8)
