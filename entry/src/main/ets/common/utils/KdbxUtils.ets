@@ -1,4 +1,4 @@
-import { Kdbx, KdbxEntryField, KdbxGroup, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxEntryField, ProtectedValue } from 'kdbxweb';
 
 export default class KdbxUtils {
   /**
@@ -23,5 +23,24 @@ export default class KdbxUtils {
     }
 
     return value.toString();
+  }
+
+  /**
+   * 获取条目
+   * @param kdbx 数据库
+   * @param groupId 组id
+   * @param entryId 条目id
+   */
+  public static getEntry(kdbx: Kdbx, groupId: string, entryId: string): KdbxEntry | null {
+    const group = kdbx.getGroup(groupId);
+    if (!group) {
+      return null;
+    }
+    for (const entry of group.entries) {
+      if (entry.uuid.id === entryId) {
+        return entry;
+      }
+    }
+    return null;
   }
 }

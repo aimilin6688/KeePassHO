@@ -4,7 +4,7 @@ import ThemeManager from '../common/utils/ThemeManager';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
-import { EntryEditParam } from '../services/TypeDefined';
+import { EntryParam } from '../services/TypeDefined';
 
 @Entry
 @Component
@@ -31,7 +31,7 @@ struct EntryEdit {
     this.database = params.database ?? null;
 
     // 获取路由参数
-    const routeParams = this.router.getParams() as EntryEditParam;
+    const routeParams = this.router.getParams() as EntryParam;
 
     if (!this.database) {
       this.promptAction.showToast({
