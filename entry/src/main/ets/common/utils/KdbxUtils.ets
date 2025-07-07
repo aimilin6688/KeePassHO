@@ -1,6 +1,13 @@
 import { Kdbx, KdbxEntry, KdbxEntryField, ProtectedValue } from 'kdbxweb';
 
 export default class KdbxUtils {
+  public static readonly FIELD_USERNAME = 'UserName';
+  public static readonly FIELD_PASSWORD = 'Password';
+  public static readonly FIELD_URL = 'URL';
+  public static readonly FIELD_NOTES = 'Notes';
+  public static readonly FIELD_TITLE = 'Title';
+
+
   /**
    * 获取字段值
    * @param fields 字段
