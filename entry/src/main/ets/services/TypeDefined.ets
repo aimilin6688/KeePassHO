@@ -215,7 +215,7 @@ export interface DatabaseShowParam{
 /**
  * 数据库显示参数定义
  */
-export interface EntryEditParam{
+export interface EntryParam{
   groupId?: string;
   entryId?: string;
 }
