@@ -424,7 +424,7 @@ struct DatabaseShow {
       .width(120)
       .height(40)
       .borderRadius(20)
-      .backgroundColor($r('app.color.primary'))
+      .backgroundColor($r('app.color.accent'))
       .position({ right: 12, bottom: 72 })
       .enabled(!this.isLoading)
       .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
