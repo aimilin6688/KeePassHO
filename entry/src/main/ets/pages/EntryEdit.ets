@@ -73,11 +73,11 @@ struct EntryEdit {
       }
 
       // 加载条目数据
-      this.title = KdbxUtils.getFieldValueString(this.entry.fields, 'Title');
-      this.username = KdbxUtils.getFieldValueString(this.entry.fields, 'UserName');
-      this.password = KdbxUtils.getFieldValueString(this.entry.fields, 'Password');
-      this.url = KdbxUtils.getFieldValueString(this.entry.fields, 'URL');
-      this.notes = KdbxUtils.getFieldValueString(this.entry.fields, 'Notes');
+      this.title = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE);
+      this.username = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_USERNAME);
+      this.password = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD);
+      this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
+      this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
     }
 
     // 监听主题变化
@@ -131,20 +131,20 @@ struct EntryEdit {
     try {
       if (this.isEditMode && this.entry) {
         // 编辑现有条目
-        this.entry.fields.set('Title', this.title.trim());
-        this.entry.fields.set('UserName', this.username.trim());
-        this.entry.fields.set('Password', ProtectedValue.fromString(this.password));
-        this.entry.fields.set('URL', this.url.trim());
-        this.entry.fields.set('Notes', this.notes.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
+        this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
         this.entry.times.update();
       } else {
         // 创建新条目
         this.entry = this.database.createEntry(this.parentGroup);
-        this.entry.fields.set('Title', this.title.trim());
-        this.entry.fields.set('UserName', this.username.trim());
-        this.entry.fields.set('Password', ProtectedValue.fromString(this.password));
-        this.entry.fields.set('URL', this.url.trim());
-        this.entry.fields.set('Notes', this.notes.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
+        this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
+        this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
       }
 
       // 保存数据库
