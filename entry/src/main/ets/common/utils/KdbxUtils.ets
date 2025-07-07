@@ -1,4 +1,4 @@
-import { Kdbx, KdbxEntry, KdbxEntryField, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, ProtectedValue } from 'kdbxweb';
 
 export default class KdbxUtils {
   public static readonly FIELD_USERNAME = 'UserName';
@@ -6,7 +6,6 @@ export default class KdbxUtils {
   public static readonly FIELD_URL = 'URL';
   public static readonly FIELD_NOTES = 'Notes';
   public static readonly FIELD_TITLE = 'Title';
-
 
   /**
    * 获取字段值
@@ -50,4 +49,88 @@ export default class KdbxUtils {
     }
     return null;
   }
+
+  /**
+   * 搜索分组,包含子分组与条目
+   * @param group 分组
+   * @param searchText 搜索文本
+   */
+  public static searchInGroup(group: KdbxGroup, searchText: string): KdbxSearchResult {
+    const result: KdbxSearchResult = {
+      filteredGroups: [],
+      filteredEntries: []
+    };
+    if (!group) {
+      return result;
+    }
+    const searchTextLower = searchText.toLowerCase().trim();
+
+    // 检查当前分组是否匹配
+    if (group.name?.toLowerCase().includes(searchTextLower)) {
+      result.filteredGroups.push(group);
+    }
+
+    // 搜索当前分组中的条目
+    for (const entry of group.entries) {
+      if (KdbxUtils.entryMatchesSearch(entry, searchTextLower)) {
+        result.filteredEntries.push(entry);
+      }
+    }
+
+    // 递归搜索子分组
+    for (const subGroup of group.groups) {
+      let subGroupResult = KdbxUtils.searchInGroup(subGroup, searchText);
+      result.filteredGroups.push(...subGroupResult.filteredGroups);
+      result.filteredEntries.push(...subGroupResult.filteredEntries);
+    }
+
+    return result;
+  }
+
+  /**
+   * 检查条目是否匹配搜索文本
+   * @param entry 要检查的条目
+   * @param searchText 搜索文本（小写）
+   * @returns 是否匹配
+   */
+  private static entryMatchesSearch(entry: KdbxEntry, searchText: string): boolean {
+    // 搜索标准字段
+    const standardFields = [
+      KdbxUtils.FIELD_TITLE,
+      KdbxUtils.FIELD_USERNAME,
+      KdbxUtils.FIELD_URL,
+      KdbxUtils.FIELD_NOTES
+    ];
+
+    for (const field of standardFields) {
+      const value = KdbxUtils.getFieldValueString(entry.fields, field);
+      if (value.toLowerCase().includes(searchText)) {
+        return true;
+      }
+    }
+
+    // 搜索自定义字段
+    for (const item of entry.fields.entries()) {
+      const key = item[0];
+      // 跳过标准字段，因为已经搜索过了
+      if (standardFields.includes(key)) {
+        continue;
+      }
+
+      const fieldValue = KdbxUtils.getFieldValueString(entry.fields, key);
+      if (fieldValue.toLowerCase().includes(searchText)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+
+/**
+ * 搜索结果
+ */
+export interface KdbxSearchResult {
+  filteredGroups: Array<KdbxGroup>; // 过滤后的分组列表
+  filteredEntries: Array<KdbxEntry>; // 过滤后的条目列表
 }
