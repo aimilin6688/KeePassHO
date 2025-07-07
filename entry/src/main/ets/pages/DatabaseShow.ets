@@ -424,7 +424,7 @@ struct DatabaseShow {
                 .backgroundColor($r('app.color.card_background'))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/EntryEdit', params: { entryId: itemEntry.uuid.id, groupId: this.currentGroup?.uuid.id } });
+                  this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: this.currentGroup?.uuid.id } });
                 })
               }
               .swipeAction({
