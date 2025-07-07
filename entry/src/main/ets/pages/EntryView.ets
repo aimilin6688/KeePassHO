@@ -125,7 +125,7 @@ struct EntryView {
     // 按字段名称排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields = ['Title', 'UserName', 'Password', 'URL', 'Notes'];
+      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 
@@ -327,7 +327,7 @@ struct EntryView {
               .margin({ left: 16 })
               .fontColor($r('app.color.text_primary'))
           } else {
-            Text(KdbxUtils.getFieldValueString(this.entry?.fields, 'Title') || '查看条目')
+            Text(KdbxUtils.getFieldValueString(this.entry?.fields, KdbxUtils.FIELD_TITLE) || '查看条目')
               .fontSize(20)
               .fontWeight(FontWeight.Medium)
               .margin({ left: 16 })

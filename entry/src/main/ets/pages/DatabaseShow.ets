@@ -353,11 +353,11 @@ struct DatabaseShow {
                     .height(28)
                     .margin(10)
                   Column() {
-                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, "Title"))
+                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
-                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, "UserName"))
+                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
                       .fontSize(12)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
