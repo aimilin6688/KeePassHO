@@ -327,38 +327,45 @@ struct DatabaseShow {
                 this.router.pushUrl({ url: 'pages/Settings' })
               })
           } else {
-            // 返回按钮
-            Image($r('app.media.ic_back'))
-              .width(24)
-              .height(24)
-              .margin({ left: 16 })
-              .fillColor($r('app.color.text_primary'))
-              .onClick(() => {
-                this.isSearching = false;
-                this.searchText = '';
-              })
+            Blank()
             // 搜索框
-            TextInput({ placeholder: '请输入关键词...', text: this.searchText })
-              .width('70%')
+            Search({ placeholder: '查找内容', value: this.searchText })
+            .width('70%')
+            .margin({ left: 16 })
+            .height(40)
+            .searchIcon({
+              src: $r('sys.media.ohos_ic_public_search_filled')
+            })
+            .cancelButton({
+              style: CancelButtonStyle.CONSTANT,
+              icon: {
+                src: $r('sys.media.ohos_ic_public_cancel_filled')
+              },
+            })
+            .enterKeyType(EnterKeyType.Search)
+            .padding({ left: 10, right: 10 })
+            .onChange((value: string) => {
+              this.searchText = value;
+              this.performSearch();
+            })
+            .onSubmit((value: string) => {
+              this.searchText = value;
+              this.performSearch();
+            })
+            Button('取消')
+              .width(70)
               .height(40)
-              .borderRadius(8)
-              .padding({ left: 10, right: 10 })
-              .onChange((value: string) => {
-                this.searchText = value;
-                this.performSearch();
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r('app.color.card_background'))
+              .margin({ right: 16 })
+              .padding({ left: 5, right: 5 })
+              .onClick(() => {
+                this.searchText = '';
+                this.isSearching = false;
+                this.filteredGroups = [...this.groups];
+                this.filteredEntries = [...this.entries];
               })
-            // 清除按钮
-            if (this.searchText.length > 0) {
-              Image($r('app.media.ic_clear'))
-                .width(24)
-                .height(24)
-                .margin({ right: 16 })
-                .fillColor($r('app.color.text_primary'))
-                .onClick(() => {
-                  this.searchText = '';
-                  this.performSearch();
-                })
-            }
           }
         }
         .width('100%')
