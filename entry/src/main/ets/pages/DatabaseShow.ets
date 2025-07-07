@@ -17,6 +17,7 @@ struct DatabaseShow {
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
+  @State showAddButtons: boolean = false; // 控制是否显示添加分组和添加条目按钮
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -244,55 +245,7 @@ struct DatabaseShow {
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
   }
 
-  /**
-   * 显示添加选项菜单
-   */
-  private showAddOptions() {
-    if (!this.database || !this.currentGroup) {
-      this.promptAction.showToast({
-        message: '无效的数据库或分组信息',
-        duration: 2000
-      });
-      return;
-    }
-
-    // 显示选项菜单
-    this.promptAction.showDialog({
-      title: '添加',
-      message: '请选择要添加的类型',
-      buttons: [
-        {
-          text: '添加分组',
-          color: $r('app.color.primary')
-        },
-        {
-          text: '添加条目',
-          color: $r('app.color.primary')
-        },
-        {
-          text: '取消',
-          color: $r('app.color.text_secondary')
-        }
-      ],
-      alignment: DialogAlignment.Bottom,
-      offset: { dx: 0, dy: -20 }
-    }).then((result) => {
-      if (result.index === 0) {
-        // 添加分组
-        this.editingGroupIndex = -1;
-        this.newGroupName = "";
-        this.dialogController.open();
-      } else if (result.index === 1) {
-        // 添加条目
-        this.router.pushUrl({
-          url: 'pages/EntryEdit',
-          params: {
-            groupId: this.currentGroup?.uuid.id
-          }
-        });
-      }
-    });
-  }
+  // 已删除showAddOptions方法，改为使用固定按钮
 
   build() {
     Stack() {
@@ -444,6 +397,75 @@ struct DatabaseShow {
       .width('100%')
       .margin({ bottom: 80 })
 
+      // 点击空白区域隐藏添加按钮
+      Column()
+        .width('100%')
+        .height('100%')
+        .onClick(() => {
+          if (this.showAddButtons) {
+            this.showAddButtons = false;
+          }
+        })
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+      
+      // 添加分组按钮
+      Button() {
+        Row() {
+          Image($r('app.media.ic_folder'))
+            .width(20)
+            .height(20)
+            .fillColor(Color.White)
+          Text('添加分组')
+            .fontSize(14)
+            .fontColor(Color.White)
+            .margin({ left: 8 })
+        }
+      }
+      .width(120)
+      .height(40)
+      .borderRadius(20)
+      .backgroundColor($r('app.color.primary'))
+      .position({ right: 12, bottom: 72 })
+      .enabled(!this.isLoading)
+      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+      .onClick(() => {
+        this.showAddButtons = false;
+        this.editingGroupIndex = -1;
+        this.newGroupName = "";
+        this.dialogController.open();
+      })
+      
+      // 添加条目按钮
+      Button() {
+        Row() {
+          Image($r('app.media.ic_file'))
+            .width(20)
+            .height(20)
+            .fillColor(Color.White)
+          Text('添加条目')
+            .fontSize(14)
+            .fontColor(Color.White)
+            .margin({ left: 8 })
+        }
+      }
+      .width(120)
+      .height(40)
+      .borderRadius(20)
+      .backgroundColor($r('app.color.accent'))
+      .position({ right: 12, bottom: 120 })
+      .enabled(!this.isLoading)
+      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+      .onClick(() => {
+        this.showAddButtons = false;
+        this.router.pushUrl({
+          url: 'pages/EntryEdit',
+          params: {
+            groupId: this.currentGroup?.uuid.id
+          }
+        });
+      })
+      
+      // 主添加按钮
       Button() {
         Image($r('app.media.ic_add'))
           .width(24)
@@ -457,8 +479,9 @@ struct DatabaseShow {
       .position({ right: 12, bottom: 12 })
       .enabled(!this.isLoading)
       .opacity(this.isLoading ? 0.5 : 1)
+      .visibility(this.showAddButtons ? Visibility.None : Visibility.Visible)
       .onClick(() => {
-        this.showAddOptions();
+        this.showAddButtons = true;
       })
     }
     .width('100%')
