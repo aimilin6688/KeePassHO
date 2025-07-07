@@ -18,6 +18,10 @@ struct DatabaseShow {
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
   @State showAddButtons: boolean = false; // 控制是否显示添加分组和添加条目按钮
+  @State searchText: string = ''; // 搜索文本
+  @State isSearching: boolean = false; // 是否处于搜索状态
+  @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
+  @State filteredEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -230,8 +234,40 @@ struct DatabaseShow {
     setTimeout(() => {
       this.groups = [...this.currentGroup?.groups || []];
       this.entries = [...this.currentGroup?.entries || []];
+      
+      // 如果在搜索状态，更新搜索结果
+      if (this.isSearching && this.searchText.length > 0) {
+        this.performSearch();
+      } else if (this.isSearching) {
+        this.filteredGroups = [...this.groups];
+        this.filteredEntries = [...this.entries];
+      }
     }, 10);
   }
+
+  /**
+   * 执行搜索
+   */
+  private performSearch() {
+    if (!this.searchText || this.searchText.trim() === '') {
+      // 如果搜索文本为空，显示所有分组和条目
+      this.filteredGroups = [...this.groups];
+      this.filteredEntries = [...this.entries];
+      return;
+    }
+    if (this.isSearching) {
+      // 全局搜索模式：搜索整个数据库
+      this.filteredGroups = [];
+      this.filteredEntries = [];
+      
+      if (this.database) {
+        let result = KdbxUtils.searchInGroup(this.database.getDefaultGroup(), this.searchText);
+        this.filteredGroups.push(...result.filteredGroups);
+        this.filteredEntries.push(...result.filteredEntries);
+      }
+    }
+  }
+
 
   /**
    * 获取分组下的条目数量
@@ -262,21 +298,68 @@ struct DatabaseShow {
                 this.router.back();
               })
           }
-          Text(this.titleName)
-            .fontSize(20)
-            .fontWeight(FontWeight.Medium)
-            .margin({ left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          Blank()
-          Image($r('app.media.ic_settings'))
-            .width(24)
-            .height(24)
-            .margin({ right: 16 })
-            .onClick(() => {
-              this.router.pushUrl({ url: 'pages/Settings' })
-            })
+          if (!this.isSearching) {
+            Text(this.titleName)
+              .fontSize(20)
+              .fontWeight(FontWeight.Medium)
+              .margin({ left: 16 })
+              .fontColor($r('app.color.text_primary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Blank()
+            // 搜索按钮
+            Image($r('app.media.ic_search'))
+              .width(24)
+              .height(24)
+              .margin({ right: 16 })
+              .fillColor($r('app.color.text_primary'))
+              .onClick(() => {
+                this.isSearching = true;
+                this.searchText = '';
+                this.filteredGroups = [...this.groups];
+                this.filteredEntries = [...this.entries];
+              })
+            Image($r('app.media.ic_settings'))
+              .width(24)
+              .height(24)
+              .margin({ right: 16 })
+              .onClick(() => {
+                this.router.pushUrl({ url: 'pages/Settings' })
+              })
+          } else {
+            // 返回按钮
+            Image($r('app.media.ic_back'))
+              .width(24)
+              .height(24)
+              .margin({ left: 16 })
+              .fillColor($r('app.color.text_primary'))
+              .onClick(() => {
+                this.isSearching = false;
+                this.searchText = '';
+              })
+            // 搜索框
+            TextInput({ placeholder: '搜索整个数据库（包括自定义字段）...', text: this.searchText })
+              .width('70%')
+              .height(40)
+              .borderRadius(8)
+              .padding({ left: 10, right: 10 })
+              .onChange((value: string) => {
+                this.searchText = value;
+                this.performSearch();
+              })
+            // 清除按钮
+            if (this.searchText.length > 0) {
+              Image($r('app.media.ic_clear'))
+                .width(24)
+                .height(24)
+                .margin({ right: 16 })
+                .fillColor($r('app.color.text_primary'))
+                .onClick(() => {
+                  this.searchText = '';
+                  this.performSearch();
+                })
+            }
+          }
         }
         .width('100%')
         .height(56)
@@ -302,7 +385,7 @@ struct DatabaseShow {
         } else {
           // 数据库内容
           List({ space: 8 }) {
-            ForEach(this.groups, (itemGroup: KdbxGroup, index: number) => {
+            ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
               ListItem() {
                 Row() {
                   Image($r('app.media.ic_folder_open'))
@@ -345,7 +428,7 @@ struct DatabaseShow {
               })
             }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
 
-            ForEach(this.entries, (itemEntry: KdbxEntry, index: number) => {
+            ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
               ListItem() {
                 Row() {
                   Image($r('app.media.ic_file'))
