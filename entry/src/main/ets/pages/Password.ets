@@ -330,7 +330,7 @@ struct Password {
 
       // 验证成功，跳转到数据库展示页面
       this.router.pushUrl({
-        url: 'pages/DatabaseShow'
+        url: 'pages/DatabaseView'
       });
     } catch (error) {
       this.promptAction.showToast({
