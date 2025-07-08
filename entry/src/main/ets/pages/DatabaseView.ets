@@ -9,7 +9,7 @@ import { DatabaseShowParam } from '../services/TypeDefined';
 
 @Entry
 @Component
-struct DatabaseShow {
+struct DatabaseView {
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
   @State isLoading: boolean = true;
@@ -425,7 +425,7 @@ struct DatabaseShow {
                 .backgroundColor($r('app.color.card_background'))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/DatabaseShow', params: { groupId: itemGroup.uuid.id } });
+                  this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
                 })
               }
               .swipeAction({
