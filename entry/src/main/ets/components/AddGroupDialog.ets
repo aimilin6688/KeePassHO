@@ -57,6 +57,7 @@ export struct AddGroupDialog {
       .padding({ left: 24, right: 16 })
       .alignItems(VerticalAlign.Center)
       .backgroundColor($r('app.color.background_primary'))
+      .borderRadius({ topLeft: 16, topRight: 16 })
       
       // 分组信息输入区域
       Column() {
@@ -161,7 +162,7 @@ export struct AddGroupDialog {
           .borderRadius(20)
       }
       .width('100%')
-      .padding({ left: 24, right: 24, top: 16, bottom: 24 })
+      .padding({ left: 24, right: 24, top: 16, bottom: 30 })
       .justifyContent(FlexAlign.SpaceBetween)
       .backgroundColor($r('app.color.background_primary'))
     }
