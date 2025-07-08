@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Note Base -->
+  <rect x="4" y="4" width="16" height="16" fill="#FFFF99" stroke="#DAA520" stroke-width="1"/>
+
+  <!-- Note Lines -->
+  <line x1="6" y1="8" x2="18" y2="8" stroke="#DAA520" stroke-width="0.75"/>
+  <line x1="6" y1="12" x2="18" y2="12" stroke="#DAA520" stroke-width="0.75"/>
+  <line x1="6" y1="16" x2="18" y2="16" stroke="#DAA520" stroke-width="0.75"/>
+
+  <!-- Note Corner Fold -->
+  <path d="M16 4 L20 8 L16 8 Z" fill="#FFFFCC" stroke="#DAA520" stroke-width="0.75"/>
+
+  <!-- Pushpin -->
+  <circle cx="6" cy="6" r="1.5" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
+</svg>
