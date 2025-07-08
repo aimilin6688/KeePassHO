@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Apple Body -->
+  <path d="M12 3 C16 3 18 6 18 10 C18 14 16 18 12 18 C8 18 6 14 6 10 C6 6 8 3 12 3 Z"
+        fill="#FF0000" stroke="#8B0000" stroke-width="1"/>
+
+  <!-- Apple Leaf -->
+  <path d="M12 3 Q14 1 16 3 Q15 5 12 5 Z" fill="#32CD32" stroke="#228B22" stroke-width="0.5"/>
+
+  <!-- Apple Shine -->
+  <path d="M14 6 Q13 5 12 6 Q13 7 14 6 Z" fill="#FFFFFF" fill-opacity="0.3" stroke="none"/>
+
+  <!-- Apple Stem -->
+  <path d="M12 3 L12 1" stroke="#8B4513" stroke-width="1" stroke-linecap="round"/>
+</svg>

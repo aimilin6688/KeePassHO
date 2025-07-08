@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Feather Stem -->
+  <path d="M12 3 L12 21" stroke="#8B4513" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Feather Left Side -->
+  <path d="M12 4 Q8 8 6 12 Q4 16 5 20" fill="none" stroke="#9370DB" stroke-width="1.5"/>
+  <path d="M12 6 Q9 9 7 12 Q5 15 6 18" fill="none" stroke="#9370DB" stroke-width="1.5"/>
+
+  <!-- Feather Right Side -->
+  <path d="M12 4 Q16 8 18 12 Q20 16 19 20" fill="none" stroke="#FF69B4" stroke-width="1.5"/>
+  <path d="M12 6 Q15 9 17 12 Q19 15 18 18" fill="none" stroke="#FF69B4" stroke-width="1.5"/>
+
+  <!-- Feather Details -->
+  <path d="M12 8 L10 10 M12 10 L9 13 M12 12 L8 16" stroke="#9370DB" stroke-width="0.8" stroke-linecap="round"/>
+  <path d="M12 8 L14 10 M12 10 L15 13 M12 12 L16 16" stroke="#FF69B4" stroke-width="0.8" stroke-linecap="round"/>
+</svg>
