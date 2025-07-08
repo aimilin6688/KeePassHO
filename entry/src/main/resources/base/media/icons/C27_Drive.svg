@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Drive Body -->
+  <rect x="4" y="6" width="16" height="12" rx="1" ry="1" fill="#C0C0C0" stroke="#808080" stroke-width="1"/>
+
+  <!-- Front Panel -->
+  <rect x="6" y="8" width="12" height="8" fill="#4682B4" stroke="#1E3F66" stroke-width="0.5"/>
+
+  <!-- Activity Light -->
+  <circle cx="8" cy="10" r="1" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
+
+  <!-- Connectors -->
+  <rect x="18" y="9" width="2" height="1" fill="#696969" stroke="#2F4F4F" stroke-width="0.5"/>
+  <rect x="18" y="11" width="2" height="1" fill="#696969" stroke="#2F4F4F" stroke-width="0.5"/>
+  <rect x="18" y="13" width="2" height="1" fill="#696969" stroke="#2F4F4F" stroke-width="0.5"/>
+
+  <!-- Label -->
+  <path d="M10 12 L16 12" stroke="#FFFFFF" stroke-width="1"/>
+  <path d="M10 14 L14 14" stroke="#FFFFFF" stroke-width="1"/>
+</svg>
