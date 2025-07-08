@@ -37,6 +37,7 @@ struct DatabaseView {
       }
     }),
     alignment: DialogAlignment.Bottom,
+    customStyle: true,
     autoCancel: true
   })
 
