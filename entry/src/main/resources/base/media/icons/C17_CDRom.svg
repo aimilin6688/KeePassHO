@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- CD/DVD Drive -->
+  <rect x="4" y="8" width="16" height="8" rx="1" ry="1" fill="#C0C0C0" stroke="#808080" stroke-width="1"/>
+
+  <!-- CD/DVD Disc -->
+  <circle cx="12" cy="12" r="5" fill="#4169E1" stroke="#1E3F66" stroke-width="1"/>
+  <circle cx="12" cy="12" r="1.5" fill="#FFFFFF" stroke="#1E3F66" stroke-width="0.5"/>
+
+  <!-- Disc Details -->
+  <path d="M12 7 L12 17" stroke="#1E3F66" stroke-width="0.5" stroke-dasharray="0.5,0.5"/>
+  <path d="M7 12 L17 12" stroke="#1E3F66" stroke-width="0.5" stroke-dasharray="0.5,0.5"/>
+
+  <!-- Drive Button -->
+  <circle cx="18" cy="12" r="1" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
+
+  <!-- Drive Slot -->
+  <rect x="5" y="9" width="14" height="1" fill="#708090" stroke="#2F4F4F" stroke-width="0.5"/>
+</svg>
