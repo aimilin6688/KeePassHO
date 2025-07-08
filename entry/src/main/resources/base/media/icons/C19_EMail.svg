@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Envelope -->
+  <path d="M3 7 L12 13 L21 7 Z" fill="#87CEEB" stroke="#4682B4" stroke-width="1"/>
+  <path d="M3 7 L3 17 L21 17 L21 7 Z" fill="#E6F2FF" stroke="#4682B4" stroke-width="1"/>
+
+  <!-- Letter Lines -->
+  <path d="M6 10 L18 10" stroke="#4682B4" stroke-width="0.8"/>
+  <path d="M6 12 L15 12" stroke="#4682B4" stroke-width="0.8"/>
+  <path d="M6 14 L12 14" stroke="#4682B4" stroke-width="0.8"/>
+
+  <!-- Stamp -->
+  <rect x="16" y="9" width="2" height="2" rx="0.3" ry="0.3" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
+
+  <!-- Envelope Flap Shadow -->
+  <path d="M3 7 L12 13 L21 7" fill="none" stroke="#1E3F66" stroke-width="0.5" stroke-opacity="0.3"/>
+</svg>

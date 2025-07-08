@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Scanner Body -->
+  <rect x="4" y="4" width="16" height="16" rx="1" ry="1" fill="#87CEEB" stroke="#4682B4" stroke-width="1"/>
+
+  <!-- Document -->
+  <rect x="6" y="8" width="12" height="8" fill="#FFFFFF" stroke="#4682B4" stroke-width="0.5"/>
+  <path d="M8 10 L16 10" stroke="#4682B4" stroke-width="0.5"/>
+  <path d="M8 12 L14 12" stroke="#4682B4" stroke-width="0.5"/>
+  <path d="M8 14 L12 14" stroke="#4682B4" stroke-width="0.5"/>
+
+  <!-- Scanning Beam -->
+  <rect x="6" y="6" width="12" height="2" fill="#00BFFF" stroke="#1E90FF" stroke-width="0.5"/>
+
+  <!-- Scanner Light -->
+  <circle cx="18" cy="12" r="1" fill="#00FFFF" stroke="#008B8B" stroke-width="0.5"/>
+
+  <!-- Control Buttons -->
+  <circle cx="7" cy="6" r="0.8" fill="#4682B4"/>
+  <circle cx="9" cy="6" r="0.8" fill="#4682B4"/>
+</svg>
