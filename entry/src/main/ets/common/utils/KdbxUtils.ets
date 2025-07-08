@@ -1,4 +1,5 @@
-import { Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import IconUtils from './IconUtils';
 
 export default class KdbxUtils {
   public static readonly FIELD_USERNAME = 'UserName';
@@ -123,6 +124,21 @@ export default class KdbxUtils {
       }
     }
     return false;
+  }
+
+  /**
+   * 获取图标
+   * @param iconId 图标id
+   * @param customIcon 自定义图标
+   */
+  public static getIcon(iconId: number | undefined, customIcon: KdbxUuid | undefined, defaultResource?: Resource): ResourceStr | null {
+    if (iconId === undefined && customIcon === undefined) {
+      return defaultResource ?? null;
+    }
+    if (customIcon != undefined) {
+      return customIcon.toString();
+    }
+    return iconId != undefined ? IconUtils.getIconResourcePath(iconId) : (defaultResource ?? null);
   }
 }
 
