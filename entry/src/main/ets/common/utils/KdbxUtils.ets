@@ -1,4 +1,4 @@
-import { Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxUuid, ProtectedValue, ByteUtils } from 'kdbxweb';
 import IconUtils from './IconUtils';
 
 export default class KdbxUtils {
@@ -136,9 +136,17 @@ export default class KdbxUtils {
       return defaultResource ?? null;
     }
     if (customIcon != undefined) {
-      return customIcon.toString();
+      return KdbxUtils.toImgBase64Url(customIcon.toBytes());
     }
     return iconId != undefined ? IconUtils.getIconResourcePath(iconId) : (defaultResource ?? null);
+  }
+
+  /**
+   * 将图标数据转换为DataURL
+   * @param iconData 图标数据
+   */
+  public static toImgBase64Url(iconData: ArrayBuffer): string | null{
+    return iconData ? 'data:image/png;base64,' + ByteUtils.bytesToBase64(iconData) : null;
   }
 }
 
