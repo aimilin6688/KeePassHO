@@ -7,7 +7,7 @@ export struct AddGroupDialog {
   @Link newGroupName: string
   @Link editingGroupIndex: number
   @State selectedIconId: number = Icons.Folder;
-  
+
   private iconSelectorDialogController: CustomDialogController = new CustomDialogController({
     builder: IconSelectorDialog({
       selectedIconId: this.selectedIconId,
@@ -129,8 +129,6 @@ export struct AddGroupDialog {
       }
       .width('100%')
       .backgroundColor($r('app.color.background_primary'))
-      
-      // 图标选择器已移至独立弹框
       
       // 底部按钮
       Row() {
