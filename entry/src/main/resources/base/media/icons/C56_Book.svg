@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Book Cover -->
+  <path d="M5 4 L19 4 L19 20 L5 20 Z" fill="#8B4513" stroke="#5D2906" stroke-width="1"/>
+
+  <!-- Book Pages -->
+  <path d="M5 4 L19 4 L19 20 L5 20 Z" fill="#F5F5DC" stroke="#D2B48C" stroke-width="1" transform="translate(-2)"/>
+
+  <!-- Book Spine -->
+  <rect x="5" y="4" width="2" height="16" fill="#5D2906"/>
+
+  <!-- Book Lines -->
+  <line x1="7" y1="7" x2="17" y2="7" stroke="#D2B48C" stroke-width="0.5"/>
+  <line x1="7" y1="10" x2="17" y2="10" stroke="#D2B48C" stroke-width="0.5"/>
+  <line x1="7" y1="13" x2="17" y2="13" stroke="#D2B48C" stroke-width="0.5"/>
+  <line x1="7" y1="16" x2="17" y2="16" stroke="#D2B48C" stroke-width="0.5"/>
+</svg>

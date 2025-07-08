@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Checkbox -->
+  <rect x="4" y="4" width="16" height="16" rx="2" ry="2" fill="#90EE90" stroke="#228B22" stroke-width="1"/>
+
+  <!-- Checkmark -->
+  <path d="M7 12 L11 16 L17 8" fill="none" stroke="#228B22" stroke-width="2" stroke-linecap="round"/>
+</svg>

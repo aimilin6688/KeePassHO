@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Frame -->
+  <rect x="3" y="3" width="18" height="18" fill="#F5F5DC" stroke="#D2B48C" stroke-width="1"/>
+
+  <!-- Image Content -->
+  <rect x="6" y="6" width="12" height="9" fill="#87CEEB"/>
+  <circle cx="12" cy="12" r="3" fill="#FF6347"/>
+  <path d="M6 15 L18 15 M9 15 L9 18 M15 15 L15 18" stroke="#696969" stroke-width="1"/>
+
+  <!-- Corners -->
+  <path d="M3 3 L6 6 M21 3 L18 6 M3 21 L6 18 M21 21 L18 18" stroke="#D2B48C" stroke-width="1"/>
+</svg>
