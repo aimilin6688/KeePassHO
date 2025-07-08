@@ -1,4 +1,5 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
+import { Icons } from '../services/TypeDefined';
 import ThemeManager from '../common/utils/ThemeManager';
 import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
@@ -30,7 +31,10 @@ struct DatabaseView {
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
       editingGroupIndex: this.editingGroupIndex,
-      onConfirm: (): void => this.handleAddGroup(),
+      selectedIconId: this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length 
+        ? this.groups[this.editingGroupIndex].icon || Icons.Folder 
+        : Icons.Folder,
+      onConfirm: (iconId: number): void => this.handleAddGroup(iconId),
       onCancel: (): void => {
         this.newGroupName = "";
         this.editingGroupIndex = -1;
@@ -114,7 +118,7 @@ struct DatabaseView {
             this.router.pushUrl({
               url: 'pages/EntryEdit',
               params: {
-                groupId: this.currentGroup?.uuid.id,
+                groupId: item.parentGroup?.uuid.id,
                 entryId: item.uuid.id
               }
             });
@@ -186,7 +190,7 @@ struct DatabaseView {
     }
   }
 
-  private handleAddGroup() {
+  private handleAddGroup(iconId?: number) {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
     }
@@ -201,10 +205,12 @@ struct DatabaseView {
       // 编辑现有分组
       const group = this.groups[this.editingGroupIndex];
       group.name = this.newGroupName.trim();
+      group.icon = iconId;
       group.times.update();
     } else {
       // 添加新分组
-      this.database.createGroup(this.currentGroup, this.newGroupName.trim());
+      const group = this.database.createGroup(this.currentGroup, this.newGroupName.trim());
+      group.icon = iconId;
     }
     // 保存数据库
     this.saveDatabase();
@@ -468,7 +474,7 @@ struct DatabaseView {
                 .backgroundColor($r('app.color.card_background'))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: this.currentGroup?.uuid.id } });
+                  this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
                 })
               }
               .swipeAction({
