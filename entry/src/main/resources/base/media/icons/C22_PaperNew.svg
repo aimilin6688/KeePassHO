@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Paper -->
+  <path d="M6 2L18 2L18 22L6 22Z" fill="#E6F2FF" stroke="#4682B4" stroke-width="1"/>
+
+  <!-- Plus Sign -->
+  <rect x="11" y="8" width="2" height="8" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
+  <rect x="8" y="11" width="8" height="2" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
+
+  <!-- Document Lines -->
+  <path d="M8 5L14 5" stroke="#4682B4" stroke-width="1"/>
+  <path d="M8 8L16 8" stroke="#4682B4" stroke-width="1"/>
+  <path d="M8 11L12 11" stroke="#4682B4" stroke-width="1"/>
+  <path d="M8 14L15 14" stroke="#4682B4" stroke-width="1"/>
+  <path d="M8 17L10 17" stroke="#4682B4" stroke-width="1"/>
+</svg>
