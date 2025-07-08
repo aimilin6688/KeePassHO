@@ -1,13 +1,24 @@
 import IconUtils from '../common/utils/IconUtils';
 import { Icons } from '../services/TypeDefined';
-import { IconSelector } from './IconSelector';
+import { IconSelectorDialog } from './IconSelector';
 
 @CustomDialog
 export struct AddGroupDialog {
   @Link newGroupName: string
   @Link editingGroupIndex: number
   @State selectedIconId: number = Icons.Folder;
-  @State showIconSelector: boolean = false
+  
+  private iconSelectorDialogController: CustomDialogController = new CustomDialogController({
+    builder: IconSelectorDialog({
+      selectedIconId: this.selectedIconId,
+      onIconSelected: (iconId: number) => {
+        this.selectedIconId = iconId;
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
   
   controller: CustomDialogController
   onConfirm: (iconId: number) => void = () => {
@@ -77,7 +88,19 @@ export struct AddGroupDialog {
         .alignItems(VerticalAlign.Center)
         .backgroundColor($r('app.color.background_primary'))
         .onClick(() => {
-          this.showIconSelector = !this.showIconSelector;
+          // 打开独立的图标选择弹框
+          this.iconSelectorDialogController = new CustomDialogController({
+            builder: IconSelectorDialog({
+              selectedIconId: this.selectedIconId,
+              onIconSelected: (iconId: number) => {
+                this.selectedIconId = iconId;
+              }
+            }),
+            alignment: DialogAlignment.Bottom,
+            customStyle: true,
+            autoCancel: false
+          });
+          this.iconSelectorDialogController.open();
         })
         
         Divider()
@@ -107,10 +130,7 @@ export struct AddGroupDialog {
       .width('100%')
       .backgroundColor($r('app.color.background_primary'))
       
-      // 图标选择器
-      if (this.showIconSelector) {
-        IconSelector({ selectedIconId: $selectedIconId })
-      }
+      // 图标选择器已移至独立弹框
       
       // 底部按钮
       Row() {
