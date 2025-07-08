@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Info Circle -->
+  <circle cx="12" cy="12" r="9" fill="#4682B4" stroke="#000080" stroke-width="1"/>
+
+  <!-- Info Symbol "i" -->
+  <circle cx="12" cy="8" r="1.5" fill="#FFFFFF"/>
+  <rect x="10.5" y="11" width="3" height="7" rx="1.5" ry="1.5" fill="#FFFFFF"/>
+</svg>

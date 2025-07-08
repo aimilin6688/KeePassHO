@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Folder Base -->
+  <path d="M3 6 L9 6 L11 4 L21 4 L21 19 L3 19 Z" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
+
+  <!-- Folder Front -->
+  <path d="M3 6 L3 19 L21 19 L21 8 L10 8 L8 6 Z" fill="#FFDF00" stroke="#DAA520" stroke-width="1"/>
+
+  <!-- Package Inside -->
+  <rect x="10" y="10" width="8" height="5" fill="#D2B48C" stroke="#8B4513" stroke-width="0.5"/>
+  <path d="M10 10 L14 8 L18 10" fill="#DEB887" stroke="#8B4513" stroke-width="0.5"/>
+  <path d="M18 10 L18 15 L14 17 L14 12" fill="#CD853F" stroke="#8B4513" stroke-width="0.5"/>
+  <line x1="14" y1="8" x2="14" y2="17" stroke="#8B4513" stroke-width="0.5"/>
+
+  <!-- Folder Tab -->
+  <path d="M9 6 L11 4 L11 6 Z" fill="#FFE87C" stroke="#DAA520" stroke-width="0.5"/>
+</svg>

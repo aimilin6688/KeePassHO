@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Folder Base -->
+  <path d="M3 6 L9 6 L11 4 L21 4 L21 19 L3 19 Z" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
+
+  <!-- Folder Front -->
+  <path d="M3 6 L3 19 L21 19 L21 8 L10 8 L8 6 Z" fill="#FFDF00" stroke="#DAA520" stroke-width="1"/>
+
+  <!-- Folder Tab -->
+  <path d="M9 6 L11 4 L11 6 Z" fill="#FFE87C" stroke="#DAA520" stroke-width="0.5"/>
+</svg>
