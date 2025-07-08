@@ -1,7 +1,7 @@
 {
   "src": [
     "pages/Index",
-    "pages/DatabaseShow",
+    "pages/DatabaseView",
     "pages/Settings",
     "pages/Password",
     "pages/RecentFiles",
