@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Paper Body -->
+  <path d="M5 3 H19 V21 H5 Z" fill="#FFFFFF" stroke="#D3D3D3" stroke-width="1.5"/>
+
+  <!-- Paper Fold -->
+  <path d="M19 3 L15 7 L15 3 Z" fill="#F5F5F5" stroke="#A9A9A9" stroke-width="1"/>
+
+  <!-- Lock on Paper -->
+  <rect x="9" y="9" width="6" height="6" rx="1" fill="#4169E1" stroke="#000080" stroke-width="1"/>
+
+  <!-- Lock Shackle -->
+  <path d="M12 9 C13 7 15 7 16 9" fill="none" stroke="#000080" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- Lines on Paper -->
+  <path d="M7 12 H17 M7 15 H17 M7 18 H14" stroke="#A9A9A9" stroke-width="1" stroke-linecap="round"/>
+</svg>

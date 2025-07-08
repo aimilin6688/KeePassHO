@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Wrench Head -->
+  <rect x="8" y="8" width="8" height="8" rx="1" ry="1" fill="#A9A9A9" stroke="#696969" stroke-width="1"/>
+
+  <!-- Wrench Handle -->
+  <path d="M12 8 L12 4 M12 4 L16 8" fill="none" stroke="#696969" stroke-width="2"/>
+
+  <!-- Screwdriver Tip -->
+  <path d="M8 12 L4 12 M4 12 L8 16" fill="none" stroke="#696969" stroke-width="2"/>
+
+  <!-- Bolt -->
+  <circle cx="12" cy="12" r="1.5" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
+</svg>
