@@ -36,7 +36,7 @@ struct DatabaseView {
         this.editingGroupIndex = -1;
       }
     }),
-    alignment: DialogAlignment.Default,
+    alignment: DialogAlignment.Bottom,
     autoCancel: true
   })
 
