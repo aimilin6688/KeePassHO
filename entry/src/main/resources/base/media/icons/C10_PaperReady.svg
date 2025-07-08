@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Paper Document -->
+  <path d="M6 3 L18 3 L18 21 L6 21 Z" fill="#F0F8FF" stroke="#4169E1" stroke-width="1"/>
+  <path d="M8 7 L16 7" stroke="#4169E1" stroke-width="1"/>
+  <path d="M8 10 L16 10" stroke="#4169E1" stroke-width="1"/>
+  <path d="M8 13 L13 13" stroke="#4169E1" stroke-width="1"/>
+
+  <!-- Ready/Check Mark -->
+  <circle cx="16" cy="16" r="4" fill="#90EE90" stroke="#2E8B57" stroke-width="1"/>
+  <path d="M14 16 L15.5 17.5 L18 15" fill="none" stroke="#2E8B57" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
