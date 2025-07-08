@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Envelope Body -->
+  <rect x="4" y="6" width="12" height="9" fill="#FFFFFF" stroke="#4682B4" stroke-width="1"/>
+
+  <!-- Envelope Flap -->
+  <path d="M4 6 L10 10 L16 6" fill="#E0E0E0" stroke="#4682B4" stroke-width="1"/>
+
+  <!-- Envelope Line -->
+  <path d="M4 15 L10 11 L16 15" fill="none" stroke="#4682B4" stroke-width="0.5"/>
+
+  <!-- Magnifying Glass -->
+  <circle cx="17" cy="14" r="3" fill="none" stroke="#FF6347" stroke-width="1.5"/>
+  <line x1="19" y1="16" x2="21" y2="18" stroke="#FF6347" stroke-width="2"/>
+
+  <!-- @ Symbol -->
+  <text x="8" y="12" font-family="Arial" font-size="5" fill="#4682B4">@</text>
+</svg>

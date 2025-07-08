@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- House Roof -->
+  <path d="M4 12 L12 6 L20 12" fill="#8B4513" stroke="#654321" stroke-width="1"/>
+
+  <!-- House Body -->
+  <rect x="6" y="12" width="12" height="8" fill="#D2B48C" stroke="#8B4513" stroke-width="1"/>
+
+  <!-- Door -->
+  <rect x="10" y="16" width="4" height="4" fill="#8B4513" stroke="#654321" stroke-width="0.5"/>
+
+  <!-- Window -->
+  <rect x="7" y="13" width="2" height="2" fill="#87CEEB" stroke="#4682B4" stroke-width="0.5"/>
+  <rect x="15" y="13" width="2" height="2" fill="#87CEEB" stroke="#4682B4" stroke-width="0.5"/>
+
+  <!-- Dollar Sign -->
+  <circle cx="18" cy="8" r="3" fill="#32CD32" stroke="#006400" stroke-width="1"/>
+  <path d="M18 6 L18 10" stroke="#FFFFFF" stroke-width="1"/>
+  <path d="M17 7 L19 7" stroke="#FFFFFF" stroke-width="1"/>
+  <path d="M17 9 L19 9" stroke="#FFFFFF" stroke-width="1"/>
+</svg>
