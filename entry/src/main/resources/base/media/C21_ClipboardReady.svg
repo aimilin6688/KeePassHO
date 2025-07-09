@@ -3,10 +3,7 @@
   <path d="M8 3L8 5L16 5L16 3L19 6L19 20L5 20L5 6L8 3Z" fill="#E6F2FF" stroke="#4682B4" stroke-width="1"/>
 
   <!-- Clipboard Top -->
-  <rect x="8" y="3" width="8" height="2" fill="#4682B4" stroke="#1E3F66" stroke-width="0.5"/>
-
-  <!-- Check Mark -->
-  <path d="M9 12L11 14L15 10" fill="none" stroke="#32CD32" stroke-width="2" stroke-linecap="round"/>
+  <rect x="8" y="2" width="8" height="2" fill="#4682B4" stroke="#1E3F66" stroke-width="0.5"/>
 
   <!-- Document Lines -->
   <path d="M8 8L16 8" stroke="#4682B4" stroke-width="1"/>
@@ -14,4 +11,7 @@
   <path d="M8 12L12 12" stroke="#4682B4" stroke-width="1"/>
   <path d="M8 14L16 14" stroke="#4682B4" stroke-width="1"/>
   <path d="M8 16L13 16" stroke="#4682B4" stroke-width="1"/>
+
+  <!-- Check Mark -->
+  <path d="M9 12L11 14L15 10" fill="none" stroke="#32CD32" stroke-width="2" stroke-linecap="round"/>
 </svg>

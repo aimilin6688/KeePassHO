@@ -7,14 +7,14 @@
   <path d="M7 7 L9 9 M9 7 L7 9" stroke="#FFFFFF" stroke-width="1"/>
 
   <!-- Icon 2 (Red) -->
-  <circle cx="14" cy="8" r="3" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
-  <path d="M14 6 L14 10" stroke="#FFFFFF" stroke-width="1"/>
+  <circle cx="16" cy="8" r="3" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
+  <path d="M16 6 L16 10" stroke="#FFFFFF" stroke-width="1"/>
 
   <!-- Icon 3 (Green) -->
   <rect x="5" y="13" width="6" height="6" rx="3" ry="3" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
   <path d="M7 16 L9 16" stroke="#FFFFFF" stroke-width="1"/>
 
   <!-- Icon 4 (Purple) -->
-  <path d="M14 13 L17 18 L11 18 Z" fill="#9370DB" stroke="#483D8B" stroke-width="0.5"/>
-  <path d="M14 15 L14 17" stroke="#FFFFFF" stroke-width="1"/>
+  <path d="M16 13 L19 18 L13 18 Z" fill="#9370DB" stroke="#483D8B" stroke-width="0.5"/>
+  <path d="M16 15 L16 17" stroke="#FFFFFF" stroke-width="1"/>
 </svg>

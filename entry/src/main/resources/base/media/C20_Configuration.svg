@@ -6,10 +6,10 @@
   <circle cx="12" cy="12" r="3" fill="#87CEEB" stroke="#1E3F66" stroke-width="1"/>
 
   <!-- Gear Teeth -->
-  <rect x="11" y="3" width="2" height="4" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
-  <rect x="11" y="17" width="2" height="4" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
-  <rect x="3" y="11" width="4" height="2" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
-  <rect x="17" y="11" width="4" height="2" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
+  <rect x="11" y="3" width="2" height="2" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
+  <rect x="11" y="19" width="2" height="2" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
+  <rect x="3" y="11" width="2" height="2" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
+  <rect x="19" y="11" width="2" height="2" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
 
   <!-- Diagonal Teeth -->
   <rect x="5" y="5" width="2" height="2" transform="rotate(45 6 6)" fill="#1E3F66" stroke="#1E3F66" stroke-width="0.5"/>
