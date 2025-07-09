@@ -61,7 +61,7 @@ export class LocalFileStorage implements IFileStorage {
    */
   async exists(path: string): Promise<boolean> {
     try {
-      return fs.access(path, fs.AccessModeType.EXIST);
+      return fs.access(path, fs.AccessModeType.EXIST, fs.AccessFlagType.LOCAL);
     } catch {
       return false;
     }
