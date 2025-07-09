@@ -46,7 +46,7 @@ struct Password {
 
   // 更新按钮状态
   private updateButtonState(): void {
-    console.log('updateButtonState-----------》', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType)
+    console.log('updateButtonState-----------》', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType.type)
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
@@ -106,7 +106,13 @@ struct Password {
         this.filePath = recentFile.filePath;
         this.storageType = recentFile.storageType;
         // 读取最近打开的文件内容
-        this.recentFileService.readRecentFile(recentFile);
+        this.recentFileService.readRecentFile(recentFile).then(() => {
+          this.promptAction.showToast({ message: '数据库加载完成！' });
+        }).catch((error: Error) => {
+          console.error(`Open recent file error: ${error}`);
+          this.promptAction.showToast({ message: `数据库打开失败: ${error.message}`, duration: 2000 });
+          this.router.back();
+        });
         // 设置认证类型
         if (recentFile.authType) {
           this.authType = recentFile.authType;
@@ -119,7 +125,7 @@ struct Password {
           })
         }
       }
-    }).catch((error:Error)=>{
+    }).catch((error: Error) => {
       console.error(`Open recent file error: ${error}`);
       this.promptAction.showToast({
         message: '数据文件打开失败',
@@ -141,21 +147,15 @@ struct Password {
       // 创建凭证
       let credentials: KdbxCredentials;
       if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
-        this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
-      this.keyFileContent) {
+        this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&  this.keyFileContent) {
         // 使用密码和密钥文件
-        credentials = new KdbxCredentials(
-          ProtectedValue.fromString(this.password),
-          this.keyFileContent
-        );
+        credentials = new KdbxCredentials(ProtectedValue.fromString(this.password),this.keyFileContent);
       } else {
         // 仅使用密码
         credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
       }
       // 加载数据库
-      const database = await Kdbx.load(FileService.getInstance().getFileContent(), credentials);
-      console.info('数据库加载成功');
-      return database;
+      return Kdbx.load(FileService.getInstance().getFileContent(), credentials);
     } catch (error) {
       console.error(`加载数据库失败: ${error}`);
       let errorMessage = '加载数据库失败';
@@ -173,7 +173,7 @@ struct Password {
         message: errorMessage,
         duration: 2000
       });
-      return null;
+      return Promise.reject(error);
     }
   }
 
@@ -209,16 +209,15 @@ struct Password {
    */
   private async loadKeyFileContent(fileUri: string) {
     console.log('loadKeyFileContent----------->', fileUri);
-    // 读取文件内容
-    try {
-      // 获取文件名
-      this.keyFilePath = fileUri;
-      this.keyFileName = FileUtils.getFileName(fileUri);
-      const fileManager = new KdbxFileManager(StorageType.LOCAL);
-      this.keyFileContent = await fileManager.loadKdbxFile(fileUri);
+    // 获取文件名
+    this.keyFilePath = fileUri;
+    this.keyFileName = FileUtils.getFileName(fileUri);
+    new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(fileUri).then((fileContent) => {
+      this.promptAction.showToast({ message: '密钥加载完成！' });
+      this.keyFileContent = fileContent;
       this.hasKeyFileContent = true; // 更新状态变量
       this.updateButtonState(); // 更新按钮状态
-    } catch (error) {
+    }).catch((error: Error) => {
       console.error(`读取密钥文件失败: ${error}`);
       this.promptAction.showToast({
         message: '读取密钥文件失败',
@@ -229,7 +228,7 @@ struct Password {
       this.keyFilePath = '';
       this.keyFileName = '';
       this.updateButtonState(); // 更新按钮状态
-    }
+    });
   }
 
   /**
@@ -300,18 +299,16 @@ struct Password {
     this.isLoading = true;
     this.updateButtonState(); // 更新按钮状态
     if (this.storageType === null) {
-      this.promptAction.showToast({
-        message: `存储类型为空`,
-      });
+      this.promptAction.showToast({ message: `存储类型为空` });
       return;
     }
-    try {
-      // 加载并验证数据库
-      const database = await this.loadDatabase();
+    // 加载并验证数据库
+    this.loadDatabase().then((database) => {
       if (!database) {
+        this.promptAction.showToast({ message: `数据库加载失败` });
         return;
       }
-
+      // 设置数据库文件信息
       FileService.getInstance().setDbFileParam({
         filePath: this.filePath,
         password: this.password,
@@ -319,7 +316,7 @@ struct Password {
         database: database,
         keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
         authType: this.authType, // 添加认证类型
-        storageType: this.storageType
+        storageType: this.storageType ?? StorageType.LOCAL
       })
 
       // 添加到最近打开的文件列表，包含认证方式和认证文件信息
@@ -334,20 +331,17 @@ struct Password {
           });
         }
       })
-
       // 验证成功，跳转到数据库展示页面
       this.router.pushUrl({
         url: 'pages/DatabaseView'
       });
-    } catch (error) {
-      this.promptAction.showToast({
-        message: `数据库加载失败: ${error}`,
-        duration: 2000
-      });
-    } finally {
+    }).catch((error: Error) => {
+      console.error(`验证密码并打开数据库失败: ${error}`);
+      this.promptAction.showToast({ message: '密码或密钥文件错误', duration: 2000 })
+    }).finally(() => {
       this.isLoading = false;
       this.updateButtonState(); // 更新按钮状态
-    }
+    })
   }
 
   build() {
