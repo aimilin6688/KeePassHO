@@ -1,5 +1,6 @@
 import { PromptAction, router, Router } from '@kit.ArkUI';
-import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
+import worker, { ErrorEvent, MessageEvents } from '@ohos.worker';
 import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
 import picker from '@ohos.file.picker';
@@ -9,6 +10,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
 import FileUtils from '../common/utils/FIleUtils';
+import { LoadDatabaseResult, WorkerMessage} from '../workers/DatabaseWorker'
 
 @Entry
 @Component
@@ -42,6 +44,15 @@ struct Password {
     }
     // 初始化按钮状态
     this.updateButtonState();
+  }
+  
+  aboutToDisappear() {
+    // 终止 Worker
+    if (this.databaseWorker) {
+      this.databaseWorker.terminate();
+      this.databaseWorker = null;
+      console.log('数据库 Worker 已终止');
+    }
   }
 
   // 更新按钮状态
@@ -135,45 +146,107 @@ struct Password {
     });
   }
 
+  // Worker 实例
+  private databaseWorker: worker.ThreadWorker | null = null;
+  
   /**
    * 加载并解密数据库
    */
   private async loadDatabase(): Promise<Kdbx | null> {
-    try {
-      if (!FileService.getInstance().getFileContent()) {
-        throw new Error('文件内容为空');
+    return new Promise<Kdbx | null>((resolve, reject) => {
+      try {
+        if (!FileService.getInstance().getFileContent()) {
+          throw new Error('文件内容为空');
+        }
+        
+        // 创建 Worker 实例
+        if (!this.databaseWorker) {
+          this.databaseWorker = new worker.ThreadWorker('entry/src/main/ets/workers/DatabaseWorker.ts');
+          
+          // 监听 Worker 消息
+          this.databaseWorker.onmessage = (event: MessageEvents) => {
+            const message: WorkerMessage = event.data;
+            
+            if (message.type === 'ready') {
+              console.log('数据库 Worker 已准备就绪');
+            } else if (message.type === 'loadDatabaseResult') {
+              const result:LoadDatabaseResult = message.data;
+              
+              if (result.success) {
+                // 数据库加载成功，使用主线程加载数据库
+                // 这是因为 Worker 中加载的数据库对象无法直接传递回主线程
+                // 所以我们只在 Worker 中验证凭据，然后在主线程中重新加载
+                this.loadDatabaseInMainThread().then(resolve).catch(reject);
+              } else {
+                // 数据库加载失败
+                console.error(`Worker 加载数据库失败: ${result.error?.message}`);
+                let errorMessage = result.error?.message || '加载数据库失败';
+                
+                this.promptAction.showToast({ message: errorMessage,duration: 2000});
+                reject(new Error(errorMessage));
+              }
+            }
+          };
+          
+          // 监听 Worker 错误
+          this.databaseWorker.onerror = (event: ErrorEvent) => {
+            console.error(`Worker 错误: ${event.message}`);
+            this.promptAction.showToast({
+              message: `数据库处理错误: ${event.message}`,
+              duration: 2000
+            });
+            reject(new Error(event.message));
+          };
+        }
+        
+        // 发送数据库加载请求到 Worker
+        this.databaseWorker.postMessage({
+          type: 'loadDatabase',
+          data: {
+            fileContent: FileService.getInstance().getFileContent(),
+            password: this.password,
+            keyFileContent: this.keyFileContent
+          }
+        });
+      } catch (error) {
+        console.error(`创建 Worker 或发送消息失败: ${error}`);
+        let errorMessage = '加载数据库失败';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        this.promptAction.showToast({
+          message: errorMessage,
+          duration: 2000
+        });
+        reject(error);
       }
-
+    });
+  }
+  
+  /**
+   * 在主线程中加载数据库（Worker 验证成功后）
+   * 这是必要的，因为 Worker 中的复杂对象无法直接传递回主线程
+   */
+  private async loadDatabaseInMainThread(): Promise<Kdbx | null> {
+    try {
       // 创建凭证
       let credentials: KdbxCredentials;
       if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
-        this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&  this.keyFileContent) {
+        this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && this.keyFileContent) {
         // 使用密码和密钥文件
-        credentials = new KdbxCredentials(ProtectedValue.fromString(this.password),this.keyFileContent);
+        credentials = new KdbxCredentials(ProtectedValue.fromString(this.password), this.keyFileContent);
       } else {
         // 仅使用密码
         credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
       }
+      
       // 加载数据库
       return Kdbx.load(FileService.getInstance().getFileContent(), credentials);
     } catch (error) {
-      console.error(`加载数据库失败: ${error}`);
-      let errorMessage = '加载数据库失败';
-
-      if (error instanceof KdbxError) {
-        if (error.code === 'InvalidKey') {
-          errorMessage = this.authType === AuthType.PASSWORD_KEYFILE ?
-            '密码或密钥文件错误，请重试' : '密码错误，请重试';
-        } else {
-          errorMessage = `数据库错误: ${error.message}`;
-        }
-      }
-
-      this.promptAction.showToast({
-        message: errorMessage,
-        duration: 2000
-      });
-      return Promise.reject(error);
+      console.error(`主线程加载数据库失败: ${error}`);
+      return null;
     }
   }
 
