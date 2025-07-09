@@ -13,6 +13,4 @@
   <!-- Drive Button -->
   <circle cx="18" cy="12" r="1" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
 
-  <!-- Drive Slot -->
-  <rect x="5" y="9" width="14" height="1" fill="#708090" stroke="#2F4F4F" stroke-width="0.5"/>
 </svg>
