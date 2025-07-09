@@ -85,14 +85,17 @@ export class RecentFilesService {
    * @param filePath 文件路径
    */
   public async readRecentFile(recentFile: RecentFile): Promise<void> {
-    const fileContent = await new KdbxFileManager(recentFile.storageType).loadKdbxFile(recentFile.filePath);
-    // 设置文件参数
-    FileService.getInstance().setFileParam({
-      filePath: recentFile.filePath,
-      fileName: recentFile.fileName,
-      fileContent: fileContent,
-      storageType: recentFile.storageType
-    });
+    // 读取文件内容
+    return new KdbxFileManager(recentFile.storageType).loadKdbxFile(recentFile.filePath).then(fileContent => {
+      console.info(`读取文件成功: ${recentFile.filePath}`);
+      // 设置文件参数
+      FileService.getInstance().setFileParam({
+        filePath: recentFile.filePath,
+        fileName: recentFile.fileName,
+        fileContent: fileContent,
+        storageType: recentFile.storageType
+      });
+    })
   }
 
   /**
