@@ -32,7 +32,7 @@ export class KdbxFileManager {
       }
 
       // 读取文件内容
-      return await this.storage.readFile(path);
+      return this.storage.readFile(path);
     } catch (error) {
       throw new Error(`Failed to load KDBX file: ${error.message}`);
     }
