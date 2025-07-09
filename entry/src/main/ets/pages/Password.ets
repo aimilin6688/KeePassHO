@@ -119,6 +119,13 @@ struct Password {
           })
         }
       }
+    }).catch((error:Error)=>{
+      console.error(`Open recent file error: ${error}`);
+      this.promptAction.showToast({
+        message: '数据文件打开失败',
+        duration: 2000
+      });
+      this.router.back();
     });
   }
 
