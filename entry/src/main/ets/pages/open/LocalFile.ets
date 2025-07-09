@@ -48,36 +48,34 @@ struct LocalFile {
    */
   async loadKdbxFile(path: string) {
     this.isLoading = true;
-    try {
-      // 永久授权文件访问权限
-      FileUtils.persistPermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
-        // 获取文件信息
-        const fileInfo = await this.fileManager.getKdbxFileInfo(path);
-        console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+    // 永久授权文件访问权限
+    FileUtils.persistPermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
+      // 获取文件信息
+      const fileInfo = await this.fileManager.getKdbxFileInfo(path);
+      console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
-        // 加载文件内容
-        const content = await this.fileManager.loadKdbxFile(path);
-        console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
+      // 加载文件内容
+      const content = await this.fileManager.loadKdbxFile(path);
+      console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
 
-        FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content, storageType: StorageType.LOCAL });
+      FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content, storageType: StorageType.LOCAL });
 
-        // 添加到最近打开的文件列表
-        await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL });
+      // 添加到最近打开的文件列表
+      await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL });
 
-        // 导航到密码输入页面，并传递文件内容
-        this.router.pushUrl({
-          url: 'pages/Password'
-        });
-      })
-    } catch (error) {
+      // 导航到密码输入页面，并传递文件内容
+      this.router.pushUrl({
+        url: 'pages/Password'
+      });
+    }).catch((error:Error) =>{
       console.error(`Failed to load KDBX file: ${error}`);
       this.promptAction.showToast({
         message: `加载文件失败: ${error}`,
-        duration: 2000
+        duration: 3000
       });
-    } finally {
+    }).finally(() => {
       this.isLoading = false;
-    }
+    });
   }
 
   build() {
