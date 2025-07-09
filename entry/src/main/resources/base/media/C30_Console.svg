@@ -7,12 +7,9 @@
   <path d="M12 8 L16 8" stroke="#32CD32" stroke-width="1.5"/>
 
   <!-- Command Line -->
-  <path d="M8 12 L16 12" stroke="#32CD32" stroke-width="1.5"/>
+  <path d="M8 14 L16 14" stroke="#32CD32" stroke-width="1.5"/>
 
   <!-- Output -->
   <path d="M8 16 L16 16" stroke="#32CD32" stroke-width="1.5"/>
   <path d="M8 18 L14 18" stroke="#32CD32" stroke-width="1.5"/>
-
-  <!-- Cursor -->
-  <rect x="16" y="11" width="1" height="2" fill="#32CD32"/>
 </svg>
