@@ -1,5 +1,6 @@
 import { Kdbx } from 'kdbxweb';
 import { StorageType } from './kdbx/interfaces';
+import { StorageConfig } from './kdbx/interfaces/StorageConfig';
 
 /**
  * kdbx文件定义
@@ -16,14 +17,14 @@ export interface FileParam {
   fileName: string;
 
   /**
-   * 文件内容
-   */
-  fileContent: ArrayBuffer;
-
-  /**
    * 存储类型
    */
   storageType: StorageType;
+
+  /**
+   * 存储配置信息
+   */
+  storageConfig: StorageConfig;
 }
 
 /**
@@ -56,14 +57,19 @@ export interface DbFileParam {
   authType: AuthTypeInfo;
 
   /**
+   * 认证密码文件路径
+   */
+  keyFilePath?: string;
+
+  /**
    * 存储类型
    */
   storageType: StorageType;
 
   /**
-   * 认证密码文件路径
+   * 存储配置信息
    */
-  keyFilePath?: string;
+  storageConfig: StorageConfig;
 }
 
 /**
@@ -166,6 +172,15 @@ export class AuthType {
   public static getByType(type: string): AuthTypeInfo | null {
     return AuthType.getAllTypes().find(item => item.type === type) || null;
   }
+
+  /**
+   * 判断认证方式是否使用密钥文件
+   * @param authType 认证方式
+   * @returns 是否使用密钥文件
+   */
+  public static useKeyAuth(authType: AuthTypeInfo) : boolean {
+      return authType && ( authType.type === AuthType.PASSWORD_KEYFILE.type || authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type);
+  }
 }
 
 /**
@@ -183,11 +198,6 @@ export interface RecentFile {
   fileName: string;
 
   /**
-   * 存储类型
-   */
-  storageType: StorageType;
-
-  /**
    * 认证方式
    */
   authType?: AuthTypeInfo;
@@ -196,6 +206,16 @@ export interface RecentFile {
    * 认证密钥文件路径
    */
   keyFilePath?: string;
+
+  /**
+   * 存储类型
+   */
+  storageType: StorageType;
+
+  /**
+   * 存储类型
+   */
+  storageConfig: StorageConfig;
 }
 
 /**

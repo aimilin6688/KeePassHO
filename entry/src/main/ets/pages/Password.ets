@@ -1,5 +1,4 @@
 import { PromptAction, router, Router } from '@kit.ArkUI';
-import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import worker, { ErrorEvent, MessageEvents } from '@ohos.worker';
 import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
@@ -9,7 +8,8 @@ import { fileShare } from '@kit.CoreFileKit';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
 import FileUtils from '../common/utils/FIleUtils';
-import {LoadDatabaseResult, LoadKeyFileResult, WorkerMessage} from '../workers/DatabaseWorker'
+import { LoadDatabase, LoadMessage, MessageType, WorkerMessage } from '../workers/DatabaseWorker';
+import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 
 @Entry
 @Component
@@ -23,13 +23,16 @@ struct Password {
   @State showPassword: boolean = false;
   @State hasKeyFileContent: boolean = false; // 添加状态变量跟踪密钥文件是否已加载
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
+
   private filePath: string = '';
-  private keyFileContent: ArrayBuffer | null = null;
   private storageType: StorageType | null = null;
+  private storageConfig: StorageConfig | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private recentFileService = RecentFilesService.getInstance();
+  private databaseWorker: worker.ThreadWorker | null = null;
+
 
   aboutToAppear() {
     const params = this.router.getParams() as Record<string, string>;
@@ -44,19 +47,14 @@ struct Password {
     // 初始化按钮状态
     this.updateButtonState();
   }
-  
+
   aboutToDisappear() {
-    // 终止 Worker
-    if (this.databaseWorker) {
-      this.databaseWorker.terminate();
-      this.databaseWorker = null;
-      console.log('数据库 Worker 已终止');
-    }
+    this.stopWorker();
   }
 
   // 更新按钮状态
   private updateButtonState(): void {
-    console.log('updateButtonState-----------》', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType.type)
+    console.log('updateButtonState: ', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType.type)
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
@@ -91,14 +89,7 @@ struct Password {
     this.filePath = fileParam.filePath ?? '';
     this.fileName = fileParam.fileName ?? '未知文件';
     this.storageType = fileParam.storageType;
-
-    if (!this.filePath || !fileParam.fileContent) {
-      this.promptAction.showToast({
-        message: '无效的数据文件',
-        duration: 2000
-      });
-      this.router.back();
-    }
+    this.storageConfig = fileParam.storageConfig;
   }
 
   /**
@@ -115,14 +106,7 @@ struct Password {
         this.fileName = recentFile.fileName;
         this.filePath = recentFile.filePath;
         this.storageType = recentFile.storageType;
-        // 读取最近打开的文件内容
-        this.recentFileService.readRecentFile(recentFile).then(() => {
-          this.promptAction.showToast({ message: '数据库加载完成！' });
-        }).catch((error: Error) => {
-          console.error(`Open recent file error: ${error}`);
-          this.promptAction.showToast({ message: `数据库打开失败: ${error.message}`, duration: 2000 });
-          this.router.back();
-        });
+        this.storageConfig = recentFile.storageConfig;
         // 设置认证类型
         if (recentFile.authType) {
           this.authType = recentFile.authType;
@@ -130,283 +114,53 @@ struct Password {
         // 获取密钥文件路径
         if (recentFile.keyFilePath) {
           this.keyFilePath = recentFile.keyFilePath;
-          FileUtils.activatePermission(this.keyFilePath, fileShare.OperationMode.READ_MODE).then(async () => {
-            this.loadKeyFileContent(this.keyFilePath);
-          })
         }
       }
     }).catch((error: Error) => {
       console.error(`Open recent file error: ${error}`);
       this.promptAction.showToast({
-        message: '数据文件打开失败',
+        message: '打开失败:' + error.message,
         duration: 2000
       });
       this.router.back();
     });
   }
 
-  // Worker 实例
-  private databaseWorker: worker.ThreadWorker | null = null;
-  
   /**
-   * 加载并解密数据库
+   * 终止 Worker
    */
-  private async loadDatabase(): Promise<Kdbx | null> {
-    return new Promise<Kdbx | null>((resolve, reject) => {
-      try {
-        if (!FileService.getInstance().getFileContent()) {
-          throw new Error('文件内容为空');
-        }
-        
-        // 创建 Worker 实例（如果尚未创建）
-        if (!this.databaseWorker) {
-          this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
-          // 设置 Worker 消息处理函数
-          this.setupWorkerMessageHandler(resolve, reject);
-        } else {
-          // 更新 Worker 消息处理函数中的 resolve 和 reject 引用
-          this.updateDatabasePromiseHandlers(resolve, reject);
-        }
-        
-        // 发送数据库加载请求到 Worker
-        this.databaseWorker.postMessage({
-          type: 'loadDatabase',
-          data: {
-            fileContent: FileService.getInstance().getFileContent(),
-            password: this.password,
-            keyFileContent: this.keyFileContent
-          }
-        } as WorkerMessage);
-      } catch (error) {
-        console.error(`创建 Worker 或发送消息失败: ${error}`);
-        let errorMessage = '加载数据库失败';
-        
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-        
-        this.promptAction.showToast({
-          message: errorMessage,
-          duration: 2000
-        });
-        reject(error);
-      }
-    });
-  }
-  
-  // 数据库加载的 Promise 处理函数
-  private databaseResolve: ((value: Kdbx | null) => void) | null = null;
-  private databaseReject: ((reason?: Error) => void) | null = null;
-  
-  /**
-   * 更新数据库 Promise 处理函数
-   */
-  private updateDatabasePromiseHandlers(
-    resolve: (value: Kdbx | null) => void,
-    reject: (reason?: Error) => void
-  ): void {
-    this.databaseResolve = resolve;
-    this.databaseReject = reject;
-  }
-  
-  /**
-   * 设置 Worker 消息处理函数
-   */
-  private setupWorkerMessageHandler(
-    resolve: (value: Kdbx | null) => void,
-    reject: (reason?: Error) => void
-  ): void {
-    if (!this.databaseWorker) return;
-    
-    // 保存 Promise 处理函数
-    this.databaseResolve = resolve;
-    this.databaseReject = reject;
-    
-    // 监听 Worker 消息
-    this.databaseWorker.onmessage = (event: MessageEvents) => {
-      const message: WorkerMessage = event.data as WorkerMessage;
-      
-      if (message.type === 'ready') {
-        console.log('数据库 Worker 已准备就绪');
-      } else if (message.type === 'loadDatabaseResult') {
-        const result = message.data as LoadDatabaseResult;
-        
-        if (result.success) {
-          // 数据库加载成功，使用主线程加载数据库
-          // 这是因为 Worker 中加载的数据库对象无法直接传递回主线程
-          // 所以我们只在 Worker 中验证凭据，然后在主线程中重新加载
-          if (this.databaseResolve) {
-            this.loadDatabaseInMainThread().then(this.databaseResolve).catch(this.databaseReject);
-          }
-        } else {
-          // 数据库加载失败
-          console.error(`Worker 加载数据库失败: ${result.error?.message}`);
-          let errorMessage = result.error?.message || '加载数据库失败';
-          
-          this.promptAction.showToast({ message: errorMessage, duration: 2000 });
-          if (this.databaseReject) {
-            this.databaseReject(new Error(errorMessage));
-          }
-        }
-      } else if (message.type === 'loadKeyFileResult') {
-        // 处理密钥文件加载结果
-        const result = message.data as LoadKeyFileResult;
-        
-        if (result.success && result.keyFileContent) {
-          this.promptAction.showToast({ message: '密钥加载完成！' });
-          this.keyFileContent = result.keyFileContent;
-          this.hasKeyFileContent = true; // 更新状态变量
-          this.updateButtonState(); // 更新按钮状态
-        } else {
-          console.error(`Worker 加载密钥文件失败: ${result.error?.message}`);
-          this.promptAction.showToast({
-            message: '读取密钥文件失败',
-            duration: 2000
-          });
-          this.keyFileContent = null;
-          this.hasKeyFileContent = false; // 更新状态变量
-          this.keyFilePath = '';
-          this.keyFileName = '';
-          this.updateButtonState(); // 更新按钮状态
-        }
-      }
-    };
-    
-    // 监听 Worker 错误
-    this.databaseWorker.onerror = (event: ErrorEvent) => {
-      console.error(`Worker 错误: ${event.message}`);
-      this.promptAction.showToast({
-        message: `处理错误: ${event.message}`,
-        duration: 2000
-      });
-      if (this.databaseReject) {
-        this.databaseReject(new Error(event.message));
-      }
-    };
-  }
-  
-  /**
-   * 在主线程中加载数据库（Worker 验证成功后）
-   * 这是必要的，因为 Worker 中的复杂对象无法直接传递回主线程
-   */
-  private async loadDatabaseInMainThread(): Promise<Kdbx | null> {
-    try {
-      // 创建凭证
-      let credentials: KdbxCredentials;
-      if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
-        this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && this.keyFileContent) {
-        // 使用密码和密钥文件
-        credentials = new KdbxCredentials(ProtectedValue.fromString(this.password), this.keyFileContent);
-      } else {
-        // 仅使用密码
-        credentials = new KdbxCredentials(ProtectedValue.fromString(this.password));
-      }
-      
-      // 加载数据库
-      return Kdbx.load(FileService.getInstance().getFileContent(), credentials);
-    } catch (error) {
-      console.error(`主线程加载数据库失败: ${error}`);
-      return null;
+  private  stopWorker(){
+    // 终止 Worker
+    if (this.databaseWorker) {
+      this.databaseWorker.terminate();
+      this.databaseWorker = null;
+      console.log('数据库 Worker 已终止');
     }
   }
-
   /**
    * 选择密钥文件
    */
   private async selectKeyFile() {
-    try {
-      const documentPicker = new picker.DocumentViewPicker(this.context);
-      const result = await documentPicker.select({
-        maxSelectNumber: 1,
-        fileSuffixFilters: ['.key'] // 只显示key文件
-      });
-      if (result && result.length > 0) {
-        const fileUri = result[0];
-        // 永久授权文件访问权限
-        FileUtils.persistPermission(fileUri, fileShare.OperationMode.READ_MODE).then(async () => {
-          this.loadKeyFileContent(fileUri);
+    const documentPicker = new picker.DocumentViewPicker(this.context);
+    const result = await documentPicker.select({
+      maxSelectNumber: 1,
+      fileSuffixFilters: ['.key'] // 只显示key文件
+    });
+    if (result && result.length > 0) {
+      const fileUri = result[0];
+      FileUtils.persistPermission(fileUri, fileShare.OperationMode.READ_MODE).then(async () => {
+        this.keyFilePath = fileUri;
+        this.keyFileName = FileUtils.getFileName(fileUri);
+      }).catch((error: Error) => {
+        console.error(`Open key file error: ${error}`);
+        this.promptAction.showToast({
+          message: '打开失败:' + error.message,
+          duration: 2000
         });
-      }
-    } catch (error) {
-      console.error(`选择密钥文件失败: ${error}`);
-      this.promptAction.showToast({
-        message: '选择密钥文件失败',
-        duration: 2000
       });
     }
   }
 
-  /**
-   * 读取密钥文件内容
-   * @param fileUri 文件路径
-   */
-  private async loadKeyFileContent(fileUri: string) {
-    console.log('loadKeyFileContent----------->', fileUri);
-    // 获取文件名
-    this.keyFilePath = fileUri;
-    this.keyFileName = FileUtils.getFileName(fileUri);
-    
-    // 创建 Worker 实例（如果尚未创建）
-    if (!this.databaseWorker) {
-      this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
-      
-      // 设置 Worker 消息处理函数
-      this.setupWorkerMessageHandler(()=>null, ()=>null);
-    }
-    
-    // 发送加载密钥文件的请求
-    this.sendLoadKeyFileRequest(fileUri);
-  }
-  
-  /**
-   * 发送加载密钥文件的请求到 Worker
-   * @param fileUri 文件路径
-   */
-  private sendLoadKeyFileRequest(fileUri: string) {
-    if (this.databaseWorker) {
-      this.databaseWorker.postMessage({
-        type: 'loadKeyFile',
-        data: {
-          filePath: fileUri,
-          storageType: StorageType.LOCAL
-        }
-      } as WorkerMessage);
-    }
-  }
-
-  /**
-   * 验证密码并打开数据库
-   */
-  // 密钥文件选择器组件
-  @Builder
-  KeyFileSelector() {
-    Column() {
-      Text('密钥文件')
-        .fontSize(16)
-        .fontColor($r('app.color.text_primary'))
-        .margin({ bottom: 16 })
-        .alignSelf(ItemAlign.Start)
-
-      Button(this.keyFileName ? '重新选择密钥文件' : '选择密钥文件')
-        .width('100%')
-        .height(48)
-        .backgroundColor($r('app.color.button_background'))
-        .onClick(() => {
-          this.selectKeyFile();
-        })
-
-      if (this.keyFileName) {
-        Text(this.keyFileName)
-          .fontSize(14)
-          .fontColor($r('app.color.text_secondary'))
-          .margin({ top: 8 })
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-    }
-    .width('90%')
-    .padding({ left: 16, right: 16, bottom: 24 })
-  }
 
   /**
    * 更改数据库
@@ -419,7 +173,7 @@ struct Password {
   /**
    * 验证密码并打开数据库
    */
-  async verifyAndOpenDatabase() {
+  private verifyAndOpenDatabase() {
     // 验证输入
     if (!this.password) {
       this.promptAction.showToast({
@@ -430,8 +184,7 @@ struct Password {
     }
 
     if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
-      this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
-      !this.keyFileContent) {
+      this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyFilePath) {
       this.promptAction.showToast({
         message: '请选择密钥文件',
         duration: 2000
@@ -445,46 +198,41 @@ struct Password {
       this.promptAction.showToast({ message: `存储类型为空` });
       return;
     }
-    // 加载并验证数据库
-    this.loadDatabase().then((database) => {
-      if (!database) {
-        this.promptAction.showToast({ message: `数据库加载失败` });
-        return;
-      }
-      // 设置数据库文件信息
-      FileService.getInstance().setDbFileParam({
-        filePath: this.filePath,
-        password: this.password,
-        fileName: this.fileName,
-        database: database,
-        keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
-        authType: this.authType, // 添加认证类型
-        storageType: this.storageType ?? StorageType.LOCAL
-      })
 
-      // 添加到最近打开的文件列表，包含认证方式和认证文件信息
-      this.recentFileService.getRecentFile(this.filePath).then((recentFile) => {
-        if (recentFile) {
-          this.recentFileService.addRecentFile({
-            filePath: recentFile.filePath,
-            fileName: recentFile.fileName,
-            storageType: recentFile.storageType, // 假设是本地存储
-            authType: this.authType,
-            keyFilePath: this.keyFilePath
-          });
-        }
-      })
-      // 验证成功，跳转到数据库展示页面
-      this.router.pushUrl({
-        url: 'pages/DatabaseView'
-      });
-    }).catch((error: Error) => {
-      console.error(`验证密码并打开数据库失败: ${error}`);
-      this.promptAction.showToast({ message: '密码或密钥文件错误', duration: 2000 })
-    }).finally(() => {
+    this.stopWorker();
+    this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
+    this.databaseWorker.postMessage({
+      filePath: this.filePath,
+      password: this.password,
+      authType: this.authType,
+      keyFilePath: this.keyFilePath,
+      storageType: this.storageType,
+      storageConfig: this.storageConfig
+    } as LoadDatabase);
+
+    // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
+    this.databaseWorker.onmessage = (e: MessageEvents) => {
+      let data = e.data as WorkerMessage;
+      // 加载进度消息
+      if(data.type == MessageType.LOAD_MESSAGE){
+        const loadMessage = data as LoadMessage;
+        this.promptAction.showToast({ message: loadMessage.message})
+      }
+      // 数据库加载成功
+      if(data.type == MessageType.SUCCESS){
+        this.isLoading = false;
+        this.updateButtonState(); // 更新按钮状态
+        this.router.pushUrl({url: 'pages/DatabaseView'});
+      }
+    }
+
+    // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
+    this.databaseWorker.onAllErrors = (err: ErrorEvent) => {
+      console.error('Open database error:', err);
+      this.promptAction.showToast({ message: err.message})
       this.isLoading = false;
       this.updateButtonState(); // 更新按钮状态
-    })
+    }
   }
 
   build() {
@@ -543,9 +291,7 @@ struct Password {
               if (index >= 0 && index < allTypes.length) {
                 this.authType = allTypes[index];
                 // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-                if (this.authType.type !== AuthType.PASSWORD_KEYFILE.type &&
-                  this.authType.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
-                  this.keyFileContent = null;
+                if (this.authType.type !== AuthType.PASSWORD_KEYFILE.type && this.authType.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
                   this.hasKeyFileContent = false; // 更新状态变量
                   this.keyFilePath = '';
                   this.keyFileName = '';
@@ -634,5 +380,38 @@ struct Password {
     }
     .width('100%')
     .height('100%')
+  }
+
+  /**
+   * 验证密码并打开数据库
+   */
+  @Builder
+  KeyFileSelector() {
+    Column() {
+      Text('密钥文件')
+        .fontSize(16)
+        .fontColor($r('app.color.text_primary'))
+        .margin({ bottom: 16 })
+        .alignSelf(ItemAlign.Start)
+
+      Button(this.keyFileName ? '重新选择密钥文件' : '选择密钥文件')
+        .width('100%')
+        .height(48)
+        .backgroundColor($r('app.color.button_background'))
+        .onClick(() => {
+          this.selectKeyFile();
+        })
+
+      if (this.keyFileName) {
+        Text(this.keyFileName)
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+          .margin({ top: 8 })
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+    }
+    .width('90%')
+    .padding({ left: 16, right: 16, bottom: 24 })
   }
 }

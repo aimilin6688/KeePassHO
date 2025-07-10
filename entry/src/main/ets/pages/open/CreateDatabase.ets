@@ -3,7 +3,7 @@ import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
 import { AuthType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { StorageType } from '../../services/kdbx/interfaces';
+import { StorageType, LocalFileStorageConfig } from '../../services/kdbx/interfaces';
 import { BusinessError } from '@kit.BasicServicesKit';
 import * as kdbxweb from 'kdbxweb';
 import { RecentFilesService } from '../../services/RecentFilesService';
@@ -238,7 +238,8 @@ struct CreateDatabase {
             filePath: filePath,
             fileName: FileUtils.getFileName(filePath),
             storageType: StorageType.LOCAL,
-            authType: AuthType.PASSWORD
+            authType: AuthType.PASSWORD,
+            storageConfig: new LocalFileStorageConfig(dbContent.byteLength)
           });
         // 跳转到密码页面
         this.router.replaceUrl({
