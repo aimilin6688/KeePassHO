@@ -7,6 +7,7 @@ import { fileShare } from '@kit.CoreFileKit';
 import { FileService } from '../../services/FileService';
 import { RecentFilesService } from '../../services/RecentFilesService';
 import FileUtils from '../../common/utils/FIleUtils';
+import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 
 @Entry
 @Component
@@ -54,14 +55,12 @@ struct LocalFile {
       const fileInfo = await this.fileManager.getKdbxFileInfo(path);
       console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
-      // 加载文件内容
-      const content = await this.fileManager.loadKdbxFile(path);
-      console.info(`KDBX file loaded successfully, content size: ${content.byteLength} bytes`);
-
-      FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, fileContent: content, storageType: StorageType.LOCAL });
-
+      // 本地配置信息
+      const  storageConfig = new LocalFileStorageConfig(fileInfo.size);
+      // 设置文件参数
+      FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
       // 添加到最近打开的文件列表
-      await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL });
+      await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig});
 
       // 导航到密码输入页面，并传递文件内容
       this.router.pushUrl({

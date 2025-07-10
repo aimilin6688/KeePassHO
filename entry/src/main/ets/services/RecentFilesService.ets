@@ -81,24 +81,6 @@ export class RecentFilesService {
   }
 
   /**
-   * 读取最近打开的文件的内容
-   * @param filePath 文件路径
-   */
-  public async readRecentFile(recentFile: RecentFile): Promise<void> {
-    // 读取文件内容
-    return new KdbxFileManager(recentFile.storageType).loadKdbxFile(recentFile.filePath).then(fileContent => {
-      console.info(`读取文件成功: ${recentFile.filePath}`);
-      // 设置文件参数
-      FileService.getInstance().setFileParam({
-        filePath: recentFile.filePath,
-        fileName: recentFile.fileName,
-        fileContent: fileContent,
-        storageType: recentFile.storageType
-      });
-    })
-  }
-
-  /**
    * 加载最近打开的文件
    * 返回最近打开的第一个文件的参数，如果没有则返回null
    */
