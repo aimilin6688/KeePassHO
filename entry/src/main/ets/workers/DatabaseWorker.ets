@@ -4,8 +4,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { AuthType } from '../services/TypeDefined';
 import { FileService } from '../services/FileService';
-import { RecentFilesService } from '../services/RecentFilesService';
-import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, toLoadMessage, toSuccessMessage, WorkerMessage } from './DatabaseWorkerParam';
+import { LoadDatabase, LoadMessage, MessageType, toLoadMessage, toSuccessMessage, WorkerMessage } from './DatabaseWorkerParam';
 
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
