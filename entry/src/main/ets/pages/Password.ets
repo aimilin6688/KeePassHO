@@ -8,7 +8,7 @@ import { fileShare } from '@kit.CoreFileKit';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
 import FileUtils from '../common/utils/FIleUtils';
-import { LoadDatabase, LoadMessage, MessageType, WorkerMessage } from '../workers/DatabaseWorker';
+import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/DatabaseWorkerParam';
 import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 
 @Entry
@@ -21,9 +21,7 @@ struct Password {
   @State keyFilePath: string = '';
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
-  @State hasKeyFileContent: boolean = false; // 添加状态变量跟踪密钥文件是否已加载
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
-
   private filePath: string = '';
   private storageType: StorageType | null = null;
   private storageConfig: StorageConfig | null = null;
@@ -32,7 +30,6 @@ struct Password {
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private recentFileService = RecentFilesService.getInstance();
   private databaseWorker: worker.ThreadWorker | null = null;
-
 
   aboutToAppear() {
     const params = this.router.getParams() as Record<string, string>;
@@ -54,14 +51,14 @@ struct Password {
 
   // 更新按钮状态
   private updateButtonState(): void {
-    console.log('updateButtonState: ', this.isLoading, this.password.length, this.hasKeyFileContent, this.authType.type)
+    console.log('updateButtonState: ', this.isLoading, this.password.length, this.keyFilePath, this.authType.type)
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
     }
     if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
       this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
-      !this.hasKeyFileContent) {
+      !this.keyFilePath) {
       this.buttonEnabled = false;
       return;
     }
@@ -129,7 +126,7 @@ struct Password {
   /**
    * 终止 Worker
    */
-  private  stopWorker(){
+  private stopWorker() {
     // 终止 Worker
     if (this.databaseWorker) {
       this.databaseWorker.terminate();
@@ -137,6 +134,7 @@ struct Password {
       console.log('数据库 Worker 已终止');
     }
   }
+
   /**
    * 选择密钥文件
    */
@@ -151,6 +149,7 @@ struct Password {
       FileUtils.persistPermission(fileUri, fileShare.OperationMode.READ_MODE).then(async () => {
         this.keyFilePath = fileUri;
         this.keyFileName = FileUtils.getFileName(fileUri);
+        this.updateButtonState();
       }).catch((error: Error) => {
         console.error(`Open key file error: ${error}`);
         this.promptAction.showToast({
@@ -160,7 +159,6 @@ struct Password {
       });
     }
   }
-
 
   /**
    * 更改数据库
@@ -201,38 +199,67 @@ struct Password {
 
     this.stopWorker();
     this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
-    this.databaseWorker.postMessage({
+    this.databaseWorker.postMessage(JSON.stringify({
+      type: MessageType.LOAD_DATABASE,
       filePath: this.filePath,
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
       storageType: this.storageType,
       storageConfig: this.storageConfig
-    } as LoadDatabase);
+    } as LoadDatabase));
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
     this.databaseWorker.onmessage = (e: MessageEvents) => {
-      let data = e.data as WorkerMessage;
-      // 加载进度消息
-      if(data.type == MessageType.LOAD_MESSAGE){
+      let data = JSON.parse(e.data) as WorkerMessage;
+      // // 加载进度消息
+      if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
-        this.promptAction.showToast({ message: loadMessage.message})
+        this.promptAction.showToast({ message: loadMessage.message })
       }
       // 数据库加载成功
-      if(data.type == MessageType.SUCCESS){
+      if (data.type == MessageType.SUCCESS) {
+        this.putFileToRecentFile();
         this.isLoading = false;
         this.updateButtonState(); // 更新按钮状态
-        this.router.pushUrl({url: 'pages/DatabaseView'});
+        this.router.pushUrl({ url: 'pages/DatabaseView' });
       }
     }
 
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     this.databaseWorker.onAllErrors = (err: ErrorEvent) => {
       console.error('Open database error:', err);
-      this.promptAction.showToast({ message: err.message})
+      this.promptAction.showToast({ message: err.message })
       this.isLoading = false;
       this.updateButtonState(); // 更新按钮状态
     }
+
+    // 注册onexit回调，当Worker销毁时被调用，在宿主线程执行
+    this.databaseWorker.onexit = (e: number) => {
+      this.isLoading = false;
+      this.updateButtonState(); // 更新按钮状态
+    }
+  }
+  /**
+   * 文件打开成功，保存到最近访问列表中
+   */
+  private putFileToRecentFile(){
+    let fileParam = FileService.getInstance().getFileParam();
+    console.log("打开数据库文件：{}", fileParam)
+
+    // 添加到最近打开的文件列表，包含认证方式和认证文件信息
+    RecentFilesService.getInstance().getRecentFile(this.filePath).then((recentFile) => {
+      if (recentFile) {
+        RecentFilesService.getInstance().addRecentFile({
+          filePath: this.filePath,
+          fileName: this.fileName,
+          storageType: this.storageType?? StorageType.LOCAL,
+          authType: this.authType,
+          keyFilePath: this.keyFilePath,
+          storageConfig: this.storageConfig??{}
+        });
+      }
+    })
   }
 
   build() {
@@ -292,7 +319,6 @@ struct Password {
                 this.authType = allTypes[index];
                 // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
                 if (this.authType.type !== AuthType.PASSWORD_KEYFILE.type && this.authType.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
-                  this.hasKeyFileContent = false; // 更新状态变量
                   this.keyFilePath = '';
                   this.keyFileName = '';
                 }
