@@ -29,10 +29,6 @@ export class FileService {
     return this.fileParam;
   }
 
-  public getFileContent(): ArrayBuffer {
-    return this.fileParam.fileContent;
-  }
-
   public setDbFileParam(dbFileParam: DbFileParam): void {
     this.dbFileParam = dbFileParam;
   }
