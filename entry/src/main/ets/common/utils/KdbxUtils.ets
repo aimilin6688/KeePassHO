@@ -148,6 +148,23 @@ export default class KdbxUtils {
   public static toImgBase64Url(iconData: ArrayBuffer): string | null{
     return iconData ? 'data:image/png;base64,' + ByteUtils.bytesToBase64(iconData) : null;
   }
+
+  /**
+   * 将对象转换为ArrayBuffer
+   * @param kdbx KDBX对象
+   */
+  public static kdbxToArrayBuffer(obj: Kdbx): ArrayBuffer {
+    return ByteUtils.stringToBuffer(JSON.stringify(obj));
+  }
+
+  /**
+   * 将ArrayBuffer转换为对象
+   * @param arrayBuffer ArrayBuffer对象
+   */
+  public static arrayBufferToKdbx(arrayBuffer: ArrayBuffer): Kdbx {
+    return JSON.parse(ByteUtils.bytesToString(arrayBuffer));
+  }
+
 }
 
 
