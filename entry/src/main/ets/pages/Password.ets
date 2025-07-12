@@ -250,17 +250,19 @@ struct Password {
    * 设置数据库文件信息
    */
   private setFileParam(kdbxContent: ArrayBuffer){
-    // 设置数据库文件信息
-    FileService.getInstance().setDbFileParam({
-      filePath: this.filePath,
-      password: this.password,
-      fileName: this.fileName,
-      database: KdbxUtils.arrayBufferToKdbx(kdbxContent),
-      keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
-      authType: this.authType, // 添加认证类型
-      storageType: this.storageType?? StorageType.LOCAL,
-      storageConfig: this.storageConfig??{}
-    })
+    KdbxUtils.arrayBufferToKdbx(kdbxContent).then((kdbx: Kdbx) => {
+      // 设置数据库文件信息
+      FileService.getInstance().setDbFileParam({
+        filePath: this.filePath,
+        password: this.password,
+        fileName: this.fileName,
+        database: kdbx,
+        keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
+        authType: this.authType, // 添加认证类型
+        storageType: this.storageType ?? StorageType.LOCAL,
+        storageConfig: this.storageConfig ?? {}
+      })
+    });
   }
 
   /**
