@@ -6,12 +6,12 @@ import { IconSelectorDialog } from './IconSelector';
 export struct AddGroupDialog {
   @Link newGroupName: string
   @Link editingGroupIndex: number
-  @State selectedIconId: number = Icons.Folder;
+  @State selectedIconId: number|string = Icons.Folder;
 
   private iconSelectorDialogController: CustomDialogController = new CustomDialogController({
     builder: IconSelectorDialog({
       selectedIconId: this.selectedIconId,
-      onIconSelected: (iconId: number) => {
+      onIconSelected: (iconId: number|string) => {
         this.selectedIconId = iconId;
       }
     }),
@@ -21,7 +21,7 @@ export struct AddGroupDialog {
   });
   
   controller: CustomDialogController
-  onConfirm: (iconId: number) => void = () => {
+  onConfirm: (iconId: number|string) => void = () => {
   }
   onCancel: () => void = () => {
   }
@@ -93,7 +93,7 @@ export struct AddGroupDialog {
           this.iconSelectorDialogController = new CustomDialogController({
             builder: IconSelectorDialog({
               selectedIconId: this.selectedIconId,
-              onIconSelected: (iconId: number) => {
+              onIconSelected: (iconId: number|string) => {
                 this.selectedIconId = iconId;
               }
             }),

@@ -219,6 +219,7 @@ struct Password {
       // 数据库加载成功
       if (data.type == MessageType.LOAD_SUCCESS) {
         let successMessage = data as SuccessMessage;
+        this.init();
         this.putFileToRecentFile();
         this.setFileParam(successMessage.data);
         this.isLoading = false;
@@ -275,6 +276,13 @@ struct Password {
         storageConfig: this.storageConfig ?? {}
       })
     });
+  }
+
+  /**
+   * 初始化
+   */
+  private init(){
+    KdbxUtils.init();
   }
 
   /**

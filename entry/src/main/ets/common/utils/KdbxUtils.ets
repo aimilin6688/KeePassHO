@@ -1,4 +1,4 @@
-import { ByteUtils, Kdbx, KdbxBinaries, KdbxCustomIcon, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import IconUtils from './IconUtils';
@@ -9,6 +9,11 @@ export default class KdbxUtils {
   public static readonly FIELD_URL = 'URL';
   public static readonly FIELD_NOTES = 'Notes';
   public static readonly FIELD_TITLE = 'Title';
+  private static customIconMap: Map<string, string> = new Map<string, string>();
+
+  public static init() {
+    KdbxUtils.customIconMap.clear();
+  }
 
   /**
    * 获取字段值
@@ -139,13 +144,39 @@ export default class KdbxUtils {
       return defaultResource ?? null;
     }
     if (customIcon != undefined && kdbxMeta != undefined) {
-      let icon = kdbxMeta.customIcons.get(customIcon.toString());
-      if(icon != undefined){
-        return KdbxUtils.toImgBase64Url(icon.data);
+      let customIconResult = KdbxUtils.getCustomIcon(customIcon, kdbxMeta);
+      if (customIconResult != null) {
+        return customIconResult;
       }
     }
     return iconId != undefined ? IconUtils.getIconResourcePath(iconId) : (defaultResource ?? null);
   }
+
+  /**
+   * 获取图标资源
+   * @param customIcon 自定义图标ID
+   * @param kdbxMeta kdbx元数据
+   * @returns 图标资源
+   */
+  public static getCustomIcon(customIcon: KdbxUuid | undefined | string, kdbxMeta: KdbxMeta | undefined): ResourceStr | null {
+    if (customIcon == undefined || kdbxMeta == undefined) {
+      return null;
+    }
+    let value = KdbxUtils.customIconMap.get(customIcon.toString());
+    if (value != undefined) {
+      return value;
+    }
+    let icon = kdbxMeta.customIcons.get(customIcon.toString());
+    if (icon != undefined) {
+      let iconBase64 = KdbxUtils.toImgBase64Url(icon.data);
+      if (iconBase64 != null) {
+        KdbxUtils.customIconMap.set(customIcon.toString(), iconBase64);
+        return iconBase64;
+      }
+    }
+    return null;
+  }
+
 
   /**
    * 将图标数据转换为DataURL
