@@ -1,4 +1,6 @@
+import { FileService } from '../../services/FileService';
 import { IconResource, Icons } from '../../services/TypeDefined';
+import KdbxUtils from './KdbxUtils';
 
 /**
  * 图标工具类
@@ -9,10 +11,16 @@ export default class IconUtils {
    * @param iconId 图标ID
    * @returns 图标资源路径
    */
-  static getIconResourcePath(iconId: number): Resource {
+  static getIconResourcePath(iconId: number | string): ResourceStr {
     // 默认图标
     let iconResource: Resource = $r('app.media.C48_Folder');
 
+    if (typeof iconId === 'string') {
+      let icon = KdbxUtils.getCustomIcon(iconId, FileService.getInstance().getDbFileParam().database.meta);
+      if (icon) {
+        return icon;
+      }
+    }
     // 根据图标ID获取对应的图标资源
     switch (iconId) {
       case Icons.Key:
@@ -236,7 +244,6 @@ export default class IconUtils {
    */
   public static getAllIcons(): Array<IconResource> {
     const icons: Array<IconResource> = [];
-
     // 遍历所有图标ID
     for (let i = 0; i <= 68; i++) {
       icons.push({
@@ -244,6 +251,22 @@ export default class IconUtils {
         resource: IconUtils.getIconResourcePath(i)
       });
     }
+    // 用户自定义图标返回
+    try {
+      let kdbx = FileService.getInstance().getDbFileParam().database;
+      for (let key of kdbx.meta.customIcons) {
+        let icon = KdbxUtils.toImgBase64Url(key[1].data)
+        if (icon != null) {
+          icons.push({
+            id: key[0].toString(),
+            resource: icon
+          });
+        }
+      }
+    } catch (e) {
+      console.log(e)
+    }
+
     return icons;
   }
 }

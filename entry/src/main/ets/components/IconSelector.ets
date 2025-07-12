@@ -3,9 +3,9 @@ import { IconResource } from '../services/TypeDefined';
 
 @CustomDialog
 export struct IconSelectorDialog {
-  @State selectedIconId: number = -1;
+  @State selectedIconId: number|string = -1;
   private controller: CustomDialogController;
-  public onIconSelected: (iconId: number) => void = () => {};
+  public onIconSelected: (iconId: number|string) => void = () => {};
   
   // 每行显示的图标数量
   private readonly columnsPerRow: number = 5;
