@@ -17,7 +17,12 @@ export enum MessageType {
   /**
    * 加载成功
    */
-  LOAD_SUCCESS = "LOAD_SUCCESS"
+  LOAD_SUCCESS = "LOAD_SUCCESS",
+
+  /**
+   * 加载失败
+   */
+  LOAD_ERROR = "LOAD_ERROR"
 }
 
 // 定义消息
@@ -77,6 +82,13 @@ export interface SuccessMessage extends WorkerMessage {
 export function toLoadMessage(message: string): LoadMessage {
   return {
     type: MessageType.LOAD_MESSAGE,
+    message
+  }
+}
+
+export function toErrorMessage(message: string): LoadMessage {
+  return {
+    type: MessageType.LOAD_ERROR,
     message
   }
 }
