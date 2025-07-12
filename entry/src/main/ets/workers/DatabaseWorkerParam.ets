@@ -17,7 +17,6 @@ export enum MessageType {
   /**
    * 加载成功
    */
-  SUCCESS = 'SUCCESS',
   LOAD_SUCCESS = "LOAD_SUCCESS"
 }
 

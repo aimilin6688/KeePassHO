@@ -221,7 +221,7 @@ struct Password {
         this.promptAction.showToast({ message: loadMessage.message })
       }
       // 数据库加载成功
-      if (data.type == MessageType.SUCCESS) {
+      if (data.type == MessageType.LOAD_SUCCESS) {
         let successMessage = data as SuccessMessage;
         this.putFileToRecentFile();
         this.setFileParam(successMessage.data);
