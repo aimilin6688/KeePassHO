@@ -256,8 +256,8 @@ export interface EntryParam {
  * 图标资源定义
  */
 export interface IconResource {
-  id: number,
-  resource: Resource;
+  id: number | string,
+  resource: ResourceStr;
 }
 
 
