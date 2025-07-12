@@ -3,8 +3,7 @@ import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { AuthType } from '../services/TypeDefined';
-import { FileService } from '../services/FileService';
-import { LoadDatabase, MessageType, toLoadMessage, WorkerMessage, SuccessMessage } from './DatabaseWorkerParam';
+import { LoadDatabase, MessageType, SuccessMessage, toLoadMessage, WorkerMessage } from './DatabaseWorkerParam';
 import KdbxUtils from '../common/utils/KdbxUtils';
 
 // 初始化 worker
@@ -33,8 +32,8 @@ async function handleLoadDatabase(request: LoadDatabase) {
     postMessage('正在解析数据库文件...');
     // 尝试加载数据库（仅验证，不保留结果）
     let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
-    let kdbxContent = KdbxUtils.kdbxToArrayBuffer(kdbx);
-    workerPort.postMessage({type: MessageType.LOAD_SUCCESS, data: kdbxContent} as SuccessMessage,  [kdbxContent]);
+    let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
+    workerPort.postMessage({ type: MessageType.LOAD_SUCCESS, data: kdbxContent } as SuccessMessage, [kdbxContent]);
   } catch (error) {
     console.error('Worker error loading database:', error);
     postMessage(error.message);
