@@ -402,7 +402,7 @@ struct DatabaseView {
             ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
               ListItem() {
                 Row() {
-                  Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
+                  Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, this.database?.meta, $r('app.media.ic_folder_open')))
                     .width(28)
                     .height(28)
                     .margin(10)
@@ -445,7 +445,7 @@ struct DatabaseView {
             ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
               ListItem() {
                 Row() {
-                  Image(KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                  Image(KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon,this.database?.meta,  $r('app.media.ic_file')))
                     .width(28)
                     .height(28)
                     .margin(10)
