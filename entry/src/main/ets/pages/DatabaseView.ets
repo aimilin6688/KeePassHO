@@ -1,12 +1,11 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { Icons } from '../services/TypeDefined';
+import { DatabaseShowParam, Icons } from '../services/TypeDefined';
 import ThemeManager from '../common/utils/ThemeManager';
-import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
-import { DatabaseShowParam } from '../services/TypeDefined';
 
 @Entry
 @Component
@@ -31,10 +30,9 @@ struct DatabaseView {
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
       editingGroupIndex: this.editingGroupIndex,
-      selectedIconId: this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length 
-        ? this.groups[this.editingGroupIndex].icon || Icons.Folder 
-        : Icons.Folder,
-      onConfirm: (iconId: number): void => this.handleAddGroup(iconId),
+      selectedIconId: this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length
+        ?  this.groups[this.editingGroupIndex].customIcon?.toString() || this.groups[this.editingGroupIndex].icon || Icons.Folder : Icons.Folder,
+      onConfirm: (iconId: number | string): void => this.handleAddGroup(iconId),
       onCancel: (): void => {
         this.newGroupName = "";
         this.editingGroupIndex = -1;
@@ -190,7 +188,7 @@ struct DatabaseView {
     }
   }
 
-  private handleAddGroup(iconId?: number) {
+  private handleAddGroup(iconId?: number | string) {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
     }
@@ -201,16 +199,22 @@ struct DatabaseView {
       return;
     }
 
+    let group:KdbxGroup;
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length) {
       // 编辑现有分组
-      const group = this.groups[this.editingGroupIndex];
+      group = this.groups[this.editingGroupIndex];
       group.name = this.newGroupName.trim();
-      group.icon = iconId;
       group.times.update();
     } else {
       // 添加新分组
-      const group = this.database.createGroup(this.currentGroup, this.newGroupName.trim());
-      group.icon = iconId;
+      group = this.database.createGroup(this.currentGroup, this.newGroupName.trim());
+    }
+
+    // 设置分组图标
+    if (typeof iconId === 'string' && iconId.length > 0) {
+      group.customIcon = new KdbxUuid(iconId);
+    } else {
+      group.icon = iconId as  number;
     }
     // 保存数据库
     this.saveDatabase();
@@ -233,7 +237,7 @@ struct DatabaseView {
   /**
    * 强制组件刷新
    */
-  private updateUI(){
+  private updateUI() {
     // 强制刷新UI - 先清空数组，再重新加载
     this.groups = [];
     this.entries = [];
@@ -241,7 +245,7 @@ struct DatabaseView {
     setTimeout(() => {
       this.groups = [...this.currentGroup?.groups || []];
       this.entries = [...this.currentGroup?.entries || []];
-      
+
       // 如果在搜索状态，更新搜索结果
       if (this.isSearching && this.searchText.length > 0) {
         this.performSearch();
@@ -266,7 +270,7 @@ struct DatabaseView {
       // 全局搜索模式：搜索整个数据库
       this.filteredGroups = [];
       this.filteredEntries = [];
-      
+
       if (this.database) {
         let result = KdbxUtils.searchInGroup(this.database.getDefaultGroup(), this.searchText);
         this.filteredGroups.push(...result.filteredGroups);
@@ -274,7 +278,6 @@ struct DatabaseView {
       }
     }
   }
-
 
   /**
    * 获取分组下的条目数量
@@ -337,28 +340,28 @@ struct DatabaseView {
             Blank()
             // 搜索框
             Search({ placeholder: '查找内容', value: this.searchText })
-            .width('70%')
-            .margin({ left: 16 })
-            .height(40)
-            .searchIcon({
-              src: $r('sys.media.ohos_ic_public_search_filled')
-            })
-            .cancelButton({
-              style: CancelButtonStyle.CONSTANT,
-              icon: {
-                src: $r('sys.media.ohos_ic_public_cancel_filled')
-              },
-            })
-            .enterKeyType(EnterKeyType.Search)
-            .padding({ left: 10, right: 10 })
-            .onChange((value: string) => {
-              this.searchText = value;
-              this.performSearch();
-            })
-            .onSubmit((value: string) => {
-              this.searchText = value;
-              this.performSearch();
-            })
+              .width('70%')
+              .margin({ left: 16 })
+              .height(40)
+              .searchIcon({
+                src: $r('sys.media.ohos_ic_public_search_filled')
+              })
+              .cancelButton({
+                style: CancelButtonStyle.CONSTANT,
+                icon: {
+                  src: $r('sys.media.ohos_ic_public_cancel_filled')
+                },
+              })
+              .enterKeyType(EnterKeyType.Search)
+              .padding({ left: 10, right: 10 })
+              .onChange((value: string) => {
+                this.searchText = value;
+                this.performSearch();
+              })
+              .onSubmit((value: string) => {
+                this.searchText = value;
+                this.performSearch();
+              })
             Button('取消')
               .width(70)
               .height(40)
@@ -445,7 +448,7 @@ struct DatabaseView {
             ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
               ListItem() {
                 Row() {
-                  Image(KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon,this.database?.meta,  $r('app.media.ic_file')))
+                  Image(KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, this.database?.meta, $r('app.media.ic_file')))
                     .width(28)
                     .height(28)
                     .margin(10)
@@ -504,7 +507,7 @@ struct DatabaseView {
           }
         })
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-      
+
       // 添加分组按钮
       Button() {
         Row() {
@@ -531,7 +534,7 @@ struct DatabaseView {
         this.newGroupName = "";
         this.dialogController.open();
       })
-      
+
       // 添加条目按钮
       Button() {
         Row() {
@@ -561,7 +564,7 @@ struct DatabaseView {
           }
         });
       })
-      
+
       // 主添加按钮
       Button() {
         Image($r('app.media.ic_add'))
