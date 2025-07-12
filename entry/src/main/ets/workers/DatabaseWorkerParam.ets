@@ -1,5 +1,5 @@
-import { StorageConfig, StorageType } from "../services/kdbx/interfaces";
-import { AuthTypeInfo } from "../services/TypeDefined";
+import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
+import { AuthTypeInfo, CredentialsParam } from '../services/TypeDefined';
 
 /**
  * 定义消息类型
@@ -31,7 +31,8 @@ export interface WorkerMessage {
 }
 
 // 定义数据库加载请求
-export interface LoadDatabase extends WorkerMessage {
+export class LoadDatabase implements  WorkerMessage, CredentialsParam {
+  type: MessageType;
   /**
    * 文件路径
    */
@@ -66,29 +67,47 @@ export interface LoadDatabase extends WorkerMessage {
    * 存储配置信息
    */
   storageConfig: StorageConfig;
+
+  constructor(filePath: string, fileName: string, password: string, authType: AuthTypeInfo,
+    keyFilePath?: string, storageType?: StorageType |  null, storageConfig?: StorageConfig | null) {
+    this.type = MessageType.LOAD_DATABASE;
+    this.filePath = filePath;
+    this.fileName = fileName;
+    this.password = password;
+    this.authType = authType;
+    this.keyFilePath = keyFilePath;
+    this.storageType = storageType ?? StorageType.LOCAL;
+    this.storageConfig = storageConfig ??  {};
+  }
 }
 
 // 定义数据库加载结果
-export interface LoadMessage extends WorkerMessage {
+export class LoadMessage implements WorkerMessage {
+  type: MessageType;
   message: string;
+
+  constructor(type: MessageType, message: string) {
+    this.type = type;
+    this.message = message;
+  }
 }
 
 // 成功消息
-export interface SuccessMessage extends WorkerMessage {
+export class SuccessMessage implements WorkerMessage {
+  type: MessageType;
   data: ArrayBuffer;
+
+  constructor(data: ArrayBuffer) {
+    this.type = MessageType.LOAD_SUCCESS;
+    this.data = data;
+  }
 }
 
 
 export function toLoadMessage(message: string): LoadMessage {
-  return {
-    type: MessageType.LOAD_MESSAGE,
-    message
-  }
+  return new LoadMessage(MessageType.LOAD_MESSAGE, message);
 }
 
 export function toErrorMessage(message: string): LoadMessage {
-  return {
-    type: MessageType.LOAD_ERROR,
-    message
-  }
+  return new LoadMessage(MessageType.LOAD_ERROR, message);
 }
