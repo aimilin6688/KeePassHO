@@ -1,4 +1,6 @@
 import { ByteUtils, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { CredentialsService } from '../../services/CredentialsService';
+import { CredentialsParam } from '../../services/TypeDefined';
 import IconUtils from './IconUtils';
 
 export default class KdbxUtils {
@@ -153,16 +155,17 @@ export default class KdbxUtils {
    * 将对象转换为ArrayBuffer
    * @param kdbx KDBX对象
    */
-  public static kdbxToArrayBuffer(kdbx: Kdbx): Promise<ArrayBuffer> {
-    return Promise.resolve(ByteUtils.stringToBytes(JSON.stringify(kdbx)));
+  public static async kdbxToArrayBuffer(kdbx: Kdbx): Promise<ArrayBuffer> {
+    return Promise.resolve(ByteUtils.stringToBuffer(await kdbx.saveXml()));
   }
 
   /**
    * 将ArrayBuffer转换为对象
    * @param arrayBuffer ArrayBuffer对象
    */
-  public static arrayBufferToKdbx(arrayBuffer: ArrayBuffer): Promise<Kdbx> {
-    return JSON.parse(ByteUtils.bytesToString(arrayBuffer));
+  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer, credentialsParam: CredentialsParam): Promise<Kdbx> {
+    let credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
+    return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
   }
 }
 

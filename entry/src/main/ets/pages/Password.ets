@@ -1,6 +1,6 @@
 import { PromptAction, router, Router } from '@kit.ArkUI';
 import worker, { ErrorEvent, MessageEvents } from '@ohos.worker';
-import { AuthType, AuthTypeInfo, FileParam } from '../services/TypeDefined';
+import { AuthType, AuthTypeInfo, CredentialsParam, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
@@ -201,19 +201,13 @@ struct Password {
 
     this.stopWorker();
     this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
-    this.databaseWorker.postMessage(JSON.stringify({
-      type: MessageType.LOAD_DATABASE,
-      filePath: this.filePath,
-      password: this.password,
-      authType: this.authType,
-      keyFilePath: this.keyFilePath,
-      storageType: this.storageType,
-      storageConfig: this.storageConfig
-    } as LoadDatabase));
+    this.databaseWorker.postMessage(JSON.stringify(
+      new LoadDatabase(this.filePath, this.fileName, this.password, this.authType,  this.keyFilePath, this.storageType, this.storageConfig)
+    ));
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
     this.databaseWorker.onmessage = (e: MessageEvents) => {
-      let data = JSON.parse(e.data) as WorkerMessage;
+      let data = e.data as WorkerMessage;
       // // 加载进度消息
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
@@ -263,7 +257,11 @@ struct Password {
    * 设置数据库文件信息
    */
   private setFileParam(kdbxContent: ArrayBuffer){
-    KdbxUtils.arrayBufferToKdbx(kdbxContent).then((kdbx: Kdbx) => {
+    KdbxUtils.arrayBufferToKdbx(kdbxContent, {
+      password: this.password,
+      authType: this.authType,
+      keyFilePath: this.keyFilePath,
+    } as CredentialsParam).then((kdbx: Kdbx) => {
       // 设置数据库文件信息
       FileService.getInstance().setDbFileParam({
         filePath: this.filePath,
