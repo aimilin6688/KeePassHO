@@ -282,7 +282,7 @@ struct Password {
    */
   private putFileToRecentFile(){
     let fileParam = FileService.getInstance().getFileParam();
-    console.log("打开数据库文件：{}", fileParam)
+    console.log("打开数据库文件：", fileParam?.filePath)
 
     // 添加到最近打开的文件列表，包含认证方式和认证文件信息
     RecentFilesService.getInstance().getRecentFile(this.filePath).then((recentFile) => {
