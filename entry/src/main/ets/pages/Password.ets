@@ -215,6 +215,7 @@ struct Password {
       // // 加载进度消息
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
+        console.log("接收到加载进度消息：", loadMessage.message);
         this.promptAction.showToast({ message: loadMessage.message })
       }
       // 数据库加载成功
