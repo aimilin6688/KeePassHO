@@ -113,6 +113,7 @@ struct Password {
         // 获取密钥文件路径
         if (recentFile.keyFilePath) {
           this.keyFilePath = recentFile.keyFilePath;
+          this.keyFileName = FileUtils.getFileName(this.keyFilePath);
         }
       }
     }).catch((error: Error) => {
