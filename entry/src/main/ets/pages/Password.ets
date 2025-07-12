@@ -219,6 +219,7 @@ struct Password {
         const loadMessage = data as LoadMessage;
         console.log("接收到加载进度消息：", loadMessage.message);
         this.promptAction.showToast({ message: loadMessage.message })
+        return;
       }
       // 数据库加载成功
       if (data.type == MessageType.LOAD_SUCCESS) {
@@ -228,12 +229,24 @@ struct Password {
         this.isLoading = false;
         this.updateButtonState(); // 更新按钮状态
         this.router.pushUrl({ url: 'pages/DatabaseView' });
+        return;
+      }
+      // 错误消息
+      if (data.type == MessageType.LOAD_ERROR) {
+        let errorMessage = data as LoadMessage;
+        this.promptAction.showToast({ message: errorMessage.message });
+        this.isLoading = false;
+        this.updateButtonState(); // 更新按钮状态
+        return;
       }
     }
 
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     this.databaseWorker.onAllErrors = (err: ErrorEvent) => {
       console.error('Open database error:', err);
+      if(err.message.indexOf('NativeCustomSpan') != -1){
+        return;
+      }
       this.promptAction.showToast({ message: err.message })
       this.isLoading = false;
       this.updateButtonState(); // 更新按钮状态

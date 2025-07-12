@@ -3,7 +3,7 @@ import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { AuthType } from '../services/TypeDefined';
-import { LoadDatabase, MessageType, SuccessMessage, toLoadMessage, WorkerMessage } from './DatabaseWorkerParam';
+import { LoadDatabase, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './DatabaseWorkerParam';
 import KdbxUtils from '../common/utils/KdbxUtils';
 
 // 初始化 worker
@@ -29,7 +29,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     let credentials: KdbxCredentials = await createKdbxCredentials(request);
     // 加载文件内容
     let fileContent: ArrayBuffer = await loadKdbxFileContent(request);
-    postMessage('正在解析...');
+    postMessage('正在验证...');
     // 尝试加载数据库（仅验证，不保留结果）
     let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
     postMessage('加载完成...');
@@ -37,7 +37,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     workerPort.postMessage({ type: MessageType.LOAD_SUCCESS, data: kdbxContent } as SuccessMessage, [kdbxContent]);
   } catch (error) {
     console.error('Worker error loading database:', error);
-    postMessage(error.message);
+    postErrorMessage(error.message);
   }
 }
 
@@ -86,6 +86,14 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
  */
 function postMessage(message: string) {
   workerPort.postMessage(JSON.stringify(toLoadMessage(message)));
+}
+
+/**
+ * 发送加载消息给主线程
+ * @param message 消息
+ */
+function postErrorMessage(message: string) {
+  workerPort.postMessage(JSON.stringify(toErrorMessage(message)));
 }
 
 
