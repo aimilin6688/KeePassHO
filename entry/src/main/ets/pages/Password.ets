@@ -8,8 +8,10 @@ import { fileShare } from '@kit.CoreFileKit';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
 import FileUtils from '../common/utils/FIleUtils';
-import { LoadDatabase, LoadMessage, MessageType, WorkerMessage } from '../workers/DatabaseWorkerParam';
+import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/DatabaseWorkerParam';
 import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
+import KdbxUtils from '../common/utils/KdbxUtils';
+import { Kdbx } from 'kdbxweb';
 
 @Entry
 @Component
@@ -220,7 +222,9 @@ struct Password {
       }
       // 数据库加载成功
       if (data.type == MessageType.SUCCESS) {
+        let successMessage = data as SuccessMessage;
         this.putFileToRecentFile();
+        this.setFileParam(successMessage.data);
         this.isLoading = false;
         this.updateButtonState(); // 更新按钮状态
         this.router.pushUrl({ url: 'pages/DatabaseView' });
@@ -241,6 +245,24 @@ struct Password {
       this.updateButtonState(); // 更新按钮状态
     }
   }
+
+  /**
+   * 设置数据库文件信息
+   */
+  private setFileParam(kdbxContent: ArrayBuffer){
+    // 设置数据库文件信息
+    FileService.getInstance().setDbFileParam({
+      filePath: this.filePath,
+      password: this.password,
+      fileName: this.fileName,
+      database: KdbxUtils.arrayBufferToKdbx(kdbxContent),
+      keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
+      authType: this.authType, // 添加认证类型
+      storageType: this.storageType?? StorageType.LOCAL,
+      storageConfig: this.storageConfig??{}
+    })
+  }
+
   /**
    * 文件打开成功，保存到最近访问列表中
    */
