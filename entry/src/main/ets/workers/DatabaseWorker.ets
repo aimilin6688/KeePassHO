@@ -4,7 +4,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { AuthType } from '../services/TypeDefined';
 import { FileService } from '../services/FileService';
-import { LoadDatabase, LoadMessage, MessageType, toLoadMessage, toSuccessMessage, WorkerMessage } from './DatabaseWorkerParam';
+import { LoadDatabase, MessageType, toLoadMessage, toSuccessMessage, WorkerMessage } from './DatabaseWorkerParam';
 
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
@@ -29,6 +29,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     let credentials: KdbxCredentials = await createKdbxCredentials(request);
     // 加载文件内容
     let fileContent: ArrayBuffer = await loadKdbxFileContent(request);
+    postLoadMessage('正在解析数据库文件...');
     // 尝试加载数据库（仅验证，不保留结果）
     let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
     // 处理数据库文件
@@ -36,7 +37,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     postMessage(toSuccessMessage());
   } catch (error) {
     console.error('Worker error loading database:', error);
-    postMessage({ type: MessageType.LOAD_MESSAGE, message: error.message } as LoadMessage)
+    postLoadMessage(error.message);
   }
 }
 
@@ -55,13 +56,13 @@ async function createKdbxCredentials(request: LoadDatabase): Promise<KdbxCredent
     // 使用密码和密钥文件
     let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.keyFilePath);
     console.log('Load key file content success, keyFilePath: ', request.keyFilePath);
-    postMessage(toLoadMessage('加载密钥文件成功！'));
+    postLoadMessage('加载密钥文件成功！');
     credentials = new KdbxCredentials(ProtectedValue.fromString(request.password), keyFileContent);
   } else {
     // 仅使用密码
     credentials = new KdbxCredentials(ProtectedValue.fromString(request.password));
   }
-  postMessage(toLoadMessage('创建凭证成功！'));
+  postLoadMessage('创建凭证成功！');
   return Promise.resolve(credentials);
 }
 
@@ -74,7 +75,17 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
   if (!request.filePath) {
     throw new Error('请选择数据库文件');
   }
-  return new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
+  let result = new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
+  postLoadMessage("加载文件内容成功！");
+  return result;
+}
+
+/**
+ * 发送加载消息给主线程
+ * @param message 消息
+ */
+function postLoadMessage(message: string) {
+  workerPort.postMessage(JSON.stringify(toLoadMessage(message)));
 }
 
 /**
