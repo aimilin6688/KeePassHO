@@ -4,6 +4,7 @@ import { AuthTypeInfo } from "../services/TypeDefined";
 /**
  * 定义消息类型
  */
+
 export enum MessageType {
   /**
    * 加载数据库
@@ -17,6 +18,7 @@ export enum MessageType {
    * 加载成功
    */
   SUCCESS = 'SUCCESS',
+  LOAD_SUCCESS = "LOAD_SUCCESS"
 }
 
 // 定义消息
@@ -68,14 +70,10 @@ export interface LoadMessage extends WorkerMessage {
 }
 
 // 成功消息
-export interface SuccessMessage extends WorkerMessage {}
-
-
-export function toSuccessMessage(): SuccessMessage {
-  return {
-    type: MessageType.SUCCESS
-  }
+export interface SuccessMessage extends WorkerMessage {
+  data: ArrayBuffer;
 }
+
 
 export function toLoadMessage(message: string): LoadMessage {
   return {
