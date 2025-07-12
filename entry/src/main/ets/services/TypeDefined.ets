@@ -3,6 +3,25 @@ import { StorageType } from './kdbx/interfaces';
 import { StorageConfig } from './kdbx/interfaces/StorageConfig';
 
 /**
+ * 凭证参数定义
+ */
+export interface  CredentialsParam{
+  /**
+   * 密码
+   */
+  password: string;
+  /**
+   * 认证方式
+   */
+  authType: AuthTypeInfo;
+
+  /**
+   * 认证密码文件路径
+   */
+  keyFilePath?: string;
+}
+
+/**
  * kdbx文件定义
  */
 export interface FileParam {
