@@ -4,7 +4,8 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { StorageType } from '../services/kdbx/interfaces';
 import { AuthType } from '../services/TypeDefined';
 import { FileService } from '../services/FileService';
-import { LoadDatabase, MessageType, toLoadMessage, toSuccessMessage, WorkerMessage } from './DatabaseWorkerParam';
+import { LoadDatabase, MessageType, toLoadMessage, WorkerMessage, SuccessMessage } from './DatabaseWorkerParam';
+import KdbxUtils from '../common/utils/KdbxUtils';
 
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
@@ -29,15 +30,14 @@ async function handleLoadDatabase(request: LoadDatabase) {
     let credentials: KdbxCredentials = await createKdbxCredentials(request);
     // 加载文件内容
     let fileContent: ArrayBuffer = await loadKdbxFileContent(request);
-    postLoadMessage('正在解析数据库文件...');
+    postMessage('正在解析数据库文件...');
     // 尝试加载数据库（仅验证，不保留结果）
     let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
-    // 处理数据库文件
-    await handlerDatabase(request, kdbx);
-    postMessage(toSuccessMessage());
+    let kdbxContent = KdbxUtils.kdbxToArrayBuffer(kdbx);
+    workerPort.postMessage({type: MessageType.LOAD_SUCCESS, data: kdbxContent} as SuccessMessage,  [kdbxContent]);
   } catch (error) {
     console.error('Worker error loading database:', error);
-    postLoadMessage(error.message);
+    postMessage(error.message);
   }
 }
 
@@ -56,13 +56,13 @@ async function createKdbxCredentials(request: LoadDatabase): Promise<KdbxCredent
     // 使用密码和密钥文件
     let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.keyFilePath);
     console.log('Load key file content success, keyFilePath: ', request.keyFilePath);
-    postLoadMessage('加载密钥文件成功！');
+    postMessage('加载密钥文件成功！');
     credentials = new KdbxCredentials(ProtectedValue.fromString(request.password), keyFileContent);
   } else {
     // 仅使用密码
     credentials = new KdbxCredentials(ProtectedValue.fromString(request.password));
   }
-  postLoadMessage('创建凭证成功！');
+  postMessage('创建凭证成功！');
   return Promise.resolve(credentials);
 }
 
@@ -76,7 +76,7 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
     throw new Error('请选择数据库文件');
   }
   let result = new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
-  postLoadMessage("加载文件内容成功！");
+  postMessage("加载文件内容成功！");
   return result;
 }
 
@@ -84,35 +84,8 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
  * 发送加载消息给主线程
  * @param message 消息
  */
-function postLoadMessage(message: string) {
+function postMessage(message: string) {
   workerPort.postMessage(JSON.stringify(toLoadMessage(message)));
-}
-
-/**
- * 发送消息给主线程
- * @param message 消息
- */
-function postMessage(message: WorkerMessage) {
-  workerPort.postMessage(JSON.stringify(message));
-}
-
-/**
- * 处理数据库文件
- * @param request 请求
- * @param kdbx 数据
- */
-async function handlerDatabase(request: LoadDatabase, kdbx: Kdbx) {
-  // 设置数据库文件信息
-  FileService.getInstance().setDbFileParam({
-    filePath: request.filePath,
-    password: request.password,
-    fileName: request.fileName,
-    database: kdbx,
-    keyFilePath: request.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
-    authType: request.authType, // 添加认证类型
-    storageType: request.storageType,
-    storageConfig: request.storageConfig
-  })
 }
 
 
