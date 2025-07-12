@@ -1,4 +1,4 @@
-import { Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxUuid, ProtectedValue, ByteUtils } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import IconUtils from './IconUtils';
 
 export default class KdbxUtils {
@@ -145,7 +145,7 @@ export default class KdbxUtils {
    * 将图标数据转换为DataURL
    * @param iconData 图标数据
    */
-  public static toImgBase64Url(iconData: ArrayBuffer): string | null{
+  public static toImgBase64Url(iconData: ArrayBuffer): string | null {
     return iconData ? 'data:image/png;base64,' + ByteUtils.bytesToBase64(iconData) : null;
   }
 
@@ -153,18 +153,17 @@ export default class KdbxUtils {
    * 将对象转换为ArrayBuffer
    * @param kdbx KDBX对象
    */
-  public static kdbxToArrayBuffer(obj: Kdbx): ArrayBuffer {
-    return ByteUtils.stringToBuffer(JSON.stringify(obj));
+  public static kdbxToArrayBuffer(kdbx: Kdbx): Promise<ArrayBuffer> {
+    return Promise.resolve(ByteUtils.stringToBytes(JSON.stringify(kdbx)));
   }
 
   /**
    * 将ArrayBuffer转换为对象
    * @param arrayBuffer ArrayBuffer对象
    */
-  public static arrayBufferToKdbx(arrayBuffer: ArrayBuffer): Kdbx {
+  public static arrayBufferToKdbx(arrayBuffer: ArrayBuffer): Promise<Kdbx> {
     return JSON.parse(ByteUtils.bytesToString(arrayBuffer));
   }
-
 }
 
 
