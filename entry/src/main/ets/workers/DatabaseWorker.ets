@@ -24,15 +24,17 @@ workerPort.onmessage = (event: MessageEvents) => {
  */
 async function handleLoadDatabase(request: LoadDatabase) {
   try {
+    postMessage('创建密钥...');
     // 创建凭证
     let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
+    postMessage('加载密钥...');
     // 加载文件内容
     let fileContent: ArrayBuffer = await loadKdbxFileContent(request);
     postMessage('正在验证...');
     // 尝试加载数据库（仅验证，不保留结果）
     let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
-    postMessage('加载完成...');
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
+    postMessage('加载完成...');
     workerPort.postMessage(new SuccessMessage(kdbxContent), [kdbxContent]);
   } catch (error) {
     console.error('Worker error loading database:', error);
