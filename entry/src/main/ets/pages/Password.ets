@@ -1,4 +1,4 @@
-import { PromptAction, router, Router } from '@kit.ArkUI';
+import {PromptAction, router, Router } from '@kit.ArkUI';
 import worker, { ErrorEvent, MessageEvents } from '@ohos.worker';
 import { AuthType, AuthTypeInfo, CredentialsParam, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
@@ -12,6 +12,7 @@ import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, WorkerMessage }
 import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
+import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 
 @Entry
 @Component
@@ -24,6 +25,8 @@ struct Password {
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
+  @State loadingMessage:string =  '正在加载...';
+
   private filePath: string = '';
   private storageType: StorageType | null = null;
   private storageConfig: StorageConfig | null = null;
@@ -32,6 +35,16 @@ struct Password {
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private recentFileService = RecentFilesService.getInstance();
   private databaseWorker: worker.ThreadWorker | null = null;
+
+  // 带内容的进度弹框
+  private loadingDialogController: CustomDialogController = new CustomDialogController({
+    builder: ContextLoadingDialog({
+      loadingMessage: this.loadingMessage,
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
 
   aboutToAppear() {
     const params = this.router.getParams() as Record<string, string>;
@@ -172,6 +185,24 @@ struct Password {
   }
 
   /**
+   * 打开进度弹框
+   */
+  private openLoadingDialog(){
+    this.isLoading = true;
+    this.updateButtonState(); // 更新按钮状态
+    this.loadingDialogController.open();
+  }
+
+  /**
+   * 管理进度弹框
+   */
+  private closeLoadingDialog(){
+    this.isLoading = false;
+    this.updateButtonState(); // 更新按钮状态
+    this.loadingDialogController.close();
+  }
+
+  /**
    * 验证密码并打开数据库
    */
   private verifyAndOpenDatabase() {
@@ -193,13 +224,11 @@ struct Password {
       return;
     }
 
-    this.isLoading = true;
-    this.updateButtonState(); // 更新按钮状态
     if (this.storageType === null) {
       this.promptAction.showToast({ message: `存储类型为空` });
       return;
     }
-
+    this.openLoadingDialog();
     this.stopWorker();
     this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
     this.databaseWorker.postMessage(JSON.stringify(
@@ -213,8 +242,7 @@ struct Password {
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
         console.log("接收到加载进度消息：", loadMessage.message);
-        this.promptAction.showToast({ message: loadMessage.message })
-        return;
+        this.loadingMessage =  loadMessage.message;
       }
       // 数据库加载成功
       if (data.type == MessageType.LOAD_SUCCESS) {
@@ -222,23 +250,22 @@ struct Password {
         this.init();
         this.putFileToRecentFile();
         this.setFileParam(successMessage.data).then(() => {
-          this.isLoading = false;
-          this.updateButtonState(); // 更新按钮状态
+          this.loadingMessage = '打开成功';
           this.router.pushUrl({ url: 'pages/DatabaseView' });
-          return;
+          setTimeout(() => {
+            this.closeLoadingDialog();
+          }, 300);
         }).catch((error: Error) => {
           console.error(`Open database error: ${error}`);
-          this.promptAction.showToast({ message: error.message, duration: 3000 });
-          return;
+          this.promptAction.showToast({message: error.message, duration: 3000});
+          this.closeLoadingDialog();
         });
       }
       // 错误消息
       if (data.type == MessageType.LOAD_ERROR) {
         let errorMessage = data as LoadMessage;
-        this.promptAction.showToast({ message: errorMessage.message });
-        this.isLoading = false;
-        this.updateButtonState(); // 更新按钮状态
-        return;
+        this.promptAction.showToast({ message: errorMessage.message, duration: 3000 });
+        this.closeLoadingDialog();
       }
     }
 
@@ -249,14 +276,12 @@ struct Password {
         return;
       }
       this.promptAction.showToast({ message: err.message })
-      this.isLoading = false;
-      this.updateButtonState(); // 更新按钮状态
+      this.closeLoadingDialog();
     }
 
     // 注册onexit回调，当Worker销毁时被调用，在宿主线程执行
     this.databaseWorker.onexit = (e: number) => {
-      this.isLoading = false;
-      this.updateButtonState(); // 更新按钮状态
+      this.closeLoadingDialog();
     }
   }
 
@@ -441,14 +466,6 @@ struct Password {
         .padding({ top: 12, bottom: 12 })
         .position({ x: 0, y: '100%' })
         .translate({ y: -74 }) // 调整位置，确保正确显示
-
-        if (this.isLoading) {
-          LoadingProgress()
-            .width(24)
-            .height(24)
-            .margin({ top: 16 })
-            .color($r('app.color.text_primary'))
-        }
       }
       .width('100%')
       .layoutWeight(1)
