@@ -212,6 +212,8 @@ export default class KdbxUtils {
    * @param sortMod 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
    */
   public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
+    // 排序前分组名称
+    console.log("排序前分组名称：", sortMode, groups.map(group => group.name).join(','));
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
@@ -238,6 +240,8 @@ export default class KdbxUtils {
       // 默认排序，不做额外处理
         break;
     }
+    // 排序后分组名称
+    console.log("排序后分组名称：", sortMode, groups.map(group => group.name).join(','));
   }
 
   /**
@@ -256,7 +260,7 @@ export default class KdbxUtils {
     if (b == undefined) {
       return 1;
     }
-    return b.getTime() - a.getTime();
+    return a.getTime() - b.getTime();
   }
 }
 
