@@ -522,12 +522,12 @@ struct DatabaseView {
           .width('100%')
           .height('100%')
           .backgroundColor($r('app.color.background_primary'))
-          .padding({ left: 12, right: 12, top: 12 })
+          .padding({ left: 12, right: 12, top: 12, bottom:40 })
           .scrollBar(BarState.Auto)
         }
       }
       .width('100%')
-      .margin({ bottom: 80 })
+      .height('100%')
 
       // 点击空白区域隐藏添加按钮
       Column()
