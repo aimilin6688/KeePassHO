@@ -225,15 +225,25 @@ struct EntryView {
    */
   @Builder
   FieldItem(key: string, value: string, isProtected: boolean = false) {
-    Column() {
-      Text(key)
-        .fontSize(14)
-        .fontColor($r('app.color.text_secondary'))
-        .width('100%')
-        .textAlign(TextAlign.Start)
-        .margin({ bottom: 4 })
+    Row() {
+      // 左侧图标
+      Image(this.getFieldIcon(key))
+        .width(40)
+        .height(40)
+        .margin({ right: 12 })
+        .fillColor($r('app.color.text_primary'))
 
-      Row() {
+      // 中间内容区域
+      Column() {
+        // 左上角小标题显示标签提示信息
+        Text(key)
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+          .width('100%')
+          .textAlign(TextAlign.Start)
+          .margin({ bottom: 4 })
+
+        // 左下角显示具体的值
         Text(isProtected ? '••••••••' : value)
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
@@ -241,26 +251,26 @@ struct EntryView {
           .textAlign(TextAlign.Start)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .maxLines(isProtected ? 1 : 3)
-
-        if (value) {
-          Image($r('app.media.ic_copy'))
-            .width(20)
-            .height(20)
-            .margin({ left: 8 })
-            .fillColor($r('app.color.text_primary'))
-            .onClick(() => {
-              this.copyToClipboard(value);
-            })
-        }
       }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceBetween)
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+
+      // 右侧复制按钮
+      if (value) {
+        Image($r('app.media.ic_copy'))
+          .width(24)
+          .height(24)
+          .fillColor($r('app.color.text_primary'))
+          .onClick((event) => {
+            this.copyToClipboard(value);
+          })
+      }
     }
     .width('100%')
     .backgroundColor($r('app.color.card_background'))
     .borderRadius(8)
-    .padding(16)
-    .margin({ bottom: 12 })
+    .padding(12)
+    .margin({ bottom: 8 })
     .onClick(() => {
       if (value) {
         this.copyToClipboard(value);
@@ -269,38 +279,92 @@ struct EntryView {
   }
 
   /**
+   * 获取字段对应的图标
+   */
+  private getFieldIcon(key: string): Resource {
+    switch (key) {
+      case KdbxUtils.FIELD_TITLE:
+    // return $r('app.media.ic_title');
+      case KdbxUtils.FIELD_USERNAME:
+    // return $r('app.media.ic_user');
+      case KdbxUtils.FIELD_PASSWORD:
+    // return $r('app.media.ic_password');
+      case KdbxUtils.FIELD_URL:
+    // return $r('app.media.ic_url');
+      case KdbxUtils.FIELD_NOTES:
+      // return $r('app.media.ic_notes');
+      default:
+      // return $r('app.media.ic_field');
+    }
+    return $r('app.media.ic_file');
+  }
+
+  /**
+   * 获取分组图标
+   */
+  private getGroupIcon(): ResourceStr {
+    // 如果有自定义图标，返回自定义图标
+    if (this.entry && this.entry.customIcon) {
+      return KdbxUtils.getIcon(this.entry.icon, this.entry.customIcon, $r('app.media.ic_folder'));
+    }
+    // 否则返回默认分组图标
+    return $r('app.media.ic_folder');
+  }
+
+  /**
+   * 获取分组名称
+   */
+  private getGroupName(): string {
+    if (this.entry && this.entry.parentGroup) {
+      return this.entry.parentGroup?.name ?? '';
+    }
+    return '未分组';
+  }
+
+  /**
    * 构建历史记录项
    */
   @Builder
-  HistoryItem(item: EntryHistoryView ) {
+  HistoryItem(item: EntryHistoryView) {
     Row() {
+      // 左侧图标
+      Image($r('app.media.ic_history'))
+        .width(40)
+        .height(40)
+        .margin({ right: 12 })
+        .fillColor($r('app.color.text_primary'))
+
+      // 中间内容区域
       Column() {
+        // 版本号
         Text(`历史版本 #${this.historyEntries.length - item.index}`)
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
           .width('100%')
           .textAlign(TextAlign.Start)
+          .margin({ bottom: 4 })
 
+        // 修改日期
         Text(item.date)
           .fontSize(14)
           .fontColor($r('app.color.text_secondary'))
           .width('100%')
           .textAlign(TextAlign.Start)
-          .margin({ top: 4 })
       }
-      .flexGrow(1)
+      .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
 
+      // 右侧箭头
       Image($r('app.media.ic_arrow_right'))
-        .width(20)
-        .height(20)
-        .fillColor($r('app.color.text_primary'))
+        .width(24)
+        .height(24)
+        .fillColor($r('app.color.text_secondary'))
     }
     .width('100%')
     .backgroundColor($r('app.color.card_background'))
     .borderRadius(8)
-    .padding(16)
-    .margin({ bottom: 12 })
+    .padding(12)
+    .margin({ bottom: 8 })
     .onClick(() => {
       this.viewHistoryDetail(item.index);
     })
@@ -420,18 +484,39 @@ struct EntryView {
           .width('100%')
           .height('100%')
         } else {
+          // 显示分组信息
+          Row() {
+            Image(this.getGroupIcon())
+              .width(24)
+              .height(24)
+              .margin({ left: 16, right: 8 })
+              .fillColor($r('app.color.text_primary'))
+
+            Text(this.getGroupName())
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+          .width('100%')
+          .height(40)
+          .backgroundColor($r('app.color.card_background'))
+          .padding({ left: 16, right: 16 })
+          .margin({ top: 4, bottom: 4 })
+
           // 显示当前条目
           Tabs() {
             TabContent() {
               List() {
-                ForEach(this.fields, (field:FieldView) => {
+                ForEach(this.fields, (field: FieldView) => {
                   ListItem() {
                     this.FieldItem(field.key, field.value, field.isProtected)
                   }
                 })
               }
               .width('100%')
-              .padding({ left: 16, right: 16, top: 16 })
+              .padding({ left: 16, right: 16, top: 12 })
               .layoutWeight(1)
               .backgroundColor($r('app.color.background_primary'))
             }
@@ -440,14 +525,14 @@ struct EntryView {
             TabContent() {
               if (this.historyEntries.length > 0) {
                 List() {
-                  ForEach(this.historyEntries, (item:EntryHistoryView) => {
+                  ForEach(this.historyEntries, (item: EntryHistoryView) => {
                     ListItem() {
                       this.HistoryItem(item)
                     }
                   })
                 }
                 .width('100%')
-                .padding({ left: 16, right: 16, top: 16 })
+                .padding({ left: 16, right: 16, top: 12 })
                 .layoutWeight(1)
                 .backgroundColor($r('app.color.background_primary'))
               } else {
@@ -475,7 +560,7 @@ struct EntryView {
           .height('100%')
           .barMode(BarMode.Fixed)
           .barWidth('100%')
-          .barHeight(56)
+          .barHeight(40) // 减少tab标签页的高度
         }
       }
       .width('100%')
