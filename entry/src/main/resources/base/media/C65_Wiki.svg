@@ -1,5 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Letter W -->
-  <path d="M3 18 L7 6 L12 14 L17 6 L21 18 M5 15 L9 15 M15 15 L19 15"
-        fill="#1E90FF" stroke="#1E90FF" stroke-width="1" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 简化的Wiki "W" 标志 -->
+  <path d="M6 8L9 16L12 10L15 16L18 8" stroke="#1976D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 小圆点装饰 -->
+  <circle cx="6" cy="8" r="1" fill="#1976D2"/>
+  <circle cx="18" cy="8" r="1" fill="#1976D2"/>
 </svg>

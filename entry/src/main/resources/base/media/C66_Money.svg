@@ -1,34 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <defs>
-    <linearGradient id="moneyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFD700"/>
-      <stop offset="50%" stop-color="#FFA500"/>
-      <stop offset="100%" stop-color="#FF8C00"/>
-    </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 美元符号 - 圆形背景 -->
+  <circle cx="12" cy="12" r="8" fill="#4CAF50"/>
 
-  <!-- Circular background -->
-  <circle cx="12" cy="12" r="10" fill="#F8F8F8" stroke="#E0E0E0" stroke-width="0.5"/>
+  <!-- 美元符号 - S形状 -->
+  <path d="M15 9.5C15 8.12 13.66 7 12 7C10.34 7 9 8.12 9 9.5C9 10.88 10.34 12 12 12C13.66 12 15 13.12 15 14.5C15 15.88 13.66 17 12 17C10.34 17 9 15.88 9 14.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
 
-  <!-- Modern $ Symbol -->
-  <path d="M12 6V18
-           M9 9h6
-           M9 15h6
-           M12 9
-           C14 11 10 13 12 15
-           C14 17 10 19 12 19"
-        fill="none"
-        stroke="url(#moneyGradient)"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        filter="url(#glow)"/>
-
-  <!-- Shine effects -->
-  <circle cx="14" cy="10" r="1" fill="#FFFFFF" fill-opacity="0.8"/>
-  <circle cx="10" cy="14" r="0.8" fill="#FFFFFF" fill-opacity="0.6"/>
+  <!-- 美元符号 - 垂直线 -->
+  <path d="M12 7V5M12 19V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
 </svg>

@@ -1,12 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="24">
-  <!-- Trash Bin Lid -->
-  <path d="M7 6 L17 6 L16 4 L8 4 Z" fill="#CCCCCC" stroke="#999999" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 垃圾桶盖子 -->
+  <path d="M9 5C9 4.44772 9.44772 4 10 4H14C14.5523 4 15 4.44772 15 5V6H9V5Z" fill="#78909C"/>
+  <path d="M9 5C9 4.44772 9.44772 4 10 4H14C14.5523 4 15 4.44772 15 5V6H9V5Z" stroke="#455A64" stroke-width="0.5"/>
 
-  <!-- Trash Bin Body -->
-  <path d="M7 6 L8 20 L16 20 L17 6 Z" fill="#CCCCCC" stroke="#999999" stroke-width="1"/>
+  <!-- 垃圾桶把手 -->
+  <path d="M7 6H17V8H7V6Z" fill="#90A4AE"/>
+  <path d="M7 6H17V8H7V6Z" stroke="#455A64" stroke-width="0.5"/>
 
-  <!-- Trash Lines -->
-  <line x1="9" y1="9" x2="9" y2="17" stroke="#999999" stroke-width="0.75"/>
-  <line x1="12" y1="9" x2="12" y2="17" stroke="#999999" stroke-width="0.75"/>
-  <line x1="15" y1="9" x2="15" y2="17" stroke="#999999" stroke-width="0.75"/>
+  <!-- 垃圾桶主体 -->
+  <path d="M8 8H16L15 20H9L8 8Z" fill="#B0BEC5"/>
+  <path d="M8 8H16L15 20H9L8 8Z" stroke="#455A64" stroke-width="0.5"/>
+
+  <!-- 垃圾桶内部线条 -->
+  <line x1="10.5" y1="11" x2="10.5" y2="17" stroke="#78909C" stroke-width="0.75" stroke-linecap="round"/>
+  <line x1="12" y1="11" x2="12" y2="17" stroke="#78909C" stroke-width="0.75" stroke-linecap="round"/>
+  <line x1="13.5" y1="11" x2="13.5" y2="17" stroke="#78909C" stroke-width="0.75" stroke-linecap="round"/>
 </svg>
