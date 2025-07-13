@@ -1,21 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Tux Body -->
-  <ellipse cx="12" cy="16" rx="6" ry="8" fill="#000000" stroke="#333333" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 企鹅身体 -->
+  <path d="M12 4C9.5 4 8 6 8 8.5C8 10 8.5 11.5 9 12.5C9.5 13.5 9 14.5 8 16C7 17.5 7.5 18.5 8.5 19C9.5 19.5 10 19 10.5 18.5C11 18 11.5 18 12 18C12.5 18 13 18 13.5 18.5C14 19 14.5 19.5 15.5 19C16.5 18.5 17 17.5 16 16C15 14.5 14.5 13.5 15 12.5C15.5 11.5 16 10 16 8.5C16 6 14.5 4 12 4Z" fill="#2D2D2D" />
 
-  <!-- Tux Belly -->
-  <ellipse cx="12" cy="16" rx="4" ry="6" fill="#FFFFFF" stroke="#DDDDDD" stroke-width="0.5"/>
+  <!-- 企鹅肚子 -->
+  <path d="M12 8C11 8 10 9 10 11C10 13 11 15 12 15C13 15 14 13 14 11C14 9 13 8 12 8Z" fill="#FFFFFF" />
 
-  <!-- Tux Head -->
-  <circle cx="12" cy="8" r="5" fill="#000000" stroke="#333333" stroke-width="1"/>
+  <!-- 眼睛 -->
+  <circle cx="10.5" cy="7.5" r="0.75" fill="white" />
+  <circle cx="13.5" cy="7.5" r="0.75" fill="white" />
 
-  <!-- Tux Eyes -->
-  <circle cx="10" cy="7" r="1" fill="#FFFFFF"/>
-  <circle cx="14" cy="7" r="1" fill="#FFFFFF"/>
+  <!-- 嘴巴 -->
+  <path d="M11 9.5C11.5 10 12.5 10 13 9.5" stroke="#FF9800" stroke-width="0.5" stroke-linecap="round" />
+  <path d="M12 9.5V10.5" stroke="#FF9800" stroke-width="0.5" stroke-linecap="round" />
 
-  <!-- Tux Beak -->
-  <path d="M12 10 L14 9 L12 8 Z" fill="#FFA500" stroke="#CC8400" stroke-width="0.5"/>
+  <!-- 脚 -->
+  <path d="M10.5 18L9.5 20H11.5L10.5 18Z" fill="#FF9800" />
+  <path d="M13.5 18L12.5 20H14.5L13.5 18Z" fill="#FF9800" />
 
-  <!-- Tux Feet -->
-  <ellipse cx="9" cy="22" rx="1.5" ry="1" fill="#FFA500" stroke="#CC8400" stroke-width="0.5"/>
-  <ellipse cx="15" cy="22" rx="1.5" ry="1" fill="#FFA500" stroke="#CC8400" stroke-width="0.5"/>
+  <!-- 翅膀/手臂 -->
+  <path d="M8.5 12C7.5 12.5 6.5 13.5 6 15" stroke="#2D2D2D" stroke-width="0.75" stroke-linecap="round" />
+  <path d="M15.5 12C16.5 12.5 17.5 13.5 18 15" stroke="#2D2D2D" stroke-width="0.75" stroke-linecap="round" />
 </svg>
