@@ -2,13 +2,15 @@ import { ThemeConstants, ThemeMode } from '../common/constants/ThemeConstants';
 import { SettingsService } from '../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
 import { router, Router } from '@kit.ArkUI';
+import { SortConstants, SortMode } from '../common/constants/SortConstants';
 
 @Entry
 @Component
 struct Settings {
-  @State isGridView: boolean = false
-  @State sortBy: string = 'name' // 'name' | 'time'
+  @State sortBy: SortMode = SortMode.DEFAULT
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
+
+
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
@@ -33,7 +35,6 @@ struct Settings {
 
   async aboutToAppear() {
     this.currentThemeMode = await this.settingsService.getThemeMode();
-    this.isGridView = await this.settingsService.isGridView();
     this.sortBy = await this.settingsService.getSortBy();
   }
 
@@ -67,13 +68,13 @@ struct Settings {
                   .fontSize(16)
                 Blank()
                 Select(ThemeConstants.THEME_OPTIONS)
-                  .value(this.currentThemeMode)
+                  .value(ThemeConstants.getThemeOptionByType(this.currentThemeMode))
                   .font({ size: 16 })
                   .selectedOptionFont({ size: 16 })
                   .optionFont({ size: 16 })
                   .backgroundColor($r('app.color.card_background'))
                   .onSelect(async (index: number) => {
-                    const selectedMode = ThemeConstants.THEME_OPTIONS[index].value;
+                    const selectedMode = ThemeConstants.THEME_OPTIONS[index].type;
                     this.applyThemeMode(selectedMode)
                   })
               }
@@ -84,59 +85,26 @@ struct Settings {
             .backgroundColor($r('app.color.card_background'))
           }
 
-          // 网格视图
+          // 排序方式
           ListItem() {
             Row() {
-              Text('网格视图')
+              Text('排序方式')
                 .fontSize(16)
-                .flexGrow(1)
-              Toggle({ type: ToggleType.Switch, isOn: this.isGridView })
-                .onChange((isOn: boolean) => {
-                  this.isGridView = isOn
-                  this.settingsService.setGridView(isOn);
+              Blank()
+              Select(SortConstants.SORT_OPTIONS)
+                .font({ size: 16 })
+                .value(SortConstants.getSortOptionByType(this.sortBy))
+                .selectedOptionFont({ size: 16 })
+                .optionFont({ size: 16 })
+                .backgroundColor($r('app.color.card_background'))
+                .onSelect((index: number) => {
+                  this.sortBy = SortConstants.SORT_OPTIONS[index].type;
+                  this.settingsService.setSortBy(SortConstants.SORT_OPTIONS[index].type);
                 })
             }
             .width('100%')
-            .padding(16)
-          }
-          .backgroundColor($r('app.color.card_background'))
-
-          // 排序方式
-          ListItem() {
-            Column() {
-              Text('排序方式')
-                .fontSize(16)
-                .width('100%')
-                .margin({ bottom: 8 })
-              Blank()
-
-              Row() {
-                Radio({ value: 'name', group: 'sortBy' })
-                  .checked(this.sortBy === 'name')
-                  .onChange((isChecked: boolean) => {
-                    if (isChecked) {
-                      this.sortBy = 'name'
-                      this.settingsService.setSortBy('name');
-                    }
-                  })
-                Text('按名称')
-                  .fontSize(14)
-                  .margin({ left: 8, right: 16 })
-                Radio({ value: 'time', group: 'sortBy' })
-                  .checked(this.sortBy === 'time')
-                  .onChange((isChecked: boolean) => {
-                    if (isChecked) {
-                      this.sortBy = 'time'
-                      this.settingsService.setSortBy('time');
-                    }
-                  })
-                Text('按时间')
-                  .fontSize(14)
-                  .margin({ left: 8 })
-              }
-            }
-            .width('100%')
-            .padding(16)
+            .height(48)
+            .padding({ left: 16, right: 16 })
           }
           .backgroundColor($r('app.color.card_background'))
         }

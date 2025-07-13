@@ -1,6 +1,7 @@
 import { ByteUtils, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { CredentialsParam } from '../../services/TypeDefined';
+import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
 
 export default class KdbxUtils {
@@ -202,8 +203,62 @@ export default class KdbxUtils {
     let credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
     return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
   }
-}
 
+
+  /**
+   * 对组和条目进行排序
+   * @param groups 组
+   * @param entries 条目
+   * @param sortMod 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
+   */
+  public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
+    // 根据排序方式进行排序
+    switch (sortMode) {
+      case SortMode.NAME:
+        // 按名称排序
+        groups.sort((a, b) => (a.name ?? String.fromCharCode(0xffff)).localeCompare((b.name ?? String.fromCharCode(0xffff))));
+        entries.sort((a, b) => {
+          const titleA = KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
+          const titleB = KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
+          return titleA.localeCompare(titleB);
+        });
+        break;
+      case SortMode.MODIFIED:
+        // 按修改日期排序（最新的在前面）
+        groups.sort((a, b) => KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime));
+        entries.sort((a, b) => KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime));
+        break;
+      case SortMode.CREATED:
+        // 按创建日期排序（最新的在前面）
+        groups.sort((a, b) => KdbxUtils.compare(b.times.creationTime, a.times.creationTime));
+        entries.sort((a, b) => KdbxUtils.compare(b.times.creationTime, a.times.creationTime));
+        break;
+      case SortMode.DEFAULT:
+      default:
+      // 默认排序，不做额外处理
+        break;
+    }
+  }
+
+  /**
+   * 比较两个日期
+   * @param a 日期A
+   * @param b 日期B
+   * @returns 0表示相等，-1表示a在b前面，1表示a在b后面
+   */
+  public static compare(a: Date | undefined, b: Date | undefined):number {
+    if (a == undefined && b == undefined) {
+      return 0;
+    }
+    if (a == undefined) {
+      return -1;
+    }
+    if (b == undefined) {
+      return 1;
+    }
+    return b.getTime() - a.getTime();
+  }
+}
 
 /**
  * 搜索结果
