@@ -52,19 +52,19 @@ struct DatabaseView {
     const params = FileService.getInstance().getDbFileParam();
     this.titleName = params.fileName ?? '未知数据库';
     this.database = params.database ?? null;
-    this.initData(this.router.getParams() as DatabaseShowParam);
+
+    // 获取排序方式
+    this.settingsService.getSortBy().then((sortBy: SortMode) => {
+      this.sortBy = sortBy;
+      this.initData(this.router.getParams() as DatabaseShowParam);
+    });
+
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
     // 监听排序方式变化
-    // 注册数据变更监听
     this.settingsService.registerObserver(this.onSortChanged);
-    // 获取排序方式
-    this.settingsService.getSortBy().then((sortBy: SortMode) => {
-      this.sortBy = sortBy;
-      this.updateUI(); // 更新UI以应用排序
-    });
   }
 
   /**
@@ -73,7 +73,10 @@ struct DatabaseView {
   private onSortChanged = (key: string) => {
     console.log("配置项发生了变化：", key)
     if (key == SettingsService.KEY_SORT_BY) {
-      this.updateUI();
+      SettingsService.getInstance().getSortBy().then((sortBy: SortMode) => {
+        this.sortBy = sortBy;
+        this.updateUI();
+      });
     }
   }
 
@@ -108,6 +111,7 @@ struct DatabaseView {
         this.router.back();
         return;
       }
+      KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
       this.groups = this.currentGroup.groups;
       this.entries = this.currentGroup.entries;
       console.info(`加载了 ${this.groups.length} 个分组, ${this.entries.length} 个条目`);
@@ -222,8 +226,8 @@ struct DatabaseView {
     }
 
     let group: KdbxGroup;
+    // 编辑现有分组
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length) {
-      // 编辑现有分组
       group = this.groups[this.editingGroupIndex];
       group.name = this.newGroupName.trim();
       group.times.update();
@@ -247,12 +251,12 @@ struct DatabaseView {
   }
 
   aboutToDisappear() {
-    // 移除主题变化监听
+    // 移除监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
+    this.settingsService.unregisterObserver(this.onSortChanged);
   }
-
+  // 强制组件刷新以应用新主题
   onThemeChanged() {
-    // 强制组件刷新以应用新主题
     this.updateUI();
   }
 
