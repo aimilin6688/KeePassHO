@@ -111,6 +111,9 @@ struct EntryView {
     // 遍历条目的所有字段
     for (const entry of this.entry.fields) {
       const key: string = entry[0];
+      if(key ===KdbxUtils.FIELD_TITLE){
+        continue;
+      }
       const value = entry[1];
       const isProtected = typeof value !== 'string';
       const strValue = KdbxUtils.getFieldValueString(this.entry.fields, key);
@@ -281,7 +284,7 @@ struct EntryView {
   /**
    * 获取字段对应的图标
    */
-  private getFieldIcon(key: string): Resource {
+  private getFieldIcon(key: string): ResourceStr {
     switch (key) {
       case KdbxUtils.FIELD_TITLE:
     // return $r('app.media.ic_title');
@@ -293,19 +296,23 @@ struct EntryView {
     // return $r('app.media.ic_url');
       case KdbxUtils.FIELD_NOTES:
       // return $r('app.media.ic_notes');
+      case KdbxUtils.GROUP_NAME:
+        return this.getGroupIcon();
       default:
       // return $r('app.media.ic_field');
     }
     return $r('app.media.ic_file');
   }
 
+
   /**
    * 获取分组图标
    */
   private getGroupIcon(): ResourceStr {
     // 如果有自定义图标，返回自定义图标
-    if (this.entry && this.entry.customIcon) {
-      return KdbxUtils.getIcon(this.entry.icon, this.entry.customIcon, $r('app.media.ic_folder'));
+    if (this.entry?.parentGroup) {
+      let group = this.entry?.parentGroup;
+      return KdbxUtils.getIcon(group.icon, group.customIcon, $r('app.media.ic_folder'));
     }
     // 否则返回默认分组图标
     return $r('app.media.ic_folder');
@@ -458,6 +465,7 @@ struct EntryView {
                     .margin({ left: 8 })
                 }
                 .width('100%')
+                .height('100%')
                 .padding(16)
                 .backgroundColor($r('app.color.card_background'))
                 .borderRadius(8)
@@ -484,37 +492,20 @@ struct EntryView {
           .width('100%')
           .height('100%')
         } else {
-          // 显示分组信息
-          Row() {
-            Image(this.getGroupIcon())
-              .width(24)
-              .height(24)
-              .margin({ left: 16, right: 8 })
-              .fillColor($r('app.color.text_primary'))
-
-            Text(this.getGroupName())
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor($r('app.color.text_primary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          .width('100%')
-          .height(40)
-          .backgroundColor($r('app.color.card_background'))
-          .padding({ left: 16, right: 16 })
-          .margin({ top: 4, bottom: 4 })
-
           // 显示当前条目
           Tabs() {
             TabContent() {
               List() {
+                ListItem() {
+                  this.FieldItem(KdbxUtils.GROUP_NAME, this.getGroupName(), false)
+                }
                 ForEach(this.fields, (field: FieldView) => {
                   ListItem() {
                     this.FieldItem(field.key, field.value, field.isProtected)
                   }
                 })
               }
+              .height('100%')
               .width('100%')
               .padding({ left: 16, right: 16, top: 12 })
               .layoutWeight(1)
