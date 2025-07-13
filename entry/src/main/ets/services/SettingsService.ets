@@ -3,6 +3,7 @@ import { BusinessError } from '@ohos.base';
 import { ThemeMode } from '../common/constants/ThemeConstants';
 import ThemeManager from '../common/utils/ThemeManager';
 import common from '@ohos.app.ability.common';
+import { SortMode } from '../common/constants/SortConstants';
 
 export class SettingsService {
   private static instance: SettingsService;
@@ -95,38 +96,12 @@ export class SettingsService {
     return mode === ThemeMode.DARK;
   }
 
-  /**
-   * 设置网格视图
-   * @param enabled 是否启用网格视图
-   */
-  public async setGridView(enabled: boolean): Promise<void> {
-    if (!this.preferences) return;
-    try {
-      await this.preferences.put(SettingsService.KEY_GRID_VIEW, enabled);
-      await this.preferences.flush();
-    } catch (err) {
-      console.error(`Failed to set grid view: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-    }
-  }
-
-  /**
-   * 获取网格视图状态
-   */
-  public async isGridView(): Promise<boolean> {
-    if (!this.preferences) return false;
-    try {
-      return await this.preferences.get(SettingsService.KEY_GRID_VIEW, false) as boolean;
-    } catch (err) {
-      console.error(`Failed to get grid view: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-      return false;
-    }
-  }
 
   /**
    * 设置排序方式
-   * @param sortBy 排序方式 ('name' | 'time')
+   * @param sortBy 排序方式 ('default' | 'name' | 'modified' | 'created')
    */
-  public async setSortBy(sortBy: string): Promise<void> {
+  public async setSortBy(sortBy: SortMode): Promise<void> {
     if (!this.preferences) return;
     try {
       await this.preferences.put(SettingsService.KEY_SORT_BY, sortBy);
@@ -139,15 +114,13 @@ export class SettingsService {
   /**
    * 获取排序方式
    */
-  public async getSortBy(): Promise<string> {
-    if (!this.preferences) return 'name';
+  public async getSortBy(): Promise<SortMode> {
+    if (!this.preferences) return SortMode.DEFAULT;
     try {
-      return await this.preferences.get(SettingsService.KEY_SORT_BY, 'name') as string;
+      return await this.preferences.get(SettingsService.KEY_SORT_BY, SortMode.DEFAULT) as SortMode;
     } catch (err) {
       console.error(`Failed to get sort by: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-      return 'name';
+      return SortMode.DEFAULT;
     }
   }
 }
-
-export default SettingsService.getInstance();

@@ -6,6 +6,8 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
+import { SortMode } from '../common/constants/SortConstants';
+import { SettingsService } from '../services/SettingsService';
 
 @Entry
 @Component
@@ -22,16 +24,18 @@ struct DatabaseView {
   @State isSearching: boolean = false; // 是否处于搜索状态
   @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
   @State filteredEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
+  @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private currentGroup: KdbxGroup | undefined = undefined;
+  private settingsService: SettingsService = SettingsService.getInstance();
   dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
       editingGroupIndex: this.editingGroupIndex,
       selectedIconId: this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length
-        ?  this.groups[this.editingGroupIndex].customIcon?.toString() || this.groups[this.editingGroupIndex].icon || Icons.Folder : Icons.Folder,
+        ? this.groups[this.editingGroupIndex].customIcon?.toString() || this.groups[this.editingGroupIndex].icon || Icons.Folder : Icons.Folder,
       onConfirm: (iconId: number | string): void => this.handleAddGroup(iconId),
       onCancel: (): void => {
         this.newGroupName = "";
@@ -52,6 +56,11 @@ struct DatabaseView {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
+    });
+    // 获取排序方式
+    this.settingsService.getSortBy().then((sortBy: SortMode) => {
+      this.sortBy = sortBy;
+      this.updateUI(); // 更新UI以应用排序
     });
   }
 
@@ -199,7 +208,7 @@ struct DatabaseView {
       return;
     }
 
-    let group:KdbxGroup;
+    let group: KdbxGroup;
     if (this.editingGroupIndex >= 0 && this.editingGroupIndex < this.groups.length) {
       // 编辑现有分组
       group = this.groups[this.editingGroupIndex];
@@ -214,7 +223,7 @@ struct DatabaseView {
     if (typeof iconId === 'string' && iconId.length > 0) {
       group.customIcon = new KdbxUuid(iconId);
     } else {
-      group.icon = iconId as  number;
+      group.icon = iconId as number;
     }
     // 保存数据库
     this.saveDatabase();
@@ -243,8 +252,14 @@ struct DatabaseView {
     this.entries = [];
     // 延迟一帧后重新加载数据，确保UI更新
     setTimeout(() => {
-      this.groups = [...this.currentGroup?.groups || []];
-      this.entries = [...this.currentGroup?.entries || []];
+      // 获取分组和条目
+      let groups = [...this.currentGroup?.groups || []];
+      let entries = [...this.currentGroup?.entries || []];
+      // 按照分组名称排序
+      KdbxUtils.sortBy(groups, entries, this.sortBy);
+
+      this.groups = groups;
+      this.entries = entries;
 
       // 如果在搜索状态，更新搜索结果
       if (this.isSearching && this.searchText.length > 0) {
