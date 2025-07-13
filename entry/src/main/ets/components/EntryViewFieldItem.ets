@@ -71,7 +71,7 @@ export struct EntryViewFieldItem {
       case KdbxUtils.FIELD_LASTMOD_TIME:
         return $r('sys.media.ohos_ic_public_clock');
       default:
-      return $r('app.media.ic_file');
+      return $r('app.media.ic_note');
     }
   }
 
