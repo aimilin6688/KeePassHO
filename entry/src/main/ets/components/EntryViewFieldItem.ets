@@ -55,15 +55,15 @@ export struct EntryViewFieldItem {
   private getFieldIcon(key: string): ResourceStr {
     switch (key) {
       case KdbxUtils.FIELD_TITLE:
-    // return $r('app.media.ic_title');
+    return $r('app.media.ic_title');
       case KdbxUtils.FIELD_USERNAME:
-    // return $r('app.media.ic_user');
+    return $r('app.media.ic_user');
       case KdbxUtils.FIELD_PASSWORD:
-    // return $r('app.media.ic_password');
+    return $r('app.media.ic_password');
       case KdbxUtils.FIELD_URL:
-    // return $r('app.media.ic_url');
+    return $r('app.media.ic_url');
       case KdbxUtils.FIELD_NOTES:
-    // return $r('app.media.ic_notes');
+    return $r('app.media.ic_notes');
       case KdbxUtils.GROUP_NAME:
         return this.getGroupIcon();
       case KdbxUtils.FIELD_CREATION_TIME:
@@ -71,9 +71,8 @@ export struct EntryViewFieldItem {
       case KdbxUtils.FIELD_LASTMOD_TIME:
         return $r('sys.media.ohos_ic_public_clock');
       default:
-      // return $r('app.media.ic_field');
+      return $r('app.media.ic_file');
     }
-    return $r('app.media.ic_file');
   }
 
   /**
