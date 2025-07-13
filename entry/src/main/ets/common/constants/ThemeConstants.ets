@@ -2,17 +2,17 @@
  * 主题模式枚举
  */
 export enum ThemeMode {
-  SYSTEM = '跟随系统',  // 跟随系统
-  LIGHT = '浅色',   // 浅色主题
-  DARK = '深色'      // 深色主题
+  SYSTEM = 'SYSTEM', // 跟随系统
+  LIGHT = 'LIGHT', // 浅色主题
+  DARK = 'DARK' // 深色主题
 }
 
 /**
  * 主题选项接口
  */
 export interface ThemeOption {
-  name: string;
-  value: ThemeMode;
+  type: ThemeMode;
+  value: string;
 }
 
 /**
@@ -23,8 +23,17 @@ export class ThemeConstants {
    * 主题模式选项
    */
   static readonly THEME_OPTIONS: ThemeOption[] = [
-    { name: '跟随系统', value: ThemeMode.SYSTEM },
-    { name: '浅色', value: ThemeMode.LIGHT },
-    { name: '深色', value: ThemeMode.DARK }
+    { value: '跟随系统', type: ThemeMode.SYSTEM },
+    { value: '浅色', type: ThemeMode.LIGHT },
+    { value: '深色', type: ThemeMode.DARK }
   ];
+
+  /**
+   * 根据值获取排序选项
+   * @param value 值
+   * @returns 排序选项
+   */
+  public static getThemeOptionByType(type: ThemeMode): string {
+    return ThemeConstants.THEME_OPTIONS.find((option) => option.type === type)?.value ?? ThemeConstants.THEME_OPTIONS[0].value;
+  }
 }
