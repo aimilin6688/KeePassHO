@@ -109,21 +109,35 @@ struct EntryView {
     this.fields = [];
 
     // 遍历条目的所有字段
-    for (const entry of this.entry.fields) {
-      const key: string = entry[0];
-      if(key ===KdbxUtils.FIELD_TITLE){
+    for (const field of this.entry.fields) {
+      const key: string = field[0];
+      if(key === KdbxUtils.FIELD_TITLE){
         continue;
       }
-      const value = entry[1];
+      const value = field[1];
       const isProtected = typeof value !== 'string';
       const strValue = KdbxUtils.getFieldValueString(this.entry.fields, key);
 
-      this.fields.push({
-        key,
-        value: strValue,
-        isProtected
-      });
+      if(strValue !== ''){
+        this.fields.push({
+          key,
+          value: strValue,
+          isProtected
+        });
+      }
     }
+
+    // 增加创建时间和更新时间
+    this.fields.push({
+      key: 'creationTime',
+      value: this.entry.times.creationTime?.toLocaleString() || '',
+      isProtected: false
+    });
+    this.fields.push({
+      key: 'lastModTime',
+      value: this.entry.times.lastModTime?.toLocaleString() || '',
+      isProtected: false
+    });
 
     // 按字段名称排序
     this.fields.sort((a, b) => {
