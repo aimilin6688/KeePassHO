@@ -3,15 +3,9 @@ import { Kdbx, KdbxEntry } from 'kdbxweb';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
 import ThemeManager from '../common/utils/ThemeManager';
-import promptAction from '@ohos.promptAction';
-import pasteboard from '@ohos.pasteboard';
 import { EntryParam } from '../services/TypeDefined';
+import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 
-interface FieldView {
-  key: string;
-  value: string;
-  isProtected: boolean;
-}
 
 interface EntryHistoryView {
   index: number;
@@ -111,35 +105,19 @@ struct EntryView {
     // 遍历条目的所有字段
     for (const field of this.entry.fields) {
       const key: string = field[0];
-      if(key === KdbxUtils.FIELD_TITLE){
+      if (key === KdbxUtils.FIELD_TITLE) {
         continue;
       }
       const value = field[1];
       const isProtected = typeof value !== 'string';
       const strValue = KdbxUtils.getFieldValueString(this.entry.fields, key);
 
-      if(strValue !== ''){
-        this.fields.push({
-          key,
-          value: strValue,
-          isProtected
-        });
+      if (strValue !== '') {
+        this.fields.push(new FieldView(key, strValue, isProtected, true));
       }
     }
 
-    // 增加创建时间和更新时间
-    this.fields.push({
-      key: 'creationTime',
-      value: this.entry.times.creationTime?.toLocaleString() || '',
-      isProtected: false
-    });
-    this.fields.push({
-      key: 'lastModTime',
-      value: this.entry.times.lastModTime?.toLocaleString() || '',
-      isProtected: false
-    });
-
-    // 按字段名称排序
+    // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
       const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
@@ -156,6 +134,12 @@ struct EntryView {
         return a.key.localeCompare(b.key);
       }
     });
+
+    // 添加分组信息
+    this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
+    // 增加创建时间和更新时间
+    this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, this.entry.times.creationTime?.toLocaleString() || '', false, false));
+    this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, this.entry.times.lastModTime?.toLocaleString() || '', false, false));
   }
 
   /**
@@ -185,32 +169,6 @@ struct EntryView {
   }
 
   /**
-   * 复制文本到剪贴板
-   */
-  private copyToClipboard(text: string) {
-    try {
-      // 获取系统剪贴板实例
-      const pasteboardInstance = pasteboard.getSystemPasteboard();
-      // 创建纯文本数据对象
-      const pasteData = pasteboard.createPlainTextData(text);
-      // 将数据写入剪贴板
-      pasteboardInstance.setData(pasteData);
-
-      // 显示提示
-      promptAction.showToast({
-        message: '已复制到剪贴板',
-        duration: 2000
-      });
-    } catch (error) {
-      console.error(`复制到剪贴板失败: ${error}`);
-      this.promptAction.showToast({
-        message: `复制失败: ${error}`,
-        duration: 2000
-      });
-    }
-  }
-
-  /**
    * 编辑条目
    */
   private editEntry() {
@@ -235,101 +193,6 @@ struct EntryView {
    */
   private backToCurrentEntry() {
     this.selectedHistoryIndex = -1;
-  }
-
-  /**
-   * 构建字段项
-   */
-  @Builder
-  FieldItem(key: string, value: string, isProtected: boolean = false) {
-    Row() {
-      // 左侧图标
-      Image(this.getFieldIcon(key))
-        .width(40)
-        .height(40)
-        .margin({ right: 12 })
-        .fillColor($r('app.color.text_primary'))
-
-      // 中间内容区域
-      Column() {
-        // 左上角小标题显示标签提示信息
-        Text(key)
-          .fontSize(14)
-          .fontColor($r('app.color.text_secondary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
-          .margin({ bottom: 4 })
-
-        // 左下角显示具体的值
-        Text(isProtected ? '••••••••' : value)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .maxLines(isProtected ? 1 : 3)
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-
-      // 右侧复制按钮
-      if (value) {
-        Image($r('app.media.ic_copy'))
-          .width(24)
-          .height(24)
-          .fillColor($r('app.color.text_primary'))
-          .onClick((event) => {
-            this.copyToClipboard(value);
-          })
-      }
-    }
-    .width('100%')
-    .backgroundColor($r('app.color.card_background'))
-    .borderRadius(8)
-    .padding(12)
-    .margin({ bottom: 8 })
-    .onClick(() => {
-      if (value) {
-        this.copyToClipboard(value);
-      }
-    })
-  }
-
-  /**
-   * 获取字段对应的图标
-   */
-  private getFieldIcon(key: string): ResourceStr {
-    switch (key) {
-      case KdbxUtils.FIELD_TITLE:
-    // return $r('app.media.ic_title');
-      case KdbxUtils.FIELD_USERNAME:
-    // return $r('app.media.ic_user');
-      case KdbxUtils.FIELD_PASSWORD:
-    // return $r('app.media.ic_password');
-      case KdbxUtils.FIELD_URL:
-    // return $r('app.media.ic_url');
-      case KdbxUtils.FIELD_NOTES:
-      // return $r('app.media.ic_notes');
-      case KdbxUtils.GROUP_NAME:
-        return this.getGroupIcon();
-      default:
-      // return $r('app.media.ic_field');
-    }
-    return $r('app.media.ic_file');
-  }
-
-
-  /**
-   * 获取分组图标
-   */
-  private getGroupIcon(): ResourceStr {
-    // 如果有自定义图标，返回自定义图标
-    if (this.entry?.parentGroup) {
-      let group = this.entry?.parentGroup;
-      return KdbxUtils.getIcon(group.icon, group.customIcon, $r('app.media.ic_folder'));
-    }
-    // 否则返回默认分组图标
-    return $r('app.media.ic_folder');
   }
 
   /**
@@ -510,18 +373,15 @@ struct EntryView {
           Tabs() {
             TabContent() {
               List() {
-                ListItem() {
-                  this.FieldItem(KdbxUtils.GROUP_NAME, this.getGroupName(), false)
-                }
                 ForEach(this.fields, (field: FieldView) => {
                   ListItem() {
-                    this.FieldItem(field.key, field.value, field.isProtected)
+                    EntryViewFieldItem({ field: field, entry: this.entry })
                   }
                 })
               }
               .height('100%')
               .width('100%')
-              .padding({ left: 16, right: 16, top: 12 })
+              .padding({ left: 16, right: 16, top: 12, bottom:40 })
               .layoutWeight(1)
               .backgroundColor($r('app.color.background_primary'))
             }
@@ -536,8 +396,9 @@ struct EntryView {
                     }
                   })
                 }
+                .height('100%')
                 .width('100%')
-                .padding({ left: 16, right: 16, top: 12 })
+                .padding({ left: 16, right: 16, top: 12, bottom:40 })
                 .layoutWeight(1)
                 .backgroundColor($r('app.color.background_primary'))
               } else {

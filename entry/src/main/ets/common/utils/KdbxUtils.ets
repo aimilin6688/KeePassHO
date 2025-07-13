@@ -11,6 +11,10 @@ export default class KdbxUtils {
   public static readonly FIELD_URL = 'URL';
   public static readonly FIELD_NOTES = 'Notes';
   public static readonly FIELD_TITLE = 'Title';
+  public static readonly FIELD_EMAIL = 'Email';
+  public static readonly FIELD_PHONE = 'Phone';
+  public static readonly FIELD_CREATION_TIME = 'creationTime';
+  public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
   public static readonly GROUP_NAME = 'GroupName';
 
 
@@ -267,6 +271,34 @@ export default class KdbxUtils {
       return 1;
     }
     return a.getTime() - b.getTime();
+  }
+
+  /**
+   * 获取字段名称
+   * @param fileKey 文件密钥
+   * @returns 字段名称
+   */
+  public static getFieldName(fileKey:string) {
+    switch (fileKey) {
+      case KdbxUtils.FIELD_USERNAME:
+        return "用户名";
+      case KdbxUtils.FIELD_PASSWORD:
+        return "密码";
+      case KdbxUtils.FIELD_URL:
+        return "网址";
+      case KdbxUtils.FIELD_NOTES:
+        return "备注";
+      case KdbxUtils.FIELD_TITLE:
+        return "标题";
+      case KdbxUtils.GROUP_NAME:
+        return "分组名称";
+      case KdbxUtils.FIELD_CREATION_TIME:
+        return "创建时间";
+      case KdbxUtils.FIELD_LASTMOD_TIME:
+        return "更新时间";
+      default:
+        return fileKey;
+    }
   }
 }
 
