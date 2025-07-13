@@ -1,16 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Paper Base -->
-  <rect x="6" y="4" width="12" height="16" fill="#FFFFFF" stroke="#808080" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 旗杆 -->
+  <line x1="8" y1="4" x2="8" y2="20" stroke="#78909C" stroke-width="1.5" stroke-linecap="round"/>
 
-  <!-- Paper Lines -->
-  <line x1="8" y1="10" x2="16" y2="10" stroke="#C0C0C0" stroke-width="1"/>
-  <line x1="8" y1="14" x2="16" y2="14" stroke="#C0C0C0" stroke-width="1"/>
-  <line x1="8" y1="18" x2="16" y2="18" stroke="#C0C0C0" stroke-width="1"/>
+  <!-- 纸质旗帜主体 -->
+  <path d="M8 4C8 4 9 5 12 5C15 5 16 4 16 4V12C16 12 15 13 12 13C9 13 8 12 8 12V4Z" fill="#ECEFF1"/>
 
-  <!-- Flag -->
-  <line x1="16" y1="4" x2="16" y2="10" stroke="#8B4513" stroke-width="1.5"/>
-  <path d="M16 4 L20 5 L16 6 L20 7 L16 8 L20 9 L16 10" fill="#FF6347" stroke="#FF6347" stroke-width="1"/>
+  <!-- 纸质旗帜边缘 -->
+  <path d="M8 4C8 4 9 5 12 5C15 5 16 4 16 4V12C16 12 15 13 12 13C9 13 8 12 8 12V4Z" stroke="#B0BEC5" stroke-width="0.5"/>
 
-  <!-- Paper Corner Fold -->
-  <path d="M14 4 L18 8 L14 8 Z" fill="#F0F0F0" stroke="#C0C0C0" stroke-width="0.5"/>
+  <!-- 纸质旗帜折痕 -->
+  <path d="M10 5.5C10.6667 6 12.4 6.8 15 6" stroke="#B0BEC5" stroke-width="0.5" stroke-linecap="round"/>
+  <path d="M10 8.5C10.6667 9 12.4 9.8 15 9" stroke="#B0BEC5" stroke-width="0.5" stroke-linecap="round"/>
+
+  <!-- 纸质旗帜波浪效果 -->
+  <path d="M16 4C16 4 15.5 4.5 16 5C16.5 5.5 16 6 16 6" stroke="#B0BEC5" stroke-width="0.5"/>
+  <path d="M16 8C16 8 15.5 8.5 16 9C16.5 9.5 16 10 16 10" stroke="#B0BEC5" stroke-width="0.5"/>
+
+  <!-- 旗帜底部细节 -->
+  <path d="M8 12C8 12 9.5 12.5 12 12.5C14.5 12.5 16 12 16 12" stroke="#B0BEC5" stroke-width="0.5" stroke-linecap="round"/>
 </svg>
