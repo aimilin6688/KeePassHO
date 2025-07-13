@@ -29,6 +29,19 @@ export class FileService {
     return this.fileParam;
   }
 
+  public init(): void {
+    this.initDbFileParam();
+    this.initFileParam();
+  }
+
+  public initDbFileParam(): void {
+    this.dbFileParam = {} as DbFileParam;
+  }
+
+  public initFileParam(): void {
+    this.fileParam = {} as FileParam;
+  }
+
   public setDbFileParam(dbFileParam: DbFileParam): void {
     this.dbFileParam = dbFileParam;
   }

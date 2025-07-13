@@ -203,7 +203,7 @@ struct Password {
     this.stopWorker();
     this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
     this.databaseWorker.postMessage(JSON.stringify(
-      new LoadDatabase(this.filePath, this.fileName, this.password, this.authType,  this.keyFilePath, this.storageType, this.storageConfig)
+      new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig)
     ));
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
@@ -221,11 +221,16 @@ struct Password {
         let successMessage = data as SuccessMessage;
         this.init();
         this.putFileToRecentFile();
-        this.setFileParam(successMessage.data);
-        this.isLoading = false;
-        this.updateButtonState(); // 更新按钮状态
-        this.router.pushUrl({ url: 'pages/DatabaseView' });
-        return;
+        this.setFileParam(successMessage.data).then(() => {
+          this.isLoading = false;
+          this.updateButtonState(); // 更新按钮状态
+          this.router.pushUrl({ url: 'pages/DatabaseView' });
+          return;
+        }).catch((error: Error) => {
+          console.error(`Open database error: ${error}`);
+          this.promptAction.showToast({ message: error.message, duration: 3000 });
+          return;
+        });
       }
       // 错误消息
       if (data.type == MessageType.LOAD_ERROR) {
@@ -240,7 +245,7 @@ struct Password {
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     this.databaseWorker.onAllErrors = (err: ErrorEvent) => {
       console.error('Open database error:', err);
-      if(err.message.indexOf('NativeCustomSpan') != -1){
+      if (err.message.indexOf('NativeCustomSpan') != -1) {
         return;
       }
       this.promptAction.showToast({ message: err.message })
@@ -258,8 +263,8 @@ struct Password {
   /**
    * 设置数据库文件信息
    */
-  private setFileParam(kdbxContent: ArrayBuffer){
-    KdbxUtils.arrayBufferToKdbx(kdbxContent, {
+  private setFileParam(kdbxContent: ArrayBuffer): Promise<void> {
+    return KdbxUtils.arrayBufferToKdbx(kdbxContent, {
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
@@ -281,14 +286,15 @@ struct Password {
   /**
    * 初始化
    */
-  private init(){
+  private init() {
     KdbxUtils.init();
+    FileService.getInstance().init();
   }
 
   /**
    * 文件打开成功，保存到最近访问列表中
    */
-  private putFileToRecentFile(){
+  private putFileToRecentFile() {
     let fileParam = FileService.getInstance().getFileParam();
     console.log("打开数据库文件：", fileParam?.filePath)
 
@@ -298,10 +304,10 @@ struct Password {
         RecentFilesService.getInstance().addRecentFile({
           filePath: this.filePath,
           fileName: this.fileName,
-          storageType: this.storageType?? StorageType.LOCAL,
+          storageType: this.storageType ?? StorageType.LOCAL,
           authType: this.authType,
           keyFilePath: this.keyFilePath,
-          storageConfig: this.storageConfig??{}
+          storageConfig: this.storageConfig ?? {}
         });
       }
     })
