@@ -11,10 +11,12 @@ export class SettingsService {
   private static readonly PREFERENCES_NAME = 'settings';
 
   // 设置键名
-  private static readonly KEY_THEME_MODE = 'themeMode';
-  private static readonly KEY_DARK_MODE = 'darkMode'; // 保留向后兼容
-  private static readonly KEY_GRID_VIEW = 'gridView';
-  private static readonly KEY_SORT_BY = 'sortBy';
+  public static readonly KEY_THEME_MODE = 'themeMode';
+  public static readonly KEY_DARK_MODE = 'darkMode'; // 保留向后兼容
+  public static readonly KEY_SORT_BY = 'sortBy';
+
+  // 观察者列表
+  private observers: ((key: string) => void)[] = [];
 
   private constructor() {}
 
@@ -102,25 +104,53 @@ export class SettingsService {
    * @param sortBy 排序方式 ('default' | 'name' | 'modified' | 'created')
    */
   public async setSortBy(sortBy: SortMode): Promise<void> {
-    if (!this.preferences) return;
-    try {
-      await this.preferences.put(SettingsService.KEY_SORT_BY, sortBy);
-      await this.preferences.flush();
-    } catch (err) {
-      console.error(`Failed to set sort by: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-    }
+    return this.put(SettingsService.KEY_SORT_BY, sortBy);
   }
 
   /**
    * 获取排序方式
    */
   public async getSortBy(): Promise<SortMode> {
-    if (!this.preferences) return SortMode.DEFAULT;
+    return this.get(SettingsService.KEY_SORT_BY, SortMode.DEFAULT);
+  }
+
+
+  // 写入数据并通知观察者
+  public async put(key: string, value: preferences.ValueType): Promise<void> {
+    if (!this.preferences) return;
+
     try {
-      return await this.preferences.get(SettingsService.KEY_SORT_BY, SortMode.DEFAULT) as SortMode;
+    await this.preferences.put(key, value);
+    await this.preferences.flush(); // 重要！确保数据持久化
+    // 通知所有观察者
+    this.observers.forEach(observer => observer(key));
     } catch (err) {
-      console.error(`Failed to get sort by: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-      return SortMode.DEFAULT;
+      console.error(`Failed to set ${(err as BusinessError).code} by ${(err as BusinessError).message}`);
+    }
+  }
+
+  // 读取数据
+  public async get<T extends preferences.ValueType>(key: string, defValue: T): Promise<T> {
+    if (!this.preferences) return defValue;
+
+    try {
+      return (await this.preferences.get(key, defValue)) as T;
+    } catch (err) {
+      console.error(`Failed to get value. Code: ${(err as BusinessError).code}`);
+      return defValue;
+    }
+  }
+
+  // 注册观察者
+  public registerObserver(observer: (key: string) => void): void {
+    this.observers.push(observer);
+  }
+
+  // 移除观察者
+  public unregisterObserver(observer: (key: string) => void): void {
+    const index = this.observers.indexOf(observer);
+    if (index !== -1) {
+      this.observers.splice(index, 1);
     }
   }
 }

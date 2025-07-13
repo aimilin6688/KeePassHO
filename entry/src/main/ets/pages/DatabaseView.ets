@@ -57,11 +57,24 @@ struct DatabaseView {
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
+    // 监听排序方式变化
+    // 注册数据变更监听
+    this.settingsService.registerObserver(this.onSortChanged);
     // 获取排序方式
     this.settingsService.getSortBy().then((sortBy: SortMode) => {
       this.sortBy = sortBy;
       this.updateUI(); // 更新UI以应用排序
     });
+  }
+
+  /**
+   * 监听主题变化
+   */
+  private onSortChanged = (key: string) => {
+    console.log("配置项发生了变化：", key)
+    if (key == SettingsService.KEY_SORT_BY) {
+      this.updateUI();
+    }
   }
 
   private initData(dbShowParam: DatabaseShowParam | undefined) {
