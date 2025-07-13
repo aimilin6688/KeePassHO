@@ -12,6 +12,8 @@ export default class KdbxUtils {
   public static readonly FIELD_NOTES = 'Notes';
   public static readonly FIELD_TITLE = 'Title';
   public static readonly GROUP_NAME = 'GroupName';
+
+
   private static customIconMap: Map<string, string> = new Map<string, string>();
 
   public static init() {
