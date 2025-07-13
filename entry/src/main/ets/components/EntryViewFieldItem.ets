@@ -67,9 +67,9 @@ export struct EntryViewFieldItem {
       case KdbxUtils.GROUP_NAME:
         return this.getGroupIcon();
       case KdbxUtils.FIELD_CREATION_TIME:
-        return $r('sys.media.ohos_ic_public_clock');
+        return $r('app.media.ic_clock');
       case KdbxUtils.FIELD_LASTMOD_TIME:
-        return $r('sys.media.ohos_ic_public_clock');
+        return $r('app.media.ic_clock');
       default:
       return $r('app.media.ic_note');
     }
