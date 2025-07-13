@@ -24,6 +24,7 @@ struct EntryEdit {
   @State useLowercase: boolean = true; // 使用小写字母
   @State useNumbers: boolean = true; // 使用数字
   @State useSpecial: boolean = true; // 使用特殊字符
+  @State useBrackets: boolean = true; // 使用括号
   @State showPasswordGenerator: boolean = false; // 显示密码生成器
 
   private database: Kdbx | null = null;
@@ -201,7 +202,8 @@ struct EntryEdit {
     if (this.useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
     if (this.useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     if (this.useNumbers) charset += '0123456789';
-    if (this.useSpecial) charset += '!@#$%^&*()_+~`|}{[]:;?><,./-=';
+    if (this.useSpecial) charset += '!@#$%^&*_+~`|;?><,./-=';
+    if (this.useBrackets) charset += '(){}[]';
     
     // 确保至少有一种字符类型被选中
     if (charset.length === 0) {
@@ -285,7 +287,6 @@ struct EntryEdit {
         Button('保存')
           .fontSize(16)
           .fontColor(Color.White)
-          .backgroundColor($r('app.color.primary'))
           .margin({ right: 16 })
           .padding({ left: 16, right: 16, top: 8, bottom: 8 })
           .borderRadius(4)
@@ -356,8 +357,8 @@ struct EntryEdit {
 
               Button('生成')
                 .fontSize(14)
-                .fontColor(Color.White)
-                .backgroundColor($r('app.color.primary'))
+                .fontColor($r('app.color.text_primary'))
+                .backgroundColor('#f0f0f0')
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
                 .borderRadius(4)
                 .onClick(() => {
@@ -430,7 +431,7 @@ struct EntryEdit {
                     .fontColor($r('app.color.text_primary'))
                   Slider({
                     value: this.passwordLength,
-                    min: 8,
+                    min: 1,
                     max: 32,
                     step: 1,
                     style: SliderStyle.OutSet
@@ -454,6 +455,9 @@ struct EntryEdit {
                     .fontSize(14)
                     .fontColor($r('app.color.text_primary'))
                     .margin({ left: 8 })
+                    .onClick(() => {
+                      this.useUppercase = !this.useUppercase;
+                    })
                 }
                 .width('100%')
                 .margin({ top: 4, bottom: 4 })
@@ -468,6 +472,9 @@ struct EntryEdit {
                     .fontSize(14)
                     .fontColor($r('app.color.text_primary'))
                     .margin({ left: 8 })
+                    .onClick(() => {
+                      this.useLowercase = !this.useLowercase;
+                    })
                 }
                 .width('100%')
                 .margin({ top: 4, bottom: 4 })
@@ -482,6 +489,9 @@ struct EntryEdit {
                     .fontSize(14)
                     .fontColor($r('app.color.text_primary'))
                     .margin({ left: 8 })
+                    .onClick(() => {
+                      this.useNumbers = !this.useNumbers;
+                    })
                 }
                 .width('100%')
                 .margin({ top: 4, bottom: 4 })
@@ -492,24 +502,59 @@ struct EntryEdit {
                     .onChange((value) => {
                       this.useSpecial = value;
                     })
-                  Text('特殊字符 (!@#$%^&*)')
+                  Text('特殊字符 (!@#$%^&*_+~`|;?><,./-=)')
                     .fontSize(14)
                     .fontColor($r('app.color.text_primary'))
                     .margin({ left: 8 })
+                    .onClick(() => {
+                      this.useSpecial = !this.useSpecial;
+                    })
                 }
                 .width('100%')
                 .margin({ top: 4, bottom: 4 })
                 
-                Button('生成密码')
-                  .width('100%')
-                  .margin({ top: 8 })
-                  .fontSize(14)
-                  .fontColor(Color.White)
-                  .backgroundColor($r('app.color.primary'))
-                  .borderRadius(4)
-                  .onClick(() => {
-                    this.generatePassword();
-                  })
+                Row() {
+                  Checkbox({ name: 'brackets', group: 'passwordOptions'})
+                    .select(this.useBrackets)
+                    .onChange((value) => {
+                      this.useBrackets = value;
+                    })
+                  Text('括号 ((){}[])')
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                    .margin({ left: 8 })
+                    .onClick(() => {
+                      this.useBrackets = !this.useBrackets;
+                    })
+                }
+                .width('100%')
+                .margin({ top: 4, bottom: 4 })
+                
+                Row() {
+                  Button('关闭')
+                    .width('48%')
+                    .margin({ top: 8, right: 8 })
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                    .backgroundColor('#f0f0f0')
+                    .borderRadius(4)
+                    .onClick(() => {
+                      this.showPasswordGenerator = false;
+                    })
+                    
+                  Button('生成密码')
+                    .width('48%')
+                    .margin({ top: 8 })
+                    .fontSize(14)
+                    .fontColor(Color.White)
+                    .backgroundColor($r('app.color.accent'))
+                    .borderRadius(4)
+                    .onClick(() => {
+                      this.generatePassword();
+                    })
+                }
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
               }
               .width('100%')
               .padding(12)
@@ -566,9 +611,11 @@ struct EntryEdit {
           .margin({ top: 16, bottom: 24 })
         }
         .width('100%')
+        .height('100%')
         .padding({ left: 16, right: 16 })
       }
       .width('100%')
+      .height('100%')
       .layoutWeight(1)
       .backgroundColor($r('app.color.background_primary'))
     }
