@@ -1,11 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Pen Body -->
-  <path d="M5 19 L9 15 L19 5 L21 7 L11 17 L5 23 Z" fill="#4169E1" stroke="#000080" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- 钢笔笔尖 -->
+  <path d="M7 17L5 19V20H6L8 18L7 17Z" fill="#FFC107"/>
+  <path d="M7 17L5 19V20H6L8 18L7 17Z" stroke="#FFA000" stroke-width="0.5"/>
 
-  <!-- Pen Tip -->
-  <path d="M19 5 L23 1 L25 3 L21 7 Z" fill="#1E90FF" stroke="#000080" stroke-width="1"/>
+  <!-- 钢笔笔身 -->
+  <path d="M17 7L8 16L7 17L8 18L17 9L18 8L17 7Z" fill="#5D4037"/>
+  <path d="M17 7L8 16L7 17L8 18L17 9L18 8L17 7Z" stroke="#4E342E" stroke-width="0.5"/>
 
-  <!-- Pen Grip -->
-  <rect x="7" y="17" width="2" height="2" transform="rotate(45 8 18)" fill="#000080"/>
-  <rect x="9" y="15" width="2" height="2" transform="rotate(45 10 16)" fill="#000080"/>
+  <!-- 钢笔笔帽 -->
+  <path d="M17 7L18 8L19 7L18 6L17 7Z" fill="#795548"/>
+  <path d="M17 7L18 8L19 7L18 6L17 7Z" stroke="#4E342E" stroke-width="0.5"/>
+
+  <!-- 钢笔笔夹 -->
+  <path d="M18 6L19 5L20 4L19 3L18 4L17 5L18 6Z" fill="#8D6E63"/>
+  <path d="M18 6L19 5L20 4L19 3L18 4L17 5L18 6Z" stroke="#4E342E" stroke-width="0.5"/>
+
+  <!-- 钢笔高光 -->
+  <path d="M16.5 7.5L7.5 16.5" stroke="#8D6E63" stroke-width="0.5"/>
+
+  <!-- 笔尖墨水 -->
+  <path d="M6.5 19.5L6 20" stroke="#FFA000" stroke-width="0.5"/>
 </svg>
