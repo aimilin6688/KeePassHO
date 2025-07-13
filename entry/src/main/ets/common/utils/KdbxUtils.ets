@@ -1,5 +1,6 @@
 import { ByteUtils, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
+import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
@@ -139,10 +140,12 @@ export default class KdbxUtils {
    * @param iconId 图标id
    * @param customIcon 自定义图标
    */
-  public static getIcon(iconId: number | undefined, customIcon: KdbxUuid | undefined, kdbxMeta: KdbxMeta | undefined,
-    defaultResource?: Resource): ResourceStr | null {
+  public static getIcon(iconId: number | undefined, customIcon: KdbxUuid | undefined, defaultResource: Resource, kdbxMeta?: KdbxMeta | undefined): ResourceStr {
     if (iconId === undefined && customIcon === undefined) {
-      return defaultResource ?? null;
+      return defaultResource;
+    }
+    if(kdbxMeta == undefined){
+      kdbxMeta = FileService.getInstance().getDbFileParam().database.meta;
     }
     if (customIcon != undefined && kdbxMeta != undefined) {
       let customIconResult = KdbxUtils.getCustomIcon(customIcon, kdbxMeta);
@@ -150,7 +153,7 @@ export default class KdbxUtils {
         return customIconResult;
       }
     }
-    return iconId != undefined ? IconUtils.getIconResourcePath(iconId) : (defaultResource ?? null);
+    return iconId != undefined ? IconUtils.getIconResourcePath(iconId) : defaultResource;
   }
 
   /**
