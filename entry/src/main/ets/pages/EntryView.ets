@@ -293,11 +293,11 @@ struct EntryView {
                 .height(24)
                 .fillColor($r('app.color.text_primary'))
             }
-            .type(ButtonType.Normal)
             .backgroundColor(Color.Transparent)
             .width(48)
             .height(48)
-            .margin({ right: 8 })
+            .borderRadius(20)
+            .margin({ right: 16 })
             .onClick(() => {
               this.editEntry();
             })
