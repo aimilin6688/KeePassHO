@@ -37,6 +37,7 @@ struct EntryEdit {
   @State currentFieldValue: string = ''; // 当前字段的值
   @State currentFieldProtected: boolean = false; // 当前字段是否受保护
   @State customFieldsVisibility: boolean[] = []; // 自定义字段值的可见性状态
+  @State isModified: boolean = false; // 是否有字段被修改
   
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -119,6 +120,9 @@ struct EntryEdit {
       // 加载自定义字段
       this.loadCustomFields();
     }
+
+    // 初始化修改状态为false
+    this.isModified = false;
 
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
@@ -207,7 +211,6 @@ struct EntryEdit {
       });
       return;
     }
-
     this.isLoading = true;
 
     try {
@@ -415,6 +418,9 @@ struct EntryEdit {
         
         // 重置该字段的可见性状态为隐藏
         this.customFieldsVisibility[this.editingFieldIndex] = false;
+        
+        // 标记为已修改
+        this.isModified = true;
       }
     } else {
       // 添加新字段
@@ -437,6 +443,9 @@ struct EntryEdit {
       
       // 添加新字段的可见性状态，默认为隐藏
       this.customFieldsVisibility.push(false);
+      
+      // 标记为已修改
+      this.isModified = true;
     }
   }
   
@@ -465,6 +474,8 @@ struct EntryEdit {
           this.customFields.splice(index, 1);
           // 同时删除对应的可见性状态
           this.customFieldsVisibility.splice(index, 1);
+          // 标记为已修改
+          this.isModified = true;
         }
       });
     }
@@ -478,6 +489,8 @@ struct EntryEdit {
   private updateCustomFieldValue(index: number, newValue: string) {
     if (index >= 0 && index < this.customFields.length) {
       this.customFields[index].value = newValue;
+      // 标记为已修改
+      this.isModified = true;
     }
   }
   
@@ -488,6 +501,8 @@ struct EntryEdit {
   private toggleCustomFieldProtection(index: number) {
     if (index >= 0 && index < this.customFields.length) {
       this.customFields[index].isProtected = !this.customFields[index].isProtected;
+      // 标记为已修改
+      this.isModified = true;
     }
   }
   
@@ -528,14 +543,14 @@ struct EntryEdit {
           Image($r('app.media.ic_save'))
             .width(24)
             .height(24)
-            .fillColor(Color.White)
+            .fillColor($r('app.color.text_primary'))
         }
-        .width(40)
-        .height(40)
+        .width(48)
+        .height(48)
         .margin({ right: 16 })
         .borderRadius(20)
-        .backgroundColor($r('app.color.accent'))
-        .enabled(!this.isLoading)
+        .backgroundColor(Color.Transparent)
+        .enabled(!this.isLoading && this.isModified)
         .onClick(() => {
           this.saveEntry();
         })
@@ -564,6 +579,7 @@ struct EntryEdit {
               .borderRadius(8)
               .onChange((value) => {
                 this.title = value;
+                this.isModified = true;
               })
           }
           .width('100%')
@@ -585,6 +601,7 @@ struct EntryEdit {
               .borderRadius(8)
               .onChange((value) => {
                 this.username = value;
+                this.isModified = true;
               })
           }
           .width('100%')
@@ -622,6 +639,7 @@ struct EntryEdit {
                 .type(this.showPassword ? InputType.Normal : InputType.Password)
                 .onChange((value) => {
                   this.password = value;
+                  this.isModified = true;
                   this.evaluatePasswordStrength();
                 })
             }
@@ -826,6 +844,7 @@ struct EntryEdit {
               .borderRadius(8)
               .onChange((value) => {
                 this.url = value;
+                this.isModified = true;
               })
           }
           .width('100%')
@@ -844,10 +863,10 @@ struct EntryEdit {
               .height(120)
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
-              // .backgroundColor($r('app.color.input_background'))
               .borderRadius(8)
               .onChange((value) => {
                 this.notes = value;
+                this.isModified = true;
               })
           }
           .width('100%')
