@@ -332,3 +332,12 @@ export class Icons {
   public static readonly Certificate: number = 67;
   public static readonly BlackBerry: number = 68;
 }
+
+/**
+ * 自定义字段接口
+ */
+export interface CustomField {
+  key: string;
+  value: string;
+  isProtected: boolean;
+}

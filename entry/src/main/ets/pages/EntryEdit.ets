@@ -1,10 +1,12 @@
-import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue } from 'kdbxweb';
+import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue, KdbxEntryField } from 'kdbxweb';
 import { Router } from '@kit.ArkUI';
 import ThemeManager from '../common/utils/ThemeManager';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { EntryParam } from '../services/TypeDefined';
+import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
+import { CustomField } from '../services/TypeDefined';
 
 @Entry
 @Component
@@ -26,6 +28,30 @@ struct EntryEdit {
   @State useSpecial: boolean = true; // 使用特殊字符
   @State useBrackets: boolean = true; // 使用括号
   @State showPasswordGenerator: boolean = false; // 显示密码生成器
+
+  @State customFields: CustomField[] = []; // 自定义字段列表
+  @State showFieldDialog: boolean = false; // 显示自定义字段对话框
+  @State isEditingField: boolean = false; // 是否是编辑字段模式
+  @State editingFieldIndex: number = -1; // 正在编辑的字段索引
+  @State currentFieldKey: string = ''; // 当前字段的键
+  @State currentFieldValue: string = ''; // 当前字段的值
+  @State currentFieldProtected: boolean = false; // 当前字段是否受保护
+  
+  // 自定义字段对话框控制器
+  fieldDialogController: CustomDialogController = new CustomDialogController({
+    builder: EntryEditFieldDialog({
+      isEditing: $isEditingField,
+      fieldKey: $currentFieldKey,
+      fieldValue: $currentFieldValue,
+      isProtected: $currentFieldProtected,
+      onConfirm: (customField: CustomField) => {
+        console.log("接收到字段 -------", customField);
+        this.confirmCustomField(customField);
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true
+  });
 
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
@@ -88,6 +114,9 @@ struct EntryEdit {
       this.password = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD);
       this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
       this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
+      
+      // 加载自定义字段
+      this.loadCustomFields();
     }
 
     // 监听主题变化
@@ -114,6 +143,44 @@ struct EntryEdit {
     let temp = this.showPassword;
     this.showPassword = !temp;
     this.showPassword = temp;
+  }
+  
+  /**
+   * 加载自定义字段
+   */
+  private loadCustomFields() {
+    this.customFields = [];
+    if (this.entry) {
+      // 获取所有字段
+      const fields = this.entry.fields;
+      
+      // 遍历字段，排除标准字段
+      fields.forEach((value, key) => {
+        // 跳过标准字段
+        if ([KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, 
+             KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
+          return;
+        }
+        
+        let fieldValue = '';
+        let isProtected = false;
+        
+        // 检查是否是受保护的值
+        if (value instanceof ProtectedValue) {
+          fieldValue = value.getText();
+          isProtected = true;
+        } else {
+          fieldValue = value?.toString() || '';
+        }
+        
+        // 添加到自定义字段列表
+        this.customFields.push({
+          key: key,
+          value: fieldValue,
+          isProtected: isProtected
+        });
+      });
+    }
   }
 
   /**
@@ -146,6 +213,24 @@ struct EntryEdit {
         this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
         this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
         this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
+        
+        // 清除旧的自定义字段（除了标准字段外的所有字段）
+        this.entry.fields.forEach((value, key) => {
+          if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, 
+                KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
+            this.entry?.fields.delete(key);
+          }
+        });
+        
+        // 保存自定义字段
+        this.customFields.forEach(field => {
+          if (field.isProtected) {
+            this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
+          } else {
+            this.entry?.fields.set(field.key, field.value);
+          }
+        });
+        
         this.entry.times.update();
       } else {
         // 创建新条目
@@ -155,6 +240,15 @@ struct EntryEdit {
         this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
         this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
         this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
+        
+        // 保存自定义字段
+        this.customFields.forEach(field => {
+          if (field.isProtected) {
+            this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
+          } else {
+            this.entry?.fields.set(field.key, field.value);
+          }
+        });
       }
 
       // 保存数据库
@@ -260,6 +354,129 @@ struct EntryEdit {
       this.passwordStrength = 0; // 弱
     }
   }
+  
+  /**
+   * 打开添加自定义字段对话框
+   */
+  private openAddFieldDialog() {
+    this.isEditingField = false;
+    this.currentFieldKey = '';
+    this.currentFieldValue = '';
+    this.currentFieldProtected = false;
+    this.fieldDialogController.open();
+  }
+
+  /**
+   * 打开编辑自定义字段对话框
+   * @param index 字段索引
+   */
+  private openEditFieldDialog(index: number) {
+    const field = this.customFields[index];
+    this.isEditingField = true;
+    this.editingFieldIndex = index;
+    this.currentFieldKey = field.key;
+    this.currentFieldValue = field.value;
+    this.currentFieldProtected = field.isProtected;
+    this.fieldDialogController.open();
+  }
+
+  /**
+   * 确认自定义字段（添加或更新）
+   * @param key 字段名称
+   * @param value 字段值
+   * @param isProtected 是否受保护
+   */
+  private confirmCustomField(customField: CustomField) {
+    if (this.isEditingField) {
+      // 更新字段
+      if (this.editingFieldIndex >= 0 && this.editingFieldIndex < this.customFields.length) {
+        // 检查字段名称是否已存在（排除当前编辑的字段）
+        const existingField = this.customFields.findIndex(field => 
+          field.key === customField.key && this.customFields.indexOf(field) !== this.editingFieldIndex);
+        
+        if (existingField !== -1) {
+          this.promptAction.showToast({
+            message: '字段名称已存在',
+            duration: 2000
+          });
+          return;
+        }
+        
+        this.customFields[this.editingFieldIndex] = {
+          key: customField.key,
+          value: customField.value,
+          isProtected: customField.isProtected
+        };
+      }
+    } else {
+      // 添加新字段
+      // 检查字段名称是否已存在
+      const existingField = this.customFields.find(field => field.key === customField.key);
+      if (existingField) {
+        this.promptAction.showToast({
+          message: '字段名称已存在',
+          duration: 2000
+        });
+        return;
+      }
+
+      // 添加自定义字段
+      this.customFields.push({
+        key: customField.key,
+        value: customField.value,
+        isProtected: customField.isProtected
+      });
+    }
+  }
+  
+  /**
+   * 删除自定义字段
+   * @param index 字段索引
+   */
+  private deleteCustomField(index: number) {
+    if (index >= 0 && index < this.customFields.length) {
+      const fieldKey:string = this.customFields[index].key;
+      this.promptAction.showDialog({
+        title: '确认删除',
+        message: `确定要删除字段 "${fieldKey}" 吗？`,
+        buttons: [
+          {
+            text: '取消',
+            color: $r('app.color.text_secondary')
+          },
+          {
+            text: '删除',
+            color: $r('app.color.accent'),
+          }
+        ],
+      }).then((result) => {
+        if (result.index === 1) {
+          this.customFields.splice(index, 1);
+        }
+      });
+    }
+  }
+  
+  /**
+   * 更新自定义字段值
+   * @param index 字段索引
+   * @param newValue 新值
+   */
+  private updateCustomFieldValue(index: number, newValue: string) {
+    if (index >= 0 && index < this.customFields.length) {
+      this.customFields[index].value = newValue;
+    }
+  }
+  
+  /**
+   * 切换自定义字段保护状态
+   * @param index 字段索引
+   */
+  private toggleCustomFieldProtection(index: number) {
+    if (index >= 0 && index < this.customFields.length) {
+      this.customFields[index].isProtected = !this.customFields[index].isProtected;
+    }
+  }
 
   build() {
     Column() {
@@ -337,7 +554,6 @@ struct EntryEdit {
               .height(48)
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
-              // .backgroundColor($r('app.color.input_background'))
               .borderRadius(8)
               .onChange((value) => {
                 this.username = value;
@@ -579,7 +795,6 @@ struct EntryEdit {
               .height(48)
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
-              // .backgroundColor($r('app.color.input_background'))
               .borderRadius(8)
               .onChange((value) => {
                 this.url = value;
@@ -608,10 +823,120 @@ struct EntryEdit {
               })
           }
           .width('100%')
+          .margin({ top: 16 })
+          
+          // 自定义字段部分
+          Column() {
+            Row() {
+              Text('自定义字段')
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .alignSelf(ItemAlign.Start)
+              
+              Blank()
+              
+              Button() {
+                Image($r('app.media.ic_add'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width(32)
+              .height(32)
+              .backgroundColor('#f0f0f0')
+              .borderRadius(16)
+              .onClick(() => {
+                this.openAddFieldDialog();
+              })
+            }
+            .width('100%')
+            .margin({ bottom: 8 })
+            
+            // 自定义字段列表
+            if (this.customFields.length > 0) {
+              ForEach(this.customFields, (field: CustomField, index) => {
+                Column() {
+                  Row() {
+                    Text(field.key)
+                      .fontSize(14)
+                      .fontColor($r('app.color.text_secondary'))
+                      .margin({ bottom: 8 })
+                    
+                    Blank()
+                    
+                    Button() {
+                      Image($r('app.media.ic_edit'))
+                        .width(16)
+                        .height(16)
+                        .fillColor($r('app.color.text_primary'))
+                    }
+                    .width(32)
+                    .height(32)
+                    .backgroundColor('#f0f0f0')
+                    .borderRadius(16)
+                    .margin({ right: 8 })
+                    .onClick(() => {
+                      this.openEditFieldDialog(index);
+                    })
+                    
+                    Button() {
+                      Image($r('app.media.ic_delete'))
+                        .width(16)
+                        .height(16)
+                        .fillColor($r('app.color.text_primary'))
+                    }
+                    .width(32)
+                    .height(32)
+                    .backgroundColor('#f0f0f0')
+                    .borderRadius(16)
+                    .onClick(() => {
+                      this.deleteCustomField(index);
+                    })
+                  }
+                  .width('100%')
+                  
+                  Row() {
+                    Text(field.isProtected ? '******' : field.value)
+                      .fontSize(16)
+                      .fontColor($r('app.color.text_primary'))
+                      .width('100%')
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .maxLines(1)
+                    
+                    if (field.isProtected) {
+                      Image(this.showPassword ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
+                        .width(24)
+                        .height(24)
+                        .fillColor($r('app.color.text_secondary'))
+                        .margin({ left: 8 })
+                        .onClick(() => {
+                          this.toggleCustomFieldProtection(index);
+                        })
+                    }
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Center)
+                }
+                .width('100%')
+                .padding(12)
+                .backgroundColor('#f5f5f5')
+                .borderRadius(8)
+                .margin({ bottom: 8 })
+                .onClick(() => {
+                  this.openEditFieldDialog(index);
+                })
+              })
+            } else {
+              Text('暂无自定义字段')
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ top: 8, bottom: 8 })
+            }
+          }
+          .width('100%')
           .margin({ top: 16, bottom: 24 })
         }
         .width('100%')
-        .height('100%')
         .padding({ left: 16, right: 16 })
       }
       .width('100%')
