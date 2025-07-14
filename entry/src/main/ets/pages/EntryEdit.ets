@@ -495,18 +495,6 @@ struct EntryEdit {
   }
   
   /**
-   * 切换自定义字段保护状态
-   * @param index 字段索引
-   */
-  private toggleCustomFieldProtection(index: number) {
-    if (index >= 0 && index < this.customFields.length) {
-      this.customFields[index].isProtected = !this.customFields[index].isProtected;
-      // 标记为已修改
-      this.isModified = true;
-    }
-  }
-  
-  /**
    * 切换自定义字段的可见性状态
    * @param index 字段索引
    */
