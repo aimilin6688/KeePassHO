@@ -36,6 +36,7 @@ struct EntryEdit {
   @State currentFieldKey: string = ''; // 当前字段的键
   @State currentFieldValue: string = ''; // 当前字段的值
   @State currentFieldProtected: boolean = false; // 当前字段是否受保护
+  @State customFieldsVisibility: boolean[] = []; // 自定义字段值的可见性状态
   
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -150,6 +151,7 @@ struct EntryEdit {
    */
   private loadCustomFields() {
     this.customFields = [];
+    this.customFieldsVisibility = [];
     if (this.entry) {
       // 获取所有字段
       const fields = this.entry.fields;
@@ -179,6 +181,9 @@ struct EntryEdit {
           value: fieldValue,
           isProtected: isProtected
         });
+        
+        // 初始化可见性状态为false（隐藏）
+        this.customFieldsVisibility.push(false);
       });
     }
   }
@@ -407,6 +412,9 @@ struct EntryEdit {
           value: customField.value,
           isProtected: customField.isProtected
         };
+        
+        // 重置该字段的可见性状态为隐藏
+        this.customFieldsVisibility[this.editingFieldIndex] = false;
       }
     } else {
       // 添加新字段
@@ -426,6 +434,9 @@ struct EntryEdit {
         value: customField.value,
         isProtected: customField.isProtected
       });
+      
+      // 添加新字段的可见性状态，默认为隐藏
+      this.customFieldsVisibility.push(false);
     }
   }
   
@@ -452,6 +463,8 @@ struct EntryEdit {
       }).then((result) => {
         if (result.index === 1) {
           this.customFields.splice(index, 1);
+          // 同时删除对应的可见性状态
+          this.customFieldsVisibility.splice(index, 1);
         }
       });
     }
@@ -475,6 +488,16 @@ struct EntryEdit {
   private toggleCustomFieldProtection(index: number) {
     if (index >= 0 && index < this.customFields.length) {
       this.customFields[index].isProtected = !this.customFields[index].isProtected;
+    }
+  }
+  
+  /**
+   * 切换自定义字段的可见性状态
+   * @param index 字段索引
+   */
+  private toggleCustomFieldVisibility(index: number) {
+    if (index >= 0 && index < this.customFieldsVisibility.length) {
+      this.customFieldsVisibility[index] = !this.customFieldsVisibility[index];
     }
   }
 
@@ -896,20 +919,22 @@ struct EntryEdit {
                   .width('100%')
                   
                   Row() {
-                    Text(field.isProtected ? '******' : field.value)
+                    Text(field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value)
                       .fontSize(16)
                       .fontColor($r('app.color.text_primary'))
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
                       .maxLines(1)
+                      .layoutWeight(1)
                     
                     if (field.isProtected) {
-                      Image(this.showPassword ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
+                      Image(this.customFieldsVisibility[index] ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
                         .width(24)
                         .height(24)
                         .fillColor($r('app.color.text_secondary'))
                         .margin({ left: 8 })
-                        .onClick(() => {
-                          this.toggleCustomFieldProtection(index);
+                        .onClick((event) => {
+                          this.toggleCustomFieldVisibility(index);
+                          return false;
                         })
                     }
                   }
