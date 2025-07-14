@@ -899,7 +899,6 @@ struct EntryEdit {
                     Text(field.isProtected ? '******' : field.value)
                       .fontSize(16)
                       .fontColor($r('app.color.text_primary'))
-                      .width('100%')
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
                       .maxLines(1)
                     
