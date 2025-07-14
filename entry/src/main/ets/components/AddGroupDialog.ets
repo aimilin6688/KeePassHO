@@ -145,7 +145,7 @@ export struct AddGroupDialog {
           .fontColor(Color.White)
           .width('45%')
           .height(40)
-          .borderRadius(20)
+          .borderRadius(16)
         
         Button('确定')
           .enabled(this.newGroupName.trim().length > 0)
@@ -159,7 +159,7 @@ export struct AddGroupDialog {
           .fontColor(Color.White)
           .width('45%')
           .height(40)
-          .borderRadius(20)
+          .borderRadius(16)
       }
       .width('100%')
       .padding({ left: 24, right: 24, top: 16, bottom: 30 })
