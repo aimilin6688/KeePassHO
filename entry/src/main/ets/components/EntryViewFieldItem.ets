@@ -129,6 +129,7 @@ export struct EntryViewFieldItem {
           .margin({ right: 15 })
           .onClick((event) => {
             this.field.showPlanText = !this.field.showPlanText;
+            return false;
           })
       }
 
@@ -140,6 +141,7 @@ export struct EntryViewFieldItem {
           .fillColor($r('app.color.text_primary'))
           .onClick((event) => {
             this.copyToClipboard(this.field.value);
+            return false;
           })
       }
     }
