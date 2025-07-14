@@ -524,16 +524,21 @@ struct EntryEdit {
 
         Blank()
 
-        Button('保存')
-          .fontSize(16)
-          .fontColor(Color.White)
-          .margin({ right: 16 })
-          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-          .borderRadius(4)
-          .enabled(!this.isLoading)
-          .onClick(() => {
-            this.saveEntry();
-          })
+        Button() {
+          Image($r('app.media.ic_save'))
+            .width(24)
+            .height(24)
+            .fillColor(Color.White)
+        }
+        .width(40)
+        .height(40)
+        .margin({ right: 16 })
+        .borderRadius(20)
+        .backgroundColor($r('app.color.accent'))
+        .enabled(!this.isLoading)
+        .onClick(() => {
+          this.saveEntry();
+        })
       }
       .width('100%')
       .height(56)
