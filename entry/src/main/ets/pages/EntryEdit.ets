@@ -215,6 +215,8 @@ struct EntryEdit {
 
     try {
       if (this.isEditMode && this.entry) {
+        // 添加到历史记录中
+        this.entry.pushHistory();
         // 编辑现有条目
         this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
         this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
@@ -238,8 +240,6 @@ struct EntryEdit {
             this.entry?.fields.set(field.key, field.value);
           }
         });
-        
-        this.entry.times.update();
       } else {
         // 创建新条目
         this.entry = this.database.createEntry(this.parentGroup);
@@ -258,6 +258,7 @@ struct EntryEdit {
           }
         });
       }
+      this.entry.times.update();
 
       // 保存数据库
       this.saveDatabase();
@@ -283,17 +284,19 @@ struct EntryEdit {
           this.promptAction.showToast({ message: `保存成功` });
           this.isLoading = false;
           this.router.back();
-        }).catch((error: Error) => {
-          console.error(`保存数据库失败: ${error}`);
-          this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
-          this.isLoading = false;
-        });
-      }).catch((error: Error) => {
-        console.error(`保存数据库失败: ${error}`);
-        this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
-        this.isLoading = false;
-      });
+        }).catch(this.handleSaveError);
+      }).catch(this.handleSaveError);
     }
+  }
+
+  /**
+   * 处理保存错误
+   * @param error 错误信息
+   */
+  private handleSaveError(error: Error){
+    console.error(`保存数据库失败: ${error}`);
+    this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
+    this.isLoading = false;
   }
 
   /**
@@ -478,19 +481,6 @@ struct EntryEdit {
           this.isModified = true;
         }
       });
-    }
-  }
-  
-  /**
-   * 更新自定义字段值
-   * @param index 字段索引
-   * @param newValue 新值
-   */
-  private updateCustomFieldValue(index: number, newValue: string) {
-    if (index >= 0 && index < this.customFields.length) {
-      this.customFields[index].value = newValue;
-      // 标记为已修改
-      this.isModified = true;
     }
   }
   
