@@ -151,7 +151,9 @@ struct Settings {
               url: 'pages/RecentFiles'
             }, router.RouterMode.Single);
           })
+        }
 
+        ListItemGroup() {
           // 关于
           ListItem() {
             Row() {
