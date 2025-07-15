@@ -7,6 +7,7 @@
     "pages/RecentFiles",
     "pages/EntryEdit",
     "pages/EntryView",
+    "pages/About",
     "pages/open/OpenDatabase",
     "pages/open/LocalFile",
     "pages/open/WebDAV",
