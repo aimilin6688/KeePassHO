@@ -2,7 +2,6 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { Kdbx, KdbxEntry } from 'kdbxweb';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
-import ThemeManager from '../common/utils/ThemeManager';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 
@@ -33,20 +32,18 @@ struct EntryView {
     const params = this.router.getParams() as EntryParam;
     this.entryId = params?.entryId || '';
     this.groupId = params?.groupId || '';
-
-    // 加载数据库和条目
-    this.loadEntry();
   }
 
-  aboutToDisappear() {
-    // 移除主题变化监听
-    ThemeManager.getInstance().removeThemeChangeListenerAll();
+  onPageShow(): void {
+    // 加载数据库和条目
+    this.loadEntry();
   }
 
   /**
    * 加载条目
    */
   private loadEntry() {
+    console.log("加载条目：%s, %s", this.entryId, this.groupId);
     this.isLoading = true;
     try {
       // 获取数据库

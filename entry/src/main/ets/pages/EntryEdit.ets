@@ -1,6 +1,5 @@
-import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue, KdbxEntryField } from 'kdbxweb';
+import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue } from 'kdbxweb';
 import { Router } from '@kit.ArkUI';
-import ThemeManager from '../common/utils/ThemeManager';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
@@ -123,33 +122,8 @@ struct EntryEdit {
 
     // 初始化修改状态为false
     this.isModified = false;
-
-    // 监听主题变化
-    ThemeManager.getInstance().addThemeChangeListener(() => {
-      this.onThemeChanged();
-    });
   }
 
-  aboutToDisappear() {
-    // 移除主题变化监听
-    ThemeManager.getInstance().removeThemeChangeListenerAll();
-  }
-
-  onThemeChanged() {
-    // 强制组件刷新以应用新主题
-    this.forceUpdate();
-  }
-
-  /**
-   * 强制组件刷新
-   */
-  private forceUpdate() {
-    // 触发UI更新的临时变量
-    let temp = this.showPassword;
-    this.showPassword = !temp;
-    this.showPassword = temp;
-  }
-  
   /**
    * 加载自定义字段
    */
