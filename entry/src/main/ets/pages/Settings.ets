@@ -151,6 +151,27 @@ struct Settings {
               url: 'pages/RecentFiles'
             }, router.RouterMode.Single);
           })
+
+          // 关于
+          ListItem() {
+            Row() {
+              Text('关于')
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .backgroundColor($r('app.color.card_background'))
+          .onClick(()=>{
+            this.router.pushUrl({
+              url: 'pages/About'
+            }, router.RouterMode.Single);
+          })
         }
       }
       .width('100%')
