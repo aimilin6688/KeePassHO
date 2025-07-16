@@ -512,7 +512,7 @@ struct EntryEdit {
 
           // 标题
           Column() {
-            Text('标题')
+            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
               .fontSize(14)
               .fontColor($r('app.color.text_secondary'))
               .margin({ bottom: 8 })
@@ -553,7 +553,7 @@ struct EntryEdit {
 
           // 用户名
           Column() {
-            Text('用户名')
+            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_USERNAME))
               .fontSize(14)
               .fontColor($r('app.color.text_secondary'))
               .margin({ bottom: 8 })
@@ -576,7 +576,7 @@ struct EntryEdit {
           // 密码
           Column() {
             Row() {
-              Text('密码')
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_PASSWORD))
                 .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
 
@@ -616,7 +616,7 @@ struct EntryEdit {
 
           // URL
           Column() {
-            Text('URL')
+            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_URL))
               .fontSize(14)
               .fontColor($r('app.color.text_secondary'))
               .margin({ bottom: 8 })
@@ -638,7 +638,7 @@ struct EntryEdit {
 
           // 标签
           Column() {
-            Text('标签')
+            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TAGS))
               .fontSize(14)
               .fontColor($r('app.color.text_secondary'))
               .margin({ bottom: 8 })
@@ -660,7 +660,7 @@ struct EntryEdit {
 
           // 备注
           Column() {
-            Text('备注')
+            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_NOTES))
               .fontSize(14)
               .fontColor($r('app.color.text_secondary'))
               .margin({ bottom: 8 })
@@ -683,7 +683,7 @@ struct EntryEdit {
           // 自定义字段部分
           Column() {
             Row() {
-              Text('自定义字段')
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_CUSTOM_FIELDS))
                 .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
                 .alignSelf(ItemAlign.Start)
@@ -775,7 +775,7 @@ struct EntryEdit {
                 }
                 .width('100%')
                 .padding(12)
-                .backgroundColor('#f5f5f5')
+                .backgroundColor($r('sys.color.textfield_bg_color'))
                 .borderRadius(8)
                 .margin({ bottom: 8 })
                 .onClick(() => {

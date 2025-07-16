@@ -14,6 +14,7 @@ export default class KdbxUtils {
   public static readonly FIELD_TAGS = 'Tags';
   public static readonly FIELD_EMAIL = 'Email';
   public static readonly FIELD_PHONE = 'Phone';
+  public static readonly FIELD_CUSTOM_FIELDS = 'CustomFields';
   public static readonly FIELD_CREATION_TIME = 'creationTime';
   public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
   public static readonly GROUP_NAME = 'GroupName';
@@ -280,13 +281,14 @@ export default class KdbxUtils {
    * @returns 字段名称
    */
   public static getFieldName(fileKey:string) {
+    console.log("获取字段名称：", fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
         return "用户名";
       case KdbxUtils.FIELD_PASSWORD:
         return "密码";
       case KdbxUtils.FIELD_URL:
-        return "网址";
+        return "链接地址";
       case KdbxUtils.FIELD_NOTES:
         return "备注";
       case KdbxUtils.FIELD_TITLE:
@@ -295,6 +297,8 @@ export default class KdbxUtils {
         return "标签";
       case KdbxUtils.GROUP_NAME:
         return "分组名称";
+      case KdbxUtils.FIELD_CUSTOM_FIELDS:
+        return "自定义字段";
       case KdbxUtils.FIELD_CREATION_TIME:
         return "创建时间";
       case KdbxUtils.FIELD_LASTMOD_TIME:
