@@ -3,7 +3,7 @@
  */
 @CustomDialog
 export struct PasswordGeneratorDialog {
-  @Link password: string;
+  @State password: string = '';
 
   @State passwordStrength: number = 0;
   @State passwordLength: number = 16; // 密码生成长度
@@ -15,6 +15,11 @@ export struct PasswordGeneratorDialog {
 
   public onGenerate: (password: string) => void = () => {};
   private controller: CustomDialogController;
+
+  // 显示时评估密码强度
+  onPageShow(): void {
+    this.evaluatePasswordStrength();
+  }
 
   /**
    * 生成随机密码
@@ -128,6 +133,10 @@ export struct PasswordGeneratorDialog {
           .fontColor($r('app.color.text_primary'))
           .borderRadius(8)
           .width("100%")
+          .onChange((value)=>{
+            this.password = value;
+            this.evaluatePasswordStrength();
+          })
 
         // 密码强度指示器
         Row() {
