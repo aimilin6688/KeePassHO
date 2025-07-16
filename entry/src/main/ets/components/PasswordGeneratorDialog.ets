@@ -12,6 +12,9 @@ export struct PasswordGeneratorDialog {
   @State useNumbers: boolean = true; // 使用数字
   @State useSpecial: boolean = true; // 使用特殊字符
   @State useBrackets: boolean = true; // 使用括号
+  @State useMinus: boolean = false; // 使用减号
+  @State useUnderscore: boolean = false; // 使用下划线
+  @State useSpace: boolean = false; // 使用空格
 
   public onGenerate: (password: string) => void = () => {};
   private controller: CustomDialogController;
@@ -29,8 +32,11 @@ export struct PasswordGeneratorDialog {
     if (this.useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
     if (this.useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     if (this.useNumbers) charset += '0123456789';
-    if (this.useSpecial) charset += '!@#$%^&*_+~`|;?><,./-=';
+    if (this.useSpecial) charset += '!@#$%^&*=+~`|;?><,.';
     if (this.useBrackets) charset += '(){}[]';
+    if (this.useMinus) charset += '-';
+    if (this.useUnderscore) charset += '_';
+    if (this.useSpace) charset += ' ';
 
     // 确保至少有一种字符类型被选中
     if (charset.length === 0) {
@@ -284,18 +290,84 @@ export struct PasswordGeneratorDialog {
         }
         .width('100%')
         .margin({ top: 4, bottom: 4 })
+
+        // 减号选项
+        Row() {
+          Checkbox({ name: 'minus', group: 'passwordOptions'})
+            .select(this.useMinus)
+            .onChange((value) => {
+              this.useMinus = value;
+            })
+          Text('减号 (-)')
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.useMinus = !this.useMinus;
+            })
+        }
+        .width('100%')
+        .margin({ top: 4, bottom: 4 })
+
+        // 下划线选项
+        Row() {
+          Checkbox({ name: 'underscore', group: 'passwordOptions'})
+            .select(this.useUnderscore)
+            .onChange((value) => {
+              this.useUnderscore = value;
+            })
+          Text('下划线 (_)')
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.useUnderscore = !this.useUnderscore;
+            })
+        }
+        .width('100%')
+        .margin({ top: 4, bottom: 4 })
+
+        // 空格选项
+        Row() {
+          Checkbox({ name: 'space', group: 'passwordOptions'})
+            .select(this.useSpace)
+            .onChange((value) => {
+              this.useSpace = value;
+            })
+          Text('空格 ( )')
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.useSpace = !this.useSpace;
+            })
+        }
+        .width('100%')
+        .margin({ top: 4, bottom: 4 })
       }
       .width('100%')
       .padding(16)
 
       // 底部按钮
       Row() {
-        Button('接受')
+        Button(){
+            Row() {
+              Image($r('app.media.ic_check'))
+                .width(24)
+                .height(24)
+                .margin({ right: 8 })
+                .fillColor($r('app.color.text_primary'))
+              Text('接受')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor($r('app.color.text_primary'))
+            }
+          }
           .width('48%')
           .height(40)
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
-          .backgroundColor('#f0f0f0')
+          .backgroundColor($r('app.color.gray'))
           .borderRadius(4)
           .onClick(() => {
             this.onGenerate(this.password);
