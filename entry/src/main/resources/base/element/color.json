@@ -49,6 +49,10 @@
       "value": "#FF3B30"
     },
     {
+      "name": "gray",
+      "value": "#f0f0f0"
+    },
+    {
       "name": "icon_normal",
       "value": "#333333"
     }
