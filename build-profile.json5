@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.p12",
+          "storePassword": "000000190C2A3489D21BBE29F049328FAA460D394C1D5EBCE59A8DCD26B7FC4DAB1861AC247F072F94",
+          "keyAlias": "keepassho",
+          "keyPassword": "00000019D2D76C1BEAC83CAD474A940974C98AB397656CB543A2B40D9A2671D5F2CF3A46532BCFA79D",
+          "signAlg": "SHA256withECDSA",
+          "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.p7b",
+          "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.cer"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
