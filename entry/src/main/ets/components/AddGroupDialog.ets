@@ -1,6 +1,6 @@
 import IconUtils from '../common/utils/IconUtils';
 import { Icons } from '../services/TypeDefined';
-import { IconSelectorDialog } from './IconSelector';
+import { IconSelectorDialog } from './IconSelectorDialog';
 
 @CustomDialog
 export struct AddGroupDialog {
