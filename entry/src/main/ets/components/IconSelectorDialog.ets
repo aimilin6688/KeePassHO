@@ -86,6 +86,6 @@ export struct IconSelectorDialog {
     .width('100%')
     .height('70%')
     .backgroundColor($r('app.color.background_primary'))
-    .borderRadius({ topLeft: 16, topRight: 16 })
+    .borderRadius(16)
   }
 }

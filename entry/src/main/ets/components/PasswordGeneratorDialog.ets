@@ -390,7 +390,7 @@ export struct PasswordGeneratorDialog {
       .padding({ left: 16, right: 16, bottom: 16 })
     }
     .width('100%')
-    .backgroundColor(Color.White)
+    .backgroundColor($r('app.color.background_primary'))
     .borderRadius(16)
   }
 }
