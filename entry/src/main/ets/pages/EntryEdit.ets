@@ -569,10 +569,10 @@ struct EntryEdit {
 
               Blank()
 
-              Button('生成')
+              Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
                 .fontSize(14)
                 .fontColor($r('app.color.text_primary'))
-                .backgroundColor('#f0f0f0')
+                .backgroundColor($r('app.color.gray'))
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
                 .borderRadius(4)
                 .onClick(() => {
@@ -663,7 +663,7 @@ struct EntryEdit {
               }
               .width(32)
               .height(32)
-              .backgroundColor('#f0f0f0')
+              .backgroundColor($r('app.color.gray'))
               .borderRadius(16)
               .onClick(() => {
                 this.openAddFieldDialog();
@@ -692,7 +692,7 @@ struct EntryEdit {
                     }
                     .width(32)
                     .height(32)
-                    .backgroundColor('#f0f0f0')
+                    .backgroundColor($r('app.color.gray'))
                     .borderRadius(16)
                     .margin({ right: 8 })
                     .onClick(() => {
@@ -707,7 +707,7 @@ struct EntryEdit {
                     }
                     .width(32)
                     .height(32)
-                    .backgroundColor('#f0f0f0')
+                    .backgroundColor($r('app.color.gray'))
                     .borderRadius(16)
                     .onClick(() => {
                       this.deleteCustomField(index);
