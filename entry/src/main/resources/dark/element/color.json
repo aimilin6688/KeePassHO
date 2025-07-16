@@ -21,6 +21,10 @@
       "value": "#38383A"
     },
     {
+      "name": "gray",
+      "value": "#f0f0f0"
+    },
+    {
       "name": "card_background",
       "value": "#2C2C2E"
     },
