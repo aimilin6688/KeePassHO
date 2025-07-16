@@ -168,6 +168,6 @@ export struct AddGroupDialog {
     }
     .width('100%')
     .backgroundColor($r('app.color.background_primary'))
-    .borderRadius({ topLeft: 16, topRight: 16 })
+    .borderRadius(16)
   }
 }
