@@ -33,6 +33,7 @@ struct EntryEdit {
   @State customFieldsVisibility: boolean[] = []; // 自定义字段值的可见性状态
   @State isModified: boolean = false; // 是否有字段被修改
   @State iconId: number | string | undefined = -1; // 当前选择的图标ID
+  @State tags: string = ''; // 标签，以逗号分隔
   
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -140,6 +141,11 @@ struct EntryEdit {
       this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
       this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
       
+      // 加载标签
+      if (this.entry.tags && this.entry.tags.length > 0) {
+        this.tags = this.entry.tags.join(', ');
+      }
+      
       // 加载图标ID
       this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
       
@@ -218,13 +224,6 @@ struct EntryEdit {
       if (this.isEditMode && this.entry) {
         // 添加到历史记录中
         this.entry.pushHistory();
-        // 编辑现有条目
-        this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
-        this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
-        this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
-        this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
-        this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
-        
         // 清除旧的自定义字段（除了标准字段外的所有字段）
         this.entry.fields.forEach((value, key) => {
           if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, 
@@ -232,35 +231,32 @@ struct EntryEdit {
             this.entry?.fields.delete(key);
           }
         });
-        
-        // 保存自定义字段
-        this.customFields.forEach(field => {
-          if (field.isProtected) {
-            this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
-          } else {
-            this.entry?.fields.set(field.key, field.value);
-          }
-        });
       } else {
         // 创建新条目
         this.entry = this.database.createEntry(this.parentGroup);
-        this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
-        this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
-        this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
-        this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
-        this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
-        
-        // 保存自定义字段
-        this.customFields.forEach(field => {
-          if (field.isProtected) {
-            this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
-          } else {
-            this.entry?.fields.set(field.key, field.value);
-          }
-        });
       }
 
+      // 设置基础字段
+      this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
+      this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
+      this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
+      this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
+      this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
+
+      // 保存自定义字段
+      this.customFields.forEach(field => {
+        if (field.isProtected) {
+          this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
+        } else {
+          this.entry?.fields.set(field.key, field.value);
+        }
+      });
+
+      // 保存图标
       this.setEntryIcon();
+      // 保存标签
+      this.setTags();
+      // 保存条目时间戳
       this.entry.times.update();
       // 保存数据库
       this.saveDatabase();
@@ -271,6 +267,23 @@ struct EntryEdit {
         duration: 2000
       });
       this.isLoading = false;
+    }
+  }
+
+  /**
+   * 保存标签
+   */
+  private setTags() {
+    if(!this.entry){
+      return;
+    }
+    // 保存标签
+    if (this.tags) {
+      // 将标签字符串分割成数组，支持中英文逗号
+      const tagsArray = this.tags.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag);
+      this.entry.tags = tagsArray;
+    } else {
+      this.entry.tags = [];
     }
   }
 
@@ -617,6 +630,28 @@ struct EntryEdit {
               .borderRadius(8)
               .onChange((value) => {
                 this.url = value;
+                this.isModified = true;
+              })
+          }
+          .width('100%')
+          .margin({ top: 16 })
+
+          // 标签
+          Column() {
+            Text('标签')
+              .fontSize(14)
+              .fontColor($r('app.color.text_secondary'))
+              .margin({ bottom: 8 })
+              .alignSelf(ItemAlign.Start)
+
+            TextInput({ text: this.tags, placeholder: '请输入标签（用逗号分隔）' })
+              .width('100%')
+              .height(48)
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
+              .borderRadius(8)
+              .onChange((value) => {
+                this.tags = value;
                 this.isModified = true;
               })
           }
