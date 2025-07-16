@@ -1,11 +1,13 @@
-import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue } from 'kdbxweb';
+import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue, KdbxUuid } from 'kdbxweb';
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
-import { EntryParam } from '../services/TypeDefined';
+import IconUtils from '../common/utils/IconUtils';
+import { EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { CustomField } from '../services/TypeDefined';
+import { IconSelectorDialog } from '../components/IconSelectorDialog';
 
 @Entry
 @Component
@@ -37,6 +39,7 @@ struct EntryEdit {
   @State currentFieldProtected: boolean = false; // 当前字段是否受保护
   @State customFieldsVisibility: boolean[] = []; // 自定义字段值的可见性状态
   @State isModified: boolean = false; // 是否有字段被修改
+  @State iconId: number | string | undefined = -1; // 当前选择的图标ID
   
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -52,6 +55,20 @@ struct EntryEdit {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true
+  });
+  
+  // 图标选择器对话框控制器
+  iconSelectorController: CustomDialogController = new CustomDialogController({
+    builder: IconSelectorDialog({
+      selectedIconId: this.iconId,
+      onIconSelected: (iconId: number|string) => {
+        this.iconId = iconId;
+        this.isModified = true;
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
   });
 
   private database: Kdbx | null = null;
@@ -115,6 +132,9 @@ struct EntryEdit {
       this.password = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD);
       this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
       this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
+      
+      // 加载图标ID
+      this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
       
       // 加载自定义字段
       this.loadCustomFields();
@@ -232,8 +252,9 @@ struct EntryEdit {
           }
         });
       }
-      this.entry.times.update();
 
+      this.setEntryIcon();
+      this.entry.times.update();
       // 保存数据库
       this.saveDatabase();
     } catch (error) {
@@ -243,6 +264,20 @@ struct EntryEdit {
         duration: 2000
       });
       this.isLoading = false;
+    }
+  }
+
+  /**
+   * 设置条目图标
+   */
+  private setEntryIcon(){
+    if(!this.entry || !this.iconId){
+      return;
+    }
+    if(typeof this.iconId === 'number'){
+      this.entry.icon = this.iconId as number;
+    }else{
+      this.entry.customIcon = new KdbxUuid(this.iconId);
     }
   }
 
@@ -467,6 +502,13 @@ struct EntryEdit {
       this.customFieldsVisibility[index] = !this.customFieldsVisibility[index];
     }
   }
+  
+  /**
+   * 打开图标选择器对话框
+   */
+  private openIconSelector() {
+    this.iconSelectorController.open();
+  }
 
   build() {
     Column() {
@@ -514,6 +556,33 @@ struct EntryEdit {
       // 表单内容
       Scroll() {
         Column() {
+          // 图标选择
+          Column() {
+            Text('图标')
+              .fontSize(14)
+              .fontColor($r('app.color.text_secondary'))
+              .margin({ bottom: 8 })
+              .alignSelf(ItemAlign.Start)
+            
+            Row() {
+              Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
+                .width(32)
+                .height(32)
+                .objectFit(ImageFit.Contain)
+            }
+            .width('100%')
+            .height(48)
+            .backgroundColor('#f5f5f5')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Start)
+            .padding({ left: 12 })
+            .onClick(() => {
+              this.openIconSelector();
+            })
+          }
+          .width('100%')
+          .margin({ top: 16 })
+          
           // 标题
           Column() {
             Text('标题')
