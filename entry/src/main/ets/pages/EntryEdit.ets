@@ -556,33 +556,7 @@ struct EntryEdit {
       // 表单内容
       Scroll() {
         Column() {
-          // 图标选择
-          Column() {
-            Text('图标')
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
-            
-            Row() {
-              Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
-                .width(32)
-                .height(32)
-                .objectFit(ImageFit.Contain)
-            }
-            .width('100%')
-            .height(48)
-            .backgroundColor('#f5f5f5')
-            .borderRadius(8)
-            .justifyContent(FlexAlign.Start)
-            .padding({ left: 12 })
-            .onClick(() => {
-              this.openIconSelector();
-            })
-          }
-          .width('100%')
-          .margin({ top: 16 })
-          
+
           // 标题
           Column() {
             Text('标题')
@@ -591,17 +565,35 @@ struct EntryEdit {
               .margin({ bottom: 8 })
               .alignSelf(ItemAlign.Start)
 
-            TextInput({ text: this.title, placeholder: '请输入标题' })
-              .width('100%')
+            Row() {
+              TextInput({ text: this.title, placeholder: '请输入标题' })
+                .layoutWeight(1)
+                .height(48)
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .borderRadius(8)
+                .onChange((value) => {
+                  this.title = value;
+                  this.isModified = true;
+                })
+              
+              // 图标选择按钮
+              Button() {
+                Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
+                  .width(24)
+                  .height(24)
+                  .objectFit(ImageFit.Contain)
+              }
+              .width(48)
               .height(48)
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              // .backgroundColor($r('app.color.input_background'))
+              .margin({ left: 8 })
               .borderRadius(8)
-              .onChange((value) => {
-                this.title = value;
-                this.isModified = true;
+              .backgroundColor('#f5f5f5')
+              .onClick(() => {
+                this.openIconSelector();
               })
+            }
+            .width('100%')
           }
           .width('100%')
           .margin({ top: 16 })
