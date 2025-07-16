@@ -114,10 +114,15 @@ struct EntryView {
       }
     }
 
+    // 添加标签字段
+    if(this.entry.tags && this.entry.tags.length > 0){
+      this.fields.push(new FieldView(KdbxUtils.FIELD_TAGS, this.entry.tags.join(', '), false, true));
+    }
+
     // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 
