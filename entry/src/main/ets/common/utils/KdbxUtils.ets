@@ -11,6 +11,7 @@ export default class KdbxUtils {
   public static readonly FIELD_URL = 'URL';
   public static readonly FIELD_NOTES = 'Notes';
   public static readonly FIELD_TITLE = 'Title';
+  public static readonly FIELD_TAGS = 'Tags';
   public static readonly FIELD_EMAIL = 'Email';
   public static readonly FIELD_PHONE = 'Phone';
   public static readonly FIELD_CREATION_TIME = 'creationTime';
@@ -290,6 +291,8 @@ export default class KdbxUtils {
         return "备注";
       case KdbxUtils.FIELD_TITLE:
         return "标题";
+      case KdbxUtils.FIELD_TAGS:
+        return "标签";
       case KdbxUtils.GROUP_NAME:
         return "分组名称";
       case KdbxUtils.FIELD_CREATION_TIME:
