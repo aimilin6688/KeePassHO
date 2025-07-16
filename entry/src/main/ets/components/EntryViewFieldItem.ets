@@ -55,23 +55,25 @@ export struct EntryViewFieldItem {
   private getFieldIcon(key: string): ResourceStr {
     switch (key) {
       case KdbxUtils.FIELD_TITLE:
-    return $r('app.media.ic_title');
+        return $r("app.media.ic_color_title");
       case KdbxUtils.FIELD_USERNAME:
-    return $r('app.media.ic_user');
+        return $r("app.media.ic_color_user");
       case KdbxUtils.FIELD_PASSWORD:
-    return $r('app.media.ic_password');
+        return $r("app.media.ic_color_password");
       case KdbxUtils.FIELD_URL:
-    return $r('app.media.ic_url');
+        return $r("app.media.ic_color_url");
       case KdbxUtils.FIELD_NOTES:
-    return $r('app.media.ic_notes');
+        return $r("app.media.ic_color_notes");
+      case KdbxUtils.FIELD_TAGS:
+        return $r("app.media.ic_color_tag");
       case KdbxUtils.GROUP_NAME:
         return this.getGroupIcon();
       case KdbxUtils.FIELD_CREATION_TIME:
-        return $r('app.media.ic_clock');
+        return $r("app.media.ic_color_clock");
       case KdbxUtils.FIELD_LASTMOD_TIME:
-        return $r('app.media.ic_clock');
+        return $r("app.media.ic_color_clock");
       default:
-      return $r('app.media.ic_note');
+      return $r("app.media.ic_color_note");
     }
   }
 
