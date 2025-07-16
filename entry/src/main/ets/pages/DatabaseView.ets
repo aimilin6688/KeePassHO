@@ -14,7 +14,7 @@ import { SettingsService } from '../services/SettingsService';
 struct DatabaseView {
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
-  @State isLoading: boolean = true;
+  @State isLoading: boolean = false;
   @State titleName: string = '';
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
@@ -26,6 +26,7 @@ struct DatabaseView {
   @State filteredEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
   private database: Kdbx | null = null;
+  private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private currentGroup: KdbxGroup | undefined = undefined;
@@ -48,6 +49,7 @@ struct DatabaseView {
   })
 
   aboutToAppear() {
+    this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 获取从Password页面传递的参数
     const params = FileService.getInstance().getDbFileParam();
     this.titleName = params.fileName ?? '未知数据库';
@@ -56,7 +58,7 @@ struct DatabaseView {
     // 获取排序方式
     this.settingsService.getSortBy().then((sortBy: SortMode) => {
       this.sortBy = sortBy;
-      this.initData(this.router.getParams() as DatabaseShowParam);
+      this.initData(this.databaseShowParam);
     });
 
     // 监听主题变化
@@ -65,6 +67,10 @@ struct DatabaseView {
     });
     // 监听排序方式变化
     this.settingsService.registerObserver(this.onSortChanged);
+  }
+
+  onPageShow(): void {
+    this.initData(this.databaseShowParam);
   }
 
   /**
@@ -87,6 +93,9 @@ struct DatabaseView {
         duration: 2000
       });
       this.router.back();
+      return;
+    }
+    if(this.isLoading == true){
       return;
     }
 
