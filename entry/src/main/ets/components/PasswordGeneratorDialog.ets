@@ -128,7 +128,6 @@ export struct PasswordGeneratorDialog {
       .width('100%')
       .height(56)
       .alignItems(VerticalAlign.Center)
-      .padding({ left: 16, right: 16 })
       .borderRadius({ topLeft: 16, topRight: 16 })
 
       // 密码生成器内容
@@ -346,8 +345,7 @@ export struct PasswordGeneratorDialog {
         .margin({ top: 4, bottom: 4 })
       }
       .width('100%')
-      .padding(16)
-
+      .margin({ top: 16, bottom: 16 })
       // 底部按钮
       Row() {
         Button(){
@@ -387,10 +385,11 @@ export struct PasswordGeneratorDialog {
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceBetween)
-      .padding({ left: 16, right: 16, bottom: 16 })
+      .padding({ bottom: 16 })
     }
     .width('100%')
     .backgroundColor($r('app.color.background_primary'))
     .borderRadius(16)
+    .padding({ left: 24, right: 24, bottom: 16 })
   }
 }
