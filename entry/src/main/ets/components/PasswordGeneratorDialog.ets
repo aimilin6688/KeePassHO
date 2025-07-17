@@ -117,7 +117,7 @@ export struct PasswordGeneratorDialog {
           Image($r('sys.media.ohos_ic_public_cancel_filled'))
             .width(24)
             .height(24)
-            .fillColor('#666666')
+            .fillColor($r('app.color.text_primary'))
         }
         .type(ButtonType.Circle)
         .backgroundColor('transparent')
@@ -377,7 +377,7 @@ export struct PasswordGeneratorDialog {
           .height(40)
           .fontSize(16)
           .fontColor(Color.White)
-          .backgroundColor($r('app.color.accent'))
+          .backgroundColor(Color.Gray)
           .borderRadius(4)
           .onClick(() => {
             this.generatePassword();
