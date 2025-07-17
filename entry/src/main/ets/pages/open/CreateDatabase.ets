@@ -3,7 +3,7 @@ import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
 import { AuthType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { StorageType, LocalFileStorageConfig } from '../../services/kdbx/interfaces';
+import { LocalFileStorageConfig, StorageType } from '../../services/kdbx/interfaces';
 import { BusinessError } from '@kit.BasicServicesKit';
 import * as kdbxweb from 'kdbxweb';
 import { RecentFilesService } from '../../services/RecentFilesService';

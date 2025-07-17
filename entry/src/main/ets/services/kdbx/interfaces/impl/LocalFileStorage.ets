@@ -15,7 +15,7 @@ export class LocalFileStorage implements IFileStorage {
    */
   async readFile(path: string): Promise<ArrayBuffer> {
 
-    return FileUtils.activatePermission(path, fileShare.OperationMode.READ_MODE).then(async () => {
+    return await FileUtils.activatePermission(path, fileShare.OperationMode.READ_MODE).then(async () => {
       try {
         // 打开文件
         const file = await fs.open(path, fs.OpenMode.READ_ONLY);
