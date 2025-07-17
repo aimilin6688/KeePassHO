@@ -13,6 +13,10 @@
       "value": "#F1F3F5"
     },
     {
+      "name": "background_secondary",
+      "value": "#E1E3E5"
+    },
+    {
       "name": "text_primary",
       "value": "#000000"
     },

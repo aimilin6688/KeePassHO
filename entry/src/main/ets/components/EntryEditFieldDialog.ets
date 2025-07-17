@@ -71,7 +71,7 @@ export struct EntryEditFieldDialog {
           Image($r('sys.media.ohos_ic_public_cancel_filled'))
             .width(24)
             .height(24)
-            .fillColor('#666666')
+            .fillColor($r('app.color.text_primary'))
         }
         .type(ButtonType.Circle)
         .backgroundColor('transparent')
