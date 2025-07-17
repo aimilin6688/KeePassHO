@@ -158,6 +158,7 @@ struct CreateDatabase {
       }
       .width('100%')
       .layoutWeight(1)
+      .padding(16)
       .backgroundColor($r('app.color.background_primary'))
     }
     .width('100%')
