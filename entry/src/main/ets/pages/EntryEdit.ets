@@ -541,7 +541,7 @@ struct EntryEdit {
               .height(48)
               .margin({ left: 8 })
               .borderRadius(8)
-              .backgroundColor('#f5f5f5')
+              .backgroundColor($r('app.color.background_secondary'))
               .onClick(() => {
                 this.openIconSelector();
               })
@@ -585,7 +585,7 @@ struct EntryEdit {
               Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
                 .fontSize(14)
                 .fontColor($r('app.color.text_primary'))
-                .backgroundColor($r('app.color.gray'))
+                .backgroundColor($r('app.color.background_secondary'))
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
                 .borderRadius(4)
                 .onClick(() => {
@@ -698,7 +698,7 @@ struct EntryEdit {
               }
               .width(32)
               .height(32)
-              .backgroundColor($r('app.color.gray'))
+              .backgroundColor($r('app.color.background_secondary'))
               .borderRadius(16)
               .onClick(() => {
                 this.openAddFieldDialog();
