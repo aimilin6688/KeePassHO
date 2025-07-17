@@ -1,4 +1,4 @@
-import picker from '@ohos.file.picker';
+import  { picker } from '@kit.CoreFileKit';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
