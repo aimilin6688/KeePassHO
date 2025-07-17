@@ -52,9 +52,7 @@ export default class FileUtils {
       operationMode: operationMode,
     };
     let policies: Array<fileShare.PolicyInfo> = [policyInfo];
-    fileShare.persistPermission(policies).then(() => {
-      return Promise.resolve();
-    }).catch((error: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
+    return fileShare.persistPermission(policies).catch((error: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
       console.error("PersistPermission failed with error message: " + error.message + ", error code: " + error.code);
       throw new Error(`Failed to persist Permission file: ${error.message}`);
     });
