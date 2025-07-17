@@ -2,7 +2,7 @@
   "app": {
     "signingConfigs": [
       {
-        "name": "default",
+        "name": "release",
         "type": "HarmonyOS",
         "material": {
           "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.p12",
@@ -12,6 +12,19 @@
           "signAlg": "SHA256withECDSA",
           "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.p7b",
           "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.cer"
+        }
+      },
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_debug.p12",
+          "storePassword": "00000019C3B45FFA6B0C144A28933B1B49B7BECE33A067B422572E5B04957786A9A50D5A90389F902D",
+          "keyAlias": "keepassho",
+          "keyPassword": "000000192F21A7EFF3145308127519230FECE6E3ED50DD6387A88EDDB9C47DCCD0F20ED4F915ACDADA",
+          "signAlg": "SHA256withECDSA",
+          "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_debug.p7b",
+          "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_debug.cer"
         }
       }
     ],
@@ -27,7 +40,20 @@
             "caseSensitiveCheck": true,
             "useNormalizedOHMUrl": true
           }
-        }
+        },
+      },
+      {
+        "name": "release",
+        "signingConfig": "release",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        },
       }
     ],
     "buildModeSet": [
@@ -47,7 +73,7 @@
         {
           "name": "default",
           "applyToProducts": [
-            "default"
+            "default", "release"
           ]
         }
       ]
