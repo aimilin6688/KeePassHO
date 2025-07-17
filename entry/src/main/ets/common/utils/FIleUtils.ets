@@ -30,9 +30,7 @@ export default class FileUtils {
       operationMode: operationMode,
     };
     let policies: Array<fileShare.PolicyInfo> = [policyInfo];
-    fileShare.activatePermission(policies).then(() => {
-      return Promise.resolve();
-    }).catch((error: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
+    return fileShare.activatePermission(policies).catch((error: BusinessError<Array<fileShare.PolicyErrorResult>>) => {
       console.error("activatePermission failed with error message: " + error.message + ", error code: " + error.code);
       throw new Error(`Failed to activate Permission file: ${error.message}`);
     });
