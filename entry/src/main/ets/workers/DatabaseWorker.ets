@@ -51,7 +51,7 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
   if (!request.filePath) {
     throw new Error('请选择数据库文件');
   }
-  let result = new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
+  let result = await new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
   postMessage("加载文件内容成功！");
   return result;
 }
