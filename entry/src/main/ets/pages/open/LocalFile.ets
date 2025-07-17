@@ -50,7 +50,7 @@ struct LocalFile {
   async loadKdbxFile(path: string) {
     this.isLoading = true;
     // 永久授权文件访问权限
-    FileUtils.persistPermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
+    FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE |  fileShare.OperationMode.WRITE_MODE).then(async () => {
       // 获取文件信息
       const fileInfo = await this.fileManager.getKdbxFileInfo(path);
       console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
