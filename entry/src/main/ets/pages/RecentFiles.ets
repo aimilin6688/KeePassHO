@@ -1,6 +1,7 @@
+import { PromptAction, Router } from '@kit.ArkUI';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
-import { PromptAction, Router } from '@kit.ArkUI';
+
 
 @Entry
 @Component
@@ -130,14 +131,12 @@ struct RecentFiles {
       .width('100%')
       .height(56)
       .padding({ left: 16, right: 16 })
-      .backgroundColor('#F1F3F5')
 
       // 文件列表
       if (this.isLoading) {
         LoadingProgress()
           .width(50)
           .height(50)
-          .color('#0A59F7')
       } else if (this.recentFiles.length === 0) {
         Column() {
           Image($r('app.media.ic_empty'))
@@ -168,7 +167,6 @@ struct RecentFiles {
                     .margin({ bottom: 4 })
                   Text(file.filePath)
                     .fontSize(14)
-                    .fontColor('#999999')
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .maxLines(1)
                 }
@@ -179,6 +177,7 @@ struct RecentFiles {
                   Image($r('app.media.ic_delete'))
                     .width(24)
                     .height(24)
+                    .fillColor($r('app.color.text_primary'))
                 }
                 .backgroundColor(Color.Transparent)
                 .onClick(() => {
@@ -188,7 +187,6 @@ struct RecentFiles {
               .width('100%')
               .padding(16)
               .borderRadius(8)
-              .backgroundColor(Color.White)
               .onClick(() => {
                 this.openFile(file);
               })
@@ -203,6 +201,6 @@ struct RecentFiles {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor($r('app.color.background_primary'))
   }
 }
