@@ -155,7 +155,7 @@ export struct AddGroupDialog {
               this.onConfirm(this.selectedIconId)
             }
           })
-          .backgroundColor(this.newGroupName.trim().length > 0 ? $r('app.color.accent') : $r("app.color.button_bg_disabled"))
+          .backgroundColor(this.newGroupName.trim().length > 0 ? $r('app.color.button_blue') : $r("app.color.button_bg_disabled"))
           .fontColor(Color.White)
           .width('45%')
           .height(40)
