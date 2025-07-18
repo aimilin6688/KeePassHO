@@ -247,7 +247,7 @@ struct EntryView {
         .fillColor($r('app.color.text_secondary'))
     }
     .width('100%')
-    .backgroundColor($r('app.color.card_background'))
+    .backgroundColor($r("app.color.card_bg"))
     .borderRadius(8)
     .padding(12)
     .margin({ bottom: 8 })
@@ -307,7 +307,7 @@ struct EntryView {
         }
         .width('100%')
         .height(56)
-        .backgroundColor($r('app.color.card_background'))
+        .backgroundColor($r("app.color.card_bg"))
 
         if (this.isLoading) {
           // 加载中状态
@@ -325,7 +325,7 @@ struct EntryView {
           .width('100%')
           .height('100%')
           .justifyContent(FlexAlign.Center)
-          .backgroundColor($r('app.color.background_primary'))
+          .backgroundColor($r("app.color.bg_primary"))
         } else if (this.selectedHistoryIndex >= 0 && this.selectedHistoryIndex < this.historyEntries.length) {
           // 显示历史记录详情
           Column() {
@@ -346,7 +346,7 @@ struct EntryView {
                 .width('100%')
                 .height('100%')
                 .padding(16)
-                .backgroundColor($r('app.color.card_background'))
+                .backgroundColor($r("app.color.card_bg"))
                 .borderRadius(8)
                 .margin({ bottom: 16 })
               }
@@ -366,7 +366,7 @@ struct EntryView {
             .width('100%')
             .padding({ left: 16, right: 16, top: 16 })
             .layoutWeight(1)
-            .backgroundColor($r('app.color.background_primary'))
+            .backgroundColor($r("app.color.bg_primary"))
           }
           .width('100%')
           .height('100%')
@@ -385,7 +385,7 @@ struct EntryView {
               .width('100%')
               .padding({ left: 16, right: 16, top: 12, bottom:40 })
               .layoutWeight(1)
-              .backgroundColor($r('app.color.background_primary'))
+              .backgroundColor($r("app.color.bg_primary"))
             }
             .tabBar('字段')
 
@@ -402,7 +402,7 @@ struct EntryView {
                 .width('100%')
                 .padding({ left: 16, right: 16, top: 12, bottom:40 })
                 .layoutWeight(1)
-                .backgroundColor($r('app.color.background_primary'))
+                .backgroundColor($r("app.color.bg_primary"))
               } else {
                 Column() {
                   Image($r('app.media.ic_history'))
@@ -419,7 +419,7 @@ struct EntryView {
                 .width('100%')
                 .height('100%')
                 .justifyContent(FlexAlign.Center)
-                .backgroundColor($r('app.color.background_primary'))
+                .backgroundColor($r("app.color.bg_primary"))
               }
             }
             .tabBar('历史记录')

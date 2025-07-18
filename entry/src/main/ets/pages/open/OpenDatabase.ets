@@ -44,7 +44,7 @@ struct OpenDatabase {
     }
     .width('100%')
     .height(80)
-    .backgroundColor($r('app.color.card_background'))
+    .backgroundColor($r("app.color.card_bg"))
     .margin({ top: 1 })
     .onClick(onClick)
   }
@@ -70,7 +70,7 @@ struct OpenDatabase {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 打开方式列表
       Scroll() {
@@ -103,14 +103,14 @@ struct OpenDatabase {
             )
 
           }
-          .backgroundColor($r('app.color.card_background'))
+          .backgroundColor($r("app.color.card_bg"))
           .margin({ top: 16 })
         }
         .width('100%')
       }
       .width('100%')
       .layoutWeight(1)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
       .align(Alignment.TopStart) // 确保内容从顶部开始显示
     }
     .width('100%')

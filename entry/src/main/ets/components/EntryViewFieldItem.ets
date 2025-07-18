@@ -149,7 +149,7 @@ export struct EntryViewFieldItem {
       }
     }
     .width('100%')
-    .backgroundColor($r('app.color.card_background'))
+    .backgroundColor($r("app.color.card_bg"))
     .borderRadius(8)
     .padding(12)
     .margin({ bottom: 8 })

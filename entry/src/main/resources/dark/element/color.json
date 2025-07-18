@@ -1,16 +1,8 @@
 {
   "color": [
     {
-      "name": "start_window_background",
-      "value": "#1C1C1E"
-    },
-    {
-      "name": "background_primary",
-      "value": "#1C1C1E"
-    },
-    {
-      "name": "background_secondary",
-      "value": "#3C3C3E"
+      "name": "primary",
+      "value": "#FFFFFF"
     },
     {
       "name": "text_primary",
@@ -18,27 +10,52 @@
     },
     {
       "name": "text_secondary",
-      "value": "#8E8E93"
+      "value": "#b7b7b7"
+    },
+
+    {
+      "name": "start_bg_window",
+      "value": "#1C1C1E"
+    },
+    {
+      "name": "bg_primary",
+      "value": "#1C1C1E"
+    },
+    {
+      "name": "bg_secondary",
+      "value": "#3C3C3E"
     },
     {
       "name": "divider",
       "value": "#38383A"
     },
     {
-      "name": "gray",
-      "value": "#f0f0f0"
-    },
-    {
-      "name": "card_background",
+      "name": "card_bg",
       "value": "#2C2C2E"
     },
     {
-      "name": "button_background",
+      "name": "button_blue",
       "value": "#007AFF"
+    },
+    {
+      "name": "button_bg_disabled",
+      "value": "#CCCCCC"
     },
     {
       "name": "button_text",
       "value": "#FFFFFF"
+    },
+    {
+      "name": "danger",
+      "value": "#FF3B30"
+    },
+    {
+      "name": "gray",
+      "value": "#f0f0f0"
+    },
+    {
+      "name": "icon_normal",
+      "value": "#777777"
     }
   ]
 }
