@@ -445,8 +445,8 @@ struct Password {
             .height(48)
             .layoutWeight(1)
             .margin({ left: 16, right: 8 })
-            .backgroundColor('#E0E0E0')  // 浅灰色背景
-            .fontColor('#333333')        // 深灰色文字
+            .backgroundColor($r('app.color.card_bg'))  // 浅灰色背景
+            .fontColor($r('app.color.text_primary'))        // 深灰色文字
             .onClick(() => {
               this.changeDatabase();
             })
