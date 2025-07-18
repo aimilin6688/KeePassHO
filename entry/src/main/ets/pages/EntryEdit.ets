@@ -431,7 +431,7 @@ struct EntryEdit {
           },
           {
             text: '删除',
-            color: $r('app.color.button_blue'),
+            color: $r("app.color.button_bg_blue"),
           }
         ],
       }).then((result) => {
