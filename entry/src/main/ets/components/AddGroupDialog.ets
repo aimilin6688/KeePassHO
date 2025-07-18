@@ -72,7 +72,7 @@ export struct AddGroupDialog {
           Column() {
             Text('图标')
               .fontSize(16)
-              .fontColor('#333333')
+              .fontColor($r('app.color.text_primary'))
             
             Text('点击选择图标')
               .fontSize(14)
@@ -155,7 +155,7 @@ export struct AddGroupDialog {
               this.onConfirm(this.selectedIconId)
             }
           })
-          .backgroundColor(this.newGroupName.trim().length > 0 ? $r('app.color.button_blue') : $r("app.color.button_bg_disabled"))
+          .backgroundColor(this.newGroupName.trim().length > 0 ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
           .fontColor(Color.White)
           .width('45%')
           .height(40)
