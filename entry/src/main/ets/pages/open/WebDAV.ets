@@ -25,7 +25,7 @@ struct WebDAV {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 主要内容区域
       Column() {
@@ -38,7 +38,7 @@ struct WebDAV {
       }
       .width('100%')
       .layoutWeight(1)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
     }
     .width('100%')
     .height('100%')

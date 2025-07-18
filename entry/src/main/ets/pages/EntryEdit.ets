@@ -504,7 +504,7 @@ struct EntryEdit {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 表单内容
       Scroll() {
@@ -541,7 +541,7 @@ struct EntryEdit {
               .height(48)
               .margin({ left: 8 })
               .borderRadius(8)
-              .backgroundColor($r('app.color.background_secondary'))
+              .backgroundColor($r("app.color.bg_secondary"))
               .onClick(() => {
                 this.openIconSelector();
               })
@@ -585,7 +585,7 @@ struct EntryEdit {
               Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
                 .fontSize(14)
                 .fontColor($r('app.color.text_primary'))
-                .backgroundColor($r('app.color.background_secondary'))
+                .backgroundColor($r("app.color.bg_secondary"))
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
                 .borderRadius(4)
                 .onClick(() => {
@@ -698,7 +698,7 @@ struct EntryEdit {
               }
               .width(32)
               .height(32)
-              .backgroundColor($r('app.color.background_secondary'))
+              .backgroundColor($r("app.color.bg_secondary"))
               .borderRadius(16)
               .onClick(() => {
                 this.openAddFieldDialog();
@@ -729,7 +729,7 @@ struct EntryEdit {
                     .width(32)
                     .height(32)
                     .borderRadius(16)
-                    .backgroundColor($r('app.color.background_secondary'))
+                    .backgroundColor($r("app.color.bg_secondary"))
                     .margin({ right: 8 })
                     .onClick(() => {
                       this.openEditFieldDialog(index);
@@ -743,7 +743,7 @@ struct EntryEdit {
                     }
                     .width(32)
                     .height(32)
-                    .backgroundColor($r('app.color.background_secondary'))
+                    .backgroundColor($r("app.color.bg_secondary"))
                     .borderRadius(16)
                     .onClick(() => {
                       this.deleteCustomField(index);
@@ -799,7 +799,7 @@ struct EntryEdit {
       .width('100%')
       .height('100%')
       .layoutWeight(1)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
     }
     .width('100%')
     .height('100%')

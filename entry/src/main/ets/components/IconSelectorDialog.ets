@@ -42,7 +42,7 @@ export struct IconSelectorDialog {
       .height(56)
       .padding({ left: 24, right: 16 })
       .alignItems(VerticalAlign.Center)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
       .borderRadius({ topLeft: 16, topRight: 16 })
       
       // 图标网格
@@ -85,7 +85,7 @@ export struct IconSelectorDialog {
     }
     .width('100%')
     .height('70%')
-    .backgroundColor($r('app.color.background_primary'))
+    .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
   }
 }
