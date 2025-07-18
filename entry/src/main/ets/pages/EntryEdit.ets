@@ -431,7 +431,7 @@ struct EntryEdit {
           },
           {
             text: '删除',
-            color: $r('app.color.accent'),
+            color: $r('app.color.button_blue'),
           }
         ],
       }).then((result) => {
@@ -541,7 +541,7 @@ struct EntryEdit {
               .height(48)
               .margin({ left: 8 })
               .borderRadius(8)
-              .backgroundColor($r("app.color.bg_secondary"))
+              .backgroundColor($r("app.color.card_bg"))
               .onClick(() => {
                 this.openIconSelector();
               })
@@ -585,7 +585,7 @@ struct EntryEdit {
               Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
                 .fontSize(14)
                 .fontColor($r('app.color.text_primary'))
-                .backgroundColor($r("app.color.bg_secondary"))
+                .backgroundColor($r("app.color.card_bg"))
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
                 .borderRadius(4)
                 .onClick(() => {
@@ -698,7 +698,7 @@ struct EntryEdit {
               }
               .width(32)
               .height(32)
-              .backgroundColor($r("app.color.bg_secondary"))
+              .backgroundColor($r("app.color.card_bg"))
               .borderRadius(16)
               .onClick(() => {
                 this.openAddFieldDialog();
@@ -706,7 +706,7 @@ struct EntryEdit {
             }
             .width('100%')
             .margin({ bottom: 8 })
-            
+
             // 自定义字段列表
             if (this.customFields.length > 0) {
               ForEach(this.customFields, (field: CustomField, index) => {
