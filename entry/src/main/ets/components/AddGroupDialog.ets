@@ -56,7 +56,7 @@ export struct AddGroupDialog {
       .height(56)
       .padding({ left: 24, right: 16 })
       .alignItems(VerticalAlign.Center)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
       .borderRadius({ topLeft: 16, topRight: 16 })
       
       // 分组信息输入区域
@@ -87,7 +87,7 @@ export struct AddGroupDialog {
         .height(72)
         .padding({ left: 24, right: 24 })
         .alignItems(VerticalAlign.Center)
-        .backgroundColor($r('app.color.background_primary'))
+        .backgroundColor($r("app.color.bg_primary"))
         .onClick(() => {
           // 打开独立的图标选择弹框
           this.iconSelectorDialogController = new CustomDialogController({
@@ -129,7 +129,7 @@ export struct AddGroupDialog {
           .margin({ left: 24, right: 24 })
       }
       .width('100%')
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
       
       // 底部按钮
       Row() {
@@ -155,7 +155,7 @@ export struct AddGroupDialog {
               this.onConfirm(this.selectedIconId)
             }
           })
-          .backgroundColor(this.newGroupName.trim().length > 0 ? $r('app.color.accent') : $r('app.color.button_disabled_background'))
+          .backgroundColor(this.newGroupName.trim().length > 0 ? $r('app.color.accent') : $r("app.color.button_bg_disabled"))
           .fontColor(Color.White)
           .width('45%')
           .height(40)
@@ -164,10 +164,10 @@ export struct AddGroupDialog {
       .width('100%')
       .padding({ left: 24, right: 24, top: 16, bottom: 30 })
       .justifyContent(FlexAlign.SpaceBetween)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
     }
     .width('100%')
-    .backgroundColor($r('app.color.background_primary'))
+    .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
   }
 }

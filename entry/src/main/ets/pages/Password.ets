@@ -359,7 +359,7 @@ struct Password {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 主要内容区域
       Column() {
@@ -457,7 +457,7 @@ struct Password {
             .layoutWeight(1)
             .margin({ left: 8, right: 16 })
             .enabled(this.buttonEnabled)
-            .backgroundColor(this.buttonEnabled ? $r('app.color.button_background') : $r('app.color.button_disabled_background'))
+            .backgroundColor(this.buttonEnabled ? $r("app.color.button_blue") : $r("app.color.button_bg_disabled"))
             .onClick(() => {
               this.verifyAndOpenDatabase();
             })
@@ -469,7 +469,7 @@ struct Password {
       }
       .width('100%')
       .layoutWeight(1)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
       .padding({ top: 16 })
     }
     .width('100%')
@@ -491,7 +491,7 @@ struct Password {
       Button(this.keyFileName ? '重新选择密钥文件' : '选择密钥文件')
         .width('100%')
         .height(48)
-        .backgroundColor($r('app.color.button_background'))
+        .backgroundColor($r("app.color.button_blue"))
         .onClick(() => {
           this.selectKeyFile();
         })

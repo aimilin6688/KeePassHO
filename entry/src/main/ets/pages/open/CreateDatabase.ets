@@ -44,7 +44,7 @@ struct CreateDatabase {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 主要内容区域
       Column() {
@@ -63,7 +63,7 @@ struct CreateDatabase {
           .placeholderFont({ size: 16 })
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
-          .backgroundColor($r('app.color.card_background'))
+          .backgroundColor($r("app.color.card_bg"))
           .margin({ top: 8, left: 16, right: 16 })
           .padding({ left: 12, right: 12 })
           .height(48)
@@ -89,7 +89,7 @@ struct CreateDatabase {
             .placeholderFont({ size: 16 })
             .fontSize(16)
             .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r('app.color.card_background'))
+            .backgroundColor($r("app.color.card_bg"))
             .padding({ left: 12 })
             .layoutWeight(1)
             .height(48)
@@ -101,7 +101,7 @@ struct CreateDatabase {
         }
         .margin({ top: 8, left: 16, right: 16 })
         .width('100%')
-        .backgroundColor($r('app.color.card_background'))
+        .backgroundColor($r("app.color.card_bg"))
         .borderRadius(8)
 
         // 确认密码输入
@@ -120,7 +120,7 @@ struct CreateDatabase {
             .placeholderFont({ size: 16 })
             .fontSize(16)
             .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r('app.color.card_background'))
+            .backgroundColor($r("app.color.card_bg"))
             .padding({ left: 12 })
             .layoutWeight(1)
             .height(48)
@@ -132,7 +132,7 @@ struct CreateDatabase {
         }
         .margin({ top: 8, left: 16, right: 16 })
         .width('100%')
-        .backgroundColor($r('app.color.card_background'))
+        .backgroundColor($r("app.color.card_bg"))
         .borderRadius(8)
 
         // 错误信息
@@ -159,7 +159,7 @@ struct CreateDatabase {
       .width('100%')
       .layoutWeight(1)
       .padding(16)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
     }
     .width('100%')
     .height('100%')

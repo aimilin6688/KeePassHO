@@ -365,7 +365,7 @@ export struct PasswordGeneratorDialog {
           .height(40)
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
-          .backgroundColor($r('app.color.background_secondary'))
+          .backgroundColor($r("app.color.bg_secondary"))
           .borderRadius(4)
           .onClick(() => {
             this.onGenerate(this.password);
@@ -388,7 +388,7 @@ export struct PasswordGeneratorDialog {
       .padding({ bottom: 16 })
     }
     .width('100%')
-    .backgroundColor($r('app.color.background_primary'))
+    .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 24, right: 24, bottom: 16 })
   }

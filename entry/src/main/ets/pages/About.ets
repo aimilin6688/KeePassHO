@@ -29,7 +29,7 @@ export struct About {
         }
         .width('100%')
         .height(56)
-        .backgroundColor($r('app.color.card_background'))
+        .backgroundColor($r("app.color.card_bg"))
 
         // 内容
         Column() {

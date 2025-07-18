@@ -55,7 +55,7 @@ struct Settings {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 设置列表
       List() {
@@ -72,7 +72,7 @@ struct Settings {
                   .font({ size: 16 })
                   .selectedOptionFont({ size: 16 })
                   .optionFont({ size: 16 })
-                  .backgroundColor($r('app.color.card_background'))
+                  .backgroundColor($r("app.color.card_bg"))
                   .onSelect(async (index: number) => {
                     const selectedMode = ThemeConstants.THEME_OPTIONS[index].type;
                     this.applyThemeMode(selectedMode)
@@ -82,7 +82,7 @@ struct Settings {
               .height(48)
               .padding({ left: 16, right: 16 })
             }
-            .backgroundColor($r('app.color.card_background'))
+            .backgroundColor($r("app.color.card_bg"))
           }
 
           // 排序方式
@@ -96,7 +96,7 @@ struct Settings {
                 .value(SortConstants.getSortOptionByType(this.sortBy))
                 .selectedOptionFont({ size: 16 })
                 .optionFont({ size: 16 })
-                .backgroundColor($r('app.color.card_background'))
+                .backgroundColor($r("app.color.card_bg"))
                 .onSelect((index: number) => {
                   this.sortBy = SortConstants.SORT_OPTIONS[index].type;
                   this.settingsService.setSortBy(SortConstants.SORT_OPTIONS[index].type);
@@ -106,7 +106,7 @@ struct Settings {
             .height(48)
             .padding({ left: 16, right: 16 })
           }
-          .backgroundColor($r('app.color.card_background'))
+          .backgroundColor($r("app.color.card_bg"))
         }
 
         ListItemGroup() {
@@ -124,7 +124,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .backgroundColor($r('app.color.card_background'))
+          .backgroundColor($r("app.color.card_bg"))
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/open/OpenDatabase'
@@ -145,7 +145,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .backgroundColor($r('app.color.card_background'))
+          .backgroundColor($r("app.color.card_bg"))
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/RecentFiles'
@@ -168,7 +168,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .backgroundColor($r('app.color.card_background'))
+          .backgroundColor($r("app.color.card_bg"))
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/About'
@@ -189,6 +189,6 @@ struct Settings {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor($r('app.color.background_primary'))
+    .backgroundColor($r("app.color.bg_primary"))
   }
 }

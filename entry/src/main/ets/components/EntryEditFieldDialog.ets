@@ -182,7 +182,7 @@ export struct EntryEditFieldDialog {
       .justifyContent(FlexAlign.SpaceBetween)
     }
     .width('100%')
-    .backgroundColor($r('app.color.background_primary'))
+    .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 24, right: 24, bottom: 16 })
   }

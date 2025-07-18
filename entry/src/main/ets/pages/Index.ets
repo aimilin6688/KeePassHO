@@ -65,7 +65,7 @@ struct Index {
     .width('80%')
     .height(56)
     .borderRadius(28)
-    .backgroundColor($r('app.color.card_background'))
+    .backgroundColor($r("app.color.card_bg"))
     .onClick(onClick)
   }
 
@@ -89,7 +89,7 @@ struct Index {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
 
       // 主要内容区域
       Column() {
@@ -135,7 +135,7 @@ struct Index {
       }
       .width('100%')
       .layoutWeight(1)
-      .backgroundColor($r('app.color.background_primary'))
+      .backgroundColor($r("app.color.bg_primary"))
     }
     .width('100%')
     .height('100%')
