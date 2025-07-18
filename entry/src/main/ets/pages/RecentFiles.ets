@@ -185,7 +185,7 @@ struct RecentFiles {
                 })
               }
               .width('100%')
-              .padding(16)
+              .padding({top: 16 , bottom: 16 })
               .borderRadius(8)
               .onClick(() => {
                 this.openFile(file);
@@ -195,6 +195,7 @@ struct RecentFiles {
           })
         }
         .width('100%')
+        .height('100%')
         .layoutWeight(1)
         .padding({ left: 16, right: 16 })
       }
