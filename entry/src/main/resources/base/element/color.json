@@ -34,7 +34,11 @@
       "value": "#FFFFFF"
     },
     {
-      "name": "button_blue",
+      "name": "button_text_blue",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "button_bg_blue",
       "value": "#007DFF"
     },
     {
