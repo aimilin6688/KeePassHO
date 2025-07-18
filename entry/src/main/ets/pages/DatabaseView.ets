@@ -49,6 +49,7 @@ struct DatabaseView {
   })
 
   aboutToAppear() {
+    this.router.clear();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 获取从Password页面传递的参数
     const params = FileService.getInstance().getDbFileParam();
