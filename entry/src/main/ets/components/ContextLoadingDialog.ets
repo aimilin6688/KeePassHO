@@ -17,7 +17,7 @@ export struct ContextLoadingDialog {
           .fontColor($r('app.color.text_primary'))
           .margin({ left: 12 })
       }
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r("app.color.card_bg"))
       .borderRadius(8)
       .padding(16)
     }

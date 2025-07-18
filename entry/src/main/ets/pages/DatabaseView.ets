@@ -409,7 +409,7 @@ struct DatabaseView {
               .height(40)
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
-              .backgroundColor($r('app.color.card_background'))
+              .backgroundColor($r("app.color.card_bg"))
               .margin({ right: 16 })
               .padding({ left: 5, right: 5 })
               .onClick(() => {
@@ -422,7 +422,7 @@ struct DatabaseView {
         }
         .width('100%')
         .height(56)
-        .backgroundColor($r('app.color.card_background'))
+        .backgroundColor($r("app.color.card_bg"))
 
         if (this.isLoading) {
           // 加载中状态
@@ -440,7 +440,7 @@ struct DatabaseView {
           .width('100%')
           .height('100%')
           .justifyContent(FlexAlign.Center)
-          .backgroundColor($r('app.color.background_primary'))
+          .backgroundColor($r("app.color.bg_primary"))
         } else {
           // 数据库内容
           List({ space: 8 }) {
@@ -474,7 +474,7 @@ struct DatabaseView {
                 .width('100%')
                 .height(60)
                 .borderRadius(8)
-                .backgroundColor($r('app.color.card_background'))
+                .backgroundColor($r("app.color.card_bg"))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
                   this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
@@ -516,7 +516,7 @@ struct DatabaseView {
                 .width('100%')
                 .height(60)
                 .borderRadius(8)
-                .backgroundColor($r('app.color.card_background'))
+                .backgroundColor($r("app.color.card_bg"))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
                   this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
@@ -531,7 +531,7 @@ struct DatabaseView {
           }
           .width('100%')
           .height('100%')
-          .backgroundColor($r('app.color.background_primary'))
+          .backgroundColor($r("app.color.bg_primary"))
           .padding({ left: 12, right: 12, top: 12, bottom:40 })
           .scrollBar(BarState.Auto)
         }
