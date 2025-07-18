@@ -49,7 +49,7 @@ struct DatabaseView {
   })
 
   aboutToAppear() {
-    this.router.clear();
+    this.clearUrl();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 获取从Password页面传递的参数
     const params = FileService.getInstance().getDbFileParam();
@@ -73,6 +73,20 @@ struct DatabaseView {
   onPageShow(): void {
     console.log("Load DatabaseView Page: ", this.databaseShowParam);
     this.initData(this.databaseShowParam);
+  }
+
+  /**
+   * 如果从 Password 页面过来直接清空历史记录
+   */
+  private clearUrl(){
+    let pageNum = this.router.getLength();
+    if(parseInt(pageNum) <= 0 ){
+      return;
+    }
+    let prePage = this.router.getStateByIndex(parseInt(this.router.getLength()) -1);
+    if(prePage && prePage.name == 'Password'){
+      this.router.clear();
+    }
   }
 
   /**
@@ -144,7 +158,7 @@ struct DatabaseView {
       Button("编辑", { type: ButtonType.Normal })
         .width(80)
         .height(60)
-        .backgroundColor($r('app.color.button_blue'))
+        .backgroundColor($r("app.color.button_bg_blue"))
         .fontColor(Color.White)
         .fontSize(14)
         .onClick(() => {
@@ -557,17 +571,17 @@ struct DatabaseView {
           Image($r('app.media.ic_folder'))
             .width(20)
             .height(20)
-            .fillColor($r('app.color.text_primary'))
+            .fillColor($r('app.color.button_text_blue'))
           Text('添加分组')
             .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
+            .fontColor($r('app.color.button_text_blue'))
             .margin({ left: 8 })
         }
       }
       .width(120)
       .height(40)
       .borderRadius(20)
-      .backgroundColor($r('app.color.button_blue'))
+      .backgroundColor($r("app.color.button_bg_blue"))
       .position({ right: 12, bottom: 72 })
       .enabled(!this.isLoading)
       .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
@@ -584,17 +598,17 @@ struct DatabaseView {
           Image($r('app.media.ic_file'))
             .width(20)
             .height(20)
-            .fillColor($r('app.color.text_primary'))
+            .fillColor($r("app.color.button_text_blue"))
           Text('添加条目')
             .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
+            .fontColor($r("app.color.button_text_blue"))
             .margin({ left: 8 })
         }
       }
       .width(120)
       .height(40)
       .borderRadius(20)
-      .backgroundColor($r('app.color.button_blue'))
+      .backgroundColor($r("app.color.button_bg_blue"))
       .position({ right: 12, bottom: 120 })
       .enabled(!this.isLoading)
       .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
@@ -618,7 +632,7 @@ struct DatabaseView {
       .width(60)
       .height(60)
       .borderRadius(30)
-      .backgroundColor($r('app.color.button_blue'))
+      .backgroundColor($r("app.color.button_bg_blue"))
       .position({ right: 12, bottom: 12 })
       .enabled(!this.isLoading)
       .opacity(this.isLoading ? 0.5 : 1)
