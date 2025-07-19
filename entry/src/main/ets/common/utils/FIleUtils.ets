@@ -12,7 +12,7 @@ export default class FileUtils {
       return "";
     }
     const fileNameMatch = filePath.match(/[^/]+$/);
-    return  fileNameMatch ? fileNameMatch[0] : '';
+    return  fileNameMatch ? decodeURIComponent(fileNameMatch[0]) : '';
   }
 
 
@@ -48,5 +48,39 @@ export default class FileUtils {
     };
     let policies: Array<fileShare.PolicyInfo> = [policyInfo];
     return fileShare.persistPermission(policies);
+  }
+
+  /**
+   * 校验文件权限
+   * @param path 文件路径
+   * @returns 结果
+   */
+  public static checkPersistPermission(path: string, operationMode: fileShare.OperationMode): Promise<Array<boolean>> {
+    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+      throw new Error('this api is not supported on this device');
+    }
+    let policyInfo: fileShare.PolicyInfo = {
+      uri: path,
+      operationMode: operationMode,
+    };
+    let policies: Array<fileShare.PolicyInfo> = [policyInfo];
+    return fileShare.checkPersistentPermission(policies);
+  }
+
+  /**
+   * 取消文件持久化权限
+   * @param path 文件路径
+   * @returns 结果
+   */
+  public static revokePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
+    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+      throw new Error('this api is not supported on this device');
+    }
+    let policyInfo: fileShare.PolicyInfo = {
+      uri: path,
+      operationMode: operationMode,
+    };
+    let policies: Array<fileShare.PolicyInfo> = [policyInfo];
+    return fileShare.revokePermission(policies);
   }
 }
