@@ -464,344 +464,353 @@ struct EntryEdit {
   }
 
   build() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r('app.media.ic_back'))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.router.back();
-          })
-
-        Text(this.pageTitle)
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-        Blank()
-
-        Button() {
-          Image($r('app.media.ic_save'))
+    Stack() {
+      Column() {
+        // 顶部导航栏
+        Row() {
+          Image($r('app.media.ic_back'))
             .width(24)
             .height(24)
+            .margin({ left: 16 })
             .fillColor($r('app.color.text_primary'))
-        }
-        .width(48)
-        .height(48)
-        .margin({ right: 16 })
-        .borderRadius(20)
-        .backgroundColor(Color.Transparent)
-        .enabled(!this.isLoading && this.isModified)
-        .onClick(() => {
-          this.saveEntry();
-        })
-      }
-      .width('100%')
-      .height(56)
-      .backgroundColor($r("app.color.card_bg"))
+            .onClick(() => {
+              this.router.back();
+            })
 
-      // 表单内容
-      Scroll() {
-        Column() {
+          Text(this.pageTitle)
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-          // 标题
-          Column() {
-            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
+          Blank()
 
-            Row() {
-              TextInput({ text: this.title, placeholder: '请输入标题' })
-                .layoutWeight(1)
-                .height(48)
-                .fontSize(16)
-                .fontColor($r('app.color.text_primary'))
-                .borderRadius(8)
-                .onChange((value) => {
-                  this.title = value;
-                  this.isModified = true;
-                })
-              
-              // 图标选择按钮
-              Button() {
-                Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
-                  .width(24)
-                  .height(24)
-                  .objectFit(ImageFit.Contain)
-              }
-              .width(48)
-              .height(48)
-              .margin({ left: 8 })
-              .borderRadius(8)
-              .backgroundColor($r("app.color.card_bg"))
-              .onClick(() => {
-                this.openIconSelector();
-              })
-            }
-            .width('100%')
+          Button() {
+            Image($r('app.media.ic_save'))
+              .width(24)
+              .height(24)
+              .fillColor($r('app.color.text_primary'))
           }
-          .width('100%')
-          .margin({ top: 16 })
-
-          // 用户名
-          Column() {
-            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_USERNAME))
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
-
-            TextInput({ text: this.username, placeholder: '请输入用户名' })
-              .width('100%')
-              .height(48)
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .borderRadius(8)
-              .onChange((value) => {
-                this.username = value;
-                this.isModified = true;
-              })
-          }
-          .width('100%')
-          .margin({ top: 16 })
-
-          // 密码
-          Column() {
-            Row() {
-              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_PASSWORD))
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-
-              Blank()
-
-              Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
-                .fontSize(14)
-                .fontColor($r('app.color.text_primary'))
-                .backgroundColor($r("app.color.card_bg"))
-                .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-                .borderRadius(4)
-                .onClick(() => {
-                  this.passwordGeneratorController.open();
-                })
-            }
-            .width('100%')
-            .margin({ bottom: 8 })
-
-            Row() {
-              TextInput({ text: this.password, placeholder: '请输入密码' })
-                .width('100%')
-                .height(48)
-                .fontSize(16)
-                .fontColor($r('app.color.text_primary'))
-                .borderRadius(8)
-                .type(this.showPassword ? InputType.Normal : InputType.Password)
-                .onChange((value) => {
-                  this.password = value;
-                  this.isModified = true;
-                })
-            }
-            .width('100%')
-            .height(48)
-          }
-          .width('100%')
-          .margin({ top: 16 })
-
-          // URL
-          Column() {
-            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_URL))
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
-
-            TextInput({ text: this.url, placeholder: '请输入URL' })
-              .width('100%')
-              .height(48)
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .borderRadius(8)
-              .onChange((value) => {
-                this.url = value;
-                this.isModified = true;
-              })
-          }
-          .width('100%')
-          .margin({ top: 16 })
-
-          // 标签
-          Column() {
-            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TAGS))
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
-
-            TextInput({ text: this.tags, placeholder: '请输入标签（用逗号分隔）' })
-              .width('100%')
-              .height(48)
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .borderRadius(8)
-              .onChange((value) => {
-                this.tags = value;
-                this.isModified = true;
-              })
-          }
-          .width('100%')
-          .margin({ top: 16 })
-
-          // 备注
-          Column() {
-            Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_NOTES))
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
-
-            TextArea({ text: this.notes, placeholder: '请输入备注' })
-              .width('100%')
-              .height(120)
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .borderRadius(8)
-              .onChange((value) => {
-                this.notes = value;
-                this.isModified = true;
-              })
-          }
-          .width('100%')
-          .margin({ top: 16 })
-          
-          // 自定义字段部分
-          Column() {
-            Row() {
-              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_CUSTOM_FIELDS))
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-                .alignSelf(ItemAlign.Start)
-              
-              Blank()
-              
-              Button() {
-                Image($r('app.media.ic_add'))
-                  .width(24)
-                  .height(24)
-                  .fillColor($r('app.color.text_primary'))
-              }
-              .width(32)
-              .height(32)
-              .backgroundColor($r("app.color.card_bg"))
-              .borderRadius(16)
-              .onClick(() => {
-                this.openAddFieldDialog();
-              })
-            }
-            .width('100%')
-            .margin({ bottom: 8 })
-
-            // 自定义字段列表
-            if (this.customFields.length > 0) {
-              ForEach(this.customFields, (field: CustomField, index) => {
-                Column() {
-                  Row() {
-                    Text(field.key)
-                      .fontSize(14)
-                      .fontColor($r('app.color.text_secondary'))
-                      .margin({ bottom: 8 })
-                    
-                    Blank()
-                    
-                    Button() {
-                      Image($r('app.media.ic_edit'))
-                        .width(16)
-                        .height(16)
-                        .fillColor($r('app.color.text_primary'))
-
-                    }
-                    .width(32)
-                    .height(32)
-                    .borderRadius(16)
-                    .backgroundColor($r("app.color.bg_secondary"))
-                    .margin({ right: 8 })
-                    .onClick(() => {
-                      this.openEditFieldDialog(index);
-                    })
-                    
-                    Button() {
-                      Image($r('app.media.ic_delete'))
-                        .width(16)
-                        .height(16)
-                        .fillColor($r('app.color.text_primary'))
-                    }
-                    .width(32)
-                    .height(32)
-                    .backgroundColor($r("app.color.bg_secondary"))
-                    .borderRadius(16)
-                    .onClick(() => {
-                      this.deleteCustomField(index);
-                    })
-                  }
-                  .width('100%')
-                  
-                  Row() {
-                    Text(field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value)
-                      .fontSize(16)
-                      .fontColor($r('app.color.text_primary'))
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })
-                      .maxLines(1)
-                      .layoutWeight(1)
-                    
-                    if (field.isProtected) {
-                      Image(this.customFieldsVisibility[index] ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
-                        .width(24)
-                        .height(24)
-                        .fillColor($r('app.color.text_secondary'))
-                        .margin({ left: 8 })
-                        .onClick((event) => {
-                          this.toggleCustomFieldVisibility(index);
-                          return false;
-                        })
-                    }
-                  }
-                  .width('100%')
-                  .alignItems(VerticalAlign.Center)
-                }
-                .width('100%')
-                .padding(12)
-                .backgroundColor($r('sys.color.textfield_bg_color'))
-                .borderRadius(8)
-                .margin({ bottom: 8 })
-                .onClick(() => {
-                  this.openEditFieldDialog(index);
-                })
-              })
-            } else {
-              Text('暂无自定义字段')
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-                .margin({ top: 8, bottom: 8 })
-            }
-          }
-          .width('100%')
-          .margin({ top: 16, bottom: 24 })
+          .width(48)
+          .height(48)
+          .margin({ right: 16 })
+          .borderRadius(20)
+          .backgroundColor(Color.Transparent)
+          .enabled(!this.isLoading && this.isModified)
+          .onClick(() => {
+            this.saveEntry();
+          })
         }
         .width('100%')
-        .padding({ left: 16, right: 16 })
+        .height(56)
+        .backgroundColor($r("app.color.card_bg"))
+
+        // 表单内容
+        Scroll() {
+          Column() {
+
+            // 标题
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              Row() {
+                TextInput({ text: this.title, placeholder: '请输入标题' })
+                  .layoutWeight(1)
+                  .height(48)
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+                  .borderRadius(8)
+                  .onChange((value) => {
+                    this.title = value;
+                    this.isModified = true;
+                  })
+
+                // 图标选择按钮
+                Button() {
+                  Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
+                    .width(24)
+                    .height(24)
+                    .objectFit(ImageFit.Contain)
+                }
+                .width(48)
+                .height(48)
+                .margin({ left: 8 })
+                .borderRadius(8)
+                .backgroundColor($r("app.color.card_bg"))
+                .onClick(() => {
+                  this.openIconSelector();
+                })
+              }
+              .width('100%')
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // 用户名
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_USERNAME))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              TextInput({ text: this.username, placeholder: '请输入用户名' })
+                .width('100%')
+                .height(48)
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .borderRadius(8)
+                .onChange((value) => {
+                  this.username = value;
+                  this.isModified = true;
+                })
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // 密码
+            Column() {
+              Row() {
+                Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_PASSWORD))
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+
+                Blank()
+
+                Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_primary'))
+                  .backgroundColor($r("app.color.card_bg"))
+                  .padding({
+                    left: 12,
+                    right: 12,
+                    top: 4,
+                    bottom: 4
+                  })
+                  .borderRadius(4)
+                  .onClick(() => {
+                    this.passwordGeneratorController.open();
+                  })
+              }
+              .width('100%')
+              .margin({ bottom: 8 })
+
+              Row() {
+                TextInput({ text: this.password, placeholder: '请输入密码' })
+                  .width('100%')
+                  .height(48)
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+                  .borderRadius(8)
+                  .type(this.showPassword ? InputType.Normal : InputType.Password)
+                  .onChange((value) => {
+                    this.password = value;
+                    this.isModified = true;
+                  })
+              }
+              .width('100%')
+              .height(48)
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // URL
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_URL))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              TextInput({ text: this.url, placeholder: '请输入URL' })
+                .width('100%')
+                .height(48)
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .borderRadius(8)
+                .onChange((value) => {
+                  this.url = value;
+                  this.isModified = true;
+                })
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // 标签
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TAGS))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              TextInput({ text: this.tags, placeholder: '请输入标签（用逗号分隔）' })
+                .width('100%')
+                .height(48)
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .borderRadius(8)
+                .onChange((value) => {
+                  this.tags = value;
+                  this.isModified = true;
+                })
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // 备注
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_NOTES))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              TextArea({ text: this.notes, placeholder: '请输入备注' })
+                .width('100%')
+                .height(120)
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .borderRadius(8)
+                .onChange((value) => {
+                  this.notes = value;
+                  this.isModified = true;
+                })
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // 自定义字段部分
+            Column() {
+              Row() {
+                Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_CUSTOM_FIELDS))
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+                  .alignSelf(ItemAlign.Start)
+
+                Blank()
+
+                Button() {
+                  Image($r('app.media.ic_add'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .width(32)
+                .height(32)
+                .backgroundColor($r("app.color.card_bg"))
+                .borderRadius(16)
+                .onClick(() => {
+                  this.openAddFieldDialog();
+                })
+              }
+              .width('100%')
+              .margin({ bottom: 8 })
+
+              // 自定义字段列表
+              if (this.customFields.length > 0) {
+                ForEach(this.customFields, (field: CustomField, index) => {
+                  Column() {
+                    Row() {
+                      Text(field.key)
+                        .fontSize(14)
+                        .fontColor($r('app.color.text_secondary'))
+                        .margin({ bottom: 8 })
+
+                      Blank()
+
+                      Button() {
+                        Image($r('app.media.ic_edit'))
+                          .width(16)
+                          .height(16)
+                          .fillColor($r('app.color.text_primary'))
+
+                      }
+                      .width(32)
+                      .height(32)
+                      .borderRadius(16)
+                      .backgroundColor($r("app.color.bg_secondary"))
+                      .margin({ right: 8 })
+                      .onClick(() => {
+                        this.openEditFieldDialog(index);
+                      })
+
+                      Button() {
+                        Image($r('app.media.ic_delete'))
+                          .width(16)
+                          .height(16)
+                          .fillColor($r('app.color.text_primary'))
+                      }
+                      .width(32)
+                      .height(32)
+                      .backgroundColor($r("app.color.bg_secondary"))
+                      .borderRadius(16)
+                      .onClick(() => {
+                        this.deleteCustomField(index);
+                      })
+                    }
+                    .width('100%')
+
+                    Row() {
+                      Text(field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value)
+                        .fontSize(16)
+                        .fontColor($r('app.color.text_primary'))
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        .maxLines(1)
+                        .layoutWeight(1)
+
+                      if (field.isProtected) {
+                        Image(this.customFieldsVisibility[index] ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
+                          .width(24)
+                          .height(24)
+                          .fillColor($r('app.color.text_secondary'))
+                          .margin({ left: 8 })
+                          .onClick((event) => {
+                            this.toggleCustomFieldVisibility(index);
+                            return false;
+                          })
+                      }
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center)
+                  }
+                  .width('100%')
+                  .padding(12)
+                  .backgroundColor($r('sys.color.textfield_bg_color'))
+                  .borderRadius(8)
+                  .margin({ bottom: 8 })
+                  .onClick(() => {
+                    this.openEditFieldDialog(index);
+                  })
+                })
+              } else {
+                Text('暂无自定义字段')
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+                  .margin({ top: 8, bottom: 8 })
+              }
+            }
+            .width('100%')
+            .margin({ top: 16, bottom: 24 })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16 })
+        }
+        .width('100%')
+        .height('100%')
+        .layoutWeight(1)
+        .backgroundColor($r("app.color.bg_primary"))
       }
       .width('100%')
       .height('100%')
-      .layoutWeight(1)
-      .backgroundColor($r("app.color.bg_primary"))
     }
-    .width('100%')
     .height('100%')
+    .width('100%')
   }
 }
