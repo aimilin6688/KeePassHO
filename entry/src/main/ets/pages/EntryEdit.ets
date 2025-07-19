@@ -736,7 +736,6 @@ struct EntryEdit {
                       .height(32)
                       .borderRadius(16)
                       .backgroundColor($r("app.color.bg_secondary"))
-                      .margin({ right: 8 })
                       .onClick(() => {
                         this.openEditFieldDialog(index);
                       })
@@ -749,8 +748,8 @@ struct EntryEdit {
                       }
                       .width(32)
                       .height(32)
-                      .backgroundColor($r("app.color.bg_secondary"))
                       .borderRadius(16)
+                      .backgroundColor($r("app.color.bg_secondary"))
                       .onClick(() => {
                         this.deleteCustomField(index);
                       })
@@ -781,8 +780,9 @@ struct EntryEdit {
                     .alignItems(VerticalAlign.Center)
                   }
                   .width('100%')
-                  .padding(12)
-                  .backgroundColor($r('sys.color.textfield_bg_color'))
+                  .height('auto')
+                  .padding({top: 12, bottom: 12, left: 12})
+                  .backgroundColor($r("app.color.bg_secondary"))
                   .borderRadius(8)
                   .margin({ bottom: 8 })
                   .onClick(() => {
