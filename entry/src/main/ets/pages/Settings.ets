@@ -80,9 +80,8 @@ struct Settings {
               }
               .width('100%')
               .height(48)
-              .padding({ left: 16, right: 16 })
+              .padding({ left: 16})
             }
-            .backgroundColor($r("app.color.card_bg"))
           }
 
           // 排序方式
@@ -104,12 +103,38 @@ struct Settings {
             }
             .width('100%')
             .height(48)
-            .padding({ left: 16, right: 16 })
+            .padding({ left: 16 })
           }
-          .backgroundColor($r("app.color.card_bg"))
         }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ top: 12, bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
 
         ListItemGroup() {
+          // 创建数据库
+          ListItem() {
+            Row() {
+              Text('创建数据库')
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .onClick(()=>{
+            this.router.pushUrl({
+              url: 'pages/open/CreateDatabase'
+            }, router.RouterMode.Single);
+          })
+
           // 更换数据库
           ListItem() {
             Row() {
@@ -124,7 +149,6 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .backgroundColor($r("app.color.card_bg"))
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/open/OpenDatabase'
@@ -145,13 +169,19 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .backgroundColor($r("app.color.card_bg"))
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/RecentFiles'
             }, router.RouterMode.Single);
           })
         }
+        .margin({ top: 12, bottom: 12 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
 
         ListItemGroup() {
           // 关于
@@ -168,24 +198,25 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .backgroundColor($r("app.color.card_bg"))
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/About'
             }, router.RouterMode.Single);
           })
         }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ top: 12, bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
       }
       .width('100%')
       .height('auto')
       .layoutWeight(1)
       .margin({ top: 12 })
-      .divider({
-        strokeWidth: 1,
-        color: $r('app.color.divider'),
-        startMargin: 16,
-        endMargin: 16
-      })
+      .padding({ left: 12, right: 12 })
     }
     .width('100%')
     .height('100%')
