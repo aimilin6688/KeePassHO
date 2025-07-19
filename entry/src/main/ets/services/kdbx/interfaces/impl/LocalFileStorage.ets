@@ -35,25 +35,42 @@ export class LocalFileStorage implements IFileStorage {
   }
 
   /**
-   * 写入文件内容
+   * 写入文件内容, 写入前根据授权内容判断是否授权或激活授权
    * @param path 文件路径
    * @param content 文件内容
    * @throws 如果写入失败则抛出异常
    */
   async writeFile(path: string, content: ArrayBuffer): Promise<void> {
-    return await FileUtils.activatePermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
-      try {
-        // 打开文件（如果不存在则创建）
-        const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-        // 写入内容
-        await fs.write(file.fd, content);
-        // 关闭文件
-        await fs.close(file.fd);
-        return Promise.resolve();
-      } catch (error) {
-        throw new Error(`Failed to write file: ${error.message}`);
-      }
-    });
+    // 校验文件权限
+   return await FileUtils.checkPersistPermission(path, fileShare.OperationMode.WRITE_MODE | fileShare.OperationMode.READ_MODE).then((result) =>{
+     if(result[0]){
+       return FileUtils.activatePermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
+          return await this.writeFileContent(path, content);
+       });
+     }else{
+        return this.writeFileContent(path, content);
+     }
+   });
+  }
+
+  /**
+   * 写入文件内容
+   * @param path 文件路径
+   * @param content 文件内容
+   * @returns Promise<void>
+   */
+  private async writeFileContent(path: string, content: ArrayBuffer):Promise<void>{
+    try {
+      // 打开文件（如果不存在则创建）
+      const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      // 写入内容
+      await fs.write(file.fd, content);
+      // 关闭文件
+      await fs.close(file.fd);
+      return Promise.resolve();
+    } catch (error) {
+      throw new Error(`Failed to write file: ${error.message}`);
+    }
   }
 
   /**
@@ -86,7 +103,7 @@ export class LocalFileStorage implements IFileStorage {
       const stat = await fs.stat(file.fd);
       await fs.close(file.fd);
       return {
-        name: path.split('/').pop() || '',
+        name: FileUtils.getFileName(path),
         size: stat.size,
         modifiedTime: new Date(stat.mtime),
         path: path
