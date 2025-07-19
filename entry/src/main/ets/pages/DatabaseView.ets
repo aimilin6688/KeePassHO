@@ -72,7 +72,7 @@ struct DatabaseView {
 
   onPageShow(): void {
     console.log("Load DatabaseView Page: ", this.databaseShowParam);
-    this.initData(this.databaseShowParam);
+    this.updateUI();
   }
 
   /**
