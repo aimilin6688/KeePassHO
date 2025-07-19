@@ -520,10 +520,11 @@ struct EntryEdit {
                 .alignSelf(ItemAlign.Start)
 
               Row() {
-                TextInput({ text: this.title, placeholder: '请输入标题' })
+                TextArea({ text: this.title, placeholder: '请输入标题' })
                   .layoutWeight(1)
-                  .height(48)
                   .fontSize(16)
+                  .lineHeight(24)
+                  .padding({top:12,bottom:12})
                   .fontColor($r('app.color.text_primary'))
                   .borderRadius(8)
                   .onChange((value) => {
@@ -560,12 +561,13 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextInput({ text: this.username, placeholder: '请输入用户名' })
+              TextArea({ text: this.username, placeholder: '请输入用户名' })
                 .width('100%')
-                .height(48)
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
+                .lineHeight(24)
+                .padding({top:12,bottom:12})
                 .onChange((value) => {
                   this.username = value;
                   this.isModified = true;
@@ -628,12 +630,13 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextInput({ text: this.url, placeholder: '请输入URL' })
+              TextArea({ text: this.url, placeholder: '请输入URL' })
                 .width('100%')
-                .height(48)
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
+                .lineHeight(24)
+                .padding({top:12,bottom:12})
                 .onChange((value) => {
                   this.url = value;
                   this.isModified = true;
@@ -650,9 +653,10 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextInput({ text: this.tags, placeholder: '请输入标签（用逗号分隔）' })
+              TextArea({ text: this.tags, placeholder: '请输入标签（用逗号分隔）' })
                 .width('100%')
-                .height(48)
+                .lineHeight(24)
+                .padding({top:12,bottom:12})
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
@@ -674,7 +678,9 @@ struct EntryEdit {
 
               TextArea({ text: this.notes, placeholder: '请输入备注' })
                 .width('100%')
-                .height(120)
+                .height(96)
+                .lineHeight(24)
+                .padding({top:12,bottom:12})
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
