@@ -63,7 +63,7 @@ export struct EntryEditFieldDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text(this.isEditing ? '编辑自定义字段' : '添加自定义字段')
+        Text(this.isEditing ? $r('app.string.EntryEditFieldDialog_edit_field') : $r('app.string.EntryEditFieldDialog_add_field'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         Blank()
@@ -86,13 +86,13 @@ export struct EntryEditFieldDialog {
 
       // 字段名称
       Column() {
-        Text('字段名称')
+        Text($r('app.string.EntryEditFieldDialog_field_name'))
           .fontSize(14)
           .fontColor($r('app.color.text_secondary'))
           .margin({ bottom: 8 })
           .alignSelf(ItemAlign.Start)
 
-        TextInput({ text: this.tempKey, placeholder: '请输入字段名称' })
+        TextInput({ text: this.tempKey, placeholder: $r('app.string.EntryEditFieldDialog_enter_field_name') })
           .width('100%')
           .height(48)
           .fontSize(16)
@@ -107,7 +107,7 @@ export struct EntryEditFieldDialog {
 
       // 字段值
       Column() {
-        Text('字段值')
+        Text($r('app.string.EntryEditFieldDialog_field_value'))
           .fontSize(14)
           .fontColor($r('app.color.text_secondary'))
           .margin({ bottom: 8 })
@@ -116,7 +116,7 @@ export struct EntryEditFieldDialog {
         Row() {
           TextInput({
             text: this.tempValue,
-            placeholder: '请输入字段值',
+            placeholder: $r('app.string.EntryEditFieldDialog_enter_field_value'),
           })
             .type(this.tempProtected && !this.showPassword ? InputType.Password : InputType.Normal)
             .width('100%')
