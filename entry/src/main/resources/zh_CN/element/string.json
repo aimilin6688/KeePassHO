@@ -103,6 +103,74 @@
     {
       "name": "Error_check_recent_files",
       "value": "检查最近文件失败"
+    },
+    {
+      "name": "DatabaseView_invalid_database",
+      "value": "无效的数据库"
+    },
+    {
+      "name": "DatabaseView_invalid_group",
+      "value": "无效的分组"
+    },
+    {
+      "name": "DatabaseView_process_failed",
+      "value": "处理数据库失败"
+    },
+    {
+      "name": "DatabaseView_edit",
+      "value": "编辑"
+    },
+    {
+      "name": "DatabaseView_delete",
+      "value": "删除"
+    },
+    {
+      "name": "DatabaseView_confirm_delete",
+      "value": "确认删除"
+    },
+    {
+      "name": "DatabaseView_confirm_delete_group",
+      "value": "确定要删除这个分组吗？"
+    },
+    {
+      "name": "DatabaseView_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "DatabaseView_save_success",
+      "value": "保存成功"
+    },
+    {
+      "name": "DatabaseView_save_failed",
+      "value": "保存数据库失败"
+    },
+    {
+      "name": "DatabaseView_invalid_database_info",
+      "value": "无效的数据库信息"
+    },
+    {
+      "name": "DatabaseView_loading",
+      "value": "正在加载数据库..."
+    },
+    {
+      "name": "DatabaseView_group_items",
+      "value": "组群 %d 个条目"
+    },
+    {
+      "name": "DatabaseView_search_placeholder",
+      "value": "查找内容"
+    },
+    {
+      "name": "DatabaseView_cancel_search",
+      "value": "取消"
+    },
+    {
+      "name": "DatabaseView_add_group",
+      "value": "添加分组"
+    },
+    {
+      "name": "DatabaseView_add_entry",
+      "value": "添加条目"
     }
   ]
 }

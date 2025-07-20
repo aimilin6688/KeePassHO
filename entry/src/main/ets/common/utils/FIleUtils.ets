@@ -1,18 +1,16 @@
 import { fileShare } from '@kit.CoreFileKit';
-import { BusinessError } from '@kit.BasicServicesKit';
 
 export default class FileUtils {
-
   /**
    * 获取文件名
    * @param filePath 文件路径
    */
   public static getFileName(filePath: string): string {
-    if(!filePath){
+    if (!filePath) {
       return "";
     }
     const fileNameMatch = filePath.match(/[^/]+$/);
-    return  fileNameMatch ? decodeURIComponent(fileNameMatch[0]) : '';
+    return fileNameMatch ? decodeURIComponent(fileNameMatch[0]) : '';
   }
 
 

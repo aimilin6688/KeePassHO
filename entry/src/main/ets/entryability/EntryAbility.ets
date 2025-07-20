@@ -4,6 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { SettingsService } from '../services/SettingsService';
 import ThemeManager from '../common/utils/ThemeManager';
+import ResourceManager from '../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -17,6 +18,9 @@ export default class EntryAbility extends UIAbility {
 
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
+
+    // 初始化资源管理器
+    ResourceManager.getInstance().init(this.context);
 
     // 初始化设置服务
     await SettingsService.getInstance().init(this.context);
