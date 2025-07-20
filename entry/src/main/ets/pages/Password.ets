@@ -25,7 +25,7 @@ struct Password {
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
-  @State loadingMessage:string =  '正在加载...';
+  @State loadingMessage:string =  '';
 
   private filePath: string = '';
   private storageType: StorageType | null = null;
@@ -351,7 +351,7 @@ struct Password {
             this.router.back();
           })
 
-        Text('解锁数据库')
+        Text($r('app.string.Password_unlock_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -441,7 +441,7 @@ struct Password {
         // 底部固定按钮栏
         Row() {
           // 左侧 - 更改数据库按钮
-          Button('更改数据库')
+          Button($r('app.string.Password_change_db'))
             .height(48)
             .layoutWeight(1)
             .margin({ left: 16, right: 8 })
@@ -452,7 +452,7 @@ struct Password {
             })
 
           // 右侧 - 解锁按钮
-          Button(this.isLoading ? '验证中...' : '解锁')
+          Button(this.isLoading ? $r('app.string.Password_loading') : $r('app.string.Password_unlock_title'))
             .height(48)
             .layoutWeight(1)
             .margin({ left: 8, right: 16 })

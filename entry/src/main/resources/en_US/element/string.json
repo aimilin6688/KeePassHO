@@ -700,6 +700,18 @@
     {
       "name": "DatabaseView_unknown_database",
       "value": "Unknown database"
+    },
+    {
+      "name": "Password_loading",
+      "value": "Loading..."
+    },
+    {
+      "name": "Password_unlock_title",
+      "value": "Unlock Database"
+    },
+    {
+      "name": "Password_change_db",
+      "value": "Change Database"
     }
   ]
 }
