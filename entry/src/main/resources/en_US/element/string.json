@@ -468,6 +468,66 @@
     {
       "name": "group_item_count_format",
       "value": "Group {n} items"
+    },
+    {
+      "name": "entry_edit_add_title",
+      "value": "Add Entry"
+    },
+    {
+      "name": "entry_edit_edit_title",
+      "value": "Edit Entry"
+    },
+    {
+      "name": "invalid_group_message",
+      "value": "Invalid group information"
+    },
+    {
+      "name": "invalid_entry_message",
+      "value": "Invalid entry information"
+    },
+    {
+      "name": "title_required_message",
+      "value": "Title cannot be empty"
+    },
+    {
+      "name": "field_name_exists_message",
+      "value": "Field name already exists"
+    },
+    {
+      "name": "save_entry_failed_message",
+      "value": "Failed to save entry"
+    },
+    {
+      "name": "generate_button_text",
+      "value": "Generate"
+    },
+    {
+      "name": "title_placeholder",
+      "value": "Enter title"
+    },
+    {
+      "name": "username_placeholder",
+      "value": "Enter username"
+    },
+    {
+      "name": "password_placeholder",
+      "value": "Enter password"
+    },
+    {
+      "name": "url_placeholder",
+      "value": "Enter URL"
+    },
+    {
+      "name": "tags_placeholder",
+      "value": "Enter tags (comma separated)"
+    },
+    {
+      "name": "notes_placeholder",
+      "value": "Enter notes"
+    },
+    {
+      "name": "no_custom_fields_message",
+      "value": "No custom fields"
     }
   ]
 }
