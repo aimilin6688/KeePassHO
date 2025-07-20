@@ -52,7 +52,7 @@ struct EntryView {
 
       if (!this.database || !this.entryId) {
         this.promptAction.showToast({
-          message: '无效的数据库或条目ID',
+          message: $r('app.string.invalid_db_or_entry'),
           duration: 2000
         });
         this.router.back();
@@ -64,7 +64,7 @@ struct EntryView {
 
       if (!this.entry) {
         this.promptAction.showToast({
-          message: '找不到指定的条目',
+          message: $r('app.string.entry_not_found'),
           duration: 2000
         });
         this.router.back();
@@ -80,7 +80,7 @@ struct EntryView {
     } catch (error) {
       console.error(`加载条目失败: ${error}`);
       this.promptAction.showToast({
-        message: `加载条目失败: ${error}`,
+        message: $r('app.string.load_entry_failed') + `: ${error}`,
         duration: 2000
       });
       this.router.back();
@@ -317,7 +317,7 @@ struct EntryView {
               .height(50)
               .color($r('app.color.primary'))
 
-            Text('正在加载条目...')
+            Text($r('app.string.loading_entry'))
               .fontSize(16)
               .margin({ top: 16 })
               .fontColor($r('app.color.text_primary'))
@@ -411,7 +411,7 @@ struct EntryView {
                     .fillColor($r('app.color.text_secondary'))
                     .opacity(0.5)
 
-                  Text('没有历史记录')
+                  Text($r('app.string.no_history'))
                     .fontSize(16)
                     .fontColor($r('app.color.text_secondary'))
                     .margin({ top: 16 })
