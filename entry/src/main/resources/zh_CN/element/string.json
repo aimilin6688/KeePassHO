@@ -171,6 +171,46 @@
     {
       "name": "DatabaseView_add_entry",
       "value": "添加条目"
+    },
+    {
+      "name": "KdbxUtils_username",
+      "value": "用户名"
+    },
+    {
+      "name": "KdbxUtils_password",
+      "value": "密码"
+    },
+    {
+      "name": "KdbxUtils_url",
+      "value": "链接地址"
+    },
+    {
+      "name": "KdbxUtils_notes",
+      "value": "备注"
+    },
+    {
+      "name": "KdbxUtils_title",
+      "value": "标题"
+    },
+    {
+      "name": "KdbxUtils_tags",
+      "value": "标签"
+    },
+    {
+      "name": "KdbxUtils_group_name",
+      "value": "分组名称"
+    },
+    {
+      "name": "KdbxUtils_custom_field",
+      "value": "自定义字段"
+    },
+    {
+      "name": "KdbxUtils_created_time",
+      "value": "创建时间"
+    },
+    {
+      "name": "KdbxUtils_updated_time",
+      "value": "更新时间"
     }
   ]
 }
