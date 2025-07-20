@@ -528,6 +528,26 @@
     {
       "name": "no_custom_fields_message",
       "value": "No custom fields"
+    },
+    {
+      "name": "invalid_db_or_entry",
+      "value": "Invalid database or entry ID"
+    },
+    {
+      "name": "entry_not_found",
+      "value": "Entry not found"
+    },
+    {
+      "name": "load_entry_failed",
+      "value": "Failed to load entry"
+    },
+    {
+      "name": "loading_entry",
+      "value": "Loading entry..."
+    },
+    {
+      "name": "no_history",
+      "value": "No history records"
     }
   ]
 }
