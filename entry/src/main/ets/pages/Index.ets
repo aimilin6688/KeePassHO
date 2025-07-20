@@ -34,7 +34,7 @@ struct Index {
         }
       });
     } catch (error) {
-      console.error(`检查最近文件失败: ${error}`);
+      console.error($r('app.string.Error_check_recent_files') + `: ${error}`);
     }
   }
 
@@ -49,7 +49,7 @@ struct Index {
   @State private updateUI: boolean = false;
 
   @Builder
-  MainButton(icon: Resource, text: string, onClick: () => void) {
+  MainButton(icon: Resource, text: string | Resource, onClick: () => void) {
     Button() {
       Row() {
         Image(icon)
@@ -100,26 +100,26 @@ struct Index {
           .margin({ top: 60, bottom: 40 })
 
         // 欢迎文本
-        Text('欢迎使用 KeePassHO')
+        Text($r('app.string.Index_welcome'))
           .fontSize(24)
           .fontWeight(FontWeight.Bold)
           .margin({ bottom: 8 })
           .fontColor($r('app.color.text_primary'))
 
-        Text('安全管理您的密码')
+        Text($r('app.string.Index_subtitle'))
           .fontSize(16)
           .opacity(0.6)
           .margin({ bottom: 60 })
           .fontColor($r('app.color.text_primary'))
 
         // 主要操作按钮
-        this.MainButton($r('app.media.ic_folder_open'), '打开数据库', () => {
+        this.MainButton($r('app.media.ic_folder_open'), $r('app.string.Index_open_database'), () => {
           this.router.pushUrl({ url: 'pages/open/OpenDatabase' }, router.RouterMode.Single)
         })
 
         // 添加间距
         Column() {
-          this.MainButton($r('app.media.ic_add_file'), '创建新的数据库', () => {
+          this.MainButton($r('app.media.ic_add_file'), $r('app.string.Index_create_database'), () => {
             this.router.pushUrl({ url: 'pages/open/CreateDatabase' })
           })
         }
@@ -127,7 +127,7 @@ struct Index {
 
         // 最近打开的文件按钮
         Column() {
-          this.MainButton($r('app.media.ic_history'), '最近打开的文件', () => {
+          this.MainButton($r('app.media.ic_history'), $r('app.string.Index_recent_files'), () => {
             this.router.pushUrl({ url: 'pages/RecentFiles' })
           })
         }
