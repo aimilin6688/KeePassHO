@@ -235,7 +235,7 @@ struct DatabaseView {
         });
       }).catch((error: Error) => {
         console.error(`保存数据库失败: ${error}`);
-        this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
+        this.promptAction.showToast({ message: `${$r('app.string.DatabaseView_save_failed')}: ${error.message}` });
       });
     }
   }
