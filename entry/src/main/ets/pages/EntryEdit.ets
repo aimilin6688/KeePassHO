@@ -9,6 +9,7 @@ import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { CustomField } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
+import ResourceManager from '../common/utils/ResourceManager';
 
 @Entry
 @Component
@@ -21,7 +22,7 @@ struct EntryEdit {
   @State showPassword: boolean = false;
   @State isLoading: boolean = false;
   @State isEditMode: boolean = false;
-  @State pageTitle: string = '添加条目';
+  @State pageTitle: string = ResourceManager.getInstance().getString($r('app.string.entry_edit_add_title'));
 
   @State customFields: CustomField[] = []; // 自定义字段列表
   @State showFieldDialog: boolean = false; // 显示自定义字段对话框
@@ -107,7 +108,7 @@ struct EntryEdit {
       this.parentGroup = this.database.getGroup(routeParams.groupId);
       if (!this.parentGroup) {
         this.promptAction.showToast({
-          message: '无效的分组信息',
+          message: $r('app.string.invalid_group_message'),
           duration: 2000
         });
         this.router.back();
@@ -120,14 +121,15 @@ struct EntryEdit {
     // 判断是编辑模式还是添加模式
     if (routeParams.entryId && routeParams.groupId) {
       this.isEditMode = true;
-      this.pageTitle = '编辑条目';
+      this.pageTitle = ResourceManager.getInstance().getString($r('app.string.entry_edit_edit_title'));
+
       
       // 使用KdbxUtils.getEntry方法获取现有条目
       this.entry = KdbxUtils.getEntry(this.database, routeParams.groupId, routeParams.entryId);
       
       if (!this.entry) {
         this.promptAction.showToast({
-          message: '无效的条目信息',
+          message: $r('app.string.invalid_entry_message'),
           duration: 2000
         });
         this.router.back();
@@ -213,7 +215,7 @@ struct EntryEdit {
 
     if (!this.title.trim()) {
       this.promptAction.showToast({
-        message: '标题不能为空',
+        message: $r('app.string.title_required_message'),
         duration: 2000
       });
       return;
@@ -369,7 +371,7 @@ struct EntryEdit {
         
         if (existingField !== -1) {
           this.promptAction.showToast({
-            message: '字段名称已存在',
+            message: $r('app.string.field_name_exists_message'),
             duration: 2000
           });
           return;
