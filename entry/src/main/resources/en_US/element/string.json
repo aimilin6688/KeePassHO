@@ -694,8 +694,12 @@
       "value": "Invalid database or group information"
     },
     {
-      "name": "EntryEdit_save_success",
+      "name": "EntryEdit_save_success", 
       "value": "Save successful"
+    },
+    {
+      "name": "DatabaseView_unknown_database",
+      "value": "Unknown database"
     }
   ]
 }
