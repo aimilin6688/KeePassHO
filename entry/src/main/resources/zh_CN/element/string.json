@@ -272,6 +272,14 @@
     {
       "name": "EntryEditFieldDialog_confirm",
       "value": "确定"
+    },
+    {
+      "name": "EntryViewFieldItem_copy_failed",
+      "value": "复制失败: %s"
+    },
+    {
+      "name": "EntryViewFieldItem_copied",
+      "value": "已复制"
     }
   ]
 }
