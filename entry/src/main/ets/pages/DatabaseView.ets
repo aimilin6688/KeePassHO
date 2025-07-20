@@ -188,15 +188,15 @@ struct DatabaseView {
         .fontSize(14)
         .onClick(() => {
           AlertDialog.show({
-            title: '确认删除',
-            message: '确定要删除这个分组吗？',
+            title: $r('app.string.delete_confirm_title'),
+            message: $r('app.string.delete_confirm_message'),
             primaryButton: {
-              value: '取消',
+              value: $r('app.string.cancel_button_text'),
               action: () => {
               }
             },
             secondaryButton: {
-              value: '删除',
+              value: $r('app.string.delete_button_text'),
               action: () => {
                 if (this.database === null) {
                   return;
