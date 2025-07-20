@@ -240,6 +240,10 @@
     {
       "name": "EntryViewFieldItem_copied",
       "value": "Copied"
+    },
+    {
+      "name": "IconSelectorDialog_select_icon",
+      "value": "Select Icon"
     }
   ]
 }

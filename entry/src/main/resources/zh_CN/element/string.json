@@ -280,6 +280,10 @@
     {
       "name": "EntryViewFieldItem_copied",
       "value": "已复制"
+    },
+    {
+      "name": "IconSelectorDialog_select_icon",
+      "value": "选择图标"
     }
   ]
 }
