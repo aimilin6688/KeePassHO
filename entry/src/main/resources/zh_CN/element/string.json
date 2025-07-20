@@ -348,6 +348,70 @@
     {
       "name": "PasswordGenerator_generate",
       "value": "生成密码"
+    },
+    {
+      "name": "CreateDatabase_title",
+      "value": "创建新数据库"
+    },
+    {
+      "name": "CreateDatabase_name_label",
+      "value": "数据库名称"
+    },
+    {
+      "name": "CreateDatabase_name_placeholder",
+      "value": "请输入数据库名称"
+    },
+    {
+      "name": "CreateDatabase_password_label",
+      "value": "密码"
+    },
+    {
+      "name": "CreateDatabase_password_placeholder",
+      "value": "请输入密码"
+    },
+    {
+      "name": "CreateDatabase_confirm_password_label",
+      "value": "确认密码"
+    },
+    {
+      "name": "CreateDatabase_confirm_password_placeholder",
+      "value": "请再次输入密码"
+    },
+    {
+      "name": "CreateDatabase_password_mismatch",
+      "value": "两次输入的密码不一致"
+    },
+    {
+      "name": "CreateDatabase_create_button",
+      "value": "创建数据库"
+    },
+    {
+      "name": "CreateDatabase_name_required",
+      "value": "请输入数据库名称"
+    },
+    {
+      "name": "CreateDatabase_password_required",
+      "value": "请输入密码"
+    },
+    {
+      "name": "CreateDatabase_success",
+      "value": "数据库创建成功"
+    },
+    {
+      "name": "CreateDatabase_save_failed",
+      "value": "数据库保存失败"
+    },
+    {
+      "name": "CreateDatabase_create_failed",
+      "value": "数据库创建失败"
+    },
+    {
+      "name": "CreateDatabase_location_failed",
+      "value": "选择保存位置失败: ${err.message}"
+    },
+    {
+      "name": "CreateDatabase_error_message",
+      "value": "创建失败: ${error}"
     }
   ]
 }

@@ -308,6 +308,70 @@
     {
       "name": "PasswordGenerator_generate",
       "value": "Generate Password"
+    },
+    {
+      "name": "CreateDatabase_title",
+      "value": "Create New Database"
+    },
+    {
+      "name": "CreateDatabase_name_label",
+      "value": "Database Name"
+    },
+    {
+      "name": "CreateDatabase_name_placeholder",
+      "value": "Please enter database name"
+    },
+    {
+      "name": "CreateDatabase_password_label",
+      "value": "Password"
+    },
+    {
+      "name": "CreateDatabase_password_placeholder",
+      "value": "Please enter password"
+    },
+    {
+      "name": "CreateDatabase_confirm_password_label",
+      "value": "Confirm Password"
+    },
+    {
+      "name": "CreateDatabase_confirm_password_placeholder",
+      "value": "Please enter password again"
+    },
+    {
+      "name": "CreateDatabase_password_mismatch",
+      "value": "Passwords do not match"
+    },
+    {
+      "name": "CreateDatabase_create_button",
+      "value": "Create Database"
+    },
+    {
+      "name": "CreateDatabase_name_required",
+      "value": "Please enter database name"
+    },
+    {
+      "name": "CreateDatabase_password_required",
+      "value": "Please enter password"
+    },
+    {
+      "name": "CreateDatabase_success",
+      "value": "Database created successfully"
+    },
+    {
+      "name": "CreateDatabase_save_failed",
+      "value": "Failed to save database"
+    },
+    {
+      "name": "CreateDatabase_create_failed",
+      "value": "Failed to create database"
+    },
+    {
+      "name": "CreateDatabase_location_failed",
+      "value": "Failed to select save location: ${err.message}"
+    },
+    {
+      "name": "CreateDatabase_error_message",
+      "value": "Creation failed: ${error}"
     }
   ]
 }
