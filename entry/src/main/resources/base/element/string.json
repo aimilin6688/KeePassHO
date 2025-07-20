@@ -71,6 +71,46 @@
     {
       "name": "Settings_about",
       "value": "About"
+    },
+    {
+      "name": "KdbxUtils_username",
+      "value": "Username"
+    },
+    {
+      "name": "KdbxUtils_password",
+      "value": "Password"
+    },
+    {
+      "name": "KdbxUtils_url",
+      "value": "URL"
+    },
+    {
+      "name": "KdbxUtils_notes",
+      "value": "Notes"
+    },
+    {
+      "name": "KdbxUtils_title",
+      "value": "Title"
+    },
+    {
+      "name": "KdbxUtils_tags",
+      "value": "Tags"
+    },
+    {
+      "name": "KdbxUtils_group_name",
+      "value": "Group Name"
+    },
+    {
+      "name": "KdbxUtils_custom_field",
+      "value": "Custom Field"
+    },
+    {
+      "name": "KdbxUtils_created_time",
+      "value": "Created Time"
+    },
+    {
+      "name": "KdbxUtils_updated_time",
+      "value": "Updated Time"
     }
   ]
 }

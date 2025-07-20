@@ -225,7 +225,7 @@ export default class KdbxUtils {
    */
   public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
     // 排序前分组名称
-    console.log("排序前分组名称：", sortMode, groups.map(group => group.name).join(','));
+    console.log('Before sort group names:', sortMode, groups.map(group => group.name).join(','));
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
@@ -253,7 +253,7 @@ export default class KdbxUtils {
         break;
     }
     // 排序后分组名称
-    console.log("排序后分组名称：", sortMode, groups.map(group => group.name).join(','));
+    console.log('After sort group names:', sortMode, groups.map(group => group.name).join(','));
   }
 
   /**
@@ -281,28 +281,28 @@ export default class KdbxUtils {
    * @returns 字段名称
    */
   public static getFieldName(fileKey:string):string | Resource {
-    console.log("获取字段名称：", fileKey);
+    console.log('Get field name: ', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
-        return "用户名";
+        return $r('app.string.KdbxUtils_username');
       case KdbxUtils.FIELD_PASSWORD:
-        return "密码";
+        return $r('app.string.KdbxUtils_password');
       case KdbxUtils.FIELD_URL:
-        return "链接地址";
+        return $r('app.string.KdbxUtils_url');
       case KdbxUtils.FIELD_NOTES:
-        return "备注";
+        return $r('app.string.KdbxUtils_notes');
       case KdbxUtils.FIELD_TITLE:
-        return "标题";
+        return $r('app.string.KdbxUtils_title');
       case KdbxUtils.FIELD_TAGS:
-        return "标签";
+        return $r('app.string.KdbxUtils_tags');
       case KdbxUtils.GROUP_NAME:
-        return "分组名称";
+        return $r('app.string.KdbxUtils_group_name');
       case KdbxUtils.FIELD_CUSTOM_FIELDS:
-        return "自定义字段";
+        return $r('app.string.KdbxUtils_custom_field');
       case KdbxUtils.FIELD_CREATION_TIME:
-        return "创建时间";
+        return $r('app.string.KdbxUtils_created_time');
       case KdbxUtils.FIELD_LASTMOD_TIME:
-        return "更新时间";
+        return $r('app.string.KdbxUtils_updated_time');
       default:
         return fileKey;
     }
