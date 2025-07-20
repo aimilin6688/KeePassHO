@@ -1,5 +1,6 @@
 {
   "string": [
+
     {
       "name": "module_desc",
       "value": "KeePassHO密码管理"
@@ -230,6 +231,46 @@
     },
     {
       "name": "AddGroupDialog_confirm",
+      "value": "确定"
+    },
+    {
+      "name": "EntryEditFieldDialog_edit_field",
+      "value": "编辑自定义字段"
+    },
+    {
+      "name": "EntryEditFieldDialog_add_field",
+      "value": "添加自定义字段"
+    },
+    {
+      "name": "EntryEditFieldDialog_field_name",
+      "value": "字段名称"
+    },
+    {
+      "name": "EntryEditFieldDialog_enter_field_name",
+      "value": "请输入字段名称"
+    },
+    {
+      "name": "EntryEditFieldDialog_field_value",
+      "value": "字段值"
+    },
+    {
+      "name": "EntryEditFieldDialog_enter_field_value",
+      "value": "请输入字段值"
+    },
+    {
+      "name": "EntryEditFieldDialog_protect_field",
+      "value": "保护字段值"
+    },
+    {
+      "name": "EntryEditFieldDialog_name_empty",
+      "value": "字段名称不能为空"
+    },
+    {
+      "name": "EntryEditFieldDialog_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "EntryEditFieldDialog_confirm",
       "value": "确定"
     }
   ]
