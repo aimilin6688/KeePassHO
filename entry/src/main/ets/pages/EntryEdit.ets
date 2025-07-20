@@ -96,7 +96,7 @@ struct EntryEdit {
 
     if (!this.database) {
       this.promptAction.showToast({
-        message: '无效的数据库信息',
+        message: $r('app.string.EntryEdit_invalid_db_info'),
         duration: 2000
       });
       this.router.back();
@@ -207,7 +207,7 @@ struct EntryEdit {
   private saveEntry() {
     if (!this.database || !this.parentGroup) {
       this.promptAction.showToast({
-        message: '无效的数据库或分组信息',
+        message: $r('app.string.EntryEdit_invalid_db_or_group'),
         duration: 2000
       });
       return;
@@ -312,7 +312,7 @@ struct EntryEdit {
       this.database.save().then(async savedDb => {
         const fileManager = new KdbxFileManager(dbFileParam.storageType);
         fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
-          this.promptAction.showToast({ message: `保存成功` });
+          this.promptAction.showToast({ message: $r('app.string.EntryEdit_save_success') });
           this.isLoading = false;
           this.router.back();
         }).catch(this.handleSaveError);
@@ -326,7 +326,7 @@ struct EntryEdit {
    */
   private handleSaveError(error: Error){
     console.error(`保存数据库失败: ${error}`);
-    this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
+    this.promptAction.showToast({ message: $r('app.string.EntryEdit_save_failed') + `: ${error.message}` });
     this.isLoading = false;
   }
 
@@ -395,7 +395,7 @@ struct EntryEdit {
       const existingField = this.customFields.find(field => field.key === customField.key);
       if (existingField) {
         this.promptAction.showToast({
-          message: '字段名称已存在',
+          message: $r('app.string.EntryEdit_field_name_exists'),
           duration: 2000
         });
         return;
