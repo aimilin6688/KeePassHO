@@ -37,7 +37,7 @@ struct LocalFile {
     } catch (error) {
       console.error(`Failed to pick file: ${error}`);
       this.promptAction.showToast({
-        message: `选择文件失败: ${error}`,
+        message: error.message,
         duration: 2000
       });
     }
@@ -69,7 +69,7 @@ struct LocalFile {
     }).catch((error:Error) =>{
       console.error(`Failed to load KDBX file: ${error}`);
       this.promptAction.showToast({
-        message: `加载文件失败: ${error}`,
+        message:  error.message,
         duration: 3000
       });
     }).finally(() => {
@@ -90,7 +90,7 @@ struct LocalFile {
             this.router.back()
           })
 
-        Text('选择本地文件')
+        Text($r('app.string.LocalFile_select_local_file'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -109,7 +109,7 @@ struct LocalFile {
             .height(50)
             .color($r('app.color.text_primary'))
 
-          Text('正在加载文件...')
+          Text($r('app.string.LocalFile_loading_file'))
             .fontSize(16)
             .margin({ top: 16 })
             .fontColor($r('app.color.text_primary'))
@@ -130,7 +130,7 @@ struct LocalFile {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('80%')
 
-          Button('重新选择文件')
+          Button($r('app.string.LocalFile_reselect_file'))
             .margin({ top: 24 })
             .onClick(() => this.openFilePicker())
         } else {
@@ -141,12 +141,12 @@ struct LocalFile {
             .margin({ top: 60 })
             .fillColor($r('app.color.text_secondary'))
 
-          Text('点击选择KDBX文件')
+          Text($r('app.string.LocalFile_click_to_select'))
             .fontSize(16)
             .margin({ top: 16 })
             .fontColor($r('app.color.text_primary'))
 
-          Button('选择文件')
+          Button($r('app.string.LocalFile_select_file'))
             .margin({ top: 24 })
             .onClick(() => this.openFilePicker())
         }
