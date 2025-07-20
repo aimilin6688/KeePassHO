@@ -1,4 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
+import ResourceManager from '../common/utils/ResourceManager'
 
 @Entry
 @Component
@@ -33,11 +34,11 @@ export struct About {
 
         // 内容
         Column() {
-          Text('KeePassHO')
+          Text($r('app.string.EntryAbility_label'))
             .fontSize(20)
             .margin({top: 20, bottom: 30})
 
-          Text($r('app.string.About_version') + '1.0.0')
+          Text(ResourceManager.getInstance().getString($r('app.string.About_version')) + '1.0.0')
             .fontSize(16)
             .margin(5)
 
