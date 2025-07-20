@@ -12,7 +12,7 @@ export enum ThemeMode {
  */
 export interface ThemeOption {
   type: ThemeMode;
-  value: string;
+  value: Resource;
 }
 
 /**
@@ -23,9 +23,9 @@ export class ThemeConstants {
    * 主题模式选项
    */
   static readonly THEME_OPTIONS: ThemeOption[] = [
-    { value: '跟随系统', type: ThemeMode.SYSTEM },
-    { value: '浅色', type: ThemeMode.LIGHT },
-    { value: '深色', type: ThemeMode.DARK }
+    { value: $r('app.string.ThemeConstants_system'), type: ThemeMode.SYSTEM },
+    { value: $r('app.string.ThemeConstants_light'), type: ThemeMode.LIGHT },
+    { value: $r('app.string.ThemeConstants_dark'), type: ThemeMode.DARK }
   ];
 
   /**
@@ -33,7 +33,7 @@ export class ThemeConstants {
    * @param value 值
    * @returns 排序选项
    */
-  public static getThemeOptionByType(type: ThemeMode): string {
+  public static getThemeOptionByType(type: ThemeMode): Resource {
     return ThemeConstants.THEME_OPTIONS.find((option) => option.type === type)?.value ?? ThemeConstants.THEME_OPTIONS[0].value;
   }
 }

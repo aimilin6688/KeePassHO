@@ -2,11 +2,11 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "KeePass Password Manager"
+      "value": "KeePas密码管理"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "KeePass Password Manager"
+      "value": "KeePas密码管理"
     },
     {
       "name": "EntryAbility_label",
@@ -14,63 +14,63 @@
     },
     {
       "name": "reason",
-      "value": "Access and store kdbx data files"
+      "value": "访问与存储kdbx数据文件"
     },
     {
       "name": "SortConstants_default",
-      "value": "Default order"
+      "value": "默认排序"
     },
     {
       "name": "SortConstants_name",
-      "value": "Sort by name"
+      "value": "按名称排序"
     },
     {
       "name": "SortConstants_modified",
-      "value": "Sort by modified date"
+      "value": "按修改日期排序"
     },
     {
       "name": "SortConstants_created",
-      "value": "Sort by created date"
+      "value": "按创建日期排序"
     },
     {
       "name": "ThemeConstants_system",
-      "value": "Follow system"
+      "value": "跟随系统"
     },
     {
       "name": "ThemeConstants_light",
-      "value": "Light"
+      "value": "浅色"
     },
     {
       "name": "ThemeConstants_dark",
-      "value": "Dark"
+      "value": "深色"
     },
     {
       "name": "Settings_title",
-      "value": "Settings"
+      "value": "设置"
     },
     {
       "name": "Settings_theme",
-      "value": "Theme"
+      "value": "主题"
     },
     {
       "name": "Settings_sort_method",
-      "value": "Sort method"
+      "value": "排序方式"
     },
     {
       "name": "Settings_create_database",
-      "value": "Create database"
+      "value": "创建数据库"
     },
     {
       "name": "Settings_change_database",
-      "value": "Change database"
+      "value": "更换数据库"
     },
     {
       "name": "Settings_recent_files",
-      "value": "Recent files"
+      "value": "最近打开"
     },
     {
       "name": "Settings_about",
-      "value": "About"
+      "value": "关于"
     }
   ]
 }
