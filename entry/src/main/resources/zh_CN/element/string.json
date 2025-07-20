@@ -412,6 +412,30 @@
     {
       "name": "CreateDatabase_error_message",
       "value": "创建失败: ${error}"
+    },
+    {
+      "name": "open_database_page_title",
+      "value": "打开数据库"
+    },
+    {
+      "name": "select_open_method_prompt",
+      "value": "请选择打开方式"
+    },
+    {
+      "name": "local_file_button_title",
+      "value": "本地文件"
+    },
+    {
+      "name": "local_file_button_description",
+      "value": "从设备存储中选择数据库文件"
+    },
+    {
+      "name": "webdav_button_title",
+      "value": "WebDAV"
+    },
+    {
+      "name": "webdav_button_description",
+      "value": "从WebDAV服务器打开数据库文件"
     }
   ]
 }
