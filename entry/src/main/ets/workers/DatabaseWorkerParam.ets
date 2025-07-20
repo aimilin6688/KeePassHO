@@ -1,5 +1,6 @@
 import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
 import { AuthTypeInfo, CredentialsParam } from '../services/TypeDefined';
+import ResourceManager from '../common/utils/ResourceManager.ets';
 
 /**
  * 定义消息类型
@@ -104,8 +105,11 @@ export class SuccessMessage implements WorkerMessage {
 }
 
 
-export function toLoadMessage(message: string): LoadMessage {
-  return new LoadMessage(MessageType.LOAD_MESSAGE, message);
+export function toLoadMessage(message: string | Resource): LoadMessage {
+  if (typeof message === 'string') {
+    return new LoadMessage(MessageType.LOAD_MESSAGE, message);
+  }
+  return new LoadMessage(MessageType.LOAD_MESSAGE, ResourceManager.getInstance().getString(message));
 }
 
 export function toErrorMessage(message: string): LoadMessage {
