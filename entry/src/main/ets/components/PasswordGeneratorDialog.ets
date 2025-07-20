@@ -109,7 +109,7 @@ export struct PasswordGeneratorDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text('密码生成器')
+        Text($r('app.string.PasswordGenerator_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         Blank()
@@ -145,7 +145,7 @@ export struct PasswordGeneratorDialog {
 
         // 密码强度指示器
         Row() {
-          Text('密码强度：')
+          Text($r('app.string.PasswordGenerator_strength'))
             .fontSize(12)
             .fontColor($r('app.color.text_secondary'))
             .margin({ right: 8 })
@@ -171,7 +171,7 @@ export struct PasswordGeneratorDialog {
               .borderRadius(3)
           }
 
-          Text(this.passwordStrength === 0 ? '弱' : (this.passwordStrength === 1 ? '中' : '强'))
+          Text(this.passwordStrength === 0 ? $r('app.string.PasswordGenerator_weak') : (this.passwordStrength === 1 ? $r('app.string.PasswordGenerator_medium') : $r('app.string.PasswordGenerator_strong')))
             .fontSize(12)
             .fontColor(this.passwordStrength === 0 ? '#FF0000' : (this.passwordStrength === 1 ? '#FFCC00' : '#00CC00'))
             .margin({ left: 8 })
@@ -181,7 +181,7 @@ export struct PasswordGeneratorDialog {
 
         // 密码长度滑块
         Row() {
-          Text('密码长度：' + this.passwordLength)
+          Text($r('app.string.PasswordGenerator_length', this.passwordLength))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
           Slider({
@@ -207,7 +207,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useUppercase = value;
             })
-          Text('大写字母 (A-Z)')
+          Text($r('app.string.PasswordGenerator_uppercase'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -225,7 +225,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useLowercase = value;
             })
-          Text('小写字母 (a-z)')
+          Text($r('app.string.PasswordGenerator_lowercase'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -243,7 +243,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useNumbers = value;
             })
-          Text('数字 (0-9)')
+          Text($r('app.string.PasswordGenerator_numbers'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -261,7 +261,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useSpecial = value;
             })
-          Text('特殊字符 (!@#$%^&*_+~`|;?><,./-=)')
+          Text($r('app.string.PasswordGenerator_special'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -279,7 +279,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useBrackets = value;
             })
-          Text('括号 ((){}[])')
+          Text($r('app.string.PasswordGenerator_brackets'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -297,7 +297,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useMinus = value;
             })
-          Text('减号 (-)')
+          Text($r('app.string.PasswordGenerator_minus'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -315,7 +315,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useUnderscore = value;
             })
-          Text('下划线 (_)')
+          Text($r('app.string.PasswordGenerator_underscore'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -333,7 +333,7 @@ export struct PasswordGeneratorDialog {
             .onChange((value) => {
               this.useSpace = value;
             })
-          Text('空格 ( )')
+          Text($r('app.string.PasswordGenerator_space'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
@@ -355,7 +355,7 @@ export struct PasswordGeneratorDialog {
                 .height(24)
                 .margin({ right: 8 })
                 .fillColor($r('app.color.text_primary'))
-              Text('接受')
+              Text($r('app.string.PasswordGenerator_accept'))
                 .fontSize(16)
                 .fontWeight(FontWeight.Medium)
                 .fontColor($r('app.color.text_primary'))
@@ -372,7 +372,7 @@ export struct PasswordGeneratorDialog {
             this.close();
           })
 
-        Button('生成密码')
+        Button($r('app.string.PasswordGenerator_generate'))
           .width('48%')
           .height(40)
           .fontSize(16)

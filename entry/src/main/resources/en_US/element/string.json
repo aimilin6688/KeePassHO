@@ -244,6 +244,70 @@
     {
       "name": "IconSelectorDialog_select_icon",
       "value": "Select Icon"
+    },
+    {
+      "name": "PasswordGenerator_title",
+      "value": "Password Generator"
+    },
+    {
+      "name": "PasswordGenerator_strength",
+      "value": "Password Strength:"
+    },
+    {
+      "name": "PasswordGenerator_weak",
+      "value": "Weak"
+    },
+    {
+      "name": "PasswordGenerator_medium",
+      "value": "Medium"
+    },
+    {
+      "name": "PasswordGenerator_strong",
+      "value": "Strong"
+    },
+    {
+      "name": "PasswordGenerator_length",
+      "value": "Password Length: %d"
+    },
+    {
+      "name": "PasswordGenerator_uppercase",
+      "value": "Uppercase Letters (A-Z)"
+    },
+    {
+      "name": "PasswordGenerator_lowercase",
+      "value": "Lowercase Letters (a-z)"
+    },
+    {
+      "name": "PasswordGenerator_numbers",
+      "value": "Numbers (0-9)"
+    },
+    {
+      "name": "PasswordGenerator_special",
+      "value": "Special Characters (!@#$%^&*_+~`|;?><,./-=)"
+    },
+    {
+      "name": "PasswordGenerator_brackets",
+      "value": "Brackets ((){}[])"
+    },
+    {
+      "name": "PasswordGenerator_minus",
+      "value": "Minus Sign (-)"
+    },
+    {
+      "name": "PasswordGenerator_underscore",
+      "value": "Underscore (_)"
+    },
+    {
+      "name": "PasswordGenerator_space",
+      "value": "Space ( )"
+    },
+    {
+      "name": "PasswordGenerator_accept",
+      "value": "Accept"
+    },
+    {
+      "name": "PasswordGenerator_generate",
+      "value": "Generate Password"
     }
   ]
 }
