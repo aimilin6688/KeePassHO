@@ -8,6 +8,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import * as kdbxweb from 'kdbxweb';
 import { RecentFilesService } from '../../services/RecentFilesService';
 import FileUtils from '../../common/utils/FIleUtils';
+import ResourceManager from '../../common/utils/ResourceManager';
 
 
 @Entry
@@ -36,7 +37,7 @@ struct CreateDatabase {
             this.router.back()
           })
 
-        Text('创建新数据库')
+        Text($r('app.string.CreateDatabase_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -49,7 +50,7 @@ struct CreateDatabase {
       // 主要内容区域
       Column() {
         // 数据库名称输入
-        Text('数据库名称')
+        Text($r('app.string.CreateDatabase_name_label'))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20, left: 16 })
@@ -57,7 +58,7 @@ struct CreateDatabase {
           .width('100%')
           .textAlign(TextAlign.Start)
 
-        TextInput({ placeholder: '请输入数据库名称', text: this.databaseName })
+        TextInput({ placeholder: $r('app.string.CreateDatabase_name_placeholder'), text: this.databaseName })
           .type(InputType.Normal)
           .placeholderColor($r('app.color.text_secondary'))
           .placeholderFont({ size: 16 })
@@ -74,7 +75,7 @@ struct CreateDatabase {
           })
 
         // 密码输入
-        Text('密码')
+        Text($r('app.string.CreateDatabase_password_label'))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20, left: 16 })
@@ -83,7 +84,7 @@ struct CreateDatabase {
           .textAlign(TextAlign.Start)
 
         Row() {
-          TextInput({ placeholder: '请输入密码', text: this.password })
+          TextInput({ placeholder: $r('app.string.CreateDatabase_password_placeholder'), text: this.password })
             .type(InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
@@ -105,7 +106,7 @@ struct CreateDatabase {
         .borderRadius(8)
 
         // 确认密码输入
-        Text('确认密码')
+        Text($r('app.string.CreateDatabase_confirm_password_label'))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20, left: 16 })
@@ -114,7 +115,7 @@ struct CreateDatabase {
           .textAlign(TextAlign.Start)
 
         Row() {
-          TextInput({ placeholder: '请再次输入密码', text: this.confirmPassword })
+          TextInput({ placeholder: $r('app.string.CreateDatabase_confirm_password_placeholder'), text: this.confirmPassword })
             .type(InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
@@ -144,7 +145,7 @@ struct CreateDatabase {
         }
 
         // 创建按钮
-        Button('创建数据库')
+        Button($r('app.string.CreateDatabase_create_button'))
           .width('90%')
           .height(48)
           .margin({ top: 40 })
@@ -167,7 +168,7 @@ struct CreateDatabase {
 
   validatePasswords() {
     if (this.password.length > 0 && this.confirmPassword.length > 0 && this.password !== this.confirmPassword) {
-      this.errorMsg = '两次输入的密码不一致';
+      this.errorMsg = ResourceManager.getInstance().getString($r('app.string.CreateDatabase_password_mismatch'));
     } else {
       this.errorMsg = '';
     }
@@ -175,17 +176,17 @@ struct CreateDatabase {
 
   async createDatabase() {
     if (this.databaseName.length === 0) {
-      this.promptAction.showToast({ message: '请输入数据库名称' });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_name_required') });
       return;
     }
 
     if (this.password.length === 0) {
-      this.promptAction.showToast({ message: '请输入密码' });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_password_required') });
       return;
     }
 
     if (this.password !== this.confirmPassword) {
-      this.promptAction.showToast({ message: '两次输入的密码不一致' });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_password_mismatch') });
       return;
     }
 
@@ -212,11 +213,11 @@ struct CreateDatabase {
         }
       }).catch((err: BusinessError) => {
         console.error(`Failed to show document save dialog: ${err.message}`);
-        this.promptAction.showToast({ message: `选择保存位置失败: ${err.message}` });
+        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', {err}) });
       })
     } catch (error) {
       console.error(`Failed to create database: ${error}`);
-      this.promptAction.showToast({ message: `创建失败: ${error}` });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', {error}) });
     } finally {
       this.isCreating = false;
     }
@@ -233,7 +234,7 @@ struct CreateDatabase {
       this.fileManager.saveKdbxFile(filePath, dbContent).then(async () => {
         console.log('Database saved successfully: ', filePath);
         // 显示成功提示
-        this.promptAction.showToast({ message: '数据库创建成功' });
+        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_success') });
         await RecentFilesService.getInstance()
           .addRecentFile({
             filePath: filePath,
@@ -251,11 +252,11 @@ struct CreateDatabase {
         });
       }).catch((error: Error) => {
         console.log(`Failed to save database: ${error}`);
-        this.promptAction.showToast({ message: '数据库保存失败' });
+        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_save_failed') });
       });
     }).catch((error: Error) => {
       console.error(`Failed to create database: ${error}`);
-      this.promptAction.showToast({ message: '数据库创建失败' });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_create_failed') });
     });
   }
 }
