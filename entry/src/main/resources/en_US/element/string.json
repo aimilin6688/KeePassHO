@@ -548,6 +548,42 @@
     {
       "name": "no_history",
       "value": "No history records"
+    },
+    {
+      "name": "invalid_data_file",
+      "value": "Invalid data file"
+    },
+    {
+      "name": "open_failed",
+      "value": "Open failed:"
+    },
+    {
+      "name": "select_key_file",
+      "value": "Please select key file"
+    },
+    {
+      "name": "storage_type_empty",
+      "value": "Storage type is empty"
+    },
+    {
+      "name": "verifying",
+      "value": "Verifying..."
+    },
+    {
+      "name": "auth_method",
+      "value": "Authentication method"
+    },
+    {
+      "name": "select_key_file_button",
+      "value": "Select key file"
+    },
+    {
+      "name": "reselect_key_file",
+      "value": "Reselect key file"
+    },
+    {
+      "name": "key_file",
+      "value": "Key file"
     }
   ]
 }
