@@ -157,7 +157,7 @@ struct EntryView {
     // 遍历条目的历史记录
     for (let i = 0; i < this.entry.history.length; i++) {
       const historyEntry = this.entry.history[i];
-      const date = historyEntry.times.lastModTime?.toLocaleString() || '未知时间';
+      const date = historyEntry.times.lastModTime?.toLocaleString() || '';
 
       this.historyEntries.push({
         index: i,
