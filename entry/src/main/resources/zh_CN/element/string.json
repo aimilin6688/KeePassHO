@@ -720,6 +720,18 @@
     {
       "name": "DatabaseView_unknown_database",
       "value": "未知数据库"
+    },
+    {
+      "name": "Password_loading",
+      "value": "正在加载..."
+    },
+    {
+      "name": "Password_unlock_title",
+      "value": "解锁数据库"
+    },
+    {
+      "name": "Password_change_db",
+      "value": "更改数据库"
     }
   ]
 }
