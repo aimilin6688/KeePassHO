@@ -232,6 +232,14 @@
     {
       "name": "EntryEditFieldDialog_confirm",
       "value": "Confirm"
+    },
+    {
+      "name": "EntryViewFieldItem_copy_failed",
+      "value": "Copy fail: %s"
+    },
+    {
+      "name": "EntryViewFieldItem_copied",
+      "value": "Copied"
     }
   ]
 }
