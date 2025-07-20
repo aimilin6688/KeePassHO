@@ -211,6 +211,26 @@
     {
       "name": "KdbxUtils_updated_time",
       "value": "更新时间"
+    },
+    {
+      "name": "AddGroupDialog_edit_group",
+      "value": "编辑分组"
+    },
+    {
+      "name": "AddGroupDialog_icon",
+      "value": "图标"
+    },
+    {
+      "name": "AddGroupDialog_select_icon",
+      "value": "点击选择图标"
+    },
+    {
+      "name": "AddGroupDialog_enter_group_name",
+      "value": "请输入分组名称"
+    },
+    {
+      "name": "AddGroupDialog_confirm",
+      "value": "确定"
     }
   ]
 }
