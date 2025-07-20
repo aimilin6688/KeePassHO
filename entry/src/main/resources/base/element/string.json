@@ -131,6 +131,26 @@
     {
       "name": "AddGroupDialog_confirm",
       "value": "Confirm"
+    },
+    {
+      "name": "LocalFile_select_local_file",
+      "value": "选择本地文件"
+    },
+    {
+      "name": "LocalFile_loading_file",
+      "value": "正在加载文件..."
+    },
+    {
+      "name": "LocalFile_reselect_file",
+      "value": "重新选择文件"
+    },
+    {
+      "name": "LocalFile_click_to_select",
+      "value": "点击选择KDBX文件"
+    },
+    {
+      "name": "LocalFile_select_file",
+      "value": "选择文件"
     }
   ]
 }

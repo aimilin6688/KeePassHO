@@ -372,6 +372,26 @@
     {
       "name": "CreateDatabase_error_message",
       "value": "Creation failed: ${error}"
+    },
+    {
+      "name": "LocalFile_select_local_file",
+      "value": "Select Local File"
+    },
+    {
+      "name": "LocalFile_loading_file",
+      "value": "Loading file..."
+    },
+    {
+      "name": "LocalFile_reselect_file",
+      "value": "Reselect File"
+    },
+    {
+      "name": "LocalFile_click_to_select",
+      "value": "Click to select KDBX file"
+    },
+    {
+      "name": "LocalFile_select_file",
+      "value": "Select File"
     }
   ]
 }
