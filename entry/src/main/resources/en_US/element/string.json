@@ -392,6 +392,30 @@
     {
       "name": "LocalFile_select_file",
       "value": "Select File"
+    },
+    {
+      "name": "open_database_page_title",
+      "value": "Open Database"
+    },
+    {
+      "name": "select_open_method_prompt",
+      "value": "Please select open method"
+    },
+    {
+      "name": "local_file_button_title",
+      "value": "Local File"
+    },
+    {
+      "name": "local_file_button_description",
+      "value": "Select database file from device storage"
+    },
+    {
+      "name": "webdav_button_title",
+      "value": "WebDAV"
+    },
+    {
+      "name": "webdav_button_description",
+      "value": "Open database file from WebDAV server"
     }
   ]
 }
