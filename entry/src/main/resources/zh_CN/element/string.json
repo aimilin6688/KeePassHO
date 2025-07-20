@@ -664,6 +664,58 @@
     {
       "name": "load_file_success",
       "value": "加载文件内容成功！"
+    },
+    {
+      "name": "EntryEdit_invalid_db_info",
+      "value": "无效的数据库信息"
+    },
+    {
+      "name": "EntryEdit_save_failed",
+      "value": "保存数据库失败"
+    },
+    {
+      "name": "EntryEdit_title_placeholder",
+      "value": "请输入标题"
+    },
+    {
+      "name": "EntryEdit_username_placeholder",
+      "value": "请输入用户名"
+    },
+    {
+      "name": "EntryEdit_password_placeholder",
+      "value": "请输入密码"
+    },
+    {
+      "name": "EntryEdit_url_placeholder",
+      "value": "请输入URL"
+    },
+    {
+      "name": "EntryEdit_tags_placeholder",
+      "value": "请输入标签（用逗号分隔）"
+    },
+    {
+      "name": "EntryEdit_notes_placeholder",
+      "value": "请输入备注"
+    },
+    {
+      "name": "EntryEdit_generate_button",
+      "value": "生成"
+    },
+    {
+      "name": "EntryEdit_no_custom_fields",
+      "value": "暂无自定义字段"
+    },
+    {
+      "name": "EntryEdit_field_name_exists",
+      "value": "字段名称已存在"
+    },
+    {
+      "name": "EntryEdit_invalid_db_or_group",
+      "value": "无效的数据库或分组信息"
+    },
+    {
+      "name": "EntryEdit_save_success",
+      "value": "保存成功"
     }
   ]
 }

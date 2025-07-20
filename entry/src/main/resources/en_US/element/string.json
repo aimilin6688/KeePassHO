@@ -644,6 +644,58 @@
     {
       "name": "load_file_success",
       "value": "File content loaded successfully!"
+    },
+    {
+      "name": "EntryEdit_invalid_db_info",
+      "value": "Invalid database information"
+    },
+    {
+      "name": "EntryEdit_save_failed",
+      "value": "Failed to save database"
+    },
+    {
+      "name": "EntryEdit_title_placeholder",
+      "value": "Enter title"
+    },
+    {
+      "name": "EntryEdit_username_placeholder",
+      "value": "Enter username"
+    },
+    {
+      "name": "EntryEdit_password_placeholder",
+      "value": "Enter password"
+    },
+    {
+      "name": "EntryEdit_url_placeholder",
+      "value": "Enter URL"
+    },
+    {
+      "name": "EntryEdit_tags_placeholder",
+      "value": "Enter tags (comma separated)"
+    },
+    {
+      "name": "EntryEdit_notes_placeholder",
+      "value": "Enter notes"
+    },
+    {
+      "name": "EntryEdit_generate_button",
+      "value": "Generate"
+    },
+    {
+      "name": "EntryEdit_no_custom_fields",
+      "value": "No custom fields"
+    },
+    {
+      "name": "EntryEdit_field_name_exists",
+      "value": "Field name already exists"
+    },
+    {
+      "name": "EntryEdit_invalid_db_or_group",
+      "value": "Invalid database or group information"
+    },
+    {
+      "name": "EntryEdit_save_success",
+      "value": "Save successful"
     }
   ]
 }
