@@ -228,7 +228,7 @@ struct DatabaseView {
       this.database.save().then(async savedDb => {
         const fileManager = new KdbxFileManager(dbFileParam.storageType);
         fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
-          this.promptAction.showToast({ message: `保存成功` });
+          this.promptAction.showToast({ message: $r('app.string.DatabaseView_save_success') });
         }).catch((error: Error) => {
           console.error(`保存数据库失败: ${error}`);
           this.promptAction.showToast({ message: `保存数据库失败: ${error.message}` });
@@ -246,7 +246,7 @@ struct DatabaseView {
     }
     if (!this.database) {
       this.promptAction.showToast({
-        message: '无效的数据库信息'
+        message: $r('app.string.DatabaseView_invalid_database_info')
       });
       return;
     }
@@ -397,7 +397,7 @@ struct DatabaseView {
           } else {
             Blank()
             // 搜索框
-            Search({ placeholder: '查找内容', value: this.searchText })
+            Search({ placeholder: $r('app.string.DatabaseView_search_placeholder'), value: this.searchText })
               .width('70%')
               .margin({ left: 16 })
               .height(40)
@@ -420,7 +420,7 @@ struct DatabaseView {
                 this.searchText = value;
                 this.performSearch();
               })
-            Button('取消')
+            Button($r('app.string.DatabaseView_cancel_search'))
               .width(70)
               .height(40)
               .fontSize(16)
@@ -448,7 +448,7 @@ struct DatabaseView {
               .height(50)
               .color($r('app.color.primary'))
 
-            Text('正在加载数据库...')
+            Text($r('app.string.DatabaseView_loading'))
               .fontSize(16)
               .margin({ top: 16 })
               .fontColor($r('app.color.text_primary'))
@@ -472,7 +472,7 @@ struct DatabaseView {
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
-                    Text(`组群 ${this.groupItemCount(itemGroup)} 个条目`)
+                    Text($r('app.string.DatabaseView_group_items', this.groupItemCount(itemGroup)))
                       .fontSize(12)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
@@ -573,7 +573,7 @@ struct DatabaseView {
             .width(20)
             .height(20)
             .fillColor($r('app.color.button_text_blue'))
-          Text('添加分组')
+          Text($r('app.string.DatabaseView_add_group'))
             .fontSize(14)
             .fontColor($r('app.color.button_text_blue'))
             .margin({ left: 8 })
@@ -600,7 +600,7 @@ struct DatabaseView {
             .width(20)
             .height(20)
             .fillColor($r("app.color.button_text_blue"))
-          Text('添加条目')
+          Text($r('app.string.DatabaseView_add_entry'))
             .fontSize(14)
             .fontColor($r("app.color.button_text_blue"))
             .margin({ left: 8 })
