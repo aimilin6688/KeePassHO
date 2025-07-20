@@ -488,6 +488,66 @@
     {
       "name": "group_item_count_format",
       "value": "组群 {n} 个条目"
+    },
+    {
+      "name": "entry_edit_add_title",
+      "value": "添加条目"
+    },
+    {
+      "name": "entry_edit_edit_title",
+      "value": "编辑条目"
+    },
+    {
+      "name": "invalid_group_message",
+      "value": "无效的分组信息"
+    },
+    {
+      "name": "invalid_entry_message",
+      "value": "无效的条目信息"
+    },
+    {
+      "name": "title_required_message",
+      "value": "标题不能为空"
+    },
+    {
+      "name": "field_name_exists_message",
+      "value": "字段名称已存在"
+    },
+    {
+      "name": "save_entry_failed_message",
+      "value": "保存条目失败"
+    },
+    {
+      "name": "generate_button_text",
+      "value": "生成"
+    },
+    {
+      "name": "title_placeholder",
+      "value": "请输入标题"
+    },
+    {
+      "name": "username_placeholder",
+      "value": "请输入用户名"
+    },
+    {
+      "name": "password_placeholder",
+      "value": "请输入密码"
+    },
+    {
+      "name": "url_placeholder",
+      "value": "请输入URL"
+    },
+    {
+      "name": "tags_placeholder",
+      "value": "请输入标签（用逗号分隔）"
+    },
+    {
+      "name": "notes_placeholder",
+      "value": "请输入备注"
+    },
+    {
+      "name": "no_custom_fields_message",
+      "value": "暂无自定义字段"
     }
   ]
 }
