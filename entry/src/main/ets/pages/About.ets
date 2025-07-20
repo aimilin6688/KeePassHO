@@ -21,7 +21,7 @@ export struct About {
               this.router.back()
             })
           
-          Text('关于')
+          Text($r('app.string.Settings_about'))
             .fontSize(18)
             .fontWeight(FontWeight.Medium)
           
@@ -37,11 +37,11 @@ export struct About {
             .fontSize(20)
             .margin({top: 20, bottom: 30})
 
-          Text('版本: 1.0.0')
+          Text($r('app.string.About_version') + '1.0.0')
             .fontSize(16)
             .margin(5)
 
-          Text('KeePassHO 是一款支持Keepass 2.x格式的密码管理器应用。')
+          Text($r('app.string.About_description'))
             .margin({top: 20})
             .fontSize(16)
             .margin(5)

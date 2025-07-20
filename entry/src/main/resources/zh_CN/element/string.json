@@ -71,6 +71,14 @@
     {
       "name": "Settings_about",
       "value": "关于"
+    },
+    {
+      "name": "About_version",
+      "value": "版本: "
+    },
+    {
+      "name": "About_description",
+      "value": "KeePassHO 是一款支持Keepass 2.x格式的密码管理器应用。"
     }
   ]
 }
