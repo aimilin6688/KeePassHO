@@ -2,11 +2,11 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "KeePas密码管理"
+      "value": "KeePassHO密码管理"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "KeePas密码管理"
+      "value": "KeePassHO密码管理"
     },
     {
       "name": "EntryAbility_label",
@@ -79,6 +79,30 @@
     {
       "name": "About_description",
       "value": "KeePassHO 是一款支持Keepass 2.x格式的密码管理器应用。"
+    },
+    {
+      "name": "Index_welcome",
+      "value": "欢迎使用 KeePassHO"
+    },
+    {
+      "name": "Index_subtitle",
+      "value": "安全管理您的密码"
+    },
+    {
+      "name": "Index_open_database",
+      "value": "打开数据库"
+    },
+    {
+      "name": "Index_create_database",
+      "value": "创建新的数据库"
+    },
+    {
+      "name": "Index_recent_files",
+      "value": "最近打开的文件"
+    },
+    {
+      "name": "Error_check_recent_files",
+      "value": "检查最近文件失败"
     }
   ]
 }

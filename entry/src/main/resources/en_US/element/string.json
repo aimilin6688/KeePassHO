@@ -79,6 +79,30 @@
     {
       "name": "About_description",
       "value": "KeePassHO is a password manager application that supports Keepass 2.x format."
+    },
+    {
+      "name": "Index_welcome",
+      "value": "Welcome to KeePassHO"
+    },
+    {
+      "name": "Index_subtitle",
+      "value": "Securely manage your passwords"
+    },
+    {
+      "name": "Index_open_database",
+      "value": "Open Database"
+    },
+    {
+      "name": "Index_create_database",
+      "value": "Create New Database"
+    },
+    {
+      "name": "Index_recent_files",
+      "value": "Recent Files"
+    },
+    {
+      "name": "Error_check_recent_files",
+      "value": "Failed to check recent files"
     }
   ]
 }
