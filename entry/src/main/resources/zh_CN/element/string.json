@@ -436,6 +436,58 @@
     {
       "name": "webdav_button_description",
       "value": "从WebDAV服务器打开数据库文件"
+    },
+    {
+      "name": "delete_confirm_title",
+      "value": "确认删除"
+    },
+    {
+      "name": "delete_confirm_message",
+      "value": "确定要删除这个分组吗？"
+    },
+    {
+      "name": "cancel_button_text",
+      "value": "取消"
+    },
+    {
+      "name": "delete_button_text",
+      "value": "删除"
+    },
+    {
+      "name": "save_success_message",
+      "value": "保存成功"
+    },
+    {
+      "name": "save_failed_message",
+      "value": "保存数据库失败"
+    },
+    {
+      "name": "invalid_database_message",
+      "value": "无效的数据库信息"
+    },
+    {
+      "name": "loading_database_message",
+      "value": "正在加载数据库..."
+    },
+    {
+      "name": "search_placeholder",
+      "value": "查找内容"
+    },
+    {
+      "name": "search_cancel_button",
+      "value": "取消"
+    },
+    {
+      "name": "add_group_button",
+      "value": "添加分组"
+    },
+    {
+      "name": "add_entry_button",
+      "value": "添加条目"
+    },
+    {
+      "name": "group_item_count_format",
+      "value": "组群 {n} 个条目"
     }
   ]
 }

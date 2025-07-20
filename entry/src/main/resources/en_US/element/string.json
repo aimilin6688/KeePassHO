@@ -416,6 +416,58 @@
     {
       "name": "webdav_button_description",
       "value": "Open database file from WebDAV server"
+    },
+    {
+      "name": "delete_confirm_title",
+      "value": "Confirm Delete"
+    },
+    {
+      "name": "delete_confirm_message",
+      "value": "Are you sure you want to delete this group?"
+    },
+    {
+      "name": "cancel_button_text",
+      "value": "Cancel"
+    },
+    {
+      "name": "delete_button_text",
+      "value": "Delete"
+    },
+    {
+      "name": "save_success_message",
+      "value": "Save successful"
+    },
+    {
+      "name": "save_failed_message",
+      "value": "Failed to save database"
+    },
+    {
+      "name": "invalid_database_message",
+      "value": "Invalid database information"
+    },
+    {
+      "name": "loading_database_message",
+      "value": "Loading database..."
+    },
+    {
+      "name": "search_placeholder",
+      "value": "Search content"
+    },
+    {
+      "name": "search_cancel_button",
+      "value": "Cancel"
+    },
+    {
+      "name": "add_group_button",
+      "value": "Add Group"
+    },
+    {
+      "name": "add_entry_button",
+      "value": "Add Entry"
+    },
+    {
+      "name": "group_item_count_format",
+      "value": "Group {n} items"
     }
   ]
 }
