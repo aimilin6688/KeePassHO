@@ -41,10 +41,10 @@ export struct EntryViewFieldItem {
     // 将数据写入剪贴板
     systemPasteboard.setData(pasteboardData, (error, data) => {
       if (error) {
-        console.error(`复制到剪贴板失败: ${error}`);
-        this.promptAction.showToast({ message: `复制失败: ${error}` });
+        console.error('Failed to copy to clipboard: ', error);
+        this.promptAction.showToast({ message: $r('app.string.EntryViewFieldItem_copy_failed', error) });
       } else {
-        this.promptAction.showToast({ message: '已复制', duration: 2000 });
+        this.promptAction.showToast({ message: $r('app.string.EntryViewFieldItem_copied'), duration: 2000 });
       }
     });
   }
