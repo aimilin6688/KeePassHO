@@ -111,6 +111,26 @@
     {
       "name": "KdbxUtils_updated_time",
       "value": "Updated Time"
+    },
+    {
+      "name": "AddGroupDialog_edit_group",
+      "value": "Edit Group"
+    },
+    {
+      "name": "AddGroupDialog_icon",
+      "value": "Icon"
+    },
+    {
+      "name": "AddGroupDialog_select_icon",
+      "value": "Click to select icon"
+    },
+    {
+      "name": "AddGroupDialog_enter_group_name",
+      "value": "Please enter group name"
+    },
+    {
+      "name": "AddGroupDialog_confirm",
+      "value": "Confirm"
     }
   ]
 }
