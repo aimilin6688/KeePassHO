@@ -7,7 +7,7 @@ struct OpenDatabase {
   private router: Router = this.getUIContext().getRouter();
 
   @Builder
-  OpenMethodButton(icon: Resource, title: string, description: string, onClick: () => void) {
+  OpenMethodButton(icon: Resource, title: string|Resource, description: string|Resource, onClick: () => void) {
     Button() {
       Row() {
         Image(icon)
@@ -62,7 +62,7 @@ struct OpenDatabase {
             this.router.back()
           })
 
-        Text('打开数据库')
+        Text($r('app.string.open_database_page_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -77,7 +77,7 @@ struct OpenDatabase {
         Column() {
           // 打开方式
           Column() {
-            Text('请选择打开方式')
+            Text($r('app.string.select_open_method_prompt'))
               .fontSize(14)
               .opacity(0.6)
               .padding({ left: 16, top: 16, bottom: 8 })
@@ -86,8 +86,8 @@ struct OpenDatabase {
 
             this.OpenMethodButton(
               $r('app.media.ic_file'),
-              '本地文件',
-              '从设备存储中选择数据库文件',
+              $r('app.string.local_file_button_title'),
+              $r('app.string.local_file_button_description'),
               () => {
                 this.router.pushUrl({ url: 'pages/open/LocalFile' })
               }
@@ -95,8 +95,8 @@ struct OpenDatabase {
 
             this.OpenMethodButton(
               $r('app.media.ic_cloud'),
-              'WebDAV',
-              '从WebDAV服务器打开数据库文件',
+              $r('app.string.webdav_button_title'),
+              $r('app.string.webdav_button_description'),
               () => {
                 this.router.pushUrl({ url: 'pages/open/WebDAV' })
               }
