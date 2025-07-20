@@ -716,6 +716,10 @@
     {
       "name": "EntryEdit_save_success",
       "value": "保存成功"
+    },
+    {
+      "name": "DatabaseView_unknown_database",
+      "value": "未知数据库"
     }
   ]
 }
