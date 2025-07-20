@@ -30,7 +30,7 @@ export struct AddGroupDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text(this.editingGroupIndex === -1 ? '添加分组' : '编辑分组')
+        Text(this.editingGroupIndex === -1 ? $r('app.string.DatabaseView_add_group') : $r('app.string.AddGroupDialog_edit_group'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         
@@ -70,11 +70,11 @@ export struct AddGroupDialog {
             .margin({ right: 16 })
           
           Column() {
-            Text('图标')
+            Text($r('app.string.AddGroupDialog_icon'))
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
             
-            Text('点击选择图标')
+            Text($r('app.string.AddGroupDialog_select_icon'))
               .fontSize(14)
               .fontColor('#999999')
               .margin({ top: 4 })
@@ -111,7 +111,7 @@ export struct AddGroupDialog {
         
         // 分组名称输入
         TextInput({
-          placeholder: '请输入分组名称',
+          placeholder: $r('app.string.AddGroupDialog_enter_group_name'),
           text: this.newGroupName
         })
           .width('100%')
@@ -133,7 +133,7 @@ export struct AddGroupDialog {
       
       // 底部按钮
       Row() {
-        Button('取消')
+        Button($r('app.string.DatabaseView_cancel'))
           .onClick(() => {
             this.controller.close()
             this.newGroupName = ''
@@ -147,7 +147,7 @@ export struct AddGroupDialog {
           .height(40)
           .borderRadius(16)
         
-        Button('确定')
+        Button($r('app.string.AddGroupDialog_confirm'))
           .enabled(this.newGroupName.trim().length > 0)
           .onClick(() => {
             this.controller.close()
