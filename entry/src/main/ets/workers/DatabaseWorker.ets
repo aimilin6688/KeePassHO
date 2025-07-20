@@ -4,6 +4,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { LoadDatabase, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './DatabaseWorkerParam';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
+import ResourceManager from '../common/utils/ResourceManager';
 
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
@@ -24,17 +25,17 @@ workerPort.onmessage = (event: MessageEvents) => {
  */
 async function handleLoadDatabase(request: LoadDatabase) {
   try {
-    postMessage('创建密钥...');
+    postMessage($r('app.string.creating_key'));
     // 创建凭证
     let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
-    postMessage('加载密钥...');
+    postMessage($r('app.string.loading_key'));
     // 加载文件内容
     let fileContent: ArrayBuffer = await loadKdbxFileContent(request);
-    postMessage('正在验证...');
+    postMessage($r('app.string.validating'));
     // 尝试加载数据库（仅验证，不保留结果）
     let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
-    postMessage('加载完成...');
+    postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent), [kdbxContent]);
   } catch (error) {
     console.error('Worker error loading database:', error);
@@ -49,10 +50,10 @@ async function handleLoadDatabase(request: LoadDatabase) {
  */
 async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> {
   if (!request.filePath) {
-    throw new Error('请选择数据库文件');
+    throw new Error(ResourceManager.getInstance().getString($r('app.string.select_database_file')));
   }
   let result = await new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
-  postMessage("加载文件内容成功！");
+  postMessage($r('app.string.load_file_success'));
   return result;
 }
 
@@ -60,7 +61,7 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
  * 发送加载消息给主线程
  * @param message 消息
  */
-function postMessage(message: string) {
+function postMessage(message: string|Resource) {
   workerPort.postMessage(toLoadMessage(message));
 }
 

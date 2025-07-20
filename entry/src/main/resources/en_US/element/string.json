@@ -620,6 +620,30 @@
     {
       "name": "no_recent_files",
       "value": "No recently opened files"
+    },
+    {
+      "name": "creating_key",
+      "value": "Creating key..."
+    },
+    {
+      "name": "loading_key",
+      "value": "Loading key..."
+    },
+    {
+      "name": "validating",
+      "value": "Validating..."
+    },
+    {
+      "name": "loading_complete",
+      "value": "Loading complete..."
+    },
+    {
+      "name": "select_database_file",
+      "value": "Please select database file"
+    },
+    {
+      "name": "load_file_success",
+      "value": "File content loaded successfully!"
     }
   ]
 }

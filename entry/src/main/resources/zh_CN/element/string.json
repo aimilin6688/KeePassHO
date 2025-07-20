@@ -640,6 +640,30 @@
     {
       "name": "no_recent_files",
       "value": "没有最近打开的文件记录"
+    },
+    {
+      "name": "creating_key",
+      "value": "创建密钥..."
+    },
+    {
+      "name": "loading_key",
+      "value": "加载密钥..."
+    },
+    {
+      "name": "validating",
+      "value": "正在验证..."
+    },
+    {
+      "name": "loading_complete",
+      "value": "加载完成..."
+    },
+    {
+      "name": "select_database_file",
+      "value": "请选择数据库文件"
+    },
+    {
+      "name": "load_file_success",
+      "value": "加载文件内容成功！"
     }
   ]
 }
