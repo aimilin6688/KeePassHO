@@ -1,5 +1,6 @@
 {
   "string": [
+
     {
       "name": "module_desc",
       "value": "KeePass Password Manager"
@@ -190,6 +191,46 @@
     },
     {
       "name": "AddGroupDialog_confirm",
+      "value": "Confirm"
+    },
+    {
+      "name": "EntryEditFieldDialog_edit_field",
+      "value": "Edit Custom Field"
+    },
+    {
+      "name": "EntryEditFieldDialog_add_field",
+      "value": "Add Custom Field"
+    },
+    {
+      "name": "EntryEditFieldDialog_field_name",
+      "value": "Field Name"
+    },
+    {
+      "name": "EntryEditFieldDialog_enter_field_name",
+      "value": "Please enter field name"
+    },
+    {
+      "name": "EntryEditFieldDialog_field_value",
+      "value": "Field Value"
+    },
+    {
+      "name": "EntryEditFieldDialog_enter_field_value",
+      "value": "Please enter field value"
+    },
+    {
+      "name": "EntryEditFieldDialog_protect_field",
+      "value": "Protect Field Value"
+    },
+    {
+      "name": "EntryEditFieldDialog_name_empty",
+      "value": "Field name cannot be empty"
+    },
+    {
+      "name": "EntryEditFieldDialog_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "EntryEditFieldDialog_confirm",
       "value": "Confirm"
     }
   ]
