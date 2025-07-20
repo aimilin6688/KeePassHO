@@ -34,7 +34,7 @@ export struct EntryEditFieldDialog {
     // 验证字段名称
     if (!this.tempKey || this.tempKey.trim() === '') {
       this.promptAction.showToast({
-        message: '字段名称不能为空',
+        message: $r('app.string.EntryEditFieldDialog_name_empty'),
         duration: 2000
       });
       return;
@@ -142,7 +142,7 @@ export struct EntryEditFieldDialog {
             this.tempProtected = value;
           })
 
-        Text('保护字段值')
+        Text($r('app.string.EntryEditFieldDialog_protect_field'))
           .fontSize(14)
           .fontColor($r('app.color.text_primary'))
           .margin({ left: 8 })
@@ -155,7 +155,7 @@ export struct EntryEditFieldDialog {
 
       // 按钮
       Row() {
-        Button('取消')
+        Button($r('app.string.EntryEditFieldDialog_cancel'))
           .width('45%')
           .height(40)
           .fontSize(16)
@@ -166,7 +166,7 @@ export struct EntryEditFieldDialog {
             this.cancel();
           })
 
-        Button('确定')
+        Button($r('app.string.EntryEditFieldDialog_confirm'))
           .width('45%')
           .height(40)
           .fontSize(16)
