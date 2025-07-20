@@ -48,7 +48,7 @@ struct Settings {
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => this.router.back())
-        Text('设置')
+        Text($r('app.string.Settings_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 12 })
@@ -64,7 +64,7 @@ struct Settings {
           ListItem() {
             Column() {
               Row() {
-                Text('主题')
+                Text($r('app.string.Settings_theme'))
                   .fontSize(16)
                 Blank()
                 Select(ThemeConstants.THEME_OPTIONS)
@@ -87,7 +87,7 @@ struct Settings {
           // 排序方式
           ListItem() {
             Row() {
-              Text('排序方式')
+              Text($r('app.string.Settings_sort_method'))
                 .fontSize(16)
               Blank()
               Select(SortConstants.SORT_OPTIONS)
@@ -118,7 +118,7 @@ struct Settings {
           // 创建数据库
           ListItem() {
             Row() {
-              Text('创建数据库')
+              Text($r('app.string.Settings_create_database'))
                 .fontSize(16)
                 .flexGrow(1)
               Image($r('app.media.ic_arrow_right'))

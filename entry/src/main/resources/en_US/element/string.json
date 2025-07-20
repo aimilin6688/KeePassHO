@@ -1,0 +1,76 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "KeePass Password Manager"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "KeePass Password Manager"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "KeePassHO"
+    },
+    {
+      "name": "reason",
+      "value": "Access and store kdbx data files"
+    },
+    {
+      "name": "SortConstants_default",
+      "value": "Default order"
+    },
+    {
+      "name": "SortConstants_name",
+      "value": "Sort by name"
+    },
+    {
+      "name": "SortConstants_modified",
+      "value": "Sort by modified date"
+    },
+    {
+      "name": "SortConstants_created",
+      "value": "Sort by created date"
+    },
+    {
+      "name": "ThemeConstants_system",
+      "value": "Follow system"
+    },
+    {
+      "name": "ThemeConstants_light",
+      "value": "Light"
+    },
+    {
+      "name": "ThemeConstants_dark",
+      "value": "Dark"
+    },
+    {
+      "name": "Settings_title",
+      "value": "Settings"
+    },
+    {
+      "name": "Settings_theme",
+      "value": "Theme"
+    },
+    {
+      "name": "Settings_sort_method",
+      "value": "Sort method"
+    },
+    {
+      "name": "Settings_create_database",
+      "value": "Create database"
+    },
+    {
+      "name": "Settings_change_database",
+      "value": "Change database"
+    },
+    {
+      "name": "Settings_recent_files",
+      "value": "Recent files"
+    },
+    {
+      "name": "Settings_about",
+      "value": "About"
+    }
+  ]
+}
