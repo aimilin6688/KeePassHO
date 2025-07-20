@@ -8,6 +8,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
+import ResourceManager from '../common/utils/ResourceManager';
 
 @Entry
 @Component
@@ -105,7 +106,7 @@ struct DatabaseView {
   private initData(dbShowParam: DatabaseShowParam | undefined) {
     if (!this.database) {
       this.promptAction.showToast({
-        message: '无效的数据库',
+        message: $r('app.string.DatabaseView_invalid_database'),
         duration: 2000
       });
       this.router.back();
@@ -130,7 +131,7 @@ struct DatabaseView {
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
         this.promptAction.showToast({
-          message: '无效的分组',
+          message: $r('app.string.DatabaseView_invalid_group'),
           duration: 2000
         });
         this.router.back();
@@ -142,7 +143,7 @@ struct DatabaseView {
       console.info(`加载了 ${this.groups.length} 个分组, ${this.entries.length} 个条目`);
     } catch (error) {
       console.error(`处理数据库失败: ${error}`);
-      this.promptAction.showToast({ message: `处理数据库失败: ${error}`, duration: 2000 });
+      this.promptAction.showToast({ message: ResourceManager.getInstance().getString($r('app.string.DatabaseView_process_failed')) + `: ${error}`, duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
         this.router.back();

@@ -280,7 +280,7 @@ export default class KdbxUtils {
    * @param fileKey 文件密钥
    * @returns 字段名称
    */
-  public static getFieldName(fileKey:string) {
+  public static getFieldName(fileKey:string):string | Resource {
     console.log("获取字段名称：", fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:

@@ -103,6 +103,74 @@
     {
       "name": "Error_check_recent_files",
       "value": "Failed to check recent files"
+    },
+    {
+      "name": "DatabaseView_invalid_database",
+      "value": "Invalid database"
+    },
+    {
+      "name": "DatabaseView_invalid_group",
+      "value": "Invalid group"
+    },
+    {
+      "name": "DatabaseView_process_failed",
+      "value": "Failed to process database"
+    },
+    {
+      "name": "DatabaseView_edit",
+      "value": "Edit"
+    },
+    {
+      "name": "DatabaseView_delete",
+      "value": "Delete"
+    },
+    {
+      "name": "DatabaseView_confirm_delete",
+      "value": "Confirm Delete"
+    },
+    {
+      "name": "DatabaseView_confirm_delete_group",
+      "value": "Are you sure you want to delete this group?"
+    },
+    {
+      "name": "DatabaseView_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "DatabaseView_save_success",
+      "value": "Save successful"
+    },
+    {
+      "name": "DatabaseView_save_failed",
+      "value": "Failed to save database"
+    },
+    {
+      "name": "DatabaseView_invalid_database_info",
+      "value": "Invalid database information"
+    },
+    {
+      "name": "DatabaseView_loading",
+      "value": "Loading database..."
+    },
+    {
+      "name": "DatabaseView_group_items",
+      "value": "Group with %d entries"
+    },
+    {
+      "name": "DatabaseView_search_placeholder",
+      "value": "Search content"
+    },
+    {
+      "name": "DatabaseView_cancel_search",
+      "value": "Cancel"
+    },
+    {
+      "name": "DatabaseView_add_group",
+      "value": "Add Group"
+    },
+    {
+      "name": "DatabaseView_add_entry",
+      "value": "Add Entry"
     }
   ]
 }
