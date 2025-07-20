@@ -25,7 +25,7 @@ struct RecentFiles {
     } catch (error) {
       console.error(`加载最近文件列表失败: ${error}`);
       this.promptAction.showToast({
-        message: '加载最近文件列表失败',
+        message: $r('app.string.load_recent_files_failed'),
         duration: 2000
       });
     } finally {
@@ -44,7 +44,7 @@ struct RecentFiles {
     const fileExists = await recentFilesService.checkFileExists(recentFile);
     if (!fileExists) {
       this.promptAction.showToast({
-        message: '文件不存在或已被移动',
+        message: $r('app.string.file_not_exists'),
         duration: 2000
       });
       // 移除不存在的文件记录
@@ -70,13 +70,13 @@ struct RecentFiles {
       await RecentFilesService.getInstance().clearRecentFiles();
       this.recentFiles = [];
       this.promptAction.showToast({
-        message: '已清除所有记录',
+        message: $r('app.string.all_records_cleared'),
         duration: 2000
       });
     } catch (error) {
       console.error(`清除记录失败: ${error}`);
       this.promptAction.showToast({
-        message: '清除记录失败',
+        message: $r('app.string.clear_records_failed'),
         duration: 2000
       });
     }
@@ -92,13 +92,13 @@ struct RecentFiles {
       // 重新加载列表
       this.loadRecentFiles();
       this.promptAction.showToast({
-        message: '已移除记录',
+        message: $r('app.string.record_removed'),
         duration: 2000
       });
     } catch (error) {
       console.error(`移除记录失败: ${error}`);
       this.promptAction.showToast({
-        message: '移除记录失败',
+        message: $r('app.string.remove_record_failed'),
         duration: 2000
       });
     }
@@ -116,11 +116,11 @@ struct RecentFiles {
           .onClick(() => {
             this.router.back();
           })
-        Text('最近打开的文件')
+        Text($r('app.string.recent_files_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
         Blank()
-        Button('清除全部')
+        Button($r('app.string.clear_all_button'))
           .fontSize(14)
           .fontColor('#E84026')
           .backgroundColor(Color.Transparent)
@@ -143,7 +143,7 @@ struct RecentFiles {
             .width(100)
             .height(100)
             .margin({ bottom: 16 })
-          Text('没有最近打开的文件记录')
+          Text($r('app.string.no_recent_files'))
             .fontSize(16)
             .fontColor('#999999')
         }
