@@ -584,6 +584,42 @@
     {
       "name": "key_file",
       "value": "Key file"
+    },
+    {
+      "name": "load_recent_files_failed",
+      "value": "Failed to load recent files list"
+    },
+    {
+      "name": "file_not_exists",
+      "value": "File does not exist or has been moved"
+    },
+    {
+      "name": "all_records_cleared",
+      "value": "All records have been cleared"
+    },
+    {
+      "name": "clear_records_failed",
+      "value": "Failed to clear records"
+    },
+    {
+      "name": "record_removed",
+      "value": "Record has been removed"
+    },
+    {
+      "name": "remove_record_failed",
+      "value": "Failed to remove record"
+    },
+    {
+      "name": "recent_files_title",
+      "value": "Recently Opened Files"
+    },
+    {
+      "name": "clear_all_button",
+      "value": "Clear All"
+    },
+    {
+      "name": "no_recent_files",
+      "value": "No recently opened files"
     }
   ]
 }
