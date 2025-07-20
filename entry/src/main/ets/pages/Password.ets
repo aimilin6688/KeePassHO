@@ -109,7 +109,7 @@ struct Password {
    */
   private openRecentFile(filePath: string) {
     if (!filePath) {
-      this.promptAction.showToast({ message: '无效的数据文件', duration: 2000 });
+      this.promptAction.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
       this.router.back();
     }
     // 获取最近打开记录
@@ -132,7 +132,7 @@ struct Password {
     }).catch((error: Error) => {
       console.error(`Open recent file error: ${error}`);
       this.promptAction.showToast({
-        message: '打开失败:' + error.message,
+        message: $r('app.string.open_failed') + error.message,
         duration: 2000
       });
       this.router.back();
@@ -209,7 +209,7 @@ struct Password {
     // 验证输入
     if (!this.password) {
       this.promptAction.showToast({
-        message: '请输入密码',
+        message: $r('app.string.password_placeholder'),
         duration: 2000
       });
       return;
@@ -218,7 +218,7 @@ struct Password {
     if ((this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
       this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyFilePath) {
       this.promptAction.showToast({
-        message: '请选择密钥文件',
+        message: $r('app.string.select_key_file'),
         duration: 2000
       });
       return;

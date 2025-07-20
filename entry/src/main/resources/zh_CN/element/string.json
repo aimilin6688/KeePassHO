@@ -530,10 +530,6 @@
       "value": "请输入用户名"
     },
     {
-      "name": "password_placeholder",
-      "value": "请输入密码"
-    },
-    {
       "name": "url_placeholder",
       "value": "请输入URL"
     },
@@ -568,6 +564,46 @@
     {
       "name": "no_history",
       "value": "没有历史记录"
+    },
+    {
+      "name": "invalid_data_file",
+      "value": "无效的数据文件"
+    },
+    {
+      "name": "open_failed",
+      "value": "打开失败:"
+    },
+    {
+      "name": "select_key_file",
+      "value": "请选择密钥文件"
+    },
+    {
+      "name": "storage_type_empty",
+      "value": "存储类型为空"
+    },
+    {
+      "name": "verifying",
+      "value": "验证中..."
+    },
+    {
+      "name": "auth_method",
+      "value": "认证方式"
+    },
+    {
+      "name": "password_placeholder",
+      "value": "请输入密码"
+    },
+    {
+      "name": "select_key_file_button",
+      "value": "选择密钥文件"
+    },
+    {
+      "name": "reselect_key_file",
+      "value": "重新选择密钥文件"
+    },
+    {
+      "name": "key_file",
+      "value": "密钥文件"
     }
   ]
 }
