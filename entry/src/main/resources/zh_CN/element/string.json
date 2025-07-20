@@ -1,0 +1,76 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "KeePas密码管理"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "KeePas密码管理"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "KeePassHO"
+    },
+    {
+      "name": "reason",
+      "value": "访问与存储kdbx数据文件"
+    },
+    {
+      "name": "SortConstants_default",
+      "value": "默认排序"
+    },
+    {
+      "name": "SortConstants_name",
+      "value": "按名称排序"
+    },
+    {
+      "name": "SortConstants_modified",
+      "value": "按修改日期排序"
+    },
+    {
+      "name": "SortConstants_created",
+      "value": "按创建日期排序"
+    },
+    {
+      "name": "ThemeConstants_system",
+      "value": "跟随系统"
+    },
+    {
+      "name": "ThemeConstants_light",
+      "value": "浅色"
+    },
+    {
+      "name": "ThemeConstants_dark",
+      "value": "深色"
+    },
+    {
+      "name": "Settings_title",
+      "value": "设置"
+    },
+    {
+      "name": "Settings_theme",
+      "value": "主题"
+    },
+    {
+      "name": "Settings_sort_method",
+      "value": "排序方式"
+    },
+    {
+      "name": "Settings_create_database",
+      "value": "创建数据库"
+    },
+    {
+      "name": "Settings_change_database",
+      "value": "更换数据库"
+    },
+    {
+      "name": "Settings_recent_files",
+      "value": "最近打开"
+    },
+    {
+      "name": "Settings_about",
+      "value": "关于"
+    }
+  ]
+}
