@@ -548,6 +548,26 @@
     {
       "name": "no_custom_fields_message",
       "value": "暂无自定义字段"
+    },
+    {
+      "name": "invalid_db_or_entry",
+      "value": "无效的数据库或条目ID"
+    },
+    {
+      "name": "entry_not_found",
+      "value": "找不到指定的条目"
+    },
+    {
+      "name": "load_entry_failed",
+      "value": "加载条目失败"
+    },
+    {
+      "name": "loading_entry",
+      "value": "正在加载条目..."
+    },
+    {
+      "name": "no_history",
+      "value": "没有历史记录"
     }
   ]
 }
