@@ -1,5 +1,9 @@
 import { PromptAction, Router } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import ResourceManager from '../common/utils/ResourceManager'
+
+const DOMAIN = 0x0000;
+const TAG = 'About';
 
 @Entry
 @Component

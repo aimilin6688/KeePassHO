@@ -11,7 +11,7 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
 
-const DOMAIN = 0xFF00;
+const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
 
 @Entry
