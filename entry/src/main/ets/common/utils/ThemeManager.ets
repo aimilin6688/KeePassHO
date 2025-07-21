@@ -17,7 +17,7 @@ type ThemeChangeListener = (isDarkMode: boolean) => void;
  * 主题管理器
  */
 export default class ThemeManager {
-  private static instance: ThemeManager;
+  private static instance: ThemeManager = new ThemeManager();
   private currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   private systemDarkMode: boolean = false;
   private themeChangeListeners: ThemeChangeListener[] = [];
@@ -45,9 +45,6 @@ export default class ThemeManager {
    * 获取单例实例
    */
   public static getInstance(): ThemeManager {
-    if (!ThemeManager.instance) {
-      ThemeManager.instance = new ThemeManager();
-    }
     return ThemeManager.instance;
   }
 

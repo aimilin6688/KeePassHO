@@ -5,7 +5,7 @@ import { DbFileParam, FileParam } from './TypeDefined';
  * 文件服务对象
  */
 export class FileService {
-  private static instance: FileService;
+  private static instance: FileService = new FileService();
   private fileParam: FileParam;
   private dbFileParam: DbFileParam;
 
@@ -15,9 +15,6 @@ export class FileService {
   }
 
   public static getInstance(): FileService {
-    if (!FileService.instance) {
-      FileService.instance = new FileService();
-    }
     return FileService.instance;
   }
 

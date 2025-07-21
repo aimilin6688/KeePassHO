@@ -85,9 +85,9 @@ export class LoadDatabase implements  WorkerMessage, CredentialsParam {
 // 定义数据库加载结果
 export class LoadMessage implements WorkerMessage {
   type: MessageType;
-  message: string;
+  message: string | number;
 
-  constructor(type: MessageType, message: string) {
+  constructor(type: MessageType, message: string | number) {
     this.type = type;
     this.message = message;
   }
@@ -109,7 +109,7 @@ export function toLoadMessage(message: string | Resource): LoadMessage {
   if (typeof message === 'string') {
     return new LoadMessage(MessageType.LOAD_MESSAGE, message);
   }
-  return new LoadMessage(MessageType.LOAD_MESSAGE, ResourceManager.getInstance().getString(message));
+  return new LoadMessage(MessageType.LOAD_MESSAGE, message.id);
 }
 
 export function toErrorMessage(message: string): LoadMessage {
