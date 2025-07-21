@@ -427,23 +427,19 @@
     },
     {
       "name": "save_failed_message",
-      "value": "保存失败"
+      "value": "保存失败:%s"
     },
     {
       "name": "invalid_database",
       "value": "无效的数据库"
     },
     {
-      "name": "loading_database_message",
+      "name": "loading_message",
       "value": "正在加载..."
     },
     {
       "name": "search_placeholder",
       "value": "查找内容"
-    },
-    {
-      "name": "group_item_count_format",
-      "value": "组群 {n} 个条目"
     },
     {
       "name": "invalid_group",
@@ -459,7 +455,7 @@
     },
     {
       "name": "save_entry_failed_message",
-      "value": "保存条目失败"
+      "value": "保存条目失败:%s"
     },
     {
       "name": "generate_button_text",
@@ -477,10 +473,6 @@
     {
       "name": "entry_not_found",
       "value": "找不到指定的条目"
-    },
-    {
-      "name": "loading_entry",
-      "value": "正在加载条目..."
     },
     {
       "name": "no_history",
@@ -501,14 +493,6 @@
     {
       "name": "storage_type_empty",
       "value": "存储类型为空"
-    },
-    {
-      "name": "verifying",
-      "value": "处理中..."
-    },
-    {
-      "name": "auth_method",
-      "value": "认证方式"
     },
     {
       "name": "select_key_file_button",
@@ -568,7 +552,7 @@
     },
     {
       "name": "validating",
-      "value": "正在验证..."
+      "value": "处理中..."
     },
     {
       "name": "loading_complete",
@@ -583,24 +567,8 @@
       "value": "加载文件内容成功！"
     },
     {
-      "name": "EntryEdit_save_failed",
-      "value": "保存数据库失败"
-    },
-    {
-      "name": "EntryEdit_generate_button",
-      "value": "生成"
-    },
-    {
-      "name": "EntryEdit_field_name_exists",
-      "value": "字段名称已存在"
-    },
-    {
       "name": "EntryEdit_invalid_db_or_group",
       "value": "无效的数据库或分组信息"
-    },
-    {
-      "name": "Password_loading",
-      "value": "正在加载..."
     },
     {
       "name": "Password_unlock_title",
