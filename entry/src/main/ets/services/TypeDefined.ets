@@ -103,7 +103,7 @@ export interface AuthTypeInfo {
   /**
    * 认证方式的描述，用于UI显示
    */
-  description: string;
+  description: ResourceStr;
 }
 
 /**
@@ -115,56 +115,56 @@ export class AuthType {
    */
   public static readonly PASSWORD: AuthTypeInfo = {
     type: 'password',
-    description: '仅密码'
+    description: $r('app.string.auth_type_password')
   };
   /**
    * 密码 + 密钥文件
    */
   public static readonly PASSWORD_KEYFILE: AuthTypeInfo = {
     type: 'password_keyfile',
-    description: '密码 + 密钥文件'
+    description: $r('app.string.auth_type_password_keyfile')
   };
   /**
    * 密码 + 一次性密码
    */
   public static readonly PASSWORD_OTP: AuthTypeInfo = {
     type: 'password_otp',
-    description: '密码 + 一次性密码'
+    description: $r('app.string.auth_type_password_otp')
   };
   /**
    * 密码 + 一次密码（恢复模式）
    */
   public static readonly PASSWORD_OTP_RECOVERY: AuthTypeInfo = {
     type: 'password_otp_recovery',
-    description: '密码 + 一次性密码（恢复模式）'
+    description: $r('app.string.auth_type_password_otp_recovery')
   };
   /**
    * 密码 + 挑战-响应
    */
   public static readonly PASSWORD_CHALLENGE_RESPONSE: AuthTypeInfo = {
     type: 'password_challenge_response',
-    description: '密码 + 挑战-响应'
+    description: $r('app.string.auth_type_password_challenge_response')
   };
   /**
    * 密码 + 挑战-响应（恢复模式）
    */
   public static readonly PASSWORD_CHALLENGE_RESPONSE_RECOVERY: AuthTypeInfo = {
     type: 'password_challenge_response_recovery',
-    description: '密码 + 挑战-响应（恢复模式）'
+    description: $r('app.string.auth_type_password_challenge_response_recovery')
   };
   /**
    * 密码 + 挑战-应答（Keepass XC）
    */
   public static readonly PASSWORD_CHALLENGE_RESPONSE_XC: AuthTypeInfo = {
     type: 'password_challenge_response_xc',
-    description: '密码 + 挑战-应答（Keepass XC）'
+    description: $r('app.string.auth_type_password_challenge_response_xc')
   };
   /**
    * 密码 + 密钥文件 + 挑战应答（Keepass XC）
    */
   public static readonly PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC: AuthTypeInfo = {
     type: 'password_keyfile_challenge_response_xc',
-    description: '密码 + 密钥文件 + 挑战应答（Keepass XC）'
+    description: $r('app.string.auth_type_password_keyfile_challenge_response_xc')
   };
 
   /**

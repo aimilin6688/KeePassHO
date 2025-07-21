@@ -1,5 +1,37 @@
 {
   "string": [
+    {
+      "name": "auth_type_password",
+      "value": "Password only"
+    },
+    {
+      "name": "auth_type_password_keyfile",
+      "value": "Password + Key File"
+    },
+    {
+      "name": "auth_type_password_otp",
+      "value": "Password + OTP"
+    },
+    {
+      "name": "auth_type_password_otp_recovery",
+      "value": "Password + OTP (Recovery Mode)"
+    },
+    {
+      "name": "auth_type_password_challenge_response",
+      "value": "Password + Challenge-Response"
+    },
+    {
+      "name": "auth_type_password_challenge_response_recovery",
+      "value": "Password + Challenge-Response (Recovery Mode)"
+    },
+    {
+      "name": "auth_type_password_challenge_response_xc",
+      "value": "Password + Challenge-Response (KeePassXC)"
+    },
+    {
+      "name": "auth_type_password_keyfile_challenge_response_xc",
+      "value": "Password + Key File + Challenge-Response (KeePassXC)"
+    },
 
     {
       "name": "module_desc",
