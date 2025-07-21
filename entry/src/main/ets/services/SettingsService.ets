@@ -11,7 +11,7 @@ const DOMAIN = 0x0000;
 const TAG = 'SettingsService';
 
 export class SettingsService {
-  private static instance: SettingsService;
+  private static instance: SettingsService = new SettingsService();
   private preferences: preferences.Preferences | null = null;
   private static readonly PREFERENCES_NAME = 'settings';
 
@@ -26,9 +26,6 @@ export class SettingsService {
   private constructor() {}
 
   public static getInstance(): SettingsService {
-    if (!SettingsService.instance) {
-      SettingsService.instance = new SettingsService();
-    }
     return SettingsService.instance;
   }
 

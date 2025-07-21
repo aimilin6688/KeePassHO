@@ -13,7 +13,7 @@ const TAG = 'RecentFilesService';
  * 用于管理最近打开的文件列表
  */
 export class RecentFilesService {
-  private static instance: RecentFilesService;
+  private static instance: RecentFilesService = new RecentFilesService();
   private static readonly PREFERENCES_NAME = 'recent_files';
   private static readonly RECENT_FILES_KEY = 'recent_files_list';
   private static readonly MAX_RECENT_FILES = 10; // 最多保存10个最近打开的文件
@@ -22,9 +22,6 @@ export class RecentFilesService {
    * 获取单例实例
    */
   public static getInstance(): RecentFilesService {
-    if (!RecentFilesService.instance) {
-      RecentFilesService.instance = new RecentFilesService();
-    }
     return RecentFilesService.instance;
   }
 

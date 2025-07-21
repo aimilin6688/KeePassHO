@@ -5,7 +5,7 @@ import { common } from '@kit.AbilityKit';
  * 资源工具类
  */
 export default class ResourceManager {
-  private static instance: ResourceManager;
+  private static instance: ResourceManager = new ResourceManager();
   private context: common.UIAbilityContext | null = null;
 
   private constructor() {
@@ -23,9 +23,6 @@ export default class ResourceManager {
    * 获取单例实例
    */
   public static getInstance(): ResourceManager {
-    if (!ResourceManager.instance) {
-      ResourceManager.instance = new ResourceManager();
-    }
     return ResourceManager.instance;
   }
 
@@ -35,9 +32,15 @@ export default class ResourceManager {
    * @param resource
    * @returns
    */
-  public getString(resource: Resource): string {
+  public getString(resource: Resource | number | string): string {
+    if(typeof resource === 'string'){
+      return resource;
+    }
     if (!this.context) {
       return '';
+    }
+    if (typeof resource === 'number') {
+     return this.context.resourceManager.getStringSync(resource);
     }
     return this.context.resourceManager.getStringSync(resource.id);
   }

@@ -42,7 +42,7 @@ export default function CryptoEngineTest() {
             it('calculates sha256', 0,() => {
                 useDefaultImpl();
                 return CryptoEngine.sha256(fromHex(src)).then((hash) => {
-                    hilog.info(1,  'test', 'hash:%s', toHex(hash));
+                    hilog.info(1,  'test', 'hash:%{public}s', toHex(hash));
                     expect(toHex(hash)).assertEqual(exp);
                 });
             });
@@ -50,7 +50,7 @@ export default function CryptoEngineTest() {
             it('calculates sha256 test', 0,() => {
                 useDefaultImpl();
                 return CryptoEngine.sha256(ByteUtils.stringToBuffer("test")).then((hash) => {
-                    hilog.info(1,  'test', 'hash:%s', ByteUtils.bytesToString(hash));
+                    hilog.info(1,  'test', 'hash:%{public}s', ByteUtils.bytesToString(hash));
                     expect(toHex(hash)).assertEqual('9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08');
                 });
             });
