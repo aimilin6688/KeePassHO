@@ -172,7 +172,7 @@ struct CreateDatabase {
 
   validatePasswords() {
     if (this.password.length > 0 && this.confirmPassword.length > 0 && this.password !== this.confirmPassword) {
-      this.errorMsg = ResourceManager.getInstance().getString($r('app.string.CreateDatabase_password_mismatch'));
+      this.errorMsg = ResourceManager.getString($r('app.string.CreateDatabase_password_mismatch'));
     } else {
       this.errorMsg = '';
     }
