@@ -113,7 +113,7 @@ struct Index {
           .fontColor($r('app.color.text_primary'))
 
         // 主要操作按钮
-        this.MainButton($r('app.media.ic_folder_open'), $r('app.string.Index_open_database'), () => {
+        this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
           this.router.pushUrl({ url: 'pages/open/OpenDatabase' }, router.RouterMode.Single)
         })
 
@@ -127,7 +127,7 @@ struct Index {
 
         // 最近打开的文件按钮
         Column() {
-          this.MainButton($r('app.media.ic_history'), $r('app.string.Index_recent_files'), () => {
+          this.MainButton($r('app.media.ic_history'), $r('app.string.recent_files_title'), () => {
             this.router.pushUrl({ url: 'pages/RecentFiles' })
           })
         }
