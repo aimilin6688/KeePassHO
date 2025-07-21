@@ -126,7 +126,7 @@
       "value": "Failed to check recent files"
     },
     {
-      "name": "DatabaseView_process_failed",
+      "name": "process_database_failed",
       "value": "Failed to process database"
     },
     {
@@ -138,7 +138,7 @@
       "value": "Delete"
     },
     {
-      "name": "DatabaseView_group_items",
+      "name": "group_items_message",
       "value": "Group with %d entries"
     },
     {
@@ -282,14 +282,6 @@
     {
       "name": "CreateDatabase_name_placeholder",
       "value": "Please enter database name"
-    },
-    {
-      "name": "CreateDatabase_password_label",
-      "value": "Password"
-    },
-    {
-      "name": "CreateDatabase_password_placeholder",
-      "value": "Please enter password"
     },
     {
       "name": "CreateDatabase_confirm_password_label",
@@ -600,16 +592,8 @@
       "value": "Enter title"
     },
     {
-      "name": "EntryEdit_username_placeholder",
-      "value": "Enter username"
-    },
-    {
       "name": "EntryEdit_password_placeholder",
       "value": "Enter password"
-    },
-    {
-      "name": "EntryEdit_url_placeholder",
-      "value": "Enter URL"
     },
     {
       "name": "EntryEdit_tags_placeholder",
