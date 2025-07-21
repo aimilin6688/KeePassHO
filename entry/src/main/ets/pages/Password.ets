@@ -132,7 +132,7 @@ struct Password {
     }).catch((error: Error) => {
       console.error(`Open recent file error: ${error}`);
       this.promptAction.showToast({
-        message: $r('app.string.open_failed') + error.message,
+        message: $r('app.string.open_failed', error.message),
         duration: 2000
       });
       this.router.back();
@@ -225,7 +225,7 @@ struct Password {
     }
 
     if (this.storageType === null) {
-      this.promptAction.showToast({ message: `存储类型为空` });
+      this.promptAction.showToast({ message: $r('app.string.storage_type_empty') });
       return;
     }
     this.openLoadingDialog();
@@ -441,7 +441,7 @@ struct Password {
         // 底部固定按钮栏
         Row() {
           // 左侧 - 更改数据库按钮
-          Button($r('app.string.Password_change_db'))
+          Button($r('app.string.change_database'))
             .height(48)
             .layoutWeight(1)
             .margin({ left: 16, right: 8 })

@@ -37,7 +37,7 @@ struct CreateDatabase {
             this.router.back()
           })
 
-        Text($r("app.string.create_new_database"))
+        Text($r("app.string.create_database"))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -176,7 +176,7 @@ struct CreateDatabase {
 
   async createDatabase() {
     if (this.databaseName.length === 0) {
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_name_required') });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_name_placeholder') });
       return;
     }
 
@@ -213,11 +213,11 @@ struct CreateDatabase {
         }
       }).catch((err: BusinessError) => {
         console.error(`Failed to show document save dialog: ${err.message}`);
-        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', {err}) });
+        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
       })
     } catch (error) {
       console.error(`Failed to create database: ${error}`);
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', {error}) });
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
     } finally {
       this.isCreating = false;
     }
@@ -234,7 +234,7 @@ struct CreateDatabase {
       this.fileManager.saveKdbxFile(filePath, dbContent).then(async () => {
         console.log('Database saved successfully: ', filePath);
         // 显示成功提示
-        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_success') });
+        this.promptAction.showToast({ message: $r("app.string.CreateDatabase_create_success") });
         await RecentFilesService.getInstance()
           .addRecentFile({
             filePath: filePath,
@@ -252,7 +252,7 @@ struct CreateDatabase {
         });
       }).catch((error: Error) => {
         console.log(`Failed to save database: ${error}`);
-        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_save_failed') });
+        this.promptAction.showToast({ message: $r('app.string.save_failed_message') });
       });
     }).catch((error: Error) => {
       console.error(`Failed to create database: ${error}`);
