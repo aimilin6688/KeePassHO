@@ -1,10 +1,14 @@
 import { PromptAction, Router } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Kdbx, KdbxEntry } from 'kdbxweb';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 
+
+const DOMAIN = 0xFF00;
+const TAG = 'EntryView';
 
 interface EntryHistoryView {
   index: number;
@@ -43,7 +47,7 @@ struct EntryView {
    * 加载条目
    */
   private loadEntry() {
-    console.log("加载条目：%s, %s", this.entryId, this.groupId);
+    hilog.info(DOMAIN, TAG, 'Loading entry: entryId=%{public}s, groupId=%{public}s', this.entryId, this.groupId);
     this.isLoading = true;
     try {
       // 获取数据库
@@ -78,7 +82,7 @@ struct EntryView {
       this.loadHistory();
 
     } catch (error) {
-      console.error(`加载条目失败: ${error}`);
+      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to load entry: ${error}`);
       this.promptAction.showToast({
         message: $r('app.string.load_entry_failed') + `: ${error}`,
         duration: 2000
