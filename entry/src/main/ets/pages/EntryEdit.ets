@@ -22,7 +22,7 @@ struct EntryEdit {
   @State showPassword: boolean = false;
   @State isLoading: boolean = false;
   @State isEditMode: boolean = false;
-  @State pageTitle: string = ResourceManager.getInstance().getString($r('app.string.entry_edit_add_title'));
+  @State pageTitle: string = ResourceManager.getInstance().getString($r('app.string.add_entry_button'));
 
   @State customFields: CustomField[] = []; // 自定义字段列表
   @State showFieldDialog: boolean = false; // 显示自定义字段对话框
