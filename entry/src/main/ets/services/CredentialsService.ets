@@ -4,6 +4,11 @@ import { StorageType } from './kdbx/interfaces';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { AuthType, CredentialsParam } from './TypeDefined';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'CredentialsService';
+
 /**
  * 凭证服务
  */
@@ -22,7 +27,7 @@ export class CredentialsService {
       }
       // 使用密码和密钥文件
       let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(param.keyFilePath);
-      console.log('Load key file content success, keyFilePath: ', param.keyFilePath);
+      hilog.info(DOMAIN, TAG, 'Load key file content success, keyFilePath: %s', param.keyFilePath);
       credentials = new KdbxCredentials(ProtectedValue.fromString(param.password), keyFileContent);
     } else {
       // 仅使用密码
