@@ -1,4 +1,6 @@
 import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue, KdbxUuid } from 'kdbxweb';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
@@ -10,6 +12,9 @@ import { CustomField } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import ResourceManager from '../common/utils/ResourceManager';
+
+const DOMAIN = 0xFF00;
+const TAG = 'EntryEdit';
 
 @Entry
 @Component
@@ -44,7 +49,7 @@ struct EntryEdit {
       fieldValue: $currentFieldValue,
       isProtected: $currentFieldProtected,
       onConfirm: (customField: CustomField) => {
-        console.log("接收到字段 -------", customField);
+        hilog.info(DOMAIN, TAG, '%{public}s', `Received field: ${JSON.stringify(customField)}`);
         this.confirmCustomField(customField);
       }
     }),
@@ -263,7 +268,7 @@ struct EntryEdit {
       // 保存数据库
       this.saveDatabase();
     } catch (error) {
-      console.error(`保存条目失败: ${error}`);
+      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save entry: ${error}`);
       this.promptAction.showToast({
         message: $r('app.string.save_entry_failed_message', error.message),
         duration: 2000
@@ -325,7 +330,7 @@ struct EntryEdit {
    * @param error 错误信息
    */
   private handleSaveError(error: Error){
-    console.error(`保存数据库失败: ${error}`);
+    hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
     this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
     this.isLoading = false;
   }
