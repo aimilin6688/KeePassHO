@@ -113,25 +113,22 @@
       "value": "Updated Time"
     },
     {
-      "name": "AddGroupDialog_edit_group",
+      "name": "edit_group",
       "value": "Edit Group"
     },
     {
-      "name": "AddGroupDialog_icon",
+      "name": "icon",
       "value": "Icon"
     },
     {
-      "name": "AddGroupDialog_select_icon",
+      "name": "select_icon",
       "value": "Click to select icon"
     },
     {
-      "name": "AddGroupDialog_enter_group_name",
+      "name": "enter_group_name",
       "value": "Please enter group name"
     },
-    {
-      "name": "AddGroupDialog_confirm",
-      "value": "Confirm"
-    },
+
     {
       "name": "LocalFile_select_local_file",
       "value": "选择本地文件"
