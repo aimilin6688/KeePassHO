@@ -90,7 +90,7 @@ struct LocalFile {
             this.router.back()
           })
 
-        Text($r('app.string.LocalFile_select_local_file'))
+        Text($r('app.string.select_local_file'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -109,7 +109,7 @@ struct LocalFile {
             .height(50)
             .color($r('app.color.text_primary'))
 
-          Text($r('app.string.LocalFile_loading_file'))
+          Text($r('app.string.loading_message'))
             .fontSize(16)
             .margin({ top: 16 })
             .fontColor($r('app.color.text_primary'))
@@ -130,7 +130,7 @@ struct LocalFile {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('80%')
 
-          Button($r('app.string.LocalFile_reselect_file'))
+          Button($r('app.string.reselect_file'))
             .margin({ top: 24 })
             .onClick(() => this.openFilePicker())
         } else {
@@ -146,7 +146,7 @@ struct LocalFile {
             .margin({ top: 16 })
             .fontColor($r('app.color.text_primary'))
 
-          Button($r('app.string.LocalFile_select_file'))
+          Button($r('app.string.select_local_file'))
             .margin({ top: 24 })
             .onClick(() => this.openFilePicker())
         }

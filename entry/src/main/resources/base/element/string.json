@@ -137,7 +137,7 @@
       "value": "Edit"
     },
     {
-      "name": "delete_buttom_text",
+      "name": "delete_button_text",
       "value": "Delete"
     },
     {
@@ -571,6 +571,18 @@
     {
       "name": "Password_unlock_title",
       "value": "Unlock database"
+    },
+    {
+      "name": "select_local_file",
+      "value": "Select local file"
+    },
+    {
+      "name": "reselect_file",
+      "value": "Reselect  file"
+    },
+    {
+      "name": "LocalFile_click_to_select",
+      "value": "Click select kdbx file"
     }
   ]
 }

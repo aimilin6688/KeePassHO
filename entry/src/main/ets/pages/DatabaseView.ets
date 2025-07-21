@@ -196,7 +196,7 @@ struct DatabaseView {
               }
             },
             secondaryButton: {
-              value: $r('app.string.delete_button_text'),
+              value: $r("app.string.delete_button_text"),
               action: () => {
                 if (this.database === null) {
                   return;
