@@ -27,7 +27,7 @@ struct EntryEdit {
   @State showPassword: boolean = false;
   @State isLoading: boolean = false;
   @State isEditMode: boolean = false;
-  @State pageTitle: string = ResourceManager.getInstance().getString($r('app.string.add_entry_button'));
+  @State pageTitle: string = ResourceManager.getString($r('app.string.add_entry_button'));
 
   @State customFields: CustomField[] = []; // 自定义字段列表
   @State showFieldDialog: boolean = false; // 显示自定义字段对话框
@@ -126,7 +126,7 @@ struct EntryEdit {
     // 判断是编辑模式还是添加模式
     if (routeParams.entryId && routeParams.groupId) {
       this.isEditMode = true;
-      this.pageTitle = ResourceManager.getInstance().getString($r("app.string.edit_entry"));
+      this.pageTitle = ResourceManager.getString($r("app.string.edit_entry"));
 
       
       // 使用KdbxUtils.getEntry方法获取现有条目

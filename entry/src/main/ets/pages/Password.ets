@@ -32,7 +32,7 @@ struct Password {
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
-  @State loadingMessage:string =  '';
+  @State loadingMessage:string =  ResourceManager.getString($r('app.string.loading_message'));
 
   private filePath: string = '';
   private storageType: StorageType | null = null;
@@ -248,7 +248,7 @@ struct Password {
       // // 加载进度消息
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
-        this.loadingMessage =  ResourceManager.getInstance().getString(loadMessage.message);
+        this.loadingMessage =  ResourceManager.getString(loadMessage.message);
         hilog.info(DOMAIN, TAG, 'Received loading progress:  %{public}s', this.loadingMessage);
       }
       // 数据库加载成功
@@ -257,7 +257,7 @@ struct Password {
         this.init();
         this.putFileToRecentFile();
         this.setFileParam(successMessage.data).then(() => {
-          this.loadingMessage = ResourceManager.getInstance().getString($r('app.string.open_success'));
+          this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
           this.router.pushUrl({ url: 'pages/DatabaseView' });
           setTimeout(() => {
             this.closeLoadingDialog();
@@ -271,7 +271,7 @@ struct Password {
       // 错误消息
       if (data.type == MessageType.LOAD_ERROR) {
         let errorMessage = data as LoadMessage;
-        this.promptAction.showToast({ message: ResourceManager.getInstance().getString(errorMessage.message), duration: 3000 });
+        this.promptAction.showToast({ message: ResourceManager.getString(errorMessage.message), duration: 3000 });
         this.closeLoadingDialog();
       }
     }

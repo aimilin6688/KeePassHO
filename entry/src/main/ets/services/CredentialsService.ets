@@ -23,7 +23,7 @@ export class CredentialsService {
     let credentials: KdbxCredentials;
     if (AuthType.useKeyAuth(param.authType)) {
       if (param.keyFilePath === undefined) {
-        throw new Error(ResourceManager.getInstance().getString($r('app.string.error_keyfile_not_found')));
+        throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
       }
       // 使用密码和密钥文件
       let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(param.keyFilePath);

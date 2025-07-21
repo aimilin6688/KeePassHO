@@ -44,4 +44,13 @@ export default class ResourceManager {
     }
     return this.context.resourceManager.getStringSync(resource.id);
   }
+
+  /**
+   * 获取字符串
+   * @param resource 资源
+   * @returns 结果
+   */
+  public static getString(resource: Resource | number | string): string {
+    return ResourceManager.getInstance().getString(resource);
+  }
 }
