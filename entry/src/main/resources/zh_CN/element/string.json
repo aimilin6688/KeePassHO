@@ -162,10 +162,6 @@
       "value": "组群 %d 个条目"
     },
     {
-      "name": "DatabaseView_search_placeholder",
-      "value": "查找内容"
-    },
-    {
       "name": "DatabaseView_add_group",
       "value": "添加分组"
     },
