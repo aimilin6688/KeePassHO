@@ -24,8 +24,6 @@ export default class KdbxUtils {
   public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
   public static readonly GROUP_NAME = 'GroupName';
   public static readonly RECYCLE_BIN_NAME = 'Recycle Bin';
-
-
   private static customIconMap: Map<string, string> = new Map<string, string>();
 
   public static init() {
@@ -62,17 +60,22 @@ export default class KdbxUtils {
    * @param groupId 组id
    * @param entryId 条目id
    */
-  public static getEntry(kdbx: Kdbx, groupId: string, entryId: string): KdbxEntry | null {
+  public static getEntry(kdbx: Kdbx, groupId: string, entryId: string, historyIndex?: number): KdbxEntry | null {
     const group = kdbx.getGroup(groupId);
     if (!group) {
       return null;
     }
+    let entryItem: KdbxEntry | null = null;
     for (const entry of group.entries) {
       if (entry.uuid.id === entryId) {
-        return entry;
+        entryItem = entry;
       }
     }
-    return null;
+    // 有历史记录
+    if (entryItem != null && historyIndex != undefined && historyIndex >= 0) {
+      entryItem = entryItem.history[historyIndex];
+    }
+    return entryItem;
   }
 
   /**
@@ -159,7 +162,7 @@ export default class KdbxUtils {
     if (iconId === undefined && customIcon === undefined) {
       return defaultResource;
     }
-    if(kdbxMeta == undefined){
+    if (kdbxMeta == undefined) {
       kdbxMeta = FileService.getInstance().getDbFileParam().database.meta;
     }
     if (customIcon != undefined && kdbxMeta != undefined) {
@@ -268,7 +271,7 @@ export default class KdbxUtils {
    * @param b 日期B
    * @returns 0表示相等，-1表示a在b前面，1表示a在b后面
    */
-  public static compare(a: Date | undefined, b: Date | undefined):number {
+  public static compare(a: Date | undefined, b: Date | undefined): number {
     if (a == undefined && b == undefined) {
       return 0;
     }
@@ -286,7 +289,7 @@ export default class KdbxUtils {
    * @param fileKey 文件密钥
    * @returns 字段名称
    */
-  public static getFieldName(fileKey:string):string | Resource {
+  public static getFieldName(fileKey: string): string | Resource {
     hilog.debug(DOMAIN, TAG, 'Get field name: %{public}s', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:

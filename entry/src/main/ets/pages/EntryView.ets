@@ -36,6 +36,7 @@ struct EntryView {
     const params = this.router.getParams() as EntryParam;
     this.entryId = params?.entryId || '';
     this.groupId = params?.groupId || '';
+    this.selectedHistoryIndex = params.historyIndex === undefined ? -1 : params.historyIndex;
   }
 
   onPageShow(): void {
@@ -47,7 +48,7 @@ struct EntryView {
    * 加载条目
    */
   private loadEntry() {
-    hilog.info(DOMAIN, TAG, 'Loading entry: entryId=%{public}s, groupId=%{public}s', this.entryId, this.groupId);
+    hilog.info(DOMAIN, TAG, 'Loading entry: entryId=%{public}s, groupId=%{public}s, historyIndex:%{public}d', this.entryId, this.groupId, this.selectedHistoryIndex);
     this.isLoading = true;
     try {
       // 获取数据库
@@ -64,7 +65,7 @@ struct EntryView {
       }
 
       // 获取条目
-      this.entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
+      this.entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId, this.selectedHistoryIndex);
 
       if (!this.entry) {
         this.promptAction.showToast({
@@ -119,7 +120,7 @@ struct EntryView {
     }
 
     // 添加标签字段
-    if(this.entry.tags && this.entry.tags.length > 0){
+    if (this.entry.tags && this.entry.tags.length > 0) {
       this.fields.push(new FieldView(KdbxUtils.FIELD_TAGS, this.entry.tags.join(', '), false, true));
     }
 
@@ -152,7 +153,7 @@ struct EntryView {
    * 加载历史记录
    */
   private loadHistory() {
-    if (!this.entry) {
+    if (!this.entry || this.selectedHistoryIndex >= 0) {
       return;
     }
 
@@ -191,20 +192,23 @@ struct EntryView {
    * 查看历史记录详情
    */
   private viewHistoryDetail(index: number) {
-    this.selectedHistoryIndex = index;
-  }
-
-  /**
-   * 返回当前条目视图
-   */
-  private backToCurrentEntry() {
-    this.selectedHistoryIndex = -1;
+    this.router.pushUrl({
+      url: 'pages/EntryView',
+      params: {
+        entryId: this.entryId,
+        groupId: this.groupId,
+        historyIndex: index
+      }
+    });
   }
 
   /**
    * 获取分组名称
    */
   private getGroupName(): string {
+    if (this.database && this.groupId) {
+      return this.database.getGroup(this.groupId)?.name || '';
+    }
     if (this.entry && this.entry.parentGroup) {
       return this.entry.parentGroup?.name ?? '';
     }
@@ -227,7 +231,7 @@ struct EntryView {
       // 中间内容区域
       Column() {
         // 版本号
-        Text($r('app.string.history_version', this.historyEntries.length - item.index))
+        Text($r('app.string.history_version', item.index + 1))
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
           .width('100%')
@@ -275,13 +279,13 @@ struct EntryView {
             })
 
           if (this.selectedHistoryIndex >= 0) {
-            Text($r('app.string.history_version', this.historyEntries.length - this.selectedHistoryIndex))
+            Text($r('app.string.history_version', this.selectedHistoryIndex + 1))
               .fontSize(20)
               .fontWeight(FontWeight.Medium)
               .margin({ left: 16 })
               .fontColor($r('app.color.text_primary'))
           } else {
-            Text(KdbxUtils.getFieldValueString(this.entry?.fields, KdbxUtils.FIELD_TITLE) || '查看条目')
+            Text(KdbxUtils.getFieldValueString(this.entry?.fields, KdbxUtils.FIELD_TITLE) || '')
               .fontSize(20)
               .fontWeight(FontWeight.Medium)
               .margin({ left: 16 })
@@ -330,50 +334,27 @@ struct EntryView {
           .height('100%')
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
-        } else if (this.selectedHistoryIndex >= 0 && this.selectedHistoryIndex < this.historyEntries.length) {
-          // 显示历史记录详情
-          Column() {
-            // 历史记录详情
-            List() {
+        } else if (this.selectedHistoryIndex >= 0) {
+          List() {
+            ForEach(this.fields, (field: FieldView) => {
               ListItem() {
-                Row() {
-                  Text($r('app.string.updated_time'))
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                    .fontColor($r('app.color.text_primary'))
-
-                  Text(this.historyEntries[this.selectedHistoryIndex].date)
-                    .fontSize(16)
-                    .fontColor($r('app.color.text_primary'))
-                    .margin({ left: 8 })
-                }
-                .width('100%')
-                .height('100%')
-                .padding(16)
-                .backgroundColor($r("app.color.card_bg"))
-                .borderRadius(8)
-                .margin({ bottom: 16 })
+                EntryViewFieldItem({ field: field, entry: this.entry })
               }
-
-              ListItem() {
-                Button($r('app.string.back_to_current_version'))
-                  .width('100%')
-                  .height(50)
-                  .backgroundColor($r('app.color.primary'))
-                  .fontColor(Color.White)
-                  .onClick(() => {
-                    this.backToCurrentEntry();
-                  })
-              }
-              .margin({ top: 16, bottom: 16 })
-            }
-            .width('100%')
-            .padding({ left: 16, right: 16, top: 16 })
-            .layoutWeight(1)
-            .backgroundColor($r("app.color.bg_primary"))
+            })
           }
-          .width('100%')
           .height('100%')
+          .width('100%')
+          .padding({
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: 40
+          })
+          .layoutWeight(1)
+          .backgroundColor($r("app.color.bg_primary"))
+
+          // 增加回滚已删除功能
+
         } else {
           // 显示当前条目
           Tabs() {
@@ -387,7 +368,12 @@ struct EntryView {
               }
               .height('100%')
               .width('100%')
-              .padding({ left: 16, right: 16, top: 12, bottom:40 })
+              .padding({
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 40
+              })
               .layoutWeight(1)
               .backgroundColor($r("app.color.bg_primary"))
             }
@@ -404,7 +390,12 @@ struct EntryView {
                 }
                 .height('100%')
                 .width('100%')
-                .padding({ left: 16, right: 16, top: 12, bottom:40 })
+                .padding({
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: 40
+                })
                 .layoutWeight(1)
                 .backgroundColor($r("app.color.bg_primary"))
               } else {
