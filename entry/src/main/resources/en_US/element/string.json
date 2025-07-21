@@ -158,10 +158,6 @@
       "value": "Confirm Delete"
     },
     {
-      "name": "DatabaseView_save_failed",
-      "value": "Failed to save database"
-    },
-    {
       "name": "DatabaseView_invalid_database_info",
       "value": "Invalid database information"
     },
