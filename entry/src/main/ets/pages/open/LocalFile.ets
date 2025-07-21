@@ -9,6 +9,10 @@ import { RecentFilesService } from '../../services/RecentFilesService';
 import FileUtils from '../../common/utils/FIleUtils';
 import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+const DOMAIN = 0x0000;
+const TAG = 'LocalFile';
+
 @Entry
 @Component
 struct LocalFile {
@@ -35,7 +39,7 @@ struct LocalFile {
         this.loadKdbxFile(this.selectedFile);
       }
     } catch (error) {
-      console.error(`Failed to pick file: ${error}`);
+      hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`,  error.message, error.stack);
       this.promptAction.showToast({
         message: error.message,
         duration: 2000
@@ -53,7 +57,7 @@ struct LocalFile {
     FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE |  fileShare.OperationMode.WRITE_MODE).then(async () => {
       // 获取文件信息
       const fileInfo = await this.fileManager.getKdbxFileInfo(path);
-      console.info(`Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
       // 本地配置信息
       const  storageConfig = new LocalFileStorageConfig(fileInfo.size);
@@ -67,7 +71,7 @@ struct LocalFile {
         url: 'pages/Password'
       });
     }).catch((error:Error) =>{
-      console.error(`Failed to load KDBX file: ${error}`);
+      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, stack:%{public}s', error.message, error.stack);
       this.promptAction.showToast({
         message:  error.message,
         duration: 3000

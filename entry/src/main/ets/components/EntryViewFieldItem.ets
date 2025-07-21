@@ -3,6 +3,12 @@ import { PromptAction } from "@kit.ArkUI";
 import KdbxUtils from "../common/utils/KdbxUtils";
 import { KdbxEntry } from "kdbxweb";
 
+
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'EntryViewFieldItem';
+
 /**
  * 构建字段项
  */
@@ -41,7 +47,7 @@ export struct EntryViewFieldItem {
     // 将数据写入剪贴板
     systemPasteboard.setData(pasteboardData, (error, data) => {
       if (error) {
-        console.error('Failed to copy to clipboard: ', error);
+        hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %s %s %s %s', error.message, error.code, error.name, error.stack);
         this.promptAction.showToast({ message: $r("app.string.copy_failed") });
       } else {
         this.promptAction.showToast({ message: $r("app.string.copied"), duration: 2000 });

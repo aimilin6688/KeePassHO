@@ -3,6 +3,11 @@ import { ThemeMode } from '../constants/ThemeConstants';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common, ConfigurationConstant } from '@kit.AbilityKit';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'ThemeManager';
+
 /**
  * 主题变更监听器类型
  */
@@ -84,7 +89,7 @@ export default class ThemeManager {
    */
   private async applyTheme(): Promise<void> {
     if (!this.context) {
-      console.error('ThemeManager not initialized with context');
+      hilog.error(DOMAIN, TAG, 'ThemeManager not initialized with context');
       return;
     }
 
@@ -102,7 +107,7 @@ export default class ThemeManager {
         navigationBarContentColor: isDark ? '#FFFFFF' : '#000000'
       });
     } catch (err) {
-      console.error(`Failed to apply theme: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+      hilog.error(DOMAIN, TAG, `Failed to apply theme: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
     }
   }
 

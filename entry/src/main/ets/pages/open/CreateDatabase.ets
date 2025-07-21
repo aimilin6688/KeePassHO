@@ -11,6 +11,10 @@ import FileUtils from '../../common/utils/FIleUtils';
 import ResourceManager from '../../common/utils/ResourceManager';
 
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+const DOMAIN = 0x0000;
+const TAG = 'CreateDatabase';
+
 @Entry
 @Component
 struct CreateDatabase {
@@ -207,16 +211,16 @@ struct CreateDatabase {
 
       // 显示文件保存对话框
       documentPicker.save(options).then(async (result) => {
-        console.info(`Selected URIs: ${result}`);
+        hilog.info(DOMAIN, TAG, `Selected URIs: ${result}`);
         if (result && result.length > 0) {
           this.saveKdbxFile(result[0]);
         }
       }).catch((err: BusinessError) => {
-        console.error(`Failed to show document save dialog: ${err.message}`);
+        hilog.error(DOMAIN, TAG,`Failed to show document save dialog: ${err.message}`, err.stack);
         this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
       })
     } catch (error) {
-      console.error(`Failed to create database: ${error}`);
+      hilog.error(DOMAIN, TAG,`Failed to create database: ${error.message}`, error.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
     } finally {
       this.isCreating = false;
@@ -224,15 +228,15 @@ struct CreateDatabase {
   }
 
   private async saveKdbxFile(filePath: string) {
-    console.info(`Selected URI: ${filePath}`);
+    hilog.info(DOMAIN, TAG,`Selected URI: ${filePath}`);
     let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password));
     // 将kdbx对象转换为ArrayBuffer
     let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
     newDb.save().then((dbContent: ArrayBuffer) => {
-      console.log('saveKdbxFile: ', dbContent.byteLength);
+      hilog.info(DOMAIN, TAG, 'saveKdbxFile: ', dbContent.byteLength);
       // 保存数据库文件
       this.fileManager.saveKdbxFile(filePath, dbContent).then(async () => {
-        console.log('Database saved successfully: ', filePath);
+        hilog.info(DOMAIN, TAG, 'Database saved successfully: %s', filePath);
         // 显示成功提示
         this.promptAction.showToast({ message: $r("app.string.CreateDatabase_create_success") });
         await RecentFilesService.getInstance()
@@ -251,11 +255,11 @@ struct CreateDatabase {
           }
         });
       }).catch((error: Error) => {
-        console.log(`Failed to save database: ${error}`);
+        hilog.error(DOMAIN, TAG, `Failed to save database: ${error.message}`, error.stack);
         this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
       });
     }).catch((error: Error) => {
-      console.error(`Failed to create database: ${error}`);
+      hilog.info(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_create_failed') });
     });
   }

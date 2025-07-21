@@ -2,6 +2,12 @@ import { FileService } from '../../services/FileService';
 import { IconResource, Icons } from '../../services/TypeDefined';
 import KdbxUtils from './KdbxUtils';
 
+
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'IconUtils';
+
 /**
  * 图标工具类
  */
@@ -264,7 +270,7 @@ export default class IconUtils {
         }
       }
     } catch (e) {
-      console.log(e)
+      hilog.error(DOMAIN, TAG, 'getAllIcons error:%s', e.message);
     }
 
     return icons;

@@ -2,6 +2,9 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+const DOMAIN = 0x0000;
+const TAG = 'RecentFiles';
 
 @Entry
 @Component
@@ -23,7 +26,7 @@ struct RecentFiles {
       this.isLoading = true;
       this.recentFiles = await RecentFilesService.getInstance().getRecentFiles();
     } catch (error) {
-      console.error(`加载最近文件列表失败: ${error}`);
+      hilog.error(DOMAIN, TAG, 'load recent file error: %{public}s', error.message);
       this.promptAction.showToast({
         message: $r('app.string.load_recent_files_failed'),
         duration: 2000
@@ -74,7 +77,7 @@ struct RecentFiles {
         duration: 2000
       });
     } catch (error) {
-      console.error(`清除记录失败: ${error}`);
+      hilog.error(DOMAIN, TAG, 'clear records error: %{public}s', error.message);
       this.promptAction.showToast({
         message: $r('app.string.clear_records_failed'),
         duration: 2000
@@ -96,7 +99,7 @@ struct RecentFiles {
         duration: 2000
       });
     } catch (error) {
-      console.error(`移除记录失败: ${error}`);
+      hilog.error(DOMAIN, TAG, 'remove records error: %{public}s', error.message);
       this.promptAction.showToast({
         message: $r('app.string.remove_record_failed'),
         duration: 2000
