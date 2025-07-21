@@ -424,8 +424,8 @@ struct EntryEdit {
     if (index >= 0 && index < this.customFields.length) {
       const fieldKey:string = this.customFields[index].key;
       this.promptAction.showDialog({
-        title: '确认删除',
-        message: `确定要删除字段 "${fieldKey}" 吗？`,
+        title: $r('app.string.dialog_confirm_title'),
+        message: $r('app.string.dialog_delete_confirm_message'),
         buttons: [
           {
             text: $r('app.string.cancel_button_text'),
@@ -522,7 +522,7 @@ struct EntryEdit {
                 .alignSelf(ItemAlign.Start)
 
               Row() {
-                TextArea({ text: this.title, placeholder: '请输入标题' })
+                TextArea({ text: this.title, placeholder: $r('app.string.title_placeholder') })
                   .layoutWeight(1)
                   .fontSize(16)
                   .lineHeight(24)
@@ -563,7 +563,7 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextArea({ text: this.username, placeholder: '请输入用户名' })
+              TextArea({ text: this.username, placeholder: $r('app.string.username_placeholder') })
                 .width('100%')
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
@@ -606,7 +606,7 @@ struct EntryEdit {
               .margin({ bottom: 8 })
 
               Row() {
-                TextInput({ text: this.password, placeholder: '请输入密码' })
+                TextInput({ text: this.password, placeholder: $r('app.string.password_placeholder') })
                   .width('100%')
                   .height(48)
                   .fontSize(16)
@@ -632,7 +632,7 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextArea({ text: this.url, placeholder: '请输入URL' })
+              TextArea({ text: this.url, placeholder: $r('app.string.url_placeholder') })
                 .width('100%')
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
@@ -678,7 +678,7 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextArea({ text: this.notes, placeholder: '请输入备注' })
+              TextArea({ text: this.notes, placeholder: $r('app.string.notes_placeholder') })
                 .width('100%')
                 .height(96)
                 .lineHeight(24)
