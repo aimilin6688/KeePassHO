@@ -38,10 +38,6 @@
       "value": "KeePass Password Manager"
     },
     {
-      "name": "EntryAbility_desc",
-      "value": "KeePass Password Manager"
-    },
-    {
       "name": "EntryAbility_label",
       "value": "KeePassHO"
     },
@@ -160,10 +156,6 @@
     {
       "name": "DatabaseView_confirm_delete",
       "value": "Confirm Delete"
-    },
-    {
-      "name": "DatabaseView_confirm_delete_group",
-      "value": "Are you sure you want to delete this group?"
     },
     {
       "name": "DatabaseView_cancel",
