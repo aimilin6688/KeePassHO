@@ -204,7 +204,7 @@ struct EntryView {
     if (this.entry && this.entry.parentGroup) {
       return this.entry.parentGroup?.name ?? '';
     }
-    return '未分组';
+    return '';
   }
 
   /**
@@ -223,7 +223,7 @@ struct EntryView {
       // 中间内容区域
       Column() {
         // 版本号
-        Text(`历史版本 #${this.historyEntries.length - item.index}`)
+        Text($r('app.string.history_version', this.historyEntries.length - item.index))
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
           .width('100%')
@@ -271,7 +271,7 @@ struct EntryView {
             })
 
           if (this.selectedHistoryIndex >= 0) {
-            Text(`历史版本 #${this.historyEntries.length - this.selectedHistoryIndex}`)
+            Text($r('app.string.history_version', this.historyEntries.length - this.selectedHistoryIndex))
               .fontSize(20)
               .fontWeight(FontWeight.Medium)
               .margin({ left: 16 })
@@ -333,7 +333,7 @@ struct EntryView {
             List() {
               ListItem() {
                 Row() {
-                  Text('修改时间:')
+                  Text($r('app.string.updated_time'))
                     .fontSize(16)
                     .fontWeight(FontWeight.Medium)
                     .fontColor($r('app.color.text_primary'))
@@ -352,7 +352,7 @@ struct EntryView {
               }
 
               ListItem() {
-                Button('返回当前版本')
+                Button($r('app.string.back_to_current_version'))
                   .width('100%')
                   .height(50)
                   .backgroundColor($r('app.color.primary'))
@@ -387,7 +387,7 @@ struct EntryView {
               .layoutWeight(1)
               .backgroundColor($r("app.color.bg_primary"))
             }
-            .tabBar('字段')
+            .tabBar($r('app.string.field_name'))
 
             TabContent() {
               if (this.historyEntries.length > 0) {
@@ -422,7 +422,7 @@ struct EntryView {
                 .backgroundColor($r("app.color.bg_primary"))
               }
             }
-            .tabBar('历史记录')
+            .tabBar($r('app.string.history_record'))
           }
           .width('100%')
           .height('100%')
