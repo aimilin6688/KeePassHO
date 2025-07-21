@@ -57,16 +57,16 @@
       "value": "创建数据库"
     },
     {
-      "name": "create_new_database",
-      "value": "创建新数据库"
-    },
-    {
       "name": "change_database",
       "value": "更换数据库"
     },
     {
       "name": "recent_files",
       "value": "最近打开"
+    },
+    {
+      "name": "open_database",
+      "value": "打开数据库"
     },
     {
       "name": "Settings_about",
@@ -121,16 +121,16 @@
       "value": "安全管理您的密码"
     },
     {
-      "name": "open_database",
-      "value": "打开数据库"
-    },
-    {
       "name": "Error_check_recent_files",
       "value": "检查最近文件失败"
     },
     {
-      "name": "process_database_failed",
-      "value": "处理数据库失败"
+      "name": "load_database_failed",
+      "value": "加载数据库失败"
+    },
+    {
+      "name": "load_entry_failed",
+      "value": "加载条目失败"
     },
     {
       "name": "edit_button_text",
@@ -201,6 +201,10 @@
       "value": "请输入标题"
     },
     {
+      "name": "title_required_message",
+      "value": "标题不能为空"
+    },
+    {
       "name": "tags",
       "value": "标签"
     },
@@ -235,6 +239,10 @@
     {
       "name": "edit_group",
       "value": "编辑分组"
+    },
+    {
+      "name": "edit_entry",
+      "value": "编辑条目"
     },
     {
       "name": "icon",
@@ -279,7 +287,7 @@
     },
     {
       "name": "copy_failed",
-      "value": "复制失败: %s"
+      "value": "复制失败"
     },
     {
       "name": "copied",
@@ -370,16 +378,8 @@
       "value": "两次输入的密码不一致"
     },
     {
-      "name": "CreateDatabase_name_required",
-      "value": "请输入数据库名称"
-    },
-    {
-      "name": "CreateDatabase_success",
+      "name": "CreateDatabase_create_success",
       "value": "数据库创建成功"
-    },
-    {
-      "name": "CreateDatabase_save_failed",
-      "value": "数据库保存失败"
     },
     {
       "name": "CreateDatabase_create_failed",
@@ -387,11 +387,11 @@
     },
     {
       "name": "CreateDatabase_location_failed",
-      "value": "选择保存位置失败: ${err.message}"
+      "value": "选择保存位置失败: %s"
     },
     {
       "name": "CreateDatabase_error_message",
-      "value": "创建失败: ${error}"
+      "value": "创建失败: %s"
     },
     {
       "name": "select_open_method_prompt",
@@ -435,7 +435,7 @@
     },
     {
       "name": "loading_database_message",
-      "value": "正在加载数据库..."
+      "value": "正在加载..."
     },
     {
       "name": "search_placeholder",
@@ -446,20 +446,12 @@
       "value": "组群 {n} 个条目"
     },
     {
-      "name": "entry_edit_edit_title",
-      "value": "编辑条目"
-    },
-    {
       "name": "invalid_group",
       "value": "无效的分组"
     },
     {
       "name": "invalid_entry_message",
       "value": "无效的条目信息"
-    },
-    {
-      "name": "title_required_message",
-      "value": "标题不能为空"
     },
     {
       "name": "field_name_exists_message",
@@ -487,10 +479,6 @@
       "value": "找不到指定的条目"
     },
     {
-      "name": "load_entry_failed",
-      "value": "加载条目失败"
-    },
-    {
       "name": "loading_entry",
       "value": "正在加载条目..."
     },
@@ -504,7 +492,7 @@
     },
     {
       "name": "open_failed",
-      "value": "打开失败:"
+      "value": "打开失败:%s"
     },
     {
       "name": "select_key_file",
@@ -516,7 +504,7 @@
     },
     {
       "name": "verifying",
-      "value": "验证中..."
+      "value": "处理中..."
     },
     {
       "name": "auth_method",
@@ -536,7 +524,7 @@
     },
     {
       "name": "load_recent_files_failed",
-      "value": "加载最近文件列表失败"
+      "value": "加载最近文件失败"
     },
     {
       "name": "file_not_exists",
@@ -611,20 +599,12 @@
       "value": "无效的数据库或分组信息"
     },
     {
-      "name": "DatabaseView_unknown_database",
-      "value": "未知数据库"
-    },
-    {
       "name": "Password_loading",
       "value": "正在加载..."
     },
     {
       "name": "Password_unlock_title",
       "value": "解锁数据库"
-    },
-    {
-      "name": "Password_change_db",
-      "value": "更改数据库"
     }
   ]
 }
