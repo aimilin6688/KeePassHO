@@ -162,10 +162,6 @@
       "value": "Group with %d entries"
     },
     {
-      "name": "DatabaseView_add_group",
-      "value": "Add Group"
-    },
-    {
       "name": "DatabaseView_add_entry",
       "value": "Add Entry"
     },
