@@ -30,7 +30,7 @@ export struct AddGroupDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text(this.editingGroupIndex === -1 ? $r('app.string.add_group_button') : $r('app.string.AddGroupDialog_edit_group'))
+        Text(this.editingGroupIndex === -1 ? $r('app.string.add_group_button') : $r("app.string.edit_group"))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         
@@ -70,11 +70,11 @@ export struct AddGroupDialog {
             .margin({ right: 16 })
           
           Column() {
-            Text($r('app.string.AddGroupDialog_icon'))
+            Text($r("app.string.icon"))
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
             
-            Text($r('app.string.AddGroupDialog_select_icon'))
+            Text($r("app.string.select_icon"))
               .fontSize(14)
               .fontColor('#999999')
               .margin({ top: 4 })
@@ -111,7 +111,7 @@ export struct AddGroupDialog {
         
         // 分组名称输入
         TextInput({
-          placeholder: $r('app.string.AddGroupDialog_enter_group_name'),
+          placeholder: $r("app.string.enter_group_name"),
           text: this.newGroupName
         })
           .width('100%')
@@ -147,7 +147,7 @@ export struct AddGroupDialog {
           .height(40)
           .borderRadius(16)
         
-        Button($r('app.string.AddGroupDialog_confirm'))
+        Button($r('app.string.confirm_buttom_text'))
           .enabled(this.newGroupName.trim().length > 0)
           .onClick(() => {
             this.controller.close()
