@@ -246,7 +246,7 @@ struct DatabaseView {
     }
     if (!this.database) {
       this.promptAction.showToast({
-        message: $r('app.string.DatabaseView_invalid_database_info')
+        message: $r('app.string.invalid_database_message')
       });
       return;
     }
