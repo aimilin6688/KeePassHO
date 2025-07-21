@@ -13,6 +13,7 @@ import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
+import ResourceManager from '../common/utils/ResourceManager';
 
 @Entry
 @Component
@@ -169,7 +170,7 @@ struct Password {
       }).catch((error: Error) => {
         console.error(`Open key file error: ${error}`);
         this.promptAction.showToast({
-          message: '打开失败:' + error.message,
+          message: $r('app.string.open_failed') + error.message,
           duration: 2000
         });
       });
@@ -250,7 +251,7 @@ struct Password {
         this.init();
         this.putFileToRecentFile();
         this.setFileParam(successMessage.data).then(() => {
-          this.loadingMessage = '打开成功';
+          this.loadingMessage = ResourceManager.getInstance().getString($r('app.string.open_success'));
           this.router.pushUrl({ url: 'pages/DatabaseView' });
           setTimeout(() => {
             this.closeLoadingDialog();
@@ -375,7 +376,7 @@ struct Password {
 
         // 认证方式选择
         Column() {
-          Text('认证方式')
+          Text($r('app.string.auth_type'))
             .fontSize(16)
             .fontColor($r('app.color.text_primary'))
             .margin({ bottom: 16 })
@@ -407,7 +408,7 @@ struct Password {
 
         // 密码输入框
         Row() {
-          TextInput({ placeholder: '请输入密码' })
+          TextInput({ placeholder: $r('app.string.password_placeholder') })
             .type(this.showPassword ? InputType.Normal : InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
@@ -482,7 +483,7 @@ struct Password {
   @Builder
   KeyFileSelector() {
     Column() {
-      Text('密钥文件')
+      Text($r('app.string.key_file'))
         .fontSize(16)
         .fontColor($r('app.color.text_primary'))
         .margin({ bottom: 16 })

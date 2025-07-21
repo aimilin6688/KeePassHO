@@ -413,11 +413,11 @@
       "value": "Open database file from WebDAV server"
     },
     {
-      "name": "delete_confirm_title",
+      "name": "dialog_confirm_title",
       "value": "Confirm deletion"
     },
     {
-      "name": "delete_group_confirm_message",
+      "name": "dialog_delete_confirm_message",
       "value": "Are you sure to delete this group?"
     },
     {
@@ -583,6 +583,38 @@
     {
       "name": "LocalFile_click_to_select",
       "value": "Click select kdbx file"
+    },
+    {
+      "name": "recycle_bin",
+      "value": "Recycle Bin"
+    },
+    {
+      "name": "open_success",
+      "value": "Open success"
+    },
+    {
+      "name": "auth_type",
+      "value": "Auth Type"
+    },
+    {
+      "name": "error_keyfile_not_found",
+      "value": "Key file not found"
+    },
+    {
+      "name": "history_version",
+      "value": "History version #%d"
+    },
+    {
+      "name": "back_to_current_version",
+      "value": "Back to current version"
+    },
+    {
+      "name": "field_name",
+      "value": "Entry"
+    },
+    {
+      "name": "history_record",
+      "value": "History Record"
     }
   ]
 }

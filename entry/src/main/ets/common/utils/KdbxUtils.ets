@@ -18,6 +18,7 @@ export default class KdbxUtils {
   public static readonly FIELD_CREATION_TIME = 'creationTime';
   public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
   public static readonly GROUP_NAME = 'GroupName';
+  public static readonly RECYCLE_BIN_NAME = 'Recycle Bin';
 
 
   private static customIconMap: Map<string, string> = new Map<string, string>();
@@ -303,6 +304,8 @@ export default class KdbxUtils {
         return $r("app.string.created_time");
       case KdbxUtils.FIELD_LASTMOD_TIME:
         return $r("app.string.updated_time");
+      case KdbxUtils.RECYCLE_BIN_NAME:
+        return $r("app.string.recycle_bin");
       default:
         return fileKey;
     }
