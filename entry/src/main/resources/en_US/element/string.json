@@ -125,7 +125,7 @@
       "value": "Failed to check recent files"
     },
     {
-      "name": "process_database_failed",
+      "name": "load_database_failed",
       "value": "Failed to process database"
     },
     {
@@ -271,10 +271,6 @@
       "value": "Generate Password"
     },
     {
-      "name": "create_new_database",
-      "value": "Create New Database"
-    },
-    {
       "name": "CreateDatabase_name_label",
       "value": "Database Name"
     },
@@ -295,16 +291,8 @@
       "value": "Passwords do not match"
     },
     {
-      "name": "CreateDatabase_name_required",
-      "value": "Please enter database name"
-    },
-    {
-      "name": "CreateDatabase_success",
+      "name": "CreateDatabase_create_success",
       "value": "Database created successfully"
-    },
-    {
-      "name": "CreateDatabase_save_failed",
-      "value": "Failed to save database"
     },
     {
       "name": "CreateDatabase_create_failed",
@@ -407,7 +395,7 @@
       "value": "Group {n} items"
     },
     {
-      "name": "entry_edit_edit_title",
+      "name": "edit_entry",
       "value": "Edit Entry"
     },
     {
@@ -595,20 +583,12 @@
       "value": "Invalid database or group information"
     },
     {
-      "name": "DatabaseView_unknown_database",
-      "value": "Unknown database"
-    },
-    {
       "name": "Password_loading",
       "value": "Loading..."
     },
     {
       "name": "Password_unlock_title",
       "value": "Unlock Database"
-    },
-    {
-      "name": "Password_change_db",
-      "value": "Change Database"
     }
   ]
 }

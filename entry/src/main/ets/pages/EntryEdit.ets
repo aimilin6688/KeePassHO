@@ -121,7 +121,7 @@ struct EntryEdit {
     // 判断是编辑模式还是添加模式
     if (routeParams.entryId && routeParams.groupId) {
       this.isEditMode = true;
-      this.pageTitle = ResourceManager.getInstance().getString($r('app.string.entry_edit_edit_title'));
+      this.pageTitle = ResourceManager.getInstance().getString($r("app.string.edit_entry"));
 
       
       // 使用KdbxUtils.getEntry方法获取现有条目
