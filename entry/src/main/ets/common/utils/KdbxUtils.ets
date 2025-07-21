@@ -6,6 +6,7 @@ import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -317,6 +318,17 @@ export default class KdbxUtils {
       default:
         return fileKey;
     }
+  }
+
+  /**
+   * 保存数据库
+   * @returns 结果信息
+   */
+  public static saveDatabase(): Promise<void> {
+    const dbFileParam = FileService.getInstance().getDbFileParam();
+    return dbFileParam.database.save().then(async savedDb => {
+      return new KdbxFileManager(dbFileParam.storageType).saveKdbxFile(dbFileParam.filePath, savedDb);
+    });
   }
 }
 
