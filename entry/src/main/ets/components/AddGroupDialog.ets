@@ -74,7 +74,7 @@ export struct AddGroupDialog {
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
             
-            Text($r("app.string.select_icon"))
+            Text($r("app.string.click_select_icon"))
               .fontSize(14)
               .fontColor('#999999')
               .margin({ top: 4 })

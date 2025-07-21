@@ -20,7 +20,7 @@ export struct IconSelectorDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text($r('app.string.IconSelectorDialog_select_icon'))
+        Text($r("app.string.select_icon"))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         
