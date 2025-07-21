@@ -123,6 +123,7 @@ export struct EntryEditFieldDialog {
             .height(48)
             .fontSize(16)
             .fontColor($r('app.color.text_primary'))
+            .enableAutoFill(false)
             .borderRadius(8)
             .onChange((value) => {
               this.tempValue = value;
