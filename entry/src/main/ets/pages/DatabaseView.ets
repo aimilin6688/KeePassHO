@@ -448,7 +448,7 @@ struct DatabaseView {
               .height(50)
               .color($r('app.color.primary'))
 
-            Text($r('app.string.DatabaseView_loading'))
+            Text($r('app.string.loading_database_message'))
               .fontSize(16)
               .margin({ top: 16 })
               .fontColor($r('app.color.text_primary'))

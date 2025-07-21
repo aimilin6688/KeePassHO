@@ -158,10 +158,6 @@
       "value": "Confirm Delete"
     },
     {
-      "name": "DatabaseView_loading",
-      "value": "Loading database..."
-    },
-    {
       "name": "DatabaseView_group_items",
       "value": "Group with %d entries"
     },
