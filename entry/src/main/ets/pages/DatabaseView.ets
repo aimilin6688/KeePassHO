@@ -8,7 +8,6 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
-import ResourceManager from '../common/utils/ResourceManager';
 
 @Entry
 @Component
@@ -54,7 +53,7 @@ struct DatabaseView {
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 获取从Password页面传递的参数
     const params = FileService.getInstance().getDbFileParam();
-    this.titleName = params.fileName ?? '未知数据库';
+    this.titleName = params.fileName ?? '';
     this.database = params.database ?? null;
 
     // 获取排序方式
@@ -79,13 +78,13 @@ struct DatabaseView {
   /**
    * 如果从 Password 页面过来直接清空历史记录
    */
-  private clearUrl(){
+  private clearUrl() {
     let pageNum = this.router.getLength();
-    if(parseInt(pageNum) <= 0 ){
+    if (parseInt(pageNum) <= 0) {
       return;
     }
-    let prePage = this.router.getStateByIndex(parseInt(this.router.getLength()) -1);
-    if(prePage && prePage.name == 'Password'){
+    let prePage = this.router.getStateByIndex(parseInt(this.router.getLength()) - 1);
+    if (prePage && prePage.name == 'Password') {
       this.router.clear();
     }
   }
@@ -112,7 +111,7 @@ struct DatabaseView {
       this.router.back();
       return;
     }
-    if(this.isLoading == true){
+    if (this.isLoading == true) {
       return;
     }
 
@@ -156,7 +155,7 @@ struct DatabaseView {
   @Builder
   SwipeActionButtons(index: number, item: KdbxGroup | KdbxEntry) {
     Row() {
-      Button("编辑", { type: ButtonType.Normal })
+      Button($r('app.string.edit_button_text'), { type: ButtonType.Normal })
         .width(80)
         .height(60)
         .backgroundColor($r("app.color.button_bg_blue"))
@@ -180,7 +179,7 @@ struct DatabaseView {
           }
         })
 
-      Button("删除", { type: ButtonType.Normal })
+      Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
         .width(80)
         .height(60)
         .backgroundColor($r('app.color.danger'))
@@ -188,8 +187,8 @@ struct DatabaseView {
         .fontSize(14)
         .onClick(() => {
           AlertDialog.show({
-            title: $r('app.string.delete_confirm_title'),
-            message: $r("app.string.delete_group_confirm_message"),
+            title: $r("app.string.dialog_confirm_title"),
+            message: $r("app.string.dialog_delete_confirm_message"),
             primaryButton: {
               value: $r('app.string.cancel_button_text'),
               action: () => {
@@ -281,6 +280,7 @@ struct DatabaseView {
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     this.settingsService.unregisterObserver(this.onSortChanged);
   }
+
   // 强制组件刷新以应用新主题
   onThemeChanged() {
     this.updateUI();
@@ -548,7 +548,12 @@ struct DatabaseView {
           .width('100%')
           .height('100%')
           .backgroundColor($r("app.color.bg_primary"))
-          .padding({ left: 12, right: 12, top: 12, bottom:40 })
+          .padding({
+            left: 12,
+            right: 12,
+            top: 12,
+            bottom: 40
+          })
           .scrollBar(BarState.Auto)
         }
       }

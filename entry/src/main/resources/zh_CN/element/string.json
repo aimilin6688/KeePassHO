@@ -414,12 +414,12 @@
       "value": "从WebDAV服务器打开数据库文件"
     },
     {
-      "name": "delete_confirm_title",
-      "value": "确认删除"
+      "name": "dialog_confirm_title",
+      "value": "确认"
     },
     {
-      "name": "delete_group_confirm_message",
-      "value": "确定要删除这个分组吗？"
+      "name": "dialog_delete_confirm_message",
+      "value": "确定要删除吗？"
     },
     {
       "name": "save_success_message",
@@ -585,6 +585,38 @@
     {
       "name": "LocalFile_click_to_select",
       "value": " 点击选择Kdbx文件"
+    },
+    {
+      "name": "recycle_bin",
+      "value": "回收站"
+    },
+    {
+      "name": "open_success",
+      "value": "打开成功"
+    },
+    {
+      "name": "auth_type",
+      "value": "认证方式"
+    },
+    {
+      "name": "error_keyfile_not_found",
+      "value": "未找到密钥文件"
+    },
+    {
+      "name": "history_version",
+      "value": "历史版本 #%d"
+    },
+    {
+      "name": "back_to_current_version",
+      "value": "返回当前版本"
+    },
+    {
+      "name": "field_name",
+      "value": "条目"
+    },
+    {
+      "name": "history_record",
+      "value": "历史记录"
     }
   ]
 }
