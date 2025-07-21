@@ -312,7 +312,7 @@ struct EntryEdit {
       this.database.save().then(async savedDb => {
         const fileManager = new KdbxFileManager(dbFileParam.storageType);
         fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
-          this.promptAction.showToast({ message: $r('app.string.EntryEdit_save_success') });
+          this.promptAction.showToast({ message: $r('app.string.save_success_message') });
           this.isLoading = false;
           this.router.back();
         }).catch(this.handleSaveError);

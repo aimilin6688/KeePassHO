@@ -228,7 +228,7 @@ struct DatabaseView {
       this.database.save().then(async savedDb => {
         const fileManager = new KdbxFileManager(dbFileParam.storageType);
         fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
-          this.promptAction.showToast({ message: $r('app.string.DatabaseView_save_success') });
+          this.promptAction.showToast({ message: $r('app.string.save_success_message') });
         }).catch((error: Error) => {
           console.error(`保存数据库失败: ${error}`);
           this.promptAction.showToast({ message: `${$r('app.string.DatabaseView_save_failed')}: ${error.message}` });
