@@ -42,7 +42,7 @@ export struct EntryViewFieldItem {
     systemPasteboard.setData(pasteboardData, (error, data) => {
       if (error) {
         console.error('Failed to copy to clipboard: ', error);
-        this.promptAction.showToast({ message: $r("app.string.copy_failed", error) });
+        this.promptAction.showToast({ message: $r("app.string.copy_failed") });
       } else {
         this.promptAction.showToast({ message: $r("app.string.copied"), duration: 2000 });
       }

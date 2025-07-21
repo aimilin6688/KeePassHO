@@ -143,7 +143,7 @@ struct DatabaseView {
       console.info(`加载了 ${this.groups.length} 个分组, ${this.entries.length} 个条目`);
     } catch (error) {
       console.error(`处理数据库失败: ${error}`);
-      this.promptAction.showToast({ message: ResourceManager.getInstance().getString($r("app.string.process_database_failed")) + `: ${error}`, duration: 2000 });
+      this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
         this.router.back();
