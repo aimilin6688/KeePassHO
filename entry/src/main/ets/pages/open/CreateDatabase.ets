@@ -252,7 +252,7 @@ struct CreateDatabase {
         });
       }).catch((error: Error) => {
         console.log(`Failed to save database: ${error}`);
-        this.promptAction.showToast({ message: $r('app.string.save_failed_message') });
+        this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
       });
     }).catch((error: Error) => {
       console.error(`Failed to create database: ${error}`);

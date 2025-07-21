@@ -317,7 +317,7 @@ struct EntryView {
               .height(50)
               .color($r('app.color.primary'))
 
-            Text($r('app.string.loading_entry'))
+            Text($r('app.string.loading_message'))
               .fontSize(16)
               .margin({ top: 16 })
               .fontColor($r('app.color.text_primary'))
