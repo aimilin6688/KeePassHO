@@ -85,31 +85,31 @@
       "value": "URL"
     },
     {
-      "name": "KdbxUtils_notes",
+      "name": "notes",
       "value": "Notes"
     },
     {
-      "name": "KdbxUtils_title",
+      "name": "title",
       "value": "Title"
     },
     {
-      "name": "KdbxUtils_tags",
+      "name": "tags",
       "value": "Tags"
     },
     {
-      "name": "KdbxUtils_group_name",
+      "name": "group_name",
       "value": "Group Name"
     },
     {
-      "name": "KdbxUtils_custom_field",
+      "name": "custom_field",
       "value": "Custom Field"
     },
     {
-      "name": "KdbxUtils_created_time",
+      "name": "created_time",
       "value": "Created Time"
     },
     {
-      "name": "KdbxUtils_updated_time",
+      "name": "updated_time",
       "value": "Updated Time"
     },
     {
@@ -121,7 +121,7 @@
       "value": "Icon"
     },
     {
-      "name": "select_icon",
+      "name": "click_select_icon",
       "value": "Click to select icon"
     },
     {

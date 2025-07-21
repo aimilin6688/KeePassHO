@@ -189,7 +189,7 @@ struct DatabaseView {
         .onClick(() => {
           AlertDialog.show({
             title: $r('app.string.delete_confirm_title'),
-            message: $r('app.string.delete_confirm_message'),
+            message: $r("app.string.delete_group_confirm_message"),
             primaryButton: {
               value: $r('app.string.cancel_button_text'),
               action: () => {

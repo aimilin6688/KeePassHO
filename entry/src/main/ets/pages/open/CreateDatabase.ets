@@ -37,7 +37,7 @@ struct CreateDatabase {
             this.router.back()
           })
 
-        Text($r('app.string.CreateDatabase_title'))
+        Text($r("app.string.create_new_database"))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -106,7 +106,7 @@ struct CreateDatabase {
         .borderRadius(8)
 
         // 确认密码输入
-        Text($r('app.string.CreateDatabase_confirm_password_label'))
+        Text($r("app.string.confirm_password_label"))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20, left: 16 })
@@ -115,7 +115,7 @@ struct CreateDatabase {
           .textAlign(TextAlign.Start)
 
         Row() {
-          TextInput({ placeholder: $r('app.string.CreateDatabase_confirm_password_placeholder'), text: this.confirmPassword })
+          TextInput({ placeholder: $r("app.string.confirm_password_placeholder"), text: this.confirmPassword })
             .type(InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
@@ -181,7 +181,7 @@ struct CreateDatabase {
     }
 
     if (this.password.length === 0) {
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_password_required') });
+      this.promptAction.showToast({ message: $r('app.string.password_placeholder') });
       return;
     }
 

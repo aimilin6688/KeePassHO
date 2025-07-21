@@ -1,38 +1,6 @@
 {
   "string": [
     {
-      "name": "auth_type_password",
-      "value": "仅密码"
-    },
-    {
-      "name": "auth_type_password_keyfile",
-      "value": "密码 + 密钥文件"
-    },
-    {
-      "name": "auth_type_password_otp",
-      "value": "密码 + 一次性密码"
-    },
-    {
-      "name": "auth_type_password_otp_recovery",
-      "value": "密码 + 一次性密码（恢复模式）"
-    },
-    {
-      "name": "auth_type_password_challenge_response",
-      "value": "密码 + 挑战-响应"
-    },
-    {
-      "name": "auth_type_password_challenge_response_recovery",
-      "value": "密码 + 挑战-响应（恢复模式）"
-    },
-    {
-      "name": "auth_type_password_challenge_response_xc",
-      "value": "密码 + 挑战-应答（Keepass XC）"
-    },
-    {
-      "name": "auth_type_password_keyfile_challenge_response_xc",
-      "value": "密码 + 密钥文件 + 挑战应答（Keepass XC）"
-    },
-    {
       "name": "module_desc",
       "value": "KeePassHO密码管理"
     },
@@ -89,6 +57,10 @@
       "value": "创建数据库"
     },
     {
+      "name": "create_new_database",
+      "value": "创建新数据库"
+    },
+    {
       "name": "change_database",
       "value": "更换数据库"
     },
@@ -99,6 +71,38 @@
     {
       "name": "Settings_about",
       "value": "关于"
+    },
+    {
+      "name": "auth_type_password",
+      "value": "仅密码"
+    },
+    {
+      "name": "auth_type_password_keyfile",
+      "value": "密码 + 密钥文件"
+    },
+    {
+      "name": "auth_type_password_otp",
+      "value": "密码 + 一次性密码"
+    },
+    {
+      "name": "auth_type_password_otp_recovery",
+      "value": "密码 + 一次性密码（恢复模式）"
+    },
+    {
+      "name": "auth_type_password_challenge_response",
+      "value": "密码 + 挑战-响应"
+    },
+    {
+      "name": "auth_type_password_challenge_response_recovery",
+      "value": "密码 + 挑战-响应（恢复模式）"
+    },
+    {
+      "name": "auth_type_password_challenge_response_xc",
+      "value": "密码 + 挑战-应答（Keepass XC）"
+    },
+    {
+      "name": "auth_type_password_keyfile_challenge_response_xc",
+      "value": "密码 + 密钥文件 + 挑战应答（Keepass XC）"
     },
     {
       "name": "About_version",
@@ -137,6 +141,22 @@
       "value": "删除"
     },
     {
+      "name": "confirm_buttom_text",
+      "value": "确定"
+    },
+    {
+      "name": "cancel_button_text",
+      "value": "取消"
+    },
+    {
+      "name": "add_group_button",
+      "value": "添加分组"
+    },
+    {
+      "name": "add_entry_button",
+      "value": "添加条目"
+    },
+    {
       "name": "group_items_message",
       "value": "组群 %d 个条目"
     },
@@ -165,31 +185,51 @@
       "value": "请输入URL"
     },
     {
-      "name": "KdbxUtils_notes",
+      "name": "notes",
       "value": "备注"
     },
     {
-      "name": "KdbxUtils_title",
+      "name": "notes_placeholder",
+      "value": "请输入备注"
+    },
+    {
+      "name": "title",
       "value": "标题"
     },
     {
-      "name": "KdbxUtils_tags",
+      "name": "title_placeholder",
+      "value": "请输入标题"
+    },
+    {
+      "name": "tags",
       "value": "标签"
     },
     {
-      "name": "KdbxUtils_group_name",
+      "name": "tags_placeholder",
+      "value": "请输入标签（用逗号分隔）"
+    },
+    {
+      "name": "confirm_password_label",
+      "value": "确认密码"
+    },
+    {
+      "name": "confirm_password_placeholder",
+      "value": "请再次输入密码"
+    },
+    {
+      "name": "group_name",
       "value": "分组名称"
     },
     {
-      "name": "KdbxUtils_custom_field",
+      "name": "custom_field",
       "value": "自定义字段"
     },
     {
-      "name": "KdbxUtils_created_time",
+      "name": "created_time",
       "value": "创建时间"
     },
     {
-      "name": "KdbxUtils_updated_time",
+      "name": "updated_time",
       "value": "更新时间"
     },
     {
@@ -199,10 +239,6 @@
     {
       "name": "icon",
       "value": "图标"
-    },
-    {
-      "name": "select_icon",
-      "value": "点击选择图标"
     },
     {
       "name": "enter_group_name",
@@ -226,6 +262,10 @@
       "value": "请输入字段名称"
     },
     {
+      "name": "field_name_not_empty",
+      "value": "字段名称不能为空"
+    },
+    {
       "name": "custom_field_value",
       "value": "字段值"
     },
@@ -238,24 +278,20 @@
       "value": "保护字段值"
     },
     {
-      "name": "field_name_not_empty",
-      "value": "字段名称不能为空"
-    },
-    {
-      "name": "confirm_buttom_text",
-      "value": "确定"
-    },
-    {
-      "name": "EntryViewFieldItem_copy_failed",
+      "name": "copy_failed",
       "value": "复制失败: %s"
     },
     {
-      "name": "EntryViewFieldItem_copied",
+      "name": "copied",
       "value": "已复制"
     },
     {
-      "name": "IconSelectorDialog_select_icon",
+      "name": "select_icon",
       "value": "选择图标"
+    },
+    {
+      "name": "click_select_icon",
+      "value": "点击选择图标"
     },
     {
       "name": "PasswordGenerator_title",
@@ -322,10 +358,6 @@
       "value": "生成密码"
     },
     {
-      "name": "CreateDatabase_title",
-      "value": "创建新数据库"
-    },
-    {
       "name": "CreateDatabase_name_label",
       "value": "数据库名称"
     },
@@ -334,24 +366,12 @@
       "value": "请输入数据库名称"
     },
     {
-      "name": "CreateDatabase_confirm_password_label",
-      "value": "确认密码"
-    },
-    {
-      "name": "CreateDatabase_confirm_password_placeholder",
-      "value": "请再次输入密码"
-    },
-    {
       "name": "CreateDatabase_password_mismatch",
       "value": "两次输入的密码不一致"
     },
     {
       "name": "CreateDatabase_name_required",
       "value": "请输入数据库名称"
-    },
-    {
-      "name": "CreateDatabase_password_required",
-      "value": "请输入密码"
     },
     {
       "name": "CreateDatabase_success",
@@ -398,12 +418,8 @@
       "value": "确认删除"
     },
     {
-      "name": "delete_confirm_message",
+      "name": "delete_group_confirm_message",
       "value": "确定要删除这个分组吗？"
-    },
-    {
-      "name": "cancel_button_text",
-      "value": "取消"
     },
     {
       "name": "save_success_message",
@@ -424,14 +440,6 @@
     {
       "name": "search_placeholder",
       "value": "查找内容"
-    },
-    {
-      "name": "add_group_button",
-      "value": "添加分组"
-    },
-    {
-      "name": "add_entry_button",
-      "value": "添加条目"
     },
     {
       "name": "group_item_count_format",
@@ -465,19 +473,7 @@
       "name": "generate_button_text",
       "value": "生成"
     },
-    {
-      "name": "title_placeholder",
-      "value": "请输入标题"
-    },
 
-    {
-      "name": "tags_placeholder",
-      "value": "请输入标签（用逗号分隔）"
-    },
-    {
-      "name": "notes_placeholder",
-      "value": "请输入备注"
-    },
     {
       "name": "no_custom_fields_message",
       "value": "暂无自定义字段"
@@ -603,28 +599,8 @@
       "value": "保存数据库失败"
     },
     {
-      "name": "EntryEdit_title_placeholder",
-      "value": "请输入标题"
-    },
-    {
-      "name": "EntryEdit_password_placeholder",
-      "value": "请输入密码"
-    },
-    {
-      "name": "EntryEdit_tags_placeholder",
-      "value": "请输入标签（用逗号分隔）"
-    },
-    {
-      "name": "EntryEdit_notes_placeholder",
-      "value": "请输入备注"
-    },
-    {
       "name": "EntryEdit_generate_button",
       "value": "生成"
-    },
-    {
-      "name": "EntryEdit_no_custom_fields",
-      "value": "暂无自定义字段"
     },
     {
       "name": "EntryEdit_field_name_exists",

@@ -1,39 +1,6 @@
 {
   "string": [
     {
-      "name": "auth_type_password",
-      "value": "Password only"
-    },
-    {
-      "name": "auth_type_password_keyfile",
-      "value": "Password + Key File"
-    },
-    {
-      "name": "auth_type_password_otp",
-      "value": "Password + OTP"
-    },
-    {
-      "name": "auth_type_password_otp_recovery",
-      "value": "Password + OTP (Recovery Mode)"
-    },
-    {
-      "name": "auth_type_password_challenge_response",
-      "value": "Password + Challenge-Response"
-    },
-    {
-      "name": "auth_type_password_challenge_response_recovery",
-      "value": "Password + Challenge-Response (Recovery Mode)"
-    },
-    {
-      "name": "auth_type_password_challenge_response_xc",
-      "value": "Password + Challenge-Response (KeePassXC)"
-    },
-    {
-      "name": "auth_type_password_keyfile_challenge_response_xc",
-      "value": "Password + Key File + Challenge-Response (KeePassXC)"
-    },
-
-    {
       "name": "module_desc",
       "value": "KeePass Password Manager"
     },
@@ -102,6 +69,38 @@
       "value": "About"
     },
     {
+      "name": "auth_type_password",
+      "value": "Password only"
+    },
+    {
+      "name": "auth_type_password_keyfile",
+      "value": "Password + Key File"
+    },
+    {
+      "name": "auth_type_password_otp",
+      "value": "Password + OTP"
+    },
+    {
+      "name": "auth_type_password_otp_recovery",
+      "value": "Password + OTP (Recovery Mode)"
+    },
+    {
+      "name": "auth_type_password_challenge_response",
+      "value": "Password + Challenge-Response"
+    },
+    {
+      "name": "auth_type_password_challenge_response_recovery",
+      "value": "Password + Challenge-Response (Recovery Mode)"
+    },
+    {
+      "name": "auth_type_password_challenge_response_xc",
+      "value": "Password + Challenge-Response (KeePassXC)"
+    },
+    {
+      "name": "auth_type_password_keyfile_challenge_response_xc",
+      "value": "Password + Key File + Challenge-Response (KeePassXC)"
+    },
+    {
       "name": "About_version",
       "value": "Version: "
     },
@@ -150,7 +149,7 @@
       "value": "Icon"
     },
     {
-      "name": "select_icon",
+      "name": "click_select_icon",
       "value": "Click to select icon"
     },
     {
@@ -196,15 +195,15 @@
       "value": "Confirm"
     },
     {
-      "name": "EntryViewFieldItem_copy_failed",
+      "name": "copy_failed",
       "value": "Copy fail: %s"
     },
     {
-      "name": "EntryViewFieldItem_copied",
+      "name": "copied",
       "value": "Copied"
     },
     {
-      "name": "IconSelectorDialog_select_icon",
+      "name": "select_icon",
       "value": "Select Icon"
     },
     {
@@ -272,7 +271,7 @@
       "value": "Generate Password"
     },
     {
-      "name": "CreateDatabase_title",
+      "name": "create_new_database",
       "value": "Create New Database"
     },
     {
@@ -284,11 +283,11 @@
       "value": "Please enter database name"
     },
     {
-      "name": "CreateDatabase_confirm_password_label",
+      "name": "confirm_password_label",
       "value": "Confirm Password"
     },
     {
-      "name": "CreateDatabase_confirm_password_placeholder",
+      "name": "confirm_password_placeholder",
       "value": "Please enter password again"
     },
     {
@@ -298,10 +297,6 @@
     {
       "name": "CreateDatabase_name_required",
       "value": "Please enter database name"
-    },
-    {
-      "name": "CreateDatabase_password_required",
-      "value": "Please enter password"
     },
     {
       "name": "CreateDatabase_success",
@@ -368,7 +363,7 @@
       "value": "Confirm Delete"
     },
     {
-      "name": "delete_confirm_message",
+      "name": "delete_group_confirm_message",
       "value": "Are you sure you want to delete this group?"
     },
     {
@@ -588,28 +583,8 @@
       "value": "Failed to save database"
     },
     {
-      "name": "EntryEdit_title_placeholder",
-      "value": "Enter title"
-    },
-    {
-      "name": "EntryEdit_password_placeholder",
-      "value": "Enter password"
-    },
-    {
-      "name": "EntryEdit_tags_placeholder",
-      "value": "Enter tags (comma separated)"
-    },
-    {
-      "name": "EntryEdit_notes_placeholder",
-      "value": "Enter notes"
-    },
-    {
       "name": "EntryEdit_generate_button",
       "value": "Generate"
-    },
-    {
-      "name": "EntryEdit_no_custom_fields",
-      "value": "No custom fields"
     },
     {
       "name": "EntryEdit_field_name_exists",
