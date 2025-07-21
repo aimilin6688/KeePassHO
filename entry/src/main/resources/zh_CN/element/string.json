@@ -137,7 +137,7 @@
       "value": "编辑"
     },
     {
-      "name": "delete_buttom_text",
+      "name": "delete_button_text",
       "value": "删除"
     },
     {
@@ -573,6 +573,18 @@
     {
       "name": "Password_unlock_title",
       "value": "解锁数据库"
+    },
+    {
+      "name": "select_local_file",
+      "value": "选择本地文件"
+    },
+    {
+      "name": "reselect_file",
+      "value": "重新选择文件"
+    },
+    {
+      "name": "LocalFile_click_to_select",
+      "value": " 点击选择Kdbx文件"
     }
   ]
 }
