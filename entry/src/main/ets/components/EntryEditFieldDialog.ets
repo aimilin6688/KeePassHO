@@ -34,7 +34,7 @@ export struct EntryEditFieldDialog {
     // 验证字段名称
     if (!this.tempKey || this.tempKey.trim() === '') {
       this.promptAction.showToast({
-        message: $r('app.string.EntryEditFieldDialog_name_empty'),
+        message: $r("app.string.field_name_not_empty"),
         duration: 2000
       });
       return;
@@ -63,7 +63,7 @@ export struct EntryEditFieldDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text(this.isEditing ? $r('app.string.EntryEditFieldDialog_edit_field') : $r('app.string.EntryEditFieldDialog_add_field'))
+        Text(this.isEditing ? $r("app.string.edit_custom_field") : $r("app.string.add_custom_field"))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         Blank()
@@ -86,13 +86,13 @@ export struct EntryEditFieldDialog {
 
       // 字段名称
       Column() {
-        Text($r('app.string.EntryEditFieldDialog_field_name'))
+        Text($r("app.string.custom_field_name"))
           .fontSize(14)
           .fontColor($r('app.color.text_secondary'))
           .margin({ bottom: 8 })
           .alignSelf(ItemAlign.Start)
 
-        TextInput({ text: this.tempKey, placeholder: $r('app.string.EntryEditFieldDialog_enter_field_name') })
+        TextInput({ text: this.tempKey, placeholder: $r("app.string.enter_custom_field_name") })
           .width('100%')
           .height(48)
           .fontSize(16)
@@ -107,7 +107,7 @@ export struct EntryEditFieldDialog {
 
       // 字段值
       Column() {
-        Text($r('app.string.EntryEditFieldDialog_field_value'))
+        Text($r("app.string.custom_field_value"))
           .fontSize(14)
           .fontColor($r('app.color.text_secondary'))
           .margin({ bottom: 8 })
@@ -116,7 +116,7 @@ export struct EntryEditFieldDialog {
         Row() {
           TextInput({
             text: this.tempValue,
-            placeholder: $r('app.string.EntryEditFieldDialog_enter_field_value'),
+            placeholder: $r("app.string.enter_custom_field_value"),
           })
             .type(this.tempProtected && !this.showPassword ? InputType.Password : InputType.Normal)
             .width('100%')
@@ -142,7 +142,7 @@ export struct EntryEditFieldDialog {
             this.tempProtected = value;
           })
 
-        Text($r('app.string.EntryEditFieldDialog_protect_field'))
+        Text($r("app.string.is_protect_field"))
           .fontSize(14)
           .fontColor($r('app.color.text_primary'))
           .margin({ left: 8 })
@@ -166,7 +166,7 @@ export struct EntryEditFieldDialog {
             this.cancel();
           })
 
-        Button($r('app.string.EntryEditFieldDialog_confirm'))
+        Button($r("app.string.confirm_buttom_text"))
           .width('45%')
           .height(40)
           .fontSize(16)

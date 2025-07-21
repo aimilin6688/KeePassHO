@@ -96,7 +96,7 @@ struct EntryEdit {
 
     if (!this.database) {
       this.promptAction.showToast({
-        message: $r('app.string.invalid_database_message'),
+        message: $r("app.string.invalid_database"),
         duration: 2000
       });
       this.router.back();
@@ -108,7 +108,7 @@ struct EntryEdit {
       this.parentGroup = this.database.getGroup(routeParams.groupId);
       if (!this.parentGroup) {
         this.promptAction.showToast({
-          message: $r('app.string.invalid_group_message'),
+          message: $r("app.string.invalid_group"),
           duration: 2000
         });
         this.router.back();

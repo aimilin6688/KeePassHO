@@ -119,7 +119,7 @@ struct Index {
 
         // 添加间距
         Column() {
-          this.MainButton($r('app.media.ic_add_file'), $r('app.string.Index_create_database'), () => {
+          this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
             this.router.pushUrl({ url: 'pages/open/CreateDatabase' })
           })
         }
