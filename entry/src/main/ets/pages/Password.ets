@@ -452,7 +452,7 @@ struct Password {
             })
 
           // 右侧 - 解锁按钮
-          Button(this.isLoading ? $r('app.string.Password_loading') : $r('app.string.Password_unlock_title'))
+          Button(this.isLoading ? $r('app.string.loading_message') : $r('app.string.Password_unlock_title'))
             .height(48)
             .layoutWeight(1)
             .margin({ left: 8, right: 16 })
@@ -488,7 +488,7 @@ struct Password {
         .margin({ bottom: 16 })
         .alignSelf(ItemAlign.Start)
 
-      Button(this.keyFileName ? '重新选择密钥文件' : '选择密钥文件')
+      Button(this.keyFileName ? $r('app.string.reselect_key_file') : $r('app.string.select_key_file_button'))
         .width('100%')
         .height(48)
         .backgroundColor($r("app.color.button_bg_blue"))

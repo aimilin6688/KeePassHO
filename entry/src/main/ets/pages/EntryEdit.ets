@@ -265,7 +265,7 @@ struct EntryEdit {
     } catch (error) {
       console.error(`保存条目失败: ${error}`);
       this.promptAction.showToast({
-        message: `保存条目失败: ${error}`,
+        message: $r('app.string.save_entry_failed_message', error.message),
         duration: 2000
       });
       this.isLoading = false;
@@ -326,7 +326,7 @@ struct EntryEdit {
    */
   private handleSaveError(error: Error){
     console.error(`保存数据库失败: ${error}`);
-    this.promptAction.showToast({ message: $r('app.string.EntryEdit_save_failed') + `: ${error.message}` });
+    this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
     this.isLoading = false;
   }
 
@@ -395,7 +395,7 @@ struct EntryEdit {
       const existingField = this.customFields.find(field => field.key === customField.key);
       if (existingField) {
         this.promptAction.showToast({
-          message: $r('app.string.EntryEdit_field_name_exists'),
+          message: $r('app.string.field_name_exists_message'),
           duration: 2000
         });
         return;
@@ -587,7 +587,7 @@ struct EntryEdit {
 
                 Blank()
 
-                Button('生成', { buttonStyle: ButtonStyleMode.TEXTUAL })
+                Button($r('app.string.generate_button_text'), { buttonStyle: ButtonStyleMode.TEXTUAL })
                   .fontSize(14)
                   .fontColor($r('app.color.text_primary'))
                   .backgroundColor($r("app.color.card_bg"))
@@ -798,7 +798,7 @@ struct EntryEdit {
                   })
                 })
               } else {
-                Text('暂无自定义字段')
+                Text($r('app.string.no_custom_fields_message'))
                   .fontSize(14)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 8, bottom: 8 })
