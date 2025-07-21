@@ -158,10 +158,6 @@
       "value": "Confirm Delete"
     },
     {
-      "name": "DatabaseView_save_success",
-      "value": "Save successful"
-    },
-    {
       "name": "DatabaseView_save_failed",
       "value": "Failed to save database"
     },
@@ -701,10 +697,6 @@
     {
       "name": "EntryEdit_invalid_db_or_group",
       "value": "Invalid database or group information"
-    },
-    {
-      "name": "EntryEdit_save_success", 
-      "value": "Save successful"
     },
     {
       "name": "DatabaseView_unknown_database",
