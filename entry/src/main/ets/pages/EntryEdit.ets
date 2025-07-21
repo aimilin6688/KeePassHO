@@ -313,14 +313,10 @@ struct EntryEdit {
    */
   private saveDatabase() {
     if (this.database) {
-      const dbFileParam = FileService.getInstance().getDbFileParam();
-      this.database.save().then(async savedDb => {
-        const fileManager = new KdbxFileManager(dbFileParam.storageType);
-        fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
-          this.promptAction.showToast({ message: $r('app.string.save_success_message') });
-          this.isLoading = false;
-          this.router.back();
-        }).catch(this.handleSaveError);
+      KdbxUtils.saveDatabase().then(() => {
+        this.promptAction.showToast({ message: $r('app.string.save_success_message') });
+        this.isLoading = false;
+        this.router.back();
       }).catch(this.handleSaveError);
     }
   }
