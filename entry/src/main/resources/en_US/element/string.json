@@ -158,10 +158,6 @@
       "value": "Confirm Delete"
     },
     {
-      "name": "DatabaseView_invalid_database_info",
-      "value": "Invalid database information"
-    },
-    {
       "name": "DatabaseView_loading",
       "value": "Loading database..."
     },
@@ -645,10 +641,6 @@
     {
       "name": "load_file_success",
       "value": "File content loaded successfully!"
-    },
-    {
-      "name": "EntryEdit_invalid_db_info",
-      "value": "Invalid database information"
     },
     {
       "name": "EntryEdit_save_failed",
