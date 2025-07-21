@@ -15,13 +15,25 @@ export struct PasswordGeneratorDialog {
   @State useMinus: boolean = false; // 使用减号
   @State useUnderscore: boolean = false; // 使用下划线
   @State useSpace: boolean = false; // 使用空格
+  @State isAcceptable: boolean = false; // 密码是否可接受
 
   public onGenerate: (password: string) => void = () => {};
   private controller: CustomDialogController;
 
   // 显示时评估密码强度
-  onPageShow(): void {
+  aboutToAppear(): void {
+    this.resetPassword();
     this.evaluatePasswordStrength();
+  }
+
+  /**
+   * 重新对密码进行设置
+   */
+  resetPassword() {
+    if(this.password !== ''){
+      return;
+    }
+    this.generatePassword();
   }
 
   /**
@@ -52,7 +64,8 @@ export struct PasswordGeneratorDialog {
 
     // 更新密码
     this.password = password;
-
+    // 设置接受密码为可用
+    this.isAcceptable = true;
     // 评估密码强度
     this.evaluatePasswordStrength();
   }
@@ -365,8 +378,10 @@ export struct PasswordGeneratorDialog {
           .height(40)
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
+          .enabled(this.isAcceptable)
           .backgroundColor($r("app.color.button_bg_blue"))
           .borderRadius(4)
+
           .onClick(() => {
             this.onGenerate(this.password);
             this.close();
