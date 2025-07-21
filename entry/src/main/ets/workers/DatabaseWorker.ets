@@ -4,7 +4,6 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { LoadDatabase, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './DatabaseWorkerParam';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
-import ResourceManager from '../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -14,7 +13,7 @@ const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
 
 // 监听主线程消息
 workerPort.onmessage = (event: MessageEvents) => {
-  hilog.info(DOMAIN, TAG, 'Worker receive message: %s', event.data)
+  hilog.info(DOMAIN, TAG, 'Worker receive message: %{public}s', event.data)
   const message = JSON.parse(event.data) as WorkerMessage;
   if (message.type === MessageType.LOAD_DATABASE) {
     const request = message as LoadDatabase;
@@ -41,7 +40,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent), [kdbxContent]);
   } catch (error) {
-    hilog.error(DOMAIN, TAG, 'Worker error loading database:%s, stack: %s', error.message, error.stack);
+    hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
     postErrorMessage(error.message);
   }
 }
@@ -53,7 +52,8 @@ async function handleLoadDatabase(request: LoadDatabase) {
  */
 async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> {
   if (!request.filePath) {
-    throw new Error(ResourceManager.getInstance().getString($r('app.string.select_database_file')));
+    hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
+    throw new Error();
   }
   let result = await new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
   postMessage($r('app.string.load_file_success'));

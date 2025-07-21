@@ -34,7 +34,7 @@ export class LocalFileStorage implements IFileStorage {
         await fs.close(file.fd);
         return buffer;
       } catch (error) {
-        hilog.error(DOMAIN, TAG, 'Failed to read file: %s', error.message)
+        hilog.error(DOMAIN, TAG, 'Failed to read file: %{public}s', error.message)
         throw new Error(`Failed to read file: ${error.message}`);
       }
     });
@@ -75,7 +75,7 @@ export class LocalFileStorage implements IFileStorage {
       await fs.close(file.fd);
       return Promise.resolve();
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to write file: %s', error.message)
+      hilog.error(DOMAIN, TAG, 'Failed to write file: %{public}s', error.message)
       throw new Error(`Failed to write file: ${error.message}`);
     }
   }
@@ -116,7 +116,7 @@ export class LocalFileStorage implements IFileStorage {
         path: path
       };
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to get file info: %s', error.message)
+      hilog.error(DOMAIN, TAG, 'Failed to get file info: %{public}s', error.message)
       throw new Error(`Failed to get file info: ${error.message}`);
     }
   }
