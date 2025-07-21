@@ -1,5 +1,37 @@
 {
   "string": [
+    {
+      "name": "auth_type_password",
+      "value": "仅密码"
+    },
+    {
+      "name": "auth_type_password_keyfile",
+      "value": "密码 + 密钥文件"
+    },
+    {
+      "name": "auth_type_password_otp",
+      "value": "密码 + 一次性密码"
+    },
+    {
+      "name": "auth_type_password_otp_recovery",
+      "value": "密码 + 一次性密码（恢复模式）"
+    },
+    {
+      "name": "auth_type_password_challenge_response",
+      "value": "密码 + 挑战-响应"
+    },
+    {
+      "name": "auth_type_password_challenge_response_recovery",
+      "value": "密码 + 挑战-响应（恢复模式）"
+    },
+    {
+      "name": "auth_type_password_challenge_response_xc",
+      "value": "密码 + 挑战-应答（Keepass XC）"
+    },
+    {
+      "name": "auth_type_password_keyfile_challenge_response_xc",
+      "value": "密码 + 密钥文件 + 挑战应答（Keepass XC）"
+    },
 
     {
       "name": "module_desc",
