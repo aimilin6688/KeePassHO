@@ -290,19 +290,19 @@ export default class KdbxUtils {
       case KdbxUtils.FIELD_URL:
         return $r("app.string.url");
       case KdbxUtils.FIELD_NOTES:
-        return $r('app.string.KdbxUtils_notes');
+        return $r("app.string.notes");
       case KdbxUtils.FIELD_TITLE:
-        return $r('app.string.KdbxUtils_title');
+        return $r("app.string.title");
       case KdbxUtils.FIELD_TAGS:
-        return $r('app.string.KdbxUtils_tags');
+        return $r("app.string.tags");
       case KdbxUtils.GROUP_NAME:
-        return $r('app.string.KdbxUtils_group_name');
+        return $r("app.string.group_name");
       case KdbxUtils.FIELD_CUSTOM_FIELDS:
-        return $r('app.string.KdbxUtils_custom_field');
+        return $r("app.string.custom_field");
       case KdbxUtils.FIELD_CREATION_TIME:
-        return $r('app.string.KdbxUtils_created_time');
+        return $r("app.string.created_time");
       case KdbxUtils.FIELD_LASTMOD_TIME:
-        return $r('app.string.KdbxUtils_updated_time');
+        return $r("app.string.updated_time");
       default:
         return fileKey;
     }
