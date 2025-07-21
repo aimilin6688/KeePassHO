@@ -42,7 +42,7 @@ export struct About {
             .fontSize(20)
             .margin({top: 20, bottom: 30})
 
-          Text(ResourceManager.getInstance().getString($r('app.string.About_version')) + '1.0.0')
+          Text(ResourceManager.getString($r('app.string.About_version')) + '1.0.0')
             .fontSize(16)
             .margin(5)
 
