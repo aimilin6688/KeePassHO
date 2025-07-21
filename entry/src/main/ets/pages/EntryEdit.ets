@@ -96,7 +96,7 @@ struct EntryEdit {
 
     if (!this.database) {
       this.promptAction.showToast({
-        message: $r('app.string.EntryEdit_invalid_db_info'),
+        message: $r('app.string.invalid_database_message'),
         duration: 2000
       });
       this.router.back();

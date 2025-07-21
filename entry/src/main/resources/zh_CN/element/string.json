@@ -158,10 +158,6 @@
       "value": "确认删除"
     },
     {
-      "name": "DatabaseView_invalid_database_info",
-      "value": "无效的数据库信息"
-    },
-    {
       "name": "DatabaseView_loading",
       "value": "正在加载数据库..."
     },
@@ -664,10 +660,6 @@
     {
       "name": "load_file_success",
       "value": "加载文件内容成功！"
-    },
-    {
-      "name": "EntryEdit_invalid_db_info",
-      "value": "无效的数据库信息"
     },
     {
       "name": "EntryEdit_save_failed",
