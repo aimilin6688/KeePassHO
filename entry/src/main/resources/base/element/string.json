@@ -615,6 +615,10 @@
     {
       "name": "history_record",
       "value": "History Record"
+    },
+    {
+      "name": "rollback_button_text",
+      "value": "Rollback"
     }
   ]
 }
