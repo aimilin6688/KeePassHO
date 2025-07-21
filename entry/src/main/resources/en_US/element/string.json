@@ -86,15 +86,15 @@
       "value": "Sort method"
     },
     {
-      "name": "Settings_create_database",
+      "name": "create_database",
       "value": "Create database"
     },
     {
-      "name": "Settings_change_database",
+      "name": "change_database",
       "value": "Change database"
     },
     {
-      "name": "Settings_recent_files",
+      "name": "recent_files",
       "value": "Recent files"
     },
     {
@@ -118,16 +118,12 @@
       "value": "Securely manage your passwords"
     },
     {
-      "name": "Index_open_database",
+      "name": "open_database",
       "value": "Open Database"
     },
     {
       "name": "Index_create_database",
       "value": "Create New Database"
-    },
-    {
-      "name": "Index_recent_files",
-      "value": "Recent Files"
     },
     {
       "name": "Error_check_recent_files",
@@ -327,10 +323,6 @@
       "value": "Passwords do not match"
     },
     {
-      "name": "CreateDatabase_create_button",
-      "value": "Create Database"
-    },
-    {
       "name": "CreateDatabase_name_required",
       "value": "Please enter database name"
     },
@@ -377,10 +369,6 @@
     {
       "name": "LocalFile_select_file",
       "value": "Select File"
-    },
-    {
-      "name": "open_database_page_title",
-      "value": "Open Database"
     },
     {
       "name": "select_open_method_prompt",

@@ -62,7 +62,7 @@ struct OpenDatabase {
             this.router.back()
           })
 
-        Text($r('app.string.open_database_page_title'))
+        Text($r('app.string.open_database'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
