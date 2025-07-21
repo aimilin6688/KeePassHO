@@ -397,7 +397,7 @@ struct DatabaseView {
           } else {
             Blank()
             // 搜索框
-            Search({ placeholder: $r('app.string.DatabaseView_search_placeholder'), value: this.searchText })
+            Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
               .width('70%')
               .margin({ left: 16 })
               .height(40)

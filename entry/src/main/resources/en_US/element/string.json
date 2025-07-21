@@ -162,10 +162,6 @@
       "value": "Group with %d entries"
     },
     {
-      "name": "DatabaseView_search_placeholder",
-      "value": "Search content"
-    },
-    {
       "name": "DatabaseView_add_group",
       "value": "Add Group"
     },
