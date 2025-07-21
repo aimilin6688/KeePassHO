@@ -2,7 +2,7 @@
 
 KeePassHO是一个为HarmonyOS平台开发的KeePass密码管理器应用。它允许用户安全地存储和管理密码，并与标准的KeePass数据库格式（.kdbx）兼容。
 
-![KeePassHO Logo](https://placeholder-for-logo-url.com)
+![KeePassHO Logo](entry/src/main/resources/base/media/startIcon.png)
 
 ## 功能特点
 
@@ -28,15 +28,12 @@ KeePassHO是一个为HarmonyOS平台开发的KeePass密码管理器应用。它�
 
 1. 克隆仓库
    ```bash
-   git clone https://github.com/your-username/KeePassHO.git
+   git clone https://gitee.com/milin/kee-pass-ho.git
    ```
 
 2. 使用DevEco Studio打开项目
 
 3. 构建并运行应用
-   ```bash
-   npm run build
-   ```
 
 ## 使用方法
 
@@ -118,8 +115,8 @@ KeePassHO使用kdbxweb库来处理KeePass数据库文件。这是一个高性能
 
 ## 联系方式
 
-- 项目维护者: [您的名字](mailto:your.email@example.com)
-- 项目主页: [GitHub仓库](https://github.com/your-username/KeePassHO)
+- 项目维护者: [艾米林](mailto:aimilin@yeah.net)
+- 项目主页: [Gitee仓库](https://gitee.com/milin/kee-pass-ho/)
 
 ---
 
