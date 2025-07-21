@@ -2,7 +2,7 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "KeePass Password Manager"
+      "value": "KeePassHO Password Manager"
     },
     {
       "name": "EntryAbility_label",
@@ -14,7 +14,7 @@
     },
     {
       "name": "SortConstants_default",
-      "value": "Default order"
+      "value": "Default sort"
     },
     {
       "name": "SortConstants_name",
@@ -65,6 +65,10 @@
       "value": "Recent files"
     },
     {
+      "name": "open_database",
+      "value": "Open database"
+    },
+    {
       "name": "Settings_about",
       "value": "About"
     },
@@ -74,7 +78,7 @@
     },
     {
       "name": "auth_type_password_keyfile",
-      "value": "Password + Key File"
+      "value": "Password + Key file"
     },
     {
       "name": "auth_type_password_otp",
@@ -82,7 +86,7 @@
     },
     {
       "name": "auth_type_password_otp_recovery",
-      "value": "Password + OTP (Recovery Mode)"
+      "value": "Password + OTP (Recovery mode)"
     },
     {
       "name": "auth_type_password_challenge_response",
@@ -90,15 +94,15 @@
     },
     {
       "name": "auth_type_password_challenge_response_recovery",
-      "value": "Password + Challenge-Response (Recovery Mode)"
+      "value": "Password + Challenge-Response (Recovery mode)"
     },
     {
       "name": "auth_type_password_challenge_response_xc",
-      "value": "Password + Challenge-Response (KeePassXC)"
+      "value": "Password + Challenge-Response (Keepass XC)"
     },
     {
       "name": "auth_type_password_keyfile_challenge_response_xc",
-      "value": "Password + Key File + Challenge-Response (KeePassXC)"
+      "value": "Password + Key file + Challenge-Response (Keepass XC)"
     },
     {
       "name": "About_version",
@@ -117,16 +121,16 @@
       "value": "Securely manage your passwords"
     },
     {
-      "name": "open_database",
-      "value": "Open Database"
-    },
-    {
       "name": "Error_check_recent_files",
       "value": "Failed to check recent files"
     },
     {
       "name": "load_database_failed",
-      "value": "Failed to process database"
+      "value": "Failed to load database"
+    },
+    {
+      "name": "load_entry_failed",
+      "value": "Failed to load entry"
     },
     {
       "name": "edit_button_text",
@@ -137,66 +141,152 @@
       "value": "Delete"
     },
     {
+      "name": "confirm_buttom_text",
+      "value": "OK"
+    },
+    {
+      "name": "cancel_button_text",
+      "value": "Cancel"
+    },
+    {
+      "name": "add_group_button",
+      "value": "Add group"
+    },
+    {
+      "name": "add_entry_button",
+      "value": "Add entry"
+    },
+    {
       "name": "group_items_message",
-      "value": "Group with %d entries"
+      "value": "%d entries in group"
+    },
+    {
+      "name": "username",
+      "value": "Username"
+    },
+    {
+      "name": "username_placeholder",
+      "value": "Enter username"
+    },
+    {
+      "name": "password",
+      "value": "Password"
+    },
+    {
+      "name": "password_placeholder",
+      "value": "Enter password"
+    },
+    {
+      "name": "url",
+      "value": "URL"
+    },
+    {
+      "name": "url_placeholder",
+      "value": "Enter URL"
+    },
+    {
+      "name": "notes",
+      "value": "Notes"
+    },
+    {
+      "name": "notes_placeholder",
+      "value": "Enter notes"
+    },
+    {
+      "name": "title",
+      "value": "Title"
+    },
+    {
+      "name": "title_placeholder",
+      "value": "Enter title"
+    },
+    {
+      "name": "title_required_message",
+      "value": "Title cannot be empty"
+    },
+    {
+      "name": "tags",
+      "value": "Tags"
+    },
+    {
+      "name": "tags_placeholder",
+      "value": "Enter tags (comma separated)"
+    },
+    {
+      "name": "confirm_password_label",
+      "value": "Confirm password"
+    },
+    {
+      "name": "confirm_password_placeholder",
+      "value": "Enter password again"
+    },
+    {
+      "name": "group_name",
+      "value": "Group name"
+    },
+    {
+      "name": "custom_field",
+      "value": "Custom field"
+    },
+    {
+      "name": "created_time",
+      "value": "Created time"
+    },
+    {
+      "name": "updated_time",
+      "value": "Updated time"
     },
     {
       "name": "edit_group",
-      "value": "Edit Group"
+      "value": "Edit group"
+    },
+    {
+      "name": "edit_entry",
+      "value": "Edit entry"
     },
     {
       "name": "icon",
       "value": "Icon"
     },
     {
-      "name": "click_select_icon",
-      "value": "Click to select icon"
-    },
-    {
       "name": "enter_group_name",
-      "value": "Please enter group name"
+      "value": "Enter group name"
     },
-
     {
       "name": "edit_custom_field",
-      "value": "Edit Custom Field"
+      "value": "Edit custom field"
     },
     {
       "name": "add_custom_field",
-      "value": "Add Custom Field"
+      "value": "Add custom field"
     },
     {
       "name": "custom_field_name",
-      "value": "Field Name"
+      "value": "Field name"
     },
     {
       "name": "enter_custom_field_name",
-      "value": "Please enter field name"
-    },
-    {
-      "name": "custom_field_value",
-      "value": "Field Value"
-    },
-    {
-      "name": "enter_custom_field_value",
-      "value": "Please enter field value"
-    },
-    {
-      "name": "is_protect_field",
-      "value": "Protect Field Value"
+      "value": "Enter field name"
     },
     {
       "name": "field_name_not_empty",
       "value": "Field name cannot be empty"
     },
-
     {
-      "name": "confirm_buttom_text",
-      "value": "Confirm"
+      "name": "custom_field_value",
+      "value": "Field value"
+    },
+    {
+      "name": "enter_custom_field_value",
+      "value": "Enter field value"
+    },
+    {
+      "name": "is_protect_field",
+      "value": "Protect field value"
     },
     {
       "name": "copy_failed",
-      "value": "Copy fail: %s"
+      "value": "Copy failed"
     },
     {
       "name": "copied",
@@ -204,7 +294,11 @@
     },
     {
       "name": "select_icon",
-      "value": "Select Icon"
+      "value": "Select icon"
+    },
+    {
+      "name": "click_select_icon",
+      "value": "Click to select icon"
     },
     {
       "name": "PasswordGenerator_title",
@@ -212,7 +306,7 @@
     },
     {
       "name": "PasswordGenerator_strength",
-      "value": "Password Strength:"
+      "value": "Password strength:"
     },
     {
       "name": "PasswordGenerator_weak",
@@ -228,15 +322,15 @@
     },
     {
       "name": "PasswordGenerator_length",
-      "value": "Password Length: %d"
+      "value": "Password length: %d"
     },
     {
       "name": "PasswordGenerator_uppercase",
-      "value": "Uppercase Letters (A-Z)"
+      "value": "Uppercase letters (A-Z)"
     },
     {
       "name": "PasswordGenerator_lowercase",
-      "value": "Lowercase Letters (a-z)"
+      "value": "Lowercase letters (a-z)"
     },
     {
       "name": "PasswordGenerator_numbers",
@@ -244,7 +338,7 @@
     },
     {
       "name": "PasswordGenerator_special",
-      "value": "Special Characters (!@#$%^&*_+~`|;?><,./-=)"
+      "value": "Special characters (!@#$%^&*_+~`|;?><,./-=)"
     },
     {
       "name": "PasswordGenerator_brackets",
@@ -252,7 +346,7 @@
     },
     {
       "name": "PasswordGenerator_minus",
-      "value": "Minus Sign (-)"
+      "value": "Minus (-)"
     },
     {
       "name": "PasswordGenerator_underscore",
@@ -268,23 +362,15 @@
     },
     {
       "name": "PasswordGenerator_generate",
-      "value": "Generate Password"
+      "value": "Generate password"
     },
     {
       "name": "CreateDatabase_name_label",
-      "value": "Database Name"
+      "value": "Database name"
     },
     {
       "name": "CreateDatabase_name_placeholder",
-      "value": "Please enter database name"
-    },
-    {
-      "name": "confirm_password_label",
-      "value": "Confirm Password"
-    },
-    {
-      "name": "confirm_password_placeholder",
-      "value": "Please enter password again"
+      "value": "Enter database name"
     },
     {
       "name": "CreateDatabase_password_mismatch",
@@ -300,39 +386,19 @@
     },
     {
       "name": "CreateDatabase_location_failed",
-      "value": "Failed to select save location: ${err.message}"
+      "value": "Failed to select save location: %s"
     },
     {
       "name": "CreateDatabase_error_message",
-      "value": "Creation failed: ${error}"
-    },
-    {
-      "name": "LocalFile_select_local_file",
-      "value": "Select Local File"
-    },
-    {
-      "name": "LocalFile_loading_file",
-      "value": "Loading file..."
-    },
-    {
-      "name": "LocalFile_reselect_file",
-      "value": "Reselect File"
-    },
-    {
-      "name": "LocalFile_click_to_select",
-      "value": "Click to select KDBX file"
-    },
-    {
-      "name": "LocalFile_select_file",
-      "value": "Select File"
+      "value": "Creation failed: %s"
     },
     {
       "name": "select_open_method_prompt",
-      "value": "Please select open method"
+      "value": "Select open method"
     },
     {
       "name": "local_file_button_title",
-      "value": "Local File"
+      "value": "Local file"
     },
     {
       "name": "local_file_button_description",
@@ -348,63 +414,39 @@
     },
     {
       "name": "delete_confirm_title",
-      "value": "Confirm Delete"
+      "value": "Confirm deletion"
     },
     {
       "name": "delete_group_confirm_message",
-      "value": "Are you sure you want to delete this group?"
-    },
-    {
-      "name": "cancel_button_text",
-      "value": "Cancel"
-    },
-    {
-      "name": "delete_button_text",
-      "value": "Delete"
+      "value": "Are you sure to delete this group?"
     },
     {
       "name": "save_success_message",
-      "value": "Save successful"
+      "value": "Saved successfully"
     },
     {
       "name": "save_failed_message",
-      "value": "Failed to save database"
+      "value": "Save failed: %s"
     },
     {
       "name": "invalid_database",
-      "value": "Invalid database information"
+      "value": "Invalid database"
     },
     {
       "name": "loading_message",
-      "value": "Loading database..."
+      "value": "Loading..."
     },
     {
       "name": "search_placeholder",
-      "value": "Search content"
-    },
-    {
-      "name": "add_group_button",
-      "value": "Add Group"
-    },
-    {
-      "name": "add_entry_button",
-      "value": "Add Entry"
-    },
-    {
-      "name": "edit_entry",
-      "value": "Edit Entry"
+      "value": "Search"
     },
     {
       "name": "invalid_group",
-      "value": "Invalid group information"
+      "value": "Invalid group"
     },
     {
       "name": "invalid_entry_message",
       "value": "Invalid entry information"
-    },
-    {
-      "name": "title_required_message",
-      "value": "Title cannot be empty"
     },
     {
       "name": "field_name_exists_message",
@@ -412,35 +454,11 @@
     },
     {
       "name": "save_entry_failed_message",
-      "value": "Failed to save entry"
+      "value": "Failed to save entry: %s"
     },
     {
       "name": "generate_button_text",
       "value": "Generate"
-    },
-    {
-      "name": "title_placeholder",
-      "value": "Enter title"
-    },
-    {
-      "name": "username_placeholder",
-      "value": "Enter username"
-    },
-    {
-      "name": "password_placeholder",
-      "value": "Enter password"
-    },
-    {
-      "name": "url_placeholder",
-      "value": "Enter URL"
-    },
-    {
-      "name": "tags_placeholder",
-      "value": "Enter tags (comma separated)"
-    },
-    {
-      "name": "notes_placeholder",
-      "value": "Enter notes"
     },
     {
       "name": "no_custom_fields_message",
@@ -455,12 +473,8 @@
       "value": "Entry not found"
     },
     {
-      "name": "load_entry_failed",
-      "value": "Failed to load entry"
-    },
-    {
       "name": "no_history",
-      "value": "No history records"
+      "value": "No history"
     },
     {
       "name": "invalid_data_file",
@@ -468,11 +482,11 @@
     },
     {
       "name": "open_failed",
-      "value": "Open failed:"
+      "value": "Open failed: %s"
     },
     {
       "name": "select_key_file",
-      "value": "Please select key file"
+      "value": "Select key file"
     },
     {
       "name": "storage_type_empty",
@@ -492,7 +506,7 @@
     },
     {
       "name": "load_recent_files_failed",
-      "value": "Failed to load recent files list"
+      "value": "Failed to load recent files"
     },
     {
       "name": "file_not_exists",
@@ -500,7 +514,7 @@
     },
     {
       "name": "all_records_cleared",
-      "value": "All records have been cleared"
+      "value": "All records cleared"
     },
     {
       "name": "clear_records_failed",
@@ -508,7 +522,7 @@
     },
     {
       "name": "record_removed",
-      "value": "Record has been removed"
+      "value": "Record removed"
     },
     {
       "name": "remove_record_failed",
@@ -516,15 +530,15 @@
     },
     {
       "name": "recent_files_title",
-      "value": "Recently Opened Files"
+      "value": "Recently opened databases"
     },
     {
       "name": "clear_all_button",
-      "value": "Clear All"
+      "value": "Clear all"
     },
     {
       "name": "no_recent_files",
-      "value": "No recently opened files"
+      "value": "No records"
     },
     {
       "name": "creating_key",
@@ -536,7 +550,7 @@
     },
     {
       "name": "validating",
-      "value": "Validating..."
+      "value": "Processing..."
     },
     {
       "name": "loading_complete",
@@ -544,11 +558,11 @@
     },
     {
       "name": "select_database_file",
-      "value": "Please select database file"
+      "value": "Select database file"
     },
     {
       "name": "load_file_success",
-      "value": "File content loaded successfully!"
+      "value": "File loaded successfully!"
     },
     {
       "name": "EntryEdit_invalid_db_or_group",
@@ -556,7 +570,7 @@
     },
     {
       "name": "Password_unlock_title",
-      "value": "Unlock Database"
+      "value": "Unlock database"
     }
   ]
 }
