@@ -5,13 +5,16 @@ import { LoadDatabase, MessageType, SuccessMessage, toErrorMessage, toLoadMessag
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
 import ResourceManager from '../common/utils/ResourceManager';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
+const DOMAIN = 0x0000;
+const TAG = 'DatabaseWorker';
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
 
 // 监听主线程消息
 workerPort.onmessage = (event: MessageEvents) => {
-  console.log('Worker receive message:', event.data)
+  hilog.info(DOMAIN, TAG, 'Worker receive message: %s', event.data)
   const message = JSON.parse(event.data) as WorkerMessage;
   if (message.type === MessageType.LOAD_DATABASE) {
     const request = message as LoadDatabase;
@@ -38,7 +41,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent), [kdbxContent]);
   } catch (error) {
-    console.error('Worker error loading database:', error);
+    hilog.error(DOMAIN, TAG, 'Worker error loading database:%s, stack: %s', error.message, error.stack);
     postErrorMessage(error.message);
   }
 }

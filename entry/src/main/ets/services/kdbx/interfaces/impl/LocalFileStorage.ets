@@ -2,6 +2,11 @@ import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
 import { FileInfo, IFileStorage } from '../IFileStorage';
 import FileUtils from '../../../../common/utils/FIleUtils';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'LocalFileStorage';
+
 /**
  * 本地文件存储实现
  * 使用鸿蒙系统的文件API实现本地文件的读写操作
@@ -29,6 +34,7 @@ export class LocalFileStorage implements IFileStorage {
         await fs.close(file.fd);
         return buffer;
       } catch (error) {
+        hilog.error(DOMAIN, TAG, 'Failed to read file: %s', error.message)
         throw new Error(`Failed to read file: ${error.message}`);
       }
     });
@@ -69,6 +75,7 @@ export class LocalFileStorage implements IFileStorage {
       await fs.close(file.fd);
       return Promise.resolve();
     } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to write file: %s', error.message)
       throw new Error(`Failed to write file: ${error.message}`);
     }
   }
@@ -82,10 +89,10 @@ export class LocalFileStorage implements IFileStorage {
     try {
       // fixme 这里始终返回false ，不确定什么原因
       let result = fs.accessSync(path, fs.AccessModeType.EXIST);
-      console.log(`file ${path} exist: ${result}`);
+      hilog.info(DOMAIN, TAG, `file ${path} exist: ${result}`);
       return true;
     } catch (error){
-      console.log(`file not exist! ${path} msg: ${error.message}`);
+      hilog.info(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
       return false;
     }
   }
@@ -109,6 +116,7 @@ export class LocalFileStorage implements IFileStorage {
         path: path
       };
     } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to get file info: %s', error.message)
       throw new Error(`Failed to get file info: ${error.message}`);
     }
   }
