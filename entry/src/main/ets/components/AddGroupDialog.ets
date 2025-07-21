@@ -133,7 +133,7 @@ export struct AddGroupDialog {
       
       // 底部按钮
       Row() {
-        Button($r('app.string.DatabaseView_cancel'))
+        Button($r('app.string.cancel_button_text'))
           .onClick(() => {
             this.controller.close()
             this.newGroupName = ''
