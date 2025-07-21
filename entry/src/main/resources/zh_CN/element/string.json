@@ -38,10 +38,6 @@
       "value": "KeePassHO密码管理"
     },
     {
-      "name": "EntryAbility_desc",
-      "value": "KeePassHO密码管理"
-    },
-    {
       "name": "EntryAbility_label",
       "value": "KeePassHO"
     },
@@ -160,10 +156,6 @@
     {
       "name": "DatabaseView_confirm_delete",
       "value": "确认删除"
-    },
-    {
-      "name": "DatabaseView_confirm_delete_group",
-      "value": "确定要删除这个分组吗？"
     },
     {
       "name": "DatabaseView_cancel",

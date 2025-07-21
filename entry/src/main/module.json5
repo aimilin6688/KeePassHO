@@ -21,7 +21,7 @@
       {
         "name": "EntryAbility",
         "srcEntry": "./ets/entryability/EntryAbility.ets",
-        "description": "$string:EntryAbility_desc",
+        "description": "$string:module_desc",
         "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",
         "startWindowIcon": "$media:startIcon",

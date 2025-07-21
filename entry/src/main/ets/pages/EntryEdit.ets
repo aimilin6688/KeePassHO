@@ -428,7 +428,7 @@ struct EntryEdit {
         message: `确定要删除字段 "${fieldKey}" 吗？`,
         buttons: [
           {
-            text: '取消',
+            text: $r('app.string.cancel_button_text'),
             color: $r('app.color.text_secondary')
           },
           {
