@@ -13,7 +13,7 @@
       "value": "KeePassHO"
     },
     {
-      "name": "reason",
+      "name": "Permission_FILE_ACCESS_PERSIST_reason",
       "value": "Access and store kdbx data files"
     },
     {
