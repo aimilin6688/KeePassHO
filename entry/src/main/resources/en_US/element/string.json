@@ -375,7 +375,7 @@
       "value": "Invalid database information"
     },
     {
-      "name": "loading_database_message",
+      "name": "loading_message",
       "value": "Loading database..."
     },
     {
@@ -389,10 +389,6 @@
     {
       "name": "add_entry_button",
       "value": "Add Entry"
-    },
-    {
-      "name": "group_item_count_format",
-      "value": "Group {n} items"
     },
     {
       "name": "edit_entry",
@@ -463,10 +459,6 @@
       "value": "Failed to load entry"
     },
     {
-      "name": "loading_entry",
-      "value": "Loading entry..."
-    },
-    {
       "name": "no_history",
       "value": "No history records"
     },
@@ -485,14 +477,6 @@
     {
       "name": "storage_type_empty",
       "value": "Storage type is empty"
-    },
-    {
-      "name": "verifying",
-      "value": "Verifying..."
-    },
-    {
-      "name": "auth_method",
-      "value": "Authentication method"
     },
     {
       "name": "select_key_file_button",
@@ -567,24 +551,8 @@
       "value": "File content loaded successfully!"
     },
     {
-      "name": "EntryEdit_save_failed",
-      "value": "Failed to save database"
-    },
-    {
-      "name": "EntryEdit_generate_button",
-      "value": "Generate"
-    },
-    {
-      "name": "EntryEdit_field_name_exists",
-      "value": "Field name already exists"
-    },
-    {
       "name": "EntryEdit_invalid_db_or_group",
       "value": "Invalid database or group information"
-    },
-    {
-      "name": "Password_loading",
-      "value": "Loading..."
     },
     {
       "name": "Password_unlock_title",
