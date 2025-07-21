@@ -162,10 +162,6 @@
       "value": "组群 %d 个条目"
     },
     {
-      "name": "DatabaseView_add_entry",
-      "value": "添加条目"
-    },
-    {
       "name": "KdbxUtils_username",
       "value": "用户名"
     },
@@ -472,10 +468,6 @@
     {
       "name": "group_item_count_format",
       "value": "组群 {n} 个条目"
-    },
-    {
-      "name": "entry_edit_add_title",
-      "value": "添加条目"
     },
     {
       "name": "entry_edit_edit_title",
