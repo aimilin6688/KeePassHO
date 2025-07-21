@@ -216,6 +216,20 @@ struct EntryView {
   }
 
   /**
+   * 删除历史记录
+   */
+  private deleteHistory() {
+    throw new Error('Method not implemented.');
+  }
+
+  /**
+   * 回滚到历史记录
+   */
+  private rollbackToHistory() {
+    throw new Error('Method not implemented.');
+  }
+
+  /**
    * 构建历史记录项
    */
   @Builder
@@ -344,17 +358,63 @@ struct EntryView {
           }
           .height('100%')
           .width('100%')
-          .padding({
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: 40
-          })
+          .padding({ left: 16,right: 16,top: 12,bottom: 40})
           .layoutWeight(1)
           .backgroundColor($r("app.color.bg_primary"))
 
-          // 增加回滚已删除功能
+          // 操作按钮
+          Row() {
+            // 回滚按钮
+            Button() {
+              Row() {
+                Image($r('app.media.ic_color_clock'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+                  .margin({ right: 8 })
 
+                Text($r('app.string.rollback_button_text'))
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+            }
+            .width('45%')
+            .height(48)
+            .backgroundColor($r('app.color.danger'))
+            .onClick(() => {
+              this.rollbackToHistory();
+            })
+
+            Blank()
+            // 删除按钮
+            Button() {
+              Row() {
+                Image($r('app.media.ic_delete'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+                  .margin({ right: 8 })
+
+                Text($r('app.string.delete_button_text'))
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+            }
+            .width('45%')
+            .height(48)
+            .backgroundColor($r('app.color.card_bg'))
+            .onClick(() => {
+              this.deleteHistory();
+            })
+          }
+          .width('100%')
+          .padding({ top: 12, bottom: 12, left: 16, right: 16 })
+          .position({ x: 0, y: '100%' })
+          .translate({ y: -74 }) // 调整位置，确保正确显示
         } else {
           // 显示当前条目
           Tabs() {
