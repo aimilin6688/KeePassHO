@@ -106,7 +106,7 @@ struct DatabaseView {
   private initData(dbShowParam: DatabaseShowParam | undefined) {
     if (!this.database) {
       this.promptAction.showToast({
-        message: $r('app.string.DatabaseView_invalid_database'),
+        message: $r('app.string.invalid_database'),
         duration: 2000
       });
       this.router.back();
@@ -131,7 +131,7 @@ struct DatabaseView {
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
         this.promptAction.showToast({
-          message: $r('app.string.DatabaseView_invalid_group'),
+          message: $r('app.string.invalid_group'),
           duration: 2000
         });
         this.router.back();
@@ -246,7 +246,7 @@ struct DatabaseView {
     }
     if (!this.database) {
       this.promptAction.showToast({
-        message: $r('app.string.invalid_database_message')
+        message: $r("app.string.invalid_database")
       });
       return;
     }

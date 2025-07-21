@@ -122,96 +122,77 @@
       "value": "Open Database"
     },
     {
-      "name": "Index_create_database",
-      "value": "Create New Database"
-    },
-    {
       "name": "Error_check_recent_files",
       "value": "Failed to check recent files"
-    },
-    {
-      "name": "DatabaseView_invalid_database",
-      "value": "Invalid database"
-    },
-    {
-      "name": "DatabaseView_invalid_group",
-      "value": "Invalid group"
     },
     {
       "name": "DatabaseView_process_failed",
       "value": "Failed to process database"
     },
     {
-      "name": "DatabaseView_edit",
+      "name": "edit_button_text",
       "value": "Edit"
     },
     {
-      "name": "DatabaseView_delete",
+      "name": "delete_buttom_text",
       "value": "Delete"
-    },
-    {
-      "name": "DatabaseView_confirm_delete",
-      "value": "Confirm Delete"
     },
     {
       "name": "DatabaseView_group_items",
       "value": "Group with %d entries"
     },
     {
-      "name": "AddGroupDialog_edit_group",
+      "name": "edit_group",
       "value": "Edit Group"
     },
     {
-      "name": "AddGroupDialog_icon",
+      "name": "icon",
       "value": "Icon"
     },
     {
-      "name": "AddGroupDialog_select_icon",
+      "name": "select_icon",
       "value": "Click to select icon"
     },
     {
-      "name": "AddGroupDialog_enter_group_name",
+      "name": "enter_group_name",
       "value": "Please enter group name"
     },
+
     {
-      "name": "AddGroupDialog_confirm",
-      "value": "Confirm"
-    },
-    {
-      "name": "EntryEditFieldDialog_edit_field",
+      "name": "edit_custom_field",
       "value": "Edit Custom Field"
     },
     {
-      "name": "EntryEditFieldDialog_add_field",
+      "name": "add_custom_field",
       "value": "Add Custom Field"
     },
     {
-      "name": "EntryEditFieldDialog_field_name",
+      "name": "custom_field_name",
       "value": "Field Name"
     },
     {
-      "name": "EntryEditFieldDialog_enter_field_name",
+      "name": "enter_custom_field_name",
       "value": "Please enter field name"
     },
     {
-      "name": "EntryEditFieldDialog_field_value",
+      "name": "custom_field_value",
       "value": "Field Value"
     },
     {
-      "name": "EntryEditFieldDialog_enter_field_value",
+      "name": "enter_custom_field_value",
       "value": "Please enter field value"
     },
     {
-      "name": "EntryEditFieldDialog_protect_field",
+      "name": "is_protect_field",
       "value": "Protect Field Value"
     },
     {
-      "name": "EntryEditFieldDialog_name_empty",
+      "name": "field_name_not_empty",
       "value": "Field name cannot be empty"
     },
 
     {
-      "name": "EntryEditFieldDialog_confirm",
+      "name": "confirm_buttom_text",
       "value": "Confirm"
     },
     {
@@ -415,7 +396,7 @@
       "value": "Failed to save database"
     },
     {
-      "name": "invalid_database_message",
+      "name": "invalid_database",
       "value": "Invalid database information"
     },
     {
@@ -443,7 +424,7 @@
       "value": "Edit Entry"
     },
     {
-      "name": "invalid_group_message",
+      "name": "invalid_group",
       "value": "Invalid group information"
     },
     {
