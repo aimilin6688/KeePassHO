@@ -770,19 +770,22 @@ struct EntryEdit {
                     .width('100%')
 
                     Row() {
-                      Text(field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value)
+                      TextArea({ text: field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value})
                         .fontSize(16)
                         .fontColor($r('app.color.text_primary'))
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .maxLines(1)
+                        .lineHeight(24)
+                        .borderWidth(0)
+                        .style(TextContentStyle.INLINE)
+                        .padding({top:12,bottom:12, left:0, right:0})
                         .layoutWeight(1)
+                        .backgroundColor($r("app.color.bg_secondary"))
 
                       if (field.isProtected) {
                         Image(this.customFieldsVisibility[index] ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
                           .width(24)
                           .height(24)
                           .fillColor($r('app.color.text_secondary'))
-                          .margin({ left: 8 })
+                          .margin({ left: 8, right: 8})
                           .onClick((event) => {
                             this.toggleCustomFieldVisibility(index);
                             return false;
@@ -798,9 +801,6 @@ struct EntryEdit {
                   .backgroundColor($r("app.color.bg_secondary"))
                   .borderRadius(8)
                   .margin({ bottom: 8 })
-                  .onClick(() => {
-                    this.openEditFieldDialog(index);
-                  })
                 })
               } else {
                 Text($r('app.string.no_custom_fields_message'))
