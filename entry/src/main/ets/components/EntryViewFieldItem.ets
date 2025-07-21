@@ -5,6 +5,7 @@ import { KdbxEntry } from "kdbxweb";
 
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { Icons } from "../services/TypeDefined";
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -93,7 +94,7 @@ export struct EntryViewFieldItem {
       return KdbxUtils.getIcon(group.icon, group.customIcon, $r('app.media.ic_folder'));
     }
     // 否则返回默认分组图标
-    return $r('app.media.ic_folder');
+    return KdbxUtils.getIcon(Icons.Folder, undefined, $r('app.media.ic_folder'));
   }
 
 

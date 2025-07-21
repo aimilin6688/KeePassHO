@@ -38,7 +38,7 @@ struct EntryEdit {
   @State currentFieldProtected: boolean = false; // 当前字段是否受保护
   @State customFieldsVisibility: boolean[] = []; // 自定义字段值的可见性状态
   @State isModified: boolean = false; // 是否有字段被修改
-  @State iconId: number | string | undefined = -1; // 当前选择的图标ID
+  @State iconId: number | string | undefined = Icons.Key; // 当前选择的图标ID
   @State tags: string = ''; // 标签，以逗号分隔
   
   // 自定义字段对话框控制器
