@@ -125,7 +125,7 @@
       "value": "检查最近文件失败"
     },
     {
-      "name": "DatabaseView_process_failed",
+      "name": "process_database_failed",
       "value": "处理数据库失败"
     },
     {
@@ -137,20 +137,32 @@
       "value": "删除"
     },
     {
-      "name": "DatabaseView_group_items",
+      "name": "group_items_message",
       "value": "组群 %d 个条目"
     },
     {
-      "name": "KdbxUtils_username",
+      "name": "username",
       "value": "用户名"
     },
     {
-      "name": "KdbxUtils_password",
+      "name": "username_placeholder",
+      "value": "请输入用户名"
+    },
+    {
+      "name": "password",
       "value": "密码"
     },
     {
-      "name": "KdbxUtils_url",
+      "name": "password_placeholder",
+      "value": "请输入密码"
+    },
+    {
+      "name": "url",
       "value": "链接地址"
+    },
+    {
+      "name": "url_placeholder",
+      "value": "请输入URL"
     },
     {
       "name": "KdbxUtils_notes",
@@ -322,14 +334,6 @@
       "value": "请输入数据库名称"
     },
     {
-      "name": "CreateDatabase_password_label",
-      "value": "密码"
-    },
-    {
-      "name": "CreateDatabase_password_placeholder",
-      "value": "请输入密码"
-    },
-    {
       "name": "CreateDatabase_confirm_password_label",
       "value": "确认密码"
     },
@@ -402,10 +406,6 @@
       "value": "取消"
     },
     {
-      "name": "delete_button_text",
-      "value": "删除"
-    },
-    {
       "name": "save_success_message",
       "value": "保存成功"
     },
@@ -469,14 +469,7 @@
       "name": "title_placeholder",
       "value": "请输入标题"
     },
-    {
-      "name": "username_placeholder",
-      "value": "请输入用户名"
-    },
-    {
-      "name": "url_placeholder",
-      "value": "请输入URL"
-    },
+
     {
       "name": "tags_placeholder",
       "value": "请输入标签（用逗号分隔）"
@@ -532,10 +525,6 @@
     {
       "name": "auth_method",
       "value": "认证方式"
-    },
-    {
-      "name": "password_placeholder",
-      "value": "请输入密码"
     },
     {
       "name": "select_key_file_button",
@@ -618,16 +607,8 @@
       "value": "请输入标题"
     },
     {
-      "name": "EntryEdit_username_placeholder",
-      "value": "请输入用户名"
-    },
-    {
       "name": "EntryEdit_password_placeholder",
       "value": "请输入密码"
-    },
-    {
-      "name": "EntryEdit_url_placeholder",
-      "value": "请输入URL"
     },
     {
       "name": "EntryEdit_tags_placeholder",

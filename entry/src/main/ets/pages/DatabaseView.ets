@@ -143,7 +143,7 @@ struct DatabaseView {
       console.info(`加载了 ${this.groups.length} 个分组, ${this.entries.length} 个条目`);
     } catch (error) {
       console.error(`处理数据库失败: ${error}`);
-      this.promptAction.showToast({ message: ResourceManager.getInstance().getString($r('app.string.DatabaseView_process_failed')) + `: ${error}`, duration: 2000 });
+      this.promptAction.showToast({ message: ResourceManager.getInstance().getString($r("app.string.process_database_failed")) + `: ${error}`, duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
         this.router.back();
@@ -472,7 +472,7 @@ struct DatabaseView {
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
-                    Text($r('app.string.DatabaseView_group_items', this.groupItemCount(itemGroup)))
+                    Text($r("app.string.group_items_message", this.groupItemCount(itemGroup)))
                       .fontSize(12)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)

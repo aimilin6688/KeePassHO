@@ -284,11 +284,11 @@ export default class KdbxUtils {
     console.log('Get field name: ', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
-        return $r('app.string.KdbxUtils_username');
+        return $r("app.string.username");
       case KdbxUtils.FIELD_PASSWORD:
-        return $r('app.string.KdbxUtils_password');
+        return $r("app.string.password");
       case KdbxUtils.FIELD_URL:
-        return $r('app.string.KdbxUtils_url');
+        return $r("app.string.url");
       case KdbxUtils.FIELD_NOTES:
         return $r('app.string.KdbxUtils_notes');
       case KdbxUtils.FIELD_TITLE:
