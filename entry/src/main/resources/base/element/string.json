@@ -73,15 +73,15 @@
       "value": "About"
     },
     {
-      "name": "KdbxUtils_username",
+      "name": "username",
       "value": "Username"
     },
     {
-      "name": "KdbxUtils_password",
+      "name": "password",
       "value": "Password"
     },
     {
-      "name": "KdbxUtils_url",
+      "name": "url",
       "value": "URL"
     },
     {
