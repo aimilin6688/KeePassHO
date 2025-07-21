@@ -1,5 +1,7 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import { DatabaseShowParam, Icons } from '../services/TypeDefined';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
 import ThemeManager from '../common/utils/ThemeManager';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
@@ -8,6 +10,9 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
+
+const DOMAIN = 0xFF00;
+const TAG = 'DatabaseView';
 
 @Entry
 @Component
@@ -71,7 +76,7 @@ struct DatabaseView {
   }
 
   onPageShow(): void {
-    console.log("Load DatabaseView Page: ", this.databaseShowParam);
+    hilog.info(DOMAIN, TAG, '%{public}s', `Load DatabaseView Page: ${JSON.stringify(this.databaseShowParam)}`);
     this.updateUI();
   }
 
@@ -93,7 +98,7 @@ struct DatabaseView {
    * 监听主题变化
    */
   private onSortChanged = (key: string) => {
-    console.log("配置项发生了变化：", key)
+    hilog.info(DOMAIN, TAG, '%{public}s', `Configuration changed: ${key}`);
     if (key == SettingsService.KEY_SORT_BY) {
       SettingsService.getInstance().getSortBy().then((sortBy: SortMode) => {
         this.sortBy = sortBy;
@@ -139,9 +144,9 @@ struct DatabaseView {
       KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
       this.groups = this.currentGroup.groups;
       this.entries = this.currentGroup.entries;
-      console.info(`加载了 ${this.groups.length} 个分组, ${this.entries.length} 个条目`);
+      hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.groups.length} groups, ${this.entries.length} entries`);
     } catch (error) {
-      console.error(`处理数据库失败: ${error}`);
+      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
       this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
@@ -229,11 +234,11 @@ struct DatabaseView {
         fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
           this.promptAction.showToast({ message: $r('app.string.save_success_message') });
         }).catch((error: Error) => {
-          console.error(`保存数据库失败: ${error}`);
+          hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
           this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
         });
       }).catch((error: Error) => {
-        console.error(`保存数据库失败: ${error}`);
+        hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
         this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
       });
     }
