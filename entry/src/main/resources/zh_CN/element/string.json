@@ -158,10 +158,6 @@
       "value": "确认删除"
     },
     {
-      "name": "DatabaseView_save_success",
-      "value": "保存成功"
-    },
-    {
       "name": "DatabaseView_save_failed",
       "value": "保存数据库失败"
     },
@@ -720,10 +716,6 @@
     {
       "name": "EntryEdit_invalid_db_or_group",
       "value": "无效的数据库或分组信息"
-    },
-    {
-      "name": "EntryEdit_save_success",
-      "value": "保存成功"
     },
     {
       "name": "DatabaseView_unknown_database",
