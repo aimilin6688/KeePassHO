@@ -420,7 +420,7 @@ struct DatabaseView {
                 this.searchText = value;
                 this.performSearch();
               })
-            Button($r('app.string.DatabaseView_cancel_search'))
+            Button($r('app.string.cancel_button_text'))
               .width(70)
               .height(40)
               .fontSize(16)

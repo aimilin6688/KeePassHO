@@ -158,10 +158,6 @@
       "value": "确认删除"
     },
     {
-      "name": "DatabaseView_cancel",
-      "value": "取消"
-    },
-    {
       "name": "DatabaseView_save_success",
       "value": "保存成功"
     },
@@ -184,10 +180,6 @@
     {
       "name": "DatabaseView_search_placeholder",
       "value": "查找内容"
-    },
-    {
-      "name": "DatabaseView_cancel_search",
-      "value": "取消"
     },
     {
       "name": "DatabaseView_add_group",
@@ -288,10 +280,6 @@
     {
       "name": "EntryEditFieldDialog_name_empty",
       "value": "字段名称不能为空"
-    },
-    {
-      "name": "EntryEditFieldDialog_cancel",
-      "value": "取消"
     },
     {
       "name": "EntryEditFieldDialog_confirm",
@@ -496,10 +484,6 @@
     {
       "name": "search_placeholder",
       "value": "查找内容"
-    },
-    {
-      "name": "search_cancel_button",
-      "value": "取消"
     },
     {
       "name": "add_group_button",
