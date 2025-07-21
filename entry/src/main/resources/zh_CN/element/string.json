@@ -158,10 +158,6 @@
       "value": "确认删除"
     },
     {
-      "name": "DatabaseView_loading",
-      "value": "正在加载数据库..."
-    },
-    {
       "name": "DatabaseView_group_items",
       "value": "组群 %d 个条目"
     },
