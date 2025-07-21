@@ -85,15 +85,15 @@
       "value": "排序方式"
     },
     {
-      "name": "Settings_create_database",
+      "name": "create_database",
       "value": "创建数据库"
     },
     {
-      "name": "Settings_change_database",
+      "name": "change_database",
       "value": "更换数据库"
     },
     {
-      "name": "Settings_recent_files",
+      "name": "recent_files",
       "value": "最近打开"
     },
     {
@@ -117,16 +117,12 @@
       "value": "安全管理您的密码"
     },
     {
-      "name": "Index_open_database",
+      "name": "open_database",
       "value": "打开数据库"
     },
     {
       "name": "Index_create_database",
       "value": "创建新的数据库"
-    },
-    {
-      "name": "Index_recent_files",
-      "value": "最近打开的文件"
     },
     {
       "name": "Error_check_recent_files",
@@ -365,10 +361,6 @@
       "value": "两次输入的密码不一致"
     },
     {
-      "name": "CreateDatabase_create_button",
-      "value": "创建数据库"
-    },
-    {
       "name": "CreateDatabase_name_required",
       "value": "请输入数据库名称"
     },
@@ -395,10 +387,6 @@
     {
       "name": "CreateDatabase_error_message",
       "value": "创建失败: ${error}"
-    },
-    {
-      "name": "open_database_page_title",
-      "value": "打开数据库"
     },
     {
       "name": "select_open_method_prompt",
@@ -606,7 +594,7 @@
     },
     {
       "name": "recent_files_title",
-      "value": "最近打开的文件"
+      "value": "最近打开的数据库"
     },
     {
       "name": "clear_all_button",
@@ -614,7 +602,7 @@
     },
     {
       "name": "no_recent_files",
-      "value": "没有最近打开的文件记录"
+      "value": "暂无记录"
     },
     {
       "name": "creating_key",

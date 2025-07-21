@@ -118,7 +118,7 @@ struct Settings {
           // 创建数据库
           ListItem() {
             Row() {
-              Text($r('app.string.Settings_create_database'))
+              Text($r("app.string.create_database"))
                 .fontSize(16)
                 .flexGrow(1)
               Image($r('app.media.ic_arrow_right'))
@@ -138,7 +138,7 @@ struct Settings {
           // 更换数据库
           ListItem() {
             Row() {
-              Text($r('app.string.Settings_change_database'))
+              Text($r("app.string.change_database"))
                 .fontSize(16)
                 .flexGrow(1)
               Image($r('app.media.ic_arrow_right'))
@@ -158,7 +158,7 @@ struct Settings {
           // 最近打开
           ListItem() {
             Row() {
-              Text($r('app.string.Settings_recent_files'))
+              Text($r("app.string.recent_files"))
                 .fontSize(16)
                 .flexGrow(1)
               Image($r('app.media.ic_arrow_right'))
