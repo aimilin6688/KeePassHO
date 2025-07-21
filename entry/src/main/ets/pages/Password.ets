@@ -18,7 +18,6 @@ import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import ResourceManager from '../common/utils/ResourceManager';
 
-
 const DOMAIN = 0x0000;
 const TAG = 'Password';
 
@@ -138,7 +137,7 @@ struct Password {
         }
       }
     }).catch((error: Error) => {
-      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to open recent file: ${error}`);
+      hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);
       this.promptAction.showToast({
         message: $r('app.string.open_failed', error.message),
         duration: 2000
@@ -155,7 +154,7 @@ struct Password {
     if (this.databaseWorker) {
       this.databaseWorker.terminate();
       this.databaseWorker = null;
-      console.log('数据库 Worker 已终止');
+      hilog.info(DOMAIN, TAG, 'Database worker terminated');
     }
   }
 
@@ -175,7 +174,7 @@ struct Password {
         this.keyFileName = FileUtils.getFileName(fileUri);
         this.updateButtonState();
       }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, '%{public}s', `Failed to open key file: ${error}`);
+        hilog.error(DOMAIN, TAG, 'Failed to open key file: %{public}s', error.message);
         this.promptAction.showToast({
           message: $r('app.string.open_failed') + error.message,
           duration: 2000
@@ -249,7 +248,7 @@ struct Password {
       // // 加载进度消息
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
-        hilog.info(DOMAIN, TAG, '%{public}s', `Received loading progress: ${loadMessage.message}`);
+        hilog.info(DOMAIN, TAG, 'Received loading progress:  %{public}s', loadMessage.message);
         this.loadingMessage =  loadMessage.message;
       }
       // 数据库加载成功
@@ -264,7 +263,7 @@ struct Password {
             this.closeLoadingDialog();
           }, 300);
         }).catch((error: Error) => {
-          hilog.error(DOMAIN, TAG, '%{public}s', `Database open failed: ${error}`);
+          hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
           this.promptAction.showToast({message: error.message, duration: 3000});
           this.closeLoadingDialog();
         });
@@ -279,7 +278,7 @@ struct Password {
 
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     this.databaseWorker.onAllErrors = (err: ErrorEvent) => {
-      console.error('Open database error:', err);
+      hilog.error(DOMAIN, TAG, 'Open database error: %{public}s', err.message);
       if (err.message.indexOf('NativeCustomSpan') != -1) {
         return;
       }
@@ -329,7 +328,7 @@ struct Password {
    */
   private putFileToRecentFile() {
     let fileParam = FileService.getInstance().getFileParam();
-    console.log("打开数据库文件：", fileParam?.filePath)
+    hilog.info(DOMAIN, TAG, '%{public}s', `Database file opened: ${fileParam?.filePath}`)
 
     // 添加到最近打开的文件列表，包含认证方式和认证文件信息
     RecentFilesService.getInstance().getRecentFile(this.filePath).then((recentFile) => {

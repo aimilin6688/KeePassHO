@@ -5,6 +5,11 @@ import { CredentialsParam } from '../../services/TypeDefined';
 import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'KdbxUtils';
+
 export default class KdbxUtils {
   public static readonly FIELD_USERNAME = 'UserName';
   public static readonly FIELD_PASSWORD = 'Password';
@@ -226,7 +231,7 @@ export default class KdbxUtils {
    */
   public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
     // 排序前分组名称
-    console.log('Before sort group names:', sortMode, groups.map(group => group.name).join(','));
+    hilog.info(DOMAIN, TAG, 'Before sort group names: %s, %s', sortMode, groups.map(group => group.name).join(','));
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
@@ -254,7 +259,7 @@ export default class KdbxUtils {
         break;
     }
     // 排序后分组名称
-    console.log('After sort group names:', sortMode, groups.map(group => group.name).join(','));
+    hilog.info(DOMAIN, TAG, 'After sort group names:%s, %s', sortMode, groups.map(group => group.name).join(','));
   }
 
   /**
@@ -282,7 +287,7 @@ export default class KdbxUtils {
    * @returns 字段名称
    */
   public static getFieldName(fileKey:string):string | Resource {
-    console.log('Get field name: ', fileKey);
+    hilog.info(DOMAIN, TAG, 'Get field name: %s', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
         return $r("app.string.username");

@@ -5,6 +5,11 @@ import ThemeManager from '../common/utils/ThemeManager';
 import common from '@ohos.app.ability.common';
 import { SortMode } from '../common/constants/SortConstants';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'SettingsService';
+
 export class SettingsService {
   private static instance: SettingsService;
   private preferences: preferences.Preferences | null = null;
@@ -39,7 +44,7 @@ export class SettingsService {
       const themeMode = await this.getThemeMode();
       await ThemeManager.getInstance().setThemeMode(themeMode);
     } catch (err) {
-      console.error(`Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+      hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
     }
   }
 
@@ -55,7 +60,7 @@ export class SettingsService {
       // 应用新的主题模式
       await ThemeManager.getInstance().setThemeMode(mode);
     } catch (err) {
-      console.error(`Failed to set theme mode: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+      hilog.error(DOMAIN, TAG, `Failed to set theme mode: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
     }
   }
 
@@ -75,7 +80,7 @@ export class SettingsService {
       const isDark = await this.preferences.get(SettingsService.KEY_DARK_MODE, false) as boolean;
       return isDark ? ThemeMode.DARK : ThemeMode.LIGHT;
     } catch (err) {
-      console.error(`Failed to get theme mode: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+      hilog.error(DOMAIN, TAG, `Failed to get theme mode: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
       return ThemeMode.SYSTEM;
     }
   }
@@ -125,7 +130,7 @@ export class SettingsService {
     // 通知所有观察者
     this.observers.forEach(observer => observer(key));
     } catch (err) {
-      console.error(`Failed to set ${(err as BusinessError).code} by ${(err as BusinessError).message}`);
+      hilog.error(DOMAIN, TAG, `Failed to set ${(err as BusinessError).code} by ${(err as BusinessError).message}`);
     }
   }
 
@@ -136,7 +141,7 @@ export class SettingsService {
     try {
       return (await this.preferences.get(key, defValue)) as T;
     } catch (err) {
-      console.error(`Failed to get value. Code: ${(err as BusinessError).code}`);
+      hilog.error(DOMAIN, TAG, `Failed to get value. Code: ${(err as BusinessError).code}`);
       return defValue;
     }
   }

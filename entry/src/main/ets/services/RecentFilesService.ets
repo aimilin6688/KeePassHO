@@ -3,6 +3,11 @@ import { FileService } from './FileService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'RecentFilesService';
+
 /**
  * 最近打开的文件服务
  * 用于管理最近打开的文件列表
@@ -61,7 +66,7 @@ export class RecentFilesService {
       await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles));
       await prefs.flush();
     } catch (error) {
-      console.error(`添加最近文件失败: ${error}`);
+      hilog.error(DOMAIN, TAG, `Add recent file error: ${error}`);
       throw new Error(error);
     }
   }
@@ -75,7 +80,7 @@ export class RecentFilesService {
       const recentFilesJson = await prefs.get(RecentFilesService.RECENT_FILES_KEY, '[]');
       return JSON.parse(recentFilesJson.toString());
     } catch (error) {
-      console.error(`获取最近文件列表失败: ${error}`);
+      hilog.error(DOMAIN, TAG, `Get all recent files error: ${error}`);
       return [];
     }
   }
@@ -104,7 +109,7 @@ export class RecentFilesService {
 
       return recentFile;
     } catch (error) {
-      console.error(`加载最近文件失败: ${error}`);
+      hilog.error(DOMAIN, TAG, `Load most recent file error: ${error}`);
       return null;
     }
   }
@@ -138,7 +143,7 @@ export class RecentFilesService {
       await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
       await prefs.flush();
     } catch (error) {
-      console.error(`移除最近文件失败: ${error}`);
+      hilog.error(DOMAIN, TAG, `Remove recent file error: ${error}`);
       throw new Error(error);
     }
   }
@@ -152,7 +157,7 @@ export class RecentFilesService {
       await prefs.put(RecentFilesService.RECENT_FILES_KEY, '[]');
       await prefs.flush();
     } catch (error) {
-      console.error(`清除最近文件列表失败: ${error}`);
+      hilog.error(DOMAIN, TAG, `Clear Recent file error: ${error}`);
       throw new Error(error);
     }
   }
