@@ -1,5 +1,8 @@
 import {PromptAction, router, Router } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import worker, { ErrorEvent, MessageEvents } from '@ohos.worker';
+
+
 import { AuthType, AuthTypeInfo, CredentialsParam, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
 import picker from '@ohos.file.picker';
@@ -14,6 +17,10 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import ResourceManager from '../common/utils/ResourceManager';
+
+
+const DOMAIN = 0x0000;
+const TAG = 'Password';
 
 @Entry
 @Component
@@ -67,7 +74,7 @@ struct Password {
 
   // 更新按钮状态
   private updateButtonState(): void {
-    console.log('updateButtonState: ', this.isLoading, this.password.length, this.keyFilePath, this.authType.type)
+    hilog.info(DOMAIN, TAG, '%{public}s', `updateButtonState: isLoading=${this.isLoading}, passwordLength=${this.password.length}, keyFilePath=${this.keyFilePath}, authType=${this.authType.type}`)
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
@@ -131,7 +138,7 @@ struct Password {
         }
       }
     }).catch((error: Error) => {
-      console.error(`Open recent file error: ${error}`);
+      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to open recent file: ${error}`);
       this.promptAction.showToast({
         message: $r('app.string.open_failed', error.message),
         duration: 2000
@@ -168,7 +175,7 @@ struct Password {
         this.keyFileName = FileUtils.getFileName(fileUri);
         this.updateButtonState();
       }).catch((error: Error) => {
-        console.error(`Open key file error: ${error}`);
+        hilog.error(DOMAIN, TAG, '%{public}s', `Failed to open key file: ${error}`);
         this.promptAction.showToast({
           message: $r('app.string.open_failed') + error.message,
           duration: 2000
@@ -242,7 +249,7 @@ struct Password {
       // // 加载进度消息
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
-        console.log("接收到加载进度消息：", loadMessage.message);
+        hilog.info(DOMAIN, TAG, '%{public}s', `Received loading progress: ${loadMessage.message}`);
         this.loadingMessage =  loadMessage.message;
       }
       // 数据库加载成功
@@ -257,7 +264,7 @@ struct Password {
             this.closeLoadingDialog();
           }, 300);
         }).catch((error: Error) => {
-          console.error(`Open database error: ${error}`);
+          hilog.error(DOMAIN, TAG, '%{public}s', `Database open failed: ${error}`);
           this.promptAction.showToast({message: error.message, duration: 3000});
           this.closeLoadingDialog();
         });

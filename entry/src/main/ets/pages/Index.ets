@@ -1,6 +1,10 @@
 import ThemeManager from '../common/utils/ThemeManager';
 import { router, Router } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
+
+const DOMAIN = 0x0000;
+const TAG = 'Index';
 
 @Entry
 @Component
@@ -34,7 +38,7 @@ struct Index {
         }
       });
     } catch (error) {
-      console.error($r('app.string.Error_check_recent_files') + `: ${error}`);
+      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to check recent files: ${error}`);
     }
   }
 
