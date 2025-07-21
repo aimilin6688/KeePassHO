@@ -88,7 +88,7 @@ struct Password {
   }
 
   // 获取认证类型的文本描述，用于Select组件
-  private getAuthTypeText(): string {
+  private getAuthTypeText(): ResourceStr {
     return this.authType.description;
   }
 
@@ -99,7 +99,7 @@ struct Password {
     let fileParam: FileParam = FileService.getInstance().getFileParam();
     // 获取从LocalFile页面传递的参数
     this.filePath = fileParam.filePath ?? '';
-    this.fileName = fileParam.fileName ?? '未知文件';
+    this.fileName = fileParam.fileName ?? '';
     this.storageType = fileParam.storageType;
     this.storageConfig = fileParam.storageConfig;
   }
