@@ -600,7 +600,7 @@ struct DatabaseView {
             .width(20)
             .height(20)
             .fillColor($r("app.color.button_text_blue"))
-          Text($r('app.string.DatabaseView_add_entry'))
+          Text($r('app.string.add_entry_button'))
             .fontSize(14)
             .fontColor($r("app.color.button_text_blue"))
             .margin({ left: 8 })
