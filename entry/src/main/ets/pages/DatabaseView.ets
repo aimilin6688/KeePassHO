@@ -191,7 +191,7 @@ struct DatabaseView {
         .fontColor($r('app.color.text_primary'))
         .fontSize(14)
         .onClick(() => {
-          AlertDialog.show({
+          this.getUIContext().showAlertDialog({
             title: $r("app.string.dialog_confirm_title"),
             message: $r("app.string.dialog_delete_confirm_message"),
             primaryButton: {

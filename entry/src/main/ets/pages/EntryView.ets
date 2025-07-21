@@ -219,14 +219,62 @@ struct EntryView {
    * 删除历史记录
    */
   private deleteHistory() {
-    throw new Error('Method not implemented.');
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: $r("app.string.dialog_delete_confirm_message"),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r("app.string.delete_button_text"),
+        action: () => {
+          let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
+          if (entry) {
+            entry.removeHistory(this.selectedHistoryIndex);
+            KdbxUtils.saveDatabase().then(result => {
+              this.promptAction.showToast({ message: $r('app.string.save_success_message') });
+              this.router.back();
+            }).catch((error:Error) => {
+              hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
+              this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
+            })
+          }
+        }
+      }
+    });
   }
 
   /**
    * 回滚到历史记录
    */
   private rollbackToHistory() {
-    throw new Error('Method not implemented.');
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: $r("app.string.dialog_rollback_confirm_message"),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r("app.string.rollback_button_text"),
+        action: () => {
+          let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
+          if (entry) {
+            entry.copyFrom(this.entry);
+            KdbxUtils.saveDatabase().then(result => {
+              this.promptAction.showToast({ message: $r('app.string.save_success_message') });
+              this.router.back();
+            }).catch((error:Error) => {
+              hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
+              this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
+            })
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -358,7 +406,12 @@ struct EntryView {
           }
           .height('100%')
           .width('100%')
-          .padding({ left: 16,right: 16,top: 12,bottom: 40})
+          .padding({
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: 40
+          })
           .layoutWeight(1)
           .backgroundColor($r("app.color.bg_primary"))
 
@@ -367,7 +420,7 @@ struct EntryView {
             // 回滚按钮
             Button() {
               Row() {
-                Image($r('app.media.ic_color_clock'))
+                Image($r('app.media.ic_rollback'))
                   .width(20)
                   .height(20)
                   .fillColor($r('app.color.text_primary'))
@@ -412,7 +465,12 @@ struct EntryView {
             })
           }
           .width('100%')
-          .padding({ top: 12, bottom: 12, left: 16, right: 16 })
+          .padding({
+            top: 12,
+            bottom: 12,
+            left: 16,
+            right: 16
+          })
           .position({ x: 0, y: '100%' })
           .translate({ y: -74 }) // 调整位置，确保正确显示
         } else {
