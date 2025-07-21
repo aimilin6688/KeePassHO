@@ -1,9 +1,10 @@
 import preferences from '@ohos.data.preferences';
-import { FileService } from './FileService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import FileUtils from '../common/utils/FIleUtils';
+import { fileShare } from '@kit.CoreFileKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -34,11 +35,30 @@ export class RecentFilesService {
   }
 
   /**
+   * 当文件拥有持久性授权时，才能添加到最近访问中
+   * @param recentFile 最近打开的文件
+   * @returns 结果
+   */
+  public async addRecentFile(recentFile: RecentFile): Promise<void> {
+    // 如果拥有持久化授权，则添加到最近访问列表中
+    return FileUtils.checkPersistPermission(recentFile.filePath, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE).then((result) => {
+      hilog.info(DOMAIN, TAG, 'Check path %{public}s persist permission: %{public}s', recentFile.filePath, result[0]);
+      if (result[0]) {
+        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%s', recentFile.filePath);
+        return this.doAdd(recentFile);
+      } else {
+        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%s no permission', recentFile.filePath);
+        return Promise.reject('No permission');
+      }
+    });
+  }
+
+  /**
    * 添加最近打开的文件
    * @param fileParam 文件参数
    * @param storageType 存储类型
    */
-  public async addRecentFile(recentFile: RecentFile): Promise<void> {
+  private async doAdd(recentFile: RecentFile): Promise<void> {
     try {
       // 获取当前的最近文件列表
       const recentFiles = await this.getRecentFiles();

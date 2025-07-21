@@ -64,9 +64,8 @@ struct LocalFile {
       // 设置文件参数
       FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
       // 添加到最近打开的文件列表
-      await RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig});
-
-      // 导航到密码输入页面，并传递文件内容
+      RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig});
+      // 导航到密码输入页面
       this.router.pushUrl({
         url: 'pages/Password'
       });
