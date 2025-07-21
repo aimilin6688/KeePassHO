@@ -155,7 +155,7 @@ export struct EntryEditFieldDialog {
 
       // 按钮
       Row() {
-        Button($r('app.string.EntryEditFieldDialog_cancel'))
+        Button($r('app.string.cancel_button_text'))
           .width('45%')
           .height(40)
           .fontSize(16)
