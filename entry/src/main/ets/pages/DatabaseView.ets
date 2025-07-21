@@ -231,11 +231,11 @@ struct DatabaseView {
           this.promptAction.showToast({ message: $r('app.string.save_success_message') });
         }).catch((error: Error) => {
           console.error(`保存数据库失败: ${error}`);
-          this.promptAction.showToast({ message: `${$r('app.string.DatabaseView_save_failed')}: ${error.message}` });
+          this.promptAction.showToast({ message: `${$r('app.string.save_failed_message')}: ${error.message}` });
         });
       }).catch((error: Error) => {
         console.error(`保存数据库失败: ${error}`);
-        this.promptAction.showToast({ message: `${$r('app.string.DatabaseView_save_failed')}: ${error.message}` });
+        this.promptAction.showToast({ message: `${$r('app.string.save_failed_message')}: ${error.message}` });
       });
     }
   }
