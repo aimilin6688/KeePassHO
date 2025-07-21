@@ -250,6 +250,7 @@ export interface DatabaseShowParam {
 export interface EntryParam {
   groupId?: string;
   entryId?: string;
+  historyIndex?: number;
 }
 
 /**
