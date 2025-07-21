@@ -124,7 +124,7 @@ export struct EntryViewFieldItem {
           .textAlign(TextAlign.Start)
           .textOverflow({ overflow: TextOverflow.None })
           .maxLines(this.field.isProtected ? 1 : 10)
-          .enableDataDetector(true)
+          .enableDataDetector(this.field.isProtected ? false : true)
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)

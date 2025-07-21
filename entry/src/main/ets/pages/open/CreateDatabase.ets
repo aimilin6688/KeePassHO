@@ -239,21 +239,27 @@ struct CreateDatabase {
         hilog.info(DOMAIN, TAG, 'Database saved successfully: %{public}s', filePath);
         // 显示成功提示
         this.promptAction.showToast({ message: $r("app.string.CreateDatabase_create_success") });
-        await RecentFilesService.getInstance()
-          .addRecentFile({
+        await RecentFilesService.getInstance().addRecentFile({
             filePath: filePath,
             fileName: FileUtils.getFileName(filePath),
             storageType: StorageType.LOCAL,
             authType: AuthType.PASSWORD,
             storageConfig: new LocalFileStorageConfig(dbContent.byteLength)
-          });
-        // 跳转到密码页面
-        this.router.replaceUrl({
-          url: 'pages/Password',
-          params: {
-            filePath: filePath
-          }
+          }).then((result)=>{
+            // 跳转到密码页面
+            this.router.replaceUrl({
+              url: 'pages/Password',
+              params: {
+                filePath: filePath
+              }
+            });
+        }).catch((error: Error) => {
+          // fixme: 通过DocumentViewPicker save 保存的文件，不能持久化授权，只能让用户重新选择文件授权
+          hilog.error(DOMAIN, TAG, `Failed to add recent file: ${error.message}`, error.stack);
+          // 跳转到首页面
+          this.router.replaceUrl({url: 'pages/Index' });
         });
+
       }).catch((error: Error) => {
         hilog.error(DOMAIN, TAG, `Failed to save database: ${error.message}`, error.stack);
         this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
