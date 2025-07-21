@@ -32,7 +32,6 @@
       "name": "auth_type_password_keyfile_challenge_response_xc",
       "value": "密码 + 密钥文件 + 挑战应答（Keepass XC）"
     },
-
     {
       "name": "module_desc",
       "value": "KeePassHO密码管理"
@@ -42,7 +41,7 @@
       "value": "KeePassHO"
     },
     {
-      "name": "reason",
+      "name": "Permission_FILE_ACCESS_PERSIST_reason",
       "value": "访问与存储kdbx数据文件"
     },
     {

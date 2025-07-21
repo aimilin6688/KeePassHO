@@ -11,7 +11,7 @@
     "requestPermissions": [
       {
         "name" : "ohos.permission.FILE_ACCESS_PERSIST",
-        "reason": "$string:reason"
+        "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
       }
     ],
     "deliveryWithInstall": true,
