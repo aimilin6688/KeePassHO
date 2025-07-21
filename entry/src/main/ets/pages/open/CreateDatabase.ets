@@ -75,7 +75,7 @@ struct CreateDatabase {
           })
 
         // 密码输入
-        Text($r('app.string.CreateDatabase_password_label'))
+        Text($r('app.string.password'))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20, left: 16 })
@@ -84,7 +84,7 @@ struct CreateDatabase {
           .textAlign(TextAlign.Start)
 
         Row() {
-          TextInput({ placeholder: $r('app.string.CreateDatabase_password_placeholder'), text: this.password })
+          TextInput({ placeholder: $r('app.string.password_placeholder'), text: this.password })
             .type(InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
