@@ -57,15 +57,15 @@
       "value": "Sort method"
     },
     {
-      "name": "Settings_create_database",
+      "name": "create_database",
       "value": "Create database"
     },
     {
-      "name": "Settings_change_database",
+      "name": "change_database",
       "value": "Change database"
     },
     {
-      "name": "Settings_recent_files",
+      "name": "recent_files",
       "value": "Recent files"
     },
     {

@@ -145,7 +145,7 @@ struct CreateDatabase {
         }
 
         // 创建按钮
-        Button($r('app.string.CreateDatabase_create_button'))
+        Button($r('app.string.create_database'))
           .width('90%')
           .height(48)
           .margin({ top: 40 })
