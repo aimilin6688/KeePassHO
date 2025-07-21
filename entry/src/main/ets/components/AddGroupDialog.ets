@@ -30,7 +30,7 @@ export struct AddGroupDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text(this.editingGroupIndex === -1 ? $r('app.string.DatabaseView_add_group') : $r('app.string.AddGroupDialog_edit_group'))
+        Text(this.editingGroupIndex === -1 ? $r('app.string.add_group_button') : $r('app.string.AddGroupDialog_edit_group'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
         
