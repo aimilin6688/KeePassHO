@@ -287,7 +287,7 @@ export default class KdbxUtils {
    * @returns 字段名称
    */
   public static getFieldName(fileKey:string):string | Resource {
-    hilog.info(DOMAIN, TAG, 'Get field name: %{public}s', fileKey);
+    hilog.debug(DOMAIN, TAG, 'Get field name: %{public}s', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
         return $r("app.string.username");
