@@ -236,7 +236,7 @@ struct CreateDatabase {
       hilog.info(DOMAIN, TAG, 'saveKdbxFile: ', dbContent.byteLength);
       // 保存数据库文件
       this.fileManager.saveKdbxFile(filePath, dbContent).then(async () => {
-        hilog.info(DOMAIN, TAG, 'Database saved successfully: %s', filePath);
+        hilog.info(DOMAIN, TAG, 'Database saved successfully: %{public}s', filePath);
         // 显示成功提示
         this.promptAction.showToast({ message: $r("app.string.CreateDatabase_create_success") });
         await RecentFilesService.getInstance()

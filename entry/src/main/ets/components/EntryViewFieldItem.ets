@@ -47,7 +47,7 @@ export struct EntryViewFieldItem {
     // 将数据写入剪贴板
     systemPasteboard.setData(pasteboardData, (error, data) => {
       if (error) {
-        hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %s %s %s %s', error.message, error.code, error.name, error.stack);
+        hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %{public}s %{public}s %{public}s %{public}s', error.message, error.code, error.name, error.stack);
         this.promptAction.showToast({ message: $r("app.string.copy_failed") });
       } else {
         this.promptAction.showToast({ message: $r("app.string.copied"), duration: 2000 });

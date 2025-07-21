@@ -248,8 +248,8 @@ struct Password {
       // // 加载进度消息
       if (data.type == MessageType.LOAD_MESSAGE) {
         const loadMessage = data as LoadMessage;
-        hilog.info(DOMAIN, TAG, 'Received loading progress:  %{public}s', loadMessage.message);
-        this.loadingMessage =  loadMessage.message;
+        this.loadingMessage =  ResourceManager.getInstance().getString(loadMessage.message);
+        hilog.info(DOMAIN, TAG, 'Received loading progress:  %{public}s', this.loadingMessage);
       }
       // 数据库加载成功
       if (data.type == MessageType.LOAD_SUCCESS) {
@@ -271,7 +271,7 @@ struct Password {
       // 错误消息
       if (data.type == MessageType.LOAD_ERROR) {
         let errorMessage = data as LoadMessage;
-        this.promptAction.showToast({ message: errorMessage.message, duration: 3000 });
+        this.promptAction.showToast({ message: ResourceManager.getInstance().getString(errorMessage.message), duration: 3000 });
         this.closeLoadingDialog();
       }
     }

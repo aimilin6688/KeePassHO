@@ -270,7 +270,7 @@ export default class IconUtils {
         }
       }
     } catch (e) {
-      hilog.error(DOMAIN, TAG, 'getAllIcons error:%s', e.message);
+      hilog.error(DOMAIN, TAG, 'getAllIcons error: %{public}s', e.message);
     }
 
     return icons;
