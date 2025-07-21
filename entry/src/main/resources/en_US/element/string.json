@@ -158,10 +158,6 @@
       "value": "Confirm Delete"
     },
     {
-      "name": "DatabaseView_cancel",
-      "value": "Cancel"
-    },
-    {
       "name": "DatabaseView_save_success",
       "value": "Save successful"
     },
@@ -184,10 +180,6 @@
     {
       "name": "DatabaseView_search_placeholder",
       "value": "Search content"
-    },
-    {
-      "name": "DatabaseView_cancel_search",
-      "value": "Cancel"
     },
     {
       "name": "DatabaseView_add_group",
@@ -249,10 +241,7 @@
       "name": "EntryEditFieldDialog_name_empty",
       "value": "Field name cannot be empty"
     },
-    {
-      "name": "EntryEditFieldDialog_cancel",
-      "value": "Cancel"
-    },
+
     {
       "name": "EntryEditFieldDialog_confirm",
       "value": "Confirm"
@@ -476,10 +465,6 @@
     {
       "name": "search_placeholder",
       "value": "Search content"
-    },
-    {
-      "name": "search_cancel_button",
-      "value": "Cancel"
     },
     {
       "name": "add_group_button",
