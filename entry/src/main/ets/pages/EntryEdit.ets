@@ -655,7 +655,7 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextArea({ text: this.tags, placeholder: '请输入标签（用逗号分隔）' })
+              TextArea({ text: this.tags, placeholder: $r('app.string.tags_placeholder') })
                 .width('100%')
                 .lineHeight(24)
                 .padding({top:12,bottom:12})
