@@ -6,6 +6,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import FileUtils from '../common/utils/FIleUtils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
+import DeviceUtils from '../common/utils/DeviceUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -61,7 +62,11 @@ export class RecentFilesService {
         return this.doAdd(recentFile);
       } else {
         hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s no permission', recentFile.filePath);
-        return Promise.reject('No permission');
+        if (DeviceUtils.isEmulator()) {
+          return this.doAdd(recentFile);
+        } else {
+          return Promise.reject('No permission');
+        }
       }
     });
   }
