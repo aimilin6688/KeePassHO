@@ -57,10 +57,10 @@ export class RecentFilesService {
     return FileUtils.checkPersistPermission(recentFile.filePath, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE).then((result) => {
       hilog.info(DOMAIN, TAG, 'Check path %{public}s persist permission: %{public}s', recentFile.filePath, result[0]);
       if (result[0]) {
-        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%s', recentFile.filePath);
+        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s', recentFile.filePath);
         return this.doAdd(recentFile);
       } else {
-        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%s no permission', recentFile.filePath);
+        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s no permission', recentFile.filePath);
         return Promise.reject('No permission');
       }
     });
