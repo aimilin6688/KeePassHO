@@ -331,18 +331,14 @@ struct Password {
     hilog.info(DOMAIN, TAG, '%{public}s', `Database file opened: ${fileParam?.filePath}`)
 
     // 添加到最近打开的文件列表，包含认证方式和认证文件信息
-    RecentFilesService.getInstance().getRecentFile(this.filePath).then((recentFile) => {
-      if (recentFile) {
-        RecentFilesService.getInstance().addRecentFile({
-          filePath: this.filePath,
-          fileName: this.fileName,
-          storageType: this.storageType ?? StorageType.LOCAL,
-          authType: this.authType,
-          keyFilePath: this.keyFilePath,
-          storageConfig: this.storageConfig ?? {}
-        });
-      }
-    })
+    RecentFilesService.getInstance().addRecentFile({
+      filePath: this.filePath,
+      fileName: this.fileName,
+      storageType: this.storageType ?? StorageType.LOCAL,
+      authType: this.authType,
+      keyFilePath: this.keyFilePath,
+      storageConfig: this.storageConfig ?? {}
+    });
   }
 
   build() {
