@@ -5,6 +5,7 @@ import { RecentFile } from './TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import FileUtils from '../common/utils/FIleUtils';
 import { fileShare } from '@kit.CoreFileKit';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -18,6 +19,15 @@ export class RecentFilesService {
   private static readonly PREFERENCES_NAME = 'recent_files';
   private static readonly RECENT_FILES_KEY = 'recent_files_list';
   private static readonly MAX_RECENT_FILES = 10; // 最多保存10个最近打开的文件
+  private context: common.UIAbilityContext | null = null;
+
+  /**
+   * 初始化主题管理器
+   * @param context UIAbilityContext
+   */
+  public init(context: common.UIAbilityContext): void {
+    this.context = context;
+  }
 
   /**
    * 获取单例实例
@@ -30,8 +40,11 @@ export class RecentFilesService {
    * 获取首选项实例
    */
   private async getPreferences(): Promise<preferences.Preferences> {
-    const context = getContext(this);
-    return await preferences.getPreferences(context, RecentFilesService.PREFERENCES_NAME);
+    if (this.context === null) {
+      hilog.error(DOMAIN, TAG, 'Context is null');
+      throw new Error('Context is null');
+    }
+    return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
   }
 
   /**
