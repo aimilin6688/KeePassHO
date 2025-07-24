@@ -4,6 +4,7 @@ import { window } from '@kit.ArkUI';
 import { SettingsService } from '../services/SettingsService';
 import ThemeManager from '../common/utils/ThemeManager';
 import ResourceManager from '../common/utils/ResourceManager';
+import { RecentFilesService } from '../services/RecentFilesService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -14,12 +15,20 @@ const TAG = 'EntryAbility';
 export default class EntryAbility extends UIAbility {
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onCreate');
+    this.init();
+  }
 
+  /**
+   * 初始化应用
+   */
+  private async init(){
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
 
     // 初始化资源管理器
     ResourceManager.getInstance().init(this.context);
+    // 最近打开的文件服务
+    RecentFilesService.getInstance().init(this.context);
 
     // 初始化设置服务
     await SettingsService.getInstance().init(this.context);
