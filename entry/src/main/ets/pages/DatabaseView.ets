@@ -354,6 +354,23 @@ struct DatabaseView {
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
   }
 
+  /**
+   * 获取分组名称
+   * @param groupName
+   * @returns
+   */
+  private getGroupName(groupName: string | undefined): ResourceStr {
+    if (groupName === undefined || groupName === '') {
+      return "";
+    }
+    if (groupName === "Recycle Bin") {
+      return $r('app.string.recycle_bin');
+    }
+    if (groupName === "Templates") {
+    }
+    return "";
+  }
+
   // 已删除showAddOptions方法，改为使用固定按钮
 
   build() {
@@ -473,7 +490,7 @@ struct DatabaseView {
                     .height(28)
                     .margin(10)
                   Column() {
-                    Text(itemGroup.name)
+                    Text(this.getGroupName(itemGroup.name))
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
