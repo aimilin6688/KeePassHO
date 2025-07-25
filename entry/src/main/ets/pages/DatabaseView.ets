@@ -21,7 +21,7 @@ struct DatabaseView {
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
   @State isLoading: boolean = false;
-  @State titleName: string = '';
+  @State titleName: ResourceStr = '';
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
@@ -129,7 +129,7 @@ struct DatabaseView {
     try {
       if (dbShowParam && dbShowParam.groupId) {
         this.currentGroup = this.database.getGroup(dbShowParam.groupId);
-        this.titleName = this.currentGroup?.name || '';
+        this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name)  || '';
         this.showBack = true;
       } else {
         // 获取根分组下的所有子分组
@@ -359,25 +359,6 @@ struct DatabaseView {
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
   }
 
-  /**
-   * 获取分组名称
-   * @param groupName
-   * @returns
-   */
-  private getGroupName(groupName: string | undefined): ResourceStr {
-    if (groupName === undefined || groupName === '') {
-      return "";
-    }
-    if (groupName === "Recycle Bin") {
-      return $r('app.string.recycle_bin');
-    }
-    if (groupName === "Templates") {
-    }
-    return "";
-  }
-
-  // 已删除showAddOptions方法，改为使用固定按钮
-
   build() {
     Stack() {
       Column() {
@@ -499,7 +480,7 @@ struct DatabaseView {
                     .height(28)
                     .margin(10)
                   Column() {
-                    Text(this.getGroupName(itemGroup.name))
+                    Text(KdbxUtils.getFieldName(itemGroup.name))
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
@@ -586,6 +567,7 @@ struct DatabaseView {
             bottom: 40
           })
           .scrollBar(BarState.Auto)
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
         }
       }
       .width('100%')

@@ -849,5 +849,7 @@ struct EntryEdit {
     }
     .height('100%')
     .width('100%')
+    .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
