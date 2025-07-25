@@ -155,7 +155,7 @@ struct EntryView {
     this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
 
     // 过期时间
-    if(this.entry.times.expiryTime){
+    if(this.entry.times.expires){
       this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, this.dateFormat.format(this.entry.times.expiryTime), false, false));
     }
 
