@@ -56,6 +56,8 @@ export struct About {
         .padding(16)
       }
     }
+    .backgroundColor($r('app.color.bg_primary'))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     .width('100%')
     .height('100%')
   }

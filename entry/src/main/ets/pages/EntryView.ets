@@ -7,6 +7,7 @@ import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 import { intl } from '@kit.LocalizationKit';
 import { i18n } from '@kit.LocalizationKit';
+import ResourceManager from '../common/utils/ResourceManager';
 
 
 const DOMAIN = 0xFF00;
@@ -215,10 +216,10 @@ struct EntryView {
    */
   private getGroupName(): string {
     if (this.database && this.groupId) {
-      return this.database.getGroup(this.groupId)?.name || '';
+      return ResourceManager.getString(KdbxUtils.getFieldName(this.database.getGroup(this.groupId)?.name) || '');
     }
     if (this.entry && this.entry.parentGroup) {
-      return this.entry.parentGroup?.name ?? '';
+      return ResourceManager.getString(KdbxUtils.getFieldName(this.entry.parentGroup?.name) || '');
     }
     return '';
   }
@@ -561,5 +562,7 @@ struct EntryView {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }

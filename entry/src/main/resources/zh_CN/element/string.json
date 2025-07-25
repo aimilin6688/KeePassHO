@@ -633,6 +633,10 @@
     {
       "name": "override_url_placeholder",
       "value": "请输入覆盖URL"
+    },
+    {
+      "name": "templates",
+      "value": "Templates"
     }
   ]
 }
