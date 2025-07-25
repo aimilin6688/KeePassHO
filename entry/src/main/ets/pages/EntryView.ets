@@ -124,10 +124,15 @@ struct EntryView {
       this.fields.push(new FieldView(KdbxUtils.FIELD_TAGS, this.entry.tags.join(', '), false, true));
     }
 
+    // 添加覆盖URL
+    if (this.entry.overrideUrl && this.entry.overrideUrl.length > 0) {
+      this.fields.push(new FieldView(KdbxUtils.FIELD_OVERRIDE_URL, this.entry.overrideUrl, false, true));
+    }
+
     // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS];
+      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS, KdbxUtils.FIELD_OVERRIDE_URL];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 
