@@ -25,7 +25,8 @@ export default class KdbxUtils {
   public static readonly FIELD_CREATION_TIME = 'creationTime';
   public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
   public static readonly GROUP_NAME = 'GroupName';
-  public static readonly RECYCLE_BIN_NAME = 'Recycle Bin';
+  public static readonly GROUP_RECYCLE_BIN = 'Recycle Bin';
+  public static readonly GROUP_TEMPLATES_NAME = 'Templates';
   private static customIconMap: Map<string, string> = new Map<string, string>();
 
   public static init() {
@@ -291,7 +292,7 @@ export default class KdbxUtils {
    * @param fileKey 文件密钥
    * @returns 字段名称
    */
-  public static getFieldName(fileKey: string): string | Resource {
+  public static getFieldName(fileKey: string | undefined): string | Resource | undefined {
     hilog.debug(DOMAIN, TAG, 'Get field name: %{public}s', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
@@ -308,16 +309,18 @@ export default class KdbxUtils {
         return $r("app.string.title");
       case KdbxUtils.FIELD_TAGS:
         return $r("app.string.tags");
-      case KdbxUtils.GROUP_NAME:
-        return $r("app.string.group_name");
       case KdbxUtils.FIELD_CUSTOM_FIELDS:
         return $r("app.string.custom_field");
       case KdbxUtils.FIELD_CREATION_TIME:
         return $r("app.string.created_time");
       case KdbxUtils.FIELD_LASTMOD_TIME:
         return $r("app.string.updated_time");
-      case KdbxUtils.RECYCLE_BIN_NAME:
+      case KdbxUtils.GROUP_NAME:
+        return $r("app.string.group_name");
+      case KdbxUtils.GROUP_RECYCLE_BIN:
         return $r("app.string.recycle_bin");
+      case KdbxUtils.GROUP_TEMPLATES_NAME:
+        return $r('app.string.templates');
       default:
         return fileKey;
     }

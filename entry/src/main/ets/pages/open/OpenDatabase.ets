@@ -110,10 +110,11 @@ struct OpenDatabase {
       }
       .width('100%')
       .layoutWeight(1)
-      .backgroundColor($r("app.color.bg_primary"))
       .align(Alignment.TopStart) // 确保内容从顶部开始显示
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }

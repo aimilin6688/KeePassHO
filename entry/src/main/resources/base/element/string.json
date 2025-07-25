@@ -631,6 +631,10 @@
     {
       "name": "dialog_rollback_confirm_message",
       "value": "Are you sure rollback ?"
+    },
+    {
+      "name": "templates",
+      "value": "Templates"
     }
   ]
 }
