@@ -487,7 +487,6 @@ struct EntryView {
             left: 16,
             right: 16
           })
-          .backgroundColor($r("app.color.bg_primary"))
           .position({ x: 0, y: '100%' })
           .translate({ y: -45 }) // 调整位置，确保正确显示
         } else {

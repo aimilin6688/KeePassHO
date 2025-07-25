@@ -253,6 +253,40 @@ export interface EntryParam {
   historyIndex?: number;
 }
 
+
+/**
+ * 移动条目参数定义
+ */
+export class MoveParam {
+  private static instance: MoveParam | undefined  = undefined;
+
+  groupId: string;
+  entryId?: string;
+  isMoving: boolean;
+  constructor(groupId: string, entryId?: string) {
+    this.groupId = groupId;
+    this.entryId = entryId;
+    this.isMoving = true;
+    MoveParam.instance = this;
+  }
+
+  public static getInstance(): MoveParam | undefined{
+    return MoveParam.instance;
+  }
+
+  public static clearInstance() {
+    MoveParam.instance = undefined;
+  }
+
+  get isMoveGroup(): boolean {
+    return this.entryId === undefined;
+  }
+
+  get isMoveEntry(): boolean {
+    return this.entryId !== undefined;
+  }
+}
+
 /**
  * 图标资源定义
  */
