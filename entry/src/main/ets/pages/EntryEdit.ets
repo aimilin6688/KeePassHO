@@ -11,6 +11,7 @@ import { CustomField } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import ResourceManager from '../common/utils/ResourceManager';
+import DateUtils from '../common/utils/DateUtils';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -40,6 +41,8 @@ struct EntryEdit {
   @State isModified: boolean = false; // 是否有字段被修改
   @State iconId: number | string | undefined = Icons.Key; // 当前选择的图标ID
   @State tags: string = ''; // 标签，以逗号分隔
+  @State expiryTime: Date | undefined = undefined; // 过期时间
+  @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
   
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -159,6 +162,10 @@ struct EntryEdit {
       
       // 加载图标ID
       this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
+
+      // 过期时间
+      this.expiryTime = this.entry.times.expiryTime;
+      this.isExpiryEnabled =   this.entry.times.expires;
       
       // 加载自定义字段
       this.loadCustomFields();
@@ -254,6 +261,8 @@ struct EntryEdit {
       this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
       this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
       this.entry.overrideUrl = this.overrideUrl;
+      this.entry.times.expires = this.isExpiryEnabled;
+      this.entry.times.expiryTime = this.isExpiryEnabled ? this.expiryTime : undefined;
 
       // 保存自定义字段
       this.customFields.forEach(field => {
@@ -469,6 +478,23 @@ struct EntryEdit {
    */
   private openIconSelector() {
     this.iconSelectorController.open();
+  }
+
+  /**
+   * 日期时间选择
+   */
+  private openExpiryTimePicker(){
+    this.getUIContext().showDatePickerDialog({
+      start: new Date(),
+      end: new Date('2099-12-31'),
+      selected: this.expiryTime,
+      showTime: true,
+      useMilitaryTime: true,
+      onDateAccept: (value:Date) =>{
+        this.expiryTime = value;
+        this.isModified = true;
+      }
+    });
   }
 
   build() {
@@ -832,6 +858,43 @@ struct EntryEdit {
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 8, bottom: 8 })
               }
+            }
+            .width('100%')
+            .margin({ top: 16})
+
+            // 过期时间
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_EXPIRY_TIME))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              Row() {
+                Toggle({ type: ToggleType.Switch, isOn: this.isExpiryEnabled })
+                  .onChange((isOn: boolean) => {
+                    this.isExpiryEnabled = isOn;
+                    this.expiryTime = this.expiryTime ? this.expiryTime : new Date();
+                    this.isModified = true;
+                  })
+                  .margin({ right: 16 })
+
+                if (this.isExpiryEnabled) {
+                  Text(DateUtils.format(this.expiryTime))
+                    .fontSize(16)
+                    .fontColor($r('app.color.text_primary'))
+                    .layoutWeight(1)
+                    .height(48)
+                    .onClick(()=>{
+                      this.openExpiryTimePicker();
+                    })
+                }
+              }
+              .width('100%')
+              .height(48)
+              .borderRadius(8)
+              .backgroundColor($r("app.color.bg_secondary"))
+              .padding({ left: 12, right: 12 })
             }
             .width('100%')
             .margin({ top: 16, bottom: 24 })
