@@ -418,7 +418,7 @@ struct EntryView {
             left: 16,
             right: 16,
             top: 12,
-            bottom: 40
+            bottom: 50
           })
           .layoutWeight(1)
           .backgroundColor($r("app.color.bg_primary"))
@@ -442,7 +442,8 @@ struct EntryView {
               .justifyContent(FlexAlign.Center)
             }
             .width('45%')
-            .height(48)
+            .height(40)
+            .borderRadius(16)
             .backgroundColor($r('app.color.danger'))
             .onClick(() => {
               this.rollbackToHistory();
@@ -466,21 +467,24 @@ struct EntryView {
               .justifyContent(FlexAlign.Center)
             }
             .width('45%')
-            .height(48)
+            .height(40)
+            .borderRadius(16)
             .backgroundColor($r('app.color.card_bg'))
             .onClick(() => {
               this.deleteHistory();
             })
           }
           .width('100%')
+          .height(45)
           .padding({
             top: 12,
             bottom: 12,
             left: 16,
             right: 16
           })
+          .backgroundColor($r("app.color.bg_primary"))
           .position({ x: 0, y: '100%' })
-          .translate({ y: -74 }) // 调整位置，确保正确显示
+          .translate({ y: -45 }) // 调整位置，确保正确显示
         } else {
           // 显示当前条目
           Tabs() {
