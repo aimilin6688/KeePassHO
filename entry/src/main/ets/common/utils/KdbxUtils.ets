@@ -24,6 +24,7 @@ export default class KdbxUtils {
   public static readonly FIELD_CUSTOM_FIELDS = 'CustomFields';
   public static readonly FIELD_CREATION_TIME = 'creationTime';
   public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
+  public static readonly FIELD_EXPIRY_TIME = 'expiryTime';
   public static readonly GROUP_NAME = 'GroupName';
   public static readonly GROUP_RECYCLE_BIN = 'Recycle Bin';
   public static readonly GROUP_TEMPLATES_NAME = 'Templates';
@@ -130,7 +131,8 @@ export default class KdbxUtils {
       KdbxUtils.FIELD_TITLE,
       KdbxUtils.FIELD_USERNAME,
       KdbxUtils.FIELD_URL,
-      KdbxUtils.FIELD_NOTES
+      KdbxUtils.FIELD_NOTES,
+      KdbxUtils.FIELD_TAGS
     ];
 
     for (const field of standardFields) {
@@ -315,6 +317,8 @@ export default class KdbxUtils {
         return $r("app.string.created_time");
       case KdbxUtils.FIELD_LASTMOD_TIME:
         return $r("app.string.updated_time");
+      case KdbxUtils.FIELD_EXPIRY_TIME:
+        return $r("app.string.expiry_time");
       case KdbxUtils.GROUP_NAME:
         return $r("app.string.group_name");
       case KdbxUtils.GROUP_RECYCLE_BIN:
