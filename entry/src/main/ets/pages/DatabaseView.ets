@@ -11,6 +11,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
+import DateUtils from '../common/utils/DateUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -518,7 +519,7 @@ struct DatabaseView {
             ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
               ListItem() {
                 Row() {
-                  Image(itemEntry.times.expires ? $r('app.media.ic_color_expiry_time') : KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                  Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.ic_color_expiry_time') : KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
                     .width(28)
                     .height(28)
                     .margin(10)
@@ -527,12 +528,12 @@ struct DatabaseView {
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
-                      .decoration({ type: (itemEntry.times.expires ?  TextDecorationType.LineThrough : TextDecorationType.None)})
+                      .decoration({ type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ?  TextDecorationType.LineThrough : TextDecorationType.None)})
                     Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
                       .fontSize(12)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
-                      .decoration({ type: (itemEntry.times.expires ?  TextDecorationType.LineThrough : TextDecorationType.None)})
+                      .decoration({ type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ?  TextDecorationType.LineThrough : TextDecorationType.None)})
                   }
                   .flexGrow(1)
                   .alignItems(HorizontalAlign.Start)

@@ -5,9 +5,8 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
-import { intl } from '@kit.LocalizationKit';
-import { i18n } from '@kit.LocalizationKit';
 import ResourceManager from '../common/utils/ResourceManager';
+import DateUtils from '../common/utils/DateUtils';
 
 
 const DOMAIN = 0xFF00;
@@ -33,7 +32,6 @@ struct EntryView {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private entryId: string = '';
   private groupId: string = '';
-  private dateFormat: intl.DateTimeFormat = new intl.DateTimeFormat(i18n.System.getSystemLocale(), {"dateStyle":"long", "timeStyle": "medium"});
 
   aboutToAppear() {
     // 获取从DatabaseShow页面传递的参数
@@ -156,12 +154,12 @@ struct EntryView {
 
     // 过期时间
     if(this.entry.times.expires){
-      this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, this.dateFormat.format(this.entry.times.expiryTime), false, false));
+      this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, DateUtils.format(this.entry.times.expiryTime), false, false));
     }
 
     // 增加创建时间和更新时间
-    this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, this.dateFormat.format(this.entry.times.creationTime), false, false));
-    this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, this.dateFormat.format(this.entry.times.lastModTime), false, false));
+    this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, DateUtils.format(this.entry.times.creationTime), false, false));
+    this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, DateUtils.format(this.entry.times.lastModTime), false, false));
   }
 
   /**
@@ -177,7 +175,7 @@ struct EntryView {
     // 遍历条目的历史记录
     for (let i = 0; i < this.entry.history.length; i++) {
       const historyEntry = this.entry.history[i];
-      const date = this.dateFormat.format(historyEntry.times.lastModTime);
+      const date = DateUtils.format(historyEntry.times.lastModTime);
 
       this.historyEntries.push({
         index: i,
