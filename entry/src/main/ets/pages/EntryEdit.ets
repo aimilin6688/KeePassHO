@@ -43,6 +43,13 @@ struct EntryEdit {
   @State tags: string = ''; // 标签，以逗号分隔
   @State expiryTime: Date | undefined = undefined; // 过期时间
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
+
+  private database: Kdbx | null = null;
+  private parentGroup: KdbxGroup | undefined = undefined;
+  private entry: KdbxEntry | null = null;
+  private standardFields: Array<string> = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+  private router: Router = this.getUIContext().getRouter();
+  private promptAction = this.getUIContext().getPromptAction();
   
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -66,7 +73,7 @@ struct EntryEdit {
       selectedIconId: this.iconId,
       onIconSelected: (iconId: number|string) => {
         this.iconId = iconId;
-        this.isModified = true;
+        this.checkEntryModified();
       }
     }),
     alignment: DialogAlignment.Bottom,
@@ -80,7 +87,7 @@ struct EntryEdit {
       password: this.password,
       onGenerate: (password: string) => {
         this.password = password;
-        this.isModified = true;
+        this.checkEntryModified();
       }
     }),
     alignment: DialogAlignment.Bottom,
@@ -88,11 +95,6 @@ struct EntryEdit {
     autoCancel: true
   });
 
-  private database: Kdbx | null = null;
-  private parentGroup: KdbxGroup | undefined = undefined;
-  private entry: KdbxEntry | null = null;
-  private router: Router = this.getUIContext().getRouter();
-  private promptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear() {
     // 获取数据库信息
@@ -169,10 +171,10 @@ struct EntryEdit {
       
       // 加载自定义字段
       this.loadCustomFields();
-    }
 
-    // 初始化修改状态为false
-    this.isModified = false;
+      // 检验是否修改了
+      this.isModified = false;
+    }
   }
 
   /**
@@ -188,8 +190,7 @@ struct EntryEdit {
       // 遍历字段，排除标准字段
       fields.forEach((value, key) => {
         // 跳过标准字段
-        if ([KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, 
-             KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
+        if (this.standardFields.includes(key)) {
           return;
         }
         
@@ -402,7 +403,7 @@ struct EntryEdit {
         this.customFieldsVisibility[this.editingFieldIndex] = false;
         
         // 标记为已修改
-        this.isModified = true;
+        this.checkEntryModified();
       }
     } else {
       // 添加新字段
@@ -427,7 +428,7 @@ struct EntryEdit {
       this.customFieldsVisibility.push(false);
       
       // 标记为已修改
-      this.isModified = true;
+      this.checkEntryModified();
     }
   }
   
@@ -457,7 +458,7 @@ struct EntryEdit {
           // 同时删除对应的可见性状态
           this.customFieldsVisibility.splice(index, 1);
           // 标记为已修改
-          this.isModified = true;
+          this.checkEntryModified();
         }
       });
     }
@@ -492,10 +493,89 @@ struct EntryEdit {
       useMilitaryTime: true,
       onDateAccept: (value:Date) =>{
         this.expiryTime = value;
-        this.isModified = true;
+        this.checkEntryModified();
       }
     });
   }
+
+  /**
+   * 判断实体是否被修改了
+   */
+  private checkEntryModified() {
+    if(this.isModified){
+      return;
+    }
+    // 标题修改了
+    if (this.entry == null) {
+      if(this.title != ''){
+        this.isModified = true;
+      }
+      return;
+    }
+    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE) != this.title.trim()){
+      this.isModified = true;
+      return;
+    }
+    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_USERNAME) != this.username.trim()){
+      this.isModified = true;
+      return;
+    }
+    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD) != this.password.trim()){
+      this.isModified = true;
+      return;
+    }
+    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL) != this.url.trim()){
+      this.isModified = true;
+      return;
+    }
+    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES) != this.notes.trim()){
+      this.isModified = true;
+      return;
+    }
+    if(this.entry.overrideUrl != this.overrideUrl){
+      this.isModified = true;
+      return;
+    }
+    if(this.entry.times.expires != this.isExpiryEnabled){
+      this.isModified = true;
+      return;
+    }
+    if(DateUtils.format(this.entry.times.expiryTime) != DateUtils.format(this.expiryTime)) {
+      this.isModified = true;
+      return;
+    }
+    for(let item of this.customFields){
+      // 标准字段不计入
+      if (this.standardFields.includes(item.key)) {
+        return;
+      }
+      if(!this.entry.fields.has(item.key)) {
+        this.isModified = true;
+        return;
+      }
+      if(KdbxUtils.getFieldValueString(this.entry.fields, item.key) != item.value){
+        this.isModified = true;
+        return;
+      }
+    }
+
+    if(typeof this.iconId === 'number'){
+      if(this.entry.icon != this.iconId){1
+        this.isModified = true;
+        return;
+      }
+    }else if(typeof this.iconId === 'string'){
+      if(this.entry.customIcon?.id != this.iconId){
+        this.isModified = true;
+        return;
+      }
+    }
+    if(this.entry.tags.join(", ") != this.tags){
+      this.isModified = true;
+      return;
+    }
+  }
+
 
   build() {
     Stack() {
@@ -563,7 +643,7 @@ struct EntryEdit {
                   .borderRadius(8)
                   .onChange((value) => {
                     this.title = value;
-                    this.isModified = true;
+                    this.checkEntryModified();
                   })
 
                 // 图标选择按钮
@@ -604,7 +684,7 @@ struct EntryEdit {
                 .padding({top:12,bottom:12})
                 .onChange((value) => {
                   this.username = value;
-                  this.isModified = true;
+                  this.checkEntryModified();
                 })
             }
             .width('100%')
@@ -647,7 +727,7 @@ struct EntryEdit {
                   .type(this.showPassword ? InputType.Normal : InputType.Password)
                   .onChange((value) => {
                     this.password = value;
-                    this.isModified = true;
+                    this.checkEntryModified();
                   })
               }
               .width('100%')
@@ -673,7 +753,7 @@ struct EntryEdit {
                 .padding({top:12,bottom:12})
                 .onChange((value) => {
                   this.url = value;
-                  this.isModified = true;
+                  this.checkEntryModified();
                 })
             }
             .width('100%')
@@ -696,7 +776,7 @@ struct EntryEdit {
                 .padding({top:12,bottom:12})
                 .onChange((value) => {
                   this.overrideUrl = value;
-                  this.isModified = true;
+                  this.checkEntryModified();
                 })
             }
             .width('100%')
@@ -719,7 +799,7 @@ struct EntryEdit {
                 .borderRadius(8)
                 .onChange((value) => {
                   this.tags = value;
-                  this.isModified = true;
+                  this.checkEntryModified();
                 })
             }
             .width('100%')
@@ -743,7 +823,7 @@ struct EntryEdit {
                 .borderRadius(8)
                 .onChange((value) => {
                   this.notes = value;
-                  this.isModified = true;
+                  this.checkEntryModified();
                 })
             }
             .width('100%')
@@ -875,7 +955,7 @@ struct EntryEdit {
                   .onChange((isOn: boolean) => {
                     this.isExpiryEnabled = isOn;
                     this.expiryTime = this.expiryTime ? this.expiryTime : new Date();
-                    this.isModified = true;
+                    this.checkEntryModified();
                   })
                   .margin({ right: 16 })
 
