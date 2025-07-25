@@ -15,6 +15,7 @@ export default class KdbxUtils {
   public static readonly FIELD_USERNAME = 'UserName';
   public static readonly FIELD_PASSWORD = 'Password';
   public static readonly FIELD_URL = 'URL';
+  public static readonly FIELD_OVERRIDE_URL = 'OverrideURL';
   public static readonly FIELD_NOTES = 'Notes';
   public static readonly FIELD_TITLE = 'Title';
   public static readonly FIELD_TAGS = 'Tags';
@@ -299,6 +300,8 @@ export default class KdbxUtils {
         return $r("app.string.password");
       case KdbxUtils.FIELD_URL:
         return $r("app.string.url");
+      case KdbxUtils.FIELD_OVERRIDE_URL:
+        return $r("app.string.override_url");
       case KdbxUtils.FIELD_NOTES:
         return $r("app.string.notes");
       case KdbxUtils.FIELD_TITLE:

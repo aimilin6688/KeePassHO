@@ -3,7 +3,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import IconUtils from '../common/utils/IconUtils';
 import { EntryParam, Icons } from '../services/TypeDefined';
@@ -23,6 +22,7 @@ struct EntryEdit {
   @State username: string = '';
   @State password: string = '';
   @State url: string = '';
+  @State overrideUrl: string | undefined = undefined;
   @State notes: string = '';
   @State showPassword: boolean = false;
   @State isLoading: boolean = false;
@@ -147,6 +147,10 @@ struct EntryEdit {
       this.password = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD);
       this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
       this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
+      this.overrideUrl = this.entry.overrideUrl;
+
+      // 加载标签
+      this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
       
       // 加载标签
       if (this.entry.tags && this.entry.tags.length > 0) {
@@ -249,6 +253,7 @@ struct EntryEdit {
       this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
       this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
       this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
+      this.entry.overrideUrl = this.overrideUrl;
 
       // 保存自定义字段
       this.customFields.forEach(field => {
@@ -642,6 +647,29 @@ struct EntryEdit {
                 .padding({top:12,bottom:12})
                 .onChange((value) => {
                   this.url = value;
+                  this.isModified = true;
+                })
+            }
+            .width('100%')
+            .margin({ top: 16 })
+
+            // Override URL
+            Column() {
+              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_OVERRIDE_URL))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ bottom: 8 })
+                .alignSelf(ItemAlign.Start)
+
+              TextArea({ text: this.overrideUrl, placeholder: $r('app.string.override_url_placeholder') })
+                .width('100%')
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .borderRadius(8)
+                .lineHeight(24)
+                .padding({top:12,bottom:12})
+                .onChange((value) => {
+                  this.overrideUrl = value;
                   this.isModified = true;
                 })
             }
