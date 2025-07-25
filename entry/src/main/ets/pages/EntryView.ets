@@ -5,6 +5,8 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
+import { intl } from '@kit.LocalizationKit';
+import { i18n } from '@kit.LocalizationKit';
 
 
 const DOMAIN = 0xFF00;
@@ -30,6 +32,7 @@ struct EntryView {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private entryId: string = '';
   private groupId: string = '';
+  private dateFormat: intl.DateTimeFormat = new intl.DateTimeFormat(i18n.System.getSystemLocale(), {"dateStyle":"long", "timeStyle": "medium"});
 
   aboutToAppear() {
     // 获取从DatabaseShow页面传递的参数
@@ -150,8 +153,8 @@ struct EntryView {
     // 添加分组信息
     this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
     // 增加创建时间和更新时间
-    this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, this.entry.times.creationTime?.toLocaleString() || '', false, false));
-    this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, this.entry.times.lastModTime?.toLocaleString() || '', false, false));
+    this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, this.dateFormat.format(this.entry.times.creationTime), false, false));
+    this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, this.dateFormat.format(this.entry.times.lastModTime), false, false));
   }
 
   /**
