@@ -153,6 +153,12 @@ struct EntryView {
 
     // 添加分组信息
     this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
+
+    // 过期时间
+    if(this.entry.times.expiryTime){
+      this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, this.dateFormat.format(this.entry.times.expiryTime), false, false));
+    }
+
     // 增加创建时间和更新时间
     this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, this.dateFormat.format(this.entry.times.creationTime), false, false));
     this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, this.dateFormat.format(this.entry.times.lastModTime), false, false));

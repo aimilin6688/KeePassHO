@@ -636,7 +636,11 @@
     },
     {
       "name": "templates",
-      "value": "Templates"
+      "value": "模版"
+    },
+    {
+      "name": "expiry_time",
+      "value": "过期时间"
     }
   ]
 }

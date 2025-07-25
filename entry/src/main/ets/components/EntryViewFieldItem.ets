@@ -79,6 +79,8 @@ export struct EntryViewFieldItem {
         return $r("app.media.ic_color_clock");
       case KdbxUtils.FIELD_LASTMOD_TIME:
         return $r("app.media.ic_color_clock");
+      case KdbxUtils.FIELD_EXPIRY_TIME:
+        return $r("app.media.ic_expiry_time");
       default:
       return $r("app.media.ic_color_note");
     }
