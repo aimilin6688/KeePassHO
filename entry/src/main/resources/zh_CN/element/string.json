@@ -625,6 +625,14 @@
     {
       "name": "dialog_rollback_confirm_message",
       "value": "您确认要回滚吗？"
+    },
+    {
+      "name": "override_url",
+      "value": "覆盖URL"
+    },
+    {
+      "name": "override_url_placeholder",
+      "value": "请输入覆盖URL"
     }
   ]
 }

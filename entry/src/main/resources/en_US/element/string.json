@@ -623,6 +623,14 @@
     {
       "name": "dialog_rollback_confirm_message",
       "value": "Are you sure rollback ?"
+    },
+    {
+      "name": "override_url",
+      "value": "Override URL"
+    },
+    {
+      "name": "override_url_placeholder",
+      "value": "Enter override URL"
     }
   ]
 }
