@@ -653,6 +653,22 @@
     {
       "name": "move_button_text",
       "value": "移动"
+    },
+    {
+      "name": "operation_failed",
+      "value": "操作失败"
+    },
+    {
+      "name": "operation_success",
+      "value": "操作成功"
+    },
+    {
+      "name": "cannot_move_to_child",
+      "value": "不能移动到自己或子群组"
+    },
+    {
+      "name": "move_here",
+      "value": "移动到此处"
     }
   ]
 }

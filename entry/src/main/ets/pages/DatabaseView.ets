@@ -1,5 +1,5 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { DatabaseShowParam, Icons } from '../services/TypeDefined';
+import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 
@@ -32,6 +32,8 @@ struct DatabaseView {
   @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
   @State filteredEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
+  @State moveParam: MoveParam | undefined  = undefined; // 移动参数
+
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
@@ -62,6 +64,7 @@ struct DatabaseView {
   aboutToAppear() {
     this.clearUrl();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
+
     // 获取从Password页面传递的参数
     const params = FileService.getInstance().getDbFileParam();
     this.titleName = params.fileName ?? '';
@@ -196,7 +199,12 @@ struct DatabaseView {
         .backgroundColor($r('app.color.yellow'))
         .fontSize(14)
         .onClick(() => {
-
+          // 判断是分组还是条目
+          if (item instanceof KdbxGroup) {
+            this.moveParam = new MoveParam(item.uuid.id);
+          } else if (item instanceof KdbxEntry) {
+            this.moveParam = new MoveParam(item.parentGroup?.uuid.id || '', item.uuid.id);
+          }
         })
       Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
         .width(80)
@@ -306,9 +314,87 @@ struct DatabaseView {
   }
 
   /**
+   * 移动条目/分组到当前分组
+   */
+  private moveItemToCurrentGroup() {
+    if (!this.database || !this.currentGroup || !this.moveParam) {
+      this.promptAction.showToast({
+        message: $r('app.string.operation_failed'),
+        duration: 2000
+      });
+      this.cancelMoving();
+      return;
+    }
+
+    try {
+      // 获取要移动的条目/分组
+      let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined ;
+      
+      if (this.moveParam.isMoveGroup) {
+        sourceItem = this.database.getGroup(this.moveParam.groupId);
+      } else {
+        sourceItem = KdbxUtils.getEntry(this.database, this.moveParam.groupId, this.moveParam.entryId || "");
+      }
+      
+      if (!sourceItem) {
+        this.promptAction.showToast({
+          message: $r('app.string.entry_not_found'),
+          duration: 2000
+        });
+        this.cancelMoving();
+        return;
+      }
+      
+      // 检查是否移动到自己或子分组
+      if (this.moveParam.isMoveGroup) {
+        const sourceGroup = sourceItem as KdbxGroup;
+        // 不能移动到自己或子分组
+        if (this.currentGroup.uuid.id === sourceGroup.uuid.id ||  KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
+          this.promptAction.showToast({
+            message: $r('app.string.cannot_move_to_child'),
+            duration: 2000
+          });
+          this.cancelMoving();
+          return;
+        }
+      }
+      
+      // 移动条目/分组
+      this.database.move(sourceItem, this.currentGroup);
+      // 保存数据库
+      this.saveDatabase();
+      // 更新UI
+      this.updateUI();
+      // 显示成功提示
+      this.promptAction.showToast({
+        message: $r('app.string.operation_success'),
+        duration: 2000
+      });
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to move item: %{public}s', error.message);
+      this.promptAction.showToast({
+        message: $r('app.string.operation_failed'),
+        duration: 2000
+      });
+    } finally {
+      // 取消移动模式
+      this.cancelMoving();
+    }
+  }
+  
+  /**
+   * 取消移动操作
+   */
+  private cancelMoving() {
+    this.moveParam = undefined;
+    MoveParam.clearInstance();
+  }
+
+  /**
    * 强制组件刷新
    */
   private updateUI() {
+    this.moveParam = MoveParam.getInstance();
     // 强制刷新UI - 先清空数组，再重新加载
     this.groups = [];
     this.entries = [];
@@ -666,10 +752,47 @@ struct DatabaseView {
       .position({ right: 12, bottom: 12 })
       .enabled(!this.isLoading)
       .opacity(this.isLoading ? 0.5 : 1)
-      .visibility(this.showAddButtons ? Visibility.None : Visibility.Visible)
+      .visibility((this.showAddButtons || this.moveParam) ? Visibility.None : Visibility.Visible)
       .onClick(() => {
         this.showAddButtons = true;
       })
+      
+      // 移动模式下的底部浮动按钮
+      if (this.moveParam) {
+        Column() {
+          Row() {
+            Button($r('app.string.move_here'), { type: ButtonType.Normal })
+              .width('45%')
+              .height(40)
+              .margin({ right: 8 })
+              .borderRadius(16)
+              .fontColor($r("app.color.button_text_blue"))
+              .backgroundColor($r("app.color.button_bg_blue"))
+              .onClick(() => {
+                this.moveItemToCurrentGroup();
+              })
+            
+            Button($r('app.string.cancel_button_text'), { type: ButtonType.Normal })
+              .width('45%')
+              .height(40)
+              .backgroundColor(Color.Gray)
+              .borderRadius(16)
+              .fontColor(Color.White)
+              .onClick(() => {
+                // 取消移动模式
+                this.cancelMoving();
+              })
+          }
+          .width('90%')
+          .justifyContent(FlexAlign.SpaceAround)
+        }
+        .width('100%')
+        .height(45)
+        .padding({ top: 12,bottom: 8, left: 16, right: 16})
+        .position({ x: 0, y: '100%' })
+        .translate({ y: -45 })
+        .justifyContent(FlexAlign.Center)
+      }
     }
     .width('100%')
     .height('100%')
