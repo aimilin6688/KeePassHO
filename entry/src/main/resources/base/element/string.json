@@ -647,6 +647,10 @@
     {
       "name": "load_save_database",
       "value": "Save database..."
+    },
+    {
+      "name": "move_button_text",
+      "value": "Move"
     }
   ]
 }
