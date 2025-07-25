@@ -1,6 +1,7 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import { DatabaseShowParam, Icons } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FocusController } from '@ohos.arkui.UIContext';
 
 import ThemeManager from '../common/utils/ThemeManager';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
@@ -36,6 +37,10 @@ struct DatabaseView {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private currentGroup: KdbxGroup | undefined = undefined;
   private settingsService: SettingsService = SettingsService.getInstance();
+  private searchController: FocusController = new FocusController();
+
+
+
   dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
@@ -423,6 +428,7 @@ struct DatabaseView {
               .width('70%')
               .margin({ left: 16 })
               .height(40)
+              .key("searchKey")
               .searchIcon({
                 src: $r('sys.media.ohos_ic_public_search_filled')
               })
@@ -441,6 +447,9 @@ struct DatabaseView {
               .onSubmit((value: string) => {
                 this.searchText = value;
                 this.performSearch();
+              })
+              .onAppear(() => {
+                this.searchController.requestFocus('searchKey'); // 传入组件key
               })
             Button($r('app.string.cancel_button_text'))
               .width(70)
