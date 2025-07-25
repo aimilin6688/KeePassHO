@@ -83,6 +83,27 @@ export default class KdbxUtils {
   }
 
   /**
+   * 判断分组是否是子分组
+   * @param parentGroup 父分组
+   * @param childGroup 子分组
+   * @returns 结果
+   */
+  public static isChildGroup(parentGroup: KdbxGroup, childGroup: KdbxGroup): boolean {
+    if(parentGroup.groups.length === 0){
+      return false;
+    }
+    for(let group of parentGroup.groups){
+      if(group.uuid.id === childGroup.uuid.id){
+        return true;
+      }
+      if(KdbxUtils.isChildGroup(group, childGroup)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * 搜索分组,包含子分组与条目
    * @param group 分组
    * @param searchText 搜索文本
