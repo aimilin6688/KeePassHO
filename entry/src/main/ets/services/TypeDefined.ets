@@ -5,11 +5,12 @@ import { StorageConfig } from './kdbx/interfaces/StorageConfig';
 /**
  * 凭证参数定义
  */
-export interface  CredentialsParam{
+export interface CredentialsParam {
   /**
    * 密码
    */
   password: string;
+
   /**
    * 认证方式
    */
@@ -197,8 +198,8 @@ export class AuthType {
    * @param authType 认证方式
    * @returns 是否使用密钥文件
    */
-  public static useKeyAuth(authType: AuthTypeInfo) : boolean {
-      return authType && ( authType.type === AuthType.PASSWORD_KEYFILE.type || authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type);
+  public static useKeyAuth(authType: AuthTypeInfo): boolean {
+    return authType && (authType.type === AuthType.PASSWORD_KEYFILE.type || authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type);
   }
 }
 
@@ -258,11 +259,11 @@ export interface EntryParam {
  * 移动条目参数定义
  */
 export class MoveParam {
-  private static instance: MoveParam | undefined  = undefined;
-
+  private static instance: MoveParam | undefined = undefined;
   groupId: string;
   entryId?: string;
   isMoving: boolean;
+
   constructor(groupId: string, entryId?: string) {
     this.groupId = groupId;
     this.entryId = entryId;
@@ -270,12 +271,24 @@ export class MoveParam {
     MoveParam.instance = this;
   }
 
-  public static getInstance(): MoveParam | undefined{
+  public static getInstance(): MoveParam | undefined {
     return MoveParam.instance;
   }
 
   public static clearInstance() {
     MoveParam.instance = undefined;
+  }
+
+  /**
+   * 判断是否是需要移动的条目
+   * @param itemId
+   * @returns
+   */
+  public isMoveItem(itemId: string): boolean {
+    if (this.isMoveEntry) {
+      return this.entryId === itemId;
+    }
+    return this.groupId === itemId;
   }
 
   get isMoveGroup(): boolean {

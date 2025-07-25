@@ -41,6 +41,7 @@ struct DatabaseView {
   private currentGroup: KdbxGroup | undefined = undefined;
   private settingsService: SettingsService = SettingsService.getInstance();
   private searchController: FocusController = new FocusController();
+  private listScroller: ListScroller = new ListScroller();
 
 
 
@@ -191,6 +192,7 @@ struct DatabaseView {
             this.newGroupName = this.groups[index].name;
             this.dialogController.open()
           }
+          this.listScroller.closeAllSwipeActions();
         })
       Button($r('app.string.move_button_text'), { type: ButtonType.Normal })
         .width(80)
@@ -205,6 +207,7 @@ struct DatabaseView {
           } else if (item instanceof KdbxEntry) {
             this.moveParam = new MoveParam(item.parentGroup?.uuid.id || '', item.uuid.id);
           }
+          this.listScroller.closeAllSwipeActions();
         })
       Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
         .width(80)
@@ -213,6 +216,7 @@ struct DatabaseView {
         .fontColor($r('app.color.text_primary'))
         .fontSize(14)
         .onClick(() => {
+          this.listScroller.closeAllSwipeActions();
           this.getUIContext().showAlertDialog({
             title: $r("app.string.dialog_confirm_title"),
             message: $r("app.string.dialog_delete_confirm_message"),
@@ -566,7 +570,7 @@ struct DatabaseView {
           .backgroundColor($r("app.color.bg_primary"))
         } else {
           // 数据库内容
-          List({ space: 8 }) {
+          List({ space: 8, scroller: this.listScroller }) {
             ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
               ListItem() {
                 Row() {
@@ -597,7 +601,7 @@ struct DatabaseView {
                 .width('100%')
                 .height(60)
                 .borderRadius(8)
-                .backgroundColor($r("app.color.card_bg"))
+                .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
                   this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
@@ -641,7 +645,7 @@ struct DatabaseView {
                 .width('100%')
                 .height(60)
                 .borderRadius(8)
-                .backgroundColor($r("app.color.card_bg"))
+                .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :$r("app.color.card_bg"))
                 .padding({ left: 10, right: 10 })
                 .onClick(() => {
                   this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
@@ -661,7 +665,7 @@ struct DatabaseView {
             left: 12,
             right: 12,
             top: 12,
-            bottom: 40
+            bottom: 100
           })
           .scrollBar(BarState.Auto)
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
