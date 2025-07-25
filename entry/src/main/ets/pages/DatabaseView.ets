@@ -518,7 +518,7 @@ struct DatabaseView {
             ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
               ListItem() {
                 Row() {
-                  Image(KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                  Image(itemEntry.times.expires ? $r('app.media.ic_color_expiry_time') : KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
                     .width(28)
                     .height(28)
                     .margin(10)
@@ -527,10 +527,12 @@ struct DatabaseView {
                       .fontSize(18)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
+                      .decoration({ type: (itemEntry.times.expires ?  TextDecorationType.LineThrough : TextDecorationType.None)})
                     Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
                       .fontSize(12)
                       .textAlign(TextAlign.Start)
                       .flexGrow(1)
+                      .decoration({ type: (itemEntry.times.expires ?  TextDecorationType.LineThrough : TextDecorationType.None)})
                   }
                   .flexGrow(1)
                   .alignItems(HorizontalAlign.Start)
