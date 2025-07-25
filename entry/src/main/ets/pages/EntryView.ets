@@ -416,17 +416,20 @@ struct EntryView {
                 EntryViewFieldItem({ field: field, entry: this.entry })
               }
             })
+
+            ListItem() {
+              Row()
+                .height(100)
+                .width('100%')
+                .backgroundColor(Color.Transparent)
+            }
           }
           .height('100%')
           .width('100%')
-          .padding({
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: 50
-          })
+          .padding({left: 16,right: 16,top: 12,bottom: 0})
           .layoutWeight(1)
           .backgroundColor($r("app.color.bg_primary"))
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
           // 操作按钮
           Row() {
@@ -474,19 +477,14 @@ struct EntryView {
             .width('45%')
             .height(40)
             .borderRadius(16)
-            .backgroundColor($r('app.color.card_bg'))
+            .backgroundColor(Color.Gray)
             .onClick(() => {
               this.deleteHistory();
             })
           }
           .width('100%')
           .height(45)
-          .padding({
-            top: 12,
-            bottom: 12,
-            left: 16,
-            right: 16
-          })
+          .padding({top: 12,bottom: 0,left: 16,right: 16})
           .position({ x: 0, y: '100%' })
           .translate({ y: -45 }) // 调整位置，确保正确显示
         } else {
