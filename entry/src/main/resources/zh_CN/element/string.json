@@ -620,11 +620,11 @@
     },
     {
       "name": "rollback_button_text",
-      "value": "回滚"
+      "value": "还原"
     },
     {
       "name": "dialog_rollback_confirm_message",
-      "value": "您确认要回滚吗？"
+      "value": "您确认要还原吗？"
     },
     {
       "name": "override_url",
@@ -649,6 +649,10 @@
     {
       "name": "load_save_database",
       "value": "保存数据库..."
+    },
+    {
+      "name": "move_button_text",
+      "value": "移动"
     }
   ]
 }
