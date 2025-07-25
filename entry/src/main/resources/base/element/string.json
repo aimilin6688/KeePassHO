@@ -651,6 +651,22 @@
     {
       "name": "move_button_text",
       "value": "Move"
+    },
+    {
+      "name": "operation_failed",
+      "value": "Operation failed"
+    },
+    {
+      "name": "operation_success",
+      "value": "Operation success"
+    },
+    {
+      "name": "cannot_move_to_child",
+      "value": "Cannot move to child group!"
+    },
+    {
+      "name": "move_here",
+      "value": "Move to here"
     }
   ]
 }
