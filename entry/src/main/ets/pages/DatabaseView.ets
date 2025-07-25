@@ -657,16 +657,18 @@ struct DatabaseView {
                 }
               })
             }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+
+            ListItem() {
+              Row()
+                .height(100)
+                .width('100%')
+                .backgroundColor(Color.Transparent)
+            }
           }
           .width('100%')
           .height('100%')
           .backgroundColor($r("app.color.bg_primary"))
-          .padding({
-            left: 12,
-            right: 12,
-            top: 12,
-            bottom: 100
-          })
+          .padding({left: 12,right: 12,top: 12,bottom: 0})
           .scrollBar(BarState.Auto)
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
         }
@@ -792,7 +794,7 @@ struct DatabaseView {
         }
         .width('100%')
         .height(45)
-        .padding({ top: 12,bottom: 8, left: 16, right: 16})
+        .padding({ top: 12,bottom: 0, left: 16, right: 16})
         .position({ x: 0, y: '100%' })
         .translate({ y: -45 })
         .justifyContent(FlexAlign.Center)
