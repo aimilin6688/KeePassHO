@@ -639,6 +639,14 @@
     {
       "name": "expiry_time",
       "value": "Expiry Time"
+    },
+    {
+      "name": "load_save_history",
+      "value": "Save history..."
+    },
+    {
+      "name": "load_save_database",
+      "value": "Save database..."
     }
   ]
 }
