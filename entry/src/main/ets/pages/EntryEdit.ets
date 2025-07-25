@@ -12,6 +12,7 @@ import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import ResourceManager from '../common/utils/ResourceManager';
 import DateUtils from '../common/utils/DateUtils';
+import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -43,6 +44,7 @@ struct EntryEdit {
   @State tags: string = ''; // 标签，以逗号分隔
   @State expiryTime: Date | undefined = undefined; // 过期时间
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
+  @State loadingMessage:string =  ResourceManager.getString($r('app.string.loading_message'));
 
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
@@ -93,6 +95,16 @@ struct EntryEdit {
     alignment: DialogAlignment.Bottom,
     customStyle: true,
     autoCancel: true
+  });
+
+  // 带内容的进度弹框
+  loadingDialogController: CustomDialogController = new CustomDialogController({
+    builder: ContextLoadingDialog({
+      loadingMessage: this.loadingMessage,
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
   });
 
 
@@ -238,11 +250,13 @@ struct EntryEdit {
       return;
     }
     this.isLoading = true;
+    this.loadingDialogController.open();
 
     try {
       if (this.isEditMode && this.entry) {
         // 添加到历史记录中
         this.entry.pushHistory();
+        this.loadingMessage =  ResourceManager.getString($r('app.string.load_save_history'));
         // 清除旧的自定义字段（除了标准字段外的所有字段）
         this.entry.fields.forEach((value, key) => {
           if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, 
@@ -289,6 +303,7 @@ struct EntryEdit {
         duration: 2000
       });
       this.isLoading = false;
+      this.loadingDialogController.close();
     }
   }
 
@@ -328,9 +343,11 @@ struct EntryEdit {
    */
   private saveDatabase() {
     if (this.database) {
+      this.loadingMessage =  ResourceManager.getString($r('app.string.load_save_database'));
       KdbxUtils.saveDatabase().then(() => {
         this.promptAction.showToast({ message: $r('app.string.save_success_message') });
         this.isLoading = false;
+        this.loadingDialogController.close();
         this.router.back();
       }).catch(this.handleSaveError);
     }
@@ -344,6 +361,7 @@ struct EntryEdit {
     hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
     this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
     this.isLoading = false;
+    this.loadingDialogController.close();
   }
 
   /**
