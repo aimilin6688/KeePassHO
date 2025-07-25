@@ -189,7 +189,15 @@ struct DatabaseView {
             this.dialogController.open()
           }
         })
+      Button($r('app.string.move_button_text'), { type: ButtonType.Normal })
+        .width(80)
+        .height(60)
+        .fontColor($r('app.color.text_primary'))
+        .backgroundColor($r('app.color.yellow'))
+        .fontSize(14)
+        .onClick(() => {
 
+        })
       Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
         .width(80)
         .height(60)
