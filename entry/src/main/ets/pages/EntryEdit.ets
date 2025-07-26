@@ -562,16 +562,35 @@ struct EntryEdit {
       this.isModified = true;
       return;
     }
+    // 自定义字段删除
+    let customKeys = this.customFields.map((item) => item.key);
+    for (let key of this.entry.fields.keys()){
+      if (this.standardFields.includes(key)) {
+        continue;
+      }
+      if(!customKeys.includes(key)){
+        this.isModified = true;
+        return;
+      }
+    }
+
+
     for(let item of this.customFields){
       // 标准字段不计入
       if (this.standardFields.includes(item.key)) {
-        return;
+        continue;
       }
       if(!this.entry.fields.has(item.key)) {
         this.isModified = true;
         return;
       }
       if(KdbxUtils.getFieldValueString(this.entry.fields, item.key) != item.value){
+        this.isModified = true;
+        return;
+      }
+      // 保护类型变更
+      let entryProtected = this.entry.fields.get(item.key) instanceof ProtectedValue;
+      if(entryProtected != item.isProtected){
         this.isModified = true;
         return;
       }
