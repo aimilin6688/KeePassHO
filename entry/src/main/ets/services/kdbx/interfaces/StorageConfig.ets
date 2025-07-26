@@ -16,3 +16,49 @@ export class LocalFileStorageConfig implements StorageConfig {
     this.size = size;
   }
 }
+
+/**
+ * WebDAV存储配置选项类
+ */
+export interface WebDAVStorageConfigOptions{
+  rootPath?: string;
+  timeout?: number;
+}
+
+/**
+ * WebDAV存储配置类
+ */
+export class WebDAVStorageConfig implements StorageConfig {
+  /**
+   * 服务器URL
+   */
+  url: string;
+
+  /**
+   * 用户名
+   */
+  username: string;
+
+  /**
+   * 密码
+   */
+  password: string;
+
+  /**
+   * 根路径（可选）
+   */
+  rootPath?: string;
+
+  /**
+   * 超时时间（毫秒，可选）
+   */
+  timeout?: number;
+
+  constructor(url: string, username: string, password: string, options?: WebDAVStorageConfigOptions) {
+    this.url = url;
+    this.username = username;
+    this.password = password;
+    this.rootPath = options?.rootPath;
+    this.timeout = options?.timeout;
+  }
+}

@@ -12,6 +12,10 @@
       {
         "name" : "ohos.permission.FILE_ACCESS_PERSIST",
         "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
+      },
+      {
+        "name" : "ohos.permission.INTERNET",
+        "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
       }
     ],
     "deliveryWithInstall": true,
