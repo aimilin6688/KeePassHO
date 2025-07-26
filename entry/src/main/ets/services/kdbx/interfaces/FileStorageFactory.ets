@@ -1,5 +1,6 @@
 import { IFileStorage } from './IFileStorage';
 import { LocalFileStorage } from './impl/LocalFileStorage';
+import { WebDAVStorage } from './impl/WebDAVStorage';
 import { StorageType } from './StorageType';
 
 /**
@@ -13,6 +14,7 @@ export class FileStorageFactory {
   private constructor() {
     // 注册默认的存储实现
     this.registerStorage(StorageType.LOCAL, new LocalFileStorage());
+    this.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
   }
 
   /**

@@ -1,8 +1,17 @@
+import { StorageConfig } from ".";
+
 /**
  * 文件存储接口
  * 定义了文件操作的基本行为，支持不同的存储方式（本地文件、WebDAV、FTP等）
  */
 export interface IFileStorage {
+
+  /**
+   * 初始化存储配置
+   * @param config
+   */
+  init(config: StorageConfig): void;
+
   /**
    * 读取文件内容
    * @param path 文件路径

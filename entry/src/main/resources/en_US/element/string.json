@@ -141,7 +141,7 @@
       "value": "Delete"
     },
     {
-      "name": "confirm_buttom_text",
+      "name": "confirm_button_text",
       "value": "OK"
     },
     {
@@ -667,6 +667,30 @@
     {
       "name": "move_here",
       "value": "Move to here"
+    },
+    {
+      "name": "test_connection",
+      "value": "Test connection"
+    },
+    {
+      "name": "fill_all_info",
+      "value": "Fill all Info"
+    },
+    {
+      "name": "connecting",
+      "value": "Connecting..."
+    },
+    {
+      "name": "connection_success",
+      "value": "Connection success"
+    },
+    {
+      "name": "connection_failed",
+      "value": "Connection failed"
+    },
+    {
+      "name": "file_is_folder",
+      "value": "Please select file url"
     }
   ]
 }

@@ -141,7 +141,7 @@
       "value": "删除"
     },
     {
-      "name": "confirm_buttom_text",
+      "name": "confirm_button_text",
       "value": "确定"
     },
     {
@@ -512,7 +512,7 @@
     },
     {
       "name": "file_not_exists",
-      "value": "文件不存在或已被移动"
+      "value": "文件不存在"
     },
     {
       "name": "all_records_cleared",
@@ -669,6 +669,30 @@
     {
       "name": "move_here",
       "value": "移动到此处"
+    },
+    {
+      "name": "test_connection",
+      "value": "测试连接"
+    },
+    {
+      "name": "fill_all_info",
+      "value": "请输入全部信息"
+    },
+    {
+      "name": "connecting",
+      "value": "连接中..."
+    },
+    {
+      "name": "connection_success",
+      "value": "连接成功"
+    },
+    {
+      "name": "connection_failed",
+      "value": "连接失败"
+    },
+    {
+      "name": "file_is_folder",
+      "value": "Please select file url"
     }
   ]
 }

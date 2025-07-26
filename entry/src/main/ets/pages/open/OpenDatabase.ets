@@ -93,14 +93,14 @@ struct OpenDatabase {
               }
             )
 
-            // this.OpenMethodButton(
-            //   $r('app.media.ic_cloud'),
-            //   $r('app.string.webdav_button_title'),
-            //   $r('app.string.webdav_button_description'),
-            //   () => {
-            //     this.router.pushUrl({ url: 'pages/open/WebDAV' })
-            //   }
-            // )
+            this.OpenMethodButton(
+              $r('app.media.ic_cloud'),
+              $r('app.string.webdav_button_title'),
+              $r('app.string.webdav_button_description'),
+              () => {
+                this.router.pushUrl({ url: 'pages/open/WebDAV' })
+              }
+            )
 
           }
           .backgroundColor($r("app.color.card_bg"))

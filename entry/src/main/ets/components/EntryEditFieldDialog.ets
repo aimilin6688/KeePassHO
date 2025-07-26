@@ -167,7 +167,7 @@ export struct EntryEditFieldDialog {
             this.cancel();
           })
 
-        Button($r("app.string.confirm_buttom_text"))
+        Button($r("app.string.confirm_button_text"))
           .width('45%')
           .height(40)
           .fontSize(16)
