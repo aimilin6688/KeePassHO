@@ -1,15 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Envelope -->
-  <path d="M3 7 L3 17 L21 17 L21 7 Z" fill="#E6F2FF" stroke="#4682B4" stroke-width="1"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- 信封主体 -->
+  <rect x="2" y="5" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#2196F3" stroke-width="1.5"/>
 
-  <!-- Letter Lines -->
-  <path d="M6 10 L18 10" stroke="#4682B4" stroke-width="0.8"/>
-  <path d="M6 12 L15 12" stroke="#4682B4" stroke-width="0.8"/>
-  <path d="M6 14 L12 14" stroke="#4682B4" stroke-width="0.8"/>
+  <!-- 信封顶部折叠线 -->
+  <path d="M2,5 L12,12 L22,5" fill="none" stroke="#2196F3" stroke-width="1.5"/>
 
-  <!-- Stamp -->
-  <rect x="16" y="9" width="2" height="2" rx="0.3" ry="0.3" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
+  <!-- 信封底部折叠线 -->
+  <path d="M2,19 L9,13 M22,19 L15,13" fill="none" stroke="#2196F3" stroke-width="1.5"/>
 
-  <!-- Envelope Flap Shadow -->
-  <path d="M3 7 L12 13 L21 7" fill="none" stroke="#1E3F66" stroke-width="0.5" stroke-opacity="0.3"/>
+  <!-- 信封中间的邮件标志 -->
+  <path d="M12,12 L12,12 L2,5 L2,19 L22,19 L22,5 L12,12 Z" fill="#E3F2FD" stroke="none"/>
+
+  <!-- 装饰性元素：小红点 -->
+  <circle cx="19" cy="7" r="1.5" fill="#F44336"/>
 </svg>
