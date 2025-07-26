@@ -18,6 +18,6 @@
   <path d="M13.5 18L12.5 20H14.5L13.5 18Z" fill="#FF9800" />
 
   <!-- 翅膀/手臂 -->
-  <path d="M8.5 12C7.5 12.5 6.5 13.5 6 15" stroke="#2D2D2D" stroke-width="0.75" stroke-linecap="round" />
-  <path d="M15.5 12C16.5 12.5 17.5 13.5 18 15" stroke="#2D2D2D" stroke-width="0.75" stroke-linecap="round" />
+  <path d="M8.5 12C7.5 12.5 6.5 13.5 6 15" stroke="#FF9800" stroke-width="0.95" stroke-linecap="round" />
+  <path d="M15.5 12C16.5 12.5 17.5 13.5 18 15" stroke="#FF9800" stroke-width="0.95" stroke-linecap="round" />
 </svg>
