@@ -617,7 +617,7 @@ struct DatabaseView {
             ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
               ListItem() {
                 Row() {
-                  Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.ic_color_expiry_time') : KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                  Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') : KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
                     .width(28)
                     .height(28)
                     .margin(10)
