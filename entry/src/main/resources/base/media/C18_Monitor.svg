@@ -1,17 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Monitor Screen -->
-  <rect x="4" y="3" width="16" height="12" rx="1" ry="1" fill="#D3D3D3" stroke="#808080" stroke-width="1"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- 显示器底座 -->
+  <path d="M8,18 L16,18 L15,20 L9,20 Z" fill="#333333" stroke="#222222" stroke-width="0.5"/>
 
-  <!-- Screen Content -->
-  <rect x="6" y="5" width="12" height="8" fill="#FFFFFF" stroke="#808080" stroke-width="0.5"/>
-  <path d="M8 7 L16 7" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 9 L14 9" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 11 L12 11" stroke="#4682B4" stroke-width="1"/>
+  <!-- 显示器支架 -->
+  <rect x="11" y="16" width="2" height="2" fill="#444444" stroke="#333333" stroke-width="0.5"/>
 
-  <!-- Monitor Stand -->
-  <rect x="10" y="15" width="4" height="2" fill="#A9A9A9" stroke="#696969" stroke-width="1"/>
-  <rect x="9" y="17" width="6" height="1" fill="#696969" stroke="#2F4F4F" stroke-width="0.5"/>
+  <!-- 显示器主体 -->
+  <rect x="4" y="4" width="16" height="12" rx="1" fill="#555555" stroke="#444444" stroke-width="0.5"/>
 
-  <!-- Power Button -->
-  <circle cx="19" cy="5" r="0.8" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
+  <!-- 显示器屏幕 -->
+  <rect x="5" y="5" width="14" height="10" rx="0.5" fill="#2196F3" stroke="none"/>
+
+
+  <!-- 电源指示灯 -->
+  <circle cx="19" cy="15.5" r="0.5" fill="#4CAF50"/>
 </svg>
