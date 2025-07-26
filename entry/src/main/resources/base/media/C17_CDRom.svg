@@ -1,16 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- CD/DVD Drive -->
-  <rect x="4" y="8" width="16" height="8" rx="1" ry="1" fill="#C0C0C0" stroke="#808080" stroke-width="1"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- CD ROM 外圈 -->
+  <circle cx="12" cy="12" r="10" fill="url(#silver-gradient)" stroke="#666666" stroke-width="0.5"/>
 
-  <!-- CD/DVD Disc -->
-  <circle cx="12" cy="12" r="5" fill="#4169E1" stroke="#1E3F66" stroke-width="1"/>
-  <circle cx="12" cy="12" r="1.5" fill="#FFFFFF" stroke="#1E3F66" stroke-width="0.5"/>
+  <!-- 数据轨道 -->
+  <circle cx="12" cy="12" r="8" fill="none" stroke="url(#rainbow-gradient)" stroke-width="0.5" opacity="0.7"/>
+  <circle cx="12" cy="12" r="4" fill="none" stroke="url(#rainbow-gradient)" stroke-width="0.5" opacity="0.7"/>
 
-  <!-- Disc Details -->
-  <path d="M12 7 L12 17" stroke="#1E3F66" stroke-width="0.5" stroke-dasharray="0.5,0.5"/>
-  <path d="M7 12 L17 12" stroke="#1E3F66" stroke-width="0.5" stroke-dasharray="0.5,0.5"/>
+  <!-- CD 中心孔 -->
+  <circle cx="12" cy="12" r="2" fill="#333333" stroke="#666666" stroke-width="0.5"/>
 
-  <!-- Drive Button -->
-  <circle cx="18" cy="12" r="1" fill="#FF6347" stroke="#8B0000" stroke-width="0.5"/>
+  <!-- 渐变定义 -->
+  <defs>
+    <!-- 银色渐变 -->
+    <linearGradient id="silver-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EEEEEE"/>
+      <stop offset="50%" stop-color="#CCCCCC"/>
+      <stop offset="100%" stop-color="#DDDDDD"/>
+    </linearGradient>
 
+    <!-- 彩虹渐变 -->
+    <linearGradient id="rainbow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF0000"/>
+      <stop offset="16.67%" stop-color="#FF9900"/>
+      <stop offset="33.33%" stop-color="#FFFF00"/>
+      <stop offset="50%" stop-color="#00FF00"/>
+      <stop offset="66.67%" stop-color="#0099FF"/>
+      <stop offset="83.33%" stop-color="#0000FF"/>
+      <stop offset="100%" stop-color="#9900FF"/>
+    </linearGradient>
+  </defs>
 </svg>
