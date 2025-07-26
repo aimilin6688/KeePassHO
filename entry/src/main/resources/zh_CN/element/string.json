@@ -692,7 +692,7 @@
     },
     {
       "name": "file_is_folder",
-      "value": "Please select file url"
+      "value": "当前文件为文件夹"
     }
   ]
 }
