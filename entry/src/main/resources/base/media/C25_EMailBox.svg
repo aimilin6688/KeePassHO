@@ -1,21 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Mailbox Body -->
-  <rect x="6" y="8" width="12" height="12" fill="#4682B4" stroke="#1E3F66" stroke-width="1"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- 收件箱主体 - 蓝色 -->
+  <rect x="2" y="6" width="20" height="14" rx="2" fill="#4285F4" />
+  <!-- 邮件 - 白色 -->
+  <path d="M3 8L12 14L21 8" stroke="#FFFFFF" stroke-width="1.5" fill="none" />
 
-  <!-- Mailbox Flag -->
-  <rect x="16" y="4" width="2" height="10" fill="#FF0000" stroke="#8B0000" stroke-width="1"/>
-  <rect x="16" y="4" width="4" height="2" fill="#FF0000" stroke="#8B0000" stroke-width="1"/>
-
-  <!-- Mail Slot -->
-  <rect x="9" y="8" width="6" height="1" fill="#1E3F66" stroke="#000000" stroke-width="0.5"/>
-
-  <!-- Mail Inside -->
-  <path d="M8 12 L16 12 L12 16 Z" fill="#87CEEB" stroke="#1E3F66" stroke-width="0.5"/>
-
-  <!-- Mail Symbol -->
-  <path d="M12 12 L12 15" stroke="#FFFFFF" stroke-width="1"/>
-  <path d="M10 14 L14 14" stroke="#FFFFFF" stroke-width="1"/>
-
-  <!-- Post -->
-  <rect x="11" y="8" width="2" height="16" fill="#8B4513" stroke="#654321" stroke-width="1"/>
+  <!-- 下载箭头指示收件 - 绿色 -->
+  <path d="M12 10V17M12 17L9 14M12 17L15 14" stroke="#34A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 </svg>
