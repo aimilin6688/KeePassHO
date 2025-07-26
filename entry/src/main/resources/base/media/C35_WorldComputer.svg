@@ -9,11 +9,6 @@
   <circle cx="12" cy="12" r="3" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
   <path d="M12 9 L12 15 M9 12 L15 12" stroke="#FFFFFF" stroke-width="0.5"/>
 
-  <!-- Network Lines -->
-  <path d="M6 6 L2 2" stroke="#808080" stroke-width="1" stroke-linecap="round"/>
-  <path d="M12 4 L12 2" stroke="#808080" stroke-width="1" stroke-linecap="round"/>
-  <path d="M18 6 L22 2" stroke="#808080" stroke-width="1" stroke-linecap="round"/>
-
   <!-- Stand -->
   <rect x="10" y="18" width="4" height="2" fill="#C0C0C0" stroke="#808080" stroke-width="0.5"/>
 </svg>
