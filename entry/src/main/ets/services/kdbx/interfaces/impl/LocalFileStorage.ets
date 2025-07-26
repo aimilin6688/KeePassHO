@@ -3,6 +3,7 @@ import { FileInfo, IFileStorage } from '../IFileStorage';
 import FileUtils from '../../../../common/utils/FIleUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { StorageConfig } from '..';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
@@ -12,6 +13,13 @@ const TAG = 'LocalFileStorage';
  * 使用鸿蒙系统的文件API实现本地文件的读写操作
  */
 export class LocalFileStorage implements IFileStorage {
+
+  /**
+   * 初始化
+   * @param config
+   */
+  init(config: StorageConfig): void {
+  }
   /**
    * 读取文件内容
    * @param path 文件路径

@@ -147,7 +147,7 @@ export struct AddGroupDialog {
           .height(40)
           .borderRadius(16)
         
-        Button($r('app.string.confirm_buttom_text'))
+        Button($r("app.string.confirm_button_text"))
           .enabled(this.newGroupName.trim().length > 0)
           .onClick(() => {
             this.controller.close()

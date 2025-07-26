@@ -64,6 +64,10 @@
     {
       "name": "icon_normal",
       "value": "#333333"
+    },
+    {
+      "name": "success",
+      "value": "#89c812"
     }
   ]
 }
