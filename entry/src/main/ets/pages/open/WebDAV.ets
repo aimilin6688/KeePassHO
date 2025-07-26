@@ -1,10 +1,11 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileStorageFactory, StorageType } from '../../services/kdbx/interfaces';
 import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
-import { promptAction } from '@kit.ArkUI';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FileService } from '../../services/FileService';
+import { RecentFilesService } from '../../services/RecentFilesService';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -16,10 +17,10 @@ struct WebDAV {
   @State url: string = 'https://dav.jianguoyun.com/dav/MyFiles/';
   @State username: string = 'aimilin@yeah.net';
   @State password: string = 'a77u9ewde6gyaqxg';
+  @State isLoading: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
   @State isErrorStatus: boolean = false;
-
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -27,12 +28,9 @@ struct WebDAV {
 
   // 测试WebDAV连接
   private async testConnection() {
-    if (!this.url || !this.username || !this.password) {
-      this.connectionStatus = ResourceManager.getString($r('app.string.fill_all_info'));
-      this.isErrorStatus = true;
+    if (!this.checkParam()) {
       return;
     }
-
     this.isConnecting = true;
     this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
     this.isErrorStatus = false;
@@ -42,15 +40,15 @@ struct WebDAV {
       storage.init(new WebDAVStorageConfig(this.url, this.username, this.password));
       // 简单测试连接
       storage.exists(this.url).then(result => {
-        if(result){
+        if (result) {
           this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
           this.isErrorStatus = false;
-        }else{
+        } else {
           this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
           this.isErrorStatus = true;
           hilog.error(DOMAIN, TAG, 'webdav connection error: %{public}s', this.connectionStatus);
         }
-      }).catch((error:Error) =>{
+      }).catch((error: Error) => {
         this.connectionStatus = error.message;
         this.isErrorStatus = true;
         hilog.error(DOMAIN, TAG, 'webdav connection error: %{public}s', this.connectionStatus);
@@ -61,11 +59,69 @@ struct WebDAV {
   }
 
   // 保存WebDAV配置
-  private saveConfig() {
-    if (!this.url || !this.username || !this.password) {
-      this.promptAction.showToast({ message:  ResourceManager.getString($r('app.string.fill_all_info'))});
+  private async saveConfig() {
+    if (!this.checkParam()) {
       return;
     }
+    this.isConnecting = true;
+    try {
+      // 获取文件信息
+      const fileInfo = await this.fileManager.getKdbxFileInfo(this.url);
+      hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+
+      // 本地配置信息
+      const storageConfig = new WebDAVStorageConfig(this.url, this.username, this.password);
+      // 设置文件参数
+      FileService.getInstance()
+        .setFileParam({
+          filePath: this.url,
+          fileName: fileInfo.name,
+          storageType: StorageType.WEBDAV,
+          storageConfig: storageConfig
+        });
+      // 添加到最近打开的文件列表
+      RecentFilesService.getInstance()
+        .addRecentFile({
+          filePath: this.url,
+          fileName: fileInfo.name,
+          storageType: StorageType.WEBDAV,
+          storageConfig: storageConfig
+        });
+      // 导航到密码输入页面
+      this.router.pushUrl({
+        url: 'pages/Password'
+      });
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
+      this.promptAction.showToast({
+        message: error.message,
+        duration: 3000
+      });
+    }finally {
+      this.isConnecting = false;
+    }
+  }
+
+  /**
+   * 校验参数合法性
+   */
+  private checkParam(): boolean {
+    if (!this.url) {
+      this.connectionStatus = ResourceManager.getString($r('app.string.url_placeholder'));
+      this.isErrorStatus = true;
+      return false;
+    }
+    if (!this.username) {
+      this.connectionStatus = ResourceManager.getString($r('app.string.username_placeholder'));
+      this.isErrorStatus = true;
+      return false;
+    }
+    if (!this.password) {
+      this.connectionStatus = ResourceManager.getString($r('app.string.password_placeholder'));
+      this.isErrorStatus = true;
+      return false;
+    }
+    return true;
   }
 
   build() {
@@ -101,7 +157,7 @@ struct WebDAV {
             .margin({ top: 20, left: 16 })
             .fontColor($r('app.color.text_primary'))
             .textAlign(TextAlign.Start)
-          TextInput({text:this.url, placeholder: $r('app.string.url_placeholder') })
+          TextInput({ text: this.url, placeholder: $r('app.string.url_placeholder') })
             .height(40)
             .margin({ top: 20 })
             .fontColor($r('app.color.text_primary'))
@@ -118,7 +174,7 @@ struct WebDAV {
             .margin({ top: 20, left: 16 })
             .fontColor($r('app.color.text_primary'))
             .textAlign(TextAlign.Start)
-          TextInput({ text:this.username, placeholder: $r('app.string.username_placeholder') })
+          TextInput({ text: this.username, placeholder: $r('app.string.username_placeholder') })
             .height(40)
             .margin({ top: 20 })
             .fontColor($r('app.color.text_primary'))
@@ -134,7 +190,7 @@ struct WebDAV {
             .margin({ top: 20, left: 16 })
             .fontColor($r('app.color.text_primary'))
             .textAlign(TextAlign.Start)
-          TextInput({text:this.password,  placeholder: $r('app.string.password_placeholder') })
+          TextInput({ text: this.password, placeholder: $r('app.string.password_placeholder') })
             .height(40)
             .type(InputType.Password)
             .margin({ top: 20 })
@@ -152,7 +208,23 @@ struct WebDAV {
               .fontColor(this.isErrorStatus ? $r('app.color.danger') : $r('app.color.success'))
           }
 
-          Row(){
+          // 加载中状态
+          if (this.isConnecting) {
+            Row(){
+              LoadingProgress()
+                .width(50)
+                .height(50)
+                .color($r('app.color.text_primary'))
+
+              Text($r('app.string.connecting'))
+                .fontSize(16)
+                .margin({ top: 16 })
+                .fontColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+          }
+
+          Row() {
             // 测试连接按钮
             Button($r('app.string.test_connection'))
               .height(40)
