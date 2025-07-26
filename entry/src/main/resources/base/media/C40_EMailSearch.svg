@@ -5,9 +5,6 @@
   <!-- Envelope Flap -->
   <path d="M4 6 L10 10 L16 6" fill="#E0E0E0" stroke="#4682B4" stroke-width="1"/>
 
-  <!-- Envelope Line -->
-  <path d="M4 15 L10 11 L16 15" fill="none" stroke="#4682B4" stroke-width="0.5"/>
-
   <!-- Magnifying Glass -->
   <circle cx="17" cy="14" r="3" fill="none" stroke="#FF6347" stroke-width="1.5"/>
   <line x1="19" y1="16" x2="21" y2="18" stroke="#FF6347" stroke-width="2"/>
