@@ -8,11 +8,7 @@
   <!-- Key 2 -->
   <path d="M12 9 L12 14 L14 14 L14 13 L15 13 L15 14 L16 14 L16 12 L15 11 L16 10 L16 9 Z" fill="#FFA500" stroke="#B8860B" stroke-width="1"/>
 
-  <!-- Key 3 -->
-  <path d="M14 7 L18 11 L18 13 L16 13 L16 12 L15 12 L15 13 L14 13 L14 11 L15 10 L14 9 Z" fill="#DAA520" stroke="#B8860B" stroke-width="1"/>
-
   <!-- Key Details -->
   <circle cx="8" cy="11" r="0.5" fill="#B8860B"/>
   <circle cx="14" cy="11" r="0.5" fill="#B8860B"/>
-  <circle cx="16" cy="11" r="0.5" fill="#B8860B"/>
 </svg>
