@@ -98,8 +98,8 @@ export class WebDavClient {
   /**
    * 重新获取连接
    */
-  public connection(){
-    if(this.config != null) {
+  public connection() {
+    if (this.config != null) {
       this.updateOptions(this.config);
     }
   }
@@ -133,12 +133,12 @@ export class WebDavClient {
       requestReturn.statusCode = resp.statusCode;
       requestReturn.headers = resp.headers;
       if (resp.statusCode === 401) {
-        requestReturn.message =  ResourceManager.getString($r("app.string.webdav_auth_failed"));
+        requestReturn.message = ResourceManager.getString($r("app.string.webdav_auth_failed"));
         requestReturn.success = false;
         return requestReturn;
       }
       if (resp.statusCode === 404) {
-        requestReturn.message =  ResourceManager.getString($r("app.string.webdav_not_found"));
+        requestReturn.message = ResourceManager.getString($r("app.string.webdav_not_found"));
         requestReturn.success = false;
         return requestReturn;
       }
@@ -153,7 +153,7 @@ export class WebDavClient {
         return requestReturn;
       }
       if (resp.statusCode === 409) {
-        requestReturn.message =  ResourceManager.getString($r("app.string.webdav_no_permission"));
+        requestReturn.message = ResourceManager.getString($r("app.string.webdav_no_permission"));
         requestReturn.success = false;
         return requestReturn;
       }
@@ -184,7 +184,7 @@ export class WebDavClient {
       if (err.code === 1007900028) {
         requestReturn.message = ResourceManager.getString($r("app.string.webdav_request_timeout"));
       } else {
-        requestReturn.message = ResourceManager.getString($r("app.string.webdav_error"), err.code ?? "",  errMsg);
+        requestReturn.message = ResourceManager.getString($r("app.string.webdav_error"), err.code ?? "", errMsg);
       }
     }
     return requestReturn;
@@ -223,8 +223,8 @@ export class WebDavClient {
         rr.data = items;
       } else {
         const dirs: WebDavResource[] = [];
-        for(let item of items) {
-          if(filter == 0){
+        for (let item of items) {
+          if (filter == 0) {
             dirs.push(item);
             continue;
           }
@@ -234,7 +234,7 @@ export class WebDavClient {
             continue;
           }
           // 文件
-          if (item.type === 'file' && filter === 2){
+          if (item.type === 'file' && filter === 2) {
             dirs.push(item);
           }
         }
@@ -300,10 +300,10 @@ export class WebDavClient {
    * @param path 路径
    * @returns 结果
    */
-  public async get(path:string): Promise<ResultInfo> {
+  public async get(path: string): Promise<ResultInfo> {
     const req = new rcp.Request(path, "GET", { "Depth": "0" });
     const rr = await this.request(req);
-    if(!rr.success) {
+    if (!rr.success) {
       return Promise.reject(rr);
     }
     return rr;
@@ -315,6 +315,31 @@ export class WebDavClient {
    */
   private getBase64Auth(): string {
     return CommonUtils.base64Encode(`${this.config?.username}:${this.config?.password}`)
+  }
+
+  /**
+   * 上传文件
+   * @param remoteUri
+   * @param fileBuffer
+   * @param progressCallback
+   * @returns
+   */
+  async upload(remoteUri: string, fileBuffer: ArrayBuffer,
+    progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
+    // 读取文件
+    const customHttpEventsHandler: rcp.HttpEventsHandler = {
+      onUploadProgress: (totalSize: number, transferredSize: number) => {
+        if (progressCallback) {
+          progressCallback(totalSize, transferredSize);
+        }
+      }
+    };
+    hilog.info(DOMAIN, TAG, `File upload url：${remoteUri}, size: ${fileBuffer.byteLength}`)
+    const req = new rcp.Request(remoteUri, "PUT", {}, fileBuffer, {}, {},
+      { tracing: { httpEventsHandler: customHttpEventsHandler } });
+    const rr = await this.request(req);
+    hilog.info(DOMAIN, TAG, "File upload success:" + (remoteUri) + ', ' + rr.statusCode);
+    return rr
   }
 
 

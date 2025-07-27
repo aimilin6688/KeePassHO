@@ -56,12 +56,18 @@ export class WebDAVStorage implements IFileStorage {
   }
 
   public async writeFile(path: string, data: ArrayBuffer): Promise<void> {
-    // try {
-    //   await this.client.putFileContents(path, data);
-    // } catch (error) {
-    //   console.error('WebDAV writeFile error:', error);
-    //   throw new Error('Failed to write file to WebDAV');
-    // }
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
+      return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
+    }
+    try {
+      await this.client.upload(path, data, (total, loaded) => {
+        hilog.debug(DOMAIN, TAG, 'WebDAV upload progress: %{public}d/%{public}d', loaded, total);
+      });
+    } catch (error) {
+      console.error('WebDAV writeFile error:', error);
+      throw new Error('Failed to write file to WebDAV');
+    }
   }
 
   /**

@@ -564,7 +564,7 @@
     },
     {
       "name": "load_file_success",
-      "value": "加载文件内容成功！"
+      "value": "加载内容成功"
     },
     {
       "name": "EntryEdit_invalid_db_or_group",
@@ -736,11 +736,15 @@
     },
     {
       "name": "webdav_not_file",
-      "value": "非文件，请输入文件URL地址"
+      "value": "请输入文件URL地址(非文件夹)"
     },
     {
       "name": "webdav_not_init",
       "value": "WebDAV 未初始化"
+    },
+    {
+      "name": "merging_database",
+      "value": "合并中..."
     }
   ]
 }
