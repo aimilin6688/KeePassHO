@@ -90,6 +90,11 @@ export interface DbFileParam {
    * 存储配置信息
    */
   storageConfig: StorageConfig;
+
+  /**
+   * 最后修改时间,单位为毫秒
+   */
+  modifiedTime: number;
 }
 
 /**

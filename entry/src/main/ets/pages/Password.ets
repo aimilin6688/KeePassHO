@@ -40,7 +40,6 @@ struct Password {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  private recentFileService = RecentFilesService.getInstance();
   private databaseWorker: worker.ThreadWorker | null = null;
 
   // 带内容的进度弹框
@@ -103,7 +102,7 @@ struct Password {
    * 数据库选择器打开
    */
   private openFileParam() {
-    let fileParam: FileParam = FileService.getInstance().getFileParam();
+    let fileParam: FileParam = FileService.getFileParam();
     // 获取从LocalFile页面传递的参数
     this.filePath = fileParam.filePath ?? '';
     this.fileName = fileParam.fileName ?? '';
@@ -120,7 +119,7 @@ struct Password {
       this.router.back();
     }
     // 获取最近打开记录
-    this.recentFileService.getRecentFile(filePath).then(recentFile => {
+    RecentFilesService.getRecentFile(filePath).then(recentFile => {
       if (recentFile) {
         this.fileName = recentFile.fileName;
         this.filePath = recentFile.filePath;
@@ -256,7 +255,7 @@ struct Password {
         let successMessage = data as SuccessMessage;
         this.init();
         this.putFileToRecentFile();
-        this.setFileParam(successMessage.data).then(() => {
+        this.setFileParam(successMessage).then(() => {
           this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
           this.router.pushUrl({ url: 'pages/DatabaseView' });
           setTimeout(() => {
@@ -295,14 +294,14 @@ struct Password {
   /**
    * 设置数据库文件信息
    */
-  private setFileParam(kdbxContent: ArrayBuffer): Promise<void> {
-    return KdbxUtils.arrayBufferToKdbx(kdbxContent, {
+  private setFileParam(successMessage:SuccessMessage): Promise<void> {
+    return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
     } as CredentialsParam).then((kdbx: Kdbx) => {
       // 设置数据库文件信息
-      FileService.getInstance().setDbFileParam({
+      FileService.setDbFileParam({
         filePath: this.filePath,
         password: this.password,
         fileName: this.fileName,
@@ -310,7 +309,8 @@ struct Password {
         keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
         authType: this.authType, // 添加认证类型
         storageType: this.storageType ?? StorageType.LOCAL,
-        storageConfig: this.storageConfig ?? {}
+        storageConfig: this.storageConfig ?? {},
+        modifiedTime: successMessage.modifiedTime
       })
     });
   }
