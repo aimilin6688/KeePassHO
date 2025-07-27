@@ -319,8 +319,8 @@ export class WebDavClient {
 
 
   /**
-   * 法进行使用系统上传方上传
-   * @param context
+   * 使用系统上传方上传
+   * @param context 上下文环境
    * @param name 文件名称
    * @param remoteUri 远端Uri地址
    * @param filePath 文件路径
@@ -379,7 +379,7 @@ export class WebDavClient {
         })
       } catch (error) {
         let err: BusinessError = error as BusinessError;
-        console.error(`Invoke uploadFile failed, code is ${err.code}, message is ${err.message}`);
+        hilog.error(DOMAIN, TAG, `Invoke uploadFile failed, code is ${err.code}, message is ${err.message}`);
         let rr: ResultInfo = {
           statusCode: err.code,
           success: false,
