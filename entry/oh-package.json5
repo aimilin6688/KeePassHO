@@ -6,8 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "kdbxweb": "^2.2.1",
-    "@dove/webdav": "^0.2.2"
+    "kdbxweb": "^2.2.1"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
