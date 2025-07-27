@@ -62,9 +62,9 @@ struct LocalFile {
       // 本地配置信息
       const  storageConfig = new LocalFileStorageConfig(fileInfo.size);
       // 设置文件参数
-      FileService.getInstance().setFileParam({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
+      FileService.setFileParam({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
       // 添加到最近打开的文件列表
-      RecentFilesService.getInstance().addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig});
+      RecentFilesService.addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig});
       // 导航到密码输入页面
       this.router.pushUrl({
         url: 'pages/Password'

@@ -28,7 +28,7 @@ export class CredentialsService {
       // 使用密码和密钥文件
       let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(param.keyFilePath);
       hilog.info(DOMAIN, TAG, 'Load key file content success, keyFilePath: %{public}s', param.keyFilePath);
-      credentials = new KdbxCredentials(ProtectedValue.fromString(param.password), keyFileContent);
+      credentials = new KdbxCredentials(ProtectedValue.fromString(param.password), keyFileContent.content);
     } else {
       // 仅使用密码
       credentials = new KdbxCredentials(ProtectedValue.fromString(param.password));
