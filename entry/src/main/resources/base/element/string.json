@@ -739,6 +739,10 @@
     {
       "name": "webdav_not_init",
       "value": "WebDAV not initialized"
+    },
+    {
+      "name": "merging_database",
+      "value": "Merging database..."
     }
   ]
 }
