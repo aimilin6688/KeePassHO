@@ -61,7 +61,7 @@ export interface FileInfo {
   /**
    * 最后修改时间
    */
-  modifiedTime: Date;
+  modifiedTime: number;
 
   /**
    * 文件路径

@@ -94,7 +94,7 @@ export class WebDAVStorage implements IFileStorage {
         return Promise.resolve({
           name: fileInfo.displayName,
           size: fileInfo.contentLength,
-          modifiedTime: new Date(fileInfo.lastModified),
+          modifiedTime: new Date(fileInfo.lastModified).getTime(),
           path: fileInfo.href
         } as FileInfo);
       } else {
