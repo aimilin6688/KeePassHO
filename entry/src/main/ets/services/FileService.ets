@@ -58,4 +58,8 @@ export class FileService {
   public getDbFileParam(): DbFileParam {
     return this.dbFileParam;
   }
+
+  public static getDbFileParam(): DbFileParam {
+    return FileService.instance.getDbFileParam();
+  }
 }

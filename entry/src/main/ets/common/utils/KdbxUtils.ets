@@ -356,9 +356,9 @@ export default class KdbxUtils {
    * @returns 结果信息
    */
   public static saveDatabase(): Promise<void> {
-    const dbFileParam = FileService.getInstance().getDbFileParam();
+    const dbFileParam = FileService.getDbFileParam();
     return dbFileParam.database.save().then(async savedDb => {
-      return new KdbxFileManager(dbFileParam.storageType).saveKdbxFile(dbFileParam.filePath, savedDb);
+      return new KdbxFileManager(dbFileParam.storageType, dbFileParam.storageConfig).saveKdbxFile(dbFileParam.filePath, savedDb);
     });
   }
 }
