@@ -55,7 +55,7 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> 
     hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
     throw new Error();
   }
-  let result = await new KdbxFileManager(request.storageType).loadKdbxFile(request.filePath);
+  let result = await new KdbxFileManager(request.storageType, request.storageConfig).loadKdbxFile(request.filePath);
   postMessage($r('app.string.load_file_success'));
   return result;
 }

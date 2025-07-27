@@ -1,7 +1,13 @@
-import { IFileStorage, StorageType, FileStorageFactory, getDefaultStorage } from './interfaces';
+import { IFileStorage, StorageType, FileStorageFactory, getDefaultStorage, StorageConfig } from './interfaces';
 // 导出FileInfo类型
 import { FileInfo } from './interfaces/IFileStorage';
-export { FileInfo };
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import ResourceManager from '../../common/utils/ResourceManager';
+
+
+const DOMAIN = 0x0000;
+const TAG = 'WebDavClient';
+
 /**
  * KDBX文件管理器
  * 用于处理KDBX文件的加载和保存
@@ -13,8 +19,11 @@ export class KdbxFileManager {
    * 构造函数
    * @param storageType 存储类型，默认为本地存储
    */
-  constructor(storageType: StorageType = StorageType.LOCAL) {
+  constructor(storageType: StorageType = StorageType.LOCAL, storageConfig?: StorageConfig) {
     this.storage = FileStorageFactory.getInstance().getStorage(storageType);
+    if(storageConfig) {
+      this.storage.init(storageConfig);
+    }
   }
 
   /**
@@ -28,13 +37,14 @@ export class KdbxFileManager {
       // 检查文件是否存在
       const exists = await this.storage.exists(path);
       if (!exists) {
-        throw new Error(`KDBX file does not exist: ${path}`);
+        hilog.error(DOMAIN, TAG, 'KDBX file does not exist: %{public}s', path);
+        throw new Error(ResourceManager.getString($r('app.string.file_not_exists')));
       }
-
       // 读取文件内容
       return this.storage.readFile(path);
     } catch (error) {
-      throw new Error(`Failed to load KDBX file: ${error.message}`);
+      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s', error.message)
+      throw new Error(error.message);
     }
   }
 
@@ -49,7 +59,8 @@ export class KdbxFileManager {
       // 写入文件内容
       return this.storage.writeFile(path, content);
     } catch (error) {
-      throw new Error(`Failed to save KDBX file: ${error.message}`);
+      hilog.error(DOMAIN, TAG, 'Failed to save KDBX file: %{public}s', error.message)
+      throw new Error(error.message);
     }
   }
 
@@ -63,7 +74,8 @@ export class KdbxFileManager {
     try {
       return await this.storage.getFileInfo(path);
     } catch (error) {
-      throw new Error(`Failed to get KDBX file info: ${error.message}`);
+      hilog.error(DOMAIN, TAG, 'Failed to get KDBX file info: %{public}s', error.message)
+      throw new Error(error.message);
     }
   }
 

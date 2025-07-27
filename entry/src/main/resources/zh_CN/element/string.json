@@ -693,6 +693,54 @@
     {
       "name": "file_is_folder",
       "value": "当前文件为文件夹"
+    },
+    {
+      "name": "webdav_request_error",
+      "value": "请求失败"
+    },
+    {
+      "name": "webdav_auth_failed",
+      "value": "用户名或密码错误"
+    },
+    {
+      "name": "webdav_not_found",
+      "value": "资源不存在"
+    },
+    {
+      "name": "webdav_file_exists",
+      "value": "已存在"
+    },
+    {
+      "name": "webdav_dir_not_exists",
+      "value": "目录不存在"
+    },
+    {
+      "name": "webdav_no_permission",
+      "value": "无权限"
+    },
+    {
+      "name": "webdav_server_error",
+      "value": "服务器异常"
+    },
+    {
+      "name": "webdav_server_full",
+      "value": "空间已满"
+    },
+    {
+      "name": "webdav_request_timeout",
+      "value": "请求超时"
+    },
+    {
+      "name": "webdav_error",
+      "value": "异常 %d %s"
+    },
+    {
+      "name": "webdav_not_file",
+      "value": "非文件，请输入文件URL地址"
+    },
+    {
+      "name": "webdav_not_init",
+      "value": "WebDAV 未初始化"
     }
   ]
 }
