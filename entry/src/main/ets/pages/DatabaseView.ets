@@ -254,19 +254,12 @@ struct DatabaseView {
    */
   private saveDatabase() {
     if (this.database) {
-      const dbFileParam = FileService.getInstance().getDbFileParam();
-      this.database.save().then(async savedDb => {
-        const fileManager = new KdbxFileManager(dbFileParam.storageType);
-        fileManager.saveKdbxFile(dbFileParam.filePath, savedDb).then(() => {
+      KdbxUtils.saveDatabase().then(() => {
           this.promptAction.showToast({ message: $r('app.string.save_success_message') });
         }).catch((error: Error) => {
           hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
           this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
         });
-      }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-        this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
-      });
     }
   }
 
