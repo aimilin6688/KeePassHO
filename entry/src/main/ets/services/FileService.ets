@@ -22,6 +22,10 @@ export class FileService {
     this.fileParam = fileParam;
   }
 
+  public static setFileParam(fileParam: FileParam): void {
+    FileService.instance.setFileParam(fileParam);
+  }
+
   public getFileParam(): FileParam {
     return this.fileParam;
   }
@@ -41,6 +45,10 @@ export class FileService {
 
   public setDbFileParam(dbFileParam: DbFileParam): void {
     this.dbFileParam = dbFileParam;
+  }
+
+  public static setDbFileParam(dbFileParam: DbFileParam): void {
+    FileService.instance.setDbFileParam(dbFileParam);
   }
 
   public getDbFileParam(): DbFileParam {
