@@ -1,11 +1,12 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { Kdbx, KdbxCredentials } from 'kdbxweb';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import { LoadDatabase, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './DatabaseLoadWorkerParam';
+import { LoadDatabase, SuccessMessage, toErrorMessage, toLoadMessage } from './DatabaseLoadWorkerParam';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileContentInfo } from '../services/kdbx/interfaces';
+import { MessageType, WorkerMessage } from './WorkerParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseWorker';
