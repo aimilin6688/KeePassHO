@@ -237,7 +237,7 @@ struct Password {
     }
     this.openLoadingDialog();
     this.stopWorker();
-    this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseWorker.ets');
+    this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseLoadWorker.ets');
     this.databaseWorker.postMessage(JSON.stringify(
       new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig)
     ));
