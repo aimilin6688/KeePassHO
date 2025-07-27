@@ -73,6 +73,10 @@ export class RecentFilesService {
     });
   }
 
+  public static async addRecentFile(recentFile: RecentFile): Promise<void> {
+    return RecentFilesService.getInstance().addRecentFile(recentFile);
+  }
+
   /**
    * 添加最近打开的文件
    * @param fileParam 文件参数
@@ -121,6 +125,10 @@ export class RecentFilesService {
       hilog.error(DOMAIN, TAG, `Get all recent files error: ${error}`);
       return [];
     }
+  }
+
+  public static getRecentFiles(): Promise<RecentFile[]> {
+    return RecentFilesService.getInstance().getRecentFiles();
   }
 
   /**
@@ -213,5 +221,9 @@ export class RecentFilesService {
       }
     }
     return null;
+  }
+
+  public static getRecentFile(filePath: string): Promise<RecentFile | null> {
+    return RecentFilesService.getInstance().getRecentFile(filePath);
   }
 }

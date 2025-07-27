@@ -30,6 +30,10 @@ export class FileService {
     return this.fileParam;
   }
 
+  public static getFileParam(): FileParam {
+    return FileService.instance.getFileParam();
+  }
+
   public init(): void {
     this.initDbFileParam();
     this.initFileParam();

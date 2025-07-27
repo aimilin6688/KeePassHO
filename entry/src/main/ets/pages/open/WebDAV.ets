@@ -73,16 +73,14 @@ struct WebDAV {
       // 本地配置信息
       const storageConfig = new WebDAVStorageConfig(this.url, this.username, this.password);
       // 设置文件参数
-      FileService.getInstance()
-        .setFileParam({
+      FileService.setFileParam({
           filePath: this.url,
           fileName: fileInfo.name,
           storageType: StorageType.WEBDAV,
           storageConfig: storageConfig
         });
       // 添加到最近打开的文件列表
-      RecentFilesService.getInstance()
-        .addRecentFile({
+      RecentFilesService.addRecentFile({
           filePath: this.url,
           fileName: fileInfo.name,
           storageType: StorageType.WEBDAV,
