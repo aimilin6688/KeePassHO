@@ -11,7 +11,7 @@ import { fileShare } from '@kit.CoreFileKit';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
 import FileUtils from '../common/utils/FIleUtils';
-import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/DatabaseWorkerParam';
+import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/DatabaseLoadWorkerParam';
 import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
