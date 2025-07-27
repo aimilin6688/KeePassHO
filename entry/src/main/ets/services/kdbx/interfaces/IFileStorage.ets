@@ -68,3 +68,31 @@ export interface FileInfo {
    */
   path: string;
 }
+
+/**
+ * 文件内容信息
+ */
+export class FileContentInfo implements FileInfo {
+  name: string;
+  size: number;
+  modifiedTime: number;
+  path: string;
+  content: ArrayBuffer;
+
+  constructor(fileInfo: FileInfo, content: ArrayBuffer) {
+    this.name = fileInfo.name;
+    this.size = fileInfo.size;
+    this.modifiedTime = fileInfo.modifiedTime;
+    this.path = fileInfo.path;
+    this.content = content;
+  }
+
+  get fileInfo(): FileInfo{
+    return {
+      name: this.name,
+      size: this.size,
+      modifiedTime: this.modifiedTime,
+      path: this.path
+    };
+  }
+}

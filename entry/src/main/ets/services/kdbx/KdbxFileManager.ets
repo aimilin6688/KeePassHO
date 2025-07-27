@@ -1,4 +1,5 @@
-import { IFileStorage, StorageType, FileStorageFactory, getDefaultStorage, StorageConfig } from './interfaces';
+import { IFileStorage, StorageType, FileStorageFactory, getDefaultStorage, StorageConfig,
+  FileContentInfo } from './interfaces';
 // 导出FileInfo类型
 import { FileInfo } from './interfaces/IFileStorage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -32,16 +33,18 @@ export class KdbxFileManager {
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果加载失败则抛出异常
    */
-  public async loadKdbxFile(path: string): Promise<ArrayBuffer> {
+  public async loadKdbxFile(path: string): Promise<FileContentInfo> {
     try {
       // 检查文件是否存在
-      const exists = await this.storage.exists(path);
-      if (!exists) {
+      const fileInfo = await this.storage.getFileInfo(path);
+      if (!fileInfo) {
         hilog.error(DOMAIN, TAG, 'KDBX file does not exist: %{public}s', path);
         throw new Error(ResourceManager.getString($r('app.string.file_not_exists')));
       }
       // 读取文件内容
-      return this.storage.readFile(path);
+      const content= await this.storage.readFile(path);
+      // 返回文件内容
+      return new FileContentInfo(fileInfo, content);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s', error.message)
       throw new Error(error.message);

@@ -5,6 +5,7 @@ import { LoadDatabase, MessageType, SuccessMessage, toErrorMessage, toLoadMessag
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FileContentInfo } from '../services/kdbx/interfaces';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseWorker';
@@ -32,13 +33,13 @@ async function handleLoadDatabase(request: LoadDatabase) {
     let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
     postMessage($r('app.string.loading_key'));
     // 加载文件内容
-    let fileContent: ArrayBuffer = await loadKdbxFileContent(request);
+    let fileContent: FileContentInfo = await loadKdbxFileContent(request);
     postMessage($r('app.string.validating'));
     // 尝试加载数据库（仅验证，不保留结果）
-    let kdbx: Kdbx = await Kdbx.load(fileContent, credentials);
+    let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
     postMessage($r('app.string.loading_complete'));
-    workerPort.postMessage(new SuccessMessage(kdbxContent), [kdbxContent]);
+    workerPort.postMessage(new SuccessMessage(kdbxContent, fileContent.modifiedTime), [kdbxContent]);
   } catch (error) {
     hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
     postErrorMessage(error.message);
@@ -50,7 +51,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
  * @param request 请求
  * @return Promise<ArrayBuffer> 文件内容
  */
-async function loadKdbxFileContent(request: LoadDatabase): Promise<ArrayBuffer> {
+async function loadKdbxFileContent(request: LoadDatabase): Promise<FileContentInfo> {
   if (!request.filePath) {
     hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
     throw new Error();

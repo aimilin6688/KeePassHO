@@ -90,10 +90,16 @@ export class LoadMessage implements WorkerMessage {
 export class SuccessMessage implements WorkerMessage {
   type: MessageType;
   data: ArrayBuffer;
+  /**
+   * 最后修改时间,单位为毫秒
+   */
+  modifiedTime: number;
 
-  constructor(data: ArrayBuffer) {
+
+  constructor(data: ArrayBuffer, modifiedTime: number) {
     this.type = MessageType.LOAD_SUCCESS;
     this.data = data;
+    this.modifiedTime = modifiedTime;
   }
 }
 
