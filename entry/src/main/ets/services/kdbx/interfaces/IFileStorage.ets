@@ -59,7 +59,7 @@ export interface FileInfo {
   size: number;
 
   /**
-   * 最后修改时间
+   * 最后修改时间,单位为毫秒
    */
   modifiedTime: number;
 
