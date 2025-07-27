@@ -1,5 +1,5 @@
 import { util } from '@kit.ArkTS';
-
+import { promptAction } from '@kit.ArkUI';
 
 export class CommonUtils {
   /**
@@ -46,5 +46,14 @@ export class CommonUtils {
     };
 
     return mimeMap[extension] || 'application/octet-stream';
+  }
+
+  /**
+   * 显示提示信息
+   * @param message
+   * @param duration
+   */
+  public static showToast(message: string, duration?: number): void {
+    promptAction.showToast({ message: message, duration: duration ?? 2000 });
   }
 }

@@ -11,12 +11,13 @@ import { fileShare } from '@kit.CoreFileKit';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
 import FileUtils from '../common/utils/FIleUtils';
-import { LoadDatabase, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/DatabaseLoadWorkerParam';
+import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import ResourceManager from '../common/utils/ResourceManager';
+import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/WorkerParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -245,13 +246,13 @@ struct Password {
     this.databaseWorker.onmessage = (e: MessageEvents) => {
       let data = e.data as WorkerMessage;
       // // 加载进度消息
-      if (data.type == MessageType.LOAD_MESSAGE) {
+      if (data.type == MessageType.MESSAGE) {
         const loadMessage = data as LoadMessage;
         this.loadingMessage =  ResourceManager.getString(loadMessage.message);
         hilog.info(DOMAIN, TAG, 'Received loading progress:  %{public}s', this.loadingMessage);
       }
       // 数据库加载成功
-      if (data.type == MessageType.LOAD_SUCCESS) {
+      if (data.type == MessageType.SUCCESS) {
         let successMessage = data as SuccessMessage;
         this.init();
         this.putFileToRecentFile();
@@ -268,7 +269,7 @@ struct Password {
         });
       }
       // 错误消息
-      if (data.type == MessageType.LOAD_ERROR) {
+      if (data.type == MessageType.ERROR) {
         let errorMessage = data as LoadMessage;
         this.promptAction.showToast({ message: ResourceManager.getString(errorMessage.message), duration: 3000 });
         this.closeLoadingDialog();
