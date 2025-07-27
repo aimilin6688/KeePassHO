@@ -1,5 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileStorageFactory, StorageType } from '../../services/kdbx/interfaces';
+import { FileStorageFactory, IFileStorage, StorageType } from '../../services/kdbx/interfaces';
 import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
@@ -14,7 +14,7 @@ const TAG = 'WebDAV';
 @Entry
 @Component
 struct WebDAV {
-  @State url: string = 'https://dav.jianguoyun.com/dav/MyFiles/';
+  @State url: string = 'https://dav.jianguoyun.com/dav/MyFiles/test-1.kdbx';
   @State username: string = 'aimilin@yeah.net';
   @State password: string = 'a77u9ewde6gyaqxg';
   @State isLoading: boolean = false;
@@ -36,10 +36,8 @@ struct WebDAV {
     this.isErrorStatus = false;
 
     try {
-      let storage = this.storageFactory.getStorage(StorageType.WEBDAV);
-      storage.init(new WebDAVStorageConfig(this.url, this.username, this.password));
       // 简单测试连接
-      storage.exists(this.url).then(result => {
+      this.initStorage().exists(this.url).then(result => {
         if (result) {
           this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
           this.isErrorStatus = false;
@@ -64,7 +62,10 @@ struct WebDAV {
       return;
     }
     this.isConnecting = true;
+    this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
+    this.isErrorStatus = false;
     try {
+      this.initStorage();
       // 获取文件信息
       const fileInfo = await this.fileManager.getKdbxFileInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
@@ -93,10 +94,9 @@ struct WebDAV {
       });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
-      this.promptAction.showToast({
-        message: error.message,
-        duration: 3000
-      });
+      this.connectionStatus = error.message;
+      this.isErrorStatus = true;
+      this.promptAction.showToast({message: error.message});
     }finally {
       this.isConnecting = false;
     }
@@ -122,6 +122,16 @@ struct WebDAV {
       return false;
     }
     return true;
+  }
+
+  /**
+   * 初始化存储
+   * @returns
+   */
+  private initStorage():IFileStorage{
+    let storage = this.storageFactory.getStorage(StorageType.WEBDAV);
+    storage.init(new WebDAVStorageConfig(this.url, this.username, this.password));
+    return storage;
   }
 
   build() {

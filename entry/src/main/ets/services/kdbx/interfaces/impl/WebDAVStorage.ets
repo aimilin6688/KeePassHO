@@ -1,10 +1,8 @@
 import { FileInfo, IFileStorage } from '../IFileStorage';
 import { WebDAVStorageConfig } from '../StorageConfig';
-import { Client } from '@dove/webdav';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ResultInfo, WebDavClient } from '../../../../common/utils/WebDavClient';
 import ResourceManager from '../../../../common/utils/ResourceManager';
-import KdbxUtils from '../../../../common/utils/KdbxUtils';
-import FileUtils from '../../../../common/utils/FIleUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAVStorage';
@@ -14,7 +12,7 @@ const TAG = 'WebDAVStorage';
  */
 export class WebDAVStorage implements IFileStorage {
   private config: WebDAVStorageConfig | undefined;
-  private client: Client | undefined;
+  private client: WebDavClient | undefined;
 
   constructor(config?: WebDAVStorageConfig) {
     if (config) {
@@ -24,7 +22,14 @@ export class WebDAVStorage implements IFileStorage {
 
   public init(config: WebDAVStorageConfig) {
     this.config = config;
-    this.client = new Client(config.url, config.username, config.password);
+    if (this.client) {
+      this.client.close();
+    }
+    this.client = new WebDavClient({
+      url: config.url,
+      username: config.username,
+      password: config.password
+    });
   }
 
   /**
@@ -33,20 +38,20 @@ export class WebDAVStorage implements IFileStorage {
    * @returns 结果
    */
   public readFile(path: string): Promise<ArrayBuffer> {
-    if(!this.client){
+    if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
-      throw new Error('WebDAV not init');
+      return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
     try {
-      return this.client.get(path).then((res)=>{
-        if(res != null){
-          return res;
+      return this.client.get(path).then((res: ResultInfo) => {
+        if (res.success && res.body) {
+          return Promise.resolve(res.body);
         }
-        return new ArrayBuffer(0);
-      })
+        return Promise.reject(new Error(res.message));
+      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'WebDAV readFile error:%{public}s', error.message);
-      throw new Error(error.message);
+      return Promise.reject(new Error(error.message));
     }
   }
 
@@ -65,7 +70,7 @@ export class WebDAVStorage implements IFileStorage {
    * @returns
    */
   public async exists(path: string): Promise<boolean> {
-    return this.getFileInfo(path).then((fileInfo)=>{
+    return this.getFileInfo(path).then((fileInfo) => {
       return fileInfo != null;
     });
   }
@@ -76,33 +81,25 @@ export class WebDAVStorage implements IFileStorage {
    * @returns
    */
   public async getFileInfo(path: string): Promise<FileInfo> {
-    if(!this.client){
+    if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
-      throw new Error('WebDAV not init');
+      return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
-    try {
-      await this.client.connect();
-      let fileInfos = await this.client.list(path);
-      if(!fileInfos || fileInfos.length == 0 || fileInfos.length >= 2){
-        hilog.error(DOMAIN, TAG, 'WebDAV list file:%{public}s', JSON.stringify(fileInfos));
-        throw new Error(ResourceManager.getString($r('app.string.file_not_exists')));
+    return this.client.list(path).then((res: ResultInfo) => {
+      if (res.success && res.data && res.data.length > 0) {
+        const fileInfo = res.data[0];
+        if (fileInfo.type == 'collection') {
+          throw new Error(ResourceManager.getString($r('app.string.webdav_not_file')));
+        }
+        return Promise.resolve({
+          name: fileInfo.displayName,
+          size: fileInfo.contentLength,
+          modifiedTime: new Date(fileInfo.lastModified),
+          path: fileInfo.href
+        } as FileInfo);
+      } else {
+        return Promise.reject(new Error(res.message));
       }
-      let fileInfo = fileInfos[0];
-      if(fileInfo.isFolder){
-        hilog.error(DOMAIN, TAG, 'WebDAV file %{public}s is folder', fileInfo.href);
-        throw new Error(ResourceManager.getString($r('app.string.file_is_folder')));
-      }
-      return {
-        name: FileUtils.getFileName(fileInfo.href),
-        size: fileInfo.contentLength,
-        modifiedTime: new Date(),
-        path: fileInfo.href
-      } as FileInfo;
-    } catch (error) {
-      console.error('WebDAV getFileInfo error:', error);
-      throw new Error(error.message);
-    } finally {
-      this.client.close();
-    }
+    });
   }
 }
