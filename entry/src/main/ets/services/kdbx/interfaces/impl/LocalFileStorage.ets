@@ -120,7 +120,7 @@ export class LocalFileStorage implements IFileStorage {
       return {
         name: FileUtils.getFileName(path),
         size: stat.size,
-        modifiedTime: new Date(stat.mtime),
+        modifiedTime: stat.mtime * 1000,
         path: path
       };
     } catch (error) {
