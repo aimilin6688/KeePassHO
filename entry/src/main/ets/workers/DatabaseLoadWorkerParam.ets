@@ -1,34 +1,6 @@
 import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
 import { AuthTypeInfo, CredentialsParam } from '../services/TypeDefined';
-
-/**
- * 定义消息类型
- */
-
-export enum MessageType {
-  /**
-   * 加载数据库
-   */
-  LOAD_DATABASE = 'LOAD_DATABASE',
-  /**
-   * 加载消息
-   */
-  LOAD_MESSAGE = 'LOAD_MESSAGE',
-  /**
-   * 加载成功
-   */
-  LOAD_SUCCESS = "LOAD_SUCCESS",
-
-  /**
-   * 加载失败
-   */
-  LOAD_ERROR = "LOAD_ERROR"
-}
-
-// 定义消息
-export interface WorkerMessage {
-  type: MessageType;
-}
+import { MessageType, WorkerMessage } from './WorkerParam';
 
 // 定义数据库加载请求
 export class LoadDatabase implements WorkerMessage, CredentialsParam {
@@ -97,7 +69,7 @@ export class SuccessMessage implements WorkerMessage {
 
 
   constructor(data: ArrayBuffer, modifiedTime: number) {
-    this.type = MessageType.LOAD_SUCCESS;
+    this.type = MessageType.SUCCESS;
     this.data = data;
     this.modifiedTime = modifiedTime;
   }
@@ -106,11 +78,11 @@ export class SuccessMessage implements WorkerMessage {
 
 export function toLoadMessage(message: string | Resource): LoadMessage {
   if (typeof message === 'string') {
-    return new LoadMessage(MessageType.LOAD_MESSAGE, message);
+    return new LoadMessage(MessageType.MESSAGE, message);
   }
-  return new LoadMessage(MessageType.LOAD_MESSAGE, message.id);
+  return new LoadMessage(MessageType.MESSAGE, message.id);
 }
 
 export function toErrorMessage(message: string): LoadMessage {
-  return new LoadMessage(MessageType.LOAD_ERROR, message);
+  return new LoadMessage(MessageType.ERROR, message);
 }
