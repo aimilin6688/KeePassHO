@@ -54,11 +54,13 @@ export class RecentFilesService {
    * @returns 结果
    */
   public async addRecentFile(recentFile: RecentFile): Promise<void> {
+    if(!recentFile.filePath.startsWith("file://")){
+      return this.doAdd(recentFile);
+    }
     // 如果拥有持久化授权，则添加到最近访问列表中
     return FileUtils.checkPersistPermission(recentFile.filePath, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE).then((result) => {
       hilog.info(DOMAIN, TAG, 'Check path %{public}s persist permission: %{public}s', recentFile.filePath, result[0]);
       if (result[0]) {
-        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s', recentFile.filePath);
         return this.doAdd(recentFile);
       } else {
         hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s no permission', recentFile.filePath);
@@ -78,6 +80,7 @@ export class RecentFilesService {
    */
   private async doAdd(recentFile: RecentFile): Promise<void> {
     try {
+      hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s', recentFile.filePath);
       // 获取当前的最近文件列表
       const recentFiles = await this.getRecentFiles();
 

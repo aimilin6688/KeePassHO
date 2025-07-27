@@ -1,41 +1,42 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
-import { Client, FileInfo } from '@dove/webdav';
-import { ByteUtils } from 'kdbxweb';
+import { WebDavClient, ResultInfo } from '../../../../main/ets/common/utils/WebDavClient';
+
 
 export default function WebDavTest() {
   describe('WebDavTest', () => {
-    it('file_url_list', 0, async () => {
-      let client = new Client('https://dav.jianguoyun.com/dav/', 'aimilin@yeah.net', 'a77u9ewde6gyaqxg');
-      await client.connect().then(() => {
-        console.log("--------------------------------------------:connect");
-        client.list('').then((files: FileInfo[]) => {
-          console.log("-------------->",JSON.stringify(files));
-        }).catch((err: Error) => {
-          console.log(err.message, err.stack);
-        })
-      }).catch((err: Error) => {
-        console.log(err.message, err.stack);
-      });
-
-
-      console.log("--------------------------------------------: connect");
-      client.list('').then((files: FileInfo[]) => {
-        console.log("-------------->",JSON.stringify(files));
-      }).catch((err: Error) => {
-        console.log(err.message, err.stack);
-      })
-
-      client.get('/MyFiles/keepass.kdbx').then((result: ArrayBuffer | null) => {
-        if(result == null){
-          console.log("-------------->",result);
-        }else{
-          console.log("-------------->",ByteUtils.bytesToString(result));
-        }
-      }).catch((err: Error) => {
-        console.log(err.message, err.stack);
-      });
+    let client = new WebDavClient({url: 'https://dav.jianguoyun.com/', username: 'aimilin@yeah.net', password: 'a77u9ewde6gyaqxg'});
+    beforeEach(() => {
+       client.connection();
+    });
+    afterAll(() => {
       client.close();
-      console.log("--------------------------------------------:close");
+    });
+
+    it('file_url_list', 0, async () => {
+      await client.list('/dav/MyFiles/').then((response: ResultInfo) => {
+        console.log("-------------->", JSON.stringify(response));
+        client.close();
+      });
+    })
+
+    it('file_exists', 0, async () => {
+      await client.exists('/dav/MyFiles/').then((response: boolean) => {
+        console.log("MyFiles: -------------->", response);
+        client.close();
+      });
+
+      client.connection();
+      await client.exists('/dav/MyFiles_2').then((response: boolean) => {
+        console.log("MyFiles_2:-------------->", response);
+        client.close();
+      });
+    })
+
+    it('get_file', 0, async () => {
+      await client.get('/dav/MyFiles/test-1.kdbx').then((response: ResultInfo) => {
+        console.log("test-1.kdbx: -------------->", JSON.stringify(response));
+        client.close();
+      });
     })
   })
 }

@@ -32,7 +32,7 @@ export default class ResourceManager {
    * @param resource
    * @returns
    */
-  public getString(resource: Resource | number | string): string {
+  public getString(resource: Resource | number | string, ...args: Array<string | number>): string {
     if(typeof resource === 'string'){
       return resource;
     }
@@ -40,9 +40,9 @@ export default class ResourceManager {
       return '';
     }
     if (typeof resource === 'number') {
-     return this.context.resourceManager.getStringSync(resource);
+     return this.context.resourceManager.getStringSync(resource, ...args);
     }
-    return this.context.resourceManager.getStringSync(resource.id);
+    return this.context.resourceManager.getStringSync(resource.id, ...args);
   }
 
   /**
@@ -50,7 +50,7 @@ export default class ResourceManager {
    * @param resource 资源
    * @returns 结果
    */
-  public static getString(resource: Resource | number | string): string {
-    return ResourceManager.getInstance().getString(resource);
+  public static getString(resource: Resource | number | string, ...args: Array<string | number>): string {
+    return ResourceManager.getInstance().getString(resource, ...args);
   }
 }

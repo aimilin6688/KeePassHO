@@ -691,6 +691,54 @@
     {
       "name": "file_is_folder",
       "value": "Please select file url"
+    },
+    {
+      "name": "webdav_request_error",
+      "value": "Request error"
+    },
+    {
+      "name": "webdav_auth_failed",
+      "value": "Username or password is error"
+    },
+    {
+      "name": "webdav_not_found",
+      "value": "Not found"
+    },
+    {
+      "name": "webdav_file_exists",
+      "value": "File exists"
+    },
+    {
+      "name": "webdav_dir_not_exists",
+      "value": "Dir is not exists"
+    },
+    {
+      "name": "webdav_no_permission",
+      "value": "No permission"
+    },
+    {
+      "name": "webdav_server_error",
+      "value": "Server error"
+    },
+    {
+      "name": "webdav_server_full",
+      "value": "Server full"
+    },
+    {
+      "name": "webdav_request_timeout",
+      "value": "Request timeout"
+    },
+    {
+      "name": "webdav_error",
+      "value": "Error  %s %s"
+    },
+    {
+      "name": "webdav_not_file",
+      "value": "Please input a file url"
+    },
+    {
+      "name": "webdav_not_init",
+      "value": "WebDAV not initialized"
     }
   ]
 }
