@@ -50,6 +50,15 @@ export struct About {
             .margin({top: 20})
             .fontSize(16)
             .margin(5)
+
+          Row(){
+            Text('反馈邮箱：')
+              .margin({top: 20})
+              .fontSize(16)
+              .margin(5)
+            Hyperlink('mailto:aimilin@yeah.net?subject=KeePassHO反馈', 'aimilin@yeah.net') {}
+            .color(Color.Blue)
+          }
         }
         .width('100%')
         .height('100%')
