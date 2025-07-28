@@ -262,7 +262,7 @@ export default class KdbxUtils {
    */
   public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
     // 排序前分组名称
-    hilog.info(DOMAIN, TAG, 'Before sort group names: %{public}s, %{public}s', sortMode, groups.map(group => group.name).join(','));
+    hilog.debug(DOMAIN, TAG, 'Before sort group names: %{public}s, %{public}s', sortMode, groups.map(group => group.name).join(','));
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
@@ -290,7 +290,7 @@ export default class KdbxUtils {
         break;
     }
     // 排序后分组名称
-    hilog.info(DOMAIN, TAG, 'After sort group names: %{public}s, %{public}s', sortMode, groups.map(group => group.name).join(','));
+    hilog.debug(DOMAIN, TAG, 'After sort group names: %{public}s, %{public}s', sortMode, groups.map(group => group.name).join(','));
   }
 
   /**
