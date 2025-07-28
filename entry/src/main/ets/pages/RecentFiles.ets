@@ -24,7 +24,7 @@ struct RecentFiles {
   async loadRecentFiles() {
     try {
       this.isLoading = true;
-      this.recentFiles = await RecentFilesService.getInstance().getRecentFiles();
+      this.recentFiles = await RecentFilesService.getRecentFiles();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'load recent file error: %{public}s', error.message);
       this.promptAction.showToast({
