@@ -184,7 +184,7 @@ export class WebDavClient {
       if (err.code === 1007900028) {
         requestReturn.message = ResourceManager.getString($r("app.string.webdav_request_timeout"));
       } else {
-        requestReturn.message = ResourceManager.getString($r("app.string.webdav_error"), err.code ?? "", errMsg);
+        requestReturn.message = `${err.code}:${errMsg}`;
       }
     }
     return requestReturn;

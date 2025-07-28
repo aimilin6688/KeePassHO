@@ -22,6 +22,7 @@ struct DatabaseView {
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
   @State isLoading: boolean = false;
+  @State isRefreshing: boolean = false;
   @State titleName: ResourceStr = '';
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
@@ -562,108 +563,128 @@ struct DatabaseView {
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
         } else {
-          // 数据库内容
-          List({ space: 8, scroller: this.listScroller }) {
-            ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
-              ListItem() {
-                Row() {
-                  Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
-                    .width(28)
-                    .height(28)
-                    .margin(10)
-                  Column() {
-                    Text(KdbxUtils.getFieldName(itemGroup.name))
-                      .fontSize(18)
-                      .textAlign(TextAlign.Start)
-                      .flexGrow(1)
-                    Text($r("app.string.group_items_message", this.groupItemCount(itemGroup)))
-                      .fontSize(12)
-                      .textAlign(TextAlign.Start)
-                      .flexGrow(1)
-                      .margin({ top: 4 })
+          Refresh({ refreshing: $$this.isRefreshing, promptText:  $r('app.string.refreshing_message') })  {
+            // 数据库内容
+            List({ space: 8, scroller: this.listScroller }) {
+              ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
+                ListItem() {
+                  Row() {
+                    Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
+                      .width(28)
+                      .height(28)
+                      .margin(10)
+                    Column() {
+                      Text(KdbxUtils.getFieldName(itemGroup.name))
+                        .fontSize(18)
+                        .textAlign(TextAlign.Start)
+                        .flexGrow(1)
+                      Text($r("app.string.group_items_message", this.groupItemCount(itemGroup)))
+                        .fontSize(12)
+                        .textAlign(TextAlign.Start)
+                        .flexGrow(1)
+                        .margin({ top: 4 })
+                    }
+                    .flexGrow(1)
+                    .alignItems(HorizontalAlign.Start)
+
+                    Image($r('app.media.ic_arrow_right'))
+                      .width(20)
+                      .height(20)
+                      .margin({ right: 10 })
+                      .fillColor($r('app.color.text_primary'))
                   }
-                  .flexGrow(1)
-                  .alignItems(HorizontalAlign.Start)
-
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(20)
-                    .height(20)
-                    .margin({ right: 10 })
-                    .fillColor($r('app.color.text_primary'))
+                  .width('100%')
+                  .height(60)
+                  .borderRadius(8)
+                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
+                  .padding({ left: 10, right: 10 })
+                  .onClick(() => {
+                    this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
+                  })
                 }
-                .width('100%')
-                .height(60)
-                .borderRadius(8)
-                .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
-                .padding({ left: 10, right: 10 })
-                .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
-                })
-              }
-              .swipeAction({
-                end: {
-                  builder: this.SwipeActionButtons(index, itemGroup)
-                }
-              })
-            }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
-
-            ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
-              ListItem() {
-                Row() {
-                  Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') : KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
-                    .width(28)
-                    .height(28)
-                    .margin(10)
-                  Column() {
-                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
-                      .fontSize(18)
-                      .textAlign(TextAlign.Start)
-                      .flexGrow(1)
-                      .decoration({ type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ?  TextDecorationType.LineThrough : TextDecorationType.None)})
-                    Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
-                      .fontSize(12)
-                      .textAlign(TextAlign.Start)
-                      .flexGrow(1)
-                      .decoration({ type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ?  TextDecorationType.LineThrough : TextDecorationType.None)})
+                .swipeAction({
+                  end: {
+                    builder: this.SwipeActionButtons(index, itemGroup)
                   }
-                  .flexGrow(1)
-                  .alignItems(HorizontalAlign.Start)
-
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(20)
-                    .height(20)
-                    .margin({ right: 10 })
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .width('100%')
-                .height(60)
-                .borderRadius(8)
-                .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :$r("app.color.card_bg"))
-                .padding({ left: 10, right: 10 })
-                .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
                 })
-              }
-              .swipeAction({
-                end: {
-                  builder: this.SwipeActionButtons(index, itemEntry)
-                }
-              })
-            }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+              }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
 
-            ListItem() {
-              Row()
-                .height(100)
-                .width('100%')
-                .backgroundColor(Color.Transparent)
+              ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
+                ListItem() {
+                  Row() {
+                    Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
+                    KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                      .width(28)
+                      .height(28)
+                      .margin(10)
+                    Column() {
+                      Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
+                        .fontSize(18)
+                        .textAlign(TextAlign.Start)
+                        .flexGrow(1)
+                        .decoration({
+                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
+                        })
+                      Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
+                        .fontSize(12)
+                        .textAlign(TextAlign.Start)
+                        .flexGrow(1)
+                        .decoration({
+                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
+                        })
+                    }
+                    .flexGrow(1)
+                    .alignItems(HorizontalAlign.Start)
+
+                    Image($r('app.media.ic_arrow_right'))
+                      .width(20)
+                      .height(20)
+                      .margin({ right: 10 })
+                      .fillColor($r('app.color.text_primary'))
+                  }
+                  .width('100%')
+                  .height(60)
+                  .borderRadius(8)
+                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
+                  .padding({ left: 10, right: 10 })
+                  .onClick(() => {
+                    this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
+                  })
+                }
+                .swipeAction({
+                  end: {
+                    builder: this.SwipeActionButtons(index, itemEntry)
+                  }
+                })
+              }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+
+              ListItem() {
+                Row()
+                  .height(100)
+                  .width('100%')
+                  .backgroundColor(Color.Transparent)
+              }
             }
+            .width('100%')
+            .height('100%')
+            .backgroundColor($r("app.color.bg_primary"))
+            .padding({
+              left: 12,
+              right: 12,
+              top: 12,
+              bottom: 0
+            })
+            .scrollBar(BarState.Auto)
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
           }
-          .width('100%')
-          .height('100%')
           .backgroundColor($r("app.color.bg_primary"))
-          .padding({left: 12,right: 12,top: 12,bottom: 0})
-          .scrollBar(BarState.Auto)
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+          .refreshOffset(64)
+          .pullToRefresh(true)
+          .onRefreshing(() => {
+            setTimeout(()=>{
+              this.isRefreshing = false;
+            },1000)
+          })
         }
       }
       .width('100%')

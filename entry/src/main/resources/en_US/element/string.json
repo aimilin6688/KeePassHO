@@ -729,10 +729,6 @@
       "value": "Request timeout"
     },
     {
-      "name": "webdav_error",
-      "value": "Error  %s %s"
-    },
-    {
       "name": "webdav_not_file",
       "value": "Please input a file url"
     },
@@ -743,6 +739,14 @@
     {
       "name": "merging_database",
       "value": "Merging database..."
+    },
+    {
+      "name": "refreshing_message",
+      "value": "Refreshing..."
+    },
+    {
+      "name": "save_saving",
+      "value": "Saving..."
     }
   ]
 }
