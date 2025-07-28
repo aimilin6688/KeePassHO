@@ -1,3 +1,4 @@
+import { Kdbx } from 'kdbxweb';
 import { DbFileParam, FileParam } from './TypeDefined';
 
 
@@ -61,5 +62,17 @@ export class FileService {
 
   public static getDbFileParam(): DbFileParam {
     return FileService.instance.getDbFileParam();
+  }
+
+  /**
+   * 重置数据库文件参数
+   * @param kdbx 数据库
+   * @param modifiedTime 修改时间
+   * @returns 结果
+   */
+  public static resetDbFileParam(kdbx: Kdbx, modifiedTime: number): DbFileParam {
+    FileService.getDbFileParam().database = kdbx;
+    FileService.getDbFileParam().modifiedTime = modifiedTime;
+    return FileService.getDbFileParam();
   }
 }
