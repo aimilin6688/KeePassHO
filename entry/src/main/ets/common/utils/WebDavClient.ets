@@ -128,8 +128,7 @@ export class WebDavClient {
         requestReturn.message = ResourceManager.getString($r("app.string.webdav_request_error"));
         return requestReturn;
       }
-      hilog.info(DOMAIN, TAG, "request return statusCode: %{public}d, headers: %{public}s", resp.statusCode,
-        JSON.stringify(resp.headers));
+      hilog.debug(DOMAIN, TAG, "request return statusCode: %{public}d, headers: %{public}s", resp.statusCode, JSON.stringify(resp.headers));
       requestReturn.statusCode = resp.statusCode;
       requestReturn.headers = resp.headers;
       if (resp.statusCode === 401) {
@@ -324,8 +323,7 @@ export class WebDavClient {
    * @param progressCallback
    * @returns
    */
-  async upload(remoteUri: string, fileBuffer: ArrayBuffer,
-    progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
+  async upload(remoteUri: string, fileBuffer: ArrayBuffer, progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
     // 读取文件
     const customHttpEventsHandler: rcp.HttpEventsHandler = {
       onUploadProgress: (totalSize: number, transferredSize: number) => {

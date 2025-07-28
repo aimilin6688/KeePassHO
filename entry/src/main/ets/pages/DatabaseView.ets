@@ -7,11 +7,11 @@ import ThemeManager from '../common/utils/ThemeManager';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
 import DateUtils from '../common/utils/DateUtils';
+import { EventBus } from '../services/EventBus';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -33,7 +33,7 @@ struct DatabaseView {
   @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
   @State filteredEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
-  @State moveParam: MoveParam | undefined  = undefined; // 移动参数
+  @State moveParam: MoveParam | undefined = undefined; // 移动参数
 
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
@@ -43,7 +43,6 @@ struct DatabaseView {
   private settingsService: SettingsService = SettingsService.getInstance();
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
-
 
 
   dialogController: CustomDialogController = new CustomDialogController({
@@ -65,18 +64,13 @@ struct DatabaseView {
 
   aboutToAppear() {
     this.clearUrl();
-    this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
-
-    // 获取从Password页面传递的参数
-    const params = FileService.getInstance().getDbFileParam();
-    this.titleName = params.fileName ?? '';
-    this.database = params.database ?? null;
-
-    // 获取排序方式
-    this.settingsService.getSortBy().then((sortBy: SortMode) => {
-      this.sortBy = sortBy;
-      this.initData(this.databaseShowParam);
+    // 注册数据库合并事件
+    EventBus.on<void>(EventBus.DATABASE_MERGE, () => {
+      this.reloadDatabase();
     });
+    this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
+    // 加载数据库信息
+    this.loadDatabase();
 
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
@@ -86,9 +80,43 @@ struct DatabaseView {
     this.settingsService.registerObserver(this.onSortChanged);
   }
 
+  aboutToDisappear() {
+    // 移除监听器
+    EventBus.off<void>(EventBus.DATABASE_MERGE);
+    ThemeManager.getInstance().removeThemeChangeListenerAll();
+    this.settingsService.unregisterObserver(this.onSortChanged);
+  }
+
   onPageShow(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', `Load DatabaseView Page: ${JSON.stringify(this.databaseShowParam)}`);
     this.updateUI();
+  }
+
+  /**
+   * 重新加载数据库信息
+   */
+  private reloadDatabase() {
+    hilog.debug(DOMAIN, TAG, 'Receive reload database event');
+    this.loadDatabase().then(() => {
+      this.updateUI();
+    });
+
+  }
+
+  /**
+   * 加载数据库信息
+   */
+  private loadDatabase(): Promise<void> {
+    // 获取从Password页面传递的参数
+    const params = FileService.getDbFileParam();
+    this.titleName = params.fileName ?? '';
+    this.database = params.database ?? null;
+
+    // 获取排序方式
+    return this.settingsService.getSortBy().then((sortBy: SortMode): void => {
+      this.sortBy = sortBy;
+      return this.initData(this.databaseShowParam);
+    });
   }
 
   /**
@@ -135,7 +163,7 @@ struct DatabaseView {
     try {
       if (dbShowParam && dbShowParam.groupId) {
         this.currentGroup = this.database.getGroup(dbShowParam.groupId);
-        this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name)  || '';
+        this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
         this.showBack = true;
       } else {
         // 获取根分组下的所有子分组
@@ -256,11 +284,11 @@ struct DatabaseView {
   private saveDatabase() {
     if (this.database) {
       KdbxUtils.saveDatabase().then(() => {
-          this.promptAction.showToast({ message: $r('app.string.save_success_message') });
-        }).catch((error: Error) => {
-          hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-          this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
-        });
+        this.promptAction.showToast({ message: $r('app.string.save_success_message') });
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
+        this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
+      });
     }
   }
 
@@ -300,12 +328,6 @@ struct DatabaseView {
     this.editingGroupIndex = -1;
   }
 
-  aboutToDisappear() {
-    // 移除监听器
-    ThemeManager.getInstance().removeThemeChangeListenerAll();
-    this.settingsService.unregisterObserver(this.onSortChanged);
-  }
-
   // 强制组件刷新以应用新主题
   onThemeChanged() {
     this.updateUI();
@@ -326,14 +348,14 @@ struct DatabaseView {
 
     try {
       // 获取要移动的条目/分组
-      let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined ;
-      
+      let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined;
+
       if (this.moveParam.isMoveGroup) {
         sourceItem = this.database.getGroup(this.moveParam.groupId);
       } else {
         sourceItem = KdbxUtils.getEntry(this.database, this.moveParam.groupId, this.moveParam.entryId || "");
       }
-      
+
       if (!sourceItem) {
         this.promptAction.showToast({
           message: $r('app.string.entry_not_found'),
@@ -342,12 +364,12 @@ struct DatabaseView {
         this.cancelMoving();
         return;
       }
-      
+
       // 检查是否移动到自己或子分组
       if (this.moveParam.isMoveGroup) {
         const sourceGroup = sourceItem as KdbxGroup;
         // 不能移动到自己或子分组
-        if (this.currentGroup.uuid.id === sourceGroup.uuid.id ||  KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
+        if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
           this.promptAction.showToast({
             message: $r('app.string.cannot_move_to_child'),
             duration: 2000
@@ -356,7 +378,7 @@ struct DatabaseView {
           return;
         }
       }
-      
+
       // 移动条目/分组
       this.database.move(sourceItem, this.currentGroup);
       // 保存数据库
@@ -379,7 +401,7 @@ struct DatabaseView {
       this.cancelMoving();
     }
   }
-  
+
   /**
    * 取消移动操作
    */
@@ -563,7 +585,7 @@ struct DatabaseView {
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
         } else {
-          Refresh({ refreshing: $$this.isRefreshing, promptText:  $r('app.string.refreshing_message') })  {
+          Refresh({ refreshing: $$this.isRefreshing, promptText: $r('app.string.refreshing_message') }) {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
               ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
@@ -681,9 +703,9 @@ struct DatabaseView {
           .refreshOffset(64)
           .pullToRefresh(true)
           .onRefreshing(() => {
-            setTimeout(()=>{
+            setTimeout(() => {
               this.isRefreshing = false;
-            },1000)
+            }, 1000)
           })
         }
       }
@@ -776,7 +798,7 @@ struct DatabaseView {
       .onClick(() => {
         this.showAddButtons = true;
       })
-      
+
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
         Column() {
@@ -791,7 +813,7 @@ struct DatabaseView {
               .onClick(() => {
                 this.moveItemToCurrentGroup();
               })
-            
+
             Button($r('app.string.cancel_button_text'), { type: ButtonType.Normal })
               .width('45%')
               .height(40)
@@ -808,7 +830,12 @@ struct DatabaseView {
         }
         .width('100%')
         .height(45)
-        .padding({ top: 12,bottom: 0, left: 16, right: 16})
+        .padding({
+          top: 12,
+          bottom: 0,
+          left: 16,
+          right: 16
+        })
         .position({ x: 0, y: '100%' })
         .translate({ y: -45 })
         .justifyContent(FlexAlign.Center)
