@@ -937,15 +937,17 @@ struct EntryEdit {
                     .width('100%')
 
                     Row() {
-                      TextArea({ text: field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value})
+                      Text(field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value)
                         .fontSize(16)
                         .fontColor($r('app.color.text_primary'))
                         .lineHeight(24)
                         .borderWidth(0)
-                        .style(TextContentStyle.INLINE)
-                        .padding({top:12,bottom:12, left:0, right:0})
+                        .padding({top:6,bottom:6, left:0, right:0})
                         .layoutWeight(1)
                         .backgroundColor($r("app.color.bg_secondary"))
+                        .onClick(()=>{
+                          this.openEditFieldDialog(index);
+                        })
 
                       if (field.isProtected) {
                         Image(this.customFieldsVisibility[index] ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
