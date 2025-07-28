@@ -1,6 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import ResourceManager from '../common/utils/ResourceManager'
+import { bundleManager } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'About';
@@ -8,8 +9,21 @@ const TAG = 'About';
 @Entry
 @Component
 export struct About {
+  @State version: string = '';
+
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+
+  aboutToAppear(){
+    this.setVersion();
+  }
+
+  setVersion() {
+    let bundleFlags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION;
+    bundleManager.getBundleInfoForSelf(bundleFlags).then((result)=>{
+      this.version =  ResourceManager.getString($r('app.string.About_version')) + result.versionName
+    })
+  }
 
   build() {
     Stack() {
@@ -42,7 +56,7 @@ export struct About {
             .fontSize(20)
             .margin({top: 20, bottom: 30})
 
-          Text(ResourceManager.getString($r('app.string.About_version')) + '1.0.0')
+          Text(this.version)
             .fontSize(16)
             .margin(5)
 
