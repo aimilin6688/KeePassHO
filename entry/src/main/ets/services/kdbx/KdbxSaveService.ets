@@ -6,6 +6,7 @@ import ResourceManager from '../../common/utils/ResourceManager';
 import { FileService } from '../../services/FileService';
 import { SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
+import { EventBus } from '../EventBus';
 import { DbFileParam } from '../TypeDefined';
 
 const DOMAIN = 0x0000;
@@ -106,6 +107,7 @@ export default class KdbxSaveService {
     if (successMessage.isMerge) {
       KdbxUtils.arrayBufferToKdbx(successMessage.data, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
+        EventBus.emit<void>(EventBus.DATABASE_MERGE);
       })
     }
     CommonUtils.showToast(ResourceManager.getString($r('app.string.save_success_message')));

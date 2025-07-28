@@ -15,8 +15,8 @@ const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
 
 // 监听主线程消息
 workerPort.onmessage = (event: MessageEvents) => {
-  hilog.info(DOMAIN, TAG, 'Worker receive message: %{public}s', event.data)
   const message = JSON.parse(event.data) as WorkerMessage;
+  hilog.debug(DOMAIN, TAG, 'Load worker receive message type:%{public}s', message.type);
   if (message.type === MessageType.LOAD_DATABASE) {
     const request = message as LoadDatabase;
     handleLoadDatabase(request);
