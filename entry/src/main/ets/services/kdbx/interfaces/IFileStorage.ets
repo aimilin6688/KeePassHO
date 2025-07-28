@@ -79,6 +79,11 @@ export class FileContentInfo implements FileInfo {
   path: string;
   content: ArrayBuffer;
 
+  /**
+   * 文件内容信息
+   * @param fileInfo 文件信息
+   * @param content 数据库内容
+   */
   constructor(fileInfo: FileInfo, content: ArrayBuffer) {
     this.name = fileInfo.name;
     this.size = fileInfo.size;
