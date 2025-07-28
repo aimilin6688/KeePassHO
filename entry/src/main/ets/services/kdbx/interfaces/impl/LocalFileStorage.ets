@@ -112,20 +112,22 @@ export class LocalFileStorage implements IFileStorage {
    * @throws 如果获取失败则抛出异常
    */
   async getFileInfo(path: string): Promise<FileInfo> {
-    try {
-      // 打开文件
-      const file = await fs.open(path, fs.OpenMode.READ_ONLY);
-      const stat = await fs.stat(file.fd);
-      await fs.close(file.fd);
-      return {
-        name: FileUtils.getFileName(path),
-        size: stat.size,
-        modifiedTime: stat.mtime * 1000,
-        path: path
-      };
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to get file info: %{public}s', error.message)
-      throw new Error(`Failed to get file info: ${error.message}`);
-    }
+    return await FileUtils.activatePermission(path, fileShare.OperationMode.READ_MODE).then(async () => {
+      try {
+        // 打开文件
+        const file = await fs.open(path, fs.OpenMode.READ_ONLY);
+        const stat = await fs.stat(file.fd);
+        await fs.close(file.fd);
+        return {
+          name: FileUtils.getFileName(path),
+          size: stat.size,
+          modifiedTime: stat.mtime * 1000,
+          path: path
+        } as FileInfo;
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, 'Failed to get file info: %{public}s', error.message)
+        throw new Error(`Failed to get file info: ${error.message}`);
+      }
+    });
   }
 }
