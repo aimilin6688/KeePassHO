@@ -1,9 +1,9 @@
 {
   "name": "entry",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Please describe the basic information.",
   "main": "",
-  "author": "",
+  "author": "艾米林",
   "license": "",
   "dependencies": {
     "kdbxweb": "^2.2.1"
