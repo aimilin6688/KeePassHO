@@ -46,17 +46,26 @@ export class LoadMessage implements WorkerMessage {
 // 成功消息
 export class SuccessMessage implements WorkerMessage {
   type: MessageType;
+  /**
+   * xml格式的数据库内容
+   */
   data: ArrayBuffer;
   /**
    * 最后修改时间,单位为毫秒
    */
   modifiedTime: number;
 
+  /**
+   * 数据库是否发生了合并
+   */
+  isMerge: boolean;
 
-  constructor(data: ArrayBuffer, modifiedTime: number) {
+
+  constructor(data: ArrayBuffer, modifiedTime: number, isMerge?: boolean) {
     this.type = MessageType.SUCCESS;
     this.data = data;
     this.modifiedTime = modifiedTime;
+    this.isMerge = isMerge || false;
   }
 }
 

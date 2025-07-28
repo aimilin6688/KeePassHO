@@ -50,7 +50,7 @@ export interface FileParam {
 /**
  * kdbx文件定义
  */
-export interface DbFileParam {
+export interface DbFileParam extends CredentialsParam{
   /**
    * 文件路径
    */
