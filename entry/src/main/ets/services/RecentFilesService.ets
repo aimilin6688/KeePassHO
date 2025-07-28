@@ -166,7 +166,7 @@ export class RecentFilesService {
    */
   public async checkFileExists(recentFile: RecentFile): Promise<boolean> {
     try {
-      return new KdbxFileManager(recentFile.storageType).exists(recentFile.filePath);
+      return new KdbxFileManager(recentFile.storageType, recentFile.storageConfig).exists(recentFile.filePath);
     } catch (error) {
       return false;
     }
