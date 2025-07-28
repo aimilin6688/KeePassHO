@@ -1,6 +1,4 @@
-import { ByteUtils, Kdbx,
-  KdbxCredentials,
-  KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxCredentials, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
@@ -8,12 +6,7 @@ import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
-import { SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
-import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
-import ResourceManager from './ResourceManager';
-import { CommonUtils } from './CommonUtils';
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -36,7 +29,6 @@ export default class KdbxUtils {
   public static readonly GROUP_RECYCLE_BIN = 'Recycle Bin';
   public static readonly GROUP_TEMPLATES_NAME = 'Templates';
   private static customIconMap: Map<string, string> = new Map<string, string>();
-  private static databaseWorker: worker.ThreadWorker | null = null;
 
   public static init() {
     KdbxUtils.customIconMap.clear();
@@ -366,49 +358,9 @@ export default class KdbxUtils {
    * @returns 结果信息
    */
   public static async saveDatabase(): Promise<void> {
-    if (KdbxUtils.databaseWorker) {
-      KdbxUtils.databaseWorker.terminate();
-      KdbxUtils.databaseWorker = null;
-      hilog.info(DOMAIN, TAG, 'Database save worker terminated');
-    }
-
-    const dbFileParam = FileService.getDbFileParam();
-    KdbxUtils.kdbxToArrayBuffer(dbFileParam.database).then(async savedDb => {
-      KdbxUtils.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseSaveWorker.ets');
-      KdbxUtils.databaseWorker.postMessage(new SaveDatabaseMessage(savedDb, dbFileParam), [savedDb]);
-
-      // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
-      KdbxUtils.databaseWorker.onmessage = (e: MessageEvents) => {
-        let data = e.data as WorkerMessage;
-        // // 加载进度消息
-        if (data.type == MessageType.MESSAGE) {
-          const loadMessage = data as LoadMessage;
-          hilog.info(DOMAIN, TAG, 'Received save database message:  %{public}s', ResourceManager.getString(loadMessage.message));
-          CommonUtils.showToast(ResourceManager.getString(loadMessage.message));
-        }
-        // 数据库加载成功
-        if (data.type == MessageType.SUCCESS) {
-          let successMessage = data as SuccessMessage;
-          FileService.getDbFileParam().modifiedTime = successMessage.modifiedTime;
-          CommonUtils.showToast(ResourceManager.getString($r('app.string.save_success_message')));
-        }
-        // 错误消息
-        if (data.type == MessageType.ERROR) {
-          let errorMessage = data as LoadMessage;
-          hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', errorMessage.message);
-          CommonUtils.showToast(ResourceManager.getString(errorMessage.message));
-        }
-      }
-
-      KdbxUtils.databaseWorker.onAllErrors = (err: ErrorEvent) => {
-        hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', err.message);
-        if (err.message.indexOf('NativeCustomSpan') != -1) {
-          return;
-        }
-        CommonUtils.showToast(err.message);
-      }
-    });
+    return KdbxSaveService.saveDatabase();
   }
+
 }
 
 /**
