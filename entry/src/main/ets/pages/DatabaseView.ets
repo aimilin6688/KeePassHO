@@ -12,6 +12,10 @@ import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
 import DateUtils from '../common/utils/DateUtils';
 import { EventBus } from '../services/EventBus';
+import KdbxLoadService from '../services/kdbx/KdbxLoadService';
+import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
+import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
+import ResourceManager from '../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -34,6 +38,7 @@ struct DatabaseView {
   @State filteredEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
   @State moveParam: MoveParam | undefined = undefined; // 移动参数
+  @State refreshText: ResourceStr = $r('app.string.refreshing_message');
 
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
@@ -194,6 +199,33 @@ struct DatabaseView {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  /**
+   * 重新加载数据库
+   */
+  private refreshDatabase(){
+    let loadParam = LoadDatabase.byDbFileParam(FileService.getDbFileParam());
+    KdbxLoadService.loadDatabase(loadParam, {
+      onSuccessMessage: (successMessage: SuccessMessage) => {
+        KdbxUtils.arrayBufferToKdbx(successMessage.data, loadParam).then((database: Kdbx) => {
+          FileService.resetDbFileParam(database, successMessage.modifiedTime);
+          this.refreshText = $r('app.string.refreshing_message');
+          EventBus.emit<void>(EventBus.DATABASE_UPDATE);
+          this.promptAction.showToast({message: $r('app.string.refresh_success')});
+          this.isRefreshing = false;
+        });
+      },
+      onLoadMessage: (message: LoadMessage) => {
+        this.refreshText =  ResourceManager.getString(message.message);
+        this.isRefreshing = false;
+      },
+      onErrorMessage: (message: LoadMessage) => {
+        this.refreshText =  ResourceManager.getString(message.message);
+        this.promptAction.showToast({message: this.refreshText});
+        this.isRefreshing = false;
+      },
+    });
   }
 
   @Builder
@@ -585,7 +617,7 @@ struct DatabaseView {
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
         } else {
-          Refresh({ refreshing: $$this.isRefreshing, promptText: $r('app.string.refreshing_message') }) {
+          Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
               ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
@@ -703,9 +735,7 @@ struct DatabaseView {
           .refreshOffset(64)
           .pullToRefresh(true)
           .onRefreshing(() => {
-            setTimeout(() => {
-              this.isRefreshing = false;
-            }, 1000)
+            this.refreshDatabase();
           })
         }
       }
