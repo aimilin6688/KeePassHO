@@ -14,9 +14,9 @@ const TAG = 'WebDAV';
 @Entry
 @Component
 struct WebDAV {
-  @State url: string = 'https://dav.jianguoyun.com/dav/MyFiles/test-1.kdbx';
-  @State username: string = 'aimilin@yeah.net';
-  @State password: string = 'a77u9ewde6gyaqxg';
+  @State url: string = '';
+  @State username: string = '';
+  @State password: string = '';
   @State isLoading: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
@@ -161,8 +161,11 @@ struct WebDAV {
             .margin({ top: 20, left: 16 })
             .fontColor($r('app.color.text_primary'))
             .textAlign(TextAlign.Start)
-          TextInput({ text: this.url, placeholder: $r('app.string.url_placeholder') })
-            .height(40)
+          TextArea({ text: this.url, placeholder: $r('app.string.url_placeholder') })
+            .lineHeight(24)
+            .height(96)
+            .type(TextAreaType.URL)
+            .padding({top:12,bottom:12})
             .margin({ top: 20 })
             .fontColor($r('app.color.text_primary'))
             .backgroundColor($r("app.color.card_bg"))
