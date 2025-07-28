@@ -24,7 +24,6 @@ struct WebDAV {
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private storageFactory: FileStorageFactory = FileStorageFactory.getInstance();
 
   // 测试WebDAV连接
   private async testConnection() {
