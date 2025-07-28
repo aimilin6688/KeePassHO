@@ -1,5 +1,5 @@
 import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
-import { AuthTypeInfo, CredentialsParam } from '../services/TypeDefined';
+import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
 import { MessageType, WorkerMessage } from './WorkerParam';
 
 // 定义数据库加载请求
@@ -44,5 +44,22 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
     this.keyFilePath = keyFilePath;
     this.storageType = storageType ?? StorageType.LOCAL;
     this.storageConfig = storageConfig ?? {};
+  }
+
+  /**
+   * 通过 DbFileParam 初始化
+   * @param dbFileParam
+   * @returns
+   */
+  public static byDbFileParam(dbFileParam: DbFileParam): LoadDatabase {
+    return new LoadDatabase(
+      dbFileParam.filePath,
+      dbFileParam.fileName,
+      dbFileParam.password,
+      dbFileParam.authType,
+      dbFileParam.keyFilePath,
+      dbFileParam.storageType,
+      dbFileParam.storageConfig
+    );
   }
 }
