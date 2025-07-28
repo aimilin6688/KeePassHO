@@ -7,7 +7,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileContentInfo } from '../services/kdbx/interfaces';
 import { MessageType, WorkerMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
-import { fileIo as fs } from '@kit.CoreFileKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseSaveWorker';
@@ -78,11 +77,7 @@ async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo
  * @returns 结果
  */
 async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials): Promise<FileContentInfo> {
-  // let localPath = request.localFilePath + '/' + request.fileName;
-  // const file = await fs.open(localPath, fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE);
-  // await fs.write(file.fd, request.data);
-  // await fs.close(file.fd);
-
+  postMessage($r('app.string.save_saving'));
   let database: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
 
   let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
