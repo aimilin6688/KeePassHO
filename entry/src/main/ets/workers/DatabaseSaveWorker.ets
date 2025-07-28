@@ -68,7 +68,7 @@ async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo
   // 设置数据库内容为新内容
   request.data = await KdbxUtils.kdbxToArrayBuffer(oldKdbx);
   // 保存数据库
-  return saveDatabase(request, credentials);
+  return await saveDatabase(request, credentials);
 }
 
 /**
@@ -81,8 +81,10 @@ async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials)
   let database: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
 
   let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
-  return database.save().then(async savedDb => {
-    await kdbxFileManager.saveKdbxFile(request.filePath, savedDb);
+  return await database.save().then(async savedDb => {
+    await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(()=>{
+      postMessage($r('app.string.save_success_message'));
+    });
     return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {
       return new FileContentInfo(fileInfo, savedDb);
     });
