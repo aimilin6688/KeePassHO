@@ -57,7 +57,6 @@ export struct About {
               .fontSize(16)
               .margin(5)
             Hyperlink('mailto:aimilin@yeah.net?subject=KeePassHO反馈', 'aimilin@yeah.net') {}
-            .color(Color.Blue)
           }
         }
         .width('100%')
