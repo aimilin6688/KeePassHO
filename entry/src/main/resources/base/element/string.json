@@ -747,6 +747,10 @@
     {
       "name": "save_saving",
       "value": "Saving..."
+    },
+    {
+      "name": "refresh_success",
+      "value": "Refresh success"
     }
   ]
 }

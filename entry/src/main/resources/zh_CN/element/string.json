@@ -744,11 +744,15 @@
     },
     {
       "name": "refreshing_message",
-      "value": "刷新中..."
+      "value": "下拉刷新"
     },
     {
       "name": "save_saving",
       "value": "保存中..."
+    },
+    {
+      "name": "refresh_success",
+      "value": "刷新完成"
     }
   ]
 }
