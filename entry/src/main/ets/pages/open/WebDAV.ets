@@ -1,5 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileStorageFactory, IFileStorage, StorageType } from '../../services/kdbx/interfaces';
+import { FileStorageFactory, IFileStorage, StorageConfig, StorageType } from '../../services/kdbx/interfaces';
 import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
@@ -37,7 +37,7 @@ struct WebDAV {
 
     try {
       // 简单测试连接
-      this.initStorage().exists(this.url).then(result => {
+      this.fileManager.init(this.getStorageConfig()).exists(this.url).then(result => {
         if (result) {
           this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
           this.isErrorStatus = false;
@@ -65,9 +65,8 @@ struct WebDAV {
     this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
     this.isErrorStatus = false;
     try {
-      this.initStorage();
       // 获取文件信息
-      const fileInfo = await this.fileManager.getKdbxFileInfo(this.url);
+      const fileInfo = await this.fileManager.init(this.getStorageConfig()).getKdbxFileInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
       // 本地配置信息
@@ -126,10 +125,8 @@ struct WebDAV {
    * 初始化存储
    * @returns
    */
-  private initStorage():IFileStorage{
-    let storage = this.storageFactory.getStorage(StorageType.WEBDAV);
-    storage.init(new WebDAVStorageConfig(this.url, this.username, this.password));
-    return storage;
+  private getStorageConfig():StorageConfig{
+    return new WebDAVStorageConfig(this.url, this.username, this.password);
   }
 
   build() {

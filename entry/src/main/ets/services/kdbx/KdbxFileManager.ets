@@ -23,8 +23,17 @@ export class KdbxFileManager {
   constructor(storageType: StorageType = StorageType.LOCAL, storageConfig?: StorageConfig) {
     this.storage = FileStorageFactory.getInstance().getStorage(storageType);
     if(storageConfig) {
-      this.storage.init(storageConfig);
+      this.init(storageConfig);
     }
+  }
+
+  /**
+   * 初始化存储
+   * @param storageConfig
+   */
+  public init(storageConfig: StorageConfig): KdbxFileManager{
+    this.storage.init(storageConfig);
+    return this;
   }
 
   /**
