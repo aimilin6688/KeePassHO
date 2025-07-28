@@ -731,10 +731,6 @@
       "value": "请求超时"
     },
     {
-      "name": "webdav_error",
-      "value": "异常 %d %s"
-    },
-    {
       "name": "webdav_not_file",
       "value": "请输入文件URL地址(非文件夹)"
     },
@@ -745,6 +741,14 @@
     {
       "name": "merging_database",
       "value": "合并中..."
+    },
+    {
+      "name": "refreshing_message",
+      "value": "刷新中..."
+    },
+    {
+      "name": "save_saving",
+      "value": "保存中..."
     }
   ]
 }
