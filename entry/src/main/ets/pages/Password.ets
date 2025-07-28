@@ -1,6 +1,6 @@
 import {PromptAction, router, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import worker, { ErrorEvent, MessageEvents } from '@ohos.worker';
+import { ErrorEvent } from '@ohos.worker';
 
 
 import { AuthType, AuthTypeInfo, CredentialsParam, FileParam } from '../services/TypeDefined';
@@ -17,7 +17,8 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import ResourceManager from '../common/utils/ResourceManager';
-import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../workers/WorkerParam';
+import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
+import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -41,7 +42,6 @@ struct Password {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  private databaseWorker: worker.ThreadWorker | null = null;
 
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
@@ -68,7 +68,7 @@ struct Password {
   }
 
   aboutToDisappear() {
-    this.stopWorker();
+    KdbxLoadService.stopWorker();
   }
 
   // 更新按钮状态
@@ -144,18 +144,6 @@ struct Password {
       });
       this.router.back();
     });
-  }
-
-  /**
-   * 终止 Worker
-   */
-  private stopWorker() {
-    // 终止 Worker
-    if (this.databaseWorker) {
-      this.databaseWorker.terminate();
-      this.databaseWorker = null;
-      hilog.info(DOMAIN, TAG, 'Database worker terminated');
-    }
   }
 
   /**
@@ -235,61 +223,51 @@ struct Password {
       this.promptAction.showToast({ message: $r('app.string.storage_type_empty') });
       return;
     }
-    this.openLoadingDialog();
-    this.stopWorker();
-    this.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseLoadWorker.ets');
-    this.databaseWorker.postMessage(JSON.stringify(
-      new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig)
-    ));
 
-    // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
-    this.databaseWorker.onmessage = (e: MessageEvents) => {
-      let data = e.data as WorkerMessage;
-      // // 加载进度消息
-      if (data.type == MessageType.MESSAGE) {
-        const loadMessage = data as LoadMessage;
-        this.loadingMessage =  ResourceManager.getString(loadMessage.message);
-        hilog.info(DOMAIN, TAG, 'Received loading progress:  %{public}s', this.loadingMessage);
-      }
-      // 数据库加载成功
-      if (data.type == MessageType.SUCCESS) {
-        let successMessage = data as SuccessMessage;
-        this.init();
-        this.putFileToRecentFile();
-        this.setFileParam(successMessage).then(() => {
-          this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
-          this.router.pushUrl({ url: 'pages/DatabaseView' });
-          setTimeout(() => {
-            this.closeLoadingDialog();
-          }, 300);
-        }).catch((error: Error) => {
-          hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
-          this.promptAction.showToast({message: error.message, duration: 3000});
-          this.closeLoadingDialog();
-        });
-      }
-      // 错误消息
-      if (data.type == MessageType.ERROR) {
-        let errorMessage = data as LoadMessage;
-        this.promptAction.showToast({ message: ResourceManager.getString(errorMessage.message), duration: 3000 });
+    // 打开加载进度弹框
+    this.openLoadingDialog();
+
+    // 打开数据库
+    let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig);
+    KdbxLoadService.loadDatabase(loadDatabase, {
+      onLoadMessage: (message: LoadMessage) => {
+        this.loadingMessage =  ResourceManager.getString(message.message);
+      },
+      onSuccessMessage: (message: SuccessMessage) => {
+        this.handleSuccessMessage(message);
+      },
+      onErrorMessage: (message: LoadMessage) => {
+        this.promptAction.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
+        this.closeLoadingDialog();
+      },
+      onAllErrors: (error: ErrorEvent) => {
+        this.promptAction.showToast({ message: error.message })
+        this.closeLoadingDialog();
+      },
+      onexit: (e: number) => {
         this.closeLoadingDialog();
       }
-    }
+    });
+  }
 
-    // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
-    this.databaseWorker.onAllErrors = (err: ErrorEvent) => {
-      hilog.error(DOMAIN, TAG, 'Open database error: %{public}s', err.message);
-      if (err.message.indexOf('NativeCustomSpan') != -1) {
-        return;
-      }
-      this.promptAction.showToast({ message: err.message })
+  /**
+   * 处理数据库加载完成事件
+   * @param data
+   */
+  private handleSuccessMessage(successMessage: SuccessMessage) {
+    this.init();
+    this.putFileToRecentFile();
+    this.setFileParam(successMessage).then(() => {
+      this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
+      this.router.pushUrl({ url: 'pages/DatabaseView' });
+      setTimeout(() => {
+        this.closeLoadingDialog();
+      }, 100);
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
+      this.promptAction.showToast({message: error.message, duration: 3000});
       this.closeLoadingDialog();
-    }
-
-    // 注册onexit回调，当Worker销毁时被调用，在宿主线程执行
-    this.databaseWorker.onexit = (e: number) => {
-      this.closeLoadingDialog();
-    }
+    });
   }
 
   /**
