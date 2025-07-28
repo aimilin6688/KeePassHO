@@ -35,15 +35,16 @@ async function handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
     let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
     // 加载文件内容
     let fileContent: FileContentInfo = await loadKdbxFileContent(request);
+    let isMerge = false;
     // 修改时间不一致，则合并数据库
     if (fileContent.modifiedTime !== request.modifiedTime) {
       postMessage($r('app.string.merging_database'));
       fileContent = await mergeDatabase(request, fileContent, credentials);
+      isMerge = true;
     } else {
       fileContent = await saveDatabase(request, credentials);
     }
-    postMessage($r('app.string.loading_complete'));
-    workerPort.postMessage(new SuccessMessage(fileContent.content, fileContent.modifiedTime), [fileContent.content]);
+    workerPort.postMessage(new SuccessMessage(fileContent.content, fileContent.modifiedTime, isMerge), [fileContent.content]);
   } catch (error) {
     hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
     postErrorMessage(error.message);
@@ -86,7 +87,7 @@ async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials)
       postMessage($r('app.string.save_success_message'));
     });
     return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {
-      return new FileContentInfo(fileInfo, savedDb);
+      return new FileContentInfo(fileInfo, request.data);
     });
   });
 }
