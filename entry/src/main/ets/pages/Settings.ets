@@ -105,6 +105,26 @@ struct Settings {
             .height(48)
             .padding({ left: 16 })
           }
+
+          // 安全设置
+          ListItem() {
+            Row() {
+              Text($r('app.string.Settings_security'))
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .onClick(()=>{
+            this.router.pushUrl({
+              url: 'pages/SettingSecurity'
+            }, router.RouterMode.Single);
+          })
         }
         .backgroundColor($r("app.color.card_bg"))
         .margin({ top: 12, bottom: 12 })
