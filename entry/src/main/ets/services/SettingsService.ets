@@ -20,7 +20,10 @@ export class SettingsService {
   public static readonly KEY_SORT_BY = 'sortBy';
   // 安全设置
   public static readonly KEY_SECURITY_PULL_REFRESH = 'Security_PullRefresh';
+  public static readonly KEY_SECURITY_PULL_REFRESH_DEFAULT = true;
   public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME = 'Security_clear_pasteboard_time';
+  public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT = 30;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -155,7 +158,7 @@ export class SettingsService {
   }
 
   // 读取数据
-  public static get<T extends preferences.ValueType>(key: string, defValue: T, callback: (value: T) => void): void {
+  public static get<T extends preferences.ValueType>(key: string, defValue:T, callback: (value: T) => void): void {
     SettingsService.getInstance().get(key, defValue).then(value => {
       callback(value);
     });
@@ -167,11 +170,19 @@ export class SettingsService {
     this.observers.push(observer);
   }
 
+  public static registerObserver(observer: (key: string) => void): void {
+    SettingsService.getInstance().registerObserver(observer);
+  }
+
   // 移除观察者
   public unregisterObserver(observer: (key: string) => void): void {
     const index = this.observers.indexOf(observer);
     if (index !== -1) {
       this.observers.splice(index, 1);
     }
+  }
+
+  public static unregisterObserver(observer: (key: string) => void): void {
+    SettingsService.getInstance().unregisterObserver(observer);
   }
 }

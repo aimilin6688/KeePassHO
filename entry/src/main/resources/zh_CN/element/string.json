@@ -765,6 +765,22 @@
     {
       "name": "security_is_pull_to_refresh",
       "value": "启用下拉刷新数据库"
+    },
+    {
+      "name": "security_auto_clear_pasteboard_time",
+      "value": "自动清理粘贴板时间"
+    },
+    {
+      "name": "second",
+      "value": "秒"
+    },
+    {
+      "name": "minute",
+      "value": "分钟"
+    },
+    {
+      "name": "never",
+      "value": "从不"
     }
   ]
 }
