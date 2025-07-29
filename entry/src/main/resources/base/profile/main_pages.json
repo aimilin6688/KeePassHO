@@ -3,6 +3,7 @@
     "pages/Index",
     "pages/DatabaseView",
     "pages/Settings",
+    "pages/SettingSecurity",
     "pages/Password",
     "pages/RecentFiles",
     "pages/EntryEdit",

@@ -14,16 +14,18 @@ export class SettingsService {
   private static instance: SettingsService = new SettingsService();
   private preferences: preferences.Preferences | null = null;
   private static readonly PREFERENCES_NAME = 'settings';
-
   // 设置键名
   public static readonly KEY_THEME_MODE = 'themeMode';
   public static readonly KEY_DARK_MODE = 'darkMode'; // 保留向后兼容
   public static readonly KEY_SORT_BY = 'sortBy';
-
+  // 安全设置
+  public static readonly KEY_SECURITY_PULL_REFRESH = 'Security_PullRefresh';
+  public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME = 'Security_clear_pasteboard_time';
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
-  private constructor() {}
+  private constructor() {
+  }
 
   public static getInstance(): SettingsService {
     return SettingsService.instance;
@@ -50,7 +52,9 @@ export class SettingsService {
    * @param mode 主题模式
    */
   public async setThemeMode(mode: ThemeMode): Promise<void> {
-    if (!this.preferences) return;
+    if (!this.preferences) {
+      return;
+    }
     try {
       await this.preferences.put(SettingsService.KEY_THEME_MODE, mode);
       await this.preferences.flush();
@@ -65,7 +69,9 @@ export class SettingsService {
    * 获取主题模式
    */
   public async getThemeMode(): Promise<ThemeMode> {
-    if (!this.preferences) return ThemeMode.SYSTEM;
+    if (!this.preferences) {
+      return ThemeMode.SYSTEM;
+    }
     try {
       // 尝试获取新的主题模式设置
       const mode = await this.preferences.get(SettingsService.KEY_THEME_MODE, ThemeMode.SYSTEM) as ThemeMode;
@@ -119,13 +125,16 @@ export class SettingsService {
 
   // 写入数据并通知观察者
   public async put(key: string, value: preferences.ValueType): Promise<void> {
-    if (!this.preferences) return;
+    if (!this.preferences) {
+      return;
+    }
 
     try {
-    await this.preferences.put(key, value);
-    await this.preferences.flush(); // 重要！确保数据持久化
-    // 通知所有观察者
-    this.observers.forEach(observer => observer(key));
+      await this.preferences.put(key, value);
+      await this.preferences.flush(); // 重要！确保数据持久化
+      // 通知所有观察者
+      this.observers.forEach(observer => observer(key));
+      return Promise.resolve();
     } catch (err) {
       hilog.error(DOMAIN, TAG, `Failed to set ${(err as BusinessError).code} by ${(err as BusinessError).message}`);
     }
@@ -133,15 +142,25 @@ export class SettingsService {
 
   // 读取数据
   public async get<T extends preferences.ValueType>(key: string, defValue: T): Promise<T> {
-    if (!this.preferences) return defValue;
+    if (!this.preferences) {
+      return defValue;
+    }
 
     try {
-      return (await this.preferences.get(key, defValue)) as T;
+      return (this.preferences.get(key, defValue)) as T;
     } catch (err) {
       hilog.error(DOMAIN, TAG, `Failed to get value. Code: ${(err as BusinessError).code}`);
       return defValue;
     }
   }
+
+  // 读取数据
+  public static get<T extends preferences.ValueType>(key: string, defValue: T, callback: (value: T) => void): void {
+    SettingsService.getInstance().get(key, defValue).then(value => {
+      callback(value);
+    });
+  }
+
 
   // 注册观察者
   public registerObserver(observer: (key: string) => void): void {
