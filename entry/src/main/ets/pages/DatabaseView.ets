@@ -39,6 +39,8 @@ struct DatabaseView {
   @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
   @State moveParam: MoveParam | undefined = undefined; // 移动参数
   @State refreshText: ResourceStr = $r('app.string.refreshing_message');
+  @State isPullToRefresh: boolean = true;
+
 
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
@@ -49,8 +51,7 @@ struct DatabaseView {
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
 
-
-  dialogController: CustomDialogController = new CustomDialogController({
+  private dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
       editingGroupIndex: this.editingGroupIndex,
@@ -69,6 +70,7 @@ struct DatabaseView {
 
   aboutToAppear() {
     this.clearUrl();
+    this.initSettings();
     // 注册数据库合并事件
     EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
       this.reloadDatabase();
@@ -82,19 +84,30 @@ struct DatabaseView {
       this.onThemeChanged();
     });
     // 监听排序方式变化
-    this.settingsService.registerObserver(this.onSortChanged);
+    this.settingsService.registerObserver(this.onSettingChanged);
   }
 
   aboutToDisappear() {
     // 移除监听器
     EventBus.off<void>(EventBus.DATABASE_UPDATE);
     ThemeManager.getInstance().removeThemeChangeListenerAll();
-    this.settingsService.unregisterObserver(this.onSortChanged);
+    this.settingsService.unregisterObserver(this.onSettingChanged);
   }
 
   onPageShow(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', `Load DatabaseView Page: ${JSON.stringify(this.databaseShowParam)}`);
     this.updateUI();
+  }
+
+  /**
+   * 初始化配置参数
+   */
+  private initSettings() {
+    // 下拉刷新
+    this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, true).then(result => {
+      this.isPullToRefresh = result;
+      this.refreshText = result ? $r('app.string.refreshing_message') : $r('app.string.refreshing_disable');
+    })
   }
 
   /**
@@ -141,7 +154,7 @@ struct DatabaseView {
   /**
    * 监听主题变化
    */
-  private onSortChanged = (key: string) => {
+  private onSettingChanged = (key: string) => {
     hilog.info(DOMAIN, TAG, '%{public}s', `Configuration changed: ${key}`);
     if (key == SettingsService.KEY_SORT_BY) {
       SettingsService.getInstance().getSortBy().then((sortBy: SortMode) => {
@@ -149,6 +162,7 @@ struct DatabaseView {
         this.updateUI();
       });
     }
+    this.initSettings();
   }
 
   private initData(dbShowParam: DatabaseShowParam | undefined) {
@@ -204,7 +218,7 @@ struct DatabaseView {
   /**
    * 重新加载数据库
    */
-  private refreshDatabase(){
+  private refreshDatabase() {
     let loadParam = LoadDatabase.byDbFileParam(FileService.getDbFileParam());
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (successMessage: SuccessMessage) => {
@@ -212,17 +226,17 @@ struct DatabaseView {
           FileService.resetDbFileParam(database, successMessage.modifiedTime);
           this.refreshText = $r('app.string.refreshing_message');
           EventBus.emit<void>(EventBus.DATABASE_UPDATE);
-          this.promptAction.showToast({message: $r('app.string.refresh_success')});
+          this.promptAction.showToast({ message: $r('app.string.refresh_success') });
           this.isRefreshing = false;
         });
       },
       onLoadMessage: (message: LoadMessage) => {
-        this.refreshText =  ResourceManager.getString(message.message);
+        this.refreshText = ResourceManager.getString(message.message);
         this.isRefreshing = false;
       },
       onErrorMessage: (message: LoadMessage) => {
-        this.refreshText =  ResourceManager.getString(message.message);
-        this.promptAction.showToast({message: this.refreshText});
+        this.refreshText = ResourceManager.getString(message.message);
+        this.promptAction.showToast({ message: this.refreshText });
         this.isRefreshing = false;
       },
     });
@@ -733,7 +747,7 @@ struct DatabaseView {
           }
           .backgroundColor($r("app.color.bg_primary"))
           .refreshOffset(140)
-          .pullToRefresh(true)
+          .pullToRefresh(this.isPullToRefresh)
           .onRefreshing(() => {
             this.refreshDatabase();
           })

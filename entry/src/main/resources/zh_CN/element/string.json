@@ -753,6 +753,14 @@
     {
       "name": "refresh_success",
       "value": "刷新完成"
+    },
+    {
+      "name": "Settings_security",
+      "value": "安全设置"
+    },
+    {
+      "name": "refreshing_disable",
+      "value": "已禁用下拉刷新"
     }
   ]
 }
