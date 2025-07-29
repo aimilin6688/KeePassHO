@@ -78,7 +78,7 @@ export default class KdbxSaveService {
    * 处理来自线程的错误消息
    * @param data
    */
-  private static handleErrorMessage(data: WorkerMessage){
+  private static handleErrorMessage(data: WorkerMessage) {
     // 错误消息
     let errorMessage = data as LoadMessage;
     hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', errorMessage.message);
@@ -107,10 +107,11 @@ export default class KdbxSaveService {
     if (successMessage.isMerge) {
       KdbxUtils.arrayBufferToKdbx(successMessage.data, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
-        EventBus.emit<void>(EventBus.DATABASE_UPDATE);
+        EventBus.emit<void>(EventBus.DATABASE_MERGE);
       })
+    } else {
+      EventBus.emit<void>(EventBus.DATABASE_UPDATE);
     }
     CommonUtils.showToast(ResourceManager.getString($r('app.string.save_success_message')));
   }
-
 }
