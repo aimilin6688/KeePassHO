@@ -39,7 +39,7 @@ struct DatabaseView {
   @State sortBy: SortMode = SortMode.DEFAULT; // 排序方式：'default' | 'name' | 'modified' | 'created'
   @State moveParam: MoveParam | undefined = undefined; // 移动参数
   @State refreshText: ResourceStr = $r('app.string.refreshing_message');
-  @State isPullToRefresh: boolean = true;
+  @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
 
 
   private database: Kdbx | null = null;
@@ -104,7 +104,7 @@ struct DatabaseView {
    */
   private initSettings() {
     // 下拉刷新
-    this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, true).then(result => {
+    this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT).then(result => {
       this.isPullToRefresh = result;
       this.refreshText = result ? $r('app.string.refreshing_message') : $r('app.string.refreshing_disable');
     })

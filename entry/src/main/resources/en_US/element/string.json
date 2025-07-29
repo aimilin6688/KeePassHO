@@ -763,6 +763,22 @@
     {
       "name": "refreshing_disable",
       "value": "Refreshing is disabled"
+    },
+    {
+      "name": "security_auto_clear_pasteboard_time",
+      "value": "Auto clear pasteboard time"
+    },
+    {
+      "name": "second",
+      "value": "Seconds"
+    },
+    {
+      "name": "minute",
+      "value": "Minutes"
+    },
+    {
+      "name": "never",
+      "value": "Never"
     }
   ]
 }

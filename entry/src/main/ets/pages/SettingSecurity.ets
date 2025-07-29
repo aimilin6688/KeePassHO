@@ -1,29 +1,37 @@
-import { SettingsService } from "../services/SettingsService";
-import { Router } from "@kit.ArkUI";
+import { SettingsService } from '../services/SettingsService';
+import { Router } from '@kit.ArkUI';
+import ResourceManager from '../common/utils/ResourceManager';
 
 
 @Entry
 @Component
 export struct SettingsSecurity {
-  @State isPullToRefresh:boolean = true;
-  @State clipboardClearTime:number = 30;
+  @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
+  @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
 
-
+  private clearTimeOptions: Array<TimeOption> = [
+    { value: "15 " + ResourceManager.getString($r("app.string.second")), time: 15 },
+    { value: "30 " + ResourceManager.getString($r("app.string.second")), time: 30 },
+    { value: "1 " + ResourceManager.getString($r("app.string.minute")), time: 60 },
+    { value: "3 " + ResourceManager.getString($r("app.string.minute")), time: 180 },
+    { value: "5 " + ResourceManager.getString($r("app.string.minute")), time: 300 },
+    { value: "10 " + ResourceManager.getString($r("app.string.minute")), time: 600 },
+    { value: ResourceManager.getString($r("app.string.never")), time: -1 },
+  ];
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
   aboutToAppear(): void {
     // 获取是否开启下拉刷新功能
-    this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, true).then(result=>{
+    this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, this.isPullToRefresh).then(result => {
       this.isPullToRefresh = result;
     });
 
     // 获取清理剪切板时间
-    this.settingsService.get(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, 30).then(result=>{
+    this.settingsService.get(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, this.clipboardClearTime).then(result => {
       this.clipboardClearTime = result;
     });
   }
-
 
   build() {
     Column() {
@@ -63,6 +71,28 @@ export struct SettingsSecurity {
             .width('100%')
             .padding(16)
           }
+
+          // 剪切板自动清理时间
+          ListItem() {
+            Row() {
+              Text($r("app.string.security_auto_clear_pasteboard_time"))
+                .fontSize(16)
+                .flexGrow(1)
+
+              Select(this.clearTimeOptions)
+                .value(this.clearTimeOptions[this.clearTimeOptions.findIndex((item) => item.time === this.clipboardClearTime)].value)
+                .font({ size: 16 })
+                .selectedOptionFont({ size: 16 })
+                .optionFont({ size: 16 })
+                .backgroundColor($r("app.color.card_bg"))
+                .onSelect(async (index: number) => {
+                  this.clipboardClearTime = this.clearTimeOptions[index].time;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, this.clipboardClearTime);
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
         }
         .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
@@ -83,4 +113,12 @@ export struct SettingsSecurity {
     .backgroundColor($r("app.color.bg_primary"))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
+}
+
+/**
+ * 主题选项接口
+ */
+export interface TimeOption {
+  time: number;
+  value: string;
 }

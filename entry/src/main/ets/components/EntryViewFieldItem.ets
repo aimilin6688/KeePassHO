@@ -1,11 +1,11 @@
-import { pasteboard } from "@kit.BasicServicesKit";
-import { PromptAction } from "@kit.ArkUI";
-import KdbxUtils from "../common/utils/KdbxUtils";
-import { KdbxEntry } from "kdbxweb";
-
+import { pasteboard } from '@kit.BasicServicesKit';
+import { PromptAction } from '@kit.ArkUI';
+import KdbxUtils from '../common/utils/KdbxUtils';
+import { KdbxEntry } from 'kdbxweb';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { Icons } from "../services/TypeDefined";
+import { Icons } from '../services/TypeDefined';
+import { SettingsService } from '../services/SettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -34,26 +34,70 @@ export class FieldView {
 @Component
 export struct EntryViewFieldItem {
   @ObjectLink field: FieldView;
-  @State entry:KdbxEntry | null = null;
-
+  @State entry: KdbxEntry | null = null;
+  @State autoClearClipboardTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private timeOutObj: number = -1;
+  private systemPasteboard: pasteboard.SystemPasteboard = pasteboard.getSystemPasteboard();
+
+  aboutToAppear(): void {
+    this.initSettings();
+    // 监听排序方式变化
+    SettingsService.registerObserver(this.initSettings);
+  }
+
+  aboutToDisappear(): void {
+    SettingsService.unregisterObserver(this.initSettings);
+  }
+
+  /**
+   * 初始化系统配置参数
+   */
+  private initSettings = (key?: string) => {
+    if (!key || key === SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME) {
+      SettingsService.get(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, this.autoClearClipboardTime, (value) => {
+        this.autoClearClipboardTime = value;
+      });
+    }
+  }
 
   /**
    * 复制文本到剪贴板
    */
   private copyToClipboard(text: string) {
-    let systemPasteboard: pasteboard.SystemPasteboard = pasteboard.getSystemPasteboard();
     // 获取系统剪贴板实例
     const pasteboardData = pasteboard.createData('text/plain', text);
     // 将数据写入剪贴板
-    systemPasteboard.setData(pasteboardData, (error, data) => {
+    this.systemPasteboard.setData(pasteboardData, (error, data) => {
       if (error) {
         hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %{public}s %{public}s %{public}s %{public}s', error.message, error.code, error.name, error.stack);
         this.promptAction.showToast({ message: $r("app.string.copy_failed") });
       } else {
+        this.clearClipboard(pasteboardData);
         this.promptAction.showToast({ message: $r("app.string.copied"), duration: 2000 });
       }
     });
+  }
+
+  /**
+   * 清理剪切板数据
+   * @param pasteData
+   */
+  private clearClipboard(pasteData?: pasteboard.PasteData) {
+    try {
+      if (this.autoClearClipboardTime <= 0) {
+        return;
+      }
+      if (this.timeOutObj != -1) {
+        clearTimeout(this.timeOutObj);
+        this.timeOutObj = -1;
+      }
+      this.timeOutObj = setTimeout(() => {
+        pasteboard.getSystemPasteboard().clearData();
+      }, 1000 * this.autoClearClipboardTime);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to clear clipboard: ${error}`)
+    }
   }
 
   /**
@@ -82,7 +126,7 @@ export struct EntryViewFieldItem {
       case KdbxUtils.FIELD_EXPIRY_TIME:
         return $r("app.media.C45_Expired");
       default:
-      return $r("app.media.ic_color_note");
+        return $r("app.media.ic_color_note");
     }
   }
 
@@ -99,8 +143,7 @@ export struct EntryViewFieldItem {
     return KdbxUtils.getIcon(Icons.Folder, undefined, $r('app.media.ic_folder'));
   }
 
-
-  build(){
+  build() {
     Row() {
       // 左侧图标
       Image(this.getFieldIcon(this.field.key))
@@ -163,5 +206,4 @@ export struct EntryViewFieldItem {
     .padding(12)
     .margin({ bottom: 8 })
   }
-
 }
