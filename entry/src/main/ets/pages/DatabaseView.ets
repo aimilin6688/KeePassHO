@@ -98,6 +98,10 @@ struct DatabaseView {
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
 
+  onPageShow(): void {
+    this.moveParam = MoveParam.getInstance();
+  }
+
   /**
    * 初始化配置参数
    */
@@ -459,7 +463,6 @@ struct DatabaseView {
    * 强制组件刷新
    */
   private updateUI() {
-    this.moveParam = MoveParam.getInstance();
     // 强制刷新UI - 先清空数组，再重新加载
     this.groups = [];
     this.entries = [];
