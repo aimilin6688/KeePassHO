@@ -162,11 +162,6 @@ export struct EntryViewFieldItem {
     .borderRadius(8)
     .padding(12)
     .margin({ bottom: 8 })
-    .onClick(() => {
-      if (this.field.value && this.field.isCopy) {
-        this.copyToClipboard(this.field.value);
-      }
-    })
   }
 
 }

@@ -732,7 +732,7 @@ struct DatabaseView {
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
           }
           .backgroundColor($r("app.color.bg_primary"))
-          .refreshOffset(64)
+          .refreshOffset(124)
           .pullToRefresh(true)
           .onRefreshing(() => {
             this.refreshDatabase();
