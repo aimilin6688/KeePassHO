@@ -94,11 +94,6 @@ struct DatabaseView {
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
 
-  onPageShow(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', `Load DatabaseView Page: ${JSON.stringify(this.databaseShowParam)}`);
-    this.updateUI();
-  }
-
   /**
    * 初始化配置参数
    */
