@@ -751,6 +751,18 @@
     {
       "name": "refresh_success",
       "value": "Refresh success"
+    },
+    {
+      "name": "Settings_security",
+      "value": "Setting security"
+    },
+    {
+      "name": "security_is_pull_to_refresh",
+      "value": "Enable pull to refresh database"
+    },
+    {
+      "name": "refreshing_disable",
+      "value": "Refreshing is disabled"
     }
   ]
 }
