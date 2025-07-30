@@ -781,6 +781,42 @@
     {
       "name": "never",
       "value": "从不"
+    },
+    {
+      "name": "close_button_text",
+      "value": "关闭"
+    },
+    {
+      "name": "unlock",
+      "value": "解锁"
+    },
+    {
+      "name": "quick_unlock",
+      "value": "快速解锁"
+    },
+    {
+      "name": "security_auto_lock_time",
+      "value": "后台自动锁定时长"
+    },
+    {
+      "name": "security_quick_lock_password_length",
+      "value": "快速解锁密码长度"
+    },
+    {
+      "name": "input_quick_unlock_password",
+      "value": "输入你密码的最后 %d 个字符"
+    },
+    {
+      "name": "password_error",
+      "value": "无效的密码"
+    },
+    {
+      "name": "password_length_error",
+      "value": "密码长度有误"
+    },
+    {
+      "name": "hour",
+      "value": "小时"
     }
   ]
 }
