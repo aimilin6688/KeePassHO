@@ -779,6 +779,42 @@
     {
       "name": "never",
       "value": "Never"
+    },
+    {
+      "name": "quick_unlock",
+      "value": "Quick Unlock"
+    },
+    {
+      "name": "close_button_text",
+      "value": "Close"
+    },
+    {
+      "name": "unlock",
+      "value": "Unlock"
+    },
+    {
+      "name": "security_auto_lock_time",
+      "value": "Background auto lock after time"
+    },
+    {
+      "name": "security_quick_lock_password_length",
+      "value": "Quick lock password min length"
+    },
+    {
+      "name": "input_quick_unlock_password",
+      "value": "Please use password last %d char"
+    },
+    {
+      "name": "password_error",
+      "value": "Invalid password"
+    },
+    {
+      "name": "password_length_error",
+      "value": "Invalid password length"
+    },
+    {
+      "name": "hour",
+      "value": "Hour"
     }
   ]
 }
