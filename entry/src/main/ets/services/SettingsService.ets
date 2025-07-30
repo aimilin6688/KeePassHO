@@ -23,6 +23,10 @@ export class SettingsService {
   public static readonly KEY_SECURITY_PULL_REFRESH_DEFAULT = true;
   public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME = 'Security_clear_pasteboard_time';
   public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT = 30;
+  public static readonly KEY_SECURITY_AUTO_LOCK_TIME = 'Security_auto_lock_time';
+  public static readonly KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT = 30;
+  public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH = 'Security_quick_lock_password_length';
+  public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 4;
 
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
