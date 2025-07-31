@@ -8,6 +8,9 @@ struct OpenDatabase {
 
   @Builder
   OpenMethodButton(icon: Resource, title: string|Resource, description: string|Resource, onClick: () => void) {
+    Divider()
+      .color($r("app.color.bg_primary"))
+      .strokeWidth(1)
     Button() {
       Row() {
         Image(icon)
@@ -94,7 +97,7 @@ struct OpenDatabase {
             )
 
             this.OpenMethodButton(
-              $r('app.media.ic_cloud'),
+              $r("app.media.ic_webdav"),
               $r('app.string.webdav_button_title'),
               $r('app.string.webdav_button_description'),
               () => {
