@@ -815,6 +815,10 @@
     {
       "name": "hour",
       "value": "Hour"
+    },
+    {
+      "name": "please_auth_fingerprint",
+      "value": "Please auth fingerprint"
     }
   ]
 }
