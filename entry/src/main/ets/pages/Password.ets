@@ -19,6 +19,7 @@ import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import ResourceManager from '../common/utils/ResourceManager';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
+import { FocusController } from '@ohos.arkui.UIContext';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -42,6 +43,7 @@ struct Password {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+  private focusController: FocusController = new FocusController();
 
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
@@ -390,6 +392,7 @@ struct Password {
         // 密码输入框
         Row() {
           TextInput({ placeholder: $r('app.string.password_placeholder') })
+            .key("passwordInput")
             .type(this.showPassword ? InputType.Normal : InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
@@ -404,6 +407,9 @@ struct Password {
             })
             .onSubmit(() => {
               this.verifyAndOpenDatabase();
+            })
+            .onAppear(()=>{
+              this.focusController.requestFocus("passwordInput");
             })
         }
         .width('90%')

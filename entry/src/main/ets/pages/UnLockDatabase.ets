@@ -2,6 +2,7 @@ import { FileService } from '../services/FileService';
 import { SettingsService } from '../services/SettingsService';
 import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
+import { FocusController } from '@ohos.arkui.UIContext';
 
 
 @Entry
@@ -12,6 +13,7 @@ struct UnLockDatabase {
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
+  private focusController: FocusController = new FocusController();
 
   aboutToAppear(): void {
 
@@ -87,6 +89,7 @@ struct UnLockDatabase {
 
           TextInput({ text: this.quickPassword })
             .width('100%')
+            .key("quickPasswordInput")
             .type(InputType.Password)
             .fontSize(16)
             .enableAutoFill(false)
@@ -94,6 +97,12 @@ struct UnLockDatabase {
             .borderRadius(8)
             .onChange((value) => {
               this.quickPassword = value;
+            })
+            .onSubmit(() => {
+              this.quickUnlock();
+            })
+            .onAppear(() => {
+              this.focusController.requestFocus('quickPasswordInput'); // 传入组件key
             })
         }
         .width('100%')
