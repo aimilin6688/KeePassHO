@@ -2,8 +2,14 @@ import { FileService } from '../services/FileService';
 import { SettingsService } from '../services/SettingsService';
 import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FocusController } from '@ohos.arkui.UIContext';
+import { userAuth } from '@kit.UserAuthenticationKit';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import ResourceManager from '../common/utils/ResourceManager';
 
+const DOMAIN = 0x0000;
+const TAG = 'UnLockDatabase';
 
 @Entry
 @Component
@@ -13,7 +19,16 @@ struct UnLockDatabase {
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
-  private focusController: FocusController = new FocusController();
+  private rand = cryptoFramework.createRandom();
+  private authTrustLevel: userAuth.AuthTrustLevel = userAuth.AuthTrustLevel.ATL3; // 安全等级
+  private authParam: userAuth.AuthParam = {
+    challenge: this.rand?.generateRandomSync(16)?.data,
+    authType: [userAuth.UserAuthType.FINGERPRINT],
+    authTrustLevel: this.authTrustLevel
+  };
+  private widgetParam: userAuth.WidgetParam = {title:  ResourceManager.getString($r("app.string.please_auth_fingerprint"))};
+  private isFingerprintSupport =  this.checkFingerprintSupport();
+
 
   aboutToAppear(): void {
 
@@ -23,6 +38,9 @@ struct UnLockDatabase {
     SettingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength, (value) => {
       this.quickLockPasswordLength = value;
     });
+    if(this.isFingerprintSupport){
+      this.startAuth();
+    }
   }
 
   private quickUnlock() {
@@ -57,6 +75,40 @@ struct UnLockDatabase {
     FileService.getInstance().init();
     this.router.pushUrl({ url: 'pages/Index' });
   }
+
+  // 检查设备是否支持指纹功能
+  private checkFingerprintSupport(): boolean {
+    try {
+      userAuth.getAvailableStatus(userAuth.UserAuthType.FINGERPRINT, this.authTrustLevel);
+      return true;
+    } catch (error) {
+      hilog.info(DOMAIN, TAG, "Device does not support fingerprint");
+      return false;
+    }
+  }
+
+  // 开始指纹验证
+  private startAuth() {
+    try {
+      const authInstance = userAuth.getUserAuthInstance(this.authParam, this.widgetParam);
+      const router = this.router;
+      authInstance.on('result', {
+        onResult(result) {
+          if (result.result === userAuth.UserAuthResultCode.SUCCESS) {
+            router.pushUrl({ url: 'pages/DatabaseView' });
+          } else {
+            hilog.error(DOMAIN, TAG, "Auth fail，error：" + result.result);
+          }
+          authInstance.off('result');
+        }
+      });
+      authInstance.start();
+    } catch (error) {
+      const err: BusinessError = error as BusinessError;
+      hilog.error(DOMAIN, TAG, `auth catch error. Code is ${err?.code}, message is ${err?.message}`);
+    }
+  }
+
 
   build() {
     Column() {
@@ -100,9 +152,6 @@ struct UnLockDatabase {
             })
             .onSubmit(() => {
               this.quickUnlock();
-            })
-            .onAppear(() => {
-              this.focusController.requestFocus('quickPasswordInput'); // 传入组件key
             })
         }
         .width('100%')
