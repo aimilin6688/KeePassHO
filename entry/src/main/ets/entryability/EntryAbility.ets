@@ -29,12 +29,10 @@ export default class EntryAbility extends UIAbility {
   private async init() {
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
-
     // 初始化资源管理器
     ResourceManager.getInstance().init(this.context);
     // 最近打开的文件服务
     RecentFilesService.getInstance().init(this.context);
-
     // 初始化设置服务
     await SettingsService.getInstance().init(this.context);
   }
@@ -60,12 +58,12 @@ export default class EntryAbility extends UIAbility {
   }
 
   onForeground(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onForeground');
-    this.tryLockScreen();
+    if(this.isLockScreen()){
+      this.tryLockScreen();
+    }
   }
 
   onBackground(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onBackground');
     if (this.isLockScreen()) {
       this.backgroundTime = new Date().getTime(); // 记录当前时间戳
     }
