@@ -122,12 +122,12 @@ struct UnLockDatabase {
             Image($r('sys.media.ohos_ic_public_cancel_filled'))
               .width(20)
               .height(20)
-              .fillColor($r('app.color.text_primary'))
+              .fillColor($r('app.color.button_text'))
               .margin({ right: 8 })
 
             Text($r('app.string.close_button_text'))
               .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
+              .fontColor($r('app.color.button_text'))
           }
           .width('100%')
           .justifyContent(FlexAlign.Center)
@@ -147,12 +147,12 @@ struct UnLockDatabase {
             Image($r('app.media.ic_check'))
               .width(20)
               .height(20)
-              .fillColor($r('app.color.text_primary'))
+              .fillColor($r('app.color.button_text'))
               .margin({ right: 8 })
 
             Text($r('app.string.unlock'))
               .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
+              .fontColor($r('app.color.button_text'))
           }
           .width('100%')
           .justifyContent(FlexAlign.Center)
