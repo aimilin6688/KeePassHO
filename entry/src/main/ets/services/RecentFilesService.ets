@@ -5,7 +5,7 @@ import { RecentFile } from './TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import FileUtils from '../common/utils/FIleUtils';
 import { fileShare } from '@kit.CoreFileKit';
-import { common } from '@kit.AbilityKit';
+import { common, contextConstant } from '@kit.AbilityKit';
 import DeviceUtils from '../common/utils/DeviceUtils';
 
 const DOMAIN = 0x0000;
@@ -45,7 +45,13 @@ export class RecentFilesService {
       hilog.error(DOMAIN, TAG, 'Context is null');
       throw new Error('Context is null');
     }
-    return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
+    let area: contextConstant.AreaMode = this.context.area;
+    try {
+      this.context.area = contextConstant.AreaMode.EL5;
+      return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
+    } finally {
+      this.context.area = area;
+    }
   }
 
   /**
@@ -54,7 +60,7 @@ export class RecentFilesService {
    * @returns 结果
    */
   public async addRecentFile(recentFile: RecentFile): Promise<void> {
-    if(!recentFile.filePath.startsWith("file://")){
+    if (!recentFile.filePath.startsWith("file://")) {
       return this.doAdd(recentFile);
     }
     // 如果拥有持久化授权，则添加到最近访问列表中
