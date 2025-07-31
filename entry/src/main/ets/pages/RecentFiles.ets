@@ -3,6 +3,8 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { StorageType } from '../services/kdbx/interfaces/StorageType';
+
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
 
@@ -107,6 +109,16 @@ struct RecentFiles {
     }
   }
 
+  private getStorageTypeIcon(storageType: StorageType): ResourceStr{
+		switch (storageType){
+      case StorageType.LOCAL:
+        return $r('app.media.ic_file');
+      case StorageType.WEBDAV:
+        return $r('app.media.ic_webdav');
+    }
+    return $r('app.media.ic_file');
+	}
+
   build() {
     Column() {
       // 标题栏
@@ -134,6 +146,7 @@ struct RecentFiles {
       .width('100%')
       .height(56)
       .padding({ left: 16, right: 16 })
+      .backgroundColor($r("app.color.card_bg"))
 
       // 文件列表
       if (this.isLoading) {
@@ -158,7 +171,7 @@ struct RecentFiles {
           ForEach(this.recentFiles, (file: RecentFile) => {
             ListItem() {
               Row() {
-                Image($r('app.media.ic_file'))
+                Image(this.getStorageTypeIcon(file.storageType))
                   .width(40)
                   .height(40)
                   .fillColor($r('app.color.text_primary'))
@@ -166,7 +179,9 @@ struct RecentFiles {
                 Column() {
                   Text(file.fileName)
                     .fontSize(16)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .fontWeight(FontWeight.Medium)
+                    .maxLines(1)
                     .margin({ bottom: 4 })
                   Text(file.filePath)
                     .fontSize(14)
@@ -188,8 +203,10 @@ struct RecentFiles {
                 })
               }
               .width('100%')
-              .padding({top: 16 , bottom: 16 })
+              .height(60)
+              .padding({ left: 10, right: 10 })
               .borderRadius(8)
+              .backgroundColor($r("app.color.card_bg"))
               .onClick(() => {
                 this.openFile(file);
               })
@@ -200,7 +217,7 @@ struct RecentFiles {
         .width('100%')
         .height('100%')
         .layoutWeight(1)
-        .padding({ left: 16, right: 16 })
+        .padding({ left: 16, right: 16, top: 12, bottom: 0 })
       }
     }
     .width('100%')

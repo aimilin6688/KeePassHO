@@ -538,33 +538,39 @@ struct DatabaseView {
               })
           }
           if (!this.isSearching) {
-            Text(this.titleName)
-              .fontSize(20)
-              .fontWeight(FontWeight.Medium)
-              .margin({ left: 16 })
-              .fontColor($r('app.color.text_primary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Blank()
-            // 搜索按钮
-            Image($r('app.media.ic_search'))
-              .width(24)
-              .height(24)
-              .margin({ right: 16 })
-              .fillColor($r('app.color.text_primary'))
-              .onClick(() => {
-                this.isSearching = true;
-                this.searchText = '';
-                this.filteredGroups = [...this.groups];
-                this.filteredEntries = [...this.entries];
-              })
-            Image($r('app.media.ic_settings'))
-              .width(24)
-              .height(24)
-              .margin({ right: 16 })
-              .onClick(() => {
-                this.router.pushUrl({ url: 'pages/Settings' })
-              })
+            Row(){
+              Text(this.titleName)
+                .fontSize(20)
+                .fontWeight(FontWeight.Medium)
+                .margin({ left: 16 })
+                .fontColor($r('app.color.text_primary'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .width('70%')
+              Blank()
+              // 搜索按钮
+              Image($r('app.media.ic_search'))
+                .width(24)
+                .height(24)
+                .margin({ right: 16 })
+                .fillColor($r('app.color.text_primary'))
+                .onClick(() => {
+                  this.isSearching = true;
+                  this.searchText = '';
+                  this.filteredGroups = [...this.groups];
+                  this.filteredEntries = [...this.entries];
+                })
+              Image($r('app.media.ic_settings'))
+                .width(24)
+                .height(24)
+                .margin({ right: 16 })
+                .onClick(() => {
+                  this.router.pushUrl({ url: 'pages/Settings' })
+                })
+            }
+            .alignItems(VerticalAlign.Center)
+            .width('auto')
+            .layoutWeight(1)
           } else {
             Blank()
             // 搜索框
@@ -647,15 +653,20 @@ struct DatabaseView {
                       Text(KdbxUtils.getFieldName(itemGroup.name))
                         .fontSize(18)
                         .textAlign(TextAlign.Start)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
                         .flexGrow(1)
+                        .maxLines(1)
                       Text($r("app.string.group_items_message", this.groupItemCount(itemGroup)))
                         .fontSize(12)
                         .textAlign(TextAlign.Start)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
                         .flexGrow(1)
                         .margin({ top: 4 })
+                        .maxLines(2)
                     }
                     .flexGrow(1)
                     .alignItems(HorizontalAlign.Start)
+                    .layoutWeight(1)
 
                     Image($r('app.media.ic_arrow_right'))
                       .width(20)
@@ -692,6 +703,8 @@ struct DatabaseView {
                         .fontSize(18)
                         .textAlign(TextAlign.Start)
                         .flexGrow(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        .maxLines(1)
                         .decoration({
                           type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
                         })
@@ -699,12 +712,16 @@ struct DatabaseView {
                         .fontSize(12)
                         .textAlign(TextAlign.Start)
                         .flexGrow(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        .maxLines(1)
+                        .margin({ top: 4 })
                         .decoration({
                           type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
                         })
                     }
                     .flexGrow(1)
                     .alignItems(HorizontalAlign.Start)
+                    .layoutWeight(1)
 
                     Image($r('app.media.ic_arrow_right'))
                       .width(20)
