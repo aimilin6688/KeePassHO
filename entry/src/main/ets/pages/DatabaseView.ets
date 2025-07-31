@@ -50,6 +50,7 @@ struct DatabaseView {
   private settingsService: SettingsService = SettingsService.getInstance();
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
+  private clearHistoryUrlPage:Array<string> = ["Password", "UnLockDatabase"];
 
   private dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
@@ -149,7 +150,7 @@ struct DatabaseView {
       return;
     }
     let prePage = this.router.getStateByIndex(parseInt(this.router.getLength()) - 1);
-    if (prePage && prePage.name == 'Password') {
+    if (prePage && this.clearHistoryUrlPage.includes(prePage.name)) {
       this.router.clear();
     }
   }

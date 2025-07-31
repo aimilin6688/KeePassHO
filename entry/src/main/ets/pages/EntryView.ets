@@ -446,12 +446,12 @@ struct EntryView {
                 Image($r('app.media.ic_rollback'))
                   .width(20)
                   .height(20)
-                  .fillColor($r('app.color.text_primary'))
+                  .fillColor($r('app.color.button_text'))
                   .margin({ right: 8 })
 
                 Text($r('app.string.rollback_button_text'))
                   .fontSize(16)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('app.color.button_text'))
               }
               .width('100%')
               .justifyContent(FlexAlign.Center)
@@ -471,12 +471,12 @@ struct EntryView {
                 Image($r('app.media.ic_delete'))
                   .width(20)
                   .height(20)
-                  .fillColor($r('app.color.text_primary'))
+                  .fillColor($r('app.color.button_text'))
                   .margin({ right: 8 })
 
                 Text($r('app.string.delete_button_text'))
                   .fontSize(16)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('app.color.button_text'))
               }
               .width('100%')
               .justifyContent(FlexAlign.Center)
