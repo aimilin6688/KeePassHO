@@ -22,6 +22,7 @@ export struct SettingsSecurity {
   ];
   // 至于后台多长时间自动锁定
   private autoLockTimeOptions: Array<TimeOption> = [
+    { value: "5 " + ResourceManager.getString($r("app.string.second")), time: 5 },
     { value: "30 " + ResourceManager.getString($r("app.string.second")), time: 30 },
     { value: "1 " + ResourceManager.getString($r("app.string.minute")), time: 60 },
     { value: "3 " + ResourceManager.getString($r("app.string.minute")), time: 180 },

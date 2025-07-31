@@ -39,7 +39,7 @@ struct UnLockDatabase {
       this.quickLockPasswordLength = value;
     });
     if(this.isFingerprintSupport){
-      this.startAuth();
+      this.startFingerprintAuth();
     }
   }
 
@@ -88,7 +88,7 @@ struct UnLockDatabase {
   }
 
   // 开始指纹验证
-  private startAuth() {
+  private startFingerprintAuth() {
     try {
       const authInstance = userAuth.getUserAuthInstance(this.authParam, this.widgetParam);
       const router = this.router;
@@ -162,6 +162,26 @@ struct UnLockDatabase {
       .justifyContent(FlexAlign.Start)
       .layoutWeight(1)
       .padding({ left: 16, right: 16 })
+
+      if (this.isFingerprintSupport){
+        Row() {
+          Text($r('app.string.auth_by_fingerprint'))
+            .fontSize(14)
+            .fontColor($r('app.color.button_bg_blue'))
+            .margin({ bottom: 8 })
+            .decoration({
+              type: TextDecorationType.Underline,
+              color: $r('app.color.button_bg_blue')
+            })
+            .onClick(() => {
+              this.startFingerprintAuth();
+            })
+        }
+        .justifyContent(FlexAlign.Center)
+        .width('100%')
+        .position({ x: 0, y: '100%' })
+        .translate({ y: -100 }) // 调整位置，确保正确显示
+      }
 
       // 操作按钮
       Row() {
