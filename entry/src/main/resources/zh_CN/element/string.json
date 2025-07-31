@@ -821,6 +821,10 @@
     {
       "name": "please_auth_fingerprint",
       "value": "请验证指纹"
+    },
+    {
+      "name": "auth_by_fingerprint",
+      "value": "指纹登录"
     }
   ]
 }
