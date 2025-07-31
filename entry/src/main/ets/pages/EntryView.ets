@@ -353,40 +353,47 @@ struct EntryView {
               this.router.back();
             })
 
-          if (this.selectedHistoryIndex >= 0) {
-            Text($r('app.string.history_version', this.selectedHistoryIndex + 1))
-              .fontSize(20)
-              .fontWeight(FontWeight.Medium)
-              .margin({ left: 16 })
-              .fontColor($r('app.color.text_primary'))
-          } else {
-            Text(KdbxUtils.getFieldValueString(this.entry?.fields, KdbxUtils.FIELD_TITLE) || '')
-              .fontSize(20)
-              .fontWeight(FontWeight.Medium)
-              .margin({ left: 16 })
-              .fontColor($r('app.color.text_primary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-
-          Blank()
-
-          if (this.selectedHistoryIndex < 0) {
-            Button() {
-              Image($r('app.media.ic_edit'))
-                .width(24)
-                .height(24)
-                .fillColor($r('app.color.text_primary'))
+          Row(){
+            if (this.selectedHistoryIndex >= 0) {
+              Text($r('app.string.history_version', this.selectedHistoryIndex + 1))
+                .fontSize(20)
+                .fontWeight(FontWeight.Medium)
+                .margin({ left: 16 })
+                .fontColor($r('app.color.text_primary'))
+            } else {
+              Text(KdbxUtils.getFieldValueString(this.entry?.fields, KdbxUtils.FIELD_TITLE) || '')
+                .fontSize(20)
+                .fontWeight(FontWeight.Medium)
+                .margin({ left: 16 })
+                .fontColor($r('app.color.text_primary'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .width('80%')
             }
-            .backgroundColor(Color.Transparent)
-            .width(48)
-            .height(48)
-            .borderRadius(20)
-            .margin({ right: 16 })
-            .onClick(() => {
-              this.editEntry();
-            })
+
+            Blank()
+
+            if (this.selectedHistoryIndex < 0) {
+              Button() {
+                Image($r('app.media.ic_edit'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .backgroundColor(Color.Transparent)
+              .width(48)
+              .height(48)
+              .borderRadius(20)
+              .margin({ right: 16 })
+              .onClick(() => {
+                this.editEntry();
+              })
+            }
           }
+          .alignItems(VerticalAlign.Center)
+          .width('auto')
+          .layoutWeight(1)
+
         }
         .width('100%')
         .height(56)
