@@ -817,6 +817,10 @@
     {
       "name": "hour",
       "value": "小时"
+    },
+    {
+      "name": "please_auth_fingerprint",
+      "value": "请验证指纹"
     }
   ]
 }
