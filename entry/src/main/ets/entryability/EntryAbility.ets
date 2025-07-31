@@ -1,4 +1,4 @@
-import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, contextConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { SettingsService } from '../services/SettingsService';
@@ -27,6 +27,7 @@ export default class EntryAbility extends UIAbility {
    * 初始化应用
    */
   private async init() {
+    this.context.area = contextConstant.AreaMode.EL4;
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
     // 初始化资源管理器
