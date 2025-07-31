@@ -5,7 +5,7 @@ import { RecentFile } from './TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import FileUtils from '../common/utils/FIleUtils';
 import { fileShare } from '@kit.CoreFileKit';
-import { common, contextConstant } from '@kit.AbilityKit';
+import { common } from '@kit.AbilityKit';
 import DeviceUtils from '../common/utils/DeviceUtils';
 
 const DOMAIN = 0x0000;
@@ -45,13 +45,7 @@ export class RecentFilesService {
       hilog.error(DOMAIN, TAG, 'Context is null');
       throw new Error('Context is null');
     }
-    let area: contextConstant.AreaMode = this.context.area;
-    try {
-      this.context.area = contextConstant.AreaMode.EL5;
-      return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
-    } finally {
-      this.context.area = area;
-    }
+    return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
   }
 
   /**
