@@ -179,6 +179,32 @@ export struct SettingsSecurity {
           strokeWidth: 1,
           color: $r('app.color.divider'),
         })
+
+        // 密码相关功能
+        ListItemGroup() {
+          // 修改主密码
+          ListItem() {
+            Row() {
+              Text($r("app.string.updated_password"))
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(20)
+                .height(20)
+                .margin({ right: 10 })
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+        }
+        .margin({ top: 12, bottom: 12 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
       }
       .width('100%')
       .height('auto')
