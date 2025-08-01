@@ -171,7 +171,7 @@ export struct EntryEditFieldDialog {
           .width('45%')
           .height(40)
           .fontSize(16)
-          .fontColor(Color.White)
+          .fontColor($r('app.color.button_text'))
           .backgroundColor($r("app.color.button_bg_blue"))
           .borderRadius(16)
           .onClick(() => {

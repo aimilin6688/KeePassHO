@@ -827,8 +827,44 @@
       "value": "指纹登录"
     },
     {
-      "name": "updated_password",
+      "name": "change_password",
       "value": "修改主密码"
+    },
+    {
+      "name": "change_password_old_password",
+      "value": "旧密码"
+    },
+    {
+      "name": "change_password_old_password_placeholder",
+      "value": "请输入旧密码"
+    },
+    {
+      "name": "change_password_new_password",
+      "value": "新密码"
+    },
+    {
+      "name": "change_password_new_password_placeholder",
+      "value": "请输入新密码"
+    },
+    {
+      "name": "change_password_confirm_password",
+      "value": "确认密码"
+    },
+    {
+      "name": "change_password_confirm_password_placeholder",
+      "value": "请输入确认密码"
+    },
+    {
+      "name": "change_password_select_key_file",
+      "value": "密钥文件"
+    },
+    {
+      "name": "change_password_confirm_password_not_match",
+      "value": "新密码与确认密码不匹配"
+    },
+    {
+      "name": "change_password_old_password_not_match",
+      "value": "旧密码错误"
     }
   ]
 }

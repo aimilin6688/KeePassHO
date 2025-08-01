@@ -156,7 +156,7 @@ export struct AddGroupDialog {
             }
           })
           .backgroundColor(this.newGroupName.trim().length > 0 ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
-          .fontColor(Color.White)
+          .fontColor($r('app.color.button_text'))
           .width('45%')
           .height(40)
           .borderRadius(16)
