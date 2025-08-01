@@ -1,10 +1,10 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
-import { Kdbx, KdbxCredentials } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileContentInfo } from '../services/kdbx/interfaces';
+import { FileContentInfo, StorageType } from '../services/kdbx/interfaces';
 import { MessageType, WorkerMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 
@@ -82,12 +82,20 @@ async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials)
   let database: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
 
   let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
+  if(request.newPassword){
+    database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
+  }
+  if(request.newKeyFilePath){
+    await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.newKeyFilePath).then(newKeyFileContent => {
+      database.credentials.setKeyFile(newKeyFileContent.content);
+    });
+  }
   return await database.save().then(async savedDb => {
     await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(()=>{
       postMessage($r('app.string.save_success_message'));
     });
     return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {
-      return new FileContentInfo(fileInfo, request.data);
+      return new FileContentInfo(fileInfo, savedDb);
     });
   });
 }

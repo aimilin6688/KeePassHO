@@ -22,7 +22,9 @@ export class SaveDatabaseMessage implements WorkerMessage {
       keyFilePath: dbFileParam.keyFilePath,
       storageType: dbFileParam.storageType,
       storageConfig: dbFileParam.storageConfig,
-      modifiedTime: dbFileParam.modifiedTime
+      modifiedTime: dbFileParam.modifiedTime,
+      newPassword: dbFileParam.newPassword,
+      newKeyFilePath: dbFileParam.newKeyFilePath
     } as SaveDatabaseDbParam);
   }
 }
@@ -38,6 +40,8 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   storageType: StorageType;
   storageConfig: StorageConfig;
   modifiedTime: number;
+  newPassword?: string;
+  newKeyFilePath?: string;
 
   constructor(dbParam: SaveDatabaseDbParam, message: SaveDatabaseMessage) {
     this.type = message.type;
@@ -50,6 +54,8 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.storageType = dbParam.storageType;
     this.storageConfig = dbParam.storageConfig;
     this.modifiedTime = dbParam.modifiedTime;
+    this.newPassword = dbParam.newPassword;
+    this.newKeyFilePath = dbParam.newKeyFilePath;
   }
 }
 
@@ -96,4 +102,13 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
    * 最后修改时间,单位为毫秒
    */
   modifiedTime: number;
+
+  /**
+   * 新密码
+   */
+  newPassword?: string;
+  /**
+   * 新密钥文件路径
+   */
+  newKeyFilePath?: string;
 }

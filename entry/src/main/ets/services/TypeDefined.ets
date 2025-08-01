@@ -95,6 +95,15 @@ export interface DbFileParam extends CredentialsParam{
    * 最后修改时间,单位为毫秒
    */
   modifiedTime: number;
+
+  /**
+   * 新密码
+   */
+  newPassword?: string;
+  /**
+   * 新密钥文件路径
+   */
+  newKeyFilePath?: string;
 }
 
 /**

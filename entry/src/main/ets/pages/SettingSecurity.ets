@@ -1,6 +1,8 @@
 import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import ResourceManager from '../common/utils/ResourceManager';
+import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
+import { FileService } from '../services/FileService';
 
 
 @Entry
@@ -10,6 +12,7 @@ export struct SettingsSecurity {
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   @State autoLockTime: number = SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT;
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
+  @State isDatabaseValid: boolean = false;
   // 自动清空剪切板时间
   private clearTimeOptions: Array<TimeOption> = [
     { value: "15 " + ResourceManager.getString($r("app.string.second")), time: 15 },
@@ -44,6 +47,16 @@ export struct SettingsSecurity {
   ];
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
+  private promptAction = this.getUIContext().getPromptAction();
+  private changePasswordDialogController: CustomDialogController = new CustomDialogController({
+    builder: ChangePasswordDialog({
+      onConfirm: this.handlePasswordChange.bind(this)
+    }),
+    cancel: this.handleDialogCancel.bind(this),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
 
   aboutToAppear(): void {
     // 获取是否开启下拉刷新功能
@@ -65,6 +78,26 @@ export struct SettingsSecurity {
     this.settingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength).then(result => {
       this.quickLockPasswordLength = result;
     });
+  }
+
+  onPageShow(): void {
+    const  dbFileParam = FileService.getDbFileParam();
+    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
+  }
+
+  // 修改密码弹框
+  private showChangePasswordDialog() {
+    this.changePasswordDialogController.open();
+  }
+
+  // 修改密码
+  private handlePasswordChange(oldPassword: string, newPassword: string, keyFilePath: string) {
+    this.promptAction.showToast({message: $r('app.string.operation_success'), duration: 2000 });
+  }
+
+  // 取消修改密码
+  private handleDialogCancel() {
+    this.changePasswordDialogController.close();
   }
 
   build() {
@@ -181,30 +214,35 @@ export struct SettingsSecurity {
         })
 
         // 密码相关功能
-        ListItemGroup() {
-          // 修改主密码
-          ListItem() {
-            Row() {
-              Text($r("app.string.updated_password"))
-                .fontSize(16)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(20)
-                .height(20)
-                .margin({ right: 10 })
-                .fillColor($r('app.color.text_primary'))
+        if(this.isDatabaseValid){
+          ListItemGroup() {
+            // 修改主密码
+            ListItem() {
+              Row() {
+                Text($r("app.string.change_password"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(20)
+                  .height(20)
+                  .margin({ right: 10 })
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                this.showChangePasswordDialog();
+              })
             }
-            .width('100%')
-            .padding(16)
           }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
         }
-        .margin({ top: 12, bottom: 12 })
-        .backgroundColor($r("app.color.card_bg"))
-        .borderRadius(12)
-        .divider({
-          strokeWidth: 1,
-          color: $r('app.color.divider'),
-        })
       }
       .width('100%')
       .height('auto')
