@@ -823,6 +823,10 @@
     {
       "name": "auth_by_fingerprint",
       "value": "Fingerprint Login"
+    },
+    {
+      "name": "updated_password",
+      "value": "Update password"
     }
   ]
 }
