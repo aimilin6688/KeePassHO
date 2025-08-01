@@ -825,6 +825,10 @@
     {
       "name": "auth_by_fingerprint",
       "value": "指纹登录"
+    },
+    {
+      "name": "updated_password",
+      "value": "修改主密码"
     }
   ]
 }
