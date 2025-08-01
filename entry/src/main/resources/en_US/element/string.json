@@ -825,8 +825,44 @@
       "value": "Fingerprint Login"
     },
     {
-      "name": "updated_password",
+      "name": "change_password",
       "value": "Update password"
+    },
+    {
+      "name": "change_password_old_password",
+      "value": "Old Password"
+    },
+    {
+      "name": "change_password_old_password_placeholder",
+      "value": "Please input old password"
+    },
+    {
+      "name": "change_password_new_password",
+      "value": "New Password"
+    },
+    {
+      "name": "change_password_new_password_placeholder",
+      "value": "Please input new password"
+    },
+    {
+      "name": "change_password_confirm_password",
+      "value": "Confirm Password"
+    },
+    {
+      "name": "change_password_confirm_password_placeholder",
+      "value": "Please input confirm password"
+    },
+    {
+      "name": "change_password_select_key_file",
+      "value": "Key File"
+    },
+    {
+      "name": "change_password_confirm_password_not_match",
+      "value": "Password not match"
+    },
+    {
+      "name": "change_password_old_password_not_match",
+      "value": "Old password not match"
     }
   ]
 }
