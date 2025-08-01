@@ -237,7 +237,6 @@ struct DatabaseView {
       },
       onLoadMessage: (message: LoadMessage) => {
         this.refreshText = ResourceManager.getString(message.message);
-        this.isRefreshing = false;
       },
       onErrorMessage: (message: LoadMessage) => {
         this.refreshText = ResourceManager.getString(message.message);
@@ -767,7 +766,7 @@ struct DatabaseView {
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
           }
           .backgroundColor($r("app.color.bg_primary"))
-          .refreshOffset(140)
+          .refreshOffset(90)
           .pullToRefresh(this.isPullToRefresh)
           .onRefreshing(() => {
             this.refreshDatabase();
