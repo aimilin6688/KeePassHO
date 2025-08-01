@@ -223,6 +223,7 @@ struct DatabaseView {
    * 重新加载数据库
    */
   private refreshDatabase() {
+    this.isRefreshing = true;
     let loadParam = LoadDatabase.byDbFileParam(FileService.getDbFileParam());
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (successMessage: SuccessMessage) => {
