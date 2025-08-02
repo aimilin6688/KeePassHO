@@ -40,8 +40,6 @@ struct DatabaseView {
   @State moveParam: MoveParam | undefined = undefined; // 移动参数
   @State refreshText: ResourceStr = $r('app.string.refreshing_message');
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
-
-
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
@@ -50,8 +48,7 @@ struct DatabaseView {
   private settingsService: SettingsService = SettingsService.getInstance();
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
-  private clearHistoryUrlPage:Array<string> = ["Password", "UnLockDatabase"];
-
+  private clearHistoryUrlPage: Array<string> = ["Password", "UnLockDatabase"];
   private dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
@@ -76,9 +73,6 @@ struct DatabaseView {
     EventBus.on<void>(EventBus.DATABASE_MERGE, () => {
       this.reloadDatabase();
     });
-    EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
-      this.updateUI();
-    });
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
@@ -94,7 +88,6 @@ struct DatabaseView {
   aboutToDisappear() {
     // 移除监听器
     EventBus.off<void>(EventBus.DATABASE_MERGE);
-    EventBus.off<void>(EventBus.DATABASE_UPDATE);
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
@@ -333,11 +326,10 @@ struct DatabaseView {
    */
   private saveDatabase() {
     if (this.database) {
-      KdbxUtils.saveDatabase().then(() => {
-        this.promptAction.showToast({ message: $r('app.string.save_success_message') });
-      }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-        this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
+      KdbxUtils.saveDatabase({
+        onSuccess: () => {
+          this.updateUI();
+        }
       });
     }
   }
@@ -539,7 +531,7 @@ struct DatabaseView {
               })
           }
           if (!this.isSearching) {
-            Row(){
+            Row() {
               Text(this.titleName)
                 .fontSize(20)
                 .fontWeight(FontWeight.Medium)

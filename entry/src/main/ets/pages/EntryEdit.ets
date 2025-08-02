@@ -1,13 +1,12 @@
-import { KdbxEntry, KdbxGroup, Kdbx, ProtectedValue, KdbxUuid } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import IconUtils from '../common/utils/IconUtils';
-import { EntryParam, Icons } from '../services/TypeDefined';
+import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
-import { CustomField } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import ResourceManager from '../common/utils/ResourceManager';
@@ -30,7 +29,6 @@ struct EntryEdit {
   @State isLoading: boolean = false;
   @State isEditMode: boolean = false;
   @State pageTitle: string = ResourceManager.getString($r('app.string.add_entry_button'));
-
   @State customFields: CustomField[] = []; // 自定义字段列表
   @State showFieldDialog: boolean = false; // 显示自定义字段对话框
   @State isEditingField: boolean = false; // 是否是编辑字段模式
@@ -44,15 +42,13 @@ struct EntryEdit {
   @State tags: string = ''; // 标签，以逗号分隔
   @State expiryTime: Date | undefined = undefined; // 过期时间
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
-  @State loadingMessage:string =  ResourceManager.getString($r('app.string.loading_message'));
-
+  @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
   private standardFields: Array<string> = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-  
   // 自定义字段对话框控制器
   fieldDialogController: CustomDialogController = new CustomDialogController({
     builder: EntryEditFieldDialog({
@@ -68,12 +64,11 @@ struct EntryEdit {
     alignment: DialogAlignment.Bottom,
     customStyle: true
   });
-  
   // 图标选择器对话框控制器
   iconSelectorController: CustomDialogController = new CustomDialogController({
     builder: IconSelectorDialog({
       selectedIconId: this.iconId,
-      onIconSelected: (iconId: number|string) => {
+      onIconSelected: (iconId: number | string) => {
         this.iconId = iconId;
         this.checkEntryModified();
       }
@@ -82,7 +77,6 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
-
   // 密码生成器弹框
   passwordGeneratorController: CustomDialogController = new CustomDialogController({
     builder: PasswordGeneratorDialog({
@@ -96,7 +90,6 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: true
   });
-
   // 带内容的进度弹框
   loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -106,7 +99,6 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
-
 
   aboutToAppear() {
     // 获取数据库信息
@@ -145,10 +137,10 @@ struct EntryEdit {
       this.isEditMode = true;
       this.pageTitle = ResourceManager.getString($r("app.string.edit_entry"));
 
-      
+
       // 使用KdbxUtils.getEntry方法获取现有条目
       this.entry = KdbxUtils.getEntry(this.database, routeParams.groupId, routeParams.entryId);
-      
+
       if (!this.entry) {
         this.promptAction.showToast({
           message: $r('app.string.invalid_entry_message'),
@@ -168,19 +160,19 @@ struct EntryEdit {
 
       // 加载标签
       this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
-      
+
       // 加载标签
       if (this.entry.tags && this.entry.tags.length > 0) {
         this.tags = this.entry.tags.join(', ');
       }
-      
+
       // 加载图标ID
       this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
 
       // 过期时间
       this.expiryTime = this.entry.times.expiryTime;
-      this.isExpiryEnabled =   this.entry.times.expires;
-      
+      this.isExpiryEnabled = this.entry.times.expires;
+
       // 加载自定义字段
       this.loadCustomFields();
 
@@ -198,17 +190,17 @@ struct EntryEdit {
     if (this.entry) {
       // 获取所有字段
       const fields = this.entry.fields;
-      
+
       // 遍历字段，排除标准字段
       fields.forEach((value, key) => {
         // 跳过标准字段
         if (this.standardFields.includes(key)) {
           return;
         }
-        
+
         let fieldValue = '';
         let isProtected = false;
-        
+
         // 检查是否是受保护的值
         if (value instanceof ProtectedValue) {
           fieldValue = value.getText();
@@ -216,14 +208,14 @@ struct EntryEdit {
         } else {
           fieldValue = value?.toString() || '';
         }
-        
+
         // 添加到自定义字段列表
         this.customFields.push({
           key: key,
           value: fieldValue,
           isProtected: isProtected
         });
-        
+
         // 初始化可见性状态为false（隐藏）
         this.customFieldsVisibility.push(false);
       });
@@ -256,11 +248,11 @@ struct EntryEdit {
       if (this.isEditMode && this.entry) {
         // 添加到历史记录中
         this.entry.pushHistory();
-        this.loadingMessage =  ResourceManager.getString($r('app.string.load_save_history'));
+        this.loadingMessage = ResourceManager.getString($r('app.string.load_save_history'));
         // 清除旧的自定义字段（除了标准字段外的所有字段）
         this.entry.fields.forEach((value, key) => {
-          if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, 
-                KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
+          if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD,
+            KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
             this.entry?.fields.delete(key);
           }
         });
@@ -311,7 +303,7 @@ struct EntryEdit {
    * 保存标签
    */
   private setTags() {
-    if(!this.entry){
+    if (!this.entry) {
       return;
     }
     // 保存标签
@@ -327,13 +319,13 @@ struct EntryEdit {
   /**
    * 设置条目图标
    */
-  private setEntryIcon(){
-    if(!this.entry || !this.iconId){
+  private setEntryIcon() {
+    if (!this.entry || !this.iconId) {
       return;
     }
-    if(typeof this.iconId === 'number'){
+    if (typeof this.iconId === 'number') {
       this.entry.icon = this.iconId as number;
-    }else{
+    } else {
       this.entry.customIcon = new KdbxUuid(this.iconId);
     }
   }
@@ -343,13 +335,17 @@ struct EntryEdit {
    */
   private saveDatabase() {
     if (this.database) {
-      this.loadingMessage =  ResourceManager.getString($r('app.string.load_save_database'));
-      KdbxUtils.saveDatabase().then(() => {
-        this.promptAction.showToast({ message: $r('app.string.save_success_message') });
-        this.isLoading = false;
-        this.loadingDialogController.close();
-        this.router.back();
-      }).catch(this.handleSaveError);
+      this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
+      KdbxUtils.saveDatabase({
+        onSuccess: () => {
+          this.isLoading = false;
+          this.loadingDialogController.close();
+          this.router.back();
+        },
+        onError: (error) => {
+          this.handleSaveError(error);
+        }
+      })
     }
   }
 
@@ -357,9 +353,9 @@ struct EntryEdit {
    * 处理保存错误
    * @param error 错误信息
    */
-  private handleSaveError(error: Error){
+  private handleSaveError(error: string) {
     hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-    this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
+    this.promptAction.showToast({ message: $r('app.string.save_failed_message', error) });
     this.isLoading = false;
     this.loadingDialogController.close();
   }
@@ -400,9 +396,9 @@ struct EntryEdit {
       // 更新字段
       if (this.editingFieldIndex >= 0 && this.editingFieldIndex < this.customFields.length) {
         // 检查字段名称是否已存在（排除当前编辑的字段）
-        const existingField = this.customFields.findIndex(field => 
-          field.key === customField.key && this.customFields.indexOf(field) !== this.editingFieldIndex);
-        
+        const existingField = this.customFields.findIndex(field =>
+        field.key === customField.key && this.customFields.indexOf(field) !== this.editingFieldIndex);
+
         if (existingField !== -1) {
           this.promptAction.showToast({
             message: $r('app.string.field_name_exists_message'),
@@ -410,16 +406,16 @@ struct EntryEdit {
           });
           return;
         }
-        
+
         this.customFields[this.editingFieldIndex] = {
           key: customField.key,
           value: customField.value,
           isProtected: customField.isProtected
         };
-        
+
         // 重置该字段的可见性状态为隐藏
         this.customFieldsVisibility[this.editingFieldIndex] = false;
-        
+
         // 标记为已修改
         this.checkEntryModified();
       }
@@ -441,22 +437,22 @@ struct EntryEdit {
         value: customField.value,
         isProtected: customField.isProtected
       });
-      
+
       // 添加新字段的可见性状态，默认为隐藏
       this.customFieldsVisibility.push(false);
-      
+
       // 标记为已修改
       this.checkEntryModified();
     }
   }
-  
+
   /**
    * 删除自定义字段
    * @param index 字段索引
    */
   private deleteCustomField(index: number) {
     if (index >= 0 && index < this.customFields.length) {
-      const fieldKey:string = this.customFields[index].key;
+      const fieldKey: string = this.customFields[index].key;
       this.promptAction.showDialog({
         title: $r('app.string.dialog_confirm_title'),
         message: $r('app.string.dialog_delete_confirm_message'),
@@ -481,7 +477,7 @@ struct EntryEdit {
       });
     }
   }
-  
+
   /**
    * 切换自定义字段的可见性状态
    * @param index 字段索引
@@ -491,7 +487,7 @@ struct EntryEdit {
       this.customFieldsVisibility[index] = !this.customFieldsVisibility[index];
     }
   }
-  
+
   /**
    * 打开图标选择器对话框
    */
@@ -502,14 +498,14 @@ struct EntryEdit {
   /**
    * 日期时间选择
    */
-  private openExpiryTimePicker(){
+  private openExpiryTimePicker() {
     this.getUIContext().showDatePickerDialog({
       start: new Date(),
       end: new Date('2099-12-31'),
       selected: this.expiryTime,
       showTime: true,
       useMilitaryTime: true,
-      onDateAccept: (value:Date) =>{
+      onDateAccept: (value: Date) => {
         this.expiryTime = value;
         this.checkEntryModified();
       }
@@ -520,99 +516,99 @@ struct EntryEdit {
    * 判断实体是否被修改了
    */
   private checkEntryModified() {
-    if(this.isModified){
+    if (this.isModified) {
       return;
     }
     // 标题修改了
     if (this.entry == null) {
-      if(this.title != ''){
+      if (this.title != '') {
         this.isModified = true;
       }
       return;
     }
-    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE) != this.title.trim()){
+    if (KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE) != this.title.trim()) {
       this.isModified = true;
       return;
     }
-    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_USERNAME) != this.username.trim()){
+    if (KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_USERNAME) != this.username.trim()) {
       this.isModified = true;
       return;
     }
-    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD) != this.password.trim()){
+    if (KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD) != this.password.trim()) {
       this.isModified = true;
       return;
     }
-    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL) != this.url.trim()){
+    if (KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL) != this.url.trim()) {
       this.isModified = true;
       return;
     }
-    if(KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES) != this.notes.trim()){
+    if (KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES) != this.notes.trim()) {
       this.isModified = true;
       return;
     }
-    if(this.entry.overrideUrl != this.overrideUrl){
+    if (this.entry.overrideUrl != this.overrideUrl) {
       this.isModified = true;
       return;
     }
-    if(this.entry.times.expires != this.isExpiryEnabled){
+    if (this.entry.times.expires != this.isExpiryEnabled) {
       this.isModified = true;
       return;
     }
-    if(DateUtils.format(this.entry.times.expiryTime) != DateUtils.format(this.expiryTime)) {
+    if (DateUtils.format(this.entry.times.expiryTime) != DateUtils.format(this.expiryTime)) {
       this.isModified = true;
       return;
     }
     // 自定义字段删除
     let customKeys = this.customFields.map((item) => item.key);
-    for (let key of this.entry.fields.keys()){
+    for (let key of this.entry.fields.keys()) {
       if (this.standardFields.includes(key)) {
         continue;
       }
-      if(!customKeys.includes(key)){
+      if (!customKeys.includes(key)) {
         this.isModified = true;
         return;
       }
     }
 
 
-    for(let item of this.customFields){
+    for (let item of this.customFields) {
       // 标准字段不计入
       if (this.standardFields.includes(item.key)) {
         continue;
       }
-      if(!this.entry.fields.has(item.key)) {
+      if (!this.entry.fields.has(item.key)) {
         this.isModified = true;
         return;
       }
-      if(KdbxUtils.getFieldValueString(this.entry.fields, item.key) != item.value){
+      if (KdbxUtils.getFieldValueString(this.entry.fields, item.key) != item.value) {
         this.isModified = true;
         return;
       }
       // 保护类型变更
       let entryProtected = this.entry.fields.get(item.key) instanceof ProtectedValue;
-      if(entryProtected != item.isProtected){
+      if (entryProtected != item.isProtected) {
         this.isModified = true;
         return;
       }
     }
 
-    if(typeof this.iconId === 'number'){
-      if(this.entry.icon != this.iconId){1
+    if (typeof this.iconId === 'number') {
+      if (this.entry.icon != this.iconId) {
+        1
         this.isModified = true;
         return;
       }
-    }else if(typeof this.iconId === 'string'){
-      if(this.entry.customIcon?.id != this.iconId){
+    } else if (typeof this.iconId === 'string') {
+      if (this.entry.customIcon?.id != this.iconId) {
         this.isModified = true;
         return;
       }
     }
-    if(this.entry.tags.join(", ") != this.tags){
+    if (this.entry.tags.join(", ") != this.tags) {
       this.isModified = true;
       return;
     }
   }
-
 
   build() {
     Stack() {
@@ -675,7 +671,7 @@ struct EntryEdit {
                   .layoutWeight(1)
                   .fontSize(16)
                   .lineHeight(24)
-                  .padding({top:12,bottom:12})
+                  .padding({ top: 12, bottom: 12 })
                   .fontColor($r('app.color.text_primary'))
                   .borderRadius(8)
                   .onChange((value) => {
@@ -718,7 +714,7 @@ struct EntryEdit {
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
                 .lineHeight(24)
-                .padding({top:12,bottom:12})
+                .padding({ top: 12, bottom: 12 })
                 .onChange((value) => {
                   this.username = value;
                   this.checkEntryModified();
@@ -787,7 +783,7 @@ struct EntryEdit {
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
                 .lineHeight(24)
-                .padding({top:12,bottom:12})
+                .padding({ top: 12, bottom: 12 })
                 .onChange((value) => {
                   this.url = value;
                   this.checkEntryModified();
@@ -810,7 +806,7 @@ struct EntryEdit {
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
                 .lineHeight(24)
-                .padding({top:12,bottom:12})
+                .padding({ top: 12, bottom: 12 })
                 .onChange((value) => {
                   this.overrideUrl = value;
                   this.checkEntryModified();
@@ -830,7 +826,7 @@ struct EntryEdit {
               TextArea({ text: this.tags, placeholder: $r('app.string.tags_placeholder') })
                 .width('100%')
                 .lineHeight(24)
-                .padding({top:12,bottom:12})
+                .padding({ top: 12, bottom: 12 })
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
@@ -854,7 +850,7 @@ struct EntryEdit {
                 .width('100%')
                 .height(96)
                 .lineHeight(24)
-                .padding({top:12,bottom:12})
+                .padding({ top: 12, bottom: 12 })
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .borderRadius(8)
@@ -942,10 +938,15 @@ struct EntryEdit {
                         .fontColor($r('app.color.text_primary'))
                         .lineHeight(24)
                         .borderWidth(0)
-                        .padding({top:6,bottom:6, left:0, right:0})
+                        .padding({
+                          top: 6,
+                          bottom: 6,
+                          left: 0,
+                          right: 0
+                        })
                         .layoutWeight(1)
                         .backgroundColor($r("app.color.bg_secondary"))
-                        .onClick(()=>{
+                        .onClick(() => {
                           this.openEditFieldDialog(index);
                         })
 
@@ -954,7 +955,7 @@ struct EntryEdit {
                           .width(24)
                           .height(24)
                           .fillColor($r('app.color.text_secondary'))
-                          .margin({ left: 8, right: 8})
+                          .margin({ left: 8, right: 8 })
                           .onClick((event) => {
                             this.toggleCustomFieldVisibility(index);
                             return false;
@@ -966,7 +967,7 @@ struct EntryEdit {
                   }
                   .width('100%')
                   .height('auto')
-                  .padding({top: 12, bottom: 12, left: 12})
+                  .padding({ top: 12, bottom: 12, left: 12 })
                   .backgroundColor($r("app.color.bg_secondary"))
                   .borderRadius(8)
                   .margin({ bottom: 8 })
@@ -979,7 +980,7 @@ struct EntryEdit {
               }
             }
             .width('100%')
-            .margin({ top: 16})
+            .margin({ top: 16 })
 
             // 过期时间
             Column() {
@@ -1004,7 +1005,7 @@ struct EntryEdit {
                     .fontColor($r('app.color.text_primary'))
                     .layoutWeight(1)
                     .height(48)
-                    .onClick(()=>{
+                    .onClick(() => {
                       this.openExpiryTimePicker();
                     })
                 }
