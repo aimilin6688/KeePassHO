@@ -64,12 +64,11 @@ struct WebDAV {
     this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
     this.isErrorStatus = false;
     try {
+      const storageConfig = this.getStorageConfig();
       // 获取文件信息
-      const fileInfo = await this.fileManager.init(this.getStorageConfig()).getKdbxFileInfo(this.url);
+      const fileInfo = await this.fileManager.init(storageConfig).getKdbxFileInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
-      // 本地配置信息
-      const storageConfig = new WebDAVStorageConfig(this.url, this.username, this.password);
       // 设置文件参数
       FileService.setFileParam({
           filePath: this.url,

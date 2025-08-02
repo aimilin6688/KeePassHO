@@ -21,15 +21,23 @@ export class WebDAVStorage implements IFileStorage {
   }
 
   public init(config: WebDAVStorageConfig) {
-    this.config = config;
+    this.config = this.parseConfig(config);
     if (this.client) {
       this.client.close();
     }
     this.client = new WebDavClient({
-      url: config.url,
-      username: config.username,
-      password: config.password
+      url: this.config.url,
+      username: this.config.getUserNameText(),
+      password: this.config.getPasswordText()
     });
+  }
+
+  private parseConfig(config: WebDAVStorageConfig): WebDAVStorageConfig {
+    if(config instanceof WebDAVStorageConfig) {
+      return config;
+    }
+    config = config as WebDAVStorageConfig;
+    return new WebDAVStorageConfig(config.url, config.username, config.password, {rootPath: config.rootPath, timeout: config.timeout}, true);
   }
 
   /**
