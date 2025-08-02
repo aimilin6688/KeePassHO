@@ -50,7 +50,7 @@ export struct SettingsSecurity {
   private promptAction = this.getUIContext().getPromptAction();
   private changePasswordDialogController: CustomDialogController = new CustomDialogController({
     builder: ChangePasswordDialog({
-      onConfirm: this.handlePasswordChange.bind(this)
+      onSuccess: this.handlePasswordChange.bind(this)
     }),
     cancel: this.handleDialogCancel.bind(this),
     alignment: DialogAlignment.Bottom,
@@ -91,8 +91,17 @@ export struct SettingsSecurity {
   }
 
   // 修改密码
-  private handlePasswordChange(oldPassword: string, newPassword: string, keyFilePath: string) {
+  private handlePasswordChange() {
     this.promptAction.showToast({message: $r('app.string.operation_success'), duration: 2000 });
+    let filePath = FileService.getDbFileParam().filePath;
+    FileService.getInstance().init();
+    this.router.clear();
+    this.router.pushUrl({
+      url: 'pages/Password',
+      params: {
+        filePath: filePath,
+      }
+    });
   }
 
   // 取消修改密码

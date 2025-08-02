@@ -18,7 +18,7 @@ export struct ChangePasswordDialog {
   @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder'));  // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
   @State notUseKeyFile: boolean = false; // 不适用keyfile
-  public onConfirm: (oldPassword: string, newPassword: string, keyFilePath: string) => void = () => {
+  public onSuccess: () => void = () => {
   };
   private controller: CustomDialogController;
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -38,7 +38,7 @@ export struct ChangePasswordDialog {
     dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
     KdbxUtils.saveDatabase().then(() => {
-      this.onConfirm(this.oldPassword, this.newPassword, this.keyFilePath);
+      this.onSuccess();
       this.close();
     })
   }
