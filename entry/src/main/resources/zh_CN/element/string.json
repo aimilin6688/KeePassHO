@@ -880,7 +880,15 @@
     },
     {
       "name": "key_file_not_use_key_file",
-      "value": "Not use key file"
+      "value": "不是用密钥文件"
+    },
+    {
+      "name": "Settings_database",
+      "value": "数据库设置"
+    },
+    {
+      "name": "database_not_opened",
+      "value": "数据库未打开"
     }
   ]
 }
