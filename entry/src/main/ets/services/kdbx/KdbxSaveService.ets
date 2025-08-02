@@ -12,6 +12,25 @@ import { DbFileParam } from '../TypeDefined';
 const DOMAIN = 0x0000;
 const TAG = 'KdbxSaveService';
 
+export interface SaveDatabaseCallback {
+  /**
+   * 保存成功
+   */
+  onSuccess: () => void;
+
+  /**
+   * 保存失败
+   * @param message 异常消息
+   */
+  onError: (message: string) => void;
+
+  /**
+   * 过程消息
+   * @param message
+   */
+  onMessage?: (message: string) => void;
+}
+
 /**
  * 保存数据库服务类
  */
@@ -22,7 +41,7 @@ export default class KdbxSaveService {
    * 保存数据库
    * @returns 结果信息
    */
-  public static async saveDatabase(): Promise<void> {
+  public static saveDatabase(callback?: SaveDatabaseCallback): void {
     if (KdbxSaveService.databaseWorker) {
       KdbxSaveService.databaseWorker.terminate();
       KdbxSaveService.databaseWorker = null;
@@ -31,8 +50,15 @@ export default class KdbxSaveService {
 
     // 启用保存线程，保存数据库
     const dbFileParam = FileService.getDbFileParam();
-    return KdbxUtils.kdbxToArrayBuffer(dbFileParam.database).then(async savedDb => {
-      return KdbxSaveService.saveDatabaseWorker(savedDb, dbFileParam);
+    if (!dbFileParam.database) {
+      hilog.error(DOMAIN, TAG, 'Database is null');
+      return callback?.onError(ResourceManager.getString($r('app.string.invalid_database')));
+    }
+    KdbxUtils.kdbxToArrayBuffer(dbFileParam.database).then(async savedDb => {
+      KdbxSaveService.saveDatabaseWorker(savedDb, dbFileParam, callback);
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'Database is null');
+      return callback?.onError(error.message);
     });
   }
 
@@ -41,7 +67,7 @@ export default class KdbxSaveService {
    * @param savedDb
    * @param dbFileParam
    */
-  private static saveDatabaseWorker(savedDb: ArrayBuffer, dbFileParam: DbFileParam): void {
+  private static saveDatabaseWorker(savedDb: ArrayBuffer, dbFileParam: DbFileParam, callback?: SaveDatabaseCallback): void {
     KdbxSaveService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseSaveWorker.ets');
     KdbxSaveService.databaseWorker.postMessage(new SaveDatabaseMessage(savedDb, dbFileParam), [savedDb]);
 
@@ -51,15 +77,23 @@ export default class KdbxSaveService {
       switch (data.type) {
         // 错误消息
         case MessageType.ERROR:
-          KdbxSaveService.handleErrorMessage(data);
+          let errorMessage = data as LoadMessage;
+          callback?.onError(ResourceManager.getString(errorMessage.message));
+          KdbxSaveService.handleErrorMessage(errorMessage);
           return;
         // 加载进度消息
         case MessageType.MESSAGE:
-          KdbxSaveService.handleLoadMessage(data);
+          const loadMessage = data as LoadMessage;
+          if (callback && callback.onMessage) {
+            callback.onMessage(ResourceManager.getString(loadMessage.message));
+          }
+          KdbxSaveService.handleLoadMessage(loadMessage);
           return;
         // 数据库加载成功
         case MessageType.SUCCESS:
-          KdbxSaveService.handleSuccessMessage(data);
+          let successMessage = data as SuccessMessage;
+          callback?.onSuccess();
+          KdbxSaveService.handleSuccessMessage(successMessage);
           return;
       }
     }
@@ -78,9 +112,7 @@ export default class KdbxSaveService {
    * 处理来自线程的错误消息
    * @param data
    */
-  private static handleErrorMessage(data: WorkerMessage) {
-    // 错误消息
-    let errorMessage = data as LoadMessage;
+  private static handleErrorMessage(errorMessage: LoadMessage) {
     hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', errorMessage.message);
     CommonUtils.showToast(ResourceManager.getString(errorMessage.message));
   }
@@ -89,9 +121,8 @@ export default class KdbxSaveService {
    * 处理来自线程的进度消息
    * @param data
    */
-  private static handleLoadMessage(data: WorkerMessage) {
+  private static handleLoadMessage(loadMessage: LoadMessage) {
     // 加载进度消息
-    const loadMessage = data as LoadMessage;
     hilog.info(DOMAIN, TAG, 'Received save database message:  %{public}s', ResourceManager.getString(loadMessage.message));
     CommonUtils.showToast(ResourceManager.getString(loadMessage.message));
   }
@@ -100,9 +131,8 @@ export default class KdbxSaveService {
    * 处理来自线程的成功消息
    * @param data
    */
-  private static handleSuccessMessage(data: WorkerMessage) {
+  private static handleSuccessMessage(successMessage: SuccessMessage) {
     // 数据库加载成功
-    let successMessage = data as SuccessMessage;
     FileService.getDbFileParam().modifiedTime = successMessage.modifiedTime;
     if (successMessage.isMerge) {
       KdbxUtils.arrayBufferToKdbx(successMessage.data, FileService.getDbFileParam()).then(kdbx => {
