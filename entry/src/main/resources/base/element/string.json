@@ -862,7 +862,7 @@
     },
     {
       "name": "select_key_file_placeholder",
-      "value": "请选择密钥文件"
+      "value": "Please select key file"
     },
     {
       "name": "create_new",
@@ -879,6 +879,14 @@
     {
       "name": "key_file_not_use_key_file",
       "value": "Not use key file"
+    },
+    {
+      "name": "Settings_database",
+      "value": "Setting Database"
+    },
+    {
+      "name": "database_not_opened",
+      "value": "Database not opened"
     }
   ]
 }

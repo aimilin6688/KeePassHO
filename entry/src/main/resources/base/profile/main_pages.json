@@ -4,6 +4,7 @@
     "pages/DatabaseView",
     "pages/Settings",
     "pages/SettingSecurity",
+    "pages/SettingDatabase",
     "pages/Password",
     "pages/RecentFiles",
     "pages/EntryEdit",

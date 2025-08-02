@@ -48,15 +48,6 @@ export struct SettingsSecurity {
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-  private changePasswordDialogController: CustomDialogController = new CustomDialogController({
-    builder: ChangePasswordDialog({
-      onSuccess: this.handlePasswordChange.bind(this)
-    }),
-    cancel: this.handleDialogCancel.bind(this),
-    alignment: DialogAlignment.Bottom,
-    customStyle: true,
-    autoCancel: false
-  });
 
   aboutToAppear(): void {
     // 获取是否开启下拉刷新功能
@@ -83,30 +74,6 @@ export struct SettingsSecurity {
   onPageShow(): void {
     const  dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
-  }
-
-  // 修改密码弹框
-  private showChangePasswordDialog() {
-    this.changePasswordDialogController.open();
-  }
-
-  // 修改密码
-  private handlePasswordChange() {
-    this.promptAction.showToast({message: $r('app.string.operation_success'), duration: 2000 });
-    let filePath = FileService.getDbFileParam().filePath;
-    FileService.getInstance().init();
-    this.router.clear();
-    this.router.pushUrl({
-      url: 'pages/Password',
-      params: {
-        filePath: filePath,
-      }
-    });
-  }
-
-  // 取消修改密码
-  private handleDialogCancel() {
-    this.changePasswordDialogController.close();
   }
 
   build() {
@@ -221,37 +188,6 @@ export struct SettingsSecurity {
           strokeWidth: 1,
           color: $r('app.color.divider'),
         })
-
-        // 密码相关功能
-        if(this.isDatabaseValid){
-          ListItemGroup() {
-            // 修改主密码
-            ListItem() {
-              Row() {
-                Text($r("app.string.change_password"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Image($r('app.media.ic_arrow_right'))
-                  .width(20)
-                  .height(20)
-                  .margin({ right: 10 })
-                  .fillColor($r('app.color.text_primary'))
-              }
-              .width('100%')
-              .padding(16)
-              .onClick(() => {
-                this.showChangePasswordDialog();
-              })
-            }
-          }
-          .margin({ top: 12, bottom: 12 })
-          .backgroundColor($r("app.color.card_bg"))
-          .borderRadius(12)
-          .divider({
-            strokeWidth: 1,
-            color: $r('app.color.divider'),
-          })
-        }
       }
       .width('100%')
       .height('auto')
