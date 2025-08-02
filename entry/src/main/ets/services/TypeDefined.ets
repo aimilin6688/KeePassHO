@@ -48,7 +48,7 @@ export interface FileParam {
 }
 
 /**
- * kdbx文件定义
+ * 数据库文件定义，只会存储在内容中
  */
 export interface DbFileParam extends CredentialsParam{
   /**
