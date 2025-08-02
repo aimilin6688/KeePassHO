@@ -6,7 +6,7 @@ import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
+import KdbxSaveService, { SaveDatabaseCallback } from '../../services/kdbx/KdbxSaveService';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -89,14 +89,14 @@ export default class KdbxUtils {
    * @returns 结果
    */
   public static isChildGroup(parentGroup: KdbxGroup, childGroup: KdbxGroup): boolean {
-    if(parentGroup.groups.length === 0){
+    if (parentGroup.groups.length === 0) {
       return false;
     }
-    for(let group of parentGroup.groups){
-      if(group.uuid.id === childGroup.uuid.id){
+    for (let group of parentGroup.groups) {
+      if (group.uuid.id === childGroup.uuid.id) {
         return true;
       }
-      if(KdbxUtils.isChildGroup(group, childGroup)){
+      if (KdbxUtils.isChildGroup(group, childGroup)) {
         return true;
       }
     }
@@ -247,7 +247,7 @@ export default class KdbxUtils {
    * @param arrayBuffer ArrayBuffer对象
    */
   public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer, credentialsParam: CredentialsParam, credentials?: KdbxCredentials): Promise<Kdbx> {
-    if(credentials == undefined){
+    if (credentials == undefined) {
       credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
     }
     return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
@@ -357,10 +357,9 @@ export default class KdbxUtils {
    * 保存数据库
    * @returns 结果信息
    */
-  public static async saveDatabase(): Promise<void> {
-    return KdbxSaveService.saveDatabase();
+  public static saveDatabase(callback?: SaveDatabaseCallback): void {
+    KdbxSaveService.saveDatabase(callback);
   }
-
 }
 
 /**
