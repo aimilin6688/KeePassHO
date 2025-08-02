@@ -53,7 +53,7 @@ export class CommonUtils {
    * @param message
    * @param duration
    */
-  public static showToast(message: string, duration?: number): void {
+  public static showToast(message: ResourceStr, duration?: number): void {
     promptAction.showToast({ message: message, duration: duration ?? 2000 });
   }
 }
