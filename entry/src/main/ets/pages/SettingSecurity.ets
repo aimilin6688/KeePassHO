@@ -1,7 +1,6 @@
 import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import ResourceManager from '../common/utils/ResourceManager';
-import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { FileService } from '../services/FileService';
 
 
@@ -72,7 +71,7 @@ export struct SettingsSecurity {
   }
 
   onPageShow(): void {
-    const  dbFileParam = FileService.getDbFileParam();
+    const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
   }
 
