@@ -877,6 +877,10 @@
     {
       "name": "change_password_key_file_tip",
       "value": "未选择密钥文件将使用旧密钥文件"
+    },
+    {
+      "name": "key_file_not_use_key_file",
+      "value": "Not use key file"
     }
   ]
 }

@@ -104,6 +104,11 @@ export interface DbFileParam extends CredentialsParam{
    * 新密钥文件路径
    */
   newKeyFilePath?: string;
+
+  /**
+   * 是否使用密钥文件
+   */
+  notUseKeyFile?: boolean;
 }
 
 /**
