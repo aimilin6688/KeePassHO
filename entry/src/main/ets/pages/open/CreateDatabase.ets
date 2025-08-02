@@ -12,6 +12,8 @@ import ResourceManager from '../../common/utils/ResourceManager';
 
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FileKeyService } from '../../services/FileKeyService';
+
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
 
@@ -23,6 +25,8 @@ struct CreateDatabase {
   @State confirmPassword: string = '';
   @State isCreating: boolean = false;
   @State errorMsg: string = '';
+  @State keyFilePath: string = '';
+  @State keyFileName: ResourceStr = $r('app.string.select_key_file_placeholder');
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -140,6 +144,44 @@ struct CreateDatabase {
         .backgroundColor($r("app.color.card_bg"))
         .borderRadius(8)
 
+        // 密钥文件
+        Text($r("app.string.key_file"))
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .margin({ top: 20, left: 16 })
+          .fontColor($r('app.color.text_primary'))
+          .width('100%')
+          .textAlign(TextAlign.Start)
+        Row(){
+          // 密钥文件选择
+          Text(this.keyFileName)
+            .height(48)
+            .fontSize(16)
+            .fontColor($r('app.color.text_secondary'))
+            .borderRadius(8)
+            .width("77%")
+            .padding({top:6,bottom:6, left:12, right:4})
+            .backgroundColor($r("app.color.card_bg"))
+            .onClick(() => {
+              this.selectKeyFile();
+            })
+
+          Button($r("app.string.create_new"))
+            .height(40)
+            .fontSize(16)
+            .width("21%")
+            .margin({ left: 8 })
+            .fontColor($r('app.color.button_text'))
+            .backgroundColor(Color.Gray)
+            .onClick(() => {
+              FileKeyService.createKeyFile(this.context);
+            })
+        }
+        .margin({ top: 8, left: 16, right: 16 })
+        .width('100%')
+        .borderRadius(8)
+        .alignItems(VerticalAlign.Center)
+
         // 错误信息
         if (this.errorMsg.length > 0) {
           Text(this.errorMsg)
@@ -154,7 +196,7 @@ struct CreateDatabase {
           .height(48)
           .margin({ top: 40 })
           .borderRadius(24)
-          .fontSize(16)
+          .fontSize(14)
           .fontWeight(FontWeight.Medium)
           .enabled(!this.isCreating && this.databaseName.length > 0 && this.password.length > 0 && this.password === this.confirmPassword)
           .onClick(() => {
@@ -228,9 +270,19 @@ struct CreateDatabase {
     }
   }
 
+  /**
+   * 保存数据库文件
+   * @param filePath
+   */
   private async saveKdbxFile(filePath: string) {
     hilog.info(DOMAIN, TAG,`Selected URI: ${filePath}`);
-    let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password));
+    let keyFileContent:ArrayBuffer|null = null;
+    if(this.keyFilePath){
+      new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(this.keyFilePath).then(fileContent =>{
+        keyFileContent = fileContent.content;
+      })
+    }
+    let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password), keyFileContent);
     // 将kdbx对象转换为ArrayBuffer
     let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
     newDb.save().then((dbContent: ArrayBuffer) => {
@@ -269,5 +321,21 @@ struct CreateDatabase {
       hilog.info(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_create_failed') });
     });
+  }
+
+  /**
+   * 选择密钥文件
+   */
+  private async selectKeyFile() {
+    const documentPicker = new picker.DocumentViewPicker(this.context);
+    const result = await documentPicker.select({
+      maxSelectNumber: 1,
+      fileSuffixFilters: ['.key'] // 只显示key文件
+    });
+    if (result && result.length > 0) {
+      const fileUri = result[0];
+      this.keyFilePath = fileUri;
+      this.keyFileName = FileUtils.getFileName(fileUri);
+    }
   }
 }
