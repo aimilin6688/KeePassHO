@@ -853,16 +853,28 @@
       "value": "Please input confirm password"
     },
     {
-      "name": "change_password_select_key_file",
-      "value": "Key File"
-    },
-    {
       "name": "change_password_confirm_password_not_match",
       "value": "Password not match"
     },
     {
       "name": "change_password_old_password_not_match",
       "value": "Old password not match"
+    },
+    {
+      "name": "select_key_file_placeholder",
+      "value": "请选择密钥文件"
+    },
+    {
+      "name": "create_new",
+      "value": "New"
+    },
+    {
+      "name": "not_select_file_path",
+      "value": "Not select file path"
+    },
+    {
+      "name": "change_password_key_file_tip",
+      "value": "Not select key file will use old key file"
     }
   ]
 }
