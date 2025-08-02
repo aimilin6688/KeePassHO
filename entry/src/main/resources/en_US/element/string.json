@@ -879,6 +879,14 @@
     {
       "name": "key_file_not_use_key_file",
       "value": "Not use key file"
+    },
+    {
+      "name": "Settings_database",
+      "value": "Setting Database"
+    },
+    {
+      "name": "database_not_opened",
+      "value": "Database not opened"
     }
   ]
 }

@@ -105,7 +105,17 @@ struct Settings {
             .height(48)
             .padding({ left: 16 })
           }
+        }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ top: 12, bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
 
+        // 数据库设置
+        ListItemGroup() {
           // 安全设置
           ListItem() {
             Row() {
@@ -125,9 +135,30 @@ struct Settings {
               url: 'pages/SettingSecurity'
             }, router.RouterMode.Single);
           })
+
+          // 数据库设置
+          ListItem() {
+            Row() {
+              Text($r('app.string.Settings_database'))
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .onClick(()=>{
+            this.router.pushUrl({
+              url: 'pages/SettingDatabase'
+            }, router.RouterMode.Single);
+          })
+
         }
-        .backgroundColor($r("app.color.card_bg"))
         .margin({ top: 12, bottom: 12 })
+        .backgroundColor($r("app.color.card_bg"))
         .borderRadius(12)
         .divider({
           strokeWidth: 1,
