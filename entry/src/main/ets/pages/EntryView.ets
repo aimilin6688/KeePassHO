@@ -134,7 +134,8 @@ struct EntryView {
     // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS, KdbxUtils.FIELD_OVERRIDE_URL];
+      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
+        KdbxUtils.FIELD_OVERRIDE_URL];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 
@@ -153,7 +154,7 @@ struct EntryView {
     this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
 
     // 过期时间
-    if(this.entry.times.expires){
+    if (this.entry.times.expires) {
       this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, DateUtils.format(this.entry.times.expiryTime), false, false));
     }
 
@@ -246,13 +247,11 @@ struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.removeHistory(this.selectedHistoryIndex);
-            KdbxUtils.saveDatabase().then(result => {
-              this.promptAction.showToast({ message: $r('app.string.save_success_message') });
-              this.router.back();
-            }).catch((error:Error) => {
-              hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-              this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
-            })
+            KdbxUtils.saveDatabase({
+              onSuccess: () => {
+                this.router.back();
+              }
+            });
           }
         }
       }
@@ -277,13 +276,11 @@ struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.copyFrom(this.entry);
-            KdbxUtils.saveDatabase().then(result => {
-              this.promptAction.showToast({ message: $r('app.string.save_success_message') });
-              this.router.back();
-            }).catch((error:Error) => {
-              hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-              this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
-            })
+            KdbxUtils.saveDatabase({
+              onSuccess: () => {
+                this.router.back();
+              }
+            });
           }
         }
       }
@@ -353,7 +350,7 @@ struct EntryView {
               this.router.back();
             })
 
-          Row(){
+          Row() {
             if (this.selectedHistoryIndex >= 0) {
               Text($r('app.string.history_version', this.selectedHistoryIndex + 1))
                 .fontSize(20)
@@ -433,7 +430,12 @@ struct EntryView {
           }
           .height('100%')
           .width('100%')
-          .padding({left: 16,right: 16,top: 12,bottom: 0})
+          .padding({
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: 0
+          })
           .layoutWeight(1)
           .backgroundColor($r("app.color.bg_primary"))
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
@@ -491,7 +493,12 @@ struct EntryView {
           }
           .width('100%')
           .height(45)
-          .padding({top: 12,bottom: 0,left: 16,right: 16})
+          .padding({
+            top: 12,
+            bottom: 0,
+            left: 16,
+            right: 16
+          })
           .position({ x: 0, y: '100%' })
           .translate({ y: -45 }) // 调整位置，确保正确显示
         } else {
