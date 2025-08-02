@@ -5,7 +5,7 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileContentInfo, StorageType } from '../services/kdbx/interfaces';
-import { MessageType, WorkerMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
+import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 
 const DOMAIN = 0x0000;
@@ -82,16 +82,22 @@ async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials)
   let database: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
 
   let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
-  if(request.newPassword){
+  if (request.newPassword) {
     database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
   }
-  if(request.newKeyFilePath){
-    await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.newKeyFilePath).then(newKeyFileContent => {
-      database.credentials.setKeyFile(newKeyFileContent.content);
-    });
+  // 不适用密钥文件
+  if (request.notUseKeyFile) {
+    database.credentials.setKeyFile(null);
+  } else {
+    if (request.newKeyFilePath) {
+      await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.newKeyFilePath).then(newKeyFileContent => {
+        database.credentials.setKeyFile(newKeyFileContent.content);
+      });
+    }
   }
+
   return await database.save().then(async savedDb => {
-    await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(()=>{
+    await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(() => {
       postMessage($r('app.string.save_success_message'));
     });
     return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {

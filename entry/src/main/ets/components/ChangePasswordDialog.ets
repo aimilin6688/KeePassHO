@@ -17,6 +17,7 @@ export struct ChangePasswordDialog {
   @State keyFilePath: string = ''; // 密钥文件路径
   @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder'));  // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
+  @State notUseKeyFile: boolean = false; // 不适用keyfile
   public onConfirm: (oldPassword: string, newPassword: string, keyFilePath: string) => void = () => {
   };
   private controller: CustomDialogController;
@@ -34,6 +35,7 @@ export struct ChangePasswordDialog {
     // 设置新的数据库密码和密钥文件
     dbFileParam.newPassword = this.newPassword;
     dbFileParam.newKeyFilePath = this.keyFilePath;
+    dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
     KdbxUtils.saveDatabase().then(() => {
       this.onConfirm(this.oldPassword, this.newPassword, this.keyFilePath);
@@ -176,43 +178,64 @@ export struct ChangePasswordDialog {
           .fontColor($r('app.color.text_primary'))
           .margin({ top: 16, bottom: 4 })
 
-        Row(){
-          // 密钥文件选择
-          Text(this.keyFileName)
-            .height(48)
-            .fontSize(16)
-            .fontColor($r('app.color.text_primary'))
-            .borderRadius(8)
-            .width("77%")
-            .padding({top:6,bottom:6, left:12, right:4})
-            .backgroundColor($r("app.color.bg_secondary"))
-            .onClick(() => {
-              this.selectKeyFile();
-            })
+        if(!this.notUseKeyFile){
+          Row(){
+            // 密钥文件选择
+            Text(this.keyFileName)
+              .height(48)
+              .fontSize(16)
+              .fontColor($r('app.color.text_secondary'))
+              .borderRadius(8)
+              .width("77%")
+              .padding({top:6,bottom:6, left:12, right:4})
+              .backgroundColor($r("app.color.bg_secondary"))
+              .onClick(() => {
+                this.selectKeyFile();
+              })
 
-          Button($r("app.string.create_new"))
-            .height(40)
-            .fontSize(16)
-            .width("21%")
-            .margin({ top: 16, bottom: 4, left: 8 })
-            .fontColor($r('app.color.button_text'))
-            .backgroundColor(Color.Gray)
+            Button($r("app.string.create_new"))
+              .height(40)
+              .fontSize(14)
+              .width("21%")
+              .margin({ left: 8 })
+              .fontColor($r('app.color.button_text'))
+              .backgroundColor(Color.Gray)
+              .onClick(() => {
+                FileKeyService.createKeyFile(this.context);
+              })
+          }
+          .width("100%")
+          .alignItems(VerticalAlign.Center)
+          Text($r('app.string.change_password_key_file_tip'))
+            .fontSize(12)
+            .fontColor($r('app.color.text_secondary'))
+            .margin({ top: 2 })
+        }
+        // 不适用密钥文件
+        Row(){
+          Checkbox({ name: 'notUseKeyFile' })
+            .select(this.notUseKeyFile)
+            .shape(CheckBoxShape.CIRCLE)
+            .onChange((value: boolean) => {
+              this.notUseKeyFile = value;
+            })
+          Text($r('app.string.key_file_not_use_key_file'))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
             .onClick(() => {
-              FileKeyService.createKeyFile(this.context);
+              this.notUseKeyFile = !this.notUseKeyFile;
             })
         }
         .width("100%")
-        Text($r('app.string.change_password_key_file_tip'))
-          .fontSize(12)
-          .fontColor($r('app.color.text_secondary'))
-          .margin({ top: 4 })
+        .margin({ top: 16, bottom: 4 })
 
         // 密码匹配提示
         if (this.errorMessage.length > 0) {
           Text(this.errorMessage)
             .fontSize(12)
             .fontColor('#FF0000')
-            .margin({ top: 2 })
+            .margin({ top: 5 })
         }
       }
       .width('100%')
