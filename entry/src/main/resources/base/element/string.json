@@ -875,6 +875,10 @@
     {
       "name": "change_password_key_file_tip",
       "value": "Not select key file will use old key file"
+    },
+    {
+      "name": "key_file_not_use_key_file",
+      "value": "Not use key file"
     }
   ]
 }

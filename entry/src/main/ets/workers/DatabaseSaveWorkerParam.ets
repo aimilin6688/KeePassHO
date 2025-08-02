@@ -24,7 +24,8 @@ export class SaveDatabaseMessage implements WorkerMessage {
       storageConfig: dbFileParam.storageConfig,
       modifiedTime: dbFileParam.modifiedTime,
       newPassword: dbFileParam.newPassword,
-      newKeyFilePath: dbFileParam.newKeyFilePath
+      newKeyFilePath: dbFileParam.newKeyFilePath,
+      notUseKeyFile: dbFileParam.notUseKeyFile
     } as SaveDatabaseDbParam);
   }
 }
@@ -42,6 +43,7 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   modifiedTime: number;
   newPassword?: string;
   newKeyFilePath?: string;
+  notUseKeyFile?: boolean;
 
   constructor(dbParam: SaveDatabaseDbParam, message: SaveDatabaseMessage) {
     this.type = message.type;
@@ -56,6 +58,7 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.modifiedTime = dbParam.modifiedTime;
     this.newPassword = dbParam.newPassword;
     this.newKeyFilePath = dbParam.newKeyFilePath;
+    this.notUseKeyFile = dbParam.notUseKeyFile;
   }
 }
 
@@ -111,4 +114,8 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
    * 新密钥文件路径
    */
   newKeyFilePath?: string;
+  /**
+   * 是否使用密钥文件
+   */
+  notUseKeyFile?: boolean;
 }
