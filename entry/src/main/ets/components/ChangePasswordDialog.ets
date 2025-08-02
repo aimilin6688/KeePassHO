@@ -3,7 +3,6 @@ import ResourceManager from '../common/utils/ResourceManager';
 import { FileService } from '../services/FileService';
 import picker from '@ohos.file.picker';
 import { common } from '@kit.AbilityKit';
-import {ProtectedValue} from 'kdbxweb';
 
 /**
  * 修改主密码对话框组件
