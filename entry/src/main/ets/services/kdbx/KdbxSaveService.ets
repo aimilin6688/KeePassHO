@@ -16,13 +16,13 @@ export interface SaveDatabaseCallback {
   /**
    * 保存成功
    */
-  onSuccess: () => void;
+  onSuccess?: () => void;
 
   /**
    * 保存失败
    * @param message 异常消息
    */
-  onError: (message: string) => void;
+  onError?: (message: string) => void;
 
   /**
    * 过程消息
@@ -52,13 +52,18 @@ export default class KdbxSaveService {
     const dbFileParam = FileService.getDbFileParam();
     if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null');
-      return callback?.onError(ResourceManager.getString($r('app.string.invalid_database')));
+      if (callback && callback.onError) {
+        callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
+      }
+      return;
     }
     KdbxUtils.kdbxToArrayBuffer(dbFileParam.database).then(async savedDb => {
       KdbxSaveService.saveDatabaseWorker(savedDb, dbFileParam, callback);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database is null');
-      return callback?.onError(error.message);
+      if (callback && callback.onError) {
+        callback.onError(error.message);
+      }
     });
   }
 
@@ -78,7 +83,9 @@ export default class KdbxSaveService {
         // 错误消息
         case MessageType.ERROR:
           let errorMessage = data as LoadMessage;
-          callback?.onError(ResourceManager.getString(errorMessage.message));
+          if (callback && callback.onError) {
+            callback.onError(ResourceManager.getString(errorMessage.message));
+          }
           KdbxSaveService.handleErrorMessage(errorMessage);
           return;
         // 加载进度消息
@@ -92,7 +99,9 @@ export default class KdbxSaveService {
         // 数据库加载成功
         case MessageType.SUCCESS:
           let successMessage = data as SuccessMessage;
-          callback?.onSuccess();
+          if (callback && callback.onSuccess) {
+            callback?.onSuccess();
+          }
           KdbxSaveService.handleSuccessMessage(successMessage);
           return;
       }
@@ -103,6 +112,9 @@ export default class KdbxSaveService {
       hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', err.message);
       if (err.message.indexOf('NativeCustomSpan') != -1) {
         return;
+      }
+      if (callback && callback.onError) {
+        callback.onError(err.message);
       }
       CommonUtils.showToast(err.message);
     }

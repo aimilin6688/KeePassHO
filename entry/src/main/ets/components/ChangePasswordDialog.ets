@@ -15,7 +15,7 @@ export struct ChangePasswordDialog {
   @State newPassword: string = ''; // 新密码
   @State confirmPassword: string = ''; // 确认新密码
   @State keyFilePath: string = ''; // 密钥文件路径
-  @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder'));  // 密钥文件名称
+  @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder')); // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
   @State notUseKeyFile: boolean = false; // 不适用keyfile
   public onSuccess: () => void = () => {
@@ -24,7 +24,7 @@ export struct ChangePasswordDialog {
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   private changePassword() {
-    if(!this.validatePassword()){
+    if (!this.validatePassword()) {
       return;
     }
     const dbFileParam = FileService.getDbFileParam();
@@ -37,10 +37,12 @@ export struct ChangePasswordDialog {
     dbFileParam.newKeyFilePath = this.keyFilePath;
     dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
-    KdbxUtils.saveDatabase().then(() => {
-      this.onSuccess();
-      this.close();
-    })
+    KdbxUtils.saveDatabase({
+      onSuccess: () => {
+        this.onSuccess();
+        this.close();
+      }
+    });
   }
 
   /**
@@ -178,8 +180,8 @@ export struct ChangePasswordDialog {
           .fontColor($r('app.color.text_primary'))
           .margin({ top: 16, bottom: 4 })
 
-        if(!this.notUseKeyFile){
-          Row(){
+        if (!this.notUseKeyFile) {
+          Row() {
             // 密钥文件选择
             Text(this.keyFileName)
               .height(48)
@@ -187,7 +189,12 @@ export struct ChangePasswordDialog {
               .fontColor($r('app.color.text_secondary'))
               .borderRadius(8)
               .width("77%")
-              .padding({top:6,bottom:6, left:12, right:4})
+              .padding({
+                top: 6,
+                bottom: 6,
+                left: 12,
+                right: 4
+              })
               .backgroundColor($r("app.color.bg_secondary"))
               .onClick(() => {
                 this.selectKeyFile();
@@ -206,13 +213,14 @@ export struct ChangePasswordDialog {
           }
           .width("100%")
           .alignItems(VerticalAlign.Center)
+
           Text($r('app.string.change_password_key_file_tip'))
             .fontSize(12)
             .fontColor($r('app.color.text_secondary'))
             .margin({ top: 2 })
         }
         // 不适用密钥文件
-        Row(){
+        Row() {
           Checkbox({ name: 'notUseKeyFile' })
             .select(this.notUseKeyFile)
             .shape(CheckBoxShape.CIRCLE)
