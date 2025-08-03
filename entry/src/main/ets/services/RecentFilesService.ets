@@ -7,6 +7,7 @@ import FileUtils from '../common/utils/FIleUtils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import DeviceUtils from '../common/utils/DeviceUtils';
+import { CryptoUtils } from '../common/utils/CryptoUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -73,6 +74,10 @@ export class RecentFilesService {
     });
   }
 
+  /**
+   * 添加最近打开的文件
+   * @param fileParam 文件参数
+   */
   public static async addRecentFile(recentFile: RecentFile): Promise<void> {
     return RecentFilesService.getInstance().addRecentFile(recentFile);
   }
@@ -80,7 +85,6 @@ export class RecentFilesService {
   /**
    * 添加最近打开的文件
    * @param fileParam 文件参数
-   * @param storageType 存储类型
    */
   private async doAdd(recentFile: RecentFile): Promise<void> {
     try {
@@ -127,6 +131,10 @@ export class RecentFilesService {
     }
   }
 
+  /**
+   * 获取最近打开的文件列表
+   * @returns
+   */
   public static getRecentFiles(): Promise<RecentFile[]> {
     return RecentFilesService.getInstance().getRecentFiles();
   }
@@ -223,7 +231,51 @@ export class RecentFilesService {
     return null;
   }
 
+  /**
+   * 获取最近打开的文件
+   * @param filePath 文件路径
+   */
   public static getRecentFile(filePath: string): Promise<RecentFile | null> {
     return RecentFilesService.getInstance().getRecentFile(filePath);
+  }
+
+  /**
+   * 清空最近文件的密码
+   * @param filePath 最近文件
+   * @returns 结果
+   */
+  public static clearPassword(filePath: string): Promise<boolean> {
+    return RecentFilesService.getRecentFile(filePath).then((recentFile) => {
+      if (!recentFile) {
+        return false;
+      }
+      recentFile.password = undefined;
+      return RecentFilesService.addRecentFile(recentFile).then(result => {
+        return true;
+      });
+    });
+  }
+
+  /**
+   * 设置最近文件的密码
+   * @param filePath 文件路径
+   * @param password 密码
+   * @returns 结果
+   */
+  public static setPassword(filePath: string, password: string): Promise<boolean> {
+    if (!filePath || !password) {
+      return Promise.resolve(false);
+    }
+    return RecentFilesService.getRecentFile(filePath).then((recentFile) => {
+      if (!recentFile) {
+        return false;
+      }
+      return CryptoUtils.encryptText(password).then(result => {
+        recentFile.password = result;
+        return RecentFilesService.addRecentFile(recentFile).then(result => {
+          return true;
+        });
+      });
+    });
   }
 }
