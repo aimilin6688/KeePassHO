@@ -4,6 +4,7 @@ import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { AuthService } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FocusController } from '@ohos.arkui.UIContext';
 
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
@@ -17,6 +18,7 @@ struct UnLockDatabase {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
+  private focusController: FocusController = new FocusController();
 
   aboutToAppear(): void {
 
@@ -121,6 +123,13 @@ struct UnLockDatabase {
             })
             .onSubmit(() => {
               this.quickUnlock();
+            })
+            .onAppear(() => {
+              try {
+                this.focusController.requestFocus("quickPasswordInput");
+              } catch (error) {
+                hilog.info(DOMAIN, TAG, 'FocusController quickPasswordInput error: ' + error.message);
+              }
             })
         }
         .width('100%')
