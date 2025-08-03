@@ -1,5 +1,4 @@
 import { Router } from '@kit.ArkUI';
-import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { AuthService } from '../services/AuthService';
 import { FileService } from '../services/FileService';
@@ -43,12 +42,17 @@ export struct SettingsDatabase {
     this.changePasswordDialogController.open();
   }
 
-  // 修改密码
+  /**
+   * 密码修改成功回调
+   */
   private handlePasswordChange() {
     this.promptAction.showToast({ message: $r('app.string.operation_success'), duration: 2000 });
     let filePath = FileService.getDbFileParam().filePath;
     FileService.getInstance().init();
     this.router.clear();
+    if (this.isFingerprintSupport) {
+      RecentFilesService.clearPassword(filePath);
+    }
     this.router.pushUrl({
       url: 'pages/Password',
       params: {
@@ -67,15 +71,7 @@ export struct SettingsDatabase {
     this.settingsService.put(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, isOn);
     if (this.isFingerprintSupport && isOn) {
       let dbFileParam = FileService.getDbFileParam();
-      RecentFilesService.getInstance().getRecentFile(dbFileParam.filePath).then((recentFile) => {
-        if (!recentFile) {
-          return;
-        }
-        CryptoUtils.encryptText(dbFileParam.password).then(result => {
-          recentFile.password = result;
-          RecentFilesService.getInstance().addRecentFile(recentFile);
-        });
-      });
+      RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
     }
   }
 
