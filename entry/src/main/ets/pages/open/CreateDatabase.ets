@@ -278,7 +278,7 @@ struct CreateDatabase {
     hilog.info(DOMAIN, TAG,`Selected URI: ${filePath}`);
     let keyFileContent:ArrayBuffer|null = null;
     if(this.keyFilePath){
-      new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(this.keyFilePath).then(fileContent =>{
+      await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(this.keyFilePath).then(fileContent =>{
         keyFileContent = fileContent.content;
       })
     }
