@@ -880,7 +880,7 @@
     },
     {
       "name": "key_file_not_use_key_file",
-      "value": "不是用密钥文件"
+      "value": "不使用密钥文件"
     },
     {
       "name": "Settings_database",

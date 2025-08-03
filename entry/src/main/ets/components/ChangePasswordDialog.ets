@@ -216,8 +216,8 @@ export struct ChangePasswordDialog {
 
           Text($r('app.string.change_password_key_file_tip'))
             .fontSize(12)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ top: 2 })
+            .fontColor($r('app.color.yellow'))
+            .margin({ top: 4 })
         }
         // 不适用密钥文件
         Row() {
@@ -243,7 +243,7 @@ export struct ChangePasswordDialog {
           Text(this.errorMessage)
             .fontSize(12)
             .fontColor('#FF0000')
-            .margin({ top: 5 })
+            .margin({ top: 4 })
         }
       }
       .width('100%')
