@@ -168,8 +168,6 @@ export struct EntryViewFieldItem {
           .width('100%')
           .copyOption(this.field.showPlanText ? CopyOptions.LocalDevice : CopyOptions.None)
           .textAlign(TextAlign.Start)
-          .textOverflow({ overflow: TextOverflow.None })
-          .maxLines(this.field.isProtected ? 1 : 10)
           .enableDataDetector(this.field.isProtected ? false : true)
       }
       .layoutWeight(1)
@@ -181,7 +179,7 @@ export struct EntryViewFieldItem {
           .width(24)
           .height(24)
           .fillColor($r('app.color.text_primary'))
-          .margin({ right: 15 })
+          .margin({ left: 8, right: 8 })
           .onClick((event) => {
             this.field.showPlanText = !this.field.showPlanText;
             return false;
