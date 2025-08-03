@@ -255,6 +255,12 @@ export interface RecentFile {
    * 存储类型
    */
   storageConfig: StorageConfig;
+
+  /**
+   * 加密密码信息
+   */
+  password?: string;
+
 }
 
 /**
