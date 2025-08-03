@@ -307,7 +307,7 @@ struct CreateDatabase {
               }
             });
         }).catch((error: Error) => {
-          // fixme: 通过DocumentViewPicker save 保存的文件，不能持久化授权，只能让用户重新选择文件授权
+          // 通过DocumentViewPicker save 保存的文件，不能持久化授权，只能让用户重新选择文件授权
           hilog.error(DOMAIN, TAG, `Failed to add recent file: ${error.message}`, error.stack);
           // 跳转到首页面
           this.router.replaceUrl({url: 'pages/Index' });
