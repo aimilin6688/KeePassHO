@@ -8,7 +8,7 @@ const TAG = 'About';
 
 @Entry
 @Component
-export struct About {
+struct About {
   @State version: string = '';
 
   private router: Router = this.getUIContext().getRouter();

@@ -6,7 +6,7 @@ import { FileService } from '../services/FileService';
 
 @Entry
 @Component
-export struct SettingsSecurity {
+struct SettingsSecurity {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   @State autoLockTime: number = SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT;
