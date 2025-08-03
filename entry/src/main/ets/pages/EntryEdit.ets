@@ -337,10 +337,14 @@ struct EntryEdit {
     if (this.database) {
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
       KdbxUtils.saveDatabase({
+        showToast: false,
         onSuccess: () => {
-          this.isLoading = false;
-          this.loadingDialogController.close();
-          this.router.back();
+          this.loadingMessage = ResourceManager.getString($r('app.string.save_success_message'));
+          let timeOut = setTimeout(() => {
+            this.isLoading = false;
+            this.router.back();
+            clearTimeout(timeOut);
+          }, 150);
         },
         onMessage: (message) => {
           this.loadingMessage = message;
