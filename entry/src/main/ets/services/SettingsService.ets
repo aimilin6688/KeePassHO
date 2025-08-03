@@ -27,7 +27,9 @@ export class SettingsService {
   public static readonly KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT = 30;
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH = 'Security_quick_lock_password_length';
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 4;
-
+  // 数据设置
+  public static readonly KEY_DATABASE_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
+  public static readonly KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT = false;
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -162,7 +164,7 @@ export class SettingsService {
   }
 
   // 读取数据
-  public static get<T extends preferences.ValueType>(key: string, defValue:T, callback: (value: T) => void): void {
+  public static get<T extends preferences.ValueType>(key: string, defValue: T, callback: (value: T) => void): void {
     SettingsService.getInstance().get(key, defValue).then(value => {
       callback(value);
     });
