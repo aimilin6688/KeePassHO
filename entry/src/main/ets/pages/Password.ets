@@ -360,7 +360,7 @@ struct Password {
       storageConfig: this.storageConfig ?? {}
     } as RecentFile;
     // 如果开启指纹登录
-    if (this.isEnabledFingerprintLogin) {
+    if (this.isEnabledFingerprintLogin && this.isFingerprintSupport) {
       CryptoUtils.encryptText(this.password).then(result => {
         recentFile.password = result;
         RecentFilesService.getInstance().addRecentFile(recentFile);
