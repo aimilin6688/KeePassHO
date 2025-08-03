@@ -21,21 +21,33 @@ export class LocalFileStorage implements IFileStorage {
   }
 
   /**
+   * 检测文件是否与相关权限，如果有权限则激活该权限
+   * @param path 文件路径
+   * @param operationMode 权限模式
+   * @returns 结果
+   */
+  private async checkFilePermission(path: string, operationMode: fileShare.OperationMode): Promise<boolean> {
+    // 校验文件权限
+    return await FileUtils.checkPersistPermission(path, operationMode).then((result) => {
+      if (result[0]) {
+        return FileUtils.activatePermission(path, operationMode).then(() => {
+          return Promise.resolve(true);
+        });
+      } else {
+        return Promise.resolve(false);
+      }
+    });
+  }
+
+  /**
    * 读取文件内容
    * @param path 文件路径
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果读取失败则抛出异常
    */
   public async readFile(path: string): Promise<ArrayBuffer> {
-    // 校验文件权限
-    return await FileUtils.checkPersistPermission(path, fileShare.OperationMode.READ_MODE).then((result) => {
-      if (result[0]) {
-        return FileUtils.activatePermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
-          return await this.doReadFile(path);
-        });
-      } else {
-        return this.doReadFile(path);
-      }
+    return this.checkFilePermission(path, fileShare.OperationMode.READ_MODE).then((result) => {
+      return this.doReadFile(path);
     });
   }
 
@@ -70,15 +82,8 @@ export class LocalFileStorage implements IFileStorage {
    * @throws 如果写入失败则抛出异常
    */
   public async writeFile(path: string, content: ArrayBuffer): Promise<void> {
-    // 校验文件权限
-    return await FileUtils.checkPersistPermission(path, fileShare.OperationMode.WRITE_MODE).then((result) => {
-      if (result[0]) {
-        return FileUtils.activatePermission(path, fileShare.OperationMode.WRITE_MODE).then(async () => {
-          return await this.doWriteFile(path, content);
-        });
-      } else {
-        return this.doWriteFile(path, content);
-      }
+    return this.checkFilePermission(path, fileShare.OperationMode.WRITE_MODE).then((result) => {
+      return this.doWriteFile(path, content);
     });
   }
 
@@ -127,14 +132,8 @@ export class LocalFileStorage implements IFileStorage {
    * @throws 如果获取失败则抛出异常
    */
   public async getFileInfo(path: string): Promise<FileInfo> {
-    return await FileUtils.checkPersistPermission(path, fileShare.OperationMode.READ_MODE).then((result) => {
-      if (result[0]) {
-        return FileUtils.activatePermission(path, fileShare.OperationMode.READ_MODE).then(async () => {
-          return await this.doFileInfo(path);
-        });
-      } else {
-        return this.doFileInfo(path);
-      }
+    return this.checkFilePermission(path, fileShare.OperationMode.READ_MODE).then((result) => {
+      return this.doFileInfo(path);
     });
   }
 
