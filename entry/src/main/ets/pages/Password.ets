@@ -168,8 +168,7 @@ struct Password {
       return;
     }
     if (!this.isEnabledFingerprintLogin || !this.isFingerprintSupport) {
-      hilog.debug(DOMAIN, TAG,
-        `Fingerprint auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isEnabledFingerprintLogin: ${this.isEnabledFingerprintLogin}`);
+      hilog.debug(DOMAIN, TAG, `Fingerprint auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isEnabledFingerprintLogin: ${this.isEnabledFingerprintLogin}`);
       return;
     }
     // 启用指纹认证
