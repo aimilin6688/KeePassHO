@@ -8,7 +8,7 @@ import { SettingsService } from '../services/SettingsService';
 
 @Entry
 @Component
-export struct SettingsDatabase {
+struct SettingsDatabase {
   @State isDatabaseValid: boolean = false;
   @State fingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
   private router: Router = this.getUIContext().getRouter();
