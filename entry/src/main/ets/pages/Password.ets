@@ -2,7 +2,7 @@ import { PromptAction, router, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
 
-import { AuthType, AuthTypeInfo, CredentialsParam, FileParam } from '../services/TypeDefined';
+import { AuthType, AuthTypeInfo, CredentialsParam, FileParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
@@ -19,6 +19,9 @@ import ResourceManager from '../common/utils/ResourceManager';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { FocusController } from '@ohos.arkui.UIContext';
+import { SettingsService } from '../services/SettingsService';
+import { AuthService } from '../services/AuthService';
+import { CryptoUtils } from '../common/utils/CryptoUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -42,6 +45,8 @@ struct Password {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private focusController: FocusController = new FocusController();
+  private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
+  private isEnabledFingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -64,6 +69,13 @@ struct Password {
     }
     // 初始化按钮状态
     this.updateButtonState();
+  }
+
+  onPageShow(): void {
+    // 重置指纹登录状态
+    SettingsService.get(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, this.isEnabledFingerprintLogin, (result) => {
+      this.isEnabledFingerprintLogin = result;
+    });
   }
 
   aboutToDisappear() {
@@ -135,6 +147,8 @@ struct Password {
           this.keyFilePath = recentFile.keyFilePath;
           this.keyFileName = FileUtils.getFileName(this.keyFilePath);
         }
+        // 指纹认证
+        this.authByFingerprint(recentFile.password);
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);
@@ -143,6 +157,33 @@ struct Password {
         duration: 2000
       });
       this.router.back();
+    });
+  }
+
+  /**
+   * 通过指纹认证
+   */
+  private async authByFingerprint(password: string | undefined) {
+    if (!password || password == '') {
+      return;
+    }
+    if (!this.isEnabledFingerprintLogin || !this.isFingerprintSupport) {
+      hilog.debug(DOMAIN, TAG,
+        `Fingerprint auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isEnabledFingerprintLogin: ${this.isEnabledFingerprintLogin}`);
+      return;
+    }
+    // 启用指纹认证
+    AuthService.startFingerprintAuth({
+      onSuccess: (result) => {
+        CryptoUtils.decryptText(password).then(result => {
+          this.password = result;
+          this.verifyAndOpenDatabase();
+        });
+      },
+      onError: (error) => {
+        hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
+        this.promptAction.showToast({ message: error.message });
+      }
     });
   }
 
@@ -309,15 +350,24 @@ struct Password {
     let fileParam = FileService.getInstance().getFileParam();
     hilog.info(DOMAIN, TAG, '%{public}s', `Database file opened: ${fileParam?.filePath}`)
 
-    // 添加到最近打开的文件列表，包含认证方式和认证文件信息
-    RecentFilesService.getInstance().addRecentFile({
+    // 最近打开的文件
+    let recentFile = {
       filePath: this.filePath,
       fileName: this.fileName,
       storageType: this.storageType ?? StorageType.LOCAL,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
       storageConfig: this.storageConfig ?? {}
-    });
+    } as RecentFile;
+    // 如果开启指纹登录
+    if (this.isEnabledFingerprintLogin) {
+      CryptoUtils.encryptText(this.password).then(result => {
+        recentFile.password = result;
+        RecentFilesService.getInstance().addRecentFile(recentFile);
+      });
+    } else {
+      RecentFilesService.getInstance().addRecentFile(recentFile);
+    }
   }
 
   build() {
