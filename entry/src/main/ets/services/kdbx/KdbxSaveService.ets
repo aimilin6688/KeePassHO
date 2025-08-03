@@ -29,6 +29,11 @@ export interface SaveDatabaseCallback {
    * @param message
    */
   onMessage?: (message: string) => void;
+
+  /**
+   * 是否显示提示信息
+   */
+  showToast?: boolean | undefined;
 }
 
 /**
@@ -75,6 +80,7 @@ export default class KdbxSaveService {
   private static saveDatabaseWorker(savedDb: ArrayBuffer, dbFileParam: DbFileParam, callback?: SaveDatabaseCallback): void {
     KdbxSaveService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseSaveWorker.ets');
     KdbxSaveService.databaseWorker.postMessage(new SaveDatabaseMessage(savedDb, dbFileParam), [savedDb]);
+    let showToast = callback === undefined || callback.showToast === undefined || callback.showToast;
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
     KdbxSaveService.databaseWorker.onmessage = (e: MessageEvents) => {
@@ -86,7 +92,7 @@ export default class KdbxSaveService {
           if (callback && callback.onError) {
             callback.onError(ResourceManager.getString(errorMessage.message));
           }
-          KdbxSaveService.handleErrorMessage(errorMessage);
+          KdbxSaveService.handleErrorMessage(showToast, errorMessage);
           return;
         // 加载进度消息
         case MessageType.MESSAGE:
@@ -94,7 +100,7 @@ export default class KdbxSaveService {
           if (callback && callback.onMessage) {
             callback.onMessage(ResourceManager.getString(loadMessage.message));
           }
-          KdbxSaveService.handleLoadMessage(loadMessage);
+          KdbxSaveService.handleLoadMessage(showToast, loadMessage);
           return;
         // 数据库加载成功
         case MessageType.SUCCESS:
@@ -102,7 +108,7 @@ export default class KdbxSaveService {
           if (callback && callback.onSuccess) {
             callback?.onSuccess();
           }
-          KdbxSaveService.handleSuccessMessage(successMessage);
+          KdbxSaveService.handleSuccessMessage(showToast, successMessage);
           return;
       }
     }
@@ -116,7 +122,9 @@ export default class KdbxSaveService {
       if (callback && callback.onError) {
         callback.onError(err.message);
       }
-      CommonUtils.showToast(err.message);
+      if (showToast) {
+        CommonUtils.showToast(err.message);
+      }
     }
   }
 
@@ -124,26 +132,30 @@ export default class KdbxSaveService {
    * 处理来自线程的错误消息
    * @param data
    */
-  private static handleErrorMessage(errorMessage: LoadMessage) {
+  private static handleErrorMessage(showToast: boolean, errorMessage: LoadMessage) {
     hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', errorMessage.message);
-    CommonUtils.showToast(ResourceManager.getString(errorMessage.message));
+    if (showToast) {
+      CommonUtils.showToast(ResourceManager.getString(errorMessage.message));
+    }
   }
 
   /**
    * 处理来自线程的进度消息
    * @param data
    */
-  private static handleLoadMessage(loadMessage: LoadMessage) {
+  private static handleLoadMessage(showToast: boolean, loadMessage: LoadMessage) {
     // 加载进度消息
     hilog.info(DOMAIN, TAG, 'Received save database message:  %{public}s', ResourceManager.getString(loadMessage.message));
-    CommonUtils.showToast(ResourceManager.getString(loadMessage.message));
+    if (showToast) {
+      CommonUtils.showToast(ResourceManager.getString(loadMessage.message));
+    }
   }
 
   /**
    * 处理来自线程的成功消息
    * @param data
    */
-  private static handleSuccessMessage(successMessage: SuccessMessage) {
+  private static handleSuccessMessage(showToast: boolean, successMessage: SuccessMessage) {
     // 数据库加载成功
     FileService.getDbFileParam().modifiedTime = successMessage.modifiedTime;
     if (successMessage.isMerge) {
@@ -154,6 +166,8 @@ export default class KdbxSaveService {
     } else {
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
     }
-    CommonUtils.showToast(ResourceManager.getString($r('app.string.save_success_message')));
+    if (showToast) {
+      CommonUtils.showToast(ResourceManager.getString($r('app.string.save_success_message')));
+    }
   }
 }
