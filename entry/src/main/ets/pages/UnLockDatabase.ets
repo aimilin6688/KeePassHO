@@ -2,11 +2,8 @@ import { FileService } from '../services/FileService';
 import { SettingsService } from '../services/SettingsService';
 import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
-import { userAuth } from '@kit.UserAuthenticationKit';
-import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { AuthService } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import ResourceManager from '../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
@@ -19,16 +16,7 @@ struct UnLockDatabase {
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
-  private rand = cryptoFramework.createRandom();
-  private authTrustLevel: userAuth.AuthTrustLevel = userAuth.AuthTrustLevel.ATL3; // 安全等级
-  private authParam: userAuth.AuthParam = {
-    challenge: this.rand?.generateRandomSync(16)?.data,
-    authType: [userAuth.UserAuthType.FINGERPRINT],
-    authTrustLevel: this.authTrustLevel
-  };
-  private widgetParam: userAuth.WidgetParam = {title:  ResourceManager.getString($r("app.string.please_auth_fingerprint"))};
-  private isFingerprintSupport =  this.checkFingerprintSupport();
-
+  private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
 
   aboutToAppear(): void {
 
@@ -38,7 +26,8 @@ struct UnLockDatabase {
     SettingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength, (value) => {
       this.quickLockPasswordLength = value;
     });
-    if(this.isFingerprintSupport){
+    // 是否支持指纹验证
+    if (this.isFingerprintSupport) {
       this.startFingerprintAuth();
     }
   }
@@ -76,39 +65,19 @@ struct UnLockDatabase {
     this.router.pushUrl({ url: 'pages/Index' });
   }
 
-  // 检查设备是否支持指纹功能
-  private checkFingerprintSupport(): boolean {
-    try {
-      userAuth.getAvailableStatus(userAuth.UserAuthType.FINGERPRINT, this.authTrustLevel);
-      return true;
-    } catch (error) {
-      hilog.info(DOMAIN, TAG, "Device does not support fingerprint");
-      return false;
-    }
-  }
-
-  // 开始指纹验证
+  /**
+   * 开始指纹验证
+   */
   private startFingerprintAuth() {
-    try {
-      const authInstance = userAuth.getUserAuthInstance(this.authParam, this.widgetParam);
-      const router = this.router;
-      authInstance.on('result', {
-        onResult(result) {
-          if (result.result === userAuth.UserAuthResultCode.SUCCESS) {
-            router.pushUrl({ url: 'pages/DatabaseView' });
-          } else {
-            hilog.error(DOMAIN, TAG, "Auth fail，error：" + result.result);
-          }
-          authInstance.off('result');
-        }
-      });
-      authInstance.start();
-    } catch (error) {
-      const err: BusinessError = error as BusinessError;
-      hilog.error(DOMAIN, TAG, `auth catch error. Code is ${err?.code}, message is ${err?.message}`);
-    }
+    AuthService.startFingerprintAuth({
+      onSuccess: (result) => {
+        this.router.pushUrl({ url: 'pages/DatabaseView' });
+      },
+      onError: (error) => {
+        hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
+      }
+    });
   }
-
 
   build() {
     Column() {
@@ -163,7 +132,7 @@ struct UnLockDatabase {
       .layoutWeight(1)
       .padding({ left: 16, right: 16 })
 
-      if (this.isFingerprintSupport){
+      if (this.isFingerprintSupport) {
         Row() {
           Text($r('app.string.auth_by_fingerprint'))
             .fontSize(14)

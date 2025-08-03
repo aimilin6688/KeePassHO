@@ -1,14 +1,21 @@
 import { Router } from '@kit.ArkUI';
+import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
+import { AuthService } from '../services/AuthService';
 import { FileService } from '../services/FileService';
+import { RecentFilesService } from '../services/RecentFilesService';
+import { SettingsService } from '../services/SettingsService';
 
 
 @Entry
 @Component
 export struct SettingsDatabase {
   @State isDatabaseValid: boolean = false;
+  @State fingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
+  private settingsService: SettingsService = SettingsService.getInstance();
+  private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private changePasswordDialogController: CustomDialogController = new CustomDialogController({
     builder: ChangePasswordDialog({
       onSuccess: this.handlePasswordChange.bind(this)
@@ -20,6 +27,10 @@ export struct SettingsDatabase {
   });
 
   aboutToAppear(): void {
+    // 获取是否开启下拉刷新功能
+    this.settingsService.get(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, this.fingerprintLogin).then(result => {
+      this.fingerprintLogin = result;
+    });
   }
 
   onPageShow(): void {
@@ -51,6 +62,23 @@ export struct SettingsDatabase {
     this.changePasswordDialogController.close();
   }
 
+  // 修改指纹登录选线
+  private changeFingerprintLogin(isOn: boolean) {
+    this.settingsService.put(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, isOn);
+    if (this.isFingerprintSupport && isOn) {
+      let dbFileParam = FileService.getDbFileParam();
+      RecentFilesService.getInstance().getRecentFile(dbFileParam.filePath).then((recentFile) => {
+        if (!recentFile) {
+          return;
+        }
+        CryptoUtils.encryptText(dbFileParam.password).then(result => {
+          recentFile.password = result;
+          RecentFilesService.getInstance().addRecentFile(recentFile);
+        });
+      });
+    }
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -75,6 +103,27 @@ export struct SettingsDatabase {
         // 密码相关功能
         if (this.isDatabaseValid) {
           ListItemGroup() {
+            if (this.isFingerprintSupport) {
+              // 指纹登录
+              ListItem() {
+                Row() {
+                  Text($r("app.string.auth_by_fingerprint"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Toggle({ type: ToggleType.Switch, isOn: this.fingerprintLogin })
+                    .selectedColor('#007DFF')
+                    .switchPointColor('#FFFFFF')
+                    .onChange((isOn: boolean) => {
+                      this.changeFingerprintLogin(isOn);
+                    })
+                }
+                .width('100%')
+                .padding(16)
+                .onClick(() => {
+                  this.showChangePasswordDialog();
+                })
+              }
+            }
             // 修改主密码
             ListItem() {
               Row() {
