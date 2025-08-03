@@ -73,6 +73,9 @@ struct DatabaseView {
     EventBus.on<void>(EventBus.DATABASE_MERGE, () => {
       this.reloadDatabase();
     });
+    EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
+      this.updateUI();
+    });
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
@@ -88,6 +91,7 @@ struct DatabaseView {
   aboutToDisappear() {
     // 移除监听器
     EventBus.off<void>(EventBus.DATABASE_MERGE);
+    EventBus.off<void>(EventBus.DATABASE_UPDATE);
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
