@@ -342,6 +342,9 @@ struct EntryEdit {
           this.loadingDialogController.close();
           this.router.back();
         },
+        onMessage: (message) => {
+          this.loadingMessage = message;
+        },
         onError: (error) => {
           this.handleSaveError(error);
         }
