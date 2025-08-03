@@ -342,6 +342,7 @@ struct EntryEdit {
           this.loadingMessage = ResourceManager.getString($r('app.string.save_success_message'));
           let timeOut = setTimeout(() => {
             this.isLoading = false;
+            this.loadingDialogController.close();
             this.router.back();
             clearTimeout(timeOut);
           }, 150);
@@ -422,9 +423,9 @@ struct EntryEdit {
 
         // 重置该字段的可见性状态为隐藏
         this.customFieldsVisibility[this.editingFieldIndex] = false;
-
         // 标记为已修改
         this.checkEntryModified();
+        this.fieldDialogController.close();
       }
     } else {
       // 添加新字段
@@ -447,9 +448,9 @@ struct EntryEdit {
 
       // 添加新字段的可见性状态，默认为隐藏
       this.customFieldsVisibility.push(false);
-
       // 标记为已修改
       this.checkEntryModified();
+      this.fieldDialogController.close();
     }
   }
 

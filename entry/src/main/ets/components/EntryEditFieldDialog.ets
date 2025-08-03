@@ -46,10 +46,7 @@ export struct EntryEditFieldDialog {
     this.isProtected = this.tempProtected;
 
     // 调用确认回调
-    this.onConfirm({key:this.fieldKey, value:this.fieldValue, isProtected:this.isProtected});
-
-    // 关闭对话框
-    this.controller.close();
+    this.onConfirm({ key: this.fieldKey, value: this.fieldValue, isProtected: this.isProtected });
   }
 
   /**
@@ -114,13 +111,13 @@ export struct EntryEditFieldDialog {
           .alignSelf(ItemAlign.Start)
 
         Row() {
-          TextInput({
+          TextArea({
             text: this.tempValue,
             placeholder: $r("app.string.enter_custom_field_value"),
           })
-            .type(this.tempProtected && !this.showPassword ? InputType.Password : InputType.Normal)
             .width('100%')
-            .height(48)
+            .lineHeight(24)
+            .padding({ top: 12, bottom: 12 })
             .fontSize(16)
             .fontColor($r('app.color.text_primary'))
             .enableAutoFill(false)
@@ -130,7 +127,6 @@ export struct EntryEditFieldDialog {
             })
         }
         .width('100%')
-        .height(48)
         .margin({ bottom: 16 })
       }
       .width('100%')
