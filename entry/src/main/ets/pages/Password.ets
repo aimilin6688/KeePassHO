@@ -1,7 +1,6 @@
-import {PromptAction, router, Router } from '@kit.ArkUI';
+import { PromptAction, router, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
-
 
 import { AuthType, AuthTypeInfo, CredentialsParam, FileParam } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
@@ -35,8 +34,7 @@ struct Password {
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
-  @State loadingMessage:string =  ResourceManager.getString($r('app.string.loading_message'));
-
+  @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   private filePath: string = '';
   private storageType: StorageType | null = null;
   private storageConfig: StorageConfig | null = null;
@@ -44,7 +42,6 @@ struct Password {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private focusController: FocusController = new FocusController();
-
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -75,7 +72,8 @@ struct Password {
 
   // 更新按钮状态
   private updateButtonState(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', `updateButtonState: isLoading=${this.isLoading}, passwordLength=${this.password.length}, keyFilePath=${this.keyFilePath}, authType=${this.authType.type}`)
+    hilog.info(DOMAIN, TAG, '%{public}s',
+      `updateButtonState: isLoading=${this.isLoading}, passwordLength=${this.password.length}, keyFilePath=${this.keyFilePath}, authType=${this.authType.type}`)
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
@@ -184,7 +182,7 @@ struct Password {
   /**
    * 打开进度弹框
    */
-  private openLoadingDialog(){
+  private openLoadingDialog() {
     this.isLoading = true;
     this.updateButtonState(); // 更新按钮状态
     this.loadingDialogController.open();
@@ -193,7 +191,7 @@ struct Password {
   /**
    * 管理进度弹框
    */
-  private closeLoadingDialog(){
+  private closeLoadingDialog() {
     this.isLoading = false;
     this.updateButtonState(); // 更新按钮状态
     this.loadingDialogController.close();
@@ -233,7 +231,7 @@ struct Password {
     let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
-        this.loadingMessage =  ResourceManager.getString(message.message);
+        this.loadingMessage = ResourceManager.getString(message.message);
       },
       onSuccessMessage: (message: SuccessMessage) => {
         this.handleSuccessMessage(message);
@@ -267,7 +265,7 @@ struct Password {
       }, 100);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
-      this.promptAction.showToast({message: error.message, duration: 3000});
+      this.promptAction.showToast({ message: error.message, duration: 3000 });
       this.closeLoadingDialog();
     });
   }
@@ -275,7 +273,7 @@ struct Password {
   /**
    * 设置数据库文件信息
    */
-  private setFileParam(successMessage:SuccessMessage): Promise<void> {
+  private setFileParam(successMessage: SuccessMessage): Promise<void> {
     return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authType,
@@ -408,8 +406,12 @@ struct Password {
             .onSubmit(() => {
               this.verifyAndOpenDatabase();
             })
-            .onAppear(()=>{
-              this.focusController.requestFocus("passwordInput");
+            .onAppear(() => {
+              try {
+                this.focusController.requestFocus("passwordInput");
+              } catch (error) {
+                hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
+              }
             })
         }
         .width('90%')

@@ -596,7 +596,11 @@ struct DatabaseView {
                 this.performSearch();
               })
               .onAppear(() => {
-                this.searchController.requestFocus('searchKey'); // 传入组件key
+                try {
+                  this.searchController.requestFocus('searchKey'); // 传入组件key
+                } catch (error) {
+                  hilog.error(DOMAIN, TAG, 'SearchKey con not get focus: %{public}s', error?.message);
+                }
               })
             Button($r('app.string.cancel_button_text'))
               .width(70)
