@@ -887,6 +887,14 @@
     {
       "name": "database_not_opened",
       "value": "Database not opened"
+    },
+    {
+      "name": "feedback",
+      "value": "Feedback"
+    },
+    {
+      "name": "rate_for_us",
+      "value": "Rate for us"
     }
   ]
 }
