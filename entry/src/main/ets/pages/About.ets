@@ -162,7 +162,7 @@ struct About {
         }
         .width('100%')
         .height('100%')
-        .padding(16)
+        .padding(12)
       }
     }
     .backgroundColor($r('app.color.bg_primary'))
