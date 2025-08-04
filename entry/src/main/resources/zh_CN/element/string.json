@@ -110,7 +110,7 @@
     },
     {
       "name": "About_description",
-      "value": "KeePassHO 是一款支持Keepass 2.x格式的密码管理器应用。"
+      "value": "KeePassHO 是一款支持Keepass 2.x数据库读写的密码管理器应用。"
     },
     {
       "name": "Index_welcome",
@@ -889,6 +889,14 @@
     {
       "name": "database_not_opened",
       "value": "数据库未打开"
+    },
+    {
+      "name": "feedback",
+      "value": "意见反馈"
+    },
+    {
+      "name": "rate_for_us",
+      "value": "给个好评"
     }
   ]
 }
