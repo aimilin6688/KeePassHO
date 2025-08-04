@@ -339,7 +339,7 @@ struct Password {
    */
   private init() {
     KdbxUtils.init();
-    FileService.getInstance().init();
+    FileService.init();
   }
 
   /**

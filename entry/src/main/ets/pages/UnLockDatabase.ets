@@ -63,7 +63,7 @@ struct UnLockDatabase {
   }
 
   private closeDatabase() {
-    FileService.getInstance().init();
+    FileService.close();
     this.router.pushUrl({ url: 'pages/Index' });
   }
 
