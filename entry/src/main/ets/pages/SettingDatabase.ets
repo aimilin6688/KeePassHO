@@ -48,7 +48,7 @@ struct SettingsDatabase {
   private handlePasswordChange() {
     this.promptAction.showToast({ message: $r('app.string.operation_success'), duration: 2000 });
     let filePath = FileService.getDbFileParam().filePath;
-    FileService.getInstance().init();
+    FileService.close();
     this.router.clear();
     if (this.isFingerprintSupport) {
       RecentFilesService.clearPassword(filePath);

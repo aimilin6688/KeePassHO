@@ -40,6 +40,7 @@ export default class EntryAbility extends UIAbility {
 
   onDestroy(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onDestroy');
+    FileService.close();
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {

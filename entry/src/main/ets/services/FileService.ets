@@ -40,6 +40,14 @@ export class FileService {
     this.initFileParam();
   }
 
+  public static init(): void {
+    FileService.instance.init();
+  }
+
+  public static close():void{
+    FileService.instance.init();
+  }
+
   public initDbFileParam(): void {
     this.dbFileParam = {} as DbFileParam;
   }
