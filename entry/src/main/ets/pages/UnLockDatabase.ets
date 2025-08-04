@@ -87,8 +87,8 @@ struct UnLockDatabase {
       Column() {
         // Logo或应用图标
         Image($r('app.media.startIcon'))
-          .width(120)
-          .height(120)
+          .width(90)
+          .height(90)
           .margin({ top: 60, bottom: 40 })
 
         Text($r('app.string.quick_unlock'))
