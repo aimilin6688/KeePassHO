@@ -394,11 +394,16 @@ struct Password {
 
       // 主要内容区域
       Column() {
+        // Logo或应用图标
+        Image($r('app.media.startIcon'))
+          .width(90)
+          .height(90)
+          .margin({ top: 40, bottom: 10 })
         // 文件名显示
         Text(this.fileName)
           .fontSize(16)
           .fontColor($r('app.color.text_primary'))
-          .margin({ top: 24, bottom: 32 })
+          .margin({ bottom: 32 })
           .textAlign(TextAlign.Center)
           .width('80%')
           .maxLines(2)
