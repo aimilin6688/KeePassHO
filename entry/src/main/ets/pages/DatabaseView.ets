@@ -550,7 +550,6 @@ struct DatabaseView {
                 .width(24)
                 .height(24)
                 .margin({ right: 16 })
-                .fillColor($r('app.color.text_primary'))
                 .onClick(() => {
                   this.isSearching = true;
                   this.searchText = '';
