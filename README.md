@@ -76,10 +76,6 @@ KeePassHO/
 - HarmonyOS UI组件
 - kdbxweb库（用于处理KeePass数据库）
 
-## kdbxweb库
-
-KeePassHO使用kdbxweb库来处理KeePass数据库文件。这是一个高性能的JavaScript库，用于在Node.js或浏览器中读取/写入KeePass v2数据库（kdbx）。
-
 ### 主要特性
 
 - 在浏览器或Node.js中运行
@@ -114,6 +110,13 @@ KeePassHO使用kdbxweb库来处理KeePass数据库文件。这是一个高性能
 ## 许可证
 
 本项目采用MIT许可证 - 详情请参见[LICENSE](LICENSE)文件。
+
+## 致谢
+1. [kdbxweb](https://github.com/keeweb/kdbxweb)
+
+2. [Font-Awesome](https://github.com/FortAwesome/Font-Awesome/tree/7.x)
+
+
 
 ## 联系方式
 
