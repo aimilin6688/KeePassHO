@@ -6,7 +6,7 @@
   "author": "艾米林",
   "license": "",
   "dependencies": {
-    "kdbxweb": "^2.2.1"
+    "kdbxweb": "file:../kdbxweb"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
