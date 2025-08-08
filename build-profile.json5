@@ -5,26 +5,26 @@
         "name": "release",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.p12",
-          "storePassword": "000000190C2A3489D21BBE29F049328FAA460D394C1D5EBCE59A8DCD26B7FC4DAB1861AC247F072F94",
+          "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_release.p12",
+          "storePassword": "00000019D5B6D912893DF631F55C961B5384C3E74D991E6A7B21493EC4B4E6A57687A9CE3D2C5C0EE8",
           "keyAlias": "keepassho",
-          "keyPassword": "00000019D2D76C1BEAC83CAD474A940974C98AB397656CB543A2B40D9A2671D5F2CF3A46532BCFA79D",
+          "keyPassword": "00000019E4FCBB82DAC05C2262CF76D084DF8727ECDE701FEDF1FD318F474F6D3C3DD5A2359B436116",
           "signAlg": "SHA256withECDSA",
-          "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.p7b",
-          "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_release.cer"
+          "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_release.p7b",
+          "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_release.cer"
         }
       },
       {
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_debug.p12",
-          "storePassword": "00000019C3B45FFA6B0C144A28933B1B49B7BECE33A067B422572E5B04957786A9A50D5A90389F902D",
+          "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_debug.p12",
+          "storePassword": "000000199055DE71D6C06AB7B417789694E5B2DD6FC21912E61B8A13963B32C74865AD02BD74EE3B0D",
           "keyAlias": "keepassho",
-          "keyPassword": "000000192F21A7EFF3145308127519230FECE6E3ED50DD6387A88EDDB9C47DCCD0F20ED4F915ACDADA",
+          "keyPassword": "00000019F3FC737772262F028CC26D4F5DFCB745D555B955183B78A46E0F6D48093A3BC1D45DAF3E95",
           "signAlg": "SHA256withECDSA",
-          "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_debug.p7b",
-          "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/KeePassHO_debug.cer"
+          "profile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_debug.p7b",
+          "certpath": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_debug.cer"
         }
       }
     ],
@@ -73,7 +73,8 @@
         {
           "name": "default",
           "applyToProducts": [
-            "default", "release"
+            "default",
+            "release"
           ]
         }
       ]

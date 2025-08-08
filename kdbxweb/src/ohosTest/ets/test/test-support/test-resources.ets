@@ -30,6 +30,7 @@ export class TestResources {
   static yubikey4: ArrayBuffer = TestResources.readFile('YubiKey4.kdbx');
   static emptyUuidXml: ArrayBuffer = TestResources.readFile('empty-uuid.xml');
   static kdbx41: ArrayBuffer = TestResources.readFile('KDBX4.1.kdbx');
+  static keepassXc: ArrayBuffer = TestResources.readFile('keepassXc.kdbx');
 
   public static readFile(name: string): ArrayBuffer {
     return readFileToBuffer(name);
