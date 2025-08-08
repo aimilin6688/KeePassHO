@@ -344,7 +344,11 @@ export function unprotectValues(node: Node): void {
     if (strToBoolean(node.getAttribute(XmlNames.Attr.Protected)) && (node as any).protectedValue) {
       node.removeAttribute(XmlNames.Attr.Protected);
       node.setAttribute(XmlNames.Attr.ProtectedInMemPlainXml, 'True');
-      node.textContent = (node as any).protectedValue.getText();
+      if(node.nodeName === XmlNames.Elem.Binary) {
+        node.textContent = (node as any).protectedValue.toBase64();
+      }else{
+        node.textContent = (node as any).protectedValue.getText();
+      }
     }
   });
 }
@@ -365,7 +369,11 @@ export function protectUnprotectedValues(node: Node): void {
 export function protectPlainValues(node: Node): void {
   traverse(node, (node) => {
     if (strToBoolean(node.getAttribute(XmlNames.Attr.ProtectedInMemPlainXml))) {
-      (node as any).protectedValue = ProtectedValue.fromString(node.textContent || '');
+      if(node.nodeName === XmlNames.Elem.Binary) {
+        (node as any).protectedValue = ProtectedValue.fromBase64(node.textContent || '');
+      }else{
+        (node as any).protectedValue = ProtectedValue.fromString(node.textContent || '');
+      }
       node.textContent = (node as any).protectedValue.toString();
       node.removeAttribute(XmlNames.Attr.ProtectedInMemPlainXml);
       node.setAttribute(XmlNames.Attr.Protected, 'True');

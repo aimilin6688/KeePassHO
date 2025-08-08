@@ -8,3 +8,5 @@ declare module '@xmldom/xmldom' {
     protectedValue: ProtectedValue | undefined;
   }
 }
+
+export * from '../index';
