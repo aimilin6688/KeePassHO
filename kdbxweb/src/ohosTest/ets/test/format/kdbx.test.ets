@@ -1322,6 +1322,15 @@ export default function KdbxTest() {
 
             check(db);
         });
+
+        it('load_keepassXc.kdbx',  0,async () => {
+            const cred = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString('demo'));
+            let db = await kdbxweb.Kdbx.load(TestResources.keepassXc, cred);
+
+            const xml = await db.saveXml();
+            db = await kdbxweb.Kdbx.loadXml(xml, cred);
+
+        });
     });
 }
 
