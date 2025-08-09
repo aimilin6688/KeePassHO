@@ -31,20 +31,20 @@ workerPort.onmessage = (event: MessageEvents) => {
 async function handleLoadDatabase(request: LoadDatabase) {
   try {
     postMessage($r('app.string.creating_key'));
-    hilog.debug(DOMAIN, TAG, "LoadWorker 1: %d", Date.now() - logTime, logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "LoadWorker 1: %{public}d", Date.now() - logTime, logTime = Date.now());
     // 创建凭证
     let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
     postMessage($r('app.string.loading_key'));
     // 加载文件内容
-    hilog.debug(DOMAIN, TAG, "LoadWorker 2: %d", Date.now() - logTime, logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "LoadWorker 2: %{public}d", Date.now() - logTime, logTime = Date.now());
     let fileContent: FileContentInfo = await loadKdbxFileContent(request);
     postMessage($r('app.string.validating'));
     // 加载数据库
-    hilog.debug(DOMAIN, TAG, "LoadWorker 3: %d", Date.now() - logTime, logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "LoadWorker 3: %{public}d", Date.now() - logTime, logTime = Date.now());
     let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
-    hilog.debug(DOMAIN, TAG, "LoadWorker 4: %d", Date.now() - logTime, logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "LoadWorker 4: %{public}d", Date.now() - logTime, logTime = Date.now());
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
-    hilog.debug(DOMAIN, TAG, "LoadWorker 5: %d", Date.now() - logTime, logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "LoadWorker 5: %{public}d", Date.now() - logTime, logTime = Date.now());
     postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent, fileContent.modifiedTime), [kdbxContent]);
   } catch (error) {

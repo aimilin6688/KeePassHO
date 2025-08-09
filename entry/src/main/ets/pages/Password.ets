@@ -268,7 +268,7 @@ struct Password {
 
     // 打开加载进度弹框
     this.openLoadingDialog();
-    hilog.debug(DOMAIN, TAG, 'Open 1: %d', Date.now() - this.logTime, this.logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, 'Open 1: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
     // 打开数据库
     let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
@@ -276,7 +276,7 @@ struct Password {
         this.loadingMessage = ResourceManager.getString(message.message);
       },
       onSuccessMessage: (message: SuccessMessage) => {
-        hilog.debug(DOMAIN, TAG, 'Open 2: %d', Date.now() - this.logTime, this.logTime = Date.now());
+        hilog.debug(DOMAIN, TAG, 'Open 2: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
@@ -314,13 +314,13 @@ struct Password {
    * 设置数据库文件信息
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
-    hilog.debug(DOMAIN, TAG, 'Open 3: %d', Date.now() - this.logTime, this.logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, 'Open 3: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
     return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
     } as CredentialsParam).then((kdbx: Kdbx) => {
-      hilog.debug(DOMAIN, TAG, 'Open 4: %d', Date.now() - this.logTime, this.logTime = Date.now());
+      hilog.debug(DOMAIN, TAG, 'Open 4: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
       // 设置数据库文件信息
       FileService.setDbFileParam({
         filePath: this.filePath,

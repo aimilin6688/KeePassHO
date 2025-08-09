@@ -19,10 +19,10 @@ export default class KdbxLoadService {
     KdbxLoadService.stopWorker();
 
     // 创建 Worker
-    hilog.debug(DOMAIN, TAG, "Load 1: %d", Date.now() - KdbxLoadService.logTime, KdbxLoadService.logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "Load 1: %{public}d", Date.now() - KdbxLoadService.logTime, KdbxLoadService.logTime = Date.now());
     KdbxLoadService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseLoadWorker.ets');
     KdbxLoadService.databaseWorker.postMessage(JSON.stringify(loadParam));
-    hilog.debug(DOMAIN, TAG, "Load 2: %d", Date.now() - KdbxLoadService.logTime, KdbxLoadService.logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "Load 2: %{public}d", Date.now() - KdbxLoadService.logTime, KdbxLoadService.logTime = Date.now());
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onmessage = (e: MessageEvents) => {
