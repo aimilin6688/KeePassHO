@@ -21,6 +21,7 @@ export function ohosArgon2(
       parallelism: parallelism,
       argon2Type: algorithmType,
       argon2Version: version
+
     });
     if (res.result != 'ARGON2_OK') {
       throw new Error(res.result);
