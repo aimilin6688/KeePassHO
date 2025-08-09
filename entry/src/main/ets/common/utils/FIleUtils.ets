@@ -1,6 +1,7 @@
 import { fileShare } from '@kit.CoreFileKit';
 
 export default class FileUtils {
+  private static FolderAuthorization: string = 'SystemCapability.FileManagement.AppFileService.FolderAuthorization';
   /**
    * 获取文件名
    * @param filePath 文件路径
@@ -20,7 +21,7 @@ export default class FileUtils {
    * @returns 结果
    */
   public static activatePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
-    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+    if (!canIUse(FileUtils.FolderAuthorization)) {
       throw new Error('this api is not supported on this device');
     }
     let policyInfo: fileShare.PolicyInfo = {
@@ -37,7 +38,7 @@ export default class FileUtils {
    * @returns 结果
    */
   public static persistPermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
-    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+    if (!canIUse(FileUtils.FolderAuthorization)) {
       throw new Error('this api is not supported on this device');
     }
     let policyInfo: fileShare.PolicyInfo = {
@@ -54,7 +55,7 @@ export default class FileUtils {
    * @returns 结果
    */
   public static checkPersistPermission(path: string, operationMode: fileShare.OperationMode): Promise<Array<boolean>> {
-    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+    if (!canIUse(FileUtils.FolderAuthorization)) {
       throw new Error('this api is not supported on this device');
     }
     let policyInfo: fileShare.PolicyInfo = {
@@ -71,7 +72,7 @@ export default class FileUtils {
    * @returns 结果
    */
   public static revokePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
-    if (!canIUse('SystemCapability.FileManagement.AppFileService.FolderAuthorization')) {
+    if (!canIUse(FileUtils.FolderAuthorization)) {
       throw new Error('this api is not supported on this device');
     }
     let policyInfo: fileShare.PolicyInfo = {
