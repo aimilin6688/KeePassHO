@@ -47,6 +47,8 @@ struct Password {
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isEnabledFingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
+  private logTime:number = 0;
+
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -266,7 +268,7 @@ struct Password {
 
     // 打开加载进度弹框
     this.openLoadingDialog();
-
+    hilog.debug(DOMAIN, TAG, 'Open 1: %d', Date.now() - this.logTime, this.logTime = Date.now());
     // 打开数据库
     let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
@@ -274,6 +276,7 @@ struct Password {
         this.loadingMessage = ResourceManager.getString(message.message);
       },
       onSuccessMessage: (message: SuccessMessage) => {
+        hilog.debug(DOMAIN, TAG, 'Open 2: %d', Date.now() - this.logTime, this.logTime = Date.now());
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
@@ -300,9 +303,6 @@ struct Password {
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
       this.router.pushUrl({ url: 'pages/DatabaseView' });
-      setTimeout(() => {
-        this.closeLoadingDialog();
-      }, 100);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
       this.promptAction.showToast({ message: error.message, duration: 3000 });
@@ -314,11 +314,13 @@ struct Password {
    * 设置数据库文件信息
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
+    hilog.debug(DOMAIN, TAG, 'Open 3: %d', Date.now() - this.logTime, this.logTime = Date.now());
     return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
     } as CredentialsParam).then((kdbx: Kdbx) => {
+      hilog.debug(DOMAIN, TAG, 'Open 4: %d', Date.now() - this.logTime, this.logTime = Date.now());
       // 设置数据库文件信息
       FileService.setDbFileParam({
         filePath: this.filePath,

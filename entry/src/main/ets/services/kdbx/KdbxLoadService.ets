@@ -1,25 +1,28 @@
-import { LoadDatabase } from "../../workers/DatabaseLoadWorkerParam";
-import { ErrorEvent, MessageEvents, worker } from "@kit.ArkTS";
+import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
+import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from "../../workers/WorkerParam";
-import ResourceManager from "../../common/utils/ResourceManager";
+import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
+import ResourceManager from '../../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxLoadService';
 
 export default class KdbxLoadService {
+  // 启用加载线程，加载数据库
   private static databaseWorker: worker.ThreadWorker | null = null;
+  private static logTime:number = 0;
 
   /**
    * 加载数据库
    */
-  public static loadDatabase(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback):void{
+  public static loadDatabase(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback): void {
     KdbxLoadService.stopWorker();
 
-    // 启用加载线程，加载数据库
+    // 创建 Worker
+    hilog.debug(DOMAIN, TAG, "Load 1: %d", Date.now() - KdbxLoadService.logTime, KdbxLoadService.logTime = Date.now());
     KdbxLoadService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseLoadWorker.ets');
     KdbxLoadService.databaseWorker.postMessage(JSON.stringify(loadParam));
-
+    hilog.debug(DOMAIN, TAG, "Load 2: %d", Date.now() - KdbxLoadService.logTime, KdbxLoadService.logTime = Date.now());
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onmessage = (e: MessageEvents) => {
@@ -43,7 +46,7 @@ export default class KdbxLoadService {
       if (err.message.indexOf('NativeCustomSpan') != -1) {
         return;
       }
-      if(callback?.onAllErrors){
+      if (callback?.onAllErrors) {
         callback.onAllErrors(err);
       }
     }
@@ -51,7 +54,7 @@ export default class KdbxLoadService {
     // 注册onexit回调，当Worker销毁时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onexit = (e: number) => {
       hilog.info(DOMAIN, TAG, 'Database load worker exit: %{public}d', e);
-      if(callback?.onexit){
+      if (callback?.onexit) {
         callback.onexit(e);
       }
     }
@@ -65,7 +68,7 @@ export default class KdbxLoadService {
   private static handleLoadMessage(data: WorkerMessage, onLoadMessage?: (message: LoadMessage) => void) {
     const loadMessage = data as LoadMessage;
     hilog.debug(DOMAIN, TAG, 'Received loading message:  %{public}s', ResourceManager.getString(loadMessage.message));
-    if(onLoadMessage){
+    if (onLoadMessage) {
       onLoadMessage(loadMessage);
     }
   }
@@ -77,8 +80,8 @@ export default class KdbxLoadService {
    */
   private static handleSuccessMessage(data: WorkerMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
     const successMessage = data as SuccessMessage;
-    hilog.info(DOMAIN, TAG, 'Received success message: modifiedTime:%{public}d, isMerge:%{public}s', successMessage.modifiedTime,  successMessage.isMerge);
-    if(onSuccessMessage){
+    hilog.info(DOMAIN, TAG, 'Received success message: modifiedTime:%{public}d, isMerge:%{public}s', successMessage.modifiedTime, successMessage.isMerge);
+    if (onSuccessMessage) {
       onSuccessMessage(successMessage);
     }
   }
@@ -91,7 +94,7 @@ export default class KdbxLoadService {
   private static handleErrorMessage(data: WorkerMessage, onErrorMessage?: (message: LoadMessage) => void) {
     let errorMessage = data as LoadMessage;
     hilog.error(DOMAIN, TAG, 'Received error message: %{public}s', errorMessage.message);
-    if(onErrorMessage){
+    if (onErrorMessage) {
       onErrorMessage(errorMessage);
     }
   }
@@ -103,30 +106,38 @@ export default class KdbxLoadService {
   public static stopWorker() {
     // 终止 Worker
     if (KdbxLoadService.databaseWorker) {
-      KdbxLoadService.databaseWorker.terminate();
-      KdbxLoadService.databaseWorker = null;
-      hilog.info(DOMAIN, TAG, 'Database load worker terminated');
+      try {
+        KdbxLoadService.databaseWorker.terminate();
+        KdbxLoadService.databaseWorker = null;
+        hilog.info(DOMAIN, TAG, 'Database load worker terminated');
+      } catch (e) {
+        hilog.info(DOMAIN, TAG, 'Database load worker terminated error: %{public}s', e);
+      }
     }
   }
 }
 
-export interface  KdbxLoadServiceCallback{
+export interface KdbxLoadServiceCallback {
   /**
    * Worker销毁
    */
   onexit?: (e: number) => void;
+
   /**
    * Worker异常
    */
   onAllErrors?: (err: ErrorEvent) => void;
+
   /**
    * 加载进度消息
    */
   onLoadMessage?: (message: LoadMessage) => void;
+
   /**
    * 加载成功消息
    */
   onSuccessMessage?: (message: SuccessMessage) => void;
+
   /**
    * 加载错误消息
    */
