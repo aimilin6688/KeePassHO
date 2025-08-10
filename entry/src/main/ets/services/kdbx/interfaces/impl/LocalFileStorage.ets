@@ -117,10 +117,10 @@ export class LocalFileStorage implements IFileStorage {
     try {
       // fixme 这里始终返回false ，不确定什么原因
       let result = fs.accessSync(path, fs.AccessModeType.EXIST);
-      hilog.info(DOMAIN, TAG, `file ${path} exist: ${result}`);
+      hilog.info(DOMAIN, TAG, `Check file exist: ${result}, path: ${path}`);
       return true;
     } catch (error) {
-      hilog.info(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
+      hilog.error(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
       return false;
     }
   }
