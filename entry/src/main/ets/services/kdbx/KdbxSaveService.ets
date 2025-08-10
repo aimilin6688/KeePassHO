@@ -167,7 +167,7 @@ export default class KdbxSaveService {
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
     }
     if (showToast) {
-      CommonUtils.showToast(ResourceManager.getString($r('app.string.save_success_message')));
+      CommonUtils.showToast(ResourceManager.getString($r("app.string.save_success")));
     }
   }
 }
