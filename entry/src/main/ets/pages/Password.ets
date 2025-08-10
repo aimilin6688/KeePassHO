@@ -30,6 +30,7 @@ const TAG = 'Password';
 @Component
 struct Password {
   @State password: string = '';
+  @State encryptPassword: string | undefined = undefined;
   @State isLoading: boolean = false;
   @State fileName: string = '';
   @State authType: AuthTypeInfo = AuthType.PASSWORD;
@@ -38,6 +39,7 @@ struct Password {
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
+
   private filePath: string = '';
   private storageType: StorageType | null = null;
   private storageConfig: StorageConfig | null = null;
@@ -47,6 +49,7 @@ struct Password {
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isEnabledFingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
+
 
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
@@ -170,6 +173,8 @@ struct Password {
       hilog.debug(DOMAIN, TAG, `Fingerprint auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isEnabledFingerprintLogin: ${this.isEnabledFingerprintLogin}`);
       return;
     }
+    // 加密密钥
+    this.encryptPassword  = password;
     // 启用指纹认证
     AuthService.startFingerprintAuth({
       onSuccess: (result) => {
@@ -475,6 +480,26 @@ struct Password {
         if (this.authType.type === AuthType.PASSWORD_KEYFILE.type ||
           this.authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
           this.KeyFileSelector()
+        }
+
+        if (this.encryptPassword) {
+          Row() {
+            Text($r('app.string.auth_by_fingerprint'))
+              .fontSize(14)
+              .fontColor($r('app.color.button_bg_blue'))
+              .margin({ bottom: 8 })
+              .decoration({
+                type: TextDecorationType.Underline,
+                color: $r('app.color.button_bg_blue')
+              })
+              .onClick(() => {
+                this.authByFingerprint(this.encryptPassword);
+              })
+          }
+          .justifyContent(FlexAlign.Center)
+          .width('100%')
+          .position({ x: 0, y: '100%' })
+          .translate({ y: -100 }) // 调整位置，确保正确显示
         }
 
         // 底部固定按钮栏
