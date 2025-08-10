@@ -179,6 +179,10 @@ struct EntryEdit {
       // 检验是否修改了
       this.isModified = false;
     }
+    else{
+      this.isEditMode = false;
+      this.username = this.database.meta.defaultUser || '';
+    }
   }
 
   /**
@@ -247,7 +251,7 @@ struct EntryEdit {
     try {
       if (this.isEditMode && this.entry) {
         // 添加到历史记录中
-        this.entry.pushHistory();
+        this.pushEntryToHistory();
         this.loadingMessage = ResourceManager.getString($r('app.string.load_save_history'));
         // 清除旧的自定义字段（除了标准字段外的所有字段）
         this.entry.fields.forEach((value, key) => {
@@ -300,6 +304,27 @@ struct EntryEdit {
   }
 
   /**
+   * 添加条目到历史记录
+   */
+  private pushEntryToHistory() {
+    if(!this.database || !this.entry){
+      return;
+    }
+
+    // 限制历史条目格式
+    const historyMaxItems = this.database.meta.historyMaxItems;
+    if(historyMaxItems && historyMaxItems > 0){
+      if(this.entry.history.length >= historyMaxItems){
+        this.entry.removeHistory(1);
+      }
+    }
+    // TODO 限制历史条目总大小
+
+    // 添加到历史记录中
+    this.entry.pushHistory();
+  }
+
+  /**
    * 保存标签
    */
   private setTags() {
@@ -339,7 +364,7 @@ struct EntryEdit {
       KdbxUtils.saveDatabase({
         showToast: false,
         onSuccess: () => {
-          this.loadingMessage = ResourceManager.getString($r('app.string.save_success_message'));
+          this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           let timeOut = setTimeout(() => {
             this.isLoading = false;
             this.loadingDialogController.close();
