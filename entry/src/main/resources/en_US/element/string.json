@@ -365,12 +365,12 @@
       "value": "Generate password"
     },
     {
-      "name": "CreateDatabase_name_label",
+      "name": "database_name",
       "value": "Database name"
     },
     {
-      "name": "CreateDatabase_name_placeholder",
-      "value": "Enter database name"
+      "name": "database_name_placeholder",
+      "value": "Please input database name"
     },
     {
       "name": "CreateDatabase_password_mismatch",
@@ -421,7 +421,7 @@
       "value": "Are you sure to delete this group?"
     },
     {
-      "name": "save_success_message",
+      "name": "save_success",
       "value": "Saved successfully"
     },
     {
@@ -895,6 +895,50 @@
     {
       "name": "rate_for_us",
       "value": "Rate for us"
+    },
+    {
+      "name": "dialog_changes_confirm_message",
+      "value": "Are you sure you want to give up the change?"
+    },
+    {
+      "name": "save_button_text",
+      "value": "Save"
+    },
+    {
+      "name": "database_description_placeholder",
+      "value": "Database Description"
+    },
+    {
+      "name": "default_username_placeholder",
+      "value": "Please input default user name"
+    },
+    {
+      "name": "Settings_database_metadata",
+      "value": "Setting database metadata"
+    },
+    {
+      "name": "database_description",
+      "value": "Database Description"
+    },
+    {
+      "name": "default_username",
+      "value": "Default Username"
+    },
+    {
+      "name": "recycle_bin_enabled",
+      "value": "Enable Recycle Bin"
+    },
+    {
+      "name": "history_max_items",
+      "value": "Max History Items"
+    },
+    {
+      "name": "history_max_size",
+      "value": "Max History Size (MB)"
+    },
+    {
+      "name": "compression_enabled",
+      "value": "Enable compression"
     }
   ]
 }
