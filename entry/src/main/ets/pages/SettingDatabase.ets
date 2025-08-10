@@ -85,7 +85,7 @@ struct SettingsDatabase {
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => this.router.back())
-        Text($r('app.string.Settings_title'))
+        Text($r('app.string.Settings_database'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 12 })
@@ -136,6 +136,37 @@ struct SettingsDatabase {
               .padding(16)
               .onClick(() => {
                 this.showChangePasswordDialog();
+              })
+            }
+          }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
+          
+          // 数据库元数据设置
+          ListItemGroup() {
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_database_metadata"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(20)
+                  .height(20)
+                  .margin({ right: 10 })
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                this.router.pushUrl({
+                  url: 'pages/SettingDatabaseMeta',
+                  params: {}
+                });
               })
             }
           }
