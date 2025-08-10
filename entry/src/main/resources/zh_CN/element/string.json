@@ -366,11 +366,11 @@
       "value": "生成密码"
     },
     {
-      "name": "CreateDatabase_name_label",
+      "name": "database_name",
       "value": "数据库名称"
     },
     {
-      "name": "CreateDatabase_name_placeholder",
+      "name": "database_name_placeholder",
       "value": "请输入数据库名称"
     },
     {
@@ -422,7 +422,7 @@
       "value": "确定要删除吗？"
     },
     {
-      "name": "save_success_message",
+      "name": "save_success",
       "value": "保存成功"
     },
     {
@@ -897,6 +897,50 @@
     {
       "name": "rate_for_us",
       "value": "给个好评"
+    },
+    {
+      "name": "save_button_text",
+      "value": "保存"
+    },
+    {
+      "name": "database_description",
+      "value": "数据库描述"
+    },
+    {
+      "name": "database_description_placeholder",
+      "value": "请输入数据库描述"
+    },
+    {
+      "name": "default_username",
+      "value": "默认用户名"
+    },
+    {
+      "name": "default_username_placeholder",
+      "value": "请输入默认用户名"
+    },
+    {
+      "name": "Settings_database_metadata",
+      "value": "设置数据库元数据"
+    },
+    {
+      "name": "recycle_bin_enabled",
+      "value": "启用回收站"
+    },
+    {
+      "name": "history_max_items",
+      "value": "每个条目最大历史记录数"
+    },
+    {
+      "name": "history_max_size",
+      "value": "每个条目历史记录总大小(MB)"
+    },
+    {
+      "name": "dialog_changes_confirm_message",
+      "value": "您确定要放弃更改吗？"
+    },
+    {
+      "name": "compression_enabled",
+      "value": "启用压缩"
     }
   ]
 }
