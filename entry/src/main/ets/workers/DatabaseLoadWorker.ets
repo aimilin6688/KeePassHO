@@ -39,7 +39,7 @@ async function handleLoadDatabase(request: LoadDatabase) {
     // 加载数据库
     let logTime = Date.now();
     let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
-    hilog.debug(DOMAIN, TAG, "LoadWorker time: %{public}d", Date.now() - logTime);
+    hilog.debug(DOMAIN, TAG, "Load database cost time: %{public}d ms", Date.now() - logTime);
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
     postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent, fileContent.modifiedTime), [kdbxContent]);
