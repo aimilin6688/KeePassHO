@@ -330,7 +330,7 @@ struct CreateDatabase {
     const documentPicker = new picker.DocumentViewPicker(this.context);
     const result = await documentPicker.select({
       maxSelectNumber: 1,
-      fileSuffixFilters: ['.key'] // 只显示key文件
+      fileSuffixFilters: [] // 只显示key文件
     });
     if (result && result.length > 0) {
       const fileUri = result[0];
