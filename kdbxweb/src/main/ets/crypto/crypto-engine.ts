@@ -16,7 +16,7 @@ import { ChaCha20 } from './chacha20';
 import { CryptoJS } from '@ohos/crypto-js';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { ByteUtils } from '..';
-import { ohosArgon2 } from './argon2-phc';
+import { ohosArgon2 } from './argon2-rs';
 
 const EmptySha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 const EmptySha512 =
