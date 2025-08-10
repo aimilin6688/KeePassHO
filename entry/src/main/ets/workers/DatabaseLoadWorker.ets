@@ -6,13 +6,12 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileContentInfo } from '../services/kdbx/interfaces';
-import { MessageType, WorkerMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
+import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoadWorker';
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
-let logTime:number = 0;
 
 // 监听主线程消息
 workerPort.onmessage = (event: MessageEvents) => {
@@ -31,20 +30,17 @@ workerPort.onmessage = (event: MessageEvents) => {
 async function handleLoadDatabase(request: LoadDatabase) {
   try {
     postMessage($r('app.string.creating_key'));
-    hilog.debug(DOMAIN, TAG, "LoadWorker 1: %{public}d", Date.now() - logTime, logTime = Date.now());
     // 创建凭证
     let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
     postMessage($r('app.string.loading_key'));
     // 加载文件内容
-    hilog.debug(DOMAIN, TAG, "LoadWorker 2: %{public}d", Date.now() - logTime, logTime = Date.now());
     let fileContent: FileContentInfo = await loadKdbxFileContent(request);
     postMessage($r('app.string.validating'));
     // 加载数据库
-    hilog.debug(DOMAIN, TAG, "LoadWorker 3: %{public}d", Date.now() - logTime, logTime = Date.now());
+    let logTime = Date.now();
     let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
-    hilog.debug(DOMAIN, TAG, "LoadWorker 4: %{public}d", Date.now() - logTime, logTime = Date.now());
+    hilog.debug(DOMAIN, TAG, "LoadWorker time: %{public}d", Date.now() - logTime);
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
-    hilog.debug(DOMAIN, TAG, "LoadWorker 5: %{public}d", Date.now() - logTime, logTime = Date.now());
     postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent, fileContent.modifiedTime), [kdbxContent]);
   } catch (error) {
@@ -72,7 +68,7 @@ async function loadKdbxFileContent(request: LoadDatabase): Promise<FileContentIn
  * 发送加载消息给主线程
  * @param message 消息
  */
-function postMessage(message: string|Resource) {
+function postMessage(message: string | Resource) {
   workerPort.postMessage(toLoadMessage(message));
 }
 
