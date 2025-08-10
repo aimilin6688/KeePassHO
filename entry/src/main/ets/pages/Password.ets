@@ -47,7 +47,6 @@ struct Password {
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isEnabledFingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
-  private logTime:number = 0;
 
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
@@ -86,8 +85,6 @@ struct Password {
 
   // 更新按钮状态
   private updateButtonState(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s',
-      `updateButtonState: isLoading=${this.isLoading}, passwordLength=${this.password.length}, keyFilePath=${this.keyFilePath}, authType=${this.authType.type}`)
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
@@ -268,7 +265,6 @@ struct Password {
 
     // 打开加载进度弹框
     this.openLoadingDialog();
-    hilog.debug(DOMAIN, TAG, 'Open 1: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
     // 打开数据库
     let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authType, this.keyFilePath, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
@@ -276,7 +272,6 @@ struct Password {
         this.loadingMessage = ResourceManager.getString(message.message);
       },
       onSuccessMessage: (message: SuccessMessage) => {
-        hilog.debug(DOMAIN, TAG, 'Open 2: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
@@ -314,13 +309,11 @@ struct Password {
    * 设置数据库文件信息
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
-    hilog.debug(DOMAIN, TAG, 'Open 3: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
     return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
     } as CredentialsParam).then((kdbx: Kdbx) => {
-      hilog.debug(DOMAIN, TAG, 'Open 4: %{public}d', Date.now() - this.logTime, this.logTime = Date.now());
       // 设置数据库文件信息
       FileService.setDbFileParam({
         filePath: this.filePath,
@@ -349,7 +342,7 @@ struct Password {
    */
   private putFileToRecentFile() {
     let fileParam = FileService.getInstance().getFileParam();
-    hilog.info(DOMAIN, TAG, '%{public}s', `Database file opened: ${fileParam?.filePath}`)
+    hilog.info(DOMAIN, TAG, '%{public}s', `Put database file to recent file list: ${fileParam?.filePath}`)
 
     // 最近打开的文件
     let recentFile = {
