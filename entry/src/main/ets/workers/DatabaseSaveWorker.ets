@@ -98,7 +98,7 @@ async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials)
 
   return await database.save().then(async savedDb => {
     await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(() => {
-      postMessage($r('app.string.save_success_message'));
+      postMessage($r("app.string.save_success"));
     });
     return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {
       return new FileContentInfo(fileInfo, savedDb);

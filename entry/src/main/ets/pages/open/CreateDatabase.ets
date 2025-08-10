@@ -58,7 +58,7 @@ struct CreateDatabase {
       // 主要内容区域
       Column() {
         // 数据库名称输入
-        Text($r('app.string.CreateDatabase_name_label'))
+        Text($r("app.string.database_name"))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20, left: 16 })
@@ -66,7 +66,7 @@ struct CreateDatabase {
           .width('100%')
           .textAlign(TextAlign.Start)
 
-        TextInput({ placeholder: $r('app.string.CreateDatabase_name_placeholder'), text: this.databaseName })
+        TextInput({ placeholder: $r("app.string.database_name_placeholder"), text: this.databaseName })
           .type(InputType.Normal)
           .placeholderColor($r('app.color.text_secondary'))
           .placeholderFont({ size: 16 })
@@ -223,7 +223,7 @@ struct CreateDatabase {
 
   async createDatabase() {
     if (this.databaseName.length === 0) {
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_name_placeholder') });
+      this.promptAction.showToast({ message: $r("app.string.database_name_placeholder") });
       return;
     }
 
