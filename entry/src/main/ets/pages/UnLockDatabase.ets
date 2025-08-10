@@ -21,7 +21,7 @@ struct UnLockDatabase {
   private focusController: FocusController = new FocusController();
 
   aboutToAppear(): void {
-
+    this.router.clear();
   }
 
   onPageShow(): void {
