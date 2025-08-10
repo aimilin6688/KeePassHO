@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
-import { ohosArgon2 } from '../../../../main/ets/crypto/argon2-ohos-rs';
+import { ohosArgon2 } from '../../../../main/ets/crypto/argon2-rs';
 import { expects } from '../test-support/Asserts';
 import { TestResources } from '../test-support/test-resources';
 
