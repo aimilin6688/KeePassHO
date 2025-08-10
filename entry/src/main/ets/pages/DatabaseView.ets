@@ -519,6 +519,13 @@ struct DatabaseView {
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
   }
 
+  /**
+   * 锁定数据库
+   */
+  private lockDatabase(){
+    this.router.pushUrl({ url: 'pages/UnLockDatabase'  })
+  }
+
   build() {
     Stack() {
       Column() {
@@ -543,7 +550,7 @@ struct DatabaseView {
                 .fontColor($r('app.color.text_primary'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .width('70%')
+                .width('60%')
               Blank()
               // 搜索按钮
               Image($r('app.media.ic_search'))
@@ -555,6 +562,15 @@ struct DatabaseView {
                   this.searchText = '';
                   this.filteredGroups = [...this.groups];
                   this.filteredEntries = [...this.entries];
+                })
+              // 锁定数据库
+              Image($r('app.media.ic_lock'))
+                .width(24)
+                .height(24)
+                .margin({ right: 16 })
+                .fillColor($r('app.color.text_primary'))
+                .onClick(() => {
+                  this.lockDatabase();
                 })
               Image($r('app.media.ic_settings'))
                 .width(24)
