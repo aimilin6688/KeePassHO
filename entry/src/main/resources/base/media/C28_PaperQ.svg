@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Paper -->
-  <path d="M6 2L18 2L18 22L6 22Z" fill="#E6F2FF" stroke="#4682B4" stroke-width="1"/>
-
-  <!-- Question Mark -->
-  <circle cx="12" cy="12" r="4" fill="#4682B4" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M12 8 L12 10" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-  <path d="M12 14 L12 16" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-
-  <!-- Document Lines -->
-  <path d="M8 5L14 5" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 8L16 8" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 18L16 18" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 20L14 20" stroke="#4682B4" stroke-width="1"/>
-</svg>
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><path fill="#3f51b5" d="M43 39V24h-4v15c0 5 4 9 9 9v-4c-2.8.0-5-2.2-5-5z"/><circle fill="#90a4ae" cx="24" cy="24" r="19"/><circle fill="#37474f" cx="24" cy="24" r="2"/><g fill="#253278"><circle cx="24" cy="14" r="5"/><circle cx="24" cy="34" r="5"/><circle cx="34" cy="24" r="5"/><circle cx="14" cy="24" r="5"/></g></svg>

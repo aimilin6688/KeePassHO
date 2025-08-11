@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-  <!-- 用户图标部分 -->
-  <circle cx="9" cy="7" r="3" fill="#4285F4" />
-  <path d="M9 12C6.33 12 1 13.34 1 16V18H17V16C17 13.34 11.67 12 9 12Z" fill="#4285F4" />
-
-  <!-- 钥匙图标部分 -->
-  <path d="M21.8 11.5C21.8 9.57 20.23 8 18.3 8C16.37 8 14.8 9.57 14.8 11.5C14.8 13.43 16.37 15 18.3 15C18.81 15 19.3 14.9 19.73 14.71L22 17V19H23V17H23V15H21V14.27C21.62 13.56 21.8 12.57 21.8 11.5Z" fill="#FFC107" />
-  <circle cx="18.3" cy="11.5" r="1.5" fill="#FF9800" />
-
-  <!-- 连接线 -->
-  <path d="M14 10L17 10" stroke="#757575" stroke-width="0.75" stroke-linecap="round" />
-</svg>
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><circle fill="#ffb74d" cx="24" cy="11" r="6"/><path fill="#607d8b" d="M36 26.1S32.7 19 24 19s-12 7.1-12 7.1V30h24V26.1z"/><polygon fill="#b0bec5" points="41,25 7,25 6,29 11,32 9,29 39,29 37,32 42,29"/><polygon fill="#78909c" points="9,29 39,29 35,41 13,41"/></svg>

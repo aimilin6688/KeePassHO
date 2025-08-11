@@ -1,13 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- World -->
-  <circle cx="12" cy="10" r="7" fill="#4682B4" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M12 3 C15 3 15 17 12 17 C9 17 9 3 12 3" fill="none" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M5 10 L19 10" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M6.5 6 L17.5 6" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M6.5 14 L17.5 14" stroke="#1E3F66" stroke-width="1"/>
-
-  <!-- Socket -->
-  <rect x="9" y="17" width="6" height="4" fill="#D3D3D3" stroke="#808080" stroke-width="1"/>
-  <circle cx="10.5" cy="19" r="0.8" fill="#333333"/>
-  <circle cx="13.5" cy="19" r="0.8" fill="#333333"/>
-</svg>
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><circle fill="#b2dfdb" cx="24" cy="31" r="14"/><g fill="#009688"><polygon points="24,3.3 33,14 15,14"/><rect x="21" y="11" width="6" height="23"/></g></svg>
