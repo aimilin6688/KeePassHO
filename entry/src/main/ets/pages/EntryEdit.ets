@@ -310,15 +310,11 @@ struct EntryEdit {
     if(!this.database || !this.entry){
       return;
     }
-
     // 限制历史条目格式
     const historyMaxItems = this.database.meta.historyMaxItems;
-    if(historyMaxItems && historyMaxItems > 0){
-      if(this.entry.history.length >= historyMaxItems){
-        // 删除最旧的条目
-        const deleteCount = this.entry.history.length - historyMaxItems + 1;
-        this.entry.removeHistory(0, deleteCount);
-      }
+    if(historyMaxItems && historyMaxItems > 0 && this.entry.history.length >= historyMaxItems){
+      const deleteCount = this.entry.history.length - historyMaxItems + 1;
+      this.entry.removeHistory(0, deleteCount);
     }
     // TODO 限制历史条目总大小
 
