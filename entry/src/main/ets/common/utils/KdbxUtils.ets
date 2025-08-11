@@ -367,22 +367,24 @@ export default class KdbxUtils {
    * @param base64Image base64编码的图像数据（格式：data:image/png;base64,...)
    * @returns 添加的图标ID
    */
-  public static async addCustomIcon(database: Kdbx, base64Image: string, callback?: SaveDatabaseCallback) {
+  public static async addCustomIcon(database: Kdbx, base64Images: string[], callback?: SaveDatabaseCallback) {
     try {
-      if (!database || !base64Image) {
+      if (!database || !base64Images || base64Images.length == 0) {
         callback?.onError?.('Invalid database or base64 image');
         return;
       }
-      // 从base64字符串中提取实际的base64数据部分
-      const base64Data = base64Image.split(',')[1];
-      if (!base64Data) {
-        callback?.onError?.('Invalid base64 image');
-        return;
+      for( const base64Image of base64Images) {
+        // 从base64字符串中提取实际的base64数据部分
+        const base64Data = base64Image.split(',')[1];
+        if (!base64Data) {
+          callback?.onError?.('Invalid base64 image');
+          continue;
+        }
+        // 将base64转换为ArrayBuffer
+        const iconData = ByteUtils.base64ToBytes(base64Data);
+        // 添加自定义图标到数据库
+        database.meta.customIcons.set(KdbxUuid.random().id, { data: iconData } as KdbxCustomIcon);
       }
-      // 将base64转换为ArrayBuffer
-      const iconData = ByteUtils.base64ToBytes(base64Data);
-      // 添加自定义图标到数据库
-      database.meta.customIcons.set(new KdbxUuid().id, { data: iconData } as KdbxCustomIcon);
       // 清除缓存，确保新图标可见
       KdbxUtils.customIconMap.clear();
       // 保存数据库
