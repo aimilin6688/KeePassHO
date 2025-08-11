@@ -5,7 +5,6 @@ import picker from '@ohos.file.picker';
 import { common } from '@kit.AbilityKit';
 import FileUtils from '../common/utils/FIleUtils';
 import { FileKeyService } from '../services/FileKeyService';
-import { fileShare } from '@kit.CoreFileKit';
 
 /**
  * 修改主密码对话框组件
