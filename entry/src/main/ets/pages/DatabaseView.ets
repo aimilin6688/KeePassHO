@@ -363,8 +363,10 @@ struct DatabaseView {
     // 设置分组图标
     if (typeof iconId === 'string' && iconId.length > 0) {
       group.customIcon = new KdbxUuid(iconId);
+      group.icon = undefined;
     } else {
       group.icon = iconId as number;
+      group.customIcon = undefined;
     }
     // 保存数据库
     this.saveDatabase();
