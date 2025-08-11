@@ -715,8 +715,9 @@ struct EntryEdit {
                 // 图标选择按钮
                 Button() {
                   Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
-                    .width(24)
-                    .height(24)
+                    .width(40)
+                    .height(40)
+                    .borderRadius(8)
                     .objectFit(ImageFit.Contain)
                 }
                 .width(48)
