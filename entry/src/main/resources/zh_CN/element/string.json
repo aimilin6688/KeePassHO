@@ -941,6 +941,10 @@
     {
       "name": "compression_enabled",
       "value": "启用压缩"
+    },
+    {
+      "name": "key_file_tip",
+      "value": "注意：密钥文件丢失后，将无法打开数据库，请妥善保存密钥文件！"
     }
   ]
 }
