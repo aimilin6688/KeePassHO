@@ -945,6 +945,10 @@
     {
       "name": "key_file_tip",
       "value": "注意：密钥文件丢失后，将无法打开数据库，请您妥善保存密钥文件！"
+    },
+    {
+      "name": "upload_custom_icon_failed",
+      "value": "处理图片失败"
     }
   ]
 }
