@@ -85,7 +85,7 @@ struct SettingsSecurity {
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => this.router.back())
-        Text($r('app.string.Settings_title'))
+        Text($r('app.string.Settings_security'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 12 })
