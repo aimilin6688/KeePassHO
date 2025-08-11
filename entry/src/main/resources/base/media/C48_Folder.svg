@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Folder Base -->
-  <path d="M3 6 L9 6 L11 4 L21 4 L21 19 L3 19 Z" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
-
-  <!-- Folder Front -->
-  <path d="M3 6 L3 19 L21 19 L21 8 L10 8 L8 6 Z" fill="#FFDF00" stroke="#DAA520" stroke-width="1"/>
-
-  <!-- Folder Tab -->
-  <path d="M9 6 L11 4 L11 6 Z" fill="#FFE87C" stroke="#DAA520" stroke-width="0.5"/>
-</svg>
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><path fill="#ffa000" d="M40 12H22l-4-4H8c-2.2.0-4 1.8-4 4v8h40v-4c0-2.2-1.8-4-4-4z"/><path fill="#ffca28" d="M40 12H8c-2.2.0-4 1.8-4 4v20c0 2.2 1.8 4 4 4h32c2.2.0 4-1.8 4-4V16c0-2.2-1.8-4-4-4z"/></svg>

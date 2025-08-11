@@ -1,16 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- Paper -->
-  <path d="M6 2L18 2L18 22L6 22Z" fill="#E6F2FF" stroke="#4682B4" stroke-width="1"/>
-
-  <!-- Document Lines -->
-  <path d="M8 5L14 5" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 8L16 8" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 11L12 11" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 14L15 14" stroke="#4682B4" stroke-width="1"/>
-  <path d="M8 17L10 17" stroke="#4682B4" stroke-width="1"/>
-
-
-  <!-- Plus Sign -->
-  <rect x="13" y="10" width="2" height="8" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
-  <rect x="10" y="13" width="8" height="2" fill="#32CD32" stroke="#006400" stroke-width="0.5"/>
-</svg>
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><polygon fill="#90caf9" points="40,45 8,45 8,3 30,3 40,13"/><polygon fill="#e1f5fe" points="38.5,14 29,14 29,4.5"/></svg>

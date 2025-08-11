@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- World -->
-  <circle cx="12" cy="12" r="9" fill="#4682B4" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M12 5 C15 5 15 19 12 19 C9 19 9 5 12 5" fill="none" stroke="#1E3F66" stroke-width="1"/>
-  <path d="M3 12 L21 12" stroke="#1E3F66" stroke-width="1"/>
-
-  <!-- Star -->
-  <path d="M12 3 L14 8 L19 8 L15 12 L17 17 L12 14 L7 17 L9 12 L5 8 L10 8 Z" fill="#FFD700" stroke="#B8860B" stroke-width="1"/>
-
-  <!-- Glow Effect -->
-  <circle cx="12" cy="12" r="10" fill="none" stroke="#FFD700" stroke-width="0.5" stroke-opacity="0.5"/>
-</svg>
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><path fill="#f44336" d="M37 43l-13-6-13 6V9c0-2.2 1.8-4 4-4h18c2.2.0 4 1.8 4 4V43z"/></svg>
