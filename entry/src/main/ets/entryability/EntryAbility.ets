@@ -6,6 +6,7 @@ import ThemeManager from '../common/utils/ThemeManager';
 import ResourceManager from '../common/utils/ResourceManager';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { FileService } from '../services/FileService';
+import { CommonUtils } from '../common/utils/CommonUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -28,6 +29,8 @@ export default class EntryAbility extends UIAbility {
    */
   private async init() {
     this.context.area = contextConstant.AreaMode.EL4;
+    // 初始化通用工具类
+    CommonUtils.getInstance().init(this.context);
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
     // 初始化资源管理器
