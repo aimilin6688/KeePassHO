@@ -939,6 +939,10 @@
     {
       "name": "compression_enabled",
       "value": "Enable compression"
+    },
+    {
+      "name": "key_file_tip",
+      "value": "Note: If the key file is lost, the database will not be opened, please save the key file properly!"
     }
   ]
 }
