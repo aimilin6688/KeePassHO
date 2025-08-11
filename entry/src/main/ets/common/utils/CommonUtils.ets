@@ -1,7 +1,34 @@
 import { util } from '@kit.ArkTS';
 import { promptAction } from '@kit.ArkUI';
+import { common } from '@kit.AbilityKit';
 
 export class CommonUtils {
+  private static instance: CommonUtils = new CommonUtils();
+  private context: common.UIAbilityContext | null = null;
+
+  /**
+   * 初始化主题管理器
+   * @param context UIAbilityContext
+   */
+  public init(context: common.UIAbilityContext): void {
+    this.context = context;
+  }
+
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): CommonUtils {
+    return CommonUtils.instance;
+  }
+
+  /**
+   * 获取上下文
+   * @returns
+   */
+  public static getContext(): common.UIAbilityContext {
+    return CommonUtils.getInstance().context as common.UIAbilityContext;
+  }
+
   /**
    * base64编码
    * @param str
