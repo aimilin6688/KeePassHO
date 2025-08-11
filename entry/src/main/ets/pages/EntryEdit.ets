@@ -315,7 +315,9 @@ struct EntryEdit {
     const historyMaxItems = this.database.meta.historyMaxItems;
     if(historyMaxItems && historyMaxItems > 0){
       if(this.entry.history.length >= historyMaxItems){
-        this.entry.removeHistory(1);
+        // 删除最旧的条目
+        const deleteCount = this.entry.history.length - historyMaxItems + 1;
+        this.entry.removeHistory(0, deleteCount);
       }
     }
     // TODO 限制历史条目总大小
