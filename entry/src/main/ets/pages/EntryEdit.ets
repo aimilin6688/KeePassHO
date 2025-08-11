@@ -348,7 +348,9 @@ struct EntryEdit {
     }
     if (typeof this.iconId === 'number') {
       this.entry.icon = this.iconId as number;
+      this.entry.customIcon = undefined;
     } else {
+      this.entry.icon = undefined;
       this.entry.customIcon = new KdbxUuid(this.iconId);
     }
   }
