@@ -1,4 +1,4 @@
-import { ByteUtils, Kdbx, KdbxCredentials, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxCredentials, KdbxCustomIcon, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
@@ -359,6 +359,38 @@ export default class KdbxUtils {
    */
   public static saveDatabase(callback?: SaveDatabaseCallback): void {
     KdbxSaveService.saveDatabase(callback);
+  }
+
+  /**
+   * 添加自定义图标到数据库
+   * @param database 数据库实例
+   * @param base64Image base64编码的图像数据（格式：data:image/png;base64,...)
+   * @returns 添加的图标ID
+   */
+  public static async addCustomIcon(database: Kdbx, base64Image: string, callback?: SaveDatabaseCallback) {
+    try {
+      if (!database || !base64Image) {
+        callback?.onError?.('Invalid database or base64 image');
+        return;
+      }
+      // 从base64字符串中提取实际的base64数据部分
+      const base64Data = base64Image.split(',')[1];
+      if (!base64Data) {
+        callback?.onError?.('Invalid base64 image');
+        return;
+      }
+      // 将base64转换为ArrayBuffer
+      const iconData = ByteUtils.base64ToBytes(base64Data);
+      // 添加自定义图标到数据库
+      database.meta.customIcons.set(new KdbxUuid().id, { data: iconData } as KdbxCustomIcon);
+      // 清除缓存，确保新图标可见
+      KdbxUtils.customIconMap.clear();
+      // 保存数据库
+      KdbxUtils.saveDatabase(callback);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Add custom icon error: %{public}s', error);
+      callback?.onError?.(error.message);
+    }
   }
 }
 
