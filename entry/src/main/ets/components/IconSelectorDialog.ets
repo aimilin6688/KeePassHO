@@ -43,7 +43,6 @@ export struct IconSelectorDialog {
       // 选择图片
       const images: string[] | null = await ImagePickerUtils.selectImage(this.context, 64);
       if (!images || images.length === 0) {
-        CommonUtils.showToast($r('app.string.upload_custom_icon_failed'));
         return;
       }
       // 添加自定义图标到数据库
