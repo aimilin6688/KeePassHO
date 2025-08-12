@@ -4,6 +4,7 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Consts, Kdbx } from 'kdbxweb';
 import { EventBus } from '../services/EventBus';
+import { CommonUtils } from '../common/utils/CommonUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseMeta';
@@ -43,6 +44,11 @@ struct SettingDatabaseMeta {
       // 其他设置
       this.compressionEnabled = Consts.CompressionAlgorithm.GZip === this.database.header.compression;
     }
+  }
+
+  onBackPress(){
+    this.handleDialogCancel();
+    return true;
   }
 
   /**
@@ -107,21 +113,11 @@ struct SettingDatabaseMeta {
   private handleDialogCancel() {
     if (!this.isModified) {
       this.router.back();
+      return;
     }
-
-    this.getUIContext().showAlertDialog({
-      title: $r('app.string.dialog_confirm_title'),
-      message: $r('app.string.dialog_changes_confirm_message'),
-      primaryButton: {
-        value: $r('app.string.cancel_button_text'),
-        action: () => {
-        }
-      },
-      secondaryButton: {
-        value: $r('app.string.confirm_button_text'),
-        action: () => {
-          this.router.back();
-        }
+    CommonUtils.showUnSaveConfirm(this.getUIContext(),{
+      onConfirm: () => {
+        this.router.back();
       }
     });
   }
@@ -170,8 +166,10 @@ struct SettingDatabaseMeta {
           .width('100%')
           .borderRadius(8)
           .onChange((value) => {
+            if(this.databaseName !== value) {
+              this.isModified = true;
+            }
             this.databaseName = value;
-            this.isModified = true;
           })
 
         // 数据库描述
@@ -193,8 +191,10 @@ struct SettingDatabaseMeta {
           .width('100%')
           .borderRadius(8)
           .onChange((value) => {
+            if(this.databaseDescription !== value) {
+              this.isModified = true;
+            }
             this.databaseDescription = value;
-            this.isModified = true;
           })
 
         // 默认用户名
@@ -217,8 +217,10 @@ struct SettingDatabaseMeta {
           .width('100%')
           .borderRadius(8)
           .onChange((value) => {
+            if(this.defaultUsername !== value) {
+              this.isModified = true;
+            }
             this.defaultUsername = value;
-            this.isModified = true;
           })
 
         List() {
@@ -235,8 +237,10 @@ struct SettingDatabaseMeta {
                       value: this.historyMaxItems,
                       max: 999,
                       onChange: (value) => {
+                        if(this.historyMaxItems !== value){
+                          this.isModified = true;
+                        }
                         this.historyMaxItems = value;
-                        this.isModified = true;
                       }
                     }
                   }
@@ -258,8 +262,10 @@ struct SettingDatabaseMeta {
                       value: this.historyMaxSize,
                       max: 999,
                       onChange: (value) => {
+                        if(this.historyMaxSize !== value){
+                          this.isModified = true;
+                        }
                         this.historyMaxSize = value;
-                        this.isModified = true;
                       }
                     }
                   }
@@ -279,8 +285,10 @@ struct SettingDatabaseMeta {
                   .selectedColor('#007DFF')
                   .switchPointColor('#FFFFFF')
                   .onChange((isOn: boolean) => {
+                    if(this.recycleBinEnabled !== isOn){
+                      this.isModified = true;
+                    }
                     this.recycleBinEnabled = isOn;
-                    this.isModified = true;
                   })
               }
               .justifyContent(FlexAlign.SpaceBetween)
