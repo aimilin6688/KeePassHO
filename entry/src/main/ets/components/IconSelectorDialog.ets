@@ -54,7 +54,7 @@ export struct IconSelectorDialog {
         },
       });
     } catch (error) {
-      hilog.error(DOMAIN, TAG, '上传自定义图标失败：' + error.message);
+      hilog.error(DOMAIN, TAG, 'Upload custom icon failed：' + error.message);
       CommonUtils.showToast(error.message);
     } finally {
       this.isUploading = false;
