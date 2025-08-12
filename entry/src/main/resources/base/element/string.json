@@ -945,12 +945,12 @@
       "value": "Note: If the key file is lost, the database will not be opened, please save the key file properly!"
     },
     {
-      "name": "upload_custom_icon_failed",
-      "value": "Handle image failed"
-    },
-    {
       "name": "Settings_custom_icons",
       "value": "Custom Icons"
+    },
+    {
+      "name": "delete_not_use",
+      "value": "Delete Not Use"
     }
   ]
 }
