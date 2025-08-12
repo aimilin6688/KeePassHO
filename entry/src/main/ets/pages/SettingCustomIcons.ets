@@ -14,17 +14,12 @@ const TAG = 'SettingCustomIcons';
 @Entry
 @Component
 struct SettingCustomIcons {
-  @State icons : IconResource[] = [];
+  @State icons: IconResource[] = [];
   @State isUploading: boolean = false;
-  // 私有属性
-  // 每行显示的图标数量
-  private readonly columnsPerRow: number = 5;
+  @State selectIcons: Set<string | number> = new Set();
   // 图标大小
   private readonly iconSize: number = 52;
-  // 图标间距
-  private readonly iconGap: number = 16;
   private router: Router = this.getUIContext().getRouter();
-  private promptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   aboutToAppear() {
@@ -40,7 +35,6 @@ struct SettingCustomIcons {
       // 选择图片
       const images: string[] | null = await ImagePickerUtils.selectImage(this.context, 64);
       if (!images || images.length === 0) {
-        CommonUtils.showToast($r('app.string.upload_custom_icon_failed'));
         return;
       }
       // 添加自定义图标到数据库
@@ -55,6 +49,73 @@ struct SettingCustomIcons {
       CommonUtils.showToast(error.message);
     } finally {
       this.isUploading = false;
+    }
+  }
+
+  /**
+   * 删除选中的图标
+   */
+  private deleteIcons() {
+    // 删除弹框
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: $r("app.string.dialog_delete_confirm_message"),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      // 确认删除
+      secondaryButton: {
+        value: $r("app.string.confirm_button_text"),
+        action: () => {
+          let kdbx = FileService.getDbFileParam().database;
+          this.selectIcons.forEach((iconId) => {
+            kdbx.meta.customIcons.delete(iconId + "");
+          });
+          KdbxUtils.saveDatabase({
+            onSuccess: () => {
+              this.icons = IconUtils.getAllIcons(true);
+            }
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * 删除未使用的图标
+   */
+  private deleteNotUse() {
+    // 删除弹框
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: $r("app.string.dialog_delete_confirm_message"),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r("app.string.confirm_button_text"),
+        action: () => {
+          let kdbx = FileService.getDbFileParam().database;
+          kdbx.cleanup({ customIcons: true });
+          KdbxUtils.saveDatabase({
+            onSuccess: () => {
+              this.icons = IconUtils.getAllIcons(true);
+            }
+          });
+        }
+      }
+    });
+  }
+
+  private checkedIcon(iconId: string | number) {
+    if (this.selectIcons.has(iconId)) {
+      this.selectIcons.delete(iconId);
+    } else {
+      this.selectIcons.add(iconId);
     }
   }
 
@@ -95,30 +156,104 @@ struct SettingCustomIcons {
       .backgroundColor($r("app.color.card_bg"))
 
       // 图标网格
-      Grid() {
-        ForEach(this.icons, (icon: IconResource) => {
-          GridItem() {
+      Scroll() {
+        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+          ForEach(this.icons, (icon: IconResource) => {
             Column() {
-              Image(icon.resource)
-                .width(this.iconSize)
-                .height(this.iconSize)
-                .objectFit(ImageFit.Contain)
+              Stack() {
+                Image(icon.resource)
+                  .width(this.iconSize)
+                  .height(this.iconSize)
+                  .objectFit(ImageFit.Contain)
+
+                Checkbox({ name: 'check_' + icon.id, group: 'icon_group' })
+                  .key('key_' + icon.id)
+                  .select(this.selectIcons.has(icon.id))
+                  .selectedColor($r('app.color.button_bg_blue'))
+                  .shape(CheckBoxShape.CIRCLE)
+                  .width(16)
+                  .height(16)
+                  .position({ x: this.iconSize - 21, y: -2 })
+                  .onClick(() => {
+                    this.checkedIcon(icon.id);
+                  })
+              }
+              .width(this.iconSize)
+              .height(this.iconSize)
             }
-            .width('100%')
+            .onClick(() => {
+              this.checkedIcon(icon.id);
+            })
+            .margin(8)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .borderRadius(8)
-            .onClick(() => {
-            })
-          }
+          })
+        }
+        .width('100%')
+        .height('100%')
+        .padding({
+          top: 12,
+          left: 12,
+          right: 12,
+          bottom: 100
         })
       }
+      .width('100%')
       .height('100%')
-      .columnsTemplate('1fr '.repeat(this.columnsPerRow))
-      .columnsGap(this.iconGap)
-      .rowsGap(this.iconGap)
-      .padding({ left: 24, right: 24, bottom: 60 })
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+
+
+      // 操作按钮
+      Row() {
+        // 删除未使用
+        Button() {
+          Row() {
+            Text($r('app.string.delete_not_use'))
+              .fontSize(16)
+              .fontColor($r('app.color.button_text'))
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('45%')
+        .height(40)
+        .borderRadius(16)
+        .backgroundColor(Color.Gray)
+        .onClick(() => {
+          this.deleteNotUse();
+        })
+
+        Blank()
+        // 删除
+        Button() {
+          Row() {
+            Text($r('app.string.delete_button_text'))
+              .fontSize(16)
+              .fontColor($r('app.color.button_text'))
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('45%')
+        .height(40)
+        .enabled(this.selectIcons.size > 0)
+        .borderRadius(16)
+        .backgroundColor($r('app.color.button_bg_blue'))
+        .onClick(() => {
+          this.deleteIcons();
+        })
+      }
+      .width('100%')
+      .height(45)
+      .padding({
+        top: 12,
+        bottom: 0,
+        left: 16,
+        right: 16
+      })
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -45 }) // 调整位置，确保正确显示
     }
     .width('100%')
     .height('100%')
