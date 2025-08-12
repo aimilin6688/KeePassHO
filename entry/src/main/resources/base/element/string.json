@@ -947,6 +947,10 @@
     {
       "name": "upload_custom_icon_failed",
       "value": "Handle image failed"
+    },
+    {
+      "name": "Settings_custom_icons",
+      "value": "Custom Icons"
     }
   ]
 }
