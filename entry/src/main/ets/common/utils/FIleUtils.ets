@@ -1,7 +1,9 @@
 import { fileShare } from '@kit.CoreFileKit';
+import { LocalFileStorage } from '../../services/kdbx/interfaces';
 
 export default class FileUtils {
   private static FolderAuthorization: string = 'SystemCapability.FileManagement.AppFileService.FolderAuthorization';
+
   /**
    * 获取文件名
    * @param filePath 文件路径
@@ -81,5 +83,15 @@ export default class FileUtils {
     };
     let policies: Array<fileShare.PolicyInfo> = [policyInfo];
     return fileShare.revokePermission(policies);
+  }
+
+  /**
+   * 写入文件内容到指定的路径
+   * @param path 文件路径
+   * @param content 文件内容
+   * @returns 结果
+   */
+  public static saveFile(path: string, content: ArrayBuffer): Promise<void> {
+    return new LocalFileStorage().writeFile(path, content);
   }
 }
