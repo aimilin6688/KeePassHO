@@ -669,8 +669,8 @@ struct EntryEdit {
 
           Button() {
             Image($r('app.media.ic_save'))
-              .width(24)
-              .height(24)
+              .width(26)
+              .height(26)
               .fillColor($r('app.color.text_primary'))
           }
           .width(48)
@@ -715,8 +715,8 @@ struct EntryEdit {
                 // 图标选择按钮
                 Button() {
                   Image(IconUtils.getIconResourcePath(this.iconId || Icons.Key))
-                    .width(40)
-                    .height(40)
+                    .width(32)
+                    .height(32)
                     .borderRadius(8)
                     .objectFit(ImageFit.Contain)
                 }
