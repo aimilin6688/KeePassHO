@@ -419,7 +419,7 @@
     },
     {
       "name": "dialog_delete_confirm_message",
-      "value": "确定要删除吗？"
+      "value": "您确定要删除吗？"
     },
     {
       "name": "save_success",
@@ -947,12 +947,12 @@
       "value": "注意：密钥文件丢失后，将无法打开数据库，请您妥善保存密钥文件！"
     },
     {
-      "name": "upload_custom_icon_failed",
-      "value": "处理图片失败"
-    },
-    {
       "name": "Settings_custom_icons",
       "value": "管理自定义图标"
+    },
+    {
+      "name": "delete_not_use",
+      "value": "删除未使用"
     }
   ]
 }
