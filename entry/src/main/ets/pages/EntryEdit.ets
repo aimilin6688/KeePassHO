@@ -12,6 +12,7 @@ import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import ResourceManager from '../common/utils/ResourceManager';
 import DateUtils from '../common/utils/DateUtils';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
+import { CommonUtils } from '../common/utils/CommonUtils';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -50,7 +51,7 @@ struct EntryEdit {
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器
-  fieldDialogController: CustomDialogController = new CustomDialogController({
+  private fieldDialogController: CustomDialogController = new CustomDialogController({
     builder: EntryEditFieldDialog({
       isEditing: $isEditingField,
       fieldKey: $currentFieldKey,
@@ -65,7 +66,7 @@ struct EntryEdit {
     customStyle: true
   });
   // 图标选择器对话框控制器
-  iconSelectorController: CustomDialogController = new CustomDialogController({
+  private iconSelectorController: CustomDialogController = new CustomDialogController({
     builder: IconSelectorDialog({
       selectedIconId: this.iconId,
       onIconSelected: (iconId: number | string) => {
@@ -78,7 +79,7 @@ struct EntryEdit {
     autoCancel: false
   });
   // 密码生成器弹框
-  passwordGeneratorController: CustomDialogController = new CustomDialogController({
+  private passwordGeneratorController: CustomDialogController = new CustomDialogController({
     builder: PasswordGeneratorDialog({
       password: this.password,
       onGenerate: (password: string) => {
@@ -91,7 +92,7 @@ struct EntryEdit {
     autoCancel: true
   });
   // 带内容的进度弹框
-  loadingDialogController: CustomDialogController = new CustomDialogController({
+  private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
       loadingMessage: this.loadingMessage,
     }),
@@ -178,11 +179,22 @@ struct EntryEdit {
 
       // 检验是否修改了
       this.isModified = false;
-    }
-    else{
+    } else {
       this.isEditMode = false;
       this.username = this.database.meta.defaultUser || '';
     }
+  }
+
+  onBackPress() {
+    if (this.isModified) {
+      CommonUtils.showUnSaveConfirm(this.getUIContext(), {
+        onConfirm: () => {
+          this.router.back();
+        }
+      });
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -307,12 +319,12 @@ struct EntryEdit {
    * 添加条目到历史记录
    */
   private pushEntryToHistory() {
-    if(!this.database || !this.entry){
+    if (!this.database || !this.entry) {
       return;
     }
     // 限制历史条目格式
     const historyMaxItems = this.database.meta.historyMaxItems;
-    if(historyMaxItems && historyMaxItems > 0 && this.entry.history.length >= historyMaxItems){
+    if (historyMaxItems && historyMaxItems > 0 && this.entry.history.length >= historyMaxItems) {
       const deleteCount = this.entry.history.length - historyMaxItems + 1;
       this.entry.removeHistory(0, deleteCount);
     }
