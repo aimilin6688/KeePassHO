@@ -953,6 +953,10 @@
     {
       "name": "delete_not_use",
       "value": "删除未使用"
+    },
+    {
+      "name": "invalid_binary_file",
+      "value": "无效的附件"
     }
   ]
 }

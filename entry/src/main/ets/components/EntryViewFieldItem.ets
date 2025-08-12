@@ -1,4 +1,4 @@
-import { pasteboard } from '@kit.BasicServicesKit';
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { KdbxEntry } from 'kdbxweb';
@@ -6,6 +6,9 @@ import { KdbxEntry } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Icons } from '../services/TypeDefined';
 import { SettingsService } from '../services/SettingsService';
+import FileUtils from '../common/utils/FIleUtils';
+import { picker } from '@kit.CoreFileKit';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -20,13 +23,17 @@ export class FieldView {
   isProtected: boolean;
   isCopy: boolean;
   showPlanText: boolean;
+  isDownload: boolean;
+  binaryFile?: ArrayBuffer | undefined;
 
-  constructor(key: string, value: string, isProtected: boolean, isCopy: boolean) {
+  constructor(key: string, value: string, isProtected: boolean, isCopy: boolean, binaryFile?: ArrayBuffer) {
     this.key = key;
     this.value = value;
     this.isProtected = isProtected;
     this.isCopy = isCopy;
     this.showPlanText = !this.isProtected;
+    this.isDownload = binaryFile !== undefined;
+    this.binaryFile = binaryFile;
   }
 }
 
@@ -39,6 +46,7 @@ export struct EntryViewFieldItem {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private timeOutObj: number = -1;
   private systemPasteboard: pasteboard.SystemPasteboard = pasteboard.getSystemPasteboard();
+  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   aboutToAppear(): void {
     this.initSettings();
@@ -103,7 +111,11 @@ export struct EntryViewFieldItem {
   /**
    * 获取字段对应的图标
    */
-  private getFieldIcon(key: string): ResourceStr {
+  private getFieldIcon(fieldView: FieldView): ResourceStr {
+    if (fieldView.isDownload) {
+      return $r("app.media.ic_paperclip");
+    }
+    const key = fieldView.key;
     switch (key) {
       case KdbxUtils.FIELD_TITLE:
         return $r("app.media.ic_color_title");
@@ -143,10 +155,38 @@ export struct EntryViewFieldItem {
     return KdbxUtils.getIcon(Icons.Folder, undefined, $r('app.media.ic_folder'));
   }
 
+  /**
+   * 下载附件信息
+   * @param fieldView
+   */
+  private downloadFile(fieldView: FieldView) {
+    if (!fieldView.binaryFile || fieldView.binaryFile.byteLength <= 0) {
+      this.promptAction.showToast({ message: $r("app.string.invalid_binary_file"), duration: 2000 });
+      return;
+    }
+    // 使用文件选择器让用户选择保存位置
+    const documentPicker = new picker.DocumentViewPicker(this.context);
+    const options = new picker.DocumentSaveOptions();
+    options.newFileNames = [fieldView.key];
+
+    // 显示文件保存对话框
+    documentPicker.save(options).then(async (result) => {
+      hilog.info(DOMAIN, TAG, `Selected URIs: ${result}`);
+      if (result && result.length > 0 && fieldView.binaryFile) {
+        FileUtils.saveFile(result[0], fieldView.binaryFile).then(result => {
+          this.promptAction.showToast({ message: $r("app.string.save_success") });
+        });
+      }
+    }).catch((err: BusinessError) => {
+      hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
+    })
+  }
+
   build() {
     Row() {
       // 左侧图标
-      Image(this.getFieldIcon(this.field.key))
+      Image(this.getFieldIcon(this.field))
         .width(32)
         .height(32)
         .margin({ right: 12 })
@@ -194,6 +234,18 @@ export struct EntryViewFieldItem {
           .fillColor($r('app.color.text_primary'))
           .onClick((event) => {
             this.copyToClipboard(this.field.value);
+            return false;
+          })
+      }
+
+      // 右侧下载按钮
+      if (this.field.isDownload) {
+        Image($r('app.media.ic_download'))
+          .width(24)
+          .height(24)
+          .fillColor($r('app.color.text_primary'))
+          .onClick((event) => {
+            this.downloadFile(this.field);
             return false;
           })
       }

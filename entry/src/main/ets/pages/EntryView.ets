@@ -1,6 +1,6 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { Kdbx, KdbxEntry } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
@@ -27,6 +27,7 @@ struct EntryView {
   @State historyEntries: Array<EntryHistoryView> = [];
   @State showHistory: boolean = false;
   @State selectedHistoryIndex: number = -1;
+
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -153,6 +154,9 @@ struct EntryView {
     // 添加分组信息
     this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
 
+    // 展示附件
+    this.addBinaries();
+
     // 过期时间
     if (this.entry.times.expires) {
       this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, DateUtils.format(this.entry.times.expiryTime), false, false));
@@ -161,6 +165,32 @@ struct EntryView {
     // 增加创建时间和更新时间
     this.fields.push(new FieldView(KdbxUtils.FIELD_CREATION_TIME, DateUtils.format(this.entry.times.creationTime), false, false));
     this.fields.push(new FieldView(KdbxUtils.FIELD_LASTMOD_TIME, DateUtils.format(this.entry.times.lastModTime), false, false));
+  }
+
+  // 添加附件属性
+  private addBinaries() {
+    if (!this.entry || this.entry?.binaries.size <= 0) {
+      return;
+    }
+    for (const entry of this.entry.binaries) {
+      this.addBinary(entry[0], entry[1]);
+    }
+  }
+
+  // 添加单个附件属性
+  private addBinary(key: string, binary: KdbxBinary | KdbxBinaryWithHash) {
+    if (binary instanceof ProtectedValue) {
+      this.fields.push(new FieldView(key, "", false, false, ByteUtils.stringToBuffer(binary.getText())));
+    }
+    // 二进制文件
+    else if (binary instanceof ArrayBuffer) {
+      this.fields.push(new FieldView(key, "", false, false, binary));
+    }
+    // hash 值
+    else if (KdbxBinaries.isKdbxBinaryWithHash(binary)) {
+      let binaryHash: KdbxBinaryWithHash = binary as KdbxBinaryWithHash;
+      this.addBinary(key, binaryHash.value);
+    }
   }
 
   /**
