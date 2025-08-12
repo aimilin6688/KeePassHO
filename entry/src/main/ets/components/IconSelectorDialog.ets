@@ -147,7 +147,7 @@ export struct IconSelectorDialog {
       .padding({ left: 24, right: 24, bottom: 16 })
     }
     .width('100%')
-    .height('70%')
+    .height('85%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
   }
