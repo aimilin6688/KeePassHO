@@ -951,6 +951,10 @@
     {
       "name": "delete_not_use",
       "value": "Delete Not Use"
+    },
+    {
+      "name": "invalid_binary_file",
+      "value": "Invalid binary file"
     }
   ]
 }
