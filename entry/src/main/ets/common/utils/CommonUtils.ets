@@ -83,4 +83,37 @@ export class CommonUtils {
   public static showToast(message: ResourceStr, duration?: number): void {
     promptAction.showToast({ message: message, duration: duration ?? 2000 });
   }
+
+  /**
+   * 未保存弹框确认
+   * @param context 上下文
+   * @param cancel 取消回调
+   * @param confirm 确定回调
+   */
+  public static showUnSaveConfirm(context: UIContext, callback?: ConfirmCallback): void {
+    context.showAlertDialog({
+      title: $r('app.string.dialog_confirm_title'),
+      message: $r('app.string.dialog_changes_confirm_message'),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+          callback?.onCancel?.();
+        }
+      },
+      secondaryButton: {
+        value: $r('app.string.confirm_button_text'),
+        action: () => {
+          callback?.onConfirm?.();
+        }
+      }
+    });
+  }
+}
+
+/**
+ * 确认弹框回调
+ */
+export interface ConfirmCallback {
+  onCancel?: () => void;
+  onConfirm?: () => void;
 }
