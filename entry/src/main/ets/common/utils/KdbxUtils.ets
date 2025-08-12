@@ -358,6 +358,7 @@ export default class KdbxUtils {
    * @returns 结果信息
    */
   public static saveDatabase(callback?: SaveDatabaseCallback): void {
+    KdbxUtils.customIconMap.clear();
     KdbxSaveService.saveDatabase(callback);
   }
 
