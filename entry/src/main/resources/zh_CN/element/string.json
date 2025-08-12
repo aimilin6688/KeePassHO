@@ -949,6 +949,10 @@
     {
       "name": "upload_custom_icon_failed",
       "value": "处理图片失败"
+    },
+    {
+      "name": "Settings_custom_icons",
+      "value": "管理自定义图标"
     }
   ]
 }

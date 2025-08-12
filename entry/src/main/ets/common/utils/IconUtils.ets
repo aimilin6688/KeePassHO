@@ -2,7 +2,6 @@ import { FileService } from '../../services/FileService';
 import { IconResource, Icons } from '../../services/TypeDefined';
 import KdbxUtils from './KdbxUtils';
 
-
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -248,14 +247,17 @@ export default class IconUtils {
    * 获取所有图标
    * @returns 所有图标的ID和资源路径
    */
-  public static getAllIcons(): Array<IconResource> {
+  public static getAllIcons(onlyCustom?: boolean): Array<IconResource> {
+    onlyCustom = onlyCustom || false;
     const icons: Array<IconResource> = [];
-    // 遍历所有图标ID
-    for (let i = 0; i <= 68; i++) {
-      icons.push({
-        id: i,
-        resource: IconUtils.getIconResourcePath(i)
-      });
+    // 遍历所有系统图标ID
+    if(!onlyCustom){
+      for (let i = 0; i <= 68; i++) {
+        icons.push({
+          id: i,
+          resource: IconUtils.getIconResourcePath(i)
+        });
+      }
     }
     // 用户自定义图标返回
     try {

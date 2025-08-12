@@ -6,6 +6,7 @@
     "pages/SettingSecurity",
     "pages/SettingDatabase",
     "pages/SettingDatabaseMeta",
+    "pages/SettingCustomIcons",
     "pages/Password",
     "pages/RecentFiles",
     "pages/EntryEdit",
