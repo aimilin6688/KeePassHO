@@ -6,6 +6,7 @@ import { TotpService } from './TotpService';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import ResourceManager from '../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'ScanService';
@@ -74,10 +75,10 @@ export class ScanService {
         if (totpConfig) {
           return ScanResult.success(content);
         } else {
-          return ScanResult.fail('无效的TOTP URI格式');
+          return ScanResult.fail(ResourceManager.getString($r("app.string.totp_invalid_uri")));
         }
       } else {
-        return ScanResult.fail('扫码内容不是有效的TOTP URI');
+        return ScanResult.fail(ResourceManager.getString($r("app.string.qrcode_is_not_totp_uri")));
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Scan content error: ${error.message}`)
@@ -100,10 +101,10 @@ export class ScanService {
         if (totpConfig) {
           return ScanResult.success(content);
         } else {
-          return ScanResult.fail('无效的TOTP URI格式');
+          return ScanResult.fail(ResourceManager.getString($r("app.string.totp_invalid_uri")));
         }
       } else {
-        return ScanResult.fail('扫码内容不是有效的TOTP URI');
+        return ScanResult.fail(ResourceManager.getString($r("app.string.qrcode_is_not_totp_uri")));
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Parse scan content error: ${error.message}`)
