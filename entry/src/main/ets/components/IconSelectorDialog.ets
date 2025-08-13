@@ -139,7 +139,7 @@ export struct IconSelectorDialog {
           })
         }
       }
-      .height('80%')
+      .height('90%')
       .columnsTemplate('1fr '.repeat(this.columnsPerRow))
       .columnsGap(this.iconGap)
       .rowsGap(this.iconGap)
