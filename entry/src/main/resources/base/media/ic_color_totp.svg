@@ -3,7 +3,7 @@
   <rect width="24" height="24" rx="12" fill="#E3F2FD" />
 
   <!-- 外圆框 - 时钟部分 -->
-  <circle cx="12" cy="12" r="7" stroke="#1976D2" stroke-width="1.5" fill="none"/>
+  <circle cx="12" cy="12" r="8" stroke="#1976D2" stroke-width="1.5" fill="none"/>
 
   <!-- 时钟刻度 - 简化版 -->
   <line x1="12" y1="7" x2="12" y2="8" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
@@ -12,7 +12,7 @@
   <line x1="7" y1="12" x2="8" y2="12" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
 
   <!-- 时钟中心点 -->
-  <circle cx="12" cy="12" r="0.5" fill="#1976D2"/>
+  <circle cx="12" cy="12" r="0.8" fill="#1976D2"/>
 
   <!-- 时针 -->
   <line x1="12" y1="12" x2="14" y2="10" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
