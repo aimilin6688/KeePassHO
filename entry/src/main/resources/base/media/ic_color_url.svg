@@ -4,6 +4,4 @@
   <path d="M12 6C14.5 8.5 14.5 15.5 12 18" stroke="#006064" stroke-width="1" />
   <path d="M12 6C9.5 8.5 9.5 15.5 12 18" stroke="#006064" stroke-width="1" />
   <line x1="6" y1="12" x2="18" y2="12" stroke="#006064" stroke-width="1" />
-  <path d="M8 8L16 16" stroke="#B2EBF2" stroke-width="0.75" />
-  <path d="M16 8L8 16" stroke="#B2EBF2" stroke-width="0.75" />
 </svg>
