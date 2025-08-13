@@ -130,7 +130,7 @@ export struct EntryViewFieldItem {
       return $r("app.media.ic_paperclip");
     }
     if(fieldView.isTotp){
-      return $r("app.media.ic_totp");
+      return $r("app.media.ic_color_totp");
     }
     const key = fieldView.key;
     switch (key) {
