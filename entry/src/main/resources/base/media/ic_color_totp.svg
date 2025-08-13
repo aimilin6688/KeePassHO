@@ -24,7 +24,7 @@
   <rect x="9" y="14.5" width="6" height="3" rx="1" fill="#2196F3" />
 
   <!-- 数字代码上的点 - 表示数字 -->
-  <circle cx="10.5" cy="16" r="0.5" fill="white"/>
-  <circle cx="12" cy="16" r="0.5" fill="white"/>
-  <circle cx="13.5" cy="16" r="0.5" fill="white"/>
+  <circle cx="10.5" cy="16" r="0.7" fill="white"/>
+  <circle cx="12" cy="16" r="0.7" fill="white"/>
+  <circle cx="13.5" cy="16" r="0.7" fill="white"/>
 </svg>
