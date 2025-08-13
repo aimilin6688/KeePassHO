@@ -955,6 +955,78 @@
     {
       "name": "invalid_binary_file",
       "value": "Invalid binary file"
+    },
+    {
+      "name": "totp_config_title",
+      "value": "TOTP Config"
+    },
+    {
+      "name": "totp_type",
+      "value": "Token Type"
+    },
+    {
+      "name": "totp_type_rfc6238",
+      "value": "RFC6238  Token"
+    },
+    {
+      "name": "totp_type_steam",
+      "value": "Steam Token"
+    },
+    {
+      "name": "totp_type_custom",
+      "value": "Custom Token"
+    },
+    {
+      "name": "totp_secret",
+      "value": "Secret"
+    },
+    {
+      "name": "scan_qr_code",
+      "value": "Scan QrCode"
+    },
+    {
+      "name": "totp_algorithm",
+      "value": "Hash Algorithm"
+    },
+    {
+      "name": "totp_token_digits",
+      "value": "Token digits"
+    },
+    {
+      "name": "totp_token_period",
+      "value": "Token period(seconds)"
+    },
+    {
+      "name": "totp_mark",
+      "value": "Mark Info"
+    },
+    {
+      "name": "totp_preview",
+      "value": "Token Preview"
+    },
+    {
+      "name": "totp_config_error_empty_secret",
+      "value": "Secret must not be empty!"
+    },
+    {
+      "name": "totp_config_error_invalid_qr_code",
+      "value": "TOTP QR codes cannot be parsed"
+    },
+    {
+      "name": "error_scan_qr_code",
+      "value": "Failed to scan the code"
+    },
+    {
+      "name": "error_generate_token",
+      "value": "Token generation failed. Please check the key format"
+    },
+    {
+      "name": "totp_config_error_generating_token",
+      "value": "The configuration is being verified. Please wait a moment"
+    },
+    {
+      "name": "totp_config_error_generate_token_failed",
+      "value": "A valid token cannot be generated. Please check the configuration"
     }
   ]
 }
