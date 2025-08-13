@@ -127,7 +127,7 @@ export struct EntryViewFieldItem {
    */
   private getFieldIcon(fieldView: FieldView): ResourceStr {
     if (fieldView.isDownload) {
-      return $r("app.media.ic_paperclip");
+      return $r("app.media.ic_color_paperclip");
     }
     if(fieldView.isTotp){
       return $r("app.media.ic_color_totp");
