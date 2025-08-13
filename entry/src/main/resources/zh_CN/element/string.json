@@ -957,6 +957,78 @@
     {
       "name": "invalid_binary_file",
       "value": "无效的附件"
+    },
+    {
+      "name": "totp_config_title",
+      "value": "TOTP 令牌配置"
+    },
+    {
+      "name": "totp_type",
+      "value": "令牌类型"
+    },
+    {
+      "name": "totp_type_rfc6238",
+      "value": "RFC6238标准令牌"
+    },
+    {
+      "name": "totp_type_steam",
+      "value": "Steam令牌"
+    },
+    {
+      "name": "totp_type_custom",
+      "value": "自定义令牌"
+    },
+    {
+      "name": "totp_secret",
+      "value": "密钥"
+    },
+    {
+      "name": "scan_qr_code",
+      "value": "扫码"
+    },
+    {
+      "name": "totp_algorithm",
+      "value": "Hash算法"
+    },
+    {
+      "name": "totp_token_digits",
+      "value": "令牌位数"
+    },
+    {
+      "name": "totp_token_period",
+      "value": "更新周期(秒)"
+    },
+    {
+      "name": "totp_mark",
+      "value": "标识信息"
+    },
+    {
+      "name": "totp_preview",
+      "value": "令牌预览"
+    },
+    {
+      "name": "totp_config_error_empty_secret",
+      "value": "密钥不能为空"
+    },
+    {
+      "name": "totp_config_error_invalid_qr_code",
+      "value": "无法解析TOTP二维码"
+    },
+    {
+      "name": "error_scan_qr_code",
+      "value": "扫码失败"
+    },
+    {
+      "name": "error_generate_token",
+      "value": "生成令牌失败，请检查密钥格式"
+    },
+    {
+      "name": "totp_config_error_generating_token",
+      "value": "正在验证配置，请稍候"
+    },
+    {
+      "name": "totp_config_error_generate_token_failed",
+      "value": "无法生成有效令牌，请检查配置"
     }
   ]
 }
