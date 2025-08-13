@@ -4,7 +4,12 @@
  */
 import { TotpAlgorithm, TotpConfig, TotpService, TotpType } from '../services/TotpService';
 import { ScanService } from '../services/ScanService';
-import { TotpPreviewComponent } from './TotpPreviewComponent';
+import { TotpPreviewComponent, TotpPreviewController } from './TotpPreviewComponent';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import ResourceManager from '../common/utils/ResourceManager';
+
+const DOMAIN = 0x0000;
+const TAG = 'TotpService';
 
 @CustomDialog
 export struct TotpConfigDialog {
@@ -17,291 +22,30 @@ export struct TotpConfigDialog {
     name: '',
     issuer: ''
   };
+  @State name:string = '';
+  @State issuer:string = '';
   @State private selectedType: string = TotpType.RFC6238;
   @State private selectedAlgorithm: string = TotpAlgorithm.SHA1;
   @State private errorMessage: string = '';
-  @State private showAdvancedOptions: boolean = false;
+  @State private showMarkOptions: boolean = false;
+  public onConfirm: (config: TotpConfig, otpUrl: string) => void = () => {
+  };
+  public onCancel: () => void = () => {
+  };
 
+  private tokenTypeOptions: Array<TokenTypeOption> = [
+    { type: TotpType.RFC6238, value: $r('app.string.totp_type_rfc6238') },
+    { type: TotpType.STEAM, value: $r('app.string.totp_type_steam') },
+    { type: TotpType.CUSTOM, value: $r('app.string.totp_type_custom') },
+  ];
   private controller: CustomDialogController;
-  private confirm: (config: TotpConfig) => void = () => {};
-  private cancel: () => void = () => {};
   private totpService: TotpService = TotpService.getInstance();
   private scanService: ScanService = new ScanService(this.getUIContext());
+  private previewController: TotpPreviewController = new TotpPreviewController();
 
-  build() {
-    Column() {
-      // 标题
-      Text('TOTP令牌配置')
-        .fontSize(20)
-        .fontWeight(FontWeight.Bold)
-        .margin({ top: 10, bottom: 20 })
-
-      // 错误消息（如果有）
-      if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(14)
-          .fontColor(Color.Red)
-          .width('100%')
-          .textAlign(TextAlign.Center)
-          .margin({ bottom: 10 })
-      }
-
-      // 令牌类型选择
-      Column() {
-        Text('令牌类型')
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .alignSelf(ItemAlign.Start)
-          .margin({ bottom: 5 })
-
-        Row() {
-          Radio({ value: TotpType.RFC6238, group: 'tokenType' })
-            .checked(this.selectedType === TotpType.RFC6238)
-            .onChange((isChecked: boolean) => {
-              if (isChecked) {
-                this.selectedType = TotpType.RFC6238;
-                this.updateTotpConfig();
-              }
-            })
-          Text('RFC6238标准令牌').fontSize(14).margin({ left: 5 })
-        }
-        .width('100%')
-        .margin({ bottom: 5 })
-
-        Row() {
-          Radio({ value: TotpType.STEAM, group: 'tokenType' })
-            .checked(this.selectedType === TotpType.STEAM)
-            .onChange((isChecked: boolean) => {
-              if (isChecked) {
-                this.selectedType = TotpType.STEAM;
-                this.updateTotpConfig();
-              }
-            })
-          Text('Steam令牌').fontSize(14).margin({ left: 5 })
-        }
-        .width('100%')
-        .margin({ bottom: 5 })
-
-        Row() {
-          Radio({ value: TotpType.CUSTOM, group: 'tokenType' })
-            .checked(this.selectedType === TotpType.CUSTOM)
-            .onChange((isChecked: boolean) => {
-              if (isChecked) {
-                this.selectedType = TotpType.CUSTOM;
-                this.updateTotpConfig();
-              }
-            })
-          Text('自定义令牌').fontSize(14).margin({ left: 5 })
-        }
-        .width('100%')
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .padding(10)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(8)
-      .margin({ bottom: 15 })
-
-      // 密钥输入
-      Column() {
-        Row() {
-          Text('密钥').fontSize(16).fontWeight(FontWeight.Medium)
-          Blank()
-          Button('生成', { type: ButtonType.Normal, stateEffect: true })
-            .height(28)
-            .fontSize(14)
-            .onClick(() => this.generateRandomSecret())
-          Button('扫码', { type: ButtonType.Normal, stateEffect: true })
-            .height(28)
-            .fontSize(14)
-            .margin({ left: 8 })
-            .onClick(() => this.scanQrCode())
-        }
-        .width('100%')
-        .margin({ bottom: 5 })
-
-        TextInput({ text: this.totpConfig.secret })
-          .height(40)
-          .fontSize(14)
-          .onChange((value: string) => {
-            this.totpConfig.secret = value.toUpperCase();
-          })
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .padding(10)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(8)
-      .margin({ bottom: 15 })
-
-      // 名称和发行者
-      Column() {
-        Text('标识信息')
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .alignSelf(ItemAlign.Start)
-          .margin({ bottom: 5 })
-
-        Text('名称').fontSize(14).alignSelf(ItemAlign.Start)
-        TextInput({ text: this.totpConfig.name })
-          .height(40)
-          .fontSize(14)
-          .margin({ bottom: 10 })
-          .onChange((value: string) => {
-            this.totpConfig.name = value;
-          })
-
-        Text('发行者').fontSize(14).alignSelf(ItemAlign.Start)
-        TextInput({ text: this.totpConfig.issuer })
-          .height(40)
-          .fontSize(14)
-          .onChange((value: string) => {
-            this.totpConfig.issuer = value;
-          })
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .padding(10)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(8)
-      .margin({ bottom: 15 })
-
-      // 高级选项（可折叠）
-      Column() {
-        Row() {
-          Text('高级选项')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-          Blank()
-          Image(this.showAdvancedOptions ? $r('app.media.ic_angle_up') : $r('app.media.ic_angle_down'))
-            .width(20)
-            .height(20)
-            .fillColor($r('app.color.text_primary'))
-        }
-        .width('100%')
-        .onClick(() => {
-          this.showAdvancedOptions = !this.showAdvancedOptions;
-        })
-
-        if (this.showAdvancedOptions) {
-          // 算法选择（仅对RFC6238和自定义令牌有效）
-          if (this.selectedType !== TotpType.STEAM) {
-            Column() {
-              Text('哈希算法').fontSize(14).alignSelf(ItemAlign.Start).margin({ top: 10, bottom: 5 })
-
-              Row() {
-                Select([
-                  { value: TotpAlgorithm.SHA1 },
-                  { value: TotpAlgorithm.SHA256 },
-                  { value: TotpAlgorithm.SHA512 }
-                ])
-                  .selected(this.getAlgorithmIndex())
-                  .value(this.selectedAlgorithm)
-                  .font({ size: 14 })
-                  .onSelect((index: number, value: string) => {
-                    this.selectedAlgorithm = value as TotpAlgorithm;
-                    this.updateTotpConfig();
-                  })
-              }
-              .width('100%')
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start)
-          }
-
-          // 位数选择（仅对RFC6238和自定义令牌有效）
-          if (this.selectedType !== TotpType.STEAM) {
-            Column() {
-              Text('令牌位数').fontSize(14).alignSelf(ItemAlign.Start).margin({ top: 10, bottom: 5 })
-
-              Row() {
-                Counter() {
-                  Text(`${this.totpConfig.digits}`)
-                    .fontSize(14)
-                }
-                .onInc(() => {
-                  if (this.totpConfig.digits && this.totpConfig.digits < 10) {
-                    this.totpConfig.digits++;
-                  }
-                })
-                .onDec(() => {
-                  if (this.totpConfig.digits && this.totpConfig.digits > 6) {
-                    this.totpConfig.digits--;
-                  }
-                })
-              }
-              .width('100%')
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start)
-          }
-
-          // 周期选择
-          Column() {
-            Text('更新周期（秒）').fontSize(14).alignSelf(ItemAlign.Start).margin({ top: 10, bottom: 5 })
-
-            Row() {
-              Counter() {
-                Text(`${this.totpConfig.period}`)
-                  .fontSize(14)
-              }
-              .onInc(() => {
-                if (this.totpConfig.period && this.totpConfig.period < 60) {
-                  this.totpConfig.period += 5;
-                }
-              })
-              .onDec(() => {
-                if (this.totpConfig.period && this.totpConfig.period > 15) {
-                  this.totpConfig.period -= 5;
-                }
-              })
-            }
-            .width('100%')
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-        }
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .padding(10)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(8)
-      .margin({ bottom: 15 })
-
-      // 令牌预览
-      if (this.totpConfig.secret) {
-        TotpPreviewComponent({ totpConfig: this.totpConfig })
-          .width('100%')
-          .margin({ bottom: 15 })
-      }
-
-      // 按钮
-      Row() {
-        Button('取消', { type: ButtonType.Normal, stateEffect: true })
-          .onClick(() => {
-            this.controller.close();
-            this.cancel();
-          })
-          .backgroundColor('#F0F0F0')
-          .fontColor('#333333')
-
-        Blank()
-
-        Button('确定', { type: ButtonType.Normal, stateEffect: true })
-          .onClick(() => {
-            if (this.validateConfig()) {
-              this.controller.close();
-              this.confirm(this.totpConfig);
-            }
-          })
-          .backgroundColor('#0A59F7')
-          .fontColor(Color.White)
-      }
-      .width('100%')
-    }
-    .width('100%')
-    .padding(15)
+  aboutToAppear() {
+    this.totpConfig.name = this.name;
+    this.totpConfig.issuer = this.issuer;
   }
 
   /**
@@ -311,9 +55,10 @@ export struct TotpConfigDialog {
     try {
       const secret = await this.totpService.generateRandomSecret();
       this.totpConfig.secret = secret;
+      this.previewController.updatedToken();
     } catch (error) {
-      console.error('生成随机密钥错误:', error);
-      this.errorMessage = '生成随机密钥失败';
+      hilog.error(DOMAIN, TAG, 'Generate random secret error: ${error.message}')
+      this.errorMessage = error.message;
     }
   }
 
@@ -331,15 +76,16 @@ export struct TotpConfigDialog {
           this.selectedType = config.type;
           this.selectedAlgorithm = config.algorithm || TotpAlgorithm.SHA1;
           this.errorMessage = '';
+          this.previewController.updatedToken();
         } else {
-          this.errorMessage = '无法解析TOTP二维码';
+          this.errorMessage = ResourceManager.getString($r('app.string.totp_config_error_invalid_qr_code'));
         }
       } else {
-        this.errorMessage = result.error || '扫码失败';
+        this.errorMessage = result.error || ResourceManager.getString($r('app.string.error_scan_qr_code'));
       }
     } catch (error) {
-      console.error('扫码错误:', error);
-      this.errorMessage = '扫码过程中出错';
+      hilog.error(DOMAIN, TAG, 'Scan Qr Code error: ${error.message}')
+      this.errorMessage = error.message;
     }
   }
 
@@ -381,9 +127,394 @@ export struct TotpConfigDialog {
   private validateConfig(): boolean {
     // 检查密钥是否为空
     if (!this.totpConfig.secret) {
-      this.errorMessage = '密钥不能为空';
+      this.errorMessage = ResourceManager.getString($r('app.string.totp_config_error_empty_secret'));
       return false;
     }
-      return true;
+    return true;
   }
+
+  /**
+   * 关闭弹框
+   */
+  private close() {
+    this.controller.close();
+  }
+
+  /**
+   * 确定事件处理
+   */
+  private handlerConfirm() {
+    if (this.validateConfig()) {
+      const optUrl = TotpService.getInstance().generateUri(this.totpConfig);
+      this.controller.close();
+      this.onConfirm(this.totpConfig, optUrl);
+    }
+  }
+
+  build() {
+    Column() {
+      // 顶部标题栏
+      Row() {
+        Text($r('app.string.totp_config_title'))
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+        Blank()
+        Button() {
+          Image($r('sys.media.ohos_ic_public_cancel_filled'))
+            .width(24)
+            .height(24)
+            .fillColor($r('app.color.text_primary'))
+        }
+        .type(ButtonType.Circle)
+        .backgroundColor('transparent')
+        .onClick(() => {
+          this.close();
+        })
+      }
+      .width('100%')
+      .height(56)
+      .alignItems(VerticalAlign.Center)
+      .borderRadius({ topLeft: 16, topRight: 16 })
+
+
+      List() {
+        // 令牌类型
+        ListItemGroup() {
+          ListItem() {
+            Row() {
+              Text($r("app.string.totp_type"))
+                .fontSize(16)
+                .flexGrow(1)
+              Blank()
+              Select(this.tokenTypeOptions)
+                .value(this.tokenTypeOptions[this.tokenTypeOptions.findIndex((item) => item.type === this.selectedType)].value)
+                .font({ size: 16 })
+                .selectedOptionFont({ size: 16 })
+                .optionFont({ size: 16 })
+                .backgroundColor($r("app.color.card_bg"))
+                .onSelect(async (index: number) => {
+                  this.selectedType = this.tokenTypeOptions[index].type;
+                  this.updateTotpConfig();
+                })
+            }
+            .padding({ left: 12, right: 12 })
+            .width('100%')
+            .height(48)
+          }
+        }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ top: 12, bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+        // 自定义
+        ListItemGroup() {
+          ListItem() {
+            // 密钥
+            Column() {
+              Row() {
+                Text($r("app.string.totp_secret")).fontSize(16).fontWeight(FontWeight.Medium)
+                Blank()
+                // 生成
+                Button($r("app.string.generate_button_text"), { type: ButtonType.Normal, stateEffect: true })
+                  .fontSize(14)
+                  .height(28)
+                  .fontColor($r('app.color.text_primary'))
+                  .backgroundColor($r("app.color.bg_primary"))
+                  .padding({ left: 12, right: 12 })
+                  .margin({ right: 3 })
+                  .borderRadius(12)
+                  .onClick(() => this.generateRandomSecret())
+                // 扫码
+                Button($r("app.string.scan_qr_code"), { type: ButtonType.Normal, stateEffect: true })
+                  .fontSize(14)
+                  .height(28)
+                  .fontColor($r('app.color.text_primary'))
+                  .backgroundColor($r("app.color.bg_primary"))
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(12)
+                  .onClick(() => this.scanQrCode())
+              }
+              .width('100%')
+              .padding({ top: 10, bottom: 5 })
+              .margin({ bottom: 5 })
+
+              TextInput({ text: this.totpConfig.secret })
+                .height(40)
+                .fontSize(14)
+                .onChange((value: string) => {
+                  this.totpConfig.secret = value.toUpperCase();
+                })
+            }
+            .padding({ left: 12, right: 12, bottom: 5 })
+            .width('100%')
+          }
+
+          // 算法选择（仅对RFC6238和自定义令牌有效）
+          if (this.selectedType !== TotpType.STEAM) {
+            // Hash算法
+            ListItem() {
+              Column() {
+                Row() {
+                  Text($r('app.string.totp_algorithm')).fontSize(16).fontWeight(FontWeight.Medium)
+                  Blank()
+                  Select([
+                    { value: TotpAlgorithm.SHA1 },
+                    { value: TotpAlgorithm.SHA256 },
+                    { value: TotpAlgorithm.SHA512 }
+                  ])
+                    .selected(this.getAlgorithmIndex())
+                    .value(this.selectedAlgorithm)
+                    .font({ size: 14 })
+                    .onSelect((index: number, value: string) => {
+                      this.selectedAlgorithm = value as TotpAlgorithm;
+                      this.updateTotpConfig();
+                    })
+                }
+                .width('100%')
+              }
+              .padding({
+                left: 12,
+                right: 12,
+                top: 10,
+                bottom: 10
+              })
+              .width('100%')
+            }
+          }
+          // 位数选择（仅对RFC6238和自定义令牌有效）
+          if (this.selectedType !== TotpType.STEAM) {
+            // 令牌位数
+            ListItem() {
+              Column() {
+                Row() {
+                  Text($r("app.string.totp_token_digits")).fontSize(16).fontWeight(FontWeight.Medium)
+                  Blank()
+                  Counter() {
+                    Text(`${this.totpConfig.digits}`).fontSize(14)
+                  }
+                  .onInc(() => {
+                    if (this.totpConfig.digits && this.totpConfig.digits < 10) {
+                      this.totpConfig.digits++;
+                    }
+                  })
+                  .onDec(() => {
+                    if (this.totpConfig.digits && this.totpConfig.digits > 6) {
+                      this.totpConfig.digits--;
+                    }
+                  })
+                }
+                .width('100%')
+              }
+              .padding({
+                left: 12,
+                right: 12,
+                top: 10,
+                bottom: 10
+              })
+              .width('100%')
+            }
+          }
+          // 更新周期（秒）
+          ListItem() {
+            // 周期选择
+            Column() {
+              Row() {
+                Text($r('app.string.totp_token_period')).fontSize(16).fontWeight(FontWeight.Medium)
+                Blank()
+                Counter() {
+                  Text(`${this.totpConfig.period}`)
+                    .fontSize(14)
+                }
+                .onInc(() => {
+                  if (this.totpConfig.period && this.totpConfig.period < 60) {
+                    this.totpConfig.period += 5;
+                  }
+                })
+                .onDec(() => {
+                  if (this.totpConfig.period && this.totpConfig.period > 15) {
+                    this.totpConfig.period -= 5;
+                  }
+                })
+              }
+              .width('100%')
+            }
+            .padding({
+              left: 12,
+              right: 12,
+              top: 10,
+              bottom: 10
+            })
+            .width('100%')
+          }
+        }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+
+        // 标识信息（可折叠）
+        ListItemGroup() {
+          ListItem() {
+            Column() {
+              Row() {
+                Text($r('app.string.totp_mark')).fontSize(16).fontWeight(FontWeight.Medium)
+                Blank()
+                Image(this.showMarkOptions ? $r('app.media.ic_angle_up') : $r('app.media.ic_angle_down'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding({ top: 10, bottom: 10 })
+              .onClick(() => {
+                this.showMarkOptions = !this.showMarkOptions;
+              })
+            }
+            .padding({ left: 12, right: 12 })
+            .width('100%')
+          }
+
+          // 标识信息
+          if (this.showMarkOptions) {
+            // 名称
+            ListItem() {
+              Column() {
+                Row() {
+                  Text('名称').fontSize(16).fontWeight(FontWeight.Medium)
+                  Blank()
+                  TextInput({ text: this.totpConfig.name })
+                    .height(40)
+                    .fontSize(14)
+                    .width("80%")
+                    .onChange((value: string) => {
+                      this.totpConfig.name = value;
+                    })
+                }
+                .width('100%')
+                .padding({ top: 10, bottom: 10 })
+              }
+              .padding({ left: 12, right: 12 })
+              .width('100%')
+            }
+
+            // 发行者
+            ListItem() {
+              Column() {
+                Row() {
+                  Text('发行者').fontSize(16).fontWeight(FontWeight.Medium)
+                  Blank()
+                  TextInput({ text: this.totpConfig.issuer })
+                    .height(40)
+                    .fontSize(14)
+                    .width("80%")
+                    .onChange((value: string) => {
+                      this.totpConfig.issuer = value;
+                    })
+                }
+                .width('100%')
+                .padding({ top: 10, bottom: 10 })
+              }
+              .padding({ left: 12, right: 12 })
+              .width('100%')
+            }
+          }
+        }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+        // 令牌预览
+        if (this.totpConfig.secret) {
+          ListItemGroup() {
+            ListItem() {
+              Column() {
+                Row() {
+                  Text($r('app.string.totp_preview')).fontSize(16).fontWeight(FontWeight.Medium)
+                  Blank()
+                  TotpPreviewComponent({ controller: this.previewController, totpConfig: this.totpConfig })
+                }
+                .width('100%')
+                .padding({ top: 10, bottom: 10 })
+              }
+              .padding({ left: 12, right: 12 })
+              .width('100%')
+            }
+          }
+          .backgroundColor($r("app.color.card_bg"))
+          .margin({ bottom: 12 })
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
+        }
+      }
+      .width('100%')
+      .height('auto')
+
+
+      // 错误消息（如果有）
+      if (this.errorMessage) {
+        Text(this.errorMessage)
+          .fontSize(14)
+          .fontColor(Color.Red)
+          .width('100%')
+          .textAlign(TextAlign.Center)
+          .margin({ bottom: 10 })
+      }
+
+      // 底部按钮
+      Row() {
+        Button($r('app.string.cancel_button_text'))
+          .width('48%')
+          .height(40)
+          .fontSize(16)
+          .backgroundColor(Color.Gray)
+          .fontColor($r('app.color.button_text'))
+          .onClick(() => {
+            this.controller.close();
+            this.onCancel();
+          })
+
+        Button($r('app.string.confirm_button_text'))
+          .width('48%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .backgroundColor($r("app.color.button_bg_blue"))
+          .onClick(() => {
+            this.handlerConfirm();
+          })
+      }
+      .width('100%')
+      .padding({
+        left: 24,
+        right: 24,
+        top: 16,
+        bottom: 30
+      })
+      .justifyContent(FlexAlign.SpaceBetween)
+    }
+    .width('100%')
+    .backgroundColor($r("app.color.bg_primary"))
+    .borderRadius(16)
+    .padding({ left: 16, right: 16, bottom: 16 })
+  }
+}
+
+export interface TokenTypeOption {
+  type: TotpType;
+  value: ResourceStr;
 }
