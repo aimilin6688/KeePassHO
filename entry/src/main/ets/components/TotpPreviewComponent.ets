@@ -60,8 +60,8 @@ export struct TotpPreviewComponent {
           .fontFamily('monospace')
         // 倒计时进度条
         Progress({ value: this.remainingSeconds, total: this.totpConfig?.period || 30, type: ProgressType.Ring })
-          .width(30)
-          .height(30)
+          .width(24)
+          .height(24)
           .margin({ left: 15 })
       }
 
