@@ -13,6 +13,8 @@ import ResourceManager from '../common/utils/ResourceManager';
 import DateUtils from '../common/utils/DateUtils';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { CommonUtils } from '../common/utils/CommonUtils';
+import { TotpConfigDialog } from '../components/TotpConfigDialog';
+import { TotpConfig } from '../services/TotpService';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -100,6 +102,24 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
+
+  // otp令牌弹框
+  private otpDialogController: CustomDialogController = new CustomDialogController({
+    builder: TotpConfigDialog({
+      name: this.title,
+      issuer: this.username,
+      onConfirm: (config: TotpConfig, otpUrl: string) => {
+        this.confirmCustomField({
+          key: "OTP",
+          value: otpUrl,
+          isProtected: true
+        } as CustomField);
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: true
+    });
 
   aboutToAppear() {
     // 获取数据库信息
@@ -918,6 +938,20 @@ struct EntryEdit {
 
                 Blank()
 
+                Button() {
+                  Text('OTP')
+                    .width(56)
+                    .height(24)
+                    .fontColor($r('app.color.text_primary'))
+                    .textAlign(TextAlign.Center)
+                }
+                .height(32)
+                .backgroundColor($r("app.color.card_bg"))
+                .borderRadius(16)
+                .margin({right:5})
+                .onClick(() => {
+                  this.otpDialogController.open();
+                })
                 Button() {
                   Image($r('app.media.ic_add'))
                     .width(24)
