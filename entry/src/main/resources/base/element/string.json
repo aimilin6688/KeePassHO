@@ -1027,6 +1027,14 @@
     {
       "name": "totp_config_error_generate_token_failed",
       "value": "A valid token cannot be generated. Please check the configuration"
+    },
+    {
+      "name": "totp_invalid_uri",
+      "value": "无效的TOTP URI格式"
+    },
+    {
+      "name": "qrcode_is_not_totp_uri",
+      "value": "扫码内容不是有效的TOTP URI"
     }
   ]
 }

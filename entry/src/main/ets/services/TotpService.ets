@@ -220,7 +220,7 @@ export class TotpService {
       // 转换为Uint8Array
       return hmacResult.data;
     } catch (error) {
-      console.error('HMAC计算错误:', error);
+      hilog.error(DOMAIN, TAG, 'HMAC计算错误: ${error.message}');
       throw new Error(error.message);
     }
   }
@@ -372,7 +372,7 @@ export class TotpService {
       // 编码为Base32
       return this.base32Encode(secretBytes);
     } catch (error) {
-      console.error('生成随机密钥错误:', error);
+      hilog.error(DOMAIN, TAG, `Generate random secret error: ${error.message}`)
       throw new Error(error.message);
     }
   }
@@ -386,6 +386,7 @@ export class TotpService {
     try {
       // 检查URI格式
       if (!uri.startsWith('otpauth://totp/')) {
+        hilog.error(DOMAIN, TAG, 'Invalid URI format');
         return null;
       }
 
@@ -409,6 +410,7 @@ export class TotpService {
       const secret = params.get('secret');
 
       if (!secret) {
+        hilog.error(DOMAIN, TAG, 'Missing secret parameter');
         return null;
       }
 
@@ -433,7 +435,7 @@ export class TotpService {
         issuer
       };
     } catch (error) {
-      console.error('解析TOTP URI错误:', error);
+      hilog.error(DOMAIN, TAG, `Parse URI error: ${error.message}`)
       return null;
     }
   }

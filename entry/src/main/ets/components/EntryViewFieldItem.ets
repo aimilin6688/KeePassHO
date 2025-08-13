@@ -9,6 +9,7 @@ import { SettingsService } from '../services/SettingsService';
 import FileUtils from '../common/utils/FIleUtils';
 import { picker } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
+import { TotpPreviewComponent } from './TotpPreviewComponent';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -25,6 +26,8 @@ export class FieldView {
   showPlanText: boolean;
   isDownload: boolean;
   binaryFile?: ArrayBuffer | undefined;
+  isTotp: boolean = false;
+  otpValue: string = '';
 
   constructor(key: string, value: string, isProtected: boolean, isCopy: boolean, binaryFile?: ArrayBuffer) {
     this.key = key;
@@ -34,6 +37,17 @@ export class FieldView {
     this.showPlanText = !this.isProtected;
     this.isDownload = binaryFile !== undefined;
     this.binaryFile = binaryFile;
+    if (this.isOtpUrl(value)) {
+      this.isTotp = true;
+      this.otpValue = value;
+    }
+  }
+
+  private isOtpUrl(value: string): boolean {
+    if (value && value.startsWith('otpauth://')) {
+      return true;
+    }
+    return false;
   }
 }
 
@@ -190,7 +204,6 @@ export struct EntryViewFieldItem {
         .width(32)
         .height(32)
         .margin({ right: 12 })
-
       // 中间内容区域
       Column() {
         // 左上角小标题显示标签提示信息
@@ -201,14 +214,24 @@ export struct EntryViewFieldItem {
           .textAlign(TextAlign.Start)
           .margin({ bottom: 4 })
 
-        // 左下角显示具体的值
-        Text(this.field.showPlanText ? this.field.value : '******')
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .copyOption(this.field.showPlanText ? CopyOptions.LocalDevice : CopyOptions.None)
-          .textAlign(TextAlign.Start)
-          .enableDataDetector(this.field.isProtected ? false : true)
+        // 如果是Otp，则显示token码
+        if (this.field.isTotp && this.field.showPlanText) {
+          TotpPreviewComponent({
+            totpUrl: this.field.otpValue, onChange: (value) => {
+              this.field.value = value;
+            }
+          })
+            .width('100%')
+        } else {
+          // 左下角显示具体的值
+          Text(this.field.showPlanText ? this.field.value : '******')
+            .fontSize(16)
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .copyOption(this.field.showPlanText ? CopyOptions.LocalDevice : CopyOptions.None)
+            .textAlign(TextAlign.Start)
+            .enableDataDetector(this.field.isProtected ? false : true)
+        }
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)

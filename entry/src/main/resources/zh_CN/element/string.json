@@ -1029,6 +1029,14 @@
     {
       "name": "totp_config_error_generate_token_failed",
       "value": "无法生成有效令牌，请检查配置"
+    },
+    {
+      "name": "totp_invalid_uri",
+      "value": "无效的TOTP URI格式"
+    },
+    {
+      "name": "qrcode_is_not_totp_uri",
+      "value": "扫码内容不是有效的TOTP URI"
     }
   ]
 }
