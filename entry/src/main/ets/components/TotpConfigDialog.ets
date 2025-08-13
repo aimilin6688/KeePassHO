@@ -7,11 +7,6 @@ import { ScanService } from '../services/ScanService';
 
 @CustomDialog
 export struct TotpConfigDialog {
-  private controller: CustomDialogController;
-  private confirm: (config: TotpConfig) => void = () => {
-  };
-  private cancel: () => void = () => {
-  };
   @State totpConfig: TotpConfig = {
     type: TotpType.RFC6238,
     secret: '',
@@ -28,6 +23,10 @@ export struct TotpConfigDialog {
   @State private isGeneratingToken: boolean = false;
   @State private errorMessage: string = '';
   @State private showAdvancedOptions: boolean = false;
+
+  private controller: CustomDialogController;
+  private confirm: (config: TotpConfig) => void = () => {};
+  private cancel: () => void = () => {};
   private totpService: TotpService = TotpService.getInstance();
   private scanService: ScanService = new ScanService(this.getUIContext());
   private tokenUpdateTimer: number = -1;
