@@ -129,6 +129,9 @@ export struct EntryViewFieldItem {
     if (fieldView.isDownload) {
       return $r("app.media.ic_paperclip");
     }
+    if(fieldView.isTotp){
+      return $r("app.media.ic_totp");
+    }
     const key = fieldView.key;
     switch (key) {
       case KdbxUtils.FIELD_TITLE:
