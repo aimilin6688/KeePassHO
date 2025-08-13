@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-  <!-- 背景圆 - 使用浅蓝色 -->
-  <rect width="24" height="24" rx="12" fill="#E3F2FD" />
+  <!-- 背景圆 - 使用蓝色渐变 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#BBDEFB" />
+      <stop offset="100%" stop-color="#64B5F6" />
+    </linearGradient>
+  </defs>
+  <rect width="24" height="24" rx="12" fill="url(#bgGradient)" />
 
   <!-- 时钟外圈 - 使用中蓝色 -->
   <circle cx="12" cy="12" r="8" fill="#2196F3" />
