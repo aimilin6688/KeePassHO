@@ -183,14 +183,18 @@ struct CreateDatabase {
       // 主要内容区域
       Column() {
         // 数据库名称输入
-        Text("*").fontColor($r('app.color.required'))
-        Text($r("app.string.database_name"))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+        Row(){
+          Text("*")
+            .fontColor($r('app.color.required'))
+          Text($r("app.string.database_name"))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
+        }.width('100%')
+        .margin({ top: 20, left: 16 })
+
 
         TextInput({ placeholder: $r("app.string.database_name_placeholder"), text: this.databaseName })
           .type(InputType.Normal)
@@ -209,14 +213,17 @@ struct CreateDatabase {
           })
 
         // 密码输入
-        Text("*").fontColor($r('app.color.required'))
-        Text($r('app.string.password'))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+        Row(){
+          Text("*")
+            .fontColor($r('app.color.required'))
+          Text($r('app.string.password'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
+        }.width('100%')
+        .margin({ top: 20, left: 16 })
 
         Row() {
           TextInput({ placeholder: $r('app.string.password_placeholder'), text: this.password })
@@ -241,14 +248,18 @@ struct CreateDatabase {
         .borderRadius(8)
 
         // 确认密码输入
-        Text("*").fontColor($r('app.color.required'))
-        Text($r("app.string.confirm_password_label"))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+        Row(){
+          Text("*")
+            .fontColor($r('app.color.required'))
+          Text($r("app.string.confirm_password_label"))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
+        }.width('100%')
+        .margin({ top: 20, left: 16 })
+
 
         Row() {
           TextInput({ placeholder: $r("app.string.confirm_password_placeholder"), text: this.confirmPassword })

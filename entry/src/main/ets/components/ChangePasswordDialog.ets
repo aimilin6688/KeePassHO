@@ -121,10 +121,13 @@ export struct ChangePasswordDialog {
       // 对话框内容
       Column() {
         // 旧密码输入
-        Text($r('app.string.change_password_old_password'))
-          .fontSize(14)
-          .fontColor($r('app.color.text_primary'))
-          .margin({ top: 8, bottom: 4 })
+        Row(){
+          Text("*").fontColor($r('app.color.required'))
+          Text($r('app.string.change_password_old_password'))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ top: 8, bottom: 4 })
+        }.width('100%')
         TextInput({ placeholder: $r('app.string.change_password_old_password_placeholder'), text: this.oldPassword })
           .type(InputType.Password)
           .height(48)
@@ -139,10 +142,13 @@ export struct ChangePasswordDialog {
           })
 
         // 新密码输入
-        Text($r('app.string.change_password_new_password'))
-          .fontSize(14)
-          .fontColor($r('app.color.text_primary'))
-          .margin({ top: 16, bottom: 4 })
+        Row(){
+          Text("*").fontColor($r('app.color.required'))
+          Text($r('app.string.change_password_new_password'))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ top: 16, bottom: 4 })
+        }.width('100%')
         TextInput({ placeholder: $r('app.string.change_password_new_password_placeholder'), text: this.newPassword })
           .type(InputType.Password)
           .height(48)
@@ -157,10 +163,13 @@ export struct ChangePasswordDialog {
           })
 
         // 确认新密码输入
-        Text($r('app.string.change_password_confirm_password'))
-          .fontSize(14)
-          .fontColor($r('app.color.text_primary'))
-          .margin({ top: 16, bottom: 4 })
+        Row(){
+          Text("*").fontColor($r('app.color.required'))
+          Text($r('app.string.change_password_confirm_password'))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ top: 16, bottom: 4 })
+        }.width('100%')
         TextInput({ placeholder: $r('app.string.change_password_confirm_password_placeholder'), text: this.confirmPassword })
           .type(InputType.Password)
           .height(48)
