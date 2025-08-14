@@ -457,7 +457,7 @@
       "value": "Invalid entry information"
     },
     {
-      "name": "field_name_exists_message",
+      "name": "field_name_exists",
       "value": "Field name already exists"
     },
     {
@@ -1030,11 +1030,19 @@
     },
     {
       "name": "totp_invalid_uri",
-      "value": "无效的TOTP URI格式"
+      "value": "Invalid TOTP URI format"
     },
     {
       "name": "qrcode_is_not_totp_uri",
-      "value": "扫码内容不是有效的TOTP URI"
+      "value": "The scanned code content is not a valid TOTP URI"
+    },
+    {
+      "name": "name",
+      "value": "Name"
+    },
+    {
+      "name": "issuer",
+      "value": "Issuer"
     }
   ]
 }
