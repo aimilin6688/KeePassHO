@@ -56,7 +56,7 @@ struct OpenDatabase {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('app.media.ic_back'))
+        Image($r("app.media.ic_angle_left"))
           .width(24)
           .height(24)
           .margin({ left: 16 })
