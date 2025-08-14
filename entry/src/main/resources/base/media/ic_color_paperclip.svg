@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg"  width="21" height="21" viewBox="0 0 21 21" fill="none">
   <!-- 回形针主体 - 简化版 -->
   <path d="M16 9.5V15C16 17.2091 14.2091 19 12 19C9.79086 19 8 17.2091 8 15V8C8 6.34315 9.34315 5 11 5C12.6569 5 14 6.34315 14 8V14.5C14 15.3284 13.3284 16 12.5 16C11.6716 16 11 15.3284 11 14.5V9.5"
         stroke="#43A047"
