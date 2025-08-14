@@ -1045,6 +1045,14 @@
     {
       "name": "issuer",
       "value": "发行者"
+    },
+    {
+      "name": "security_list_show_totp",
+      "value": "列表显示TOTP字段"
+    },
+    {
+      "name": "security_item_show_totp",
+      "value": "条目显示TOTP字段"
     }
   ]
 }

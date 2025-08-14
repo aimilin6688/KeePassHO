@@ -11,6 +11,9 @@ struct SettingsSecurity {
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   @State autoLockTime: number = SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT;
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
+  @State isListShowTotp:boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
+  @State isItemShowTotp:boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
+
   @State isDatabaseValid: boolean = false;
   // 自动清空剪切板时间
   private clearTimeOptions: Array<TimeOption> = [
@@ -49,6 +52,16 @@ struct SettingsSecurity {
   private promptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
+    this.initSettings();
+  }
+
+  onPageShow(): void {
+    const dbFileParam = FileService.getDbFileParam();
+    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
+  }
+
+  // 初始化设置信息
+  private initSettings(): void {
     // 获取是否开启下拉刷新功能
     this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, this.isPullToRefresh).then(result => {
       this.isPullToRefresh = result;
@@ -68,11 +81,16 @@ struct SettingsSecurity {
     this.settingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength).then(result => {
       this.quickLockPasswordLength = result;
     });
-  }
 
-  onPageShow(): void {
-    const dbFileParam = FileService.getDbFileParam();
-    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
+    // 列表是否显示TOTP
+    this.settingsService.get(SettingsService.KEY_SECURITY_LIST_SHOW_TOTP, this.isListShowTotp).then(result => {
+      this.isListShowTotp = result;
+    });
+
+    // 条目是否显示TOTP
+    this.settingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, this.isItemShowTotp).then(result => {
+      this.isItemShowTotp = result;
+    });
   }
 
   build() {
@@ -111,7 +129,7 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding(16)
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
           }
 
           // 剪切板自动清理时间
@@ -133,7 +151,7 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding(16)
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
           }
 
           // 至于后台多长时间自动锁定
@@ -155,7 +173,7 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding(16)
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
           }
 
           // 快速解锁密码长度
@@ -177,10 +195,53 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding(16)
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
           }
         }
-        .margin({ top: 12, bottom: 12 })
+        .margin({ top: 6, bottom: 6 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+        //显示设置
+        ListItemGroup() {
+          // 列表显示totp字段
+          ListItem() {
+            Row() {
+              Text($r("app.string.security_list_show_totp"))
+                .fontSize(16)
+                .flexGrow(1)
+              Toggle({ type: ToggleType.Switch, isOn: this.isListShowTotp })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.settingsService.put(SettingsService.KEY_SECURITY_LIST_SHOW_TOTP, isOn);
+                })
+            }
+            .width('100%')
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
+          }
+          // 条目显示totp字段
+          ListItem() {
+            Row() {
+              Text($r("app.string.security_item_show_totp"))
+                .fontSize(16)
+                .flexGrow(1)
+              Toggle({ type: ToggleType.Switch, isOn: this.isItemShowTotp })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.settingsService.put(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, isOn);
+                })
+            }
+            .width('100%')
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
+          }
+        }
+        .margin({ top: 6, bottom: 6 })
         .backgroundColor($r("app.color.card_bg"))
         .borderRadius(12)
         .divider({
