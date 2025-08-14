@@ -450,7 +450,7 @@
       "value": "无效的条目信息"
     },
     {
-      "name": "field_name_exists_message",
+      "name": "field_name_exists",
       "value": "字段名称已存在"
     },
     {
@@ -1037,6 +1037,14 @@
     {
       "name": "qrcode_is_not_totp_uri",
       "value": "扫码内容不是有效的TOTP URI"
+    },
+    {
+      "name": "name",
+      "value": "名称"
+    },
+    {
+      "name": "issuer",
+      "value": "发行者"
     }
   ]
 }

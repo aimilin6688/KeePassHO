@@ -108,9 +108,12 @@ struct EntryEdit {
     builder: TotpConfigDialog({
       name: this.title,
       issuer: this.username,
-      onConfirm: (config: TotpConfig, otpUrl: string) => {
+      checkFieldName: (fieldName: string) => {
+        return this.checkCustomField(fieldName);
+      },
+      onConfirm: (fieldName: string, otpUrl: string) => {
         this.confirmCustomField({
-          key: "OTP",
+          key: fieldName,
           value: otpUrl,
           isProtected: true
         } as CustomField);
@@ -451,6 +454,17 @@ struct EntryEdit {
   }
 
   /**
+   * 检测自定义字段名称是否存在
+   * @param customFieldName 字段名称
+   * @returns 结果
+   */
+  private checkCustomField(customFieldName: string):boolean {
+    // 检查字段名称是否已存在（排除当前编辑的字段）
+    const existingField = this.customFields.findIndex(field => field.key === customFieldName && this.customFields.indexOf(field) !== this.editingFieldIndex);
+    return existingField !== -1;
+  }
+
+  /**
    * 确认自定义字段（添加或更新）
    * @param key 字段名称
    * @param value 字段值
@@ -460,13 +474,9 @@ struct EntryEdit {
     if (this.isEditingField) {
       // 更新字段
       if (this.editingFieldIndex >= 0 && this.editingFieldIndex < this.customFields.length) {
-        // 检查字段名称是否已存在（排除当前编辑的字段）
-        const existingField = this.customFields.findIndex(field =>
-        field.key === customField.key && this.customFields.indexOf(field) !== this.editingFieldIndex);
-
-        if (existingField !== -1) {
+        if (this.checkCustomField(customField.key)) {
           this.promptAction.showToast({
-            message: $r('app.string.field_name_exists_message'),
+            message: $r("app.string.field_name_exists"),
             duration: 2000
           });
           return;
@@ -490,7 +500,7 @@ struct EntryEdit {
       const existingField = this.customFields.find(field => field.key === customField.key);
       if (existingField) {
         this.promptAction.showToast({
-          message: $r('app.string.field_name_exists_message'),
+          message: $r("app.string.field_name_exists"),
           duration: 2000
         });
         return;

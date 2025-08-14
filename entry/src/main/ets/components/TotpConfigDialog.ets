@@ -24,13 +24,15 @@ export struct TotpConfigDialog {
   };
   @State name:string = '';
   @State issuer:string = '';
+  @State fieldName:string = 'OTP';
   @State private selectedType: string = TotpType.RFC6238;
   @State private selectedAlgorithm: string = TotpAlgorithm.SHA1;
   @State private errorMessage: string = '';
   @State private showMarkOptions: boolean = false;
-  public onConfirm: (config: TotpConfig, otpUrl: string) => void = () => {
-  };
-  public onCancel: () => void = () => {
+  // 确认前校验字段名称是否存在
+  public checkFieldName: (fieldName: string) => boolean = () => {return false;};
+  // 确认事件回调
+  public onConfirm: (fieldName: string, otpUrl: string) => void = () => {
   };
 
   private tokenTypeOptions: Array<TokenTypeOption> = [
@@ -145,9 +147,13 @@ export struct TotpConfigDialog {
    */
   private handlerConfirm() {
     if (this.validateConfig()) {
+      if(this.checkFieldName(this.fieldName)){
+        this.errorMessage = ResourceManager.getString($r("app.string.field_name_exists"));
+        return;
+      }
       const optUrl = TotpService.getInstance().generateUri(this.totpConfig);
       this.controller.close();
-      this.onConfirm(this.totpConfig, optUrl);
+      this.onConfirm(this.fieldName, optUrl);
     }
   }
 
@@ -178,6 +184,35 @@ export struct TotpConfigDialog {
 
 
       List() {
+        ListItemGroup(){
+          ListItem(){
+            Column() {
+              Row() {
+                Text($r('app.string.custom_field_name')).fontSize(16).fontWeight(FontWeight.Medium)
+                Blank()
+                TextInput({ text: this.fieldName })
+                  .height(40)
+                  .fontSize(14)
+                  .width("75%")
+                  .onChange((value: string) => {
+                    this.fieldName = value;
+                  })
+              }
+              .width('100%')
+              .padding({ top: 10, bottom: 10 })
+            }
+            .padding({ left: 12, right: 12 })
+            .width('100%')
+          }
+        }.backgroundColor($r("app.color.card_bg"))
+        .margin({ top: 12, bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+
         // 令牌类型
         ListItemGroup() {
           ListItem() {
@@ -203,7 +238,7 @@ export struct TotpConfigDialog {
           }
         }
         .backgroundColor($r("app.color.card_bg"))
-        .margin({ top: 12, bottom: 12 })
+        .margin({ bottom: 12 })
         .borderRadius(12)
         .divider({
           strokeWidth: 1,
@@ -388,12 +423,12 @@ export struct TotpConfigDialog {
             ListItem() {
               Column() {
                 Row() {
-                  Text('名称').fontSize(16).fontWeight(FontWeight.Medium)
+                  Text($r('app.string.name')).fontSize(16).fontWeight(FontWeight.Medium)
                   Blank()
                   TextInput({ text: this.totpConfig.name })
                     .height(40)
                     .fontSize(14)
-                    .width("80%")
+                    .width("75%")
                     .onChange((value: string) => {
                       this.totpConfig.name = value;
                     })
@@ -409,12 +444,12 @@ export struct TotpConfigDialog {
             ListItem() {
               Column() {
                 Row() {
-                  Text('发行者').fontSize(16).fontWeight(FontWeight.Medium)
+                  Text($r('app.string.issuer')).fontSize(16).fontWeight(FontWeight.Medium)
                   Blank()
                   TextInput({ text: this.totpConfig.issuer })
                     .height(40)
                     .fontSize(14)
-                    .width("80%")
+                    .width("75%")
                     .onChange((value: string) => {
                       this.totpConfig.issuer = value;
                     })
@@ -485,7 +520,6 @@ export struct TotpConfigDialog {
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
             this.controller.close();
-            this.onCancel();
           })
 
         Button($r('app.string.confirm_button_text'))
