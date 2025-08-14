@@ -30,8 +30,15 @@ export class SettingsService {
   // 数据设置
   public static readonly KEY_DATABASE_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
   public static readonly KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT = false;
+  // 显示TOTP设置
+  public static readonly KEY_SECURITY_LIST_SHOW_TOTP = "Security_list_show_totp";
+  public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = false;
+  public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
+  public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = false;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
+
 
   private constructor() {
   }

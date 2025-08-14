@@ -37,17 +37,17 @@ export class FieldView {
     this.showPlanText = !this.isProtected;
     this.isDownload = binaryFile !== undefined;
     this.binaryFile = binaryFile;
-    if (this.isOtpUrl(value)) {
+    // TOTP类型
+    if (KdbxUtils.isTotpUrl(value)) {
       this.isTotp = true;
       this.otpValue = value;
+      // 需要展示时才设置 展示totp预览
+      SettingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT, (value) => {
+        if(value){
+          this.showPlanText = value;
+        }
+      });
     }
-  }
-
-  private isOtpUrl(value: string): boolean {
-    if (value && value.startsWith('otpauth://')) {
-      return true;
-    }
-    return false;
   }
 }
 
@@ -76,6 +76,7 @@ export struct EntryViewFieldItem {
    * 初始化系统配置参数
    */
   private initSettings = (key?: string) => {
+    // 自动清理剪切板时间
     if (!key || key === SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME) {
       SettingsService.get(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, this.autoClearClipboardTime, (value) => {
         this.autoClearClipboardTime = value;
@@ -239,7 +240,7 @@ export struct EntryViewFieldItem {
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
 
-      // 右侧复制按钮
+      // 右侧显示眼镜图标
       if (this.field.value && this.field.isProtected) {
         Image(this.field.showPlanText ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
           .width(24)

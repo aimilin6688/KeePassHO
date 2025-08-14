@@ -43,7 +43,16 @@ export default class KdbxUtils {
     if (!fields || !fields.has(key)) {
       return '';
     }
-    let value = fields.get(key);
+    return KdbxUtils.getValueString(fields.get(key));
+  }
+
+  /**
+   * 获取属性的值
+   * @param key key
+   * @param value value
+   * @returns 结果字符串
+   */
+  public static getValueString(value: KdbxEntryField | undefined): string {
     if (!value) {
       return '';
     }
@@ -54,7 +63,6 @@ export default class KdbxUtils {
     if (value instanceof ProtectedValue) {
       return value.getText();
     }
-
     return value.toString();
   }
 
@@ -374,7 +382,7 @@ export default class KdbxUtils {
         callback?.onError?.('Invalid database or base64 image');
         return;
       }
-      for( const base64Image of base64Images) {
+      for (const base64Image of base64Images) {
         // 从base64字符串中提取实际的base64数据部分
         const base64Data = base64Image.split(',')[1];
         if (!base64Data) {
@@ -394,6 +402,38 @@ export default class KdbxUtils {
       hilog.error(DOMAIN, TAG, 'Add custom icon error: %{public}s', error);
       callback?.onError?.(error.message);
     }
+  }
+
+  /**
+   * 检查TOTP URL是否有效
+   * @param totpUrl
+   * @returns
+   */
+  public static isTotpUrl(totpUrl: string | undefined): boolean {
+    if (!totpUrl) {
+      return false;
+    }
+    return totpUrl.length > 0 && totpUrl.startsWith('otpauth://totp/');
+  }
+
+  /**
+   * 从条目中获取TOTP URL
+   * @param itemEntry 条目
+   * @returns TOTP URL数组
+   */
+  public static getTotpUrl(itemEntry: KdbxEntry): Array<string> {
+    let totpUrls: Array<string> = [];
+    if (!itemEntry) {
+      return totpUrls;
+    }
+    let valueString = '';
+    itemEntry.fields.forEach((value, key) => {
+      valueString = KdbxUtils.getValueString(value);
+      if (valueString && KdbxUtils.isTotpUrl(valueString)) {
+        totpUrls.push(valueString);
+      }
+    });
+    return totpUrls;
   }
 }
 

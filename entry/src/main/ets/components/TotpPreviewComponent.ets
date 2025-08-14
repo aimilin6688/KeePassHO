@@ -53,18 +53,19 @@ export struct TotpPreviewComponent {
 
   build() {
     Column() {
-      Row() {
-        Text(this.previewToken)
-          .fontSize(24)
-          .fontWeight(FontWeight.Bold)
-          .fontFamily('monospace')
-        // 倒计时进度条
-        Progress({ value: this.remainingSeconds, total: this.totpConfig?.period || 30, type: ProgressType.Ring })
-          .width(24)
-          .height(24)
-          .margin({ left: 15 })
+      if(this.previewToken){
+        Row() {
+          Text(this.previewToken)
+            .fontSize(24)
+            .fontWeight(FontWeight.Bold)
+            .fontFamily('monospace')
+          // 倒计时进度条
+          Progress({ value: this.remainingSeconds, total: this.totpConfig?.period || 30, type: ProgressType.Ring })
+            .width(24)
+            .height(24)
+            .margin({ left: 15 })
+        }
       }
-
       if (this.errorMessage) {
         Text(this.errorMessage)
           .fontSize(14)

@@ -16,6 +16,7 @@ import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import ResourceManager from '../common/utils/ResourceManager';
+import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -40,6 +41,7 @@ struct DatabaseView {
   @State moveParam: MoveParam | undefined = undefined; // 移动参数
   @State refreshText: ResourceStr = $r('app.string.refreshing_message');
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
+  @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
@@ -109,6 +111,10 @@ struct DatabaseView {
       this.isPullToRefresh = result;
       this.refreshText = result ? $r('app.string.refreshing_message') : $r('app.string.refreshing_disable');
     })
+    // 列表显示TOTP
+    this.settingsService.get(SettingsService.KEY_SECURITY_LIST_SHOW_TOTP, SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT).then(result => {
+      this.isListShowTotp = result;
+    });
   }
 
   /**
@@ -524,8 +530,8 @@ struct DatabaseView {
   /**
    * 锁定数据库
    */
-  private lockDatabase(){
-    this.router.pushUrl({ url: 'pages/UnLockDatabase'  })
+  private lockDatabase() {
+    this.router.pushUrl({ url: 'pages/UnLockDatabase' })
   }
 
   build() {
@@ -660,6 +666,7 @@ struct DatabaseView {
           Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
+              // 分组信息显示
               ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
                 ListItem() {
                   Row() {
@@ -708,6 +715,7 @@ struct DatabaseView {
                 })
               }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
 
+              // 条目数据展示
               ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
                 ListItem() {
                   Row() {
@@ -736,6 +744,12 @@ struct DatabaseView {
                         .decoration({
                           type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
                         })
+                      // TOTP 字段展示
+                      if (this.isListShowTotp) {
+                        ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string, index: number) => {
+                          TotpPreviewComponent({ totpUrl: totpUrl })
+                        });
+                      }
                     }
                     .flexGrow(1)
                     .alignItems(HorizontalAlign.Start)
@@ -748,10 +762,9 @@ struct DatabaseView {
                       .fillColor($r('app.color.text_primary'))
                   }
                   .width('100%')
-                  .height(60)
                   .borderRadius(8)
                   .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
-                  .padding({ left: 10, right: 10 })
+                  .padding({ left: 10, right: 10, top: 8, bottom: 8  })
                   .onClick(() => {
                     this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
                   })
