@@ -188,6 +188,7 @@ export struct TotpConfigDialog {
           ListItem(){
             Column() {
               Row() {
+                Text("*").fontColor($r('app.color.required'))
                 Text($r('app.string.custom_field_name')).fontSize(16).fontWeight(FontWeight.Medium)
                 Blank()
                 TextInput({ text: this.fieldName })
@@ -251,6 +252,7 @@ export struct TotpConfigDialog {
             // 密钥
             Column() {
               Row() {
+                Text("*").fontColor($r('app.color.required'))
                 Text($r("app.string.totp_secret")).fontSize(16).fontWeight(FontWeight.Medium)
                 Blank()
                 // 生成
