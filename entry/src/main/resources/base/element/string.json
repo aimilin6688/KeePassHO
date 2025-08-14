@@ -1043,6 +1043,14 @@
     {
       "name": "issuer",
       "value": "Issuer"
+    },
+    {
+      "name": "security_list_show_totp",
+      "value": "List show TOTP"
+    },
+    {
+      "name": "security_item_show_totp",
+      "value": "Item show TOTP"
     }
   ]
 }
