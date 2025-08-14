@@ -68,6 +68,10 @@
     {
       "name": "success",
       "value": "#89c812"
+    },
+    {
+      "name": "required",
+      "value": "#FF3B30"
     }
   ]
 }

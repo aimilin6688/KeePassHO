@@ -183,6 +183,7 @@ struct CreateDatabase {
       // 主要内容区域
       Column() {
         // 数据库名称输入
+        Text("*").fontColor($r('app.color.required'))
         Text($r("app.string.database_name"))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
@@ -208,6 +209,7 @@ struct CreateDatabase {
           })
 
         // 密码输入
+        Text("*").fontColor($r('app.color.required'))
         Text($r('app.string.password'))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
@@ -239,6 +241,7 @@ struct CreateDatabase {
         .borderRadius(8)
 
         // 确认密码输入
+        Text("*").fontColor($r('app.color.required'))
         Text($r("app.string.confirm_password_label"))
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
