@@ -735,6 +735,7 @@ struct EntryEdit {
 
             // 标题
             Column() {
+              Text("*").fontColor($r('app.color.required'))
               Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
                 .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
