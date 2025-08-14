@@ -735,12 +735,14 @@ struct EntryEdit {
 
             // 标题
             Column() {
-              Text("*").fontColor($r('app.color.required'))
-              Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-                .margin({ bottom: 8 })
-                .alignSelf(ItemAlign.Start)
+              Row(){
+                Text("*").fontColor($r('app.color.required'))
+                Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+                  .margin({ bottom: 8 })
+                  .alignSelf(ItemAlign.Start)
+              }.width('100%')
 
               Row() {
                 TextArea({ text: this.title, placeholder: $r('app.string.title_placeholder') })
