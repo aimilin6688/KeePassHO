@@ -24,7 +24,7 @@ export struct TotpConfigDialog {
   };
   @State name:string = '';
   @State issuer:string = '';
-  @State fieldName:string = 'OTP';
+  @State fieldName:string = 'otp';
   @State private selectedType: string = TotpType.RFC6238;
   @State private selectedAlgorithm: string = TotpAlgorithm.SHA1;
   @State private errorMessage: string = '';
