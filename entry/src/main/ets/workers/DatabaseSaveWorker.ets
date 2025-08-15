@@ -66,10 +66,8 @@ async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo
   // 合并数据库
   let oldKdbx: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
   oldKdbx.merge(newKdbx);
-  // 设置数据库内容为新内容
-  request.data = await KdbxUtils.kdbxToArrayBuffer(oldKdbx);
   // 保存数据库
-  return await saveDatabase(request, credentials);
+  return await saveDatabase(request, credentials, oldKdbx);
 }
 
 /**
@@ -77,10 +75,9 @@ async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo
  * @param request 请求
  * @returns 结果
  */
-async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials): Promise<FileContentInfo> {
+async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials, kdbx?: Kdbx): Promise<FileContentInfo> {
   postMessage($r('app.string.save_saving'));
-  let database: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
-
+  let database: Kdbx = kdbx ? kdbx : await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
   let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
   if (request.newPassword) {
     database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
