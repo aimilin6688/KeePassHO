@@ -7,7 +7,7 @@ const TAG = 'KdbxUtils';
 
 export class EventBus {
   // 数据库合并事件
-  static readonly DATABASE_MERGE = "database_merge";
+  static readonly DATABASE_RELOAD = "database_reload";
   // 数据库更新事件
   static readonly DATABASE_UPDATE = "database_update";
 
