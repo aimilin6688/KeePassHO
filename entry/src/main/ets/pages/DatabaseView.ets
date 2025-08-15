@@ -72,7 +72,7 @@ struct DatabaseView {
     this.clearUrl();
     this.initSettings();
     // 注册数据库合并事件
-    EventBus.on<void>(EventBus.DATABASE_MERGE, () => {
+    EventBus.on<void>(EventBus.DATABASE_RELOAD, () => {
       this.reloadDatabase();
     });
     EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
@@ -92,7 +92,7 @@ struct DatabaseView {
 
   aboutToDisappear() {
     // 移除监听器
-    EventBus.off<void>(EventBus.DATABASE_MERGE);
+    EventBus.off<void>(EventBus.DATABASE_RELOAD);
     EventBus.off<void>(EventBus.DATABASE_UPDATE);
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     this.settingsService.unregisterObserver(this.onSettingChanged);
@@ -233,7 +233,7 @@ struct DatabaseView {
         KdbxUtils.arrayBufferToKdbx(successMessage.data, loadParam).then((database: Kdbx) => {
           FileService.resetDbFileParam(database, successMessage.modifiedTime);
           this.refreshText = $r('app.string.refreshing_message');
-          EventBus.emit<void>(EventBus.DATABASE_MERGE);
+          EventBus.emit<void>(EventBus.DATABASE_RELOAD);
           this.promptAction.showToast({ message: $r('app.string.refresh_success') });
           this.isRefreshing = false;
         });
