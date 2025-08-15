@@ -161,7 +161,7 @@ export default class KdbxSaveService {
     if (successMessage.isMerge) {
       KdbxUtils.arrayBufferToKdbx(successMessage.data, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
-        EventBus.emit<void>(EventBus.DATABASE_MERGE);
+        EventBus.emit<void>(EventBus.DATABASE_RELOAD);
       })
     } else {
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
