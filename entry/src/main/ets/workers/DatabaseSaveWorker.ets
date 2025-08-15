@@ -56,8 +56,7 @@ async function handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
  * @param request 请求
  * @param fileContent 新文件内容
  */
-async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo,
-  credentials: KdbxCredentials): Promise<FileContentInfo> {
+async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo,  credentials: KdbxCredentials): Promise<FileContentInfo> {
   // 校验文件签名
   postMessage($r('app.string.validating'));
   // 尝试加载数据库（仅验证，不保留结果）
