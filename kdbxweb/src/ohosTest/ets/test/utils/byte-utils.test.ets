@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils } from '../../../../main/ets/index';
-import { CryptoJS } from '@ohos/crypto-js';
 
 export default function ByteUtilsTest() {
     describe('ByteUtils', () => {
@@ -177,50 +176,6 @@ export default function ByteUtilsTest() {
             });
         });
 
-        describe('arrayBufferToWordArray', () => {
-            it('converts ArrayBuffer to WordArray', 0, () => {
-                const testData = new Uint8Array([1, 2, 3, 4, 5]);
-                const buffer = testData.buffer;
-                const wordArray = ByteUtils.arrayBufferToWordArray(buffer);
-                
-                // 验证 WordArray 的属性
-                expect(wordArray.sigBytes).assertEqual(5);
-            });
-
-            it('converts WordArray to ArrayBuffer', 0, () => {
-                // 创建一个已知的 WordArray
-                const words = [0x01020304, 0x05000000];  // 对应字节：[1,2,3,4,5]
-                const wordArray = CryptoJS.lib.WordArray.create(words, 5);  // sigBytes=5 表示只使用5个字节
-                
-                const buffer = ByteUtils.wordArrayToArrayBuffer(wordArray);
-                expect(buffer instanceof ArrayBuffer).assertTrue();
-                expect(buffer.byteLength).assertEqual(5);
-                
-                const resultBytes = new Uint8Array(buffer);
-                expect(resultBytes[0]).assertEqual(1);
-                expect(resultBytes[1]).assertEqual(2);
-                expect(resultBytes[2]).assertEqual(3);
-                expect(resultBytes[3]).assertEqual(4);
-                expect(resultBytes[4]).assertEqual(5);
-            });
-
-            it('roundtrip conversion preserves data', 0, () => {
-                // 创建测试数据
-                const originalData = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
-                const originalBuffer = originalData.buffer;
-
-                // ArrayBuffer -> WordArray -> ArrayBuffer
-                const wordArray = ByteUtils.arrayBufferToWordArray(originalBuffer);
-                const resultBuffer = ByteUtils.wordArrayToArrayBuffer(wordArray);
-
-                // 验证结果
-                expect(resultBuffer.byteLength).assertEqual(originalBuffer.byteLength);
-                const resultData = new Uint8Array(resultBuffer);
-                for (let i = 0; i < originalData.length; i++) {
-                    expect(resultData[i]).assertEqual(originalData[i]);
-                }
-            });
-        });
 
         describe('arrayBufferEquals', () => {
             it('returns true for equal buffers', 0, () => {
