@@ -11,9 +11,8 @@
 
 import { KdbxError } from '../errors/kdbx-error';
 import { ErrorCodes } from '../defs/consts';
-import { arrayToBuffer, bytesToString, hexToBytes, stringToBuffer } from '../utils/byte-utils';
+import { arrayToBuffer, hexToBytes } from '../utils/byte-utils';
 import { ChaCha20 } from './chacha20';
-import { CryptoJS } from '@ohos/crypto-js';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { ByteUtils } from '..';
 import { ohosArgon2 } from './argon2-rs';
@@ -34,8 +33,11 @@ export function sha256(data: ArrayBuffer): Promise<ArrayBuffer> {
     return Promise.resolve(arrayToBuffer(hexToBytes(EmptySha256)));
   }
   return new Promise((resolve) => {
-    const sha = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(data));
-    resolve(ByteUtils.bytesToBuffer(ByteUtils.hexToBytes(sha.toString())));
+    let md = cryptoFramework.createMd("SHA256");
+    // 数据量较少时，可以只做一次update，将数据全部传入，接口未对入参长度做限制。
+    md.updateSync({ data: ByteUtils.bufferToBytes(data) });
+    let mdResult = md.digestSync();
+    resolve(ByteUtils.bytesToBuffer(mdResult.data));
   });
 }
 
@@ -44,15 +46,27 @@ export function sha512(data: ArrayBuffer): Promise<ArrayBuffer> {
     return Promise.resolve(arrayToBuffer(hexToBytes(EmptySha512)));
   }
   return new Promise((resolve) => {
-    const sha = CryptoJS.SHA512(CryptoJS.lib.WordArray.create(data));
-    resolve(ByteUtils.bytesToBuffer(ByteUtils.hexToBytes(sha.toString())));
+    let md = cryptoFramework.createMd("SHA512");
+    // 数据量较少时，可以只做一次update，将数据全部传入，接口未对入参长度做限制。
+    md.updateSync({ data: ByteUtils.bufferToBytes(data) });
+    let mdResult = md.digestSync();
+    resolve(ByteUtils.bytesToBuffer(mdResult.data));
   });
 }
 
 export function hmacSha256(key: ArrayBuffer, data: ArrayBuffer): Promise<ArrayBuffer> {
   return new Promise((resolve) => {
-    const sha = CryptoJS.HmacSHA256(CryptoJS.lib.WordArray.create(data), CryptoJS.lib.WordArray.create(key));
-    resolve(ByteUtils.bytesToBuffer(ByteUtils.hexToBytes(sha.toString())));
+    // 使用鸿蒙的加密框架计算HMAC
+    let symKeyBlob: cryptoFramework.DataBlob = { data: ByteUtils.bufferToBytes(key) };
+    let aesGenerator = cryptoFramework.createSymKeyGenerator('HMAC');
+    let symKey = aesGenerator.convertKeySync(symKeyBlob);
+
+    const macObj = cryptoFramework.createMac("SHA256");
+    macObj.initSync(symKey);
+    macObj.updateSync({ data: ByteUtils.bufferToBytes(data) });
+    const hmacResult = macObj.doFinalSync();
+    // 转换为Uint8Array
+    return resolve(ByteUtils.bytesToBuffer(hmacResult.data));
   });
 }
 
@@ -81,36 +95,36 @@ class AesCbcNode extends AesCbc {
 
   encrypt(data: ArrayBuffer, iv: ArrayBuffer): Promise<ArrayBuffer> {
     return Promise.resolve().then(() => {
-      const encrypted = CryptoJS.AES.encrypt(
-        CryptoJS.lib.WordArray.create(data),
-        CryptoJS.lib.WordArray.create(this.key),
-        {
-          iv: CryptoJS.lib.WordArray.create(iv),
-          mode: CryptoJS.mode.CBC,
-          padding: CryptoJS.pad.Pkcs7
-        }
-      );
-      return ByteUtils.wordArrayToArrayBuffer(encrypted.ciphertext);
+      let ivParamsSpec: cryptoFramework.IvParamsSpec = {
+        algName: "IvParamsSpec",
+        iv: {data: ByteUtils.bufferToBytes(iv)}
+      };
+
+      let aesGenerator = cryptoFramework.createSymKeyGenerator('AES256');
+      let symKey = aesGenerator.convertKeySync({data: ByteUtils.bufferToBytes(this.key)});
+
+      let cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
+      cipher.initSync(cryptoFramework.CryptoMode.ENCRYPT_MODE, symKey, ivParamsSpec);
+      let cipherData = cipher.doFinalSync({data: ByteUtils.bufferToBytes(data)});
+      return ByteUtils.bytesToBuffer(cipherData.data);
     });
   }
 
   decrypt(data: ArrayBuffer, iv: ArrayBuffer): Promise<ArrayBuffer> {
-    return Promise.resolve()
-      .then(() => {
-        const decrypted = CryptoJS.AES.decrypt(
-          CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.lib.WordArray.create(data) }),
-          CryptoJS.lib.WordArray.create(this.key),
-          {
-            iv: CryptoJS.lib.WordArray.create(iv),
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7
-          }
-        );
-        return ByteUtils.wordArrayToArrayBuffer(decrypted);
-      })
-      .catch((e: Error) => {
-        throw new KdbxError(ErrorCodes.InvalidKey, 'Invalid key');
-      });
+    return Promise.resolve().then(() => {
+      let ivParamsSpec: cryptoFramework.IvParamsSpec = {
+        algName: "IvParamsSpec",
+        iv: { data: ByteUtils.bufferToBytes(iv) }
+      };
+
+      let aesGenerator = cryptoFramework.createSymKeyGenerator('AES256');
+      let symKey = aesGenerator.convertKeySync({ data: ByteUtils.bufferToBytes(this.key) });
+
+      let cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
+      cipher.initSync(cryptoFramework.CryptoMode.DECRYPT_MODE, symKey, ivParamsSpec);
+      let cipherData = cipher.doFinalSync({ data: ByteUtils.bufferToBytes(data) });
+      return ByteUtils.bytesToBuffer(cipherData.data);
+    });
   }
 }
 
