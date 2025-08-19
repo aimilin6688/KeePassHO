@@ -314,11 +314,13 @@ struct Password {
    * 设置数据库文件信息
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
+    let date = new Date().getTime();
     return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authType,
       keyFilePath: this.keyFilePath,
     } as CredentialsParam).then((kdbx: Kdbx) => {
+      hilog.info(DOMAIN, TAG, 'Kdbx parse from xml time: %{public}d ms',  new Date().getTime() - date);
       // 设置数据库文件信息
       FileService.setDbFileParam({
         filePath: this.filePath,
@@ -347,8 +349,6 @@ struct Password {
    */
   private putFileToRecentFile() {
     let fileParam = FileService.getInstance().getFileParam();
-    hilog.info(DOMAIN, TAG, '%{public}s', `Put database file to recent file list: ${fileParam?.filePath}`)
-
     // 最近打开的文件
     let recentFile = {
       filePath: this.filePath,
@@ -358,6 +358,7 @@ struct Password {
       keyFilePath: this.keyFilePath,
       storageConfig: this.storageConfig ?? {}
     } as RecentFile;
+    hilog.info(DOMAIN, TAG, '%{public}s', `Put database file to recent file list: ${this.filePath}`)
     // 如果开启指纹登录
     if (this.isEnabledFingerprintLogin && this.isFingerprintSupport) {
       CryptoUtils.encryptText(this.password).then(result => {

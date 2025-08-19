@@ -40,7 +40,11 @@ async function handleLoadDatabase(request: LoadDatabase) {
     let logTime = Date.now();
     let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
     hilog.debug(DOMAIN, TAG, "Load database cost time: %{public}d ms", Date.now() - logTime);
+
+    logTime = Date.now();
     let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
+    hilog.debug(DOMAIN, TAG, "Kdbx to xml time: %{public}d ms", Date.now() - logTime);
+
     postMessage($r('app.string.loading_complete'));
     workerPort.postMessage(new SuccessMessage(kdbxContent, fileContent.modifiedTime), [kdbxContent]);
   } catch (error) {
