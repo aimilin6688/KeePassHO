@@ -102,7 +102,7 @@ export class KdbxBinaryStream extends BinaryStream {
    * 写入KdbxHeader
    * @param header
    */
-  writeHeader(header: KdbxHeader){
+  writeHeader(header: KdbxHeader) {
     header.write(this);
   }
 
