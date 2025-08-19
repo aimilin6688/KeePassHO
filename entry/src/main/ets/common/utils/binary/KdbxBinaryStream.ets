@@ -1,4 +1,4 @@
-import { BinaryStream, KdbxTimes, KdbxUuid, VarDictionary } from 'kdbxweb';
+import { BinaryStream, KdbxContext, KdbxHeader, KdbxTimes, KdbxUuid, VarDictionary } from 'kdbxweb';
 import util from '@ohos.util';
 
 /**
@@ -96,5 +96,22 @@ export class KdbxBinaryStream extends BinaryStream {
    */
   readVarDictionary(): VarDictionary {
     return VarDictionary.read(this);
+  }
+
+  /**
+   * 写入KdbxHeader
+   * @param header
+   */
+  writeHeader(header: KdbxHeader){
+    header.write(this);
+  }
+
+  /**
+   * 读取KdbxHeader
+   * @param ctx
+   * @returns
+   */
+  readHeader(ctx: KdbxContext): KdbxHeader {
+    return KdbxHeader.read(this, ctx);
   }
 }
