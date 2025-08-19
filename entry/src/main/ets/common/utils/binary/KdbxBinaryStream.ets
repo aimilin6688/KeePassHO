@@ -6,14 +6,6 @@ import util from '@ohos.util';
  */
 export class KdbxBinaryStream extends BinaryStream {
   /**
-   * 写入UUID
-   * @param uuid 要写入的UUID对象
-   */
-  writeUuid(uuid: KdbxUuid): void {
-    this.writeBytes(uuid.bytes);
-  }
-
-  /**
    * 写入时间信息
    * @param times 要写入的时间对象
    */
@@ -54,10 +46,37 @@ export class KdbxBinaryStream extends BinaryStream {
 
 
   /**
+   * 写入UUID
+   * @param uuid 要写入的UUID对象
+   */
+  writeUuid(uuid: KdbxUuid): void {
+    this.writeBytes(uuid.bytes);
+  }
+
+  /**
+   * 读取UUID
+   * @returns 读取到的UUID对象
+   */
+  readUuid(): KdbxUuid {
+    const bytes = this.readBytes(16);
+    return new KdbxUuid(bytes);
+  }
+
+  /**
+   * 读取字符串
+   * @returns 读取到的字符串
+   */
+  readString(): string {
+    const length = this.getUint32(true);
+    const bytes = this.readBytes(length);
+    return new util.TextDecoder().decodeToString(new Uint8Array(bytes));
+  }
+
+  /**
    * 写入字符串
    * @param str 要写入的字符串
    */
-  private writeString(str: string): void {
+  writeString(str: string): void {
     const bytes = new util.TextEncoder().encodeInto(str);
     this.setUint32(bytes.length, true);
     this.writeBytes(bytes);
