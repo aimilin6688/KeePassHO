@@ -1,4 +1,4 @@
-import { BinaryStream, KdbxTimes, KdbxUuid } from 'kdbxweb';
+import { BinaryStream, KdbxTimes, KdbxUuid, VarDictionary } from 'kdbxweb';
 import util from '@ohos.util';
 
 /**
@@ -80,5 +80,21 @@ export class KdbxBinaryStream extends BinaryStream {
     const bytes = new util.TextEncoder().encodeInto(str);
     this.setUint32(bytes.length, true);
     this.writeBytes(bytes);
+  }
+
+  /**
+   * 写入VarDictionary
+   * @param dict 要写入的VarDictionary对象
+   */
+  writeVarDictionary(dict: VarDictionary): void {
+    dict.write(this);
+  }
+
+  /**
+   * 读取VarDictionary
+   * @returns 读取到的VarDictionary对象
+   */
+  readVarDictionary(): VarDictionary {
+    return VarDictionary.read(this);
   }
 }
