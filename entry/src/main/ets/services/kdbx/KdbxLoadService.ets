@@ -3,6 +3,7 @@ import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import ResourceManager from '../../common/utils/ResourceManager';
+import { DatabaseLoad } from '../../workers/DatabaseLoad';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxLoadService';
@@ -15,6 +16,19 @@ export default class KdbxLoadService {
    * 加载数据库
    */
   public static loadDatabase(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback): void {
+    if (loadParam.asyncLoad) {
+      KdbxLoadService.asyncLoadDatabase(loadParam, callback);
+    } else {
+      new DatabaseLoad().handleLoadDatabase(loadParam, callback);
+    }
+  }
+
+  /**
+   * 异步线程加载数据库
+   * @param loadParam 加载参数
+   * @param callback 回调地址
+   */
+  private static asyncLoadDatabase(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback): void {
     KdbxLoadService.stopWorker();
 
     // 创建 Worker

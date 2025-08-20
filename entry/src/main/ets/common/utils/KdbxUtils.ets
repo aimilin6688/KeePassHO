@@ -254,7 +254,10 @@ export default class KdbxUtils {
    * 将ArrayBuffer转换为对象
    * @param arrayBuffer ArrayBuffer对象
    */
-  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer, credentialsParam: CredentialsParam, credentials?: KdbxCredentials): Promise<Kdbx> {
+  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer | Kdbx, credentialsParam: CredentialsParam, credentials?: KdbxCredentials): Promise<Kdbx> {
+    if (arrayBuffer instanceof Kdbx) {
+      return arrayBuffer;
+    }
     if (credentials == undefined) {
       credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
     }
