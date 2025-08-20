@@ -83,7 +83,7 @@ export class KdbxFormat {
                                 if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
                                     const date = new Date().getTime();
                                     data = arrayToBuffer(gunzipSync(new Uint8Array(data)));
-                                    console.log("gunzipSync: " + (new Date().getTime() - date) + "ms");
+                                    console.log("kdbx gunzip time: " + (new Date().getTime() - date) + "ms");
                                 }
                                 stm = new BinaryStream(arrayToBuffer(data));
                                 this.kdbx.header.readInnerHeader(stm, this.ctx);
@@ -91,11 +91,11 @@ export class KdbxFormat {
                                 const xmlStr = bytesToString(data);
                                 const date = new Date().getTime();
                                 this.kdbx.xml = XmlUtils.parse(xmlStr);
-                                console.log("xml str parse time: " + (new Date().getTime() - date) + "ms");
+                                console.log("kdbx xml parse time: " + (new Date().getTime() - date) + "ms");
                                 return this.setProtectedValues().then(() => {
                                     const date = new Date().getTime();
                                     return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
-                                        console.log("loadFromXml: " + (new Date().getTime() - date) + "ms");
+                                        console.log("kdbx xml load time: " + (new Date().getTime() - date) + "ms");
                                         this.cleanXml();
                                         return kdbx;
                                     });

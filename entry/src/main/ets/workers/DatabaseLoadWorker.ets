@@ -1,12 +1,10 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
-import { Kdbx, KdbxCredentials } from 'kdbxweb';
-import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import { Kdbx } from 'kdbxweb';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import KdbxUtils from '../common/utils/KdbxUtils';
-import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileContentInfo } from '../services/kdbx/interfaces';
-import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { LoadMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { DatabaseLoad } from './DatabaseLoad';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoadWorker';
@@ -19,7 +17,7 @@ workerPort.onmessage = (event: MessageEvents) => {
   hilog.debug(DOMAIN, TAG, 'Load worker receive message type:%{public}s', message.type);
   if (message.type === MessageType.LOAD_DATABASE) {
     const request = message as LoadDatabase;
-    handleLoadDatabase(request);
+    new DatabaseLoadWorker().handleLoadDatabase(request);
   }
 };
 
@@ -27,61 +25,33 @@ workerPort.onmessage = (event: MessageEvents) => {
  * 处理数据库加载任务
  * @param request 请求
  */
-async function handleLoadDatabase(request: LoadDatabase) {
-  try {
-    postMessage($r('app.string.creating_key'));
-    // 创建凭证
-    let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
-    postMessage($r('app.string.loading_key'));
-    // 加载文件内容
-    let fileContent: FileContentInfo = await loadKdbxFileContent(request);
-    postMessage($r('app.string.validating'));
-    // 加载数据库
+export class DatabaseLoadWorker extends DatabaseLoad {
+  /**
+   * 发送加载消息
+   * @param message 消息
+   */
+  postMessage(message: string | Resource, onLoadMessage?: (message: LoadMessage) => void) {
+    workerPort.postMessage(toLoadMessage(message));
+  }
+
+  /**
+   * 发送失败消息
+   * @param message 消息
+   */
+  postErrorMessage(message: string, onErrorMessage?: (message: LoadMessage) => void) {
+    workerPort.postMessage(toErrorMessage(message));
+  }
+
+  /**
+   * 发送成功消息
+   * @param message 消息
+   */
+  async postSuccessMessage(message: SuccessMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
     let logTime = Date.now();
-    let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
-    hilog.debug(DOMAIN, TAG, "Load database cost time: %{public}d ms", Date.now() - logTime);
-
-    logTime = Date.now();
-    let kdbxContent = await KdbxUtils.kdbxToArrayBuffer(kdbx);
-    hilog.debug(DOMAIN, TAG, "Kdbx to xml time: %{public}d ms", Date.now() - logTime);
-
-    postMessage($r('app.string.loading_complete'));
-    workerPort.postMessage(new SuccessMessage(kdbxContent, fileContent.modifiedTime), [kdbxContent]);
-  } catch (error) {
-    hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
-    postErrorMessage(error.message);
+    message.data = await KdbxUtils.kdbxToArrayBuffer(message.data as Kdbx);
+    hilog.debug(DOMAIN, TAG, "Kdbx to array buffer time: %{public}d ms", Date.now() - logTime);
+    workerPort.postMessage(message, [message.data]);
   }
-}
-
-/**
- * 加载文件内容
- * @param request 请求
- * @return Promise<ArrayBuffer> 文件内容
- */
-async function loadKdbxFileContent(request: LoadDatabase): Promise<FileContentInfo> {
-  if (!request.filePath) {
-    hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
-    throw new Error();
-  }
-  let result = await new KdbxFileManager(request.storageType, request.storageConfig).loadKdbxFile(request.filePath);
-  postMessage($r('app.string.load_file_success'));
-  return result;
-}
-
-/**
- * 发送加载消息给主线程
- * @param message 消息
- */
-function postMessage(message: string | Resource) {
-  workerPort.postMessage(toLoadMessage(message));
-}
-
-/**
- * 发送加载消息给主线程
- * @param message 消息
- */
-function postErrorMessage(message: string) {
-  workerPort.postMessage(toErrorMessage(message));
 }
 
 
