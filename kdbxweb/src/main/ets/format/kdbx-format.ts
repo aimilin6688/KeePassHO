@@ -180,7 +180,9 @@ export class KdbxFormat {
                         zeroBuffer(xmlData);
                         zeroBuffer(innerHeaderData);
                         if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
+                            const date = new Date().getTime();
                             data = arrayToBuffer(gzipSync(new Uint8Array(data)));
+                            console.log("kdbx gzip time: " + (new Date().getTime() - date) + "ms");
                         }
                         return this.encryptData(arrayToBuffer(data), keys.cipherKey).then(
                             (data) => {
