@@ -1,8 +1,8 @@
 import { FileService } from '../services/FileService';
-import { SettingsService } from '../services/SettingsService';
+import { UnlockAuthType, SettingsService } from '../services/SettingsService';
 import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
-import { AuthService } from '../services/AuthService';
+import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 
@@ -13,11 +13,13 @@ const TAG = 'UnLockDatabase';
 @Component
 struct UnLockDatabase {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
+  @State defaultAuthType: UnlockAuthType = SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
-  private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
+  private isFingerprintSupport: boolean = AuthService.isFingerprintSupportAndEnabled();
+  private isFaceSupport: boolean = AuthService.isFaceSupportAndEnabled();
   private focusController: FocusController = new FocusController();
 
   aboutToAppear(): void {
@@ -28,10 +30,18 @@ struct UnLockDatabase {
     SettingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength, (value) => {
       this.quickLockPasswordLength = value;
     });
-    // 是否支持指纹验证
-    if (this.isFingerprintSupport) {
-      this.startFingerprintAuth();
-    }
+    // 默认认证方式
+    SettingsService.get(SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE, this.defaultAuthType, (value) => {
+      this.defaultAuthType = value;
+      // 是否支持指纹验证
+      if (this.defaultAuthType === UnlockAuthType.FINGERPRINT) {
+        this.startFingerprintAuth();
+      }
+      // 是否支持人脸验证
+      if (this.defaultAuthType === UnlockAuthType.FACE) {
+        this.startFaceAuth();
+      }
+    });
   }
 
   private quickUnlock() {
@@ -71,14 +81,25 @@ struct UnLockDatabase {
    * 开始指纹验证
    */
   private startFingerprintAuth() {
-    AuthService.startFingerprintAuth({
+    AuthService.startFingerprintAuth(this.authServiceCallback());
+  }
+
+  /**
+   * 开始人脸认证
+   */
+  private startFaceAuth() {
+    AuthService.startFaceAuth(this.authServiceCallback());
+  }
+
+  private authServiceCallback() {
+    return {
       onSuccess: (result) => {
         this.router.pushUrl({ url: 'pages/DatabaseView' });
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
       }
-    });
+    } as AuthServiceCallback;
   }
 
   build() {
@@ -141,12 +162,12 @@ struct UnLockDatabase {
       .layoutWeight(1)
       .padding({ left: 16, right: 16 })
 
-      if (this.isFingerprintSupport) {
-        Row() {
+      Row() {
+        if (this.isFingerprintSupport) {
           Text($r('app.string.auth_by_fingerprint'))
             .fontSize(14)
             .fontColor($r('app.color.button_bg_blue'))
-            .margin({ bottom: 8 })
+            .margin({ bottom: 8, left: 8, right: 8 })
             .decoration({
               type: TextDecorationType.Underline,
               color: $r('app.color.button_bg_blue')
@@ -155,11 +176,26 @@ struct UnLockDatabase {
               this.startFingerprintAuth();
             })
         }
-        .justifyContent(FlexAlign.Center)
-        .width('100%')
-        .position({ x: 0, y: '100%' })
-        .translate({ y: -100 }) // 调整位置，确保正确显示
+
+        if (this.isFaceSupport) {
+          Text($r('app.string.auth_by_face'))
+            .fontSize(14)
+            .fontColor($r('app.color.button_bg_blue'))
+            .margin({ bottom: 8, left: 8, right: 8})
+            .decoration({
+              type: TextDecorationType.Underline,
+              color: $r('app.color.button_bg_blue')
+            })
+            .onClick(() => {
+              this.startFaceAuth();
+            })
+        }
       }
+      .justifyContent(FlexAlign.Center)
+      .width('100%')
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -100 }) // 调整位置，确保正确显示
+
 
       // 操作按钮
       Row() {
