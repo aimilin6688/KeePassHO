@@ -2,6 +2,8 @@
  * 定义消息类型
  */
 
+import { Kdbx } from "kdbxweb";
+
 export enum MessageType {
   /**
    * 加载数据库
@@ -49,7 +51,7 @@ export class SuccessMessage implements WorkerMessage {
   /**
    * xml格式的数据库内容
    */
-  data: ArrayBuffer;
+  data: ArrayBuffer | Kdbx;
   /**
    * 最后修改时间,单位为毫秒
    */
@@ -61,7 +63,7 @@ export class SuccessMessage implements WorkerMessage {
   isMerge: boolean;
 
 
-  constructor(data: ArrayBuffer, modifiedTime: number, isMerge?: boolean) {
+  constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean) {
     this.type = MessageType.SUCCESS;
     this.data = data;
     this.modifiedTime = modifiedTime;

@@ -39,18 +39,15 @@ struct Password {
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
-
   private filePath: string = '';
-  private storageType: StorageType | null = null;
-  private storageConfig: StorageConfig | null = null;
+  private storageType: StorageType | undefined = undefined;
+  private storageConfig: StorageConfig | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isEnabledFingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
-
-
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -170,11 +167,12 @@ struct Password {
       return;
     }
     if (!this.isEnabledFingerprintLogin || !this.isFingerprintSupport) {
-      hilog.debug(DOMAIN, TAG, `Fingerprint auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isEnabledFingerprintLogin: ${this.isEnabledFingerprintLogin}`);
+      hilog.debug(DOMAIN, TAG,
+        `Fingerprint auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isEnabledFingerprintLogin: ${this.isEnabledFingerprintLogin}`);
       return;
     }
     // 加密密钥
-    this.encryptPassword  = password;
+    this.encryptPassword = password;
     // 启用指纹认证
     AuthService.startFingerprintAuth({
       onSuccess: (result) => {
@@ -303,6 +301,7 @@ struct Password {
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
       this.router.pushUrl({ url: 'pages/DatabaseView' });
+      this.closeLoadingDialog();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
       this.promptAction.showToast({ message: error.message, duration: 3000 });
@@ -320,7 +319,7 @@ struct Password {
       authType: this.authType,
       keyFilePath: this.keyFilePath,
     } as CredentialsParam).then((kdbx: Kdbx) => {
-      hilog.info(DOMAIN, TAG, 'Kdbx parse from xml time: %{public}d ms',  new Date().getTime() - date);
+      hilog.info(DOMAIN, TAG, 'Array buffer to kdbx time: %{public}d ms', new Date().getTime() - date);
       // 设置数据库文件信息
       FileService.setDbFileParam({
         filePath: this.filePath,
