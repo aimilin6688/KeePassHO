@@ -230,8 +230,11 @@ export class KdbxBinaryStream extends BinaryStream {
       const key = entry[0];
       const value = entry[1] as KdbxCustomDataItem;
       this.writeString(key);
-      this.writeString(value.value);
-      this.writeDate(value.lastModified);
+      this.setUint8(value.value ? 1 : 0); // 标记为带哈希的引用
+      if (value.value) {
+        this.writeString(value.value);
+        this.writeDate(value.lastModified);
+      }
     }
   }
 
@@ -244,7 +247,10 @@ export class KdbxBinaryStream extends BinaryStream {
     const customData: KdbxCustomDataMap = new Map<string, KdbxCustomDataItem>();
     for (let i = 0; i < count; i++) {
       const key = this.readString();
-      customData[key] = { 'value': this.readString(), 'lastModified': this.readDate() };
+      const exists = this.getUint8();
+      if (exists) {
+        customData[key] = { 'value': this.readString(), 'lastModified': this.readDate() };
+      }
     }
     return customData;
   }
