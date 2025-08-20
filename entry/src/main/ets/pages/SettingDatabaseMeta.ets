@@ -307,21 +307,30 @@ struct SettingDatabaseMeta {
           // 其他设置
           ListItemGroup() {
             ListItem() {
-              Row() {
-                Text($r("app.string.compression_enabled"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
-                  .selectedColor('#007DFF')
-                  .switchPointColor('#FFFFFF')
-                  .onChange((isOn: boolean) => {
-                    this.compressionEnabled = isOn;
-                    this.isModified = true;
-                  })
-              }
-              .justifyContent(FlexAlign.SpaceBetween)
-              .width('100%')
-              .padding(12)
+              Column() {
+                Row() {
+                  Text($r("app.string.compression_enabled"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
+                    .selectedColor('#007DFF')
+                    .switchPointColor('#FFFFFF')
+                    .onChange((isOn: boolean) => {
+                      this.compressionEnabled = isOn;
+                      this.isModified = true;
+                    })
+                }
+                .justifyContent(FlexAlign.SpaceBetween)
+                .width('100%')
+                Row(){
+                  Text($r("app.string.compression_enabled_tips"))
+                    .fontSize(12)
+                    .fontColor($r("app.color.text_secondary"))
+                    .flexGrow(1)
+                }.width('100%')
+                .padding({top:4})
+              }.width('100%')
+              .padding({left:12, right:12, top:12, bottom:6})
             }
           }
           .margin({ top: 12, bottom: 12 })
