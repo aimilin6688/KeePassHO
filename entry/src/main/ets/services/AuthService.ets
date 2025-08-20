@@ -37,7 +37,7 @@ export class AuthService {
     authType: [userAuth.UserAuthType.FINGERPRINT],
     authTrustLevel: this.authTrustLevel
   };
-  private widgetParam: userAuth.WidgetParam = { title: ResourceManager.getString($r("app.string.please_auth_fingerprint")) };
+  private widgetParam: userAuth.WidgetParam = { title: ResourceManager.getString($r("app.string.widget_auth_title")) };
   private isFingerprintSupport = this.checkFingerprintSupport();
 
   // 检查设备是否支持指纹功能
