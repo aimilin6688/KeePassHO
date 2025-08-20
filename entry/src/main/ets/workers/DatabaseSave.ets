@@ -107,7 +107,9 @@ export class DatabaseSave {
       }
     }
     let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
+    const now = new Date().getTime();
     return await database.save().then(async savedDb => {
+      hilog.debug(DOMAIN, TAG, 'Worker save database success, time: %{public}d ms', new Date().getTime() - now);
       await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(() => {
         this.postMessage($r("app.string.save_success"));
       });
