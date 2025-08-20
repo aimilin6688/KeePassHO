@@ -1,9 +1,10 @@
 import { Router } from '@kit.ArkUI';
+import ResourceManager from '../common/utils/ResourceManager';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { AuthService } from '../services/AuthService';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { SettingsService } from '../services/SettingsService';
+import { UnlockAuthType, SettingsService } from '../services/SettingsService';
 
 
 @Entry
@@ -11,10 +12,15 @@ import { SettingsService } from '../services/SettingsService';
 struct SettingsDatabase {
   @State isDatabaseValid: boolean = false;
   @State fingerprintLogin: boolean = SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT;
+  @State faceLogin: boolean = SettingsService.KEY_DATABASE_FACE_LOGIN_DEFAULT;
+  @State authTypeOptions: AuthTypeOptions[] = [{ "type": UnlockAuthType.PASSWORD, "value": ResourceManager.getString($r("app.string.password")) }];
+  @State defaultAuthType: UnlockAuthType = SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT;
+
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   private settingsService: SettingsService = SettingsService.getInstance();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
+  private isFaceSupport: boolean = AuthService.isFaceSupport();
   private changePasswordDialogController: CustomDialogController = new CustomDialogController({
     builder: ChangePasswordDialog({
       onSuccess: this.handlePasswordChange.bind(this)
@@ -30,6 +36,21 @@ struct SettingsDatabase {
     this.settingsService.get(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, this.fingerprintLogin).then(result => {
       this.fingerprintLogin = result;
     });
+    // 获取是否开启下拉刷新功能
+    this.settingsService.get(SettingsService.KEY_DATABASE_FACE_LOGIN, this.faceLogin).then(result => {
+      this.faceLogin = result;
+    });
+    // 获取是否开启下拉刷新功能
+    this.settingsService.get(SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE, this.defaultAuthType).then(result => {
+      this.defaultAuthType = result;
+    });
+
+    if(this.isFingerprintSupport){
+      this.authTypeOptions.push({ "type": UnlockAuthType.FINGERPRINT, "value": ResourceManager.getString($r("app.string.fingerprint")) });
+    }
+    if(this.isFaceSupport){
+      this.authTypeOptions.push({ "type": UnlockAuthType.FACE, "value": ResourceManager.getString($r("app.string.face")) });
+    }
   }
 
   onPageShow(): void {
@@ -66,10 +87,19 @@ struct SettingsDatabase {
     this.changePasswordDialogController.close();
   }
 
-  // 修改指纹登录选线
+  // 修改指纹登录选项
   private changeFingerprintLogin(isOn: boolean) {
     this.settingsService.put(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, isOn);
     if (this.isFingerprintSupport && isOn) {
+      let dbFileParam = FileService.getDbFileParam();
+      RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
+    }
+  }
+
+  // 修改人脸登录选项
+  private changeFaceLogin(isOn: boolean) {
+    this.settingsService.put(SettingsService.KEY_DATABASE_FACE_LOGIN, isOn);
+    if (this.isFaceSupport && isOn) {
       let dbFileParam = FileService.getDbFileParam();
       RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
     }
@@ -115,9 +145,46 @@ struct SettingsDatabase {
                 }
                 .width('100%')
                 .padding(16)
-                .onClick(() => {
-                  this.showChangePasswordDialog();
-                })
+              }
+            }
+            if (this.isFaceSupport) {
+              // 人脸登录
+              ListItem() {
+                Row() {
+                  Text($r("app.string.auth_by_face"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Toggle({ type: ToggleType.Switch, isOn: this.faceLogin })
+                    .selectedColor('#007DFF')
+                    .switchPointColor('#FFFFFF')
+                    .onChange((isOn: boolean) => {
+                      this.changeFaceLogin(isOn);
+                    })
+                }
+                .width('100%')
+                .padding(16)
+              }
+            }
+            if (this.isFingerprintSupport || this.isFaceSupport) {
+              // 选择默认登录方式
+              ListItem() {
+                Row() {
+                  Text($r("app.string.auth_type_default"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Select(this.authTypeOptions)
+                    .value(this.authTypeOptions[this.authTypeOptions.findIndex((item) => item.type === this.defaultAuthType)].value)
+                    .font({ size: 16 })
+                    .selectedOptionFont({ size: 16 })
+                    .optionFont({ size: 16 })
+                    .backgroundColor($r("app.color.card_bg"))
+                    .onSelect(async (index: number) => {
+                      this.defaultAuthType = this.authTypeOptions[index].type;
+                      this.settingsService.put(SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE, this.defaultAuthType);
+                    })
+                }
+                .width('100%')
+                .padding(16)
               }
             }
             // 修改主密码
@@ -146,7 +213,7 @@ struct SettingsDatabase {
             strokeWidth: 1,
             color: $r('app.color.divider'),
           })
-          
+
           // 数据库元数据设置
           ListItemGroup() {
             ListItem() {
@@ -169,6 +236,7 @@ struct SettingsDatabase {
                 });
               })
             }
+
             ListItem() {
               Row() {
                 Text($r("app.string.Settings_custom_icons"))
@@ -222,16 +290,9 @@ struct SettingsDatabase {
 }
 
 /**
- * 主题选项接口
+ * 认证方式
  */
-export interface TimeOption {
-  time: number;
+export interface AuthTypeOptions {
   value: string;
-}
-
-/**
- * 主题选项接口
- */
-export interface LengthOption {
-  value: string;
+  type: UnlockAuthType;
 }
