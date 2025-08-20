@@ -5,6 +5,7 @@ import picker from '@ohos.file.picker';
 import { common } from '@kit.AbilityKit';
 import FileUtils from '../common/utils/FIleUtils';
 import { FileKeyService } from '../services/FileKeyService';
+import { RecentFilesService } from '../services/RecentFilesService';
 
 /**
  * 修改主密码对话框组件
@@ -39,6 +40,8 @@ export struct ChangePasswordDialog {
     // 更新数据库主密码
     KdbxUtils.saveDatabase({
       onSuccess: () => {
+        // 重置最近打开文件的数据库密码
+        RecentFilesService.setPassword(dbFileParam.filePath, this.newPassword);
         this.onSuccess();
         this.close();
       }
@@ -121,13 +124,14 @@ export struct ChangePasswordDialog {
       // 对话框内容
       Column() {
         // 旧密码输入
-        Row(){
+        Row() {
           Text("*").fontColor($r('app.color.required'))
           Text($r('app.string.change_password_old_password'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
         }.width('100%')
         .margin({ top: 8, bottom: 4 })
+
         TextInput({ placeholder: $r('app.string.change_password_old_password_placeholder'), text: this.oldPassword })
           .type(InputType.Password)
           .height(48)
@@ -142,12 +146,13 @@ export struct ChangePasswordDialog {
           })
 
         // 新密码输入
-        Row(){
+        Row() {
           Text("*").fontColor($r('app.color.required'))
           Text($r('app.string.change_password_new_password'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
         }.width('100%').margin({ top: 16, bottom: 4 })
+
         TextInput({ placeholder: $r('app.string.change_password_new_password_placeholder'), text: this.newPassword })
           .type(InputType.Password)
           .height(48)
@@ -162,12 +167,13 @@ export struct ChangePasswordDialog {
           })
 
         // 确认新密码输入
-        Row(){
+        Row() {
           Text("*").fontColor($r('app.color.required'))
           Text($r('app.string.change_password_confirm_password'))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
         }.width('100%').margin({ top: 16, bottom: 4 })
+
         TextInput({ placeholder: $r('app.string.change_password_confirm_password_placeholder'), text: this.confirmPassword })
           .type(InputType.Password)
           .height(48)
