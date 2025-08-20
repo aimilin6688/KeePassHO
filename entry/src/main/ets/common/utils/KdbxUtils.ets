@@ -6,7 +6,8 @@ import { SortMode } from '../constants/SortConstants';
 import IconUtils from './IconUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import KdbxSaveService, { SaveDatabaseCallback } from '../../services/kdbx/KdbxSaveService';
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
+import { SaveDatabaseCallback } from '../../workers/DatabaseSave';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -246,7 +247,10 @@ export default class KdbxUtils {
    * 将对象转换为ArrayBuffer
    * @param kdbx KDBX对象
    */
-  public static async kdbxToArrayBuffer(kdbx: Kdbx): Promise<ArrayBuffer> {
+  public static async kdbxToArrayBuffer(kdbx: Kdbx | ArrayBuffer): Promise<ArrayBuffer> {
+    if (kdbx instanceof ArrayBuffer) {
+      return Promise.resolve(kdbx);
+    }
     return Promise.resolve(ByteUtils.stringToBuffer(await kdbx.saveXml()));
   }
 
