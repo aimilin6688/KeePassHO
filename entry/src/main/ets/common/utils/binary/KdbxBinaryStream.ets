@@ -228,7 +228,7 @@ export class KdbxBinaryStream extends BinaryStream {
     this.setUint32(Object.keys(customData).length, true);
     for (const entry of customData) {
       const key = entry[0];
-      const value = entry[1];
+      const value = entry[1] as KdbxCustomDataItem;
       this.writeString(key);
       this.writeString(value.value);
       this.writeDate(value.lastModified);
