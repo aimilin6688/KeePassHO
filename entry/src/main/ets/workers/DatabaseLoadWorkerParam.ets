@@ -34,11 +34,6 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
    */
   storageConfig: StorageConfig;
 
-  /**
-   * 默认同步加载方式
-   */
-  asyncLoad: boolean = false;
-
   constructor(filePath: string, fileName: string, password: string, authType: AuthTypeInfo,
     keyFilePath?: string, storageType?: StorageType, storageConfig?: StorageConfig, asyncLoad?: boolean) {
     this.type = MessageType.LOAD_DATABASE;
@@ -49,7 +44,6 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
     this.keyFilePath = keyFilePath;
     this.storageType = storageType ?? StorageType.LOCAL;
     this.storageConfig = storageConfig ?? {};
-    this.asyncLoad = asyncLoad ?? false;
   }
 
   /**

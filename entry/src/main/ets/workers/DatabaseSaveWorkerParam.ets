@@ -1,6 +1,7 @@
-import { StorageConfig, StorageType } from "../services/kdbx/interfaces";
-import { AuthTypeInfo, CredentialsParam, DbFileParam } from "../services/TypeDefined";
-import { MessageType, WorkerMessage } from "./WorkerParam";
+import { Kdbx } from 'kdbxweb';
+import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
+import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
+import { MessageType, WorkerMessage } from './WorkerParam';
 
 
 export class SaveDatabaseMessage implements WorkerMessage {
@@ -8,10 +9,10 @@ export class SaveDatabaseMessage implements WorkerMessage {
   /**
    * 数据库文件
    */
-  data: ArrayBuffer;
+  data: ArrayBuffer | Kdbx;
   dbFileParam: string;
 
-  constructor(data: ArrayBuffer, dbFileParam: DbFileParam) {
+  constructor(data: ArrayBuffer | Kdbx, dbFileParam: DbFileParam) {
     this.type = MessageType.SAVE_DATABASE;
     this.data = data;
     this.dbFileParam = JSON.stringify({
@@ -32,7 +33,7 @@ export class SaveDatabaseMessage implements WorkerMessage {
 
 export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   type: MessageType;
-  data: ArrayBuffer;
+  data: ArrayBuffer | Kdbx;
   filePath: string;
   fileName: string;
   password: string;
@@ -110,10 +111,12 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
    * 新密码
    */
   newPassword?: string;
+
   /**
    * 新密钥文件路径
    */
   newKeyFilePath?: string;
+
   /**
    * 是否使用密钥文件
    */
