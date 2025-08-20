@@ -89,13 +89,9 @@ export class KdbxFormat {
                                 this.kdbx.header.readInnerHeader(stm, this.ctx);
                                 data = stm.readBytesToEnd();
                                 const xmlStr = bytesToString(data);
-                                const date = new Date().getTime();
                                 this.kdbx.xml = XmlUtils.parse(xmlStr);
-                                console.log("kdbx xml parse time: " + (new Date().getTime() - date) + "ms");
                                 return this.setProtectedValues().then(() => {
-                                    const date = new Date().getTime();
                                     return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
-                                        console.log("kdbx xml load time: " + (new Date().getTime() - date) + "ms");
                                         this.cleanXml();
                                         return kdbx;
                                     });
