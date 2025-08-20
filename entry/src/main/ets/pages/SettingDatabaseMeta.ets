@@ -275,7 +275,17 @@ struct SettingDatabaseMeta {
               .width('100%')
               .padding({ top: 6, bottom: 6 })
             }
+          }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
 
+          // 其他设置
+          ListItemGroup() {
             ListItem() {
               Row() {
                 Text($r("app.string.recycle_bin_enabled"))
@@ -295,17 +305,6 @@ struct SettingDatabaseMeta {
               .width('100%')
               .padding(12)
             }
-          }
-          .margin({ top: 12, bottom: 12 })
-          .backgroundColor($r("app.color.card_bg"))
-          .borderRadius(12)
-          .divider({
-            strokeWidth: 1,
-            color: $r('app.color.divider'),
-          })
-
-          // 其他设置
-          ListItemGroup() {
             ListItem() {
               Column() {
                 Row() {
