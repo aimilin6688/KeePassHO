@@ -1053,6 +1053,10 @@
     {
       "name": "security_item_show_totp",
       "value": "条目显示TOTP字段"
+    },
+    {
+      "name": "compression_enabled_tips",
+      "value": "启用压缩会延长加载和保存的速度，但会较少数据库的大小"
     }
   ]
 }
