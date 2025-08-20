@@ -1055,6 +1055,38 @@
     {
       "name": "compression_enabled_tips",
       "value": "Enabling compression will extend the loading and saving speed, but it will reduce the size of the database"
+    },
+    {
+      "name": "auth_by_face",
+      "value": "Face login"
+    },
+    {
+      "name": "auth_type_default",
+      "value": "Default authentication method"
+    },
+    {
+      "name": "fingerprint",
+      "value": "Fingerprint"
+    },
+    {
+      "name": "face",
+      "value": "Face"
+    },
+    {
+      "name": "fingerprint_not_support",
+      "value": "The current device does not support fingerprint authentication"
+    },
+    {
+      "name": "fingerprint_not_enabled",
+      "value": "Fingerprint authentication is not enabled"
+    },
+    {
+      "name": "face_not_support",
+      "value": "The current device does not support face authentication"
+    },
+    {
+      "name": "face_not_enabled",
+      "value": "Face authentication is not enabled"
     }
   ]
 }

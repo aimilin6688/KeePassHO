@@ -1057,6 +1057,38 @@
     {
       "name": "compression_enabled_tips",
       "value": "启用压缩会延长加载和保存的速度，但会较少数据库的大小"
+    },
+    {
+      "name": "auth_by_face",
+      "value": "人脸登录"
+    },
+    {
+      "name": "auth_type_default",
+      "value": "默认认证方式"
+    },
+    {
+      "name": "fingerprint",
+      "value": "指纹"
+    },
+    {
+      "name": "face",
+      "value": "人脸"
+    },
+    {
+      "name": "fingerprint_not_support",
+      "value": "当前设备不支持指纹认证"
+    },
+    {
+      "name": "fingerprint_not_enabled",
+      "value": "未启用指纹认证"
+    },
+    {
+      "name": "face_not_support",
+      "value": "当前设备不支持人脸认证"
+    },
+    {
+      "name": "face_not_enabled",
+      "value": "未启用人脸认证"
     }
   ]
 }

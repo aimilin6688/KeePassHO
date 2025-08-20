@@ -10,6 +10,12 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN = 0x0000;
 const TAG = 'SettingsService';
 
+export enum UnlockAuthType {
+  FACE = "FACE",
+  FINGERPRINT = "FINGERPRINT",
+  PASSWORD = "PASSWORD"
+}
+
 export class SettingsService {
   private static instance: SettingsService = new SettingsService();
   private preferences: preferences.Preferences | null = null;
@@ -30,15 +36,17 @@ export class SettingsService {
   // 数据设置
   public static readonly KEY_DATABASE_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
   public static readonly KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT = false;
+  public static readonly KEY_DATABASE_FACE_LOGIN = 'Database_face_login';
+  public static readonly KEY_DATABASE_FACE_LOGIN_DEFAULT = false;
+  public static readonly KEY_DATABASE_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
+  public static readonly KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.PASSWORD;
   // 显示TOTP设置
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP = "Security_list_show_totp";
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = false;
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = false;
-
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
-
 
   private constructor() {
   }
@@ -171,6 +179,19 @@ export class SettingsService {
   }
 
   // 读取数据
+  public getSync<T extends preferences.ValueType>(key: string, defValue: T): T {
+    if (!this.preferences) {
+      return defValue;
+    }
+    try {
+      return (this.preferences.getSync(key, defValue)) as T;
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `Failed to get value. Code: ${(err as BusinessError).code}`);
+      return defValue;
+    }
+  }
+
+  // 读取数据
   public static get<T extends preferences.ValueType>(key: string, defValue: T, callback: (value: T) => void): void {
     SettingsService.getInstance().get(key, defValue).then(value => {
       callback(value);
@@ -197,5 +218,13 @@ export class SettingsService {
 
   public static unregisterObserver(observer: (key: string) => void): void {
     SettingsService.getInstance().unregisterObserver(observer);
+  }
+
+  static getFingerprintAuthEnable(): boolean {
+    return SettingsService.getInstance().getSync(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT);
+  }
+
+  static getFaceAuthEnable(): boolean {
+    return SettingsService.getInstance().getSync(SettingsService.KEY_DATABASE_FACE_LOGIN, SettingsService.KEY_DATABASE_FACE_LOGIN_DEFAULT);
   }
 }
