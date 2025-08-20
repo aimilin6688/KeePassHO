@@ -817,8 +817,8 @@
       "value": "Hour"
     },
     {
-      "name": "please_auth_fingerprint",
-      "value": "Please auth fingerprint"
+      "name": "widget_auth_title",
+      "value": "Unlock Database"
     },
     {
       "name": "auth_by_fingerprint",
