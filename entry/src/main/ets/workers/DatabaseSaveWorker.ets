@@ -1,12 +1,8 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
-import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
-import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import { CredentialsService } from '../services/CredentialsService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileContentInfo, StorageType } from '../services/kdbx/interfaces';
 import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
-import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
+import { SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
+import { DatabaseSave, SaveDatabaseCallback } from './DatabaseSave';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseSaveWorker';
@@ -19,118 +15,43 @@ workerPort.onmessage = (event: MessageEvents) => {
   hilog.debug(DOMAIN, TAG, 'Save worker receive message type:%{public}s', message.type);
   if (message.type === MessageType.SAVE_DATABASE) {
     const request = message as SaveDatabaseMessage;
-    handleSaveDatabase(request);
+    new DatabaseSaveWorker().handleSaveDatabase(request);
   }
 };
 
 /**
- * 处理数据库保存任务
- * @param request 请求
- */
-async function handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
-  try {
-    let request = new SaveDatabase(JSON.parse(requestMessage.dbFileParam) as SaveDatabaseDbParam, requestMessage);
-    postMessage($r('app.string.loading_key'));
-    // 创建凭证
-    let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
-    // 加载文件内容
-    let fileContent: FileContentInfo = await loadKdbxFileContent(request);
-    let isMerge = false;
-    // 修改时间不一致，则合并数据库
-    if (fileContent.modifiedTime !== request.modifiedTime) {
-      postMessage($r('app.string.merging_database'));
-      fileContent = await mergeDatabase(request, fileContent, credentials);
-      isMerge = true;
-    } else {
-      fileContent = await saveDatabase(request, credentials);
-    }
-    workerPort.postMessage(new SuccessMessage(fileContent.content, fileContent.modifiedTime, isMerge), [fileContent.content]);
-  } catch (error) {
-    hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
-    postErrorMessage(error.message);
-  }
-}
-
-/**
- * 合并数据库
- * @param request 请求
- * @param fileContent 新文件内容
- */
-async function mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo,  credentials: KdbxCredentials): Promise<FileContentInfo> {
-  // 校验文件签名
-  postMessage($r('app.string.validating'));
-  // 尝试加载数据库（仅验证，不保留结果）
-  let newKdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
-  postMessage($r('app.string.merging_database'));
-  // 合并数据库
-  let oldKdbx: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
-  oldKdbx.merge(newKdbx);
-  // 保存数据库
-  return await saveDatabase(request, credentials, oldKdbx);
-}
-
-/**
  * 保存数据库
- * @param request 请求
- * @returns 结果
  */
-async function saveDatabase(request: SaveDatabase, credentials: KdbxCredentials, kdbx?: Kdbx): Promise<FileContentInfo> {
-  postMessage($r('app.string.save_saving'));
-  let database: Kdbx = kdbx ? kdbx : await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
-  let kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
-  if (request.newPassword) {
-    database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
-  }
-  // 不适用密钥文件
-  if (request.notUseKeyFile) {
-    database.credentials.setKeyFile(null);
-  } else {
-    if (request.newKeyFilePath) {
-      await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.newKeyFilePath).then(newKeyFileContent => {
-        database.credentials.setKeyFile(newKeyFileContent.content);
-      });
-    }
+class DatabaseSaveWorker extends DatabaseSave {
+  constructor(callback?: SaveDatabaseCallback) {
+    super(callback);
   }
 
-  return await database.save().then(async savedDb => {
-    await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(() => {
-      postMessage($r("app.string.save_success"));
-    });
-    return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {
-      return new FileContentInfo(fileInfo, savedDb);
-    });
-  });
-}
-
-/**
- * 加载文件内容
- * @param request 请求
- * @return Promise<ArrayBuffer> 文件内容
- */
-async function loadKdbxFileContent(request: SaveDatabase): Promise<FileContentInfo> {
-  if (!request.filePath) {
-    hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
-    throw new Error();
+  /**
+   * 发送加载消息
+   * @param message 消息
+   */
+  postMessage(message: string | Resource) {
+    workerPort.postMessage(toLoadMessage(message));
   }
-  let result = await new KdbxFileManager(request.storageType, request.storageConfig).loadKdbxFile(request.filePath);
-  postMessage($r('app.string.load_file_success'));
-  return result;
+
+  /**
+   * 发送加载消息
+   * @param message 消息
+   */
+  postErrorMessage(message: string) {
+    workerPort.postMessage(toErrorMessage(message));
+  }
+
+  /**
+   * 发送成功消息
+   * @param message
+   */
+  postSuccessMessage(message: SuccessMessage) {
+    workerPort.postMessage(message);
+  }
 }
 
-/**
- * 发送加载消息给主线程
- * @param message 消息
- */
-function postMessage(message: string | Resource) {
-  workerPort.postMessage(toLoadMessage(message));
-}
 
-/**
- * 发送加载消息给主线程
- * @param message 消息
- */
-function postErrorMessage(message: string) {
-  workerPort.postMessage(toErrorMessage(message));
-}
 
 
