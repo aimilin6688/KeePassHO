@@ -1,4 +1,17 @@
-import { BinaryStream, KdbxContext, KdbxHeader, KdbxTimes, KdbxUuid, VarDictionary } from 'kdbxweb';
+import {
+  BinaryStream,
+  ByteUtils,
+  KdbxBinary,
+  KdbxBinaryWithHash,
+  KdbxContext,
+  KdbxCustomDataItem,
+  KdbxCustomDataMap,
+  KdbxHeader,
+  KdbxTimes,
+  KdbxUuid,
+  ProtectedValue,
+  VarDictionary
+} from 'kdbxweb';
 import util from '@ohos.util';
 
 /**
@@ -25,13 +38,13 @@ export class KdbxBinaryStream extends BinaryStream {
    */
   readTimes(): KdbxTimes {
     const times = new KdbxTimes();
-    times.creationTime = this.getDates();
-    times.lastModTime = this.getDates();
-    times.lastAccessTime = this.getDates();
-    times.expiryTime = this.getDates();
+    times.creationTime = this.readDate();
+    times.lastModTime = this.readDate();
+    times.lastAccessTime = this.readDate();
+    times.expiryTime = this.readDate();
     times.expires = this.getUint32(true) !== 0;
     times.usageCount = this.getUint32(true);
-    times.locationChanged = this.getDates();
+    times.locationChanged = this.readDate();
     return times;
   }
 
@@ -39,7 +52,15 @@ export class KdbxBinaryStream extends BinaryStream {
    * 读取日期格式
    * @returns
    */
-  private getDates(): Date | undefined {
+  writeDate(date: Date | undefined): void {
+    this.setUint64(date?.getTime() ?? 0, true);
+  }
+
+  /**
+   * 读取日期格式
+   * @returns
+   */
+  readDate(): Date | undefined {
     const date = this.getUint64(true);
     return date !== 0 ? new Date(date) : undefined;
   }
@@ -113,5 +134,118 @@ export class KdbxBinaryStream extends BinaryStream {
    */
   readHeader(ctx: KdbxContext): KdbxHeader {
     return KdbxHeader.read(this, ctx);
+  }
+
+  writeStrings(strings: string[]): void {
+    this.setUint32(strings.length, true);
+    for (const str of strings) {
+      this.writeString(str);
+    }
+  }
+
+  readStrings(): string[] {
+    const count = this.getUint32(true);
+    const strings: string[] = [];
+    for (let i = 0; i < count; i++) {
+      strings.push(this.readString());
+    }
+    return strings;
+  }
+
+  writeProtectedValue(value: ProtectedValue): void {
+    const bytes = value.getBinary();
+    this.setUint32(bytes.length, true);
+    this.writeBytes(bytes);
+  }
+
+  readProtectedValue(): ProtectedValue {
+    const length = this.getUint32(true);
+    const bytes = this.readBytes(length);
+    return ProtectedValue.fromBinary(bytes);
+  }
+
+  writeBinaries(binaries: Map<string, KdbxBinary | KdbxBinaryWithHash>) {
+    this.setUint32(binaries.size, true);
+    for (const binary of binaries) {
+      const key = binary[0];
+      const value = binary[1];
+      this.writeString(key);
+      if (value instanceof ProtectedValue || value instanceof ArrayBuffer) {
+        this.writeBinary(value);
+      } else if (value.hash) {
+        this.setUint8(2); // 标记为带哈希的引用
+        this.writeString(value.hash);
+        this.writeBinary(value.value);
+      }
+    }
+  }
+
+  readBinaries(): Map<string, KdbxBinary | KdbxBinaryWithHash> {
+    const count = this.getUint32(true);
+    const binaries = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
+    for (let i = 0; i < count; i++) {
+      const key = this.readString();
+      const binaryType = this.getUint8();
+      if (binaryType === 0 || binaryType === 1) {
+        binaries.set(key, this.readBinary());
+      } else if (binaryType === 2) {
+        const hash = this.readString();
+        const value = this.readBinary();
+        binaries.set(key, { 'hash': hash, 'value': value } as KdbxBinaryWithHash);
+      }
+    }
+    return binaries;
+  }
+
+  writeBinary(value: KdbxBinary) {
+    if (value instanceof ProtectedValue) {
+      this.setUint8(0); // 标记为直接值
+      this.writeProtectedValue(value);
+    } else if (value instanceof ArrayBuffer) {
+      this.setUint8(1); // 标记为直接值
+      this.setUint32(value.byteLength, true);
+      this.writeBytes(value);
+    }
+  }
+
+  readBinary(): KdbxBinary {
+    const binaryType = this.getUint8();
+    if (binaryType === 0) {
+      return this.readProtectedValue();
+    } else {
+      const length = this.getUint32(true);
+      return ByteUtils.bytesToBuffer(this.readBytes(length));
+    }
+  }
+
+
+  writeCustomData(customData: KdbxCustomDataMap | undefined): void {
+    if (!customData) {
+      this.setUint32(0, true);
+      return;
+    }
+
+    this.setUint32(Object.keys(customData).length, true);
+    for (const entry of customData) {
+      const key = entry[0];
+      const value = entry[1];
+      this.writeString(key);
+      this.writeString(value.value);
+      this.writeDate(value.lastModified);
+    }
+  }
+
+  readCustomData(): KdbxCustomDataMap | undefined {
+    const count = this.getUint32(true);
+    if (count === 0) {
+      return undefined;
+    }
+
+    const customData: KdbxCustomDataMap = new Map<string, KdbxCustomDataItem>();
+    for (let i = 0; i < count; i++) {
+      const key = this.readString();
+      customData[key] = { 'value': this.readString(), 'lastModified': this.readDate() };
+    }
+    return customData;
   }
 }
