@@ -1089,6 +1089,26 @@
     {
       "name": "face_not_enabled",
       "value": "未启用人脸认证"
+    },
+    {
+      "name": "kdbx_error_InvalidKey",
+      "value": "联合密码错误，请检查"
+    },
+    {
+      "name": "kdbx_error_MergeError",
+      "value": "合并异常"
+    },
+    {
+      "name": "kdbx_error_BadSignature",
+      "value": "签名错误"
+    },
+    {
+      "name": "kdbx_error_InvalidArg",
+      "value": "参数错误"
+    },
+    {
+      "name": "kdbx_error_InvalidState",
+      "value": "状态错误"
     }
   ]
 }
