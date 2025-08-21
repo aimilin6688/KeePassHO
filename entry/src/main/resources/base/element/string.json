@@ -1087,6 +1087,26 @@
     {
       "name": "face_not_enabled",
       "value": "Face authentication is not enabled"
+    },
+    {
+      "name": "kdbx_error_InvalidKey",
+      "value": "InvalidKey"
+    },
+    {
+      "name": "kdbx_error_MergeError",
+      "value": "MergeError"
+    },
+    {
+      "name": "kdbx_error_BadSignature",
+      "value": "BadSignature"
+    },
+    {
+      "name": "kdbx_error_InvalidArg",
+      "value": "InvalidArg"
+    },
+    {
+      "name": "kdbx_error_InvalidState",
+      "value": "InvalidState"
     }
   ]
 }
