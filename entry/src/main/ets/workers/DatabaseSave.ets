@@ -1,4 +1,4 @@
-import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
 import { FileContentInfo, StorageType } from '../services/kdbx/interfaces';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -46,7 +46,11 @@ export class DatabaseSave {
       this.postSuccessMessage(new SuccessMessage(fileContent.content, fileContent.modifiedTime, isMerge));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
-      this.postErrorMessage(error.message);
+      let errorMsg: string = error.message;
+      if (error instanceof KdbxError) {
+        errorMsg = ResourceManager.getString($r("app.string.kdbx_error_" + error.code));
+      }
+      this.postErrorMessage(errorMsg);
     }
   }
 
