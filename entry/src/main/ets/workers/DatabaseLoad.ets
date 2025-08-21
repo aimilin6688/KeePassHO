@@ -1,4 +1,4 @@
-import { Kdbx, KdbxCredentials } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, KdbxError } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
 import { FileContentInfo } from '../services/kdbx/interfaces';
 import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
@@ -6,6 +6,7 @@ import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { LoadMessage, SuccessMessage, toLoadMessage } from './WorkerParam';
+import ResourceManager from '../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoad';
@@ -34,9 +35,12 @@ export class DatabaseLoad {
       this.postSuccessMessage(new SuccessMessage(kdbx, fileContent.modifiedTime), callback?.onSuccessMessage);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
-      this.postErrorMessage(error.message);
+      let errorMsg: string = error.message;
+      if (error instanceof KdbxError) {
+        errorMsg = ResourceManager.getString($r("app.string.kdbx_error_" + error.code));
+      }
+      this.postErrorMessage(errorMsg, callback?.onErrorMessage);
     }
-    1
   }
 
   /**
