@@ -397,6 +397,7 @@ export class TotpService {
       const label = decodeURIComponent(urlObject.pathname.substring(1));
       let issuer = '';
       let name = label;
+      let type = TotpType.RFC6238;
 
       // 检查标签中是否包含发行者
       const labelParts = label.split(':');
@@ -423,10 +424,14 @@ export class TotpService {
       if (params.get('issuer')) {
         issuer = params.get('issuer') || '';
       }
+      const encoder = params.get('encoder');
+      if (encoder && encoder.toUpperCase() === 'STEAM') {
+        type = TotpType.STEAM;
+      }
 
       // 创建配置对象
       return {
-        type: TotpType.RFC6238,
+        type: type,
         secret: secret.toUpperCase(),
         algorithm,
         digits,
@@ -493,6 +498,10 @@ export class TotpService {
 
     if (config.period && config.period !== 30) {
       params.append('period', config.period.toString());
+    }
+
+    if (config.type && config.type === TotpType.STEAM) {
+      params.append('encoder', TotpType.STEAM.toLowerCase());
     }
 
     // 构建完整URI
