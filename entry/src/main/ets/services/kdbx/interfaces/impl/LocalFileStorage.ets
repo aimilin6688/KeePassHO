@@ -56,7 +56,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param path 文件路径
    * @returns 结果
    */
-  private async doReadFile(path: string): Promise<ArrayBuffer> {
+  public async doReadFile(path: string): Promise<ArrayBuffer> {
     try {
       // 打开文件
       const file = await fs.open(path, fs.OpenMode.READ_ONLY);
@@ -93,7 +93,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param content 文件内容
    * @returns Promise<void>
    */
-  private async doWriteFile(path: string, content: ArrayBuffer): Promise<void> {
+  public async doWriteFile(path: string, content: ArrayBuffer): Promise<void> {
     try {
       // 打开文件（如果不存在则创建）
       const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
@@ -142,7 +142,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param path 文件路径
    * @returns 结果
    */
-  private async doFileInfo(path: string): Promise<FileInfo> {
+  public async doFileInfo(path: string): Promise<FileInfo> {
     try {
       // 打开文件
       const file = await fs.open(path, fs.OpenMode.READ_ONLY);
