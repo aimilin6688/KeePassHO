@@ -1123,6 +1123,10 @@
     {
       "name": "kdbx_error_InvalidVersion",
       "value": "InvalidVersion"
+    },
+    {
+      "name": "attachment",
+      "value": "Attachment"
     }
   ]
 }

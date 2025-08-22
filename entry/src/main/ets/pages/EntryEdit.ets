@@ -1,4 +1,4 @@
-import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
@@ -14,7 +14,7 @@ import DateUtils from '../common/utils/DateUtils';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
-import { TotpConfig } from '../services/TotpService';
+import FileUtils from '../common/utils/FIleUtils';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -46,6 +46,7 @@ struct EntryEdit {
   @State expiryTime: Date | undefined = undefined; // 过期时间
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
+  @State attachments: Map<string, KdbxBinary | KdbxBinaryWithHash> = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
@@ -102,7 +103,6 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
-
   // otp令牌弹框
   private otpDialogController: CustomDialogController = new CustomDialogController({
     builder: TotpConfigDialog({
@@ -122,7 +122,7 @@ struct EntryEdit {
     alignment: DialogAlignment.Bottom,
     customStyle: true,
     autoCancel: true
-    });
+  });
 
   aboutToAppear() {
     // 获取数据库信息
@@ -199,6 +199,9 @@ struct EntryEdit {
 
       // 加载自定义字段
       this.loadCustomFields();
+
+      // 加载附件
+      this.attachments = this.entry.binaries;
 
       // 检验是否修改了
       this.isModified = false;
@@ -458,7 +461,7 @@ struct EntryEdit {
    * @param customFieldName 字段名称
    * @returns 结果
    */
-  private checkCustomField(customFieldName: string):boolean {
+  private checkCustomField(customFieldName: string): boolean {
     // 检查字段名称是否已存在（排除当前编辑的字段）
     const existingField = this.customFields.findIndex(field => field.key === customFieldName && this.customFields.indexOf(field) !== this.editingFieldIndex);
     return existingField !== -1;
@@ -685,6 +688,24 @@ struct EntryEdit {
     }
   }
 
+  // 添加附件
+  private addAttachment() {
+    FileUtils.selectFiles(1).then(result => {
+      for (let file of result) {
+        this.attachments.set(file.name, file.content);
+      }
+      this.isModified = true;
+    }).catch((error: Error) => {
+      this.promptAction.showToast({ message: error.message })
+    });
+  }
+
+  // 删除附件
+  private deleteAttachment(key: string) {
+    this.attachments.delete(key);
+    this.isModified = true;
+  }
+
   build() {
     Stack() {
       Column() {
@@ -735,7 +756,7 @@ struct EntryEdit {
 
             // 标题
             Column() {
-              Row(){
+              Row() {
                 Text("*").fontColor($r('app.color.required'))
                 Text(KdbxUtils.getFieldName(KdbxUtils.FIELD_TITLE))
                   .fontSize(14)
@@ -948,6 +969,7 @@ struct EntryEdit {
                   .fontSize(14)
                   .fontColor($r('app.color.text_secondary'))
                   .alignSelf(ItemAlign.Start)
+                  .height(32)
 
                 Blank()
 
@@ -961,10 +983,11 @@ struct EntryEdit {
                 .height(32)
                 .backgroundColor($r("app.color.card_bg"))
                 .borderRadius(16)
-                .margin({right:5})
+                .margin({ right: 5 })
                 .onClick(() => {
                   this.otpDialogController.open();
                 })
+
                 Button() {
                   Image($r('app.media.ic_add'))
                     .width(24)
@@ -990,10 +1013,8 @@ struct EntryEdit {
                       Text(field.key)
                         .fontSize(14)
                         .fontColor($r('app.color.text_secondary'))
-                        .margin({ bottom: 8 })
-
+                        .height(32)
                       Blank()
-
                       Button() {
                         Image($r('app.media.ic_edit'))
                           .width(16)
@@ -1032,8 +1053,6 @@ struct EntryEdit {
                         .lineHeight(24)
                         .borderWidth(0)
                         .padding({
-                          top: 6,
-                          bottom: 6,
                           left: 0,
                           right: 0
                         })
@@ -1074,6 +1093,68 @@ struct EntryEdit {
             }
             .width('100%')
             .margin({ top: 16 })
+
+            // 附件
+            Column() {
+              Row() {
+                Text($r('app.string.attachment'))
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+                  .alignSelf(ItemAlign.Start)
+                  .height(32)
+                Blank()
+                Button() {
+                  Image($r('app.media.ic_add'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .width(32)
+                .height(32)
+                .backgroundColor($r("app.color.card_bg"))
+                .borderRadius(16)
+                .onClick(() => {
+                  this.addAttachment();
+                })
+              }
+              .width('100%')
+              .margin({ bottom: 8 })
+
+              ForEach(Array.from(this.attachments.keys()), (field: string, index) => {
+                Column() {
+                  Row() {
+                    Text(field)
+                      .fontSize(14)
+                      .fontColor($r('app.color.text_secondary'))
+                      .height(32)
+                      .width('90%')
+                    Blank()
+                    Button() {
+                      Image($r('app.media.ic_delete'))
+                        .width(16)
+                        .height(16)
+                        .fillColor($r('app.color.text_primary'))
+                    }
+                    .width(32)
+                    .height(32)
+                    .borderRadius(16)
+                    .backgroundColor($r("app.color.bg_secondary"))
+                    .onClick(() => {
+                      this.deleteAttachment(field);
+                    })
+                  }
+                  .width('100%')
+                }
+                .width('100%')
+                .height('auto')
+                .padding({ top: 12, bottom: 12, left: 12 })
+                .backgroundColor($r("app.color.bg_secondary"))
+                .borderRadius(8)
+                .margin({ bottom: 8 })
+              });
+            }
+            .width('100%')
+            .margin({ top: 16, bottom: 24 })
 
             // 过期时间
             Column() {
