@@ -1,4 +1,4 @@
-import { ByteUtils, Kdbx, KdbxCredentials, KdbxCustomIcon, KdbxEntry, KdbxEntryField, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { ByteUtils, Consts, Kdbx, KdbxCredentials, KdbxCustomIcon, KdbxEntry, KdbxEntryField, KdbxError, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
@@ -8,6 +8,7 @@ import IconUtils from './IconUtils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { SaveDatabaseCallback } from '../../workers/DatabaseSave';
+import ResourceManager from './ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -441,6 +442,33 @@ export default class KdbxUtils {
       }
     });
     return totpUrls;
+  }
+
+  public static kdbxErrorMessage(kdbxError: Error): string {
+    if (!(kdbxError instanceof KdbxError)) {
+      return kdbxError.message;
+    }
+    switch (kdbxError.code) {
+      case Consts.ErrorCodes.NotImplemented:
+        return ResourceManager.getString($r('app.string.kdbx_error_NotImplemented'));
+      case Consts.ErrorCodes.InvalidArg:
+        return ResourceManager.getString($r('app.string.kdbx_error_InvalidArg'));
+      case Consts.ErrorCodes.BadSignature:
+        return ResourceManager.getString($r('app.string.kdbx_error_BadSignature'));
+      case Consts.ErrorCodes.InvalidVersion:
+        return ResourceManager.getString($r('app.string.kdbx_error_InvalidVersion'));
+      case Consts.ErrorCodes.Unsupported:
+        return ResourceManager.getString($r('app.string.kdbx_error_Unsupported'));
+      case Consts.ErrorCodes.FileCorrupt:
+        return ResourceManager.getString($r('app.string.kdbx_error_FileCorrupt'));
+      case Consts.ErrorCodes.MergeError:
+        return ResourceManager.getString($r('app.string.kdbx_error_MergeError'));
+      case Consts.ErrorCodes.InvalidKey:
+        return ResourceManager.getString($r('app.string.kdbx_error_InvalidKey'));
+      case Consts.ErrorCodes.InvalidState:
+        return ResourceManager.getString($r('app.string.kdbx_error_InvalidState'));
+    }
+    return kdbxError.message;
   }
 }
 
