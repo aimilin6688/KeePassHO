@@ -1,5 +1,11 @@
-import { fileShare } from '@kit.CoreFileKit';
-import { LocalFileStorage } from '../../services/kdbx/interfaces';
+import { fileShare, picker } from '@kit.CoreFileKit';
+import { FileContentInfo, LocalFileStorage } from '../../services/kdbx/interfaces';
+import { CommonUtils } from './CommonUtils';
+
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'LocalFileStorage';
 
 export default class FileUtils {
   private static FolderAuthorization: string = 'SystemCapability.FileManagement.AppFileService.FolderAuthorization';
@@ -93,5 +99,35 @@ export default class FileUtils {
    */
   public static saveFile(path: string, content: ArrayBuffer): Promise<void> {
     return new LocalFileStorage().writeFile(path, content);
+  }
+
+  /**
+   * 选择文件，并返回文件内容
+   * @param context 上下文
+   * @returns 文件内容信息
+   */
+  public static async selectFiles(size: number, fileSuffixFilters?: Array<string>): Promise<Array<FileContentInfo>> {
+    try {
+      const documentPicker = new picker.DocumentViewPicker(CommonUtils.getContext());
+      const options = new picker.DocumentSelectOptions();
+      options.fileSuffixFilters = fileSuffixFilters || []; // 只显示kdbx文件
+      options.maxSelectNumber = size; // 只允许选择一个文件
+
+      const result: Array<FileContentInfo> = [];
+      const localFile = new LocalFileStorage();
+      const selectResult = await documentPicker.select(options);
+      if (selectResult && selectResult.length > 0) {
+        for (const filePath of selectResult) {
+          let fileInfo = await localFile.doFileInfo(filePath);
+          let fileContent = await localFile.doReadFile(filePath);
+          result.push(new FileContentInfo(fileInfo, fileContent));
+        }
+        return result;
+      }
+      return result;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`, error.message, error.stack);
+      return Promise.reject(error);
+    }
   }
 }
