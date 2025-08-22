@@ -1107,6 +1107,22 @@
     {
       "name": "kdbx_error_InvalidState",
       "value": "InvalidState"
+    },
+    {
+      "name": "kdbx_error_NotImplemented",
+      "value": "NotImplemented"
+    },
+    {
+      "name": "kdbx_error_Unsupported",
+      "value": "Unsupported"
+    },
+    {
+      "name": "kdbx_error_FileCorrupt",
+      "value": "FileCorrupt"
+    },
+    {
+      "name": "kdbx_error_InvalidVersion",
+      "value": "InvalidVersion"
     }
   ]
 }
