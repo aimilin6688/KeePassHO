@@ -182,23 +182,7 @@ export struct EntryViewFieldItem {
       this.promptAction.showToast({ message: $r("app.string.invalid_binary_file"), duration: 2000 });
       return;
     }
-    // 使用文件选择器让用户选择保存位置
-    const documentPicker = new picker.DocumentViewPicker(this.context);
-    const options = new picker.DocumentSaveOptions();
-    options.newFileNames = [fieldView.key];
-
-    // 显示文件保存对话框
-    documentPicker.save(options).then(async (result) => {
-      hilog.info(DOMAIN, TAG, `Selected URIs: ${result}`);
-      if (result && result.length > 0 && fieldView.binaryFile) {
-        FileUtils.saveFile(result[0], fieldView.binaryFile).then(result => {
-          this.promptAction.showToast({ message: $r("app.string.save_success") });
-        });
-      }
-    }).catch((err: BusinessError) => {
-      hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
-    })
+    FileUtils.saveLocalFile(fieldView.key, fieldView.binaryFile);
   }
 
   build() {

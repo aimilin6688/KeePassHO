@@ -387,7 +387,7 @@
     },
     {
       "name": "CreateDatabase_location_failed",
-      "value": "选择保存位置失败: %s"
+      "value": "保存失败: %s"
     },
     {
       "name": "CreateDatabase_error_message",
