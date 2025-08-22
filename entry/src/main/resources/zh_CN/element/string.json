@@ -1129,6 +1129,30 @@
     {
       "name": "attachment",
       "value": "附件"
+    },
+    {
+      "name": "Settings_database_output",
+      "value": "导出数据库"
+    },
+    {
+      "name": "please_select",
+      "value": "请选择"
+    },
+    {
+      "name": "export_select_way",
+      "value": "请选择导出方式"
+    },
+    {
+      "name": "export_to_local_desc",
+      "value": "导出数据库到本地文件"
+    },
+    {
+      "name": "export_to_webdav_desc",
+      "value": "导出数据库到webDAV"
+    },
+    {
+      "name": "export_database",
+      "value": "导出数据库"
     }
   ]
 }
