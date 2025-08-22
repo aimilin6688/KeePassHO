@@ -3,7 +3,7 @@ import {OpenMethodButton} from "../../components/OpenMethodButton";
 
 @Entry
 @Component
-struct OpenDatabase {
+struct ExportDatabase {
   private router: Router = this.getUIContext().getRouter();
 
   build() {
@@ -19,7 +19,7 @@ struct OpenDatabase {
             this.router.back()
           })
 
-        Text($r('app.string.open_database'))
+        Text($r('app.string.export_database'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -29,12 +29,12 @@ struct OpenDatabase {
       .height(56)
       .backgroundColor($r("app.color.card_bg"))
 
-      // 打开方式列表
+      // 导出方式列表
       Scroll() {
         Column() {
-          // 打开方式
+          // 导出方式
           Column() {
-            Text($r('app.string.select_open_method_prompt'))
+            Text($r("app.string.export_select_way"))
               .fontSize(14)
               .opacity(0.6)
               .padding({ left: 16, top: 16, bottom: 8 })
@@ -44,16 +44,16 @@ struct OpenDatabase {
             OpenMethodButton(
               $r('app.media.ic_file'),
               $r('app.string.local_file_button_title'),
-              $r('app.string.local_file_button_description'),
+              $r("app.string.export_to_local_desc"),
               () => {
-                this.router.pushUrl({ url: 'pages/open/LocalFile' })
+
               }
             )
 
             OpenMethodButton(
               $r("app.media.ic_webdav"),
               $r('app.string.webdav_button_title'),
-              $r('app.string.webdav_button_description'),
+              $r("app.string.export_to_webdav_desc"),
               () => {
                 this.router.pushUrl({ url: 'pages/open/WebDAV' })
               }
