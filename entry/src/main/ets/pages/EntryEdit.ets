@@ -1151,7 +1151,7 @@ struct EntryEdit {
                 .backgroundColor($r("app.color.bg_secondary"))
                 .borderRadius(8)
                 .margin({ bottom: 8 })
-              });
+              }, (item: string, index: number) => `${index}-${item}`);
             }
             .width('100%')
             .margin({ top: 16, bottom: 24 })
