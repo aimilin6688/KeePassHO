@@ -4,7 +4,7 @@ import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { AuthService } from '../services/AuthService';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { UnlockAuthType, SettingsService } from '../services/SettingsService';
+import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 
 
 @Entry
@@ -15,7 +15,6 @@ struct SettingsDatabase {
   @State faceLogin: boolean = SettingsService.KEY_DATABASE_FACE_LOGIN_DEFAULT;
   @State authTypeOptions: AuthTypeOptions[] = [{ "type": UnlockAuthType.PASSWORD, "value": ResourceManager.getString($r("app.string.password")) }];
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT;
-
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   private settingsService: SettingsService = SettingsService.getInstance();
@@ -30,6 +29,12 @@ struct SettingsDatabase {
     customStyle: true,
     autoCancel: false
   });
+  // 数据库导出类型
+  private exportTypeOptions: Array<ExportTypeOptions> = [
+    { value: ExportType.KDBX, type: ExportType.KDBX },
+    { value: ExportType.XML, type: ExportType.XML },
+    { value: ExportType.CSV, type: ExportType.CSV }
+  ];
 
   aboutToAppear(): void {
     // 获取是否开启下拉刷新功能
@@ -45,10 +50,10 @@ struct SettingsDatabase {
       this.defaultAuthType = result;
     });
 
-    if(this.isFingerprintSupport){
+    if (this.isFingerprintSupport) {
       this.authTypeOptions.push({ "type": UnlockAuthType.FINGERPRINT, "value": ResourceManager.getString($r("app.string.fingerprint")) });
     }
-    if(this.isFaceSupport){
+    if (this.isFaceSupport) {
       this.authTypeOptions.push({ "type": UnlockAuthType.FACE, "value": ResourceManager.getString($r("app.string.face")) });
     }
   }
@@ -103,6 +108,16 @@ struct SettingsDatabase {
       let dbFileParam = FileService.getDbFileParam();
       RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
     }
+  }
+
+  // 导出数据库
+  private exportDatabase(exportType: ExportType) {
+    this.router.pushUrl({
+      url: 'pages/export/ExportDatabase',
+      params: {
+        exportType: exportType
+      }
+    });
   }
 
   build() {
@@ -184,7 +199,12 @@ struct SettingsDatabase {
                     })
                 }
                 .width('100%')
-                .padding(16)
+                .padding({
+                  left: 16,
+                  right: 16,
+                  top: 9,
+                  bottom: 9
+                })
               }
             }
             // 修改主密码
@@ -265,6 +285,38 @@ struct SettingsDatabase {
             strokeWidth: 1,
             color: $r('app.color.divider'),
           })
+
+
+          // 数据库导出
+          ListItemGroup() {
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_database_output"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Select(this.exportTypeOptions)
+                  .value($r("app.string.please_select"))
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.exportDatabase(this.exportTypeOptions[index].type);
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 9,
+                bottom: 9
+              })
+            }
+          }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({ strokeWidth: 1, color: $r('app.color.divider') })
         } else {
           ListItem() {
             Text($r('app.string.database_not_opened'))
@@ -295,4 +347,15 @@ struct SettingsDatabase {
 export interface AuthTypeOptions {
   value: string;
   type: UnlockAuthType;
+}
+
+export interface ExportTypeOptions {
+  value: string;
+  type: ExportType;
+}
+
+export enum ExportType {
+  KDBX = "KDBX",
+  XML = "XML",
+  CSV = "CSV",
 }

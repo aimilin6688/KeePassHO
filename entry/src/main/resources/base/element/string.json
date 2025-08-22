@@ -1127,6 +1127,30 @@
     {
       "name": "attachment",
       "value": "Attachment"
+    },
+    {
+      "name": "Settings_database_output",
+      "value": "Output database"
+    },
+    {
+      "name": "please_select",
+      "value": "Please select"
+    },
+    {
+      "name": "export_select_way",
+      "value": "Please select  export select way"
+    },
+    {
+      "name": "export_to_local_desc",
+      "value": "Export database to local"
+    },
+    {
+      "name": "export_to_webdav_desc",
+      "value": "Export database to webdav"
+    },
+    {
+      "name": "export_database",
+      "value": "Export database"
     }
   ]
 }
