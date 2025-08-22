@@ -46,11 +46,7 @@ export class DatabaseSave {
       this.postSuccessMessage(new SuccessMessage(fileContent.content, fileContent.modifiedTime, isMerge));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
-      let errorMsg: string = error.message;
-      if (error instanceof KdbxError) {
-        errorMsg = ResourceManager.getString($r("app.string.kdbx_error_" + error.code));
-      }
-      this.postErrorMessage(errorMsg);
+      this.postErrorMessage(KdbxUtils.kdbxErrorMessage(error));
     }
   }
 
