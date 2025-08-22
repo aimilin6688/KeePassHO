@@ -113,9 +113,9 @@ export class Kdbx {
     /**
      * Save the db as XML string
      */
-    saveXml(prettyPrint = false): Promise<string> {
+    saveXml(prettyPrint = false, writeBinaries=true): Promise<string> {
         const format = new KdbxFormat(this);
-        return format.saveXml(prettyPrint);
+        return format.saveXml(prettyPrint, writeBinaries);
     }
 
     /**

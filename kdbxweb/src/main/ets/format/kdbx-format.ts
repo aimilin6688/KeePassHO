@@ -199,10 +199,10 @@ export class KdbxFormat {
         });
     }
 
-    saveXml(prettyPrint = false): Promise<string> {
+    saveXml(prettyPrint = false, writeBinaries=true): Promise<string> {
         return this.kdbx.credentials.ready.then(() => {
             this.kdbx.header.generateSalts();
-            this.ctx.exportXml = true;
+            this.ctx.exportXml = writeBinaries;
             this.kdbx.buildXml(this.ctx);
             if (!this.kdbx.xml) {
                 throw new KdbxError(ErrorCodes.InvalidState, 'no xml');

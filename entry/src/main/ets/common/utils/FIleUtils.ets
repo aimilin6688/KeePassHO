@@ -3,6 +3,7 @@ import { FileContentInfo, LocalFileStorage } from '../../services/kdbx/interface
 import { CommonUtils } from './CommonUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
@@ -92,13 +93,31 @@ export default class FileUtils {
   }
 
   /**
-   * 写入文件内容到指定的路径
+   * 使用保存弹框选择保存位置保存本地文件
    * @param path 文件路径
    * @param content 文件内容
    * @returns 结果
    */
-  public static saveFile(path: string, content: ArrayBuffer): Promise<void> {
-    return new LocalFileStorage().writeFile(path, content);
+  public static saveLocalFile(fileName: string, content: ArrayBuffer): Promise<void> {
+    // 使用文件选择器让用户选择保存位置
+    const documentPicker = new picker.DocumentViewPicker(CommonUtils.getContext());
+    const options = new picker.DocumentSaveOptions();
+    options.newFileNames = [fileName];
+
+    // 显示文件保存对话框
+    return documentPicker.save(options).then(async (result) => {
+      hilog.info(DOMAIN, TAG, `Selected save URIs: ${result}`);
+      if (result && result.length > 0 && content) {
+        return new LocalFileStorage().doWriteFile(result[0], content).then(result => {
+          CommonUtils.showToast($r("app.string.save_success"));
+        });
+      }
+      return Promise.reject();
+    }).catch((err: BusinessError) => {
+      hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
+      CommonUtils.showToast($r('app.string.CreateDatabase_location_failed', err.message));
+      return Promise.reject(err.message);
+    });
   }
 
   /**
@@ -129,5 +148,19 @@ export default class FileUtils {
       hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`, error.message, error.stack);
       return Promise.reject(error);
     }
+  }
+
+  /**
+   * 替换文件名后缀
+   * @param fileName 文件名
+   * @param ext 后缀
+   * @returns 文件名
+   */
+  public static replaceExt(fileName:string, ext:string):string{
+    if(!fileName){
+      return "";
+    }
+    // 替换文件名后缀为指定的后缀
+    return fileName.replace(/\.[^.]+$/, ext);
   }
 }

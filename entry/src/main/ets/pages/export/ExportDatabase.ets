@@ -1,10 +1,39 @@
 import { Router } from '@kit.ArkUI';
-import {OpenMethodButton} from "../../components/OpenMethodButton";
+import { ByteUtils } from 'kdbxweb';
+import FileUtils from '../../common/utils/FIleUtils';
+import { OpenMethodButton } from '../../components/OpenMethodButton';
+import { FileService } from '../../services/FileService';
+import { DbFileParam } from '../../services/TypeDefined';
+import { ExportType } from '../SettingDatabase';
 
 @Entry
 @Component
 struct ExportDatabase {
+  private exportType: ExportType = ExportType.KDBX;
   private router: Router = this.getUIContext().getRouter();
+
+  aboutToAppear() {
+    const params = this.router.getParams() as Record<string, string>;
+    this.exportType = params.exportType as ExportType;
+  }
+
+  // 保存数据库文件到本地
+  private saveToLocal() {
+    let dbFile: DbFileParam = FileService.getDbFileParam();
+    const kdbx = dbFile.database;
+    if (ExportType.KDBX === this.exportType) {
+      kdbx.save().then(result => {
+        FileUtils.saveLocalFile(dbFile.fileName, result);
+      });
+    }
+    if (ExportType.XML === this.exportType) {
+      kdbx.saveXml(true, false).then(result => {
+        FileUtils.saveLocalFile(FileUtils.replaceExt(dbFile.fileName, ".xml"), ByteUtils.stringToBuffer(result));
+      });
+    }
+    // TODO 这里写csv导出
+
+  }
 
   build() {
     Column() {
@@ -46,7 +75,7 @@ struct ExportDatabase {
               $r('app.string.local_file_button_title'),
               $r("app.string.export_to_local_desc"),
               () => {
-
+                this.saveToLocal();
               }
             )
 
