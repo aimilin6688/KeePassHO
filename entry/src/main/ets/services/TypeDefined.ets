@@ -112,6 +112,25 @@ export interface DbFileParam extends CredentialsParam{
 }
 
 /**
+ * 导出的文件信息
+ */
+export class ExportFileParam{
+  /**
+   * 文件路径
+   */
+  fileName: string;
+  /**
+   * 文件内容
+   */
+  content: ArrayBuffer;
+
+  constructor(fileName: string, content: ArrayBuffer) {
+    this.fileName = fileName;
+    this.content = content;
+  }
+}
+
+/**
  * 认证方式接口
  */
 export interface AuthTypeInfo {
