@@ -72,4 +72,8 @@ export class WebDAVStorageConfig implements StorageConfig {
   public getPasswordText(): string {
     return ProtectedValue.fromBase64(this.password).getText();
   }
+
+  public static getText(value: string): string {
+    return ProtectedValue.fromBase64(value).getText();
+  }
 }
