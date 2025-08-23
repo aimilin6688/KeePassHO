@@ -96,7 +96,7 @@ struct CreateDatabase {
     hilog.info(DOMAIN, TAG, `Selected URI: ${filePath}`);
     let keyFileContent: ArrayBuffer | null = null;
     if (this.keyFilePath) {
-      await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(this.keyFilePath).then(fileContent => {
+      await new KdbxFileManager(StorageType.LOCAL).readFile(this.keyFilePath).then(fileContent => {
         keyFileContent = fileContent.content;
       })
     }
@@ -106,7 +106,7 @@ struct CreateDatabase {
     newDb.save().then((dbContent: ArrayBuffer) => {
       hilog.info(DOMAIN, TAG, 'saveKdbxFile: ', dbContent.byteLength);
       // 保存数据库文件
-      this.fileManager.saveKdbxFile(filePath, dbContent).then(async () => {
+      this.fileManager.writeFile(filePath, dbContent).then(async () => {
         hilog.info(DOMAIN, TAG, 'Database saved successfully: %{public}s', filePath);
         // 显示成功提示
         this.promptAction.showToast({ message: $r("app.string.CreateDatabase_create_success") });

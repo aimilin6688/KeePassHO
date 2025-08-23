@@ -60,7 +60,7 @@ export class DatabaseSave {
       hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
       throw new Error();
     }
-    let result = await new KdbxFileManager(request.storageType, request.storageConfig).loadKdbxFile(request.filePath);
+    let result = await new KdbxFileManager(request.storageType, request.storageConfig).readFile(request.filePath);
     this.postMessage($r('app.string.load_file_success'));
     return result;
   }
@@ -101,7 +101,7 @@ export class DatabaseSave {
       database.credentials.setKeyFile(null);
     } else {
       if (request.newKeyFilePath) {
-        await new KdbxFileManager(StorageType.LOCAL).loadKdbxFile(request.newKeyFilePath).then(newKeyFileContent => {
+        await new KdbxFileManager(StorageType.LOCAL).readFile(request.newKeyFilePath).then(newKeyFileContent => {
           database.credentials.setKeyFile(newKeyFileContent.content);
         });
       }
@@ -110,10 +110,10 @@ export class DatabaseSave {
     const now = new Date().getTime();
     return await database.save().then(async savedDb => {
       hilog.debug(DOMAIN, TAG, 'Worker save database success, time: %{public}d ms', new Date().getTime() - now);
-      await kdbxFileManager.saveKdbxFile(request.filePath, savedDb).then(() => {
+      await kdbxFileManager.writeFile(request.filePath, savedDb).then(() => {
         this.postMessage($r("app.string.save_success"));
       });
-      return await kdbxFileManager.getKdbxFileInfo(request.filePath).then(fileInfo => {
+      return await kdbxFileManager.getFileInfo(request.filePath).then(fileInfo => {
         return new FileContentInfo(fileInfo, savedDb);
       });
     });

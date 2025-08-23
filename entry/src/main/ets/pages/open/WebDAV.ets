@@ -66,7 +66,7 @@ struct WebDAV {
     try {
       const storageConfig = this.getStorageConfig();
       // 获取文件信息
-      const fileInfo = await this.fileManager.init(storageConfig).getKdbxFileInfo(this.url);
+      const fileInfo = await this.fileManager.init(storageConfig).getFileInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
       // 设置文件参数
