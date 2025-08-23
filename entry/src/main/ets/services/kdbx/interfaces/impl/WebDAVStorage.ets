@@ -33,11 +33,11 @@ export class WebDAVStorage implements IFileStorage {
   }
 
   private parseConfig(config: WebDAVStorageConfig): WebDAVStorageConfig {
-    if(config instanceof WebDAVStorageConfig) {
+    if (config instanceof WebDAVStorageConfig) {
       return config;
     }
     config = config as WebDAVStorageConfig;
-    return new WebDAVStorageConfig(config.url, config.username, config.password, {rootPath: config.rootPath, timeout: config.timeout}, true);
+    return new WebDAVStorageConfig(config.url, config.username, config.password, { rootPath: config.rootPath, timeout: config.timeout }, true);
   }
 
   /**
@@ -84,6 +84,11 @@ export class WebDAVStorage implements IFileStorage {
   public async exists(path: string): Promise<boolean> {
     return this.getFileInfo(path).then((fileInfo) => {
       return fileInfo != null;
+    }).catch((error: Error) => {
+      if (error instanceof WebDAVError && error.code === 404) {
+        return false;
+      }
+      return Promise.reject(error);
     });
   }
 
@@ -110,8 +115,19 @@ export class WebDAVStorage implements IFileStorage {
           path: fileInfo.href
         } as FileInfo);
       } else {
-        return Promise.reject(new Error(res.message));
+        return Promise.reject(new WebDAVError(res.statusCode, res.message));
       }
     });
+  }
+}
+
+export class WebDAVError extends Error {
+  public readonly code: number;
+
+  constructor(code: number, message?: string) {
+    super('Error ' + code + (message ? ': ' + message : ''));
+
+    this.name = 'WebDAVError';
+    this.code = code;
   }
 }

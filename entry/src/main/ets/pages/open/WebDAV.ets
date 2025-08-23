@@ -1,11 +1,13 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileStorageFactory, IFileStorage, StorageConfig, StorageType } from '../../services/kdbx/interfaces';
+import { StorageConfig, StorageType } from '../../services/kdbx/interfaces';
 import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { RecentFilesService } from '../../services/RecentFilesService';
+import { ExportType } from '../SettingDatabase';
+import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -24,6 +26,41 @@ struct WebDAV {
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private exportType: ExportType | undefined = undefined;
+
+  onPageShow(): void {
+    const params = this.router.getParams() as Record<string, string>;
+    this.exportType = params ? params.exportType as ExportType : undefined;
+    this.initExport();
+  }
+
+  // 导出数据初始化
+  private initExport() {
+    if (!this.exportType) {
+      return;
+    }
+    // 初始化导出
+    const dbFileParam = FileService.getDbFileParam();
+    if (!(dbFileParam.storageType === StorageType.WEBDAV)) {
+      return;
+    }
+    const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
+    if (storageConfig) {
+      this.url = KdbxExportService.createFileName(storageConfig.url, this.exportType);
+      this.username = WebDAVStorageConfig.getText(storageConfig.username);
+      this.password = WebDAVStorageConfig.getText(storageConfig.password);
+    }
+  }
+
+  // 处理确认时间
+  private handleConfirm() {
+    // 导出数据库
+    if (this.exportType) {
+      this.exportDatabase();
+    } else {
+      this.loadDatabase();
+    }
+  }
 
   // 测试WebDAV连接
   private async testConnection() {
@@ -36,27 +73,30 @@ struct WebDAV {
 
     try {
       // 简单测试连接
-      this.fileManager.init(this.getStorageConfig()).exists(this.url).then(result => {
-        if (result) {
-          this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
-          this.isErrorStatus = false;
-        } else {
-          this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
+      this.fileManager.init(this.getStorageConfig())
+        .exists(this.url)
+        .then(result => {
+          if (result) {
+            this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
+            this.isErrorStatus = false;
+          } else {
+            this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
+            this.isErrorStatus = true;
+            hilog.error(DOMAIN, TAG, 'webdav connection error: %{public}s', this.connectionStatus);
+          }
+        })
+        .catch((error: Error) => {
+          this.connectionStatus = error.message;
           this.isErrorStatus = true;
           hilog.error(DOMAIN, TAG, 'webdav connection error: %{public}s', this.connectionStatus);
-        }
-      }).catch((error: Error) => {
-        this.connectionStatus = error.message;
-        this.isErrorStatus = true;
-        hilog.error(DOMAIN, TAG, 'webdav connection error: %{public}s', this.connectionStatus);
-      });
+        });
     } finally {
       this.isConnecting = false;
     }
   }
 
   // 保存WebDAV配置
-  private async saveConfig() {
+  private async loadDatabase() {
     if (!this.checkParam()) {
       return;
     }
@@ -71,18 +111,18 @@ struct WebDAV {
 
       // 设置文件参数
       FileService.setFileParam({
-          filePath: this.url,
-          fileName: fileInfo.name,
-          storageType: StorageType.WEBDAV,
-          storageConfig: storageConfig
-        });
+        filePath: this.url,
+        fileName: fileInfo.name,
+        storageType: StorageType.WEBDAV,
+        storageConfig: storageConfig
+      });
       // 添加到最近打开的文件列表
       RecentFilesService.addRecentFile({
-          filePath: this.url,
-          fileName: fileInfo.name,
-          storageType: StorageType.WEBDAV,
-          storageConfig: storageConfig
-        });
+        filePath: this.url,
+        fileName: fileInfo.name,
+        storageType: StorageType.WEBDAV,
+        storageConfig: storageConfig
+      });
       // 导航到密码输入页面
       this.router.pushUrl({
         url: 'pages/Password'
@@ -91,10 +131,69 @@ struct WebDAV {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({message: error.message});
-    }finally {
+      this.promptAction.showToast({ message: error.message });
+    } finally {
       this.isConnecting = false;
     }
+  }
+
+  /**
+   * 导出数据库
+   */
+  private async exportDatabase() {
+    if (!this.checkParam()) {
+      return;
+    }
+    this.isConnecting = true;
+    this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
+    this.isErrorStatus = false;
+
+    const storageConfig = this.getStorageConfig();
+    // 获取文件信息
+    const existsFile = await this.fileManager.init(storageConfig).exists(this.url);
+    hilog.info(DOMAIN, TAG, `Export kdbx file to webDAV path: ${this.url}`);
+    if (existsFile) {
+      this.promptAction.showDialog({
+        title: $r('app.string.dialog_prompt_title'),
+        message: $r('app.string.dialog_exists_file_message'),
+        buttons: [
+          {
+            text: $r('app.string.cancel_button_text'),
+            color: $r('app.color.text_secondary')
+          },
+          {
+            text: $r('app.string.replace_button_text'),
+            color: $r("app.color.button_bg_blue"),
+          }
+        ],
+      }).then(result => {
+        if (result.index === 1) {
+          this.exportKdbxFile(storageConfig);
+        }
+      });
+    } else {
+      this.exportKdbxFile(storageConfig);
+    }
+  }
+
+  private exportKdbxFile(storageConfig: StorageConfig) {
+    if (!this.exportType) {
+      return;
+    }
+    this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
+    KdbxExportService.createExportFile(this.exportType).then(result => {
+      this.fileManager.init(storageConfig).writeFile(this.url, result.content).then(result => {
+        this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
+        this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
+        this.isConnecting = false;
+        this.router.back();
+      });
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
+      this.connectionStatus = error.message;
+      this.isConnecting = false;
+      this.isErrorStatus = true;
+    })
   }
 
   /**
@@ -123,7 +222,7 @@ struct WebDAV {
    * 初始化存储
    * @returns
    */
-  private getStorageConfig():StorageConfig{
+  private getStorageConfig(): StorageConfig {
     return new WebDAVStorageConfig(this.url, this.username, this.password);
   }
 
@@ -164,7 +263,7 @@ struct WebDAV {
             .lineHeight(24)
             .height(96)
             .type(TextAreaType.URL)
-            .padding({top:12,bottom:12})
+            .padding({ top: 12, bottom: 12 })
             .margin({ top: 20 })
             .fontColor($r('app.color.text_primary'))
             .backgroundColor($r("app.color.card_bg"))
@@ -216,7 +315,7 @@ struct WebDAV {
 
           // 加载中状态
           if (this.isConnecting) {
-            Row(){
+            Row() {
               LoadingProgress()
                 .width(50)
                 .height(50)
@@ -249,7 +348,7 @@ struct WebDAV {
               .backgroundColor($r('app.color.button_bg_blue'))
               .fontColor($r('app.color.button_text_blue'))
               .onClick(() => {
-                this.saveConfig();
+                this.handleConfirm();
               })
           }
           .width("100%")
