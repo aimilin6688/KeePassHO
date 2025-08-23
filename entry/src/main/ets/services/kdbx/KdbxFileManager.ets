@@ -1,5 +1,4 @@
-import { IFileStorage, StorageType, FileStorageFactory, getDefaultStorage, StorageConfig,
-  FileContentInfo } from './interfaces';
+import { FileContentInfo, FileStorageFactory, IFileStorage, StorageConfig, StorageType } from './interfaces';
 // 导出FileInfo类型
 import { FileInfo } from './interfaces/IFileStorage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -22,7 +21,7 @@ export class KdbxFileManager {
    */
   constructor(storageType: StorageType = StorageType.LOCAL, storageConfig?: StorageConfig) {
     this.storage = FileStorageFactory.getInstance().getStorage(storageType);
-    if(storageConfig) {
+    if (storageConfig) {
       this.init(storageConfig);
     }
   }
@@ -31,7 +30,7 @@ export class KdbxFileManager {
    * 初始化存储
    * @param storageConfig
    */
-  public init(storageConfig: StorageConfig): KdbxFileManager{
+  public init(storageConfig: StorageConfig): KdbxFileManager {
     this.storage.init(storageConfig);
     return this;
   }
@@ -42,7 +41,7 @@ export class KdbxFileManager {
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果加载失败则抛出异常
    */
-  public async loadKdbxFile(path: string): Promise<FileContentInfo> {
+  public async readFile(path: string): Promise<FileContentInfo> {
     try {
       // 检查文件是否存在
       const fileInfo = await this.storage.getFileInfo(path);
@@ -51,7 +50,7 @@ export class KdbxFileManager {
         throw new Error(ResourceManager.getString($r('app.string.file_not_exists')));
       }
       // 读取文件内容
-      const content= await this.storage.readFile(path);
+      const content = await this.storage.readFile(path);
       // 返回文件内容
       return new FileContentInfo(fileInfo, content);
     } catch (error) {
@@ -66,7 +65,7 @@ export class KdbxFileManager {
    * @param content 文件内容
    * @throws 如果保存失败则抛出异常
    */
-  public async saveKdbxFile(path: string, content: ArrayBuffer): Promise<void> {
+  public async writeFile(path: string, content: ArrayBuffer): Promise<void> {
     try {
       // 写入文件内容
       return this.storage.writeFile(path, content);
@@ -82,7 +81,7 @@ export class KdbxFileManager {
    * @return Promise<FileInfo> 文件信息
    * @throws 如果获取失败则抛出异常
    */
-  public async getKdbxFileInfo(path: string): Promise<FileInfo> {
+  public async getFileInfo(path: string): Promise<FileInfo> {
     try {
       return await this.storage.getFileInfo(path);
     } catch (error) {
