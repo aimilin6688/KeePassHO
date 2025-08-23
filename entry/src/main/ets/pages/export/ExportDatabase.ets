@@ -3,6 +3,7 @@ import { ByteUtils } from 'kdbxweb';
 import FileUtils from '../../common/utils/FIleUtils';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
 import { FileService } from '../../services/FileService';
+import { KdbxCsvService } from '../../services/kdbx/KdbxCsvService';
 import { DbFileParam } from '../../services/TypeDefined';
 import { ExportType } from '../SettingDatabase';
 
@@ -31,8 +32,11 @@ struct ExportDatabase {
         FileUtils.saveLocalFile(FileUtils.replaceExt(dbFile.fileName, ".xml"), ByteUtils.stringToBuffer(result));
       });
     }
-    // TODO 这里写csv导出
-
+    if(ExportType.CSV === this.exportType){
+      KdbxCsvService.export(kdbx).then(result=>{
+        FileUtils.saveLocalFile(FileUtils.replaceExt(dbFile.fileName, ".csv"), result);
+      })
+    }
   }
 
   build() {
