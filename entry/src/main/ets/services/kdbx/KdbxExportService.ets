@@ -13,24 +13,40 @@ export class KdbxExportService {
   public static createExportFile(exportType: ExportType): Promise<ExportFileParam> {
     const dbFile: DbFileParam = FileService.getDbFileParam();
     const kdbx = dbFile.database;
+    const fileName = KdbxExportService.createFileName(dbFile.fileName, exportType);
     if (ExportType.KDBX === exportType) {
       return kdbx.save().then(result => {
-        const fileName = FileUtils.replaceExt(dbFile.fileName, ".kdbx");
         return new ExportFileParam(fileName, result);
       });
     }
     if (ExportType.XML === exportType) {
       return kdbx.saveXml(true, false).then(result => {
-        const fileName = FileUtils.replaceExt(dbFile.fileName, ".xml");
         return new ExportFileParam(fileName, ByteUtils.stringToBuffer(result));
       });
     }
     if (ExportType.CSV === exportType) {
       return KdbxCsvService.export(kdbx).then(result => {
-        const fileName = FileUtils.replaceExt(dbFile.fileName, ".csv");
         return new ExportFileParam(fileName, result);
       })
     }
     return Promise.reject();
+  }
+
+  /**
+   * 创建文件名
+   * @param fileName
+   * @param exportType
+   */
+  public static createFileName(fileName: string, exportType: ExportType): string {
+    if (ExportType.KDBX === exportType) {
+      return FileUtils.replaceExt(fileName, ".kdbx");
+    }
+    if (ExportType.XML === exportType) {
+      return FileUtils.replaceExt(fileName, ".xml");
+    }
+    if (ExportType.CSV === exportType) {
+      return FileUtils.replaceExt(fileName, ".csv");
+    }
+    return fileName;
   }
 }

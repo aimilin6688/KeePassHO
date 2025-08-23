@@ -540,7 +540,7 @@ struct EntryEdit {
             color: $r('app.color.text_secondary')
           },
           {
-            text: '删除',
+            text: $r("app.string.delete_button_text"),
             color: $r("app.color.button_bg_blue"),
           }
         ],

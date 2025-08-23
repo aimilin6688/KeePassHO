@@ -1151,6 +1151,22 @@
     {
       "name": "export_database",
       "value": "Export database"
+    },
+    {
+      "name": "export_type_not_selected",
+      "value": "Please select database export type"
+    },
+    {
+      "name": "dialog_prompt_title",
+      "value": "Prompt"
+    },
+    {
+      "name": "dialog_exists_file_message",
+      "value": "There is already a file with the same name. Do you want to replace it?"
+    },
+    {
+      "name": "replace_button_text",
+      "value": " Replace"
     }
   ]
 }
