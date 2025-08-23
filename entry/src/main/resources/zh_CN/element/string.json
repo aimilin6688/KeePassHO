@@ -1153,6 +1153,22 @@
     {
       "name": "export_database",
       "value": "导出数据库"
+    },
+    {
+      "name": "export_type_not_selected",
+      "value": "请选择数据库导出类型"
+    },
+    {
+      "name": "dialog_prompt_title",
+      "value": "提示"
+    },
+    {
+      "name": "dialog_exists_file_message",
+      "value": "已存在同名文件，是否替换？"
+    },
+    {
+      "name": "replace_button_text",
+      "value": "替换"
     }
   ]
 }

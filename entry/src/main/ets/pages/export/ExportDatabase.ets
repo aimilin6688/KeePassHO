@@ -26,10 +26,11 @@ struct ExportDatabase {
     autoCancel: false
   });
 
-  // 页面显示
-  onPageShow() {
+  aboutToAppear(): void {
     const params = this.router.getParams() as Record<string, string>;
-    this.exportType = params.exportType as ExportType;
+    if (params) {
+      this.exportType = params.exportType as ExportType;
+    }
     this.createFileName();
   }
 
@@ -111,7 +112,12 @@ struct ExportDatabase {
               $r('app.string.webdav_button_title'),
               $r("app.string.export_to_webdav_desc"),
               () => {
-                this.router.pushUrl({ url: 'pages/open/WebDAV' })
+                this.router.pushUrl({
+                  url: 'pages/open/WebDAV',
+                  params: {
+                    exportType: this.exportType
+                  }
+                })
               }
             )
 
