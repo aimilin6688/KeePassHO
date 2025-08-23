@@ -1,4 +1,4 @@
-import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
+import { pasteboard } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { KdbxEntry } from 'kdbxweb';
@@ -7,9 +7,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Icons } from '../services/TypeDefined';
 import { SettingsService } from '../services/SettingsService';
 import FileUtils from '../common/utils/FIleUtils';
-import { picker } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { TotpPreviewComponent } from './TotpPreviewComponent';
+import ResourceManager from '../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -43,7 +43,7 @@ export class FieldView {
       this.otpValue = value;
       // 需要展示时才设置 展示totp预览
       SettingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT, (value) => {
-        if(value){
+        if (value) {
           this.showPlanText = value;
         }
       });
@@ -130,7 +130,7 @@ export struct EntryViewFieldItem {
     if (fieldView.isDownload) {
       return $r("app.media.ic_color_paperclip");
     }
-    if(fieldView.isTotp){
+    if (fieldView.isTotp) {
       return $r("app.media.ic_color_totp");
     }
     const key = fieldView.key;
@@ -182,7 +182,14 @@ export struct EntryViewFieldItem {
       this.promptAction.showToast({ message: $r("app.string.invalid_binary_file"), duration: 2000 });
       return;
     }
-    FileUtils.saveLocalFile(fieldView.key, fieldView.binaryFile);
+    FileUtils.saveLocalFile(fieldView.key, () => {
+      return new Promise((resolve, reject) => {
+        if (!fieldView.binaryFile) {
+          return reject(ResourceManager.getString('app.string.invalid_binary_file'));
+        }
+        return resolve(fieldView.binaryFile);
+      });
+    });
   }
 
   build() {

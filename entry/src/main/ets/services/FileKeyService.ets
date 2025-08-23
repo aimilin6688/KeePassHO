@@ -28,7 +28,7 @@ export class FileKeyService {
       if (result && result.length > 0) {
         let filePath = result[0];
         KdbxCredentials.createRandomKeyFile().then(keyContent => {
-          new KdbxFileManager(StorageType.LOCAL).saveKdbxFile(filePath, ByteUtils.bytesToBuffer(keyContent)).then(async () => {
+          new KdbxFileManager(StorageType.LOCAL).writeFile(filePath, ByteUtils.bytesToBuffer(keyContent)).then(async () => {
             CommonUtils.showToast($r("app.string.save_success"));
           }).catch((error: Error) => {
             hilog.error(DOMAIN, TAG, `Failed to create new key file: ${error.message}`, error.stack);
