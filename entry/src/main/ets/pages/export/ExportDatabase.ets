@@ -1,42 +1,65 @@
-import { Router } from '@kit.ArkUI';
-import { ByteUtils } from 'kdbxweb';
+import { PromptAction, Router } from '@kit.ArkUI';
 import FileUtils from '../../common/utils/FIleUtils';
+import ResourceManager from '../../common/utils/ResourceManager';
+import { ContextLoadingDialog } from '../../components/ContextLoadingDialog';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
 import { FileService } from '../../services/FileService';
-import { KdbxCsvService } from '../../services/kdbx/KdbxCsvService';
+import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { DbFileParam } from '../../services/TypeDefined';
 import { ExportType } from '../SettingDatabase';
 
 @Entry
 @Component
 struct ExportDatabase {
+  @State savingMessage: string = ResourceManager.getString($r('app.string.save_saving'));
   private exportType: ExportType = ExportType.KDBX;
   private router: Router = this.getUIContext().getRouter();
+  private fileName: string = "";
+  private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  // 带内容的进度弹框
+  private savingDialogController: CustomDialogController = new CustomDialogController({
+    builder: ContextLoadingDialog({
+      loadingMessage: this.savingMessage,
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
 
-  aboutToAppear() {
+  // 页面显示
+  onPageShow() {
     const params = this.router.getParams() as Record<string, string>;
     this.exportType = params.exportType as ExportType;
+    this.createFileName();
+  }
+
+  /**
+   * 创建文件名
+   */
+  private createFileName() {
+    const dbFile: DbFileParam = FileService.getDbFileParam();
+    if (!dbFile) {
+      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.database_not_opened')) });
+      return;
+    }
+    this.fileName = FileUtils.replaceExt(dbFile.fileName, "." + this.exportType.toLowerCase());
   }
 
   // 保存数据库文件到本地
   private saveToLocal() {
-    let dbFile: DbFileParam = FileService.getDbFileParam();
-    const kdbx = dbFile.database;
-    if (ExportType.KDBX === this.exportType) {
-      kdbx.save().then(result => {
-        FileUtils.saveLocalFile(dbFile.fileName, result);
+    let dialogTimeout: number = 0;
+    FileUtils.saveLocalFile(this.fileName, () => {
+      dialogTimeout = setTimeout(() => {
+        this.savingDialogController.open();
+      }, 300);
+      return KdbxExportService.createExportFile(this.exportType).then(result => {
+        return result.content;
       });
-    }
-    if (ExportType.XML === this.exportType) {
-      kdbx.saveXml(true, false).then(result => {
-        FileUtils.saveLocalFile(FileUtils.replaceExt(dbFile.fileName, ".xml"), ByteUtils.stringToBuffer(result));
-      });
-    }
-    if(ExportType.CSV === this.exportType){
-      KdbxCsvService.export(kdbx).then(result=>{
-        FileUtils.saveLocalFile(FileUtils.replaceExt(dbFile.fileName, ".csv"), result);
-      })
-    }
+    }).then(() => {
+      this.savingDialogController.close();
+      clearTimeout(dialogTimeout);
+      this.router.back();
+    });
   }
 
   build() {

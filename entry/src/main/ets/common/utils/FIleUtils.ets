@@ -98,7 +98,7 @@ export default class FileUtils {
    * @param content 文件内容
    * @returns 结果
    */
-  public static saveLocalFile(fileName: string, content: ArrayBuffer): Promise<void> {
+  public static saveLocalFile(fileName: string, createContent: () => Promise<ArrayBuffer>): Promise<void> {
     // 使用文件选择器让用户选择保存位置
     const documentPicker = new picker.DocumentViewPicker(CommonUtils.getContext());
     const options = new picker.DocumentSaveOptions();
@@ -107,12 +107,18 @@ export default class FileUtils {
     // 显示文件保存对话框
     return documentPicker.save(options).then(async (result) => {
       hilog.info(DOMAIN, TAG, `Selected save URIs: ${result}`);
-      if (result && result.length > 0 && content) {
-        return new LocalFileStorage().doWriteFile(result[0], content).then(result => {
-          CommonUtils.showToast($r("app.string.save_success"));
+      if (result && result.length > 0) {
+        const filePath = result[0];
+        return createContent().then(result => {
+          return new LocalFileStorage().doWriteFile(filePath, result).then(result => {
+            CommonUtils.showToast($r("app.string.save_success"));
+          });
+        }).catch((err: Error) => {
+          hilog.error(DOMAIN, TAG, `Failed to create content: ${err.message}`, err.stack);
+          CommonUtils.showToast(err.message);
+          return Promise.reject(err.message);
         });
       }
-      return Promise.reject();
     }).catch((err: BusinessError) => {
       hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
       CommonUtils.showToast($r('app.string.CreateDatabase_location_failed', err.message));
@@ -156,8 +162,8 @@ export default class FileUtils {
    * @param ext 后缀
    * @returns 文件名
    */
-  public static replaceExt(fileName:string, ext:string):string{
-    if(!fileName){
+  public static replaceExt(fileName: string, ext: string): string {
+    if (!fileName) {
       return "";
     }
     // 替换文件名后缀为指定的后缀
