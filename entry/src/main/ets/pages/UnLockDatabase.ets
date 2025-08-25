@@ -13,7 +13,7 @@ const TAG = 'UnLockDatabase';
 @Component
 struct UnLockDatabase {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
-  @State defaultAuthType: UnlockAuthType = SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT;
+  @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -31,7 +31,7 @@ struct UnLockDatabase {
       this.quickLockPasswordLength = value;
     });
     // 默认认证方式
-    SettingsService.get(SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE, this.defaultAuthType, (value) => {
+    SettingsService.get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType, (value) => {
       this.defaultAuthType = value;
       // 是否支持指纹验证
       if (this.defaultAuthType === UnlockAuthType.FINGERPRINT) {
