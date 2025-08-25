@@ -357,7 +357,6 @@ struct Password {
    * 文件打开成功，保存到最近访问列表中
    */
   private putFileToRecentFile() {
-    let fileParam = FileService.getInstance().getFileParam();
     // 最近打开的文件
     let recentFile = {
       filePath: this.filePath,
