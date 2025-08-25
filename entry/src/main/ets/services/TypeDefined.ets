@@ -280,6 +280,10 @@ export interface RecentFile {
    */
   password?: string;
 
+  /**
+   * 搜索历史
+   */
+  searchHistory?: string[];
 }
 
 /**
