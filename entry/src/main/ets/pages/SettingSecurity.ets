@@ -1,7 +1,9 @@
-import { SettingsService } from '../services/SettingsService';
+import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import ResourceManager from '../common/utils/ResourceManager';
 import { FileService } from '../services/FileService';
+import { AuthService } from '../services/AuthService';
+import { RecentFilesService } from '../services/RecentFilesService';
 
 
 @Entry
@@ -13,8 +15,16 @@ struct SettingsSecurity {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State isListShowTotp:boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State isItemShowTotp:boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
+  // 认证方式
+  @State fingerprintLogin: boolean = SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT;
+  @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
+  @State authTypeOptions: AuthTypeOptions[] = [{ "type": UnlockAuthType.PASSWORD, "value": ResourceManager.getString($r("app.string.password")) }];
+  @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
+
 
   @State isDatabaseValid: boolean = false;
+  private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
+  private isFaceSupport: boolean = AuthService.isFaceSupport();
   // 自动清空剪切板时间
   private clearTimeOptions: Array<TimeOption> = [
     { value: "15 " + ResourceManager.getString($r("app.string.second")), time: 15 },
@@ -91,7 +101,46 @@ struct SettingsSecurity {
     this.settingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, this.isItemShowTotp).then(result => {
       this.isItemShowTotp = result;
     });
+
+    // 获取指纹登录
+    this.settingsService.get(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, this.fingerprintLogin).then(result => {
+      this.fingerprintLogin = result;
+    });
+    // 获取面容登录
+    this.settingsService.get(SettingsService.KEY_SECURITY_FACE_LOGIN, this.faceLogin).then(result => {
+      this.faceLogin = result;
+    });
+    // 获取默认认证方式
+    this.settingsService.get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType).then(result => {
+      this.defaultAuthType = result;
+    });
+
+    if (this.isFingerprintSupport) {
+      this.authTypeOptions.push({ "type": UnlockAuthType.FINGERPRINT, "value": ResourceManager.getString($r("app.string.fingerprint")) });
+    }
+    if (this.isFaceSupport) {
+      this.authTypeOptions.push({ "type": UnlockAuthType.FACE, "value": ResourceManager.getString($r("app.string.face")) });
+    }
   }
+
+  // 修改指纹登录选项
+  private changeFingerprintLogin(isOn: boolean) {
+    this.settingsService.put(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, isOn);
+    if (this.isFingerprintSupport && isOn && this.isDatabaseValid) {
+      let dbFileParam = FileService.getDbFileParam();
+      RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
+    }
+  }
+
+  // 修改人脸登录选项
+  private changeFaceLogin(isOn: boolean) {
+    this.settingsService.put(SettingsService.KEY_SECURITY_FACE_LOGIN, isOn);
+    if (this.isFaceSupport && isOn && this.isDatabaseValid) {
+      let dbFileParam = FileService.getDbFileParam();
+      RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
+    }
+  }
+
 
   build() {
     Column() {
@@ -114,6 +163,79 @@ struct SettingsSecurity {
 
 
       List() {
+        ListItemGroup() {
+          if (this.isFingerprintSupport) {
+            // 指纹登录
+            ListItem() {
+              Row() {
+                Text($r("app.string.auth_by_fingerprint"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Toggle({ type: ToggleType.Switch, isOn: this.fingerprintLogin })
+                  .selectedColor('#007DFF')
+                  .switchPointColor('#FFFFFF')
+                  .onChange((isOn: boolean) => {
+                    this.changeFingerprintLogin(isOn);
+                  })
+              }
+              .width('100%')
+              .padding(16)
+            }
+          }
+          if (this.isFaceSupport) {
+            // 人脸登录
+            ListItem() {
+              Row() {
+                Text($r("app.string.auth_by_face"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Toggle({ type: ToggleType.Switch, isOn: this.faceLogin })
+                  .selectedColor('#007DFF')
+                  .switchPointColor('#FFFFFF')
+                  .onChange((isOn: boolean) => {
+                    this.changeFaceLogin(isOn);
+                  })
+              }
+              .width('100%')
+              .padding(16)
+            }
+          }
+          if (this.isFingerprintSupport || this.isFaceSupport) {
+            // 选择默认登录方式
+            ListItem() {
+              Row() {
+                Text($r("app.string.auth_type_default"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Select(this.authTypeOptions)
+                  .value(this.authTypeOptions[this.authTypeOptions.findIndex((item) => item.type === this.defaultAuthType)].value)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.defaultAuthType = this.authTypeOptions[index].type;
+                    this.settingsService.put(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType);
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 9,
+                bottom: 9
+              })
+            }
+          }
+        }
+        .margin({ top: 6, bottom: 6 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
         ListItemGroup() {
           // 下拉刷新
           ListItem() {
@@ -275,4 +397,12 @@ export interface TimeOption {
  */
 export interface LengthOption {
   value: string;
+}
+
+/**
+ * 认证方式
+ */
+export interface AuthTypeOptions {
+  value: string;
+  type: UnlockAuthType;
 }
