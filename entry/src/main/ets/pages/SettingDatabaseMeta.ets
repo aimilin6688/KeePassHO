@@ -227,53 +227,73 @@ struct SettingDatabaseMeta {
           // 历史记录设置
           ListItemGroup() {
             ListItem() {
-              Row() {
-                CounterComponent({
-                  options: {
-                    type: CounterType.LIST,
-                    numberOptions: {
-                      label: $r("app.string.history_max_items"),
-                      min: 0,
-                      value: this.historyMaxItems,
-                      max: 999,
-                      onChange: (value) => {
-                        if(this.historyMaxItems !== value){
-                          this.isModified = true;
+              Column() {
+                Row() {
+                  CounterComponent({
+                    options: {
+                      type: CounterType.LIST,
+                      numberOptions: {
+                        label: $r("app.string.history_max_items"),
+                        min: 0,
+                        value: this.historyMaxItems,
+                        max: 999,
+                        onChange: (value) => {
+                          if(this.historyMaxItems !== value){
+                            this.isModified = true;
+                          }
+                          this.historyMaxItems = value;
                         }
-                        this.historyMaxItems = value;
                       }
                     }
-                  }
-                })
-                  .width('100%')
+                  })
+                    .width('100%')
+                }
+                .width('100%')
+                Row(){
+                  Text($r("app.string.history_max_items_tips"))
+                    .fontSize(12)
+                    .fontColor($r("app.color.text_secondary"))
+                    .flexGrow(1)
+                }.width('100%')
+                .padding({left:12, right:12, bottom:6})
               }
               .width('100%')
-              .padding({ top: 6, bottom: 6 })
+              .padding({top:6, bottom:6})
             }
 
             ListItem() {
-              Row() {
-                CounterComponent({
-                  options: {
-                    type: CounterType.LIST,
-                    numberOptions: {
-                      label: $r("app.string.history_max_size"),
-                      min: 0,
-                      value: this.historyMaxSize,
-                      max: 999,
-                      onChange: (value) => {
-                        if(this.historyMaxSize !== value){
-                          this.isModified = true;
+              Column(){
+                Row() {
+                  CounterComponent({
+                    options: {
+                      type: CounterType.LIST,
+                      numberOptions: {
+                        label: $r("app.string.history_max_size"),
+                        min: 0,
+                        value: this.historyMaxSize,
+                        max: 999,
+                        onChange: (value) => {
+                          if(this.historyMaxSize !== value){
+                            this.isModified = true;
+                          }
+                          this.historyMaxSize = value;
                         }
-                        this.historyMaxSize = value;
-                      }
+                      },
                     }
-                  }
-                })
-                  .width('100%')
+                  })
+                    .width('100%')
+                }
+                .width('100%')
+                Row(){
+                  Text($r("app.string.history_max_size_tips"))
+                    .fontSize(12)
+                    .fontColor($r("app.color.text_secondary"))
+                    .flexGrow(1)
+                }.width('100%')
+                .padding({left:12, right:12, bottom:6})
               }
               .width('100%')
-              .padding({ top: 6, bottom: 6 })
+              .padding({top:6, bottom:6})
             }
           }
           .margin({ top: 12, bottom: 12 })

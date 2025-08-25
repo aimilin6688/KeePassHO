@@ -1167,6 +1167,14 @@
     {
       "name": "replace_button_text",
       "value": " Replace"
+    },
+    {
+      "name": "history_max_items_tips",
+      "value": "If set to 0, there is no limit to the number of historical entries"
+    },
+    {
+      "name": "history_max_size_tips",
+      "value": "If set to 0, there is no limit to the total size of historical entries"
     }
   ]
 }
