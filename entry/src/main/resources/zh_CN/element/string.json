@@ -1060,7 +1060,7 @@
     },
     {
       "name": "auth_by_face",
-      "value": "人脸登录"
+      "value": "面容登录"
     },
     {
       "name": "auth_type_default",
@@ -1072,7 +1072,7 @@
     },
     {
       "name": "face",
-      "value": "人脸"
+      "value": "面容"
     },
     {
       "name": "fingerprint_not_support",
@@ -1084,11 +1084,11 @@
     },
     {
       "name": "face_not_support",
-      "value": "当前设备不支持人脸认证"
+      "value": "当前设备不支持面容认证"
     },
     {
       "name": "face_not_enabled",
-      "value": "未启用人脸认证"
+      "value": "未启用面容认证"
     },
     {
       "name": "kdbx_error_InvalidKey",
