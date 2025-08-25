@@ -145,230 +145,247 @@ struct SettingDatabaseMeta {
       .height(56)
       .backgroundColor($r('app.color.card_bg'))
 
-      // 主要内容区域
-      Column() {
-        // 数据库名称
-        Text($r('app.string.database_name'))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+      Scroll() {
+        // 主要内容区域
+        Column() {
+          // 数据库名称
+          Text($r('app.string.database_name'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
 
-        TextInput({ placeholder: $r('app.string.database_name_placeholder'), text: this.databaseName })
-          .type(InputType.Normal)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .margin({ top: 8, left: 16, right: 16 })
-          .padding({ left: 12, right: 12 })
-          .height(48)
-          .width('100%')
-          .borderRadius(8)
-          .onChange((value) => {
-            if(this.databaseName !== value) {
-              this.isModified = true;
-            }
-            this.databaseName = value;
-          })
+          TextInput({ placeholder: $r('app.string.database_name_placeholder'), text: this.databaseName })
+            .type(InputType.Normal)
+            .fontSize(16)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ top: 8, left: 16, right: 16 })
+            .padding({ left: 12, right: 12 })
+            .height(48)
+            .width('100%')
+            .borderRadius(8)
+            .onChange((value) => {
+              if (this.databaseName !== value) {
+                this.isModified = true;
+              }
+              this.databaseName = value;
+            })
 
-        // 数据库描述
-        Text($r('app.string.database_description'))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+          // 数据库描述
+          Text($r('app.string.database_description'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
 
-        TextArea({ placeholder: $r('app.string.database_description_placeholder'), text: this.databaseDescription })
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .backgroundColor($r('app.color.card_bg'))
-          .margin({ top: 8, left: 16, right: 16 })
-          .padding({ left: 12, right: 12 })
-          .height(90)
-          .width('100%')
-          .borderRadius(8)
-          .onChange((value) => {
-            if(this.databaseDescription !== value) {
-              this.isModified = true;
-            }
-            this.databaseDescription = value;
-          })
+          TextArea({ placeholder: $r('app.string.database_description_placeholder'), text: this.databaseDescription })
+            .fontSize(16)
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r('app.color.card_bg'))
+            .margin({ top: 8, left: 16, right: 16 })
+            .padding({ left: 12, right: 12 })
+            .height(90)
+            .width('100%')
+            .borderRadius(8)
+            .onChange((value) => {
+              if (this.databaseDescription !== value) {
+                this.isModified = true;
+              }
+              this.databaseDescription = value;
+            })
 
-        // 默认用户名
-        Text($r('app.string.default_username'))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+          // 默认用户名
+          Text($r('app.string.default_username'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
 
-        TextInput({ placeholder: $r('app.string.default_username_placeholder'), text: this.defaultUsername })
-          .type(InputType.Normal)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .backgroundColor($r('app.color.card_bg'))
-          .margin({ top: 8, left: 16, right: 16 })
-          .padding({ left: 12, right: 12 })
-          .height(48)
-          .width('100%')
-          .borderRadius(8)
-          .onChange((value) => {
-            if(this.defaultUsername !== value) {
-              this.isModified = true;
-            }
-            this.defaultUsername = value;
-          })
+          TextInput({ placeholder: $r('app.string.default_username_placeholder'), text: this.defaultUsername })
+            .type(InputType.Normal)
+            .fontSize(16)
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r('app.color.card_bg'))
+            .margin({ top: 8, left: 16, right: 16 })
+            .padding({ left: 12, right: 12 })
+            .height(48)
+            .width('100%')
+            .borderRadius(8)
+            .onChange((value) => {
+              if (this.defaultUsername !== value) {
+                this.isModified = true;
+              }
+              this.defaultUsername = value;
+            })
 
-        List() {
-          // 历史记录设置
-          ListItemGroup() {
-            ListItem() {
-              Column() {
-                Row() {
-                  CounterComponent({
-                    options: {
-                      type: CounterType.LIST,
-                      numberOptions: {
-                        label: $r("app.string.history_max_items"),
-                        min: 0,
-                        value: this.historyMaxItems,
-                        max: 999,
-                        onChange: (value) => {
-                          if(this.historyMaxItems !== value){
-                            this.isModified = true;
+          List() {
+            // 历史记录设置
+            ListItemGroup() {
+              ListItem() {
+                Column() {
+                  Row() {
+                    CounterComponent({
+                      options: {
+                        type: CounterType.LIST,
+                        numberOptions: {
+                          label: $r("app.string.history_max_items"),
+                          min: 0,
+                          value: this.historyMaxItems,
+                          max: 999,
+                          onChange: (value) => {
+                            if (this.historyMaxItems !== value) {
+                              this.isModified = true;
+                            }
+                            this.historyMaxItems = value;
                           }
-                          this.historyMaxItems = value;
                         }
                       }
-                    }
-                  })
-                    .width('100%')
+                    })
+                      .width('100%')
+                  }
+                  .width('100%')
+
+                  Row() {
+                    Text($r("app.string.history_max_items_tips"))
+                      .fontSize(12)
+                      .fontColor($r("app.color.text_secondary"))
+                      .flexGrow(1)
+                  }.width('100%')
+                  .padding({ left: 12, right: 12, bottom: 6 })
                 }
                 .width('100%')
-                Row(){
-                  Text($r("app.string.history_max_items_tips"))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .flexGrow(1)
-                }.width('100%')
-                .padding({left:12, right:12, bottom:6})
+                .padding({ top: 6, bottom: 6 })
               }
-              .width('100%')
-              .padding({top:6, bottom:6})
-            }
 
-            ListItem() {
-              Column(){
-                Row() {
-                  CounterComponent({
-                    options: {
-                      type: CounterType.LIST,
-                      numberOptions: {
-                        label: $r("app.string.history_max_size"),
-                        min: 0,
-                        value: this.historyMaxSize,
-                        max: 999,
-                        onChange: (value) => {
-                          if(this.historyMaxSize !== value){
-                            this.isModified = true;
+              ListItem() {
+                Column() {
+                  Row() {
+                    CounterComponent({
+                      options: {
+                        type: CounterType.LIST,
+                        numberOptions: {
+                          label: $r("app.string.history_max_size"),
+                          min: 0,
+                          value: this.historyMaxSize,
+                          max: 999,
+                          onChange: (value) => {
+                            if (this.historyMaxSize !== value) {
+                              this.isModified = true;
+                            }
+                            this.historyMaxSize = value;
                           }
-                          this.historyMaxSize = value;
-                        }
-                      },
-                    }
-                  })
-                    .width('100%')
+                        },
+                      }
+                    })
+                      .width('100%')
+                  }
+                  .width('100%')
+
+                  Row() {
+                    Text($r("app.string.history_max_size_tips"))
+                      .fontSize(12)
+                      .fontColor($r("app.color.text_secondary"))
+                      .flexGrow(1)
+                  }.width('100%')
+                  .padding({ left: 12, right: 12, bottom: 6 })
                 }
                 .width('100%')
-                Row(){
-                  Text($r("app.string.history_max_size_tips"))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .flexGrow(1)
-                }.width('100%')
-                .padding({left:12, right:12, bottom:6})
+                .padding({ top: 6, bottom: 6 })
               }
-              .width('100%')
-              .padding({top:6, bottom:6})
             }
-          }
-          .margin({ top: 12, bottom: 12 })
-          .backgroundColor($r("app.color.card_bg"))
-          .borderRadius(12)
-          .divider({
-            strokeWidth: 1,
-            color: $r('app.color.divider'),
-          })
+            .margin({ top: 12, bottom: 12 })
+            .backgroundColor($r("app.color.card_bg"))
+            .borderRadius(12)
+            .divider({
+              strokeWidth: 1,
+              color: $r('app.color.divider'),
+            })
 
-          // 其他设置
-          ListItemGroup() {
-            ListItem() {
-              Row() {
-                Text($r("app.string.recycle_bin_enabled"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Toggle({ type: ToggleType.Switch, isOn: this.recycleBinEnabled })
-                  .selectedColor('#007DFF')
-                  .switchPointColor('#FFFFFF')
-                  .onChange((isOn: boolean) => {
-                    if(this.recycleBinEnabled !== isOn){
-                      this.isModified = true;
-                    }
-                    this.recycleBinEnabled = isOn;
-                  })
-              }
-              .justifyContent(FlexAlign.SpaceBetween)
-              .width('100%')
-              .padding(12)
-            }
-            ListItem() {
-              Column() {
+            // 其他设置
+            ListItemGroup() {
+              ListItem() {
                 Row() {
-                  Text($r("app.string.compression_enabled"))
+                  Text($r("app.string.recycle_bin_enabled"))
                     .fontSize(16)
                     .flexGrow(1)
-                  Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
+                  Toggle({ type: ToggleType.Switch, isOn: this.recycleBinEnabled })
                     .selectedColor('#007DFF')
                     .switchPointColor('#FFFFFF')
                     .onChange((isOn: boolean) => {
-                      this.compressionEnabled = isOn;
-                      this.isModified = true;
+                      if (this.recycleBinEnabled !== isOn) {
+                        this.isModified = true;
+                      }
+                      this.recycleBinEnabled = isOn;
                     })
                 }
                 .justifyContent(FlexAlign.SpaceBetween)
                 .width('100%')
-                Row(){
-                  Text($r("app.string.compression_enabled_tips"))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .flexGrow(1)
+                .padding(12)
+              }
+
+              ListItem() {
+                Column() {
+                  Row() {
+                    Text($r("app.string.compression_enabled"))
+                      .fontSize(16)
+                      .flexGrow(1)
+                    Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
+                      .selectedColor('#007DFF')
+                      .switchPointColor('#FFFFFF')
+                      .onChange((isOn: boolean) => {
+                        this.compressionEnabled = isOn;
+                        this.isModified = true;
+                      })
+                  }
+                  .justifyContent(FlexAlign.SpaceBetween)
+                  .width('100%')
+
+                  Row() {
+                    Text($r("app.string.compression_enabled_tips"))
+                      .fontSize(12)
+                      .fontColor($r("app.color.text_secondary"))
+                      .flexGrow(1)
+                  }.width('100%')
+                  .padding({ top: 4 })
                 }.width('100%')
-                .padding({top:4})
-              }.width('100%')
-              .padding({left:12, right:12, top:12, bottom:6})
+                .padding({
+                  left: 12,
+                  right: 12,
+                  top: 12,
+                  bottom: 6
+                })
+              }
             }
+            .margin({ top: 12, bottom: 12 })
+            .backgroundColor($r("app.color.card_bg"))
+            .borderRadius(12)
+            .divider({
+              strokeWidth: 1,
+              color: $r('app.color.divider'),
+            })
           }
-          .margin({ top: 12, bottom: 12 })
-          .backgroundColor($r("app.color.card_bg"))
-          .borderRadius(12)
-          .divider({
-            strokeWidth: 1,
-            color: $r('app.color.divider'),
-          })
+          .width('100%')
+          .height('auto')
+          .margin({ top: 20 })
+
+          // 底部占位符
+          List() {}
+          .width('100%')
+          .height('100')
         }
         .width('100%')
         .height('auto')
-        .margin({ top: 20 })
-      }
-      .width('100%')
+        .layoutWeight(1)
+        .margin({ top: 12 })
+        .padding({ left: 12, right: 12 })
+      }.width('100%')
       .height('auto')
-      .layoutWeight(1)
-      .margin({ top: 12 })
-      .padding({ left: 12, right: 12 })
 
 
       // 操作按钮
