@@ -228,7 +228,7 @@ struct SettingsSecurity {
             }
           }
         }
-        .margin({ top: 6, bottom: 6 })
+        .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
         .borderRadius(12)
         .divider({
@@ -320,7 +320,7 @@ struct SettingsSecurity {
             .padding({left: 16, right: 16, top: 12, bottom: 12})
           }
         }
-        .margin({ top: 6, bottom: 6 })
+        .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
         .borderRadius(12)
         .divider({
@@ -363,7 +363,7 @@ struct SettingsSecurity {
             .padding({left: 16, right: 16, top: 12, bottom: 12})
           }
         }
-        .margin({ top: 6, bottom: 6 })
+        .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
         .borderRadius(12)
         .divider({
