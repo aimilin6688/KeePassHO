@@ -1169,6 +1169,14 @@
     {
       "name": "replace_button_text",
       "value": "替换"
+    },
+    {
+      "name": "history_max_items_tips",
+      "value": "设置为0，则不限制历史条目个数"
+    },
+    {
+      "name": "history_max_size_tips",
+      "value": "设置为0，则不限制历史条目总大小"
     }
   ]
 }
