@@ -330,7 +330,7 @@
     },
     {
       "name": "PasswordGenerator_length",
-      "value": "Password length: %d"
+      "value": "Password length:"
     },
     {
       "name": "PasswordGenerator_uppercase",

@@ -323,7 +323,7 @@
     },
     {
       "name": "PasswordGenerator_length",
-      "value": "密码长度：%d"
+      "value": "密码长度:"
     },
     {
       "name": "PasswordGenerator_uppercase",
