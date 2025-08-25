@@ -18,7 +18,7 @@ export struct PasswordGeneratorDialog {
   @State useUnderscore: boolean = false; // 使用下划线
   @State useSpace: boolean = false; // 使用空格
   @State isAcceptable: boolean = false; // 密码是否可接受
-  @State minLength: number = 1;
+  @State minLength: number = 0;
   @State maxLength: number = 128;
 
   public onGenerate: (password: string) => void = () => {};
@@ -36,6 +36,8 @@ export struct PasswordGeneratorDialog {
    */
   resetPassword() {
     if(this.password !== ''){
+      this.passwordLength = this.password.length;
+      this.evaluatePasswordStrength();
       return;
     }
     this.generatePassword();
@@ -45,6 +47,11 @@ export struct PasswordGeneratorDialog {
    * 生成随机密码
    */
   private generatePassword() {
+    if(this.passwordLength === 0){
+      this.password = '';
+      this.evaluatePasswordStrength();
+      return;
+    }
     let charset = '';
     if (this.useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
     if (this.useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -210,13 +217,15 @@ export struct PasswordGeneratorDialog {
             .fontColor($r('app.color.text_primary'))
             .width(70)
             .onChange((value: string) => {
-              this.passwordLength = parseInt(value) || 1;
-              this.generatePassword();
+              if(value !== this.passwordLength + ""){
+                this.passwordLength = parseInt(value) || 0;
+                this.generatePassword();
+              }
             })
         }
         .width('100%')
         .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ top: 8, bottom: 8 })
+        .margin({ top: 8, bottom: 4 })
 
         Row(){
           Text(this.minLength+"")
@@ -243,7 +252,7 @@ export struct PasswordGeneratorDialog {
             .fontColor($r('app.color.text_primary'))
         }.width('100%')
         .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ bottom: 8 })
+        .margin({ bottom: 4 })
 
         Row(){
           Button('6', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
