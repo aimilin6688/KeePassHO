@@ -32,19 +32,19 @@ export class SettingsService {
   public static readonly KEY_SECURITY_AUTO_LOCK_TIME = 'Security_auto_lock_time';
   public static readonly KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT = 30;
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH = 'Security_quick_lock_password_length';
-  public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 4;
-  // 数据设置
-  public static readonly KEY_DATABASE_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
-  public static readonly KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT = false;
-  public static readonly KEY_DATABASE_FACE_LOGIN = 'Database_face_login';
-  public static readonly KEY_DATABASE_FACE_LOGIN_DEFAULT = false;
-  public static readonly KEY_DATABASE_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
-  public static readonly KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.PASSWORD;
+  public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 3;
+  // 认证方式
+  public static readonly KEY_SECURITY_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
+  public static readonly KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT = true;
+  public static readonly KEY_SECURITY_FACE_LOGIN = 'Database_face_login';
+  public static readonly KEY_SECURITY_FACE_LOGIN_DEFAULT = true;
+  public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
+  public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.FACE;
   // 显示TOTP设置
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP = "Security_list_show_totp";
-  public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = false;
+  public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
-  public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = false;
+  public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = true;
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -221,10 +221,10 @@ export class SettingsService {
   }
 
   static getFingerprintAuthEnable(): boolean {
-    return SettingsService.getInstance().getSync(SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN, SettingsService.KEY_DATABASE_FINGERPRINT_LOGIN_DEFAULT);
+    return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT);
   }
 
   static getFaceAuthEnable(): boolean {
-    return SettingsService.getInstance().getSync(SettingsService.KEY_DATABASE_FACE_LOGIN, SettingsService.KEY_DATABASE_FACE_LOGIN_DEFAULT);
+    return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_FACE_LOGIN, SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT);
   }
 }

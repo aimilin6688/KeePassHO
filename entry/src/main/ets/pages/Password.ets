@@ -172,7 +172,7 @@ struct Password {
     // 加密密钥
     this.encryptPassword = password;
     // 默认认证方式
-    authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE, SettingsService.KEY_DATABASE_AUTH_DEFAULT_TYPE_DEFAULT);
+    authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
 
     // 指纹或者人脸验证
     if(authType === UnlockAuthType.FINGERPRINT) {
