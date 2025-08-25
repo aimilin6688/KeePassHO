@@ -1172,11 +1172,11 @@
     },
     {
       "name": "history_max_items_tips",
-      "value": "设置为0，则不限制历史条目个数"
+      "value": "设置为0，则不限制条目最大历史记录数"
     },
     {
       "name": "history_max_size_tips",
-      "value": "设置为0，则不限制历史条目总大小"
+      "value": "设置为0，则不限制条目历史记录总大小"
     }
   ]
 }

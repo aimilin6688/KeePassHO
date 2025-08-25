@@ -1170,11 +1170,11 @@
     },
     {
       "name": "history_max_items_tips",
-      "value": "If set to 0, there is no limit to the number of historical entries"
+      "value": "If set to 0, there is no limit to the maximum number of historical records for an entry"
     },
     {
       "name": "history_max_size_tips",
-      "value": "If set to 0, there is no limit to the total size of historical entries"
+      "value": "If set to 0, there is no limit to the total size of the entry history"
     }
   ]
 }
