@@ -43,7 +43,7 @@ struct ExportDatabase {
       this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.database_not_opened')) });
       return;
     }
-    this.fileName = FileUtils.replaceExt(dbFile.fileName, "." + this.exportType.toLowerCase());
+    this.fileName = KdbxExportService.createFileName(dbFile.fileName, this.exportType);
   }
 
   // 保存数据库文件到本地
