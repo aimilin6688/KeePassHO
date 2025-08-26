@@ -4,6 +4,7 @@ import { CommonUtils } from './CommonUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import DateUtils from './DateUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
@@ -168,5 +169,19 @@ export default class FileUtils {
     }
     // 替换文件名后缀为指定的后缀
     return fileName.replace(/\.[^.]+$/, ext);
+  }
+
+  /**
+   * 替换文件名后缀
+   * @param fileName 文件名
+   * @param ext 后缀
+   * @returns 文件名
+   */
+  public static fileNameAppendDate(fileName: string): string {
+    if (!fileName) {
+      return DateUtils.getCurrentDate();
+    }
+    // 解析文件名，添加日期保持后缀不变
+    return fileName.replace(/\.[^.]+$/, `_${DateUtils.getCurrentDate()}$&`);
   }
 }
