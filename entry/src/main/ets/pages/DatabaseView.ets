@@ -682,31 +682,36 @@ struct DatabaseView {
         } else {
           // 显示搜索历史
           if(this.searchHistory && this.isSearching){
-            Column({ space: 5 }) {
-              RelativeContainer() {
-                Flex({ wrap: FlexWrap.Wrap }) { // 子组件多行布局
-                  ForEach(this.searchHistory, (searchItem: string, index: number) => {
-                    Button(searchItem)
-                      .height(34)
-                      .fontSize(16)
-                      .fontColor($r('app.color.text_primary'))
-                      .backgroundColor($r("app.color.card_bg"))
-                      .padding({ left: 10, right: 10  })
-                      .onClick(() => {
-                        this.searchText = searchItem;
-                        this.performSearch();
-                      })
-                  })
-                }.width('100%')
-                .padding({left:10, right:10, top: 6, bottom:6})
-                .margin({top:6})
-                .backgroundColor($r("app.color.card_bg"))
+            RelativeContainer() {
+              Flex({ wrap: FlexWrap.Wrap }) { // 子组件多行布局
+                ForEach(this.searchHistory, (searchItem: string, index: number) => {
+                  Button(searchItem)
+                    .height(34)
+                    .fontSize(16)
+                    .fontColor($r('app.color.text_primary'))
+                    .backgroundColor($r("app.color.card_bg"))
+                    .padding({ left: 10, right: 10  })
+                    .onClick(() => {
+                      this.searchText = searchItem;
+                      this.performSearch();
+                    })
+                })
               }
-              Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
-                .height(40)
-                .borderRadius(16)
-                .fontColor($r("app.color.button_text_blue"))
-                .backgroundColor($r("app.color.button_bg_blue"))
+              .width('100%')
+              .padding({left:10, right:10, top: 6, bottom:6})
+              .margin({top:6})
+              .backgroundColor($r("app.color.card_bg"))
+              // 清空历史记录图标
+              Image($r('app.media.ic_delete'))
+                .width(22)
+                .height(22)
+                .margin({ right: 32, top: 16 })
+                .fillColor($r('app.color.button_bg_disabled'))
+                .borderRadius(4)
+                .alignRules({
+                  middle: { anchor: "__container__", align: HorizontalAlign.End },
+                  top: { anchor: "__container__", align: VerticalAlign.Top }
+                })
                 .onClick(() => {
                 })
             }
