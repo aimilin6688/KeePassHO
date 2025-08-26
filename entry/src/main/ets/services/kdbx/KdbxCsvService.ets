@@ -31,7 +31,7 @@ export class KdbxCsvService {
 
     // 遍历所有条目
     for (const entry of database.getDefaultGroup().allEntries()) {
-      const groupPath = KdbxCsvService.getGroupPath(entry.parentGroup);
+      const groupPath = KdbxUtils.getGroupPath(entry.parentGroup);
       const title = KdbxCsvService.getFieldValue(entry, 'Title');
       const username = KdbxCsvService.getFieldValue(entry, 'UserName');
       const password = KdbxCsvService.getFieldValue(entry, 'Password');
@@ -79,26 +79,6 @@ export class KdbxCsvService {
     return '';
   }
 
-  /**
-   * 获取分组路径
-   * @param group 分组
-   * @returns 分组路径字符串
-   */
-  private static getGroupPath(group: KdbxGroup | undefined): string {
-    if (!group) {
-      return '';
-    }
-
-    const path: string[] = [];
-    let currentGroup: KdbxGroup | undefined = group;
-
-    while (currentGroup && currentGroup.name) {
-      path.unshift(currentGroup.name);
-      currentGroup = currentGroup.parentGroup;
-    }
-
-    return path.join('/');
-  }
 
   /**
    * 获取字段值

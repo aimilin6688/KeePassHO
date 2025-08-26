@@ -250,13 +250,7 @@ struct EntryView {
    * 获取分组名称
    */
   private getGroupName(): string {
-    if (this.database && this.groupId) {
-      return ResourceManager.getString(KdbxUtils.getFieldName(this.database.getGroup(this.groupId)?.name) || '');
-    }
-    if (this.entry && this.entry.parentGroup) {
-      return ResourceManager.getString(KdbxUtils.getFieldName(this.entry.parentGroup?.name) || '');
-    }
-    return '';
+    return KdbxUtils.getGroupPath(this.entry?.parentGroup, "/", false);
   }
 
   /**
