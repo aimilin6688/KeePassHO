@@ -1,19 +1,22 @@
 import { Router } from '@kit.ArkUI';
+import { KdbxUuid } from 'kdbxweb';
+import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
+import KdbxUtils from '../common/utils/KdbxUtils';
 import ResourceManager from '../common/utils/ResourceManager';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
-import { AuthService } from '../services/AuthService';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { SettingsService, UnlockAuthType } from '../services/SettingsService';
+import { SettingsService } from '../services/SettingsService';
 
 
 @Entry
 @Component
 struct SettingsDatabase {
   @State isDatabaseValid: boolean = false;
+  @State algorithmType:ResourceStr = ResourceManager.getString($r("app.string.please_select"));
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-  private settingsService: SettingsService = SettingsService.getInstance();
+
   private changePasswordDialogController: CustomDialogController = new CustomDialogController({
     builder: ChangePasswordDialog({
       onSuccess: this.handlePasswordChange.bind(this)
@@ -30,12 +33,19 @@ struct SettingsDatabase {
     { value: ExportType.CSV, type: ExportType.CSV }
   ];
 
+  // 加密算法
+  private algorithmOptions: Array<AlgorithmOptions> = [
+    { value: $r('app.string.Settings_database_algorithm_aes'), type: CipherId.Aes },
+    { value: $r('app.string.Settings_database_algorithm_chacha20'), type: CipherId.ChaCha20 }
+  ];
+
   aboutToAppear(): void {
   }
 
   onPageShow(): void {
     const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
+    this.algorithmType = this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
   }
 
   // 修改密码弹框
@@ -75,6 +85,20 @@ struct SettingsDatabase {
     });
   }
 
+  // 重新加密算法
+  private resetDatabaseAlgorithm(algorithmId: string) {
+    FileService.getDbFileParam().database.header.dataCipherUuid = new KdbxUuid(algorithmId);
+    // 保存数据库
+    KdbxUtils.saveDatabase({
+      onSuccess: () => {
+        this.promptAction.showToast({ message: $r("app.string.save_success"),duration: 2000});
+      },
+      onError: (errorMessage: string) => {
+        this.promptAction.showToast({message: $r('app.string.save_failed_message', errorMessage), duration: 2000});
+      }
+    });
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -108,7 +132,6 @@ struct SettingsDatabase {
                 Image($r('app.media.ic_arrow_right'))
                   .width(20)
                   .height(20)
-                  .margin({ right: 10 })
                   .fillColor($r('app.color.text_primary'))
               }
               .width('100%')
@@ -136,7 +159,6 @@ struct SettingsDatabase {
                 Image($r('app.media.ic_arrow_right'))
                   .width(20)
                   .height(20)
-                  .margin({ right: 10 })
                   .fillColor($r('app.color.text_primary'))
               }
               .width('100%')
@@ -158,7 +180,6 @@ struct SettingsDatabase {
                 Image($r('app.media.ic_arrow_right'))
                   .width(20)
                   .height(20)
-                  .margin({ right: 10 })
                   .fillColor($r('app.color.text_primary'))
               }
               .width('100%')
@@ -172,6 +193,26 @@ struct SettingsDatabase {
             }
 
             // 数据库算法
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_database_algorithm"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Select(this.algorithmOptions)
+                  .value(this.algorithmType)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.resetDatabaseAlgorithm(this.algorithmOptions[index].type);
+                  })
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+              })
+            }
 
           }
           .margin({ top: 12, bottom: 12 })
@@ -246,4 +287,9 @@ export enum ExportType {
   KDBX = "KDBX",
   XML = "XML",
   CSV = "CSV",
+}
+
+export interface AlgorithmOptions {
+  value: ResourceStr;
+  type: string;
 }
