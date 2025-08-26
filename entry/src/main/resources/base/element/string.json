@@ -1175,6 +1175,10 @@
     {
       "name": "history_max_size_tips",
       "value": "If set to 0, there is no limit to the total size of the entry history"
+    },
+    {
+      "name": "security_search_history_enabled",
+      "value": "Enable search history"
     }
   ]
 }
