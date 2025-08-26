@@ -17,6 +17,7 @@ import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import ResourceManager from '../common/utils/ResourceManager';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
+import { RecentFilesService } from '../services/RecentFilesService';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -42,6 +43,7 @@ struct DatabaseView {
   @State refreshText: ResourceStr = $r('app.string.refreshing_message');
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
+  @State searchHistory: Array<string> = [];
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
@@ -534,6 +536,20 @@ struct DatabaseView {
     this.router.pushUrl({ url: 'pages/UnLockDatabase' })
   }
 
+  /**
+   * 执行搜索
+   */
+  private showSearch() {
+    this.isSearching = true;
+    this.searchText = '';
+    this.filteredGroups = [...this.groups];
+    this.filteredEntries = [...this.entries];
+    // 获取搜索历史
+    RecentFilesService.getSearchHistory(FileService.getDbFileParam().filePath).then(history => {
+      this.searchHistory = history;
+    });
+  }
+
   build() {
     Stack() {
       Column() {
@@ -566,10 +582,7 @@ struct DatabaseView {
                 .height(24)
                 .margin({ right: 16 })
                 .onClick(() => {
-                  this.isSearching = true;
-                  this.searchText = '';
-                  this.filteredGroups = [...this.groups];
-                  this.filteredEntries = [...this.entries];
+                  this.showSearch();
                 })
               // 锁定数据库
               Image($r('app.media.ic_lock'))
@@ -617,6 +630,7 @@ struct DatabaseView {
               .onSubmit((value: string) => {
                 this.searchText = value;
                 this.performSearch();
+                RecentFilesService.addSearchHistory(FileService.getDbFileParam().filePath, this.searchText);
               })
               .onAppear(() => {
                 try {
@@ -624,6 +638,9 @@ struct DatabaseView {
                 } catch (error) {
                   hilog.error(DOMAIN, TAG, 'SearchKey con not get focus: %{public}s', error?.message);
                 }
+              })
+              .onBlur(()=>{
+                RecentFilesService.addSearchHistory(FileService.getDbFileParam().filePath, this.searchText);
               })
             Button($r('app.string.cancel_button_text'))
               .width(70)
@@ -663,6 +680,38 @@ struct DatabaseView {
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
         } else {
+          // 显示搜索历史
+          if(this.searchHistory && this.isSearching){
+            Column({ space: 5 }) {
+              RelativeContainer() {
+                Flex({ wrap: FlexWrap.Wrap }) { // 子组件多行布局
+                  ForEach(this.searchHistory, (searchItem: string, index: number) => {
+                    Button(searchItem)
+                      .height(34)
+                      .fontSize(16)
+                      .fontColor($r('app.color.text_primary'))
+                      .backgroundColor($r("app.color.card_bg"))
+                      .padding({ left: 10, right: 10  })
+                      .onClick(() => {
+                        this.searchText = searchItem;
+                        this.performSearch();
+                      })
+                  })
+                }.width('100%')
+                .padding({left:10, right:10, top: 6, bottom:6})
+                .margin({top:6})
+                .backgroundColor($r("app.color.card_bg"))
+              }
+              Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
+                .height(40)
+                .borderRadius(16)
+                .fontColor($r("app.color.button_text_blue"))
+                .backgroundColor($r("app.color.button_bg_blue"))
+                .onClick(() => {
+                })
+            }
+            .width('100%')
+          }
           Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
@@ -764,7 +813,12 @@ struct DatabaseView {
                   .width('100%')
                   .borderRadius(8)
                   .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
-                  .padding({ left: 10, right: 10, top: 8, bottom: 8  })
+                  .padding({
+                    left: 10,
+                    right: 10,
+                    top: 8,
+                    bottom: 8
+                  })
                   .onClick(() => {
                     this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
                   })
