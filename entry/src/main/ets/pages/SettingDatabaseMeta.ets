@@ -228,75 +228,72 @@ struct SettingDatabaseMeta {
             // 历史记录设置
             ListItemGroup() {
               ListItem() {
-                Column() {
-                  Row() {
-                    CounterComponent({
-                      options: {
-                        type: CounterType.LIST,
-                        numberOptions: {
-                          label: $r("app.string.history_max_items"),
-                          min: 0,
-                          value: this.historyMaxItems,
-                          max: 999,
-                          onChange: (value) => {
-                            if (this.historyMaxItems !== value) {
-                              this.isModified = true;
-                            }
-                            this.historyMaxItems = value;
-                          }
-                        }
-                      }
-                    })
-                      .width('100%')
-                  }
-                  .width('100%')
+                Row(){
+                  Column(){
+                    Text($r("app.string.history_max_items"))
+                      .fontSize(16)
+                      .fontColor($r("app.color.text_primary"))
 
-                  Row() {
                     Text($r("app.string.history_max_items_tips"))
                       .fontSize(12)
                       .fontColor($r("app.color.text_secondary"))
-                      .flexGrow(1)
-                  }.width('100%')
-                  .padding({ left: 12, right: 12, bottom: 6 })
-                }
-                .width('100%')
-                .padding({ top: 6, bottom: 6 })
+                      .margin({ top: 4 })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  Blank()
+                  CounterComponent({
+                    options: {
+                      type: CounterType.COMPACT,
+                      numberOptions: {
+                        min: 0,
+                        value: this.historyMaxItems,
+                        max: 999,
+                        onChange: (value) => {
+                          if (this.historyMaxItems !== value) {
+                            this.isModified = true;
+                          }
+                          this.historyMaxItems = value;
+                        }
+                      }
+                    }
+                  })
+                }.width("100%")
+                .padding(12)
               }
 
               ListItem() {
-                Column() {
-                  Row() {
-                    CounterComponent({
-                      options: {
-                        type: CounterType.LIST,
-                        numberOptions: {
-                          label: $r("app.string.history_max_size"),
-                          min: 0,
-                          value: this.historyMaxSize,
-                          max: 999,
-                          onChange: (value) => {
-                            if (this.historyMaxSize !== value) {
-                              this.isModified = true;
-                            }
-                            this.historyMaxSize = value;
-                          }
-                        },
-                      }
-                    })
-                      .width('100%')
-                  }
-                  .width('100%')
+                Row(){
+                  Column(){
+                    Text($r("app.string.history_max_size"))
+                      .fontSize(16)
+                      .fontColor($r("app.color.text_primary"))
 
-                  Row() {
                     Text($r("app.string.history_max_size_tips"))
                       .fontSize(12)
                       .fontColor($r("app.color.text_secondary"))
-                      .flexGrow(1)
-                  }.width('100%')
-                  .padding({ left: 12, right: 12, bottom: 6 })
+                      .margin({ top: 4 })
+                  }.alignItems(HorizontalAlign.Start)
+                  Blank()
+                  CounterComponent({
+                    options: {
+                      type: CounterType.COMPACT,
+                      numberOptions: {
+                        min: 0,
+                        value: this.historyMaxSize,
+                        max: 999,
+                        onChange: (value) => {
+                          if (this.historyMaxSize !== value) {
+                            this.isModified = true;
+                          }
+                          this.historyMaxSize = value;
+                        }
+                      },
+                    }
+                  })
                 }
                 .width('100%')
-                .padding({ top: 6, bottom: 6 })
+                .height(60)
+                .padding(12)
               }
             }
             .margin({ top: 12, bottom: 12 })
