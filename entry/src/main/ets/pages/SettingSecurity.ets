@@ -10,6 +10,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 @Component
 struct SettingsSecurity {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
+  @State searchHistoryEnabled: boolean = SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT;
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   @State autoLockTime: number = SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT;
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
@@ -75,6 +76,11 @@ struct SettingsSecurity {
     // 获取是否开启下拉刷新功能
     this.settingsService.get(SettingsService.KEY_SECURITY_PULL_REFRESH, this.isPullToRefresh).then(result => {
       this.isPullToRefresh = result;
+    });
+
+    // 是否启用搜索历史
+    this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, this.searchHistoryEnabled).then(result => {
+      this.searchHistoryEnabled = result;
     });
 
     // 获取清理剪切板时间
@@ -248,6 +254,23 @@ struct SettingsSecurity {
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_SECURITY_PULL_REFRESH, isOn);
+                })
+            }
+            .width('100%')
+            .padding({left: 16, right: 16, top: 12, bottom: 12})
+          }
+
+          // 搜索历史
+          ListItem() {
+            Row() {
+              Text($r("app.string.security_search_history_enabled"))
+                .fontSize(16)
+                .flexGrow(1)
+              Toggle({ type: ToggleType.Switch, isOn: this.searchHistoryEnabled })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.settingsService.put(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, isOn);
                 })
             }
             .width('100%')

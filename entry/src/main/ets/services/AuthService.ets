@@ -78,7 +78,7 @@ export class AuthService {
       CommonUtils.showToast($r('app.string.fingerprint_not_support'));
       return;
     }
-    if(!SettingsService.getFingerprintAuthEnable()) {
+    if(!SettingsService.isFingerprintAuthEnable()) {
       CommonUtils.showToast($r('app.string.fingerprint_not_enabled'));
       return;
     }
@@ -94,7 +94,7 @@ export class AuthService {
       CommonUtils.showToast($r('app.string.face_not_support'));
       return;
     }
-    if(!SettingsService.getFaceAuthEnable()) {
+    if(!SettingsService.isFaceAuthEnable()) {
       CommonUtils.showToast($r('app.string.face_not_enabled'));
       return;
     }
@@ -115,11 +115,11 @@ export class AuthService {
   }
 
   public static isFingerprintSupportAndEnabled():boolean {
-    return AuthService.instance.isFingerprintSupport && SettingsService.getFingerprintAuthEnable();
+    return AuthService.instance.isFingerprintSupport && SettingsService.isFingerprintAuthEnable();
   }
 
   public static isFaceSupportAndEnabled(): boolean {
-    return AuthService.instance.isFaceSupport && SettingsService.getFaceAuthEnable();
+    return AuthService.instance.isFaceSupport && SettingsService.isFaceAuthEnable();
   }
 
   // 开始指纹验证

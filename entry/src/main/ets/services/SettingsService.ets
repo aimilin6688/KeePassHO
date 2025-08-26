@@ -27,6 +27,8 @@ export class SettingsService {
   // 安全设置
   public static readonly KEY_SECURITY_PULL_REFRESH = 'Security_PullRefresh';
   public static readonly KEY_SECURITY_PULL_REFRESH_DEFAULT = true;
+  public static readonly KEY_SECURITY_SEARCH_HISTORY_ENABLE = 'Security_search_history';
+  public static readonly KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT = true;
   public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME = 'Security_clear_pasteboard_time';
   public static readonly KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT = 30;
   public static readonly KEY_SECURITY_AUTO_LOCK_TIME = 'Security_auto_lock_time';
@@ -220,11 +222,15 @@ export class SettingsService {
     SettingsService.getInstance().unregisterObserver(observer);
   }
 
-  static getFingerprintAuthEnable(): boolean {
+  public static isFingerprintAuthEnable(): boolean {
     return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT);
   }
 
-  static getFaceAuthEnable(): boolean {
+  public static isFaceAuthEnable(): boolean {
     return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_FACE_LOGIN, SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT);
+  }
+
+  public static isSearchHistoryEnable(): boolean {
+    return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT);
   }
 }

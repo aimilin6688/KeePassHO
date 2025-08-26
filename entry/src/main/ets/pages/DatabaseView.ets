@@ -46,6 +46,7 @@ struct DatabaseView {
   @State searchHistory: Array<string> = [];
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
+  private filePath:string = '';
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private currentGroup: KdbxGroup | undefined = undefined;
@@ -138,6 +139,7 @@ struct DatabaseView {
     const params = FileService.getDbFileParam();
     this.titleName = params.fileName ?? '';
     this.database = params.database ?? null;
+    this.filePath = params.filePath ?? '';
 
     // 获取排序方式
     return this.settingsService.getSortBy().then((sortBy: SortMode): void => {
@@ -545,8 +547,53 @@ struct DatabaseView {
     this.filteredGroups = [...this.groups];
     this.filteredEntries = [...this.entries];
     // 获取搜索历史
-    RecentFilesService.getSearchHistory(FileService.getDbFileParam().filePath).then(history => {
+    this.loadSearchHistory();
+  }
+
+  /**
+   * 添加搜索历史
+   */
+  private addAndGetSearchHistory(){
+    if(!this.searchText){
+      return;
+    }
+    RecentFilesService.addSearchHistory(this.filePath, this.searchText).then(result=>{
+      this.loadSearchHistory();
+    });
+  }
+
+  /**
+   * 获取搜索历史
+   */
+  private loadSearchHistory(){
+    RecentFilesService.getSearchHistory(this.filePath).then(history => {
       this.searchHistory = history;
+    });
+  }
+
+  /**
+   * 清空搜索历史
+   */
+  private clearSearchHistory() {
+    if (!this.searchHistory) {
+      return;
+    }
+    this.getUIContext().showAlertDialog({
+      title: $r('app.string.dialog_confirm_title'),
+      message: $r('app.string.dialog_delete_confirm_message'),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r('app.string.confirm_button_text'),
+        action: () => {
+          RecentFilesService.clearSearchHistory(this.filePath).then(result=>{
+            this.searchHistory = [];
+          });
+        }
+      }
     });
   }
 
@@ -630,7 +677,7 @@ struct DatabaseView {
               .onSubmit((value: string) => {
                 this.searchText = value;
                 this.performSearch();
-                RecentFilesService.addSearchHistory(FileService.getDbFileParam().filePath, this.searchText);
+                this.addAndGetSearchHistory();
               })
               .onAppear(() => {
                 try {
@@ -639,8 +686,8 @@ struct DatabaseView {
                   hilog.error(DOMAIN, TAG, 'SearchKey con not get focus: %{public}s', error?.message);
                 }
               })
-              .onBlur(()=>{
-                RecentFilesService.addSearchHistory(FileService.getDbFileParam().filePath, this.searchText);
+              .onBlur(() => {
+                this.addAndGetSearchHistory();
               })
             Button($r('app.string.cancel_button_text'))
               .width(70)
@@ -681,26 +728,31 @@ struct DatabaseView {
           .backgroundColor($r("app.color.bg_primary"))
         } else {
           // 显示搜索历史
-          if(this.searchHistory && this.isSearching){
+          if (this.isSearching && this.searchHistory && this.searchHistory.length > 0) {
             RelativeContainer() {
-              Flex({ wrap: FlexWrap.Wrap }) { // 子组件多行布局
+              List() {
                 ForEach(this.searchHistory, (searchItem: string, index: number) => {
-                  Button(searchItem)
-                    .height(34)
-                    .fontSize(16)
-                    .fontColor($r('app.color.text_primary'))
-                    .backgroundColor($r("app.color.card_bg"))
-                    .padding({ left: 10, right: 10  })
-                    .onClick(() => {
-                      this.searchText = searchItem;
-                      this.performSearch();
-                    })
+                  ListItem(){
+                    Button(searchItem)
+                      .height(34)
+                      .fontSize(16)
+                      .fontColor($r('app.color.text_primary'))
+                      .backgroundColor($r("app.color.card_bg"))
+                      .padding({ left: 10, right: 10 })
+                      .onClick(() => {
+                        this.searchText = searchItem;
+                        this.performSearch();
+                      })
+                  }
                 })
               }
-              .width('100%')
-              .padding({left:10, right:10, top: 6, bottom:6})
-              .margin({top:6})
-              .backgroundColor($r("app.color.card_bg"))
+              .padding({
+                left: 10,
+                right: 10,
+                top: 10,
+                bottom: 6
+              })
+              .listDirection(Axis.Horizontal)
               // 清空历史记录图标
               Image($r('app.media.ic_delete'))
                 .width(22)
@@ -713,9 +765,13 @@ struct DatabaseView {
                   top: { anchor: "__container__", align: VerticalAlign.Top }
                 })
                 .onClick(() => {
+                  this.clearSearchHistory();
                 })
             }
+            .margin({ top: 6 })
             .width('100%')
+            .backgroundColor($r("app.color.card_bg"))
+            .height(58)
           }
           Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
             // 数据库内容
