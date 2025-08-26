@@ -279,11 +279,6 @@ export interface RecentFile {
    * 加密密码信息
    */
   password?: string;
-
-  /**
-   * 搜索历史
-   */
-  searchHistory?: string[];
 }
 
 /**
