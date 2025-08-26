@@ -149,6 +149,7 @@ struct SettingsDatabase {
               })
             }
 
+            // 自定义图标
             ListItem() {
               Row() {
                 Text($r("app.string.Settings_custom_icons"))
@@ -169,6 +170,9 @@ struct SettingsDatabase {
                 });
               })
             }
+
+            // 数据库算法
+
           }
           .margin({ top: 12, bottom: 12 })
           .backgroundColor($r("app.color.card_bg"))
