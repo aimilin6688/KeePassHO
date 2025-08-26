@@ -1056,7 +1056,7 @@
     },
     {
       "name": "compression_enabled_tips",
-      "value": "启用压缩会延长加载和保存的速度，但会较少数据库的大小"
+      "value": "启用压缩会延长加载和保存的速度"
     },
     {
       "name": "auth_by_face",
