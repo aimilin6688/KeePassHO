@@ -369,7 +369,7 @@ struct SettingDatabaseMeta {
           }
           .width('100%')
           .height('auto')
-          .margin({ top: 20 })
+          .margin({ top: 12 })
 
           // 底部占位符
           List() {}
