@@ -1181,6 +1181,18 @@
     {
       "name": "security_search_history_enabled",
       "value": "启用搜索历史"
+    },
+    {
+      "name": "Settings_database_algorithm",
+      "value": "算法"
+    },
+    {
+      "name": "Settings_database_algorithm_aes",
+      "value": "AES/Rijndael (256-bit key,FIPS 197)"
+    },
+    {
+      "name": "Settings_database_algorithm_chacha20",
+      "value": "ChaCha20 (256-bit key,RFC 7539)"
     }
   ]
 }
