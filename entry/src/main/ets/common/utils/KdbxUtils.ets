@@ -470,6 +470,28 @@ export default class KdbxUtils {
     }
     return kdbxError.message;
   }
+
+  /**
+   * 获取分组路径
+   * @param group 分组
+   * @returns 分组路径字符串
+   */
+  public static getGroupPath(group: KdbxGroup | undefined, splitChar: string = '/', includeRoot: boolean = true): string {
+    if (!group) {
+      return '';
+    }
+    const path: string[] = [];
+    let currentGroup: KdbxGroup | undefined = group;
+
+    while (currentGroup && currentGroup.name) {
+      path.unshift(currentGroup.name);
+      currentGroup = currentGroup.parentGroup;
+    }
+    if (!includeRoot && path.length > 0) {
+      path.shift();
+    }
+    return path.join(splitChar);
+  }
 }
 
 /**
