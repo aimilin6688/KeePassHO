@@ -38,15 +38,16 @@ export class KdbxExportService {
    * @param exportType
    */
   public static createFileName(fileName: string, exportType: ExportType): string {
+    fileName = fileName || "database";
     if (ExportType.KDBX === exportType) {
-      return FileUtils.replaceExt(fileName, ".kdbx");
+      fileName = FileUtils.replaceExt(fileName, ".kdbx");
     }
-    if (ExportType.XML === exportType) {
-      return FileUtils.replaceExt(fileName, ".xml");
+    else if (ExportType.XML === exportType) {
+      fileName = FileUtils.replaceExt(fileName, ".xml");
     }
-    if (ExportType.CSV === exportType) {
-      return FileUtils.replaceExt(fileName, ".csv");
+    else if (ExportType.CSV === exportType) {
+      fileName = FileUtils.replaceExt(fileName, ".csv");
     }
-    return fileName;
+    return FileUtils.fileNameAppendDate(fileName);
   }
 }
