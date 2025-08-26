@@ -278,46 +278,4 @@ export class RecentFilesService {
       });
     });
   }
-
-  /**
-   * 清空文件数据库的搜索历史
-   * @param filePath 最近文件
-   * @returns 结果
-   */
-  public static clearSearchHistory(filePath: string): Promise<boolean> {
-    return RecentFilesService.getRecentFile(filePath).then((recentFile) => {
-      if (!recentFile) {
-        return false;
-      }
-      recentFile.searchHistory = undefined;
-      return RecentFilesService.addRecentFile(recentFile).then(result => {
-        return true;
-      });
-    });
-  }
-
-  /**
-   * 设置最近文件的密码
-   * @param filePath 文件路径
-   * @param password 密码
-   * @returns 结果
-   */
-  public static addSearchHistory(filePath: string, keyword: string): Promise<boolean> {
-    if (!filePath || !keyword) {
-      return Promise.resolve(false);
-    }
-    return RecentFilesService.getRecentFile(filePath).then((recentFile) => {
-      if (!recentFile) {
-        return false;
-      }
-      // 添加搜索历史
-      recentFile.searchHistory = recentFile.searchHistory ? recentFile.searchHistory : [];
-      recentFile.searchHistory.push(keyword);
-      // 最多保存10条
-      recentFile.searchHistory = recentFile.searchHistory.slice(-10);
-      return RecentFilesService.addRecentFile(recentFile).then(result => {
-        return true;
-      });
-    });
-  }
 }
