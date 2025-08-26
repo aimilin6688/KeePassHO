@@ -8,6 +8,7 @@ import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import DeviceUtils from '../common/utils/DeviceUtils';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
+import { SettingsService } from './SettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -96,7 +97,7 @@ export class RecentFilesService {
       const existingIndex = recentFiles.findIndex(file => file.filePath === recentFile.filePath);
       if (existingIndex !== -1) {
         // 如果文件已经在列表中，则将其移除
-        if(recentFile.searchHistory === undefined){
+        if (recentFile.searchHistory === undefined) {
           recentFile.searchHistory = recentFiles[existingIndex].searchHistory;
         }
         recentFiles.splice(existingIndex, 1);
@@ -293,7 +294,7 @@ export class RecentFilesService {
       if (!recentFile) {
         return false;
       }
-      recentFile.searchHistory = undefined;
+      recentFile.searchHistory = [];
       return RecentFilesService.addRecentFile(recentFile).then(result => {
         return true;
       });
@@ -310,6 +311,11 @@ export class RecentFilesService {
     if (!filePath || !keyword) {
       return Promise.resolve(false);
     }
+    const enableSearchHistory: boolean = SettingsService.isSearchHistoryEnable();
+    if (!enableSearchHistory) {
+      hilog.info(DOMAIN, TAG, `Search history is disabled`);
+      return Promise.resolve(false);
+    }
     return RecentFilesService.getRecentFile(filePath).then((recentFile) => {
       if (!recentFile) {
         return false;
@@ -319,7 +325,7 @@ export class RecentFilesService {
       // 已经存在则直接移除
       recentFile.searchHistory = recentFile.searchHistory.filter(item => item !== keyword);
       // 添加搜索历史
-      recentFile.searchHistory.push(keyword);
+      recentFile.searchHistory.unshift(keyword);
       // 最多保存10条
       recentFile.searchHistory = recentFile.searchHistory.slice(-10);
       return RecentFilesService.addRecentFile(recentFile).then(result => {
@@ -332,6 +338,11 @@ export class RecentFilesService {
    * 获取搜索历史记录
    */
   public static getSearchHistory(filePath: string): Promise<Array<string>> {
+    const enableSearchHistory: boolean = SettingsService.isSearchHistoryEnable();
+    if (!enableSearchHistory) {
+      hilog.info(DOMAIN, TAG, `Search history is disabled`);
+      return Promise.resolve([]);
+    }
     return RecentFilesService.getRecentFile(filePath).then((recentFile) => {
       if (!recentFile) {
         return [];
