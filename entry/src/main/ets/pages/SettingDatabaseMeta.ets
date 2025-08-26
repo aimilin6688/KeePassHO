@@ -240,6 +240,8 @@ struct SettingDatabaseMeta {
                       .margin({ top: 4 })
                   }
                   .alignItems(HorizontalAlign.Start)
+                  .flexGrow(1)
+                  .layoutWeight(1)
                   Blank()
                   CounterComponent({
                     options: {
@@ -273,6 +275,8 @@ struct SettingDatabaseMeta {
                       .fontColor($r("app.color.text_secondary"))
                       .margin({ top: 4 })
                   }.alignItems(HorizontalAlign.Start)
+                  .flexGrow(1)
+                  .layoutWeight(1)
                   Blank()
                   CounterComponent({
                     options: {
@@ -327,11 +331,22 @@ struct SettingDatabaseMeta {
               }
 
               ListItem() {
-                Column() {
-                  Row() {
+                Row(){
+                  Column(){
                     Text($r("app.string.compression_enabled"))
                       .fontSize(16)
                       .flexGrow(1)
+
+                    Text($r("app.string.compression_enabled_tips"))
+                      .fontSize(12)
+                      .fontColor($r("app.color.text_secondary"))
+                      .padding({ top: 4 })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .flexGrow(1)
+                  .layoutWeight(1)
+                  Blank()
+                  Column() {
                     Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
                       .selectedColor('#007DFF')
                       .switchPointColor('#FFFFFF')
@@ -340,23 +355,8 @@ struct SettingDatabaseMeta {
                         this.isModified = true;
                       })
                   }
-                  .justifyContent(FlexAlign.SpaceBetween)
-                  .width('100%')
-
-                  Row() {
-                    Text($r("app.string.compression_enabled_tips"))
-                      .fontSize(12)
-                      .fontColor($r("app.color.text_secondary"))
-                      .flexGrow(1)
-                  }.width('100%')
-                  .padding({ top: 4 })
-                }.width('100%')
-                .padding({
-                  left: 12,
-                  right: 12,
-                  top: 12,
-                  bottom: 6
-                })
+                }.width("100%")
+                .padding(12)
               }
             }
             .margin({ top: 12, bottom: 12 })
