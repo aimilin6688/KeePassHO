@@ -96,7 +96,9 @@ export class RecentFilesService {
       const existingIndex = recentFiles.findIndex(file => file.filePath === recentFile.filePath);
       if (existingIndex !== -1) {
         // 如果文件已经在列表中，则将其移除
-        recentFile.searchHistory = recentFiles[existingIndex].searchHistory;
+        if(recentFile.searchHistory === undefined){
+          recentFile.searchHistory = recentFiles[existingIndex].searchHistory;
+        }
         recentFiles.splice(existingIndex, 1);
       }
 
