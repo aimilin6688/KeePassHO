@@ -1,5 +1,3 @@
-import { ComponentContent } from "@kit.ArkUI";
-
 /**
  * 密码生成器对话框组件
  */
@@ -18,12 +16,9 @@ export struct PasswordGeneratorDialog {
   @State useUnderscore: boolean = false; // 使用下划线
   @State useSpace: boolean = false; // 使用空格
   @State isAcceptable: boolean = false; // 密码是否可接受
-  @State minLength: number = 0;
-  @State maxLength: number = 128;
 
   public onGenerate: (password: string) => void = () => {};
   private controller: CustomDialogController;
-
 
   // 显示时评估密码强度
   aboutToAppear(): void {
@@ -36,8 +31,6 @@ export struct PasswordGeneratorDialog {
    */
   resetPassword() {
     if(this.password !== ''){
-      this.passwordLength = this.password.length;
-      this.evaluatePasswordStrength();
       return;
     }
     this.generatePassword();
@@ -47,11 +40,6 @@ export struct PasswordGeneratorDialog {
    * 生成随机密码
    */
   private generatePassword() {
-    if(this.passwordLength === 0){
-      this.password = '';
-      this.evaluatePasswordStrength();
-      return;
-    }
     let charset = '';
     if (this.useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
     if (this.useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -157,11 +145,9 @@ export struct PasswordGeneratorDialog {
 
       // 密码生成器内容
       Column() {
-        TextArea({ text: this.password })
-          .lineHeight(24)
-          .padding({ top: 12, bottom: 12 })
+        TextInput({ text: this.password })
+          .height(48)
           .fontSize(16)
-          .height(52)
           .fontColor($r('app.color.text_primary'))
           .borderRadius(8)
           .width("100%")
@@ -208,80 +194,24 @@ export struct PasswordGeneratorDialog {
 
         // 密码长度滑块
         Row() {
-          Text($r('app.string.PasswordGenerator_length'))
+          Text($r('app.string.PasswordGenerator_length', this.passwordLength))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
-          Blank()
-          TextInput({text: this.passwordLength+""})
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .width(70)
-            .onChange((value: string) => {
-              if(value !== this.passwordLength + ""){
-                this.passwordLength = parseInt(value) || 0;
-                this.generatePassword();
-              }
+          Slider({
+            value: this.passwordLength,
+            min: 1,
+            max: 32,
+            step: 1,
+            style: SliderStyle.OutSet
+          })
+            .width('60%')
+            .onChange((value: number) => {
+              this.passwordLength = value;
             })
         }
         .width('100%')
         .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ top: 8, bottom: 4 })
-
-        Row(){
-          Text(this.minLength+"")
-            .fontSize($r('sys.float.Caption_L'))
-            .clip(true)
-            .textAlign(TextAlign.Center)
-            .fontColor($r('app.color.text_primary'))
-          Slider({
-            value: this.passwordLength,
-            min: this.minLength,
-            max: this.maxLength,
-            step: 1,
-            style: SliderStyle.OutSet
-          })
-            .width('90%')
-            .onChange((value: number) => {
-              this.passwordLength = value;
-              this.generatePassword();
-            })
-          Text(this.maxLength+"")
-            .fontSize($r('sys.float.Caption_L'))
-            .clip(true)
-            .textAlign(TextAlign.Center)
-            .fontColor($r('app.color.text_primary'))
-        }.width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ bottom: 4 })
-
-        Row(){
-          Button('6', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 6;
-            this.generatePassword();
-          }).width(40);
-          Button('8', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 8;
-            this.generatePassword();
-          }).width(40);
-          Button('16', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 16;
-            this.generatePassword();
-          }).width(40);
-          Button('32', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 32;
-            this.generatePassword();
-          }).width(40);
-          Button('64', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 64;
-            this.generatePassword();
-          }).width(40);
-          Button('128', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 128;
-            this.generatePassword();
-          }).width(40);
-        }.width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ bottom: 8 })
+        .margin({ top: 8, bottom: 8 })
 
         // 大写字母选项
         Row() {
