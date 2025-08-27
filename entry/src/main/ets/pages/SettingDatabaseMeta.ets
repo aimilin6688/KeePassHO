@@ -259,10 +259,13 @@ struct SettingDatabaseMeta {
                       }
                     }
                   })
-                }.width("100%")
+                    .margin({ top: 10 })
+                }
+                .width("100%")
                 .padding(12)
               }
 
+              // 条目最大大小
               ListItem() {
                 Row(){
                   Column(){
@@ -274,7 +277,8 @@ struct SettingDatabaseMeta {
                       .fontSize(12)
                       .fontColor($r("app.color.text_secondary"))
                       .margin({ top: 4 })
-                  }.alignItems(HorizontalAlign.Start)
+                  }
+                  .alignItems(HorizontalAlign.Start)
                   .flexGrow(1)
                   .layoutWeight(1)
                   Blank()
@@ -294,9 +298,9 @@ struct SettingDatabaseMeta {
                       },
                     }
                   })
+                    .margin({ top: 10 })
                 }
                 .width('100%')
-                .height(60)
                 .padding(12)
               }
             }
@@ -310,6 +314,7 @@ struct SettingDatabaseMeta {
 
             // 其他设置
             ListItemGroup() {
+              // 启用回收站
               ListItem() {
                 Row() {
                   Text($r("app.string.recycle_bin_enabled"))
@@ -330,6 +335,7 @@ struct SettingDatabaseMeta {
                 .padding(12)
               }
 
+              // 启用压缩
               ListItem() {
                 Row(){
                   Column(){

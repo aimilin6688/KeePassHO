@@ -28,9 +28,9 @@ struct SettingsDatabase {
   });
   // 数据库导出类型
   private exportTypeOptions: Array<ExportTypeOptions> = [
-    { value: ExportType.KDBX, type: ExportType.KDBX },
-    { value: ExportType.XML, type: ExportType.XML },
-    { value: ExportType.CSV, type: ExportType.CSV }
+    { value: $r('app.string.export_type_kdbx'), type: ExportType.KDBX },
+    { value: $r('app.string.export_type_xml'), type: ExportType.XML },
+    { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
   ];
 
   // 加密算法
@@ -140,6 +140,57 @@ struct SettingsDatabase {
                 this.showChangePasswordDialog();
               })
             }
+
+            // 数据库算法
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_database_algorithm"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Blank()
+                Column(){
+                  Select(this.algorithmOptions)
+                    .value(this.algorithmType)
+                    .font({ size: 16 })
+                    .selectedOptionFont({ size: 16 })
+                    .optionFont({ size: 16 })
+                    .backgroundColor($r("app.color.card_bg"))
+                    .onSelect(async (index: number) => {
+                      this.resetDatabaseAlgorithm(this.algorithmOptions[index].type);
+                    })
+                    .padding({right:0})
+                }.width('70%')
+                .alignItems(HorizontalAlign.End)
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 9,
+                bottom: 9
+              })
+            }
+
+            // 密钥派生函数
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_database_encryption_key"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                this.router.pushUrl({
+                  url: 'pages/SettingDatabaseKeyFunction',
+                  params: {}
+                });
+              })
+            }
           }
           .margin({ top: 12, bottom: 12 })
           .backgroundColor($r("app.color.card_bg"))
@@ -191,29 +242,6 @@ struct SettingsDatabase {
                 });
               })
             }
-
-            // 数据库算法
-            ListItem() {
-              Row() {
-                Text($r("app.string.Settings_database_algorithm"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Select(this.algorithmOptions)
-                  .value(this.algorithmType)
-                  .font({ size: 16 })
-                  .selectedOptionFont({ size: 16 })
-                  .optionFont({ size: 16 })
-                  .backgroundColor($r("app.color.card_bg"))
-                  .onSelect(async (index: number) => {
-                    this.resetDatabaseAlgorithm(this.algorithmOptions[index].type);
-                  })
-              }
-              .width('100%')
-              .padding(16)
-              .onClick(() => {
-              })
-            }
-
           }
           .margin({ top: 12, bottom: 12 })
           .backgroundColor($r("app.color.card_bg"))
@@ -231,15 +259,21 @@ struct SettingsDatabase {
                 Text($r("app.string.Settings_database_output"))
                   .fontSize(16)
                   .flexGrow(1)
-                Select(this.exportTypeOptions)
-                  .value($r("app.string.please_select"))
-                  .font({ size: 16 })
-                  .selectedOptionFont({ size: 16 })
-                  .optionFont({ size: 16 })
-                  .backgroundColor($r("app.color.card_bg"))
-                  .onSelect(async (index: number) => {
-                    this.exportDatabase(this.exportTypeOptions[index].type);
-                  })
+                Blank()
+                Column(){
+                  Select(this.exportTypeOptions)
+                    .value($r("app.string.please_select"))
+                    .font({ size: 16 })
+                    .selectedOptionFont({ size: 16 })
+                    .optionFont({ size: 16 })
+                    .backgroundColor($r("app.color.card_bg"))
+                    .onSelect(async (index: number) => {
+                      this.exportDatabase(this.exportTypeOptions[index].type);
+                    })
+                    .padding({right:0})
+                }
+                .width('70%')
+                .alignItems(HorizontalAlign.End)
               }
               .width('100%')
               .padding({
@@ -279,7 +313,7 @@ struct SettingsDatabase {
 }
 
 export interface ExportTypeOptions {
-  value: string;
+  value: ResourceStr;
   type: ExportType;
 }
 

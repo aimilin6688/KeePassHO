@@ -7,6 +7,7 @@
     "pages/SettingDatabase",
     "pages/SettingDatabaseMeta",
     "pages/SettingCustomIcons",
+    "pages/SettingDatabaseKeyFunction",
     "pages/Password",
     "pages/RecentFiles",
     "pages/EntryEdit",
