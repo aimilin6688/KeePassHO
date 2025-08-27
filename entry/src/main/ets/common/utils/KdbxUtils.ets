@@ -446,7 +446,7 @@ export default class KdbxUtils {
 
   public static kdbxErrorMessage(kdbxError: Error): string {
     if (!(kdbxError instanceof KdbxError)) {
-      return kdbxError.message;
+      return kdbxError.message || kdbxError.toString();
     }
     switch (kdbxError.code) {
       case Consts.ErrorCodes.NotImplemented:
@@ -468,7 +468,7 @@ export default class KdbxUtils {
       case Consts.ErrorCodes.InvalidState:
         return ResourceManager.getString($r('app.string.kdbx_error_InvalidState'));
     }
-    return kdbxError.message;
+    return kdbxError.message || kdbxError.toString();
   }
 
   /**

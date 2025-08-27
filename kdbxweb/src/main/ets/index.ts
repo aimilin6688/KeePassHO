@@ -36,7 +36,7 @@ import {
 } from './format/kdbx-entry';
 import { KdbxFormat } from './format/kdbx-format';
 import { KdbxGroup } from './format/kdbx-group';
-import { KdbxHeader } from './format/kdbx-header';
+import { KdbxHeader, HeaderConst } from './format/kdbx-header';
 import {
     KdbxMemoryProtection,
     KdbxMeta,
@@ -100,5 +100,6 @@ export {
     ByteUtils,
     Int64,
     VarDictionary,
-    XmlUtils
+    XmlUtils,
+    HeaderConst
 };

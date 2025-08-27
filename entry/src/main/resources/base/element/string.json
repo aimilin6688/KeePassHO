@@ -1182,7 +1182,7 @@
     },
     {
       "name": "Settings_database_algorithm",
-      "value": "算法"
+      "value": "Algorithms"
     },
     {
       "name": "Settings_database_algorithm_aes",
@@ -1191,6 +1191,38 @@
     {
       "name": "Settings_database_algorithm_chacha20",
       "value": "ChaCha20 (256-bit key,RFC 7539)"
+    },
+    {
+      "name": "Settings_database_encryption_key",
+      "value": "Key derivation function"
+    },
+    {
+      "name": "export_type_kdbx",
+      "value": "KDBX"
+    },
+    {
+      "name": "export_type_xml",
+      "value": "XML plaintext"
+    },
+    {
+      "name": "export_type_csv",
+      "value": "CSV plaintext"
+    },
+    {
+      "name": "Settings_database_encryption_iterations",
+      "value": "Iterations"
+    },
+    {
+      "name": "Settings_database_encryption_memory",
+      "value": "Memory (Mb)"
+    },
+    {
+      "name": "Settings_database_encryption_parallel",
+      "value": "Parallel"
+    },
+    {
+      "name": "Settings_database_encryption_rounds",
+      "value": "Rounds"
     }
   ]
 }
