@@ -1116,7 +1116,7 @@
     },
     {
       "name": "kdbx_error_Unsupported",
-      "value": "不支持"
+      "value": "不支持的算法"
     },
     {
       "name": "kdbx_error_FileCorrupt",
@@ -1193,6 +1193,38 @@
     {
       "name": "Settings_database_algorithm_chacha20",
       "value": "ChaCha20 (256-bit key,RFC 7539)"
+    },
+    {
+      "name": "Settings_database_encryption_key",
+      "value": "密钥派生函数"
+    },
+    {
+      "name": "export_type_kdbx",
+      "value": "KDBX"
+    },
+    {
+      "name": "export_type_xml",
+      "value": "XML 明文"
+    },
+    {
+      "name": "export_type_csv",
+      "value": "CSV 明文"
+    },
+    {
+      "name": "Settings_database_encryption_iterations",
+      "value": "迭代次数"
+    },
+    {
+      "name": "Settings_database_encryption_memory",
+      "value": "内存(Mb)"
+    },
+    {
+      "name": "Settings_database_encryption_parallel",
+      "value": "并行处理"
+    },
+    {
+      "name": "Settings_database_encryption_rounds",
+      "value": "加密次数"
     }
   ]
 }
