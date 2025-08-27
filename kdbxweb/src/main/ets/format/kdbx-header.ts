@@ -53,7 +53,7 @@ const InnerHeaderFields: HeaderField[] = [
     { name: 'Binary', skipHeader: true }
 ];
 
-const HeaderConst = {
+export const HeaderConst = {
     DefaultFileVersionMajor: 4,
     MinSupportedVersion: 3,
     MaxSupportedVersion: 4,
@@ -62,9 +62,9 @@ const HeaderConst = {
 
     DefaultKdfAlgo: KdfId.Argon2d,
     DefaultKdfSaltLength: 32,
-    DefaultKdfParallelism: 1,
+    DefaultKdfParallelism: 2,
     DefaultKdfIterations: 2,
-    DefaultKdfMemory: 1024 * 1024,
+    DefaultKdfMemory: 6 * 1024 * 1024,
     DefaultKdfVersion: 0x13,
 
     EndOfHeader: 0x0d0ad0a
