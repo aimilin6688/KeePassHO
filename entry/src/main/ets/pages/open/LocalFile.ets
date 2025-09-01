@@ -1,11 +1,8 @@
-import  { picker } from '@kit.CoreFileKit';
+import { fileShare, picker } from '@kit.CoreFileKit';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
 import { PromptAction, Router } from '@kit.ArkUI';
-import { fileShare } from '@kit.CoreFileKit';
-import { FileService } from '../../services/FileService';
-import { RecentFilesService } from '../../services/RecentFilesService';
 import FileUtils from '../../common/utils/FIleUtils';
 import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 
@@ -41,7 +38,7 @@ struct LocalFile {
         this.loadData(this.selectedFile);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`,  error.message, error.stack);
+      hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`, error.message, error.stack);
       this.promptAction.showToast({
         message: error.message,
         duration: 2000
@@ -56,18 +53,23 @@ struct LocalFile {
   async loadData(path: string) {
     this.isLoading = true;
     // 永久授权文件访问权限
-    FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE |  fileShare.OperationMode.WRITE_MODE).then(async () => {
+    FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE).then(async () => {
       // 获取文件信息
       const fileInfo = await this.fileManager.getInfo(path);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
       // 本地配置信息
-      const  storageConfig = new LocalFileStorageConfig(fileInfo.size);
+      const storageConfig = new LocalFileStorageConfig(fileInfo.size);
       // 设置数据服务
-      DataService.readData(this.router, { filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
-    }).catch((error:Error) =>{
+      DataService.readData(this.router, {
+        filePath: path,
+        fileName: fileInfo.name,
+        storageType: StorageType.LOCAL,
+        storageConfig: storageConfig
+      });
+    }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, stack:%{public}s', error.message, error.stack);
       this.promptAction.showToast({
-        message:  error.message,
+        message: error.message,
         duration: 3000
       });
     }).finally(() => {
