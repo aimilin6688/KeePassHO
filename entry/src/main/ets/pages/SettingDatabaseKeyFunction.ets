@@ -76,14 +76,7 @@ struct SettingDatabaseKeyFunction {
       }
       hilog.debug(DOMAIN, TAG, "saveAlgoParams:%{public}s", JSON.stringify(kdfParameters));
       // 保存数据库
-      KdbxUtils.saveDatabase({
-        onSuccess: () => {
-          this.promptAction.showToast({ message: $r("app.string.save_success"), duration: 2000 });
-        },
-        onError: (errorMessage: string) => {
-          this.promptAction.showToast({ message: $r('app.string.save_failed_message', errorMessage), duration: 2000 });
-        }
-      });
+      KdbxUtils.saveDatabase();
     } catch (error) {
       const errorMsg = KdbxUtils.kdbxErrorMessage(error);
       hilog.error(DOMAIN, TAG, 'Failed to save database algo: %{public}s', errorMsg);
