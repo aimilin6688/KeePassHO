@@ -1,7 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
-import { DbFileParam, ExportType } from '../../services/TypeDefined';
+import { ExportDataParam, ExportType, WriteDataOptions } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
 import * as kdbxweb from 'kdbxweb';
@@ -11,6 +11,8 @@ import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileKeyService } from '../../services/FileKeyService';
 import { FileService } from '../../services/FileService';
+import { DataService } from '../../services/DataService';
+import { LocationMode } from './SelectLocation';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -71,13 +73,21 @@ struct CreateDatabase {
       let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password), keyFileContent);
       // 将kdbx对象转换为ArrayBuffer
       let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
-      FileService.setDbFileParam({ fileName: fileName, database: newDb } as DbFileParam);
-      this.router.pushUrl({
-        url: 'pages/open/ExportDatabase',
-        params: {
-          exportType: ExportType.KDBX
+      // 写入导出参数
+      FileService.setExportDataParam({
+        database: newDb,
+        fileName: fileName,
+        exportType: ExportType.KDBX,
+        onSuccess: (param: WriteDataOptions) => {
+          DataService.readData(this.router, {
+            filePath: param.filePath,
+            fileName: FileUtils.getFileName(param.filePath),
+            storageType: param.storageType,
+            storageConfig: param.storageConfig
+          });
         }
-      });
+      } as ExportDataParam);
+      this.router.pushUrl({ url: 'pages/open/SelectLocation', params: { type: LocationMode.CREATE } });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });

@@ -8,6 +8,9 @@ import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageCo
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
+import { FileService } from '../../services/FileService';
+import { ExportType, WriteDataOptions } from '../../services/TypeDefined';
+import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';
@@ -22,10 +25,20 @@ struct LocalFile {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
+  // 处理确认时间
+  private handleConfirm() {
+    // 导出数据库
+    if (FileService.getExportDataParam().exportType) {
+      this.exportData();
+    } else {
+      this.openFilePicker();
+    }
+  }
+
   /**
    * 打开文件选择器
    */
-  async openFilePicker() {
+  private async openFilePicker() {
     try {
       const documentPicker = new picker.DocumentViewPicker(this.context);
       const options = new picker.DocumentSelectOptions();
@@ -67,7 +80,7 @@ struct LocalFile {
         storageConfig: storageConfig
       });
     }).catch((error: Error) => {
-      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, stack:%{public}s', error.message, error.stack);
+      hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error.message, error.stack);
       this.promptAction.showToast({
         message: error.message,
         duration: 3000
@@ -75,6 +88,40 @@ struct LocalFile {
     }).finally(() => {
       this.isLoading = false;
     });
+  }
+
+  // 保存数据库文件到本地
+  private exportData() {
+    this.isLoading = true;
+    const exportType = FileService.getExportDataParam().exportType;
+    let writeDataOptions = { filePath: this.selectedFile, storageType: StorageType.LOCAL, storageConfig: new LocalFileStorageConfig() } as WriteDataOptions;
+    FileUtils.saveLocalFile(this.createFileName(exportType), (filePath) => {
+      writeDataOptions.filePath = filePath;
+      return KdbxExportService.createExportFile(writeDataOptions).then(result => {
+        return result.content;
+      })
+    })
+      .then(() => {
+        this.isLoading = false;
+        if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
+          FileService.getExportDataParam().onSuccess(writeDataOptions);
+        }
+        this.router.back();
+      })
+      .catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Failed to save file: %{public}s, stack:%{public}s', error.message, error.stack);
+        this.promptAction.showToast({ message: error.message, duration: 3000 });
+      }).finally(() => {
+      this.isLoading = false;
+    });
+  }
+
+  private createFileName(exportType: ExportType): string {
+    let fileName = FileService.getExportDataParam().fileName;
+    if (!fileName) {
+      fileName = FileService.getDbFileParam().fileName;
+    }
+    return KdbxExportService.createFileName(fileName, exportType);
   }
 
   build() {
@@ -132,7 +179,7 @@ struct LocalFile {
 
           Button($r('app.string.reselect_file'))
             .margin({ top: 24 })
-            .onClick(() => this.openFilePicker())
+            .onClick(() => this.handleConfirm())
         } else {
           // 未选择文件状态
           Image($r('app.media.ic_add_file'))
@@ -148,7 +195,7 @@ struct LocalFile {
 
           Button($r('app.string.select_local_file'))
             .margin({ top: 24 })
-            .onClick(() => this.openFilePicker())
+            .onClick(() => this.handleConfirm())
         }
       }
       .width('100%')

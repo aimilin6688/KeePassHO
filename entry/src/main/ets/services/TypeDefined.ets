@@ -63,18 +63,33 @@ export interface WriteDataOptions{
    * 存储配置信息
    */
   storageConfig: StorageConfig;
-
-  /**
-   * 导出类型
-   */
-  exportType: ExportType;
-
   /**
    * 导出之前执行的事件
    * @param writeDataOptions
    * @returns
    */
   onBeforeWrite?: (writeDataOptions: WriteDataOptions) => Promise<void>;
+}
+
+/**
+ * 导出数据参数定义
+ */
+export interface  ExportDataParam{
+  fileName: string;
+  /**
+   * 导出类型
+   */
+  exportType: ExportType;
+
+  /**
+   * 已解密的数据库对象
+   */
+  database?: Kdbx;
+
+  /**
+   * 导出成功事件
+   */
+  onSuccess: (writeDataOptions: WriteDataOptions) => Promise<void>;
 }
 
 /**

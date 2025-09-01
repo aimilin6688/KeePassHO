@@ -402,7 +402,7 @@
     },
     {
       "name": "select_open_method_prompt",
-      "value": "Select open method"
+      "value": "Select %s method"
     },
     {
       "name": "local_file_button_title",
@@ -410,7 +410,7 @@
     },
     {
       "name": "local_file_button_description",
-      "value": "Select database file from device storage"
+      "value": "The %s file in device storage"
     },
     {
       "name": "webdav_button_title",
@@ -418,7 +418,7 @@
     },
     {
       "name": "webdav_button_description",
-      "value": "Open database file from WebDAV server"
+      "value": "The %s file in the WebDAV server"
     },
     {
       "name": "dialog_confirm_title",
@@ -1223,6 +1223,22 @@
     {
       "name": "Settings_database_encryption_rounds",
       "value": "Rounds"
+    },
+    {
+      "name": "location_save",
+      "value": "Save"
+    },
+    {
+      "name": "location_create",
+      "value": "Create"
+    },
+    {
+      "name": "location_select",
+      "value": "Select"
+    },
+    {
+      "name": "location_title",
+      "value": "%s location"
     }
   ]
 }

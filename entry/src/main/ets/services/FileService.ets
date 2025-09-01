@@ -1,5 +1,5 @@
 import { Kdbx } from 'kdbxweb';
-import { DbFileParam } from './TypeDefined';
+import { DbFileParam, ExportDataParam } from './TypeDefined';
 
 
 /**
@@ -8,9 +8,11 @@ import { DbFileParam } from './TypeDefined';
 export class FileService {
   private static instance: FileService = new FileService();
   private dbFileParam: DbFileParam;
+  private exportDataParam: ExportDataParam;
 
   private constructor() {
     this.dbFileParam = {} as DbFileParam;
+    this.exportDataParam = {} as ExportDataParam;
   }
 
   public static getInstance(): FileService {
@@ -19,6 +21,7 @@ export class FileService {
 
   public init(): void {
     this.initDbFileParam();
+    this.initExportDataParam();
   }
 
   public static init(): void {
@@ -33,6 +36,10 @@ export class FileService {
     this.dbFileParam = {} as DbFileParam;
   }
 
+  public initExportDataParam(): void {
+    this.exportDataParam = {} as ExportDataParam;
+  }
+
   public setDbFileParam(dbFileParam: DbFileParam): void {
     this.dbFileParam = dbFileParam;
   }
@@ -41,12 +48,20 @@ export class FileService {
     FileService.instance.setDbFileParam(dbFileParam);
   }
 
+  public static setExportDataParam(param: ExportDataParam): void {
+    FileService.instance.exportDataParam = param;
+  }
+
   public getDbFileParam(): DbFileParam {
     return this.dbFileParam;
   }
 
   public static getDbFileParam(): DbFileParam {
     return FileService.instance.getDbFileParam();
+  }
+
+  public static getExportDataParam(): ExportDataParam {
+    return FileService.instance.exportDataParam;
   }
 
   /**
