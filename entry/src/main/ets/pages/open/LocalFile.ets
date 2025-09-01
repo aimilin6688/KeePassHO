@@ -10,6 +10,8 @@ import FileUtils from '../../common/utils/FIleUtils';
 import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { DataService } from '../../services/DataService';
+
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';
 
@@ -36,7 +38,7 @@ struct LocalFile {
       const result = await documentPicker.select(options);
       if (result && result.length > 0) {
         this.selectedFile = result[0];
-        this.loadKdbxFile(this.selectedFile);
+        this.loadData(this.selectedFile);
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`,  error.message, error.stack);
@@ -51,24 +53,17 @@ struct LocalFile {
    * 加载KDBX文件
    * @param path 文件路径
    */
-  async loadKdbxFile(path: string) {
+  async loadData(path: string) {
     this.isLoading = true;
     // 永久授权文件访问权限
     FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE |  fileShare.OperationMode.WRITE_MODE).then(async () => {
       // 获取文件信息
       const fileInfo = await this.fileManager.getInfo(path);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-
       // 本地配置信息
       const  storageConfig = new LocalFileStorageConfig(fileInfo.size);
-      // 设置文件参数
-      FileService.setFileParam({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
-      // 添加到最近打开的文件列表
-      RecentFilesService.addRecentFile({ filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig});
-      // 导航到密码输入页面
-      this.router.pushUrl({
-        url: 'pages/Password'
-      });
+      // 设置数据服务
+      DataService.readData(this.router, { filePath: path, fileName: fileInfo.name, storageType: StorageType.LOCAL, storageConfig: storageConfig });
     }).catch((error:Error) =>{
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, stack:%{public}s', error.message, error.stack);
       this.promptAction.showToast({
