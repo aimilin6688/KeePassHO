@@ -23,9 +23,9 @@ export interface CredentialsParam {
 }
 
 /**
- * kdbx文件定义
+ * 文件导入导出参数类
  */
-export interface ReadDataOptions {
+export interface LocationDataOptions {
   /**
    * 文件路径
    */
@@ -41,24 +41,6 @@ export interface ReadDataOptions {
    */
   storageType: StorageType;
 
-  /**
-   * 存储配置信息
-   */
-  storageConfig: StorageConfig;
-}
-
-/**
- * 写入数据库参数定义
- */
-export interface WriteDataOptions{
-  /**
-   * 文件路径
-   */
-  filePath: string;
-  /**
-   * 存储类型
-   */
-  storageType: StorageType;
   /**
    * 存储配置信息
    */
@@ -88,7 +70,7 @@ export interface  ExportDataParam{
   /**
    * 导出成功事件
    */
-  onSuccess: (writeDataOptions: WriteDataOptions) => Promise<void>;
+  onSuccess: (dataOptions: LocationDataOptions) => Promise<void>;
 }
 
 /**

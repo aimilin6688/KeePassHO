@@ -2,7 +2,7 @@ import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import DateUtils from '../../common/utils/DateUtils';
 import FileUtils from '../../common/utils/FIleUtils';
 import { FileService } from '../FileService';
-import { ExportDataParam, ExportFileParam, ExportType, WriteDataOptions } from '../TypeDefined';
+import { ExportDataParam, ExportFileParam, ExportType, LocationDataOptions } from '../TypeDefined';
 import { KdbxCsvService } from './KdbxCsvService';
 
 export class KdbxExportService {
@@ -10,7 +10,7 @@ export class KdbxExportService {
    * 创建导出文件
    * @param exportType 导出类型
    */
-  public static createExportFile(writeOptions: WriteDataOptions): Promise<ExportFileParam> {
+  public static createExportFile(writeOptions: LocationDataOptions): Promise<ExportFileParam> {
     const param: ExportDataParam = FileService.getExportDataParam();
     const kdbx = param.database;
     const exportType = param.exportType;

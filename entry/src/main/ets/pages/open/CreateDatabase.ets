@@ -1,7 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
-import { ExportDataParam, ExportType, WriteDataOptions } from '../../services/TypeDefined';
+import { ExportDataParam, ExportType, LocationDataOptions } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
 import * as kdbxweb from 'kdbxweb';
@@ -79,7 +79,7 @@ struct CreateDatabase {
         fileName: fileName,
         exportType: ExportType.KDBX,
         fileNameAppendDate: false,
-        onSuccess: (param: WriteDataOptions) => {
+        onSuccess: (param: LocationDataOptions) => {
           DataService.readData(this.router, {
             filePath: param.filePath,
             fileName: FileUtils.getFileName(param.filePath),
