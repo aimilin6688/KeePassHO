@@ -41,7 +41,7 @@ export class KdbxFileManager {
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果加载失败则抛出异常
    */
-  public async readFile(path: string): Promise<FileContentInfo> {
+  public async read(path: string): Promise<FileContentInfo> {
     try {
       // 检查文件是否存在
       const fileInfo = await this.storage.getInfo(path);
@@ -65,7 +65,7 @@ export class KdbxFileManager {
    * @param content 文件内容
    * @throws 如果保存失败则抛出异常
    */
-  public async writeFile(path: string, content: ArrayBuffer): Promise<void> {
+  public async write(path: string, content: ArrayBuffer): Promise<void> {
     try {
       // 写入文件内容
       return this.storage.write(path, content);
@@ -81,7 +81,7 @@ export class KdbxFileManager {
    * @return Promise<FileInfo> 文件信息
    * @throws 如果获取失败则抛出异常
    */
-  public async getFileInfo(path: string): Promise<FileInfo> {
+  public async getInfo(path: string): Promise<FileInfo> {
     try {
       return await this.storage.getInfo(path);
     } catch (error) {
