@@ -106,7 +106,7 @@ struct WebDAV {
     try {
       const storageConfig = this.getStorageConfig();
       // 获取文件信息
-      const fileInfo = await this.fileManager.init(storageConfig).getFileInfo(this.url);
+      const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
 
       // 设置文件参数
@@ -182,7 +182,7 @@ struct WebDAV {
     }
     this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
     KdbxExportService.createExportFile(this.exportType).then(result => {
-      this.fileManager.init(storageConfig).writeFile(this.url, result.content).then(result => {
+      this.fileManager.init(storageConfig).write(this.url, result.content).then(result => {
         this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
         this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
         this.isConnecting = false;

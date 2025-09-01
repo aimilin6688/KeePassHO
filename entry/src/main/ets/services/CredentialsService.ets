@@ -26,7 +26,7 @@ export class CredentialsService {
         throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
       }
       // 使用密码和密钥文件
-      let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).readFile(param.keyFilePath);
+      let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).read(param.keyFilePath);
       hilog.info(DOMAIN, TAG, 'Load key file content success, keyFilePath: %{public}s', param.keyFilePath);
       credentials = new KdbxCredentials(ProtectedValue.fromString(param.password), keyFileContent.content);
     } else {
