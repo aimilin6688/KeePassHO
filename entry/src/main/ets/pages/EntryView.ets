@@ -5,7 +5,6 @@ import KdbxUtils from '../common/utils/KdbxUtils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
-import ResourceManager from '../common/utils/ResourceManager';
 import DateUtils from '../common/utils/DateUtils';
 
 
@@ -27,7 +26,6 @@ struct EntryView {
   @State historyEntries: Array<EntryHistoryView> = [];
   @State showHistory: boolean = false;
   @State selectedHistoryIndex: number = -1;
-
   private database: Kdbx | null = null;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -51,7 +49,8 @@ struct EntryView {
    * 加载条目
    */
   private loadEntry() {
-    hilog.info(DOMAIN, TAG, 'Loading entry: entryId=%{public}s, groupId=%{public}s, historyIndex:%{public}d', this.entryId, this.groupId, this.selectedHistoryIndex);
+    hilog.info(DOMAIN, TAG, 'Loading entry: entryId=%{public}s, groupId=%{public}s, historyIndex:%{public}d', this.entryId, this.groupId,
+      this.selectedHistoryIndex);
     this.isLoading = true;
     try {
       // 获取数据库
@@ -135,8 +134,9 @@ struct EntryView {
     // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
-        KdbxUtils.FIELD_OVERRIDE_URL];
+      const commonFields =
+        [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
+          KdbxUtils.FIELD_OVERRIDE_URL];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 

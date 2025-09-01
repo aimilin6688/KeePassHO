@@ -1,5 +1,5 @@
 import ThemeManager from '../common/utils/ThemeManager';
-import { router, Router } from '@kit.ArkUI';
+import { Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
 
@@ -11,14 +11,13 @@ const TAG = 'Index';
 struct Index {
   private router: Router = this.getUIContext().getRouter();
 
-
   aboutToAppear() {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
     const params = this.router.getParams() as Record<string, string>;
-    if(!params?.notRedirect){
+    if (!params?.notRedirect) {
       this.checkRecentFiles();
     }
   }
