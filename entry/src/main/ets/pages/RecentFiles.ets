@@ -109,15 +109,15 @@ struct RecentFiles {
     }
   }
 
-  private getStorageTypeIcon(storageType: StorageType): ResourceStr{
-		switch (storageType){
+  private getStorageTypeIcon(storageType: StorageType): ResourceStr {
+    switch (storageType) {
       case StorageType.LOCAL:
         return $r('app.media.ic_file');
       case StorageType.WEBDAV:
         return $r('app.media.ic_webdav');
     }
     return $r('app.media.ic_file');
-	}
+  }
 
   build() {
     Column() {
@@ -217,7 +217,12 @@ struct RecentFiles {
         .width('100%')
         .height('100%')
         .layoutWeight(1)
-        .padding({ left: 16, right: 16, top: 12, bottom: 0 })
+        .padding({
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 0
+        })
       }
     }
     .width('100%')

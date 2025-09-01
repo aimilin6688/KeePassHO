@@ -46,7 +46,7 @@ struct DatabaseView {
   @State searchHistory: Array<string> = [];
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
-  private filePath:string = '';
+  private filePath: string = '';
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private currentGroup: KdbxGroup | undefined = undefined;
@@ -553,11 +553,11 @@ struct DatabaseView {
   /**
    * 添加搜索历史
    */
-  private addAndGetSearchHistory(){
-    if(!this.searchText){
+  private addAndGetSearchHistory() {
+    if (!this.searchText) {
       return;
     }
-    RecentFilesService.addSearchHistory(this.filePath, this.searchText).then(result=>{
+    RecentFilesService.addSearchHistory(this.filePath, this.searchText).then(result => {
       this.loadSearchHistory();
     });
   }
@@ -565,7 +565,7 @@ struct DatabaseView {
   /**
    * 获取搜索历史
    */
-  private loadSearchHistory(){
+  private loadSearchHistory() {
     RecentFilesService.getSearchHistory(this.filePath).then(history => {
       this.searchHistory = history;
     });
@@ -589,7 +589,7 @@ struct DatabaseView {
       secondaryButton: {
         value: $r('app.string.confirm_button_text'),
         action: () => {
-          RecentFilesService.clearSearchHistory(this.filePath).then(result=>{
+          RecentFilesService.clearSearchHistory(this.filePath).then(result => {
             this.searchHistory = [];
           });
         }
@@ -732,7 +732,7 @@ struct DatabaseView {
             RelativeContainer() {
               List() {
                 ForEach(this.searchHistory, (searchItem: string, index: number) => {
-                  ListItem(){
+                  ListItem() {
                     Button(searchItem)
                       .height(34)
                       .fontSize(16)
@@ -753,6 +753,7 @@ struct DatabaseView {
                 bottom: 6
               })
               .listDirection(Axis.Horizontal)
+
               // 清空历史记录图标
               Image($r('app.media.ic_delete'))
                 .width(22)
@@ -812,7 +813,8 @@ struct DatabaseView {
                   .width('100%')
                   .height(60)
                   .borderRadius(8)
-                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
+                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.button_bg_blue") :
+                  $r("app.color.card_bg"))
                   .padding({ left: 10, right: 10 })
                   .onClick(() => {
                     this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
@@ -842,7 +844,8 @@ struct DatabaseView {
                         .textOverflow({ overflow: TextOverflow.Ellipsis })
                         .maxLines(1)
                         .decoration({
-                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
+                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
+                          TextDecorationType.None)
                         })
                       Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
                         .fontSize(12)
@@ -852,7 +855,8 @@ struct DatabaseView {
                         .maxLines(1)
                         .margin({ top: 4 })
                         .decoration({
-                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough : TextDecorationType.None)
+                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
+                          TextDecorationType.None)
                         })
                       // TOTP 字段展示
                       if (this.isListShowTotp) {
@@ -873,7 +877,8 @@ struct DatabaseView {
                   }
                   .width('100%')
                   .borderRadius(8)
-                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
+                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :
+                  $r("app.color.card_bg"))
                   .padding({
                     left: 10,
                     right: 10,

@@ -50,7 +50,8 @@ struct EntryEdit {
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
-  private standardFields: Array<string> = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+  private standardFields: Array<string> =
+    [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器
@@ -463,7 +464,8 @@ struct EntryEdit {
    */
   private checkCustomField(customFieldName: string): boolean {
     // 检查字段名称是否已存在（排除当前编辑的字段）
-    const existingField = this.customFields.findIndex(field => field.key === customFieldName && this.customFields.indexOf(field) !== this.editingFieldIndex);
+    const existingField =
+      this.customFields.findIndex(field => field.key === customFieldName && this.customFields.indexOf(field) !== this.editingFieldIndex);
     return existingField !== -1;
   }
 

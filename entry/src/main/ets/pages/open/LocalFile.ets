@@ -9,7 +9,7 @@ import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageCo
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
 import { FileService } from '../../services/FileService';
-import { ExportDataParam, ExportType, WriteDataOptions } from '../../services/TypeDefined';
+import { ExportDataParam, WriteDataOptions } from '../../services/TypeDefined';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 
 const DOMAIN = 0x0000;
