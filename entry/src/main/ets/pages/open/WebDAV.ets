@@ -7,7 +7,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { DataService } from '../../services/DataService';
-import { ExportType, WriteDataOptions } from '../../services/TypeDefined';
+import { ExportType, LocationDataOptions } from '../../services/TypeDefined';
 import FileUtils from '../../common/utils/FIleUtils';
 
 const DOMAIN = 0x0000;
@@ -172,9 +172,10 @@ struct WebDAV {
     this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
     const writeDataOptions = {
       filePath: this.url,
+      fileName: FileUtils.getFileName(this.url),
       storageType: StorageType.WEBDAV,
       storageConfig: storageConfig
-    } as WriteDataOptions;
+    } as LocationDataOptions;
     DataService.writeData(writeDataOptions).then(() => {
       this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
       this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
