@@ -203,7 +203,7 @@ struct Settings {
           .onClick(()=>{
             this.router.pushUrl({
               url: 'pages/open/SelectLocation'
-            }, router.RouterMode.Single);
+            });
           })
 
           // 最近打开

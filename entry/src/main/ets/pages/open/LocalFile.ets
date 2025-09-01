@@ -9,7 +9,7 @@ import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageCo
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
 import { FileService } from '../../services/FileService';
-import { ExportType, WriteDataOptions } from '../../services/TypeDefined';
+import { ExportDataParam, ExportType, WriteDataOptions } from '../../services/TypeDefined';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 
 const DOMAIN = 0x0000;
@@ -24,11 +24,13 @@ struct LocalFile {
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private exportParam: ExportDataParam | undefined = undefined;
 
   // 处理确认时间
   private handleConfirm() {
+    this.exportParam = FileService.getExportDataParam();
     // 导出数据库
-    if (FileService.getExportDataParam().exportType) {
+    if (this.exportParam && this.exportParam.exportType) {
       this.exportData();
     } else {
       this.openFilePicker();
@@ -66,36 +68,42 @@ struct LocalFile {
   async loadData(path: string) {
     this.isLoading = true;
     // 永久授权文件访问权限
-    FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE).then(async () => {
-      // 获取文件信息
-      const fileInfo = await this.fileManager.getInfo(path);
-      hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-      // 本地配置信息
-      const storageConfig = new LocalFileStorageConfig(fileInfo.size);
-      // 设置数据服务
-      DataService.readData(this.router, {
-        filePath: path,
-        fileName: fileInfo.name,
-        storageType: StorageType.LOCAL,
-        storageConfig: storageConfig
+    FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE)
+      .then(async () => {
+        // 获取文件信息
+        const fileInfo = await this.fileManager.getInfo(path);
+        hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+        // 本地配置信息
+        const storageConfig = new LocalFileStorageConfig(fileInfo.size);
+        // 设置数据服务
+        DataService.readData(this.router, {
+          filePath: path,
+          fileName: fileInfo.name,
+          storageType: StorageType.LOCAL,
+          storageConfig: storageConfig
+        });
+      })
+      .catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error.message, error.stack);
+        this.promptAction.showToast({
+          message: error.message,
+          duration: 3000
+        });
+      })
+      .finally(() => {
+        this.isLoading = false;
       });
-    }).catch((error: Error) => {
-      hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error.message, error.stack);
-      this.promptAction.showToast({
-        message: error.message,
-        duration: 3000
-      });
-    }).finally(() => {
-      this.isLoading = false;
-    });
   }
 
   // 保存数据库文件到本地
   private exportData() {
     this.isLoading = true;
-    const exportType = FileService.getExportDataParam().exportType;
-    let writeDataOptions = { filePath: this.selectedFile, storageType: StorageType.LOCAL, storageConfig: new LocalFileStorageConfig() } as WriteDataOptions;
-    FileUtils.saveLocalFile(this.createFileName(exportType), (filePath) => {
+    let writeDataOptions = {
+      filePath: this.selectedFile,
+      storageType: StorageType.LOCAL,
+      storageConfig: new LocalFileStorageConfig()
+    } as WriteDataOptions;
+    FileUtils.saveLocalFile(KdbxExportService.createFileName(), (filePath) => {
       writeDataOptions.filePath = filePath;
       return KdbxExportService.createExportFile(writeDataOptions).then(result => {
         return result.content;
@@ -105,8 +113,9 @@ struct LocalFile {
         this.isLoading = false;
         if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
           FileService.getExportDataParam().onSuccess(writeDataOptions);
+        } else {
+          this.router.back();
         }
-        this.router.back();
       })
       .catch((error: Error) => {
         hilog.error(DOMAIN, TAG, 'Failed to save file: %{public}s, stack:%{public}s', error.message, error.stack);
@@ -114,14 +123,6 @@ struct LocalFile {
       }).finally(() => {
       this.isLoading = false;
     });
-  }
-
-  private createFileName(exportType: ExportType): string {
-    let fileName = FileService.getExportDataParam().fileName;
-    if (!fileName) {
-      fileName = FileService.getDbFileParam().fileName;
-    }
-    return KdbxExportService.createFileName(fileName, exportType);
   }
 
   build() {

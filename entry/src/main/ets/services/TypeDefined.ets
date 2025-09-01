@@ -63,12 +63,6 @@ export interface WriteDataOptions{
    * 存储配置信息
    */
   storageConfig: StorageConfig;
-  /**
-   * 导出之前执行的事件
-   * @param writeDataOptions
-   * @returns
-   */
-  onBeforeWrite?: (writeDataOptions: WriteDataOptions) => Promise<void>;
 }
 
 /**
@@ -80,12 +74,14 @@ export interface  ExportDataParam{
    * 导出类型
    */
   exportType: ExportType;
-
+  /**
+   * 文件名追加日期
+   */
+  fileNameAppendDate: boolean;
   /**
    * 已解密的数据库对象
    */
   database?: Kdbx;
-
   /**
    * 导出成功事件
    */
@@ -173,14 +169,14 @@ export class ExportFileParam{
   /**
    * 文件路径
    */
-  fileName: string;
+  filePath: string;
   /**
    * 文件内容
    */
   content: ArrayBuffer;
 
-  constructor(fileName: string, content: ArrayBuffer) {
-    this.fileName = fileName;
+  constructor(filePath: string, content: ArrayBuffer) {
+    this.filePath = filePath;
     this.content = content;
   }
 }

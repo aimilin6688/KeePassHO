@@ -13,6 +13,7 @@ import { FileKeyService } from '../../services/FileKeyService';
 import { FileService } from '../../services/FileService';
 import { DataService } from '../../services/DataService';
 import { LocationMode } from './SelectLocation';
+import { ErrorCodes, KeePassHoError } from '../../services/KeepassHoError';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -78,6 +79,7 @@ struct CreateDatabase {
         database: newDb,
         fileName: fileName,
         exportType: ExportType.KDBX,
+        fileNameAppendDate: false,
         onSuccess: (param: WriteDataOptions) => {
           DataService.readData(this.router, {
             filePath: param.filePath,
@@ -87,9 +89,9 @@ struct CreateDatabase {
           });
         }
       } as ExportDataParam);
-      this.router.pushUrl({ url: 'pages/open/SelectLocation', params: { type: LocationMode.SELECT } });
+      this.router.pushUrl({ url: 'pages/open/SelectLocation', params: { type: LocationMode.SAVE } });
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
+      hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
     } finally {
       this.isCreating = false;
