@@ -44,8 +44,9 @@ struct SettingsDatabase {
   onPageShow(): void {
     const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
-    if(this.isDatabaseValid){
-      this.algorithmType = this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
+    if (this.isDatabaseValid) {
+      this.algorithmType =
+        this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
     }
   }
 
