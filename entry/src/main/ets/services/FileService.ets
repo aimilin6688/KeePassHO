@@ -40,6 +40,10 @@ export class FileService {
     this.exportDataParam = {} as ExportDataParam;
   }
 
+  public static initExportDataParam(): void {
+    FileService.instance.initExportDataParam();
+  }
+
   public setDbFileParam(dbFileParam: DbFileParam): void {
     this.dbFileParam = dbFileParam;
   }

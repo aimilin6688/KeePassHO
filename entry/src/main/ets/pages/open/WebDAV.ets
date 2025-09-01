@@ -8,6 +8,7 @@ import { FileService } from '../../services/FileService';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { DataService } from '../../services/DataService';
 import { ExportType, WriteDataOptions } from '../../services/TypeDefined';
+import FileUtils from '../../common/utils/FIleUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -16,9 +17,9 @@ const TAG = 'WebDAV';
 @Entry
 @Component
 struct WebDAV {
-  @State url: string = '';
-  @State username: string = '';
-  @State password: string = '';
+  @State url: string = 'https://dav.jianguoyun.com/dav/MyFiles/test-1.kdbx';
+  @State username: string = 'aimilin@yeah.net';
+  @State password: string = 'a77u9ewde6gyaqxg';
   @State isLoading: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
@@ -29,12 +30,13 @@ struct WebDAV {
   private exportType: ExportType | undefined = undefined;
 
   onPageShow(): void {
-    this.exportType = FileService.getExportDataParam().exportType;
     this.initExport();
   }
 
   // 导出数据初始化
   private initExport() {
+    let exportParam = FileService.getExportDataParam();
+    this.exportType = exportParam.exportType;
     if (!this.exportType) {
       return;
     }
@@ -45,7 +47,7 @@ struct WebDAV {
     }
     const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
     if (storageConfig) {
-      this.url = KdbxExportService.createFileName(storageConfig.url, this.exportType);
+      this.url = FileUtils.replaceFileName(this.url, KdbxExportService.createFileName());
       this.username = WebDAVStorageConfig.getText(storageConfig.username);
       this.password = WebDAVStorageConfig.getText(storageConfig.password);
     }
@@ -178,6 +180,8 @@ struct WebDAV {
       this.isConnecting = false;
       if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
         FileService.getExportDataParam().onSuccess(writeDataOptions);
+      } else {
+        this.router.back();
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);

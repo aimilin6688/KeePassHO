@@ -13,27 +13,26 @@ export class KdbxExportService {
     const param: ExportDataParam = FileService.getExportDataParam();
     const kdbx = param.database;
     const exportType = param.exportType;
-    const fileName = KdbxExportService.createFileName(FileUtils.getFileName(writeOptions.filePath), exportType);
     if (kdbx) {
       if (ExportType.KDBX === exportType) {
         return kdbx.save().then(result => {
-          return new ExportFileParam(fileName, result);
+          return new ExportFileParam(writeOptions.filePath, result);
         });
       }
       if (ExportType.XML === exportType) {
         return kdbx.saveXml(true, false).then(result => {
-          return new ExportFileParam(fileName, ByteUtils.stringToBuffer(result));
+          return new ExportFileParam(writeOptions.filePath, ByteUtils.stringToBuffer(result));
         });
       }
       if (ExportType.CSV === exportType) {
         return KdbxCsvService.export(kdbx).then(result => {
-          return new ExportFileParam(fileName, result);
+          return new ExportFileParam(writeOptions.filePath, result);
         })
       }
     }
     if (ExportType.CREATE_KEY === exportType) {
       return KdbxCredentials.createRandomKeyFile().then(result => {
-        return new ExportFileParam(fileName, ByteUtils.bytesToBuffer(result));
+        return new ExportFileParam(writeOptions.filePath, ByteUtils.bytesToBuffer(result));
       });
     }
     return Promise.reject();
@@ -41,10 +40,27 @@ export class KdbxExportService {
 
   /**
    * 创建文件名
+   * 1、优先使用导出设值的文件名
+   * 2、使用数据库文件名
+   */
+  public static createFileName() {
+    const exportParam = FileService.getExportDataParam();
+    let fileName = exportParam.fileName;
+    if (!fileName) {
+      fileName = FileService.getDbFileParam().fileName;
+    }
+    if (exportParam?.exportType) {
+      fileName = KdbxExportService.createExportFileName(fileName, exportParam?.exportType, exportParam?.fileNameAppendDate);
+    }
+    return fileName;
+  }
+
+  /**
+   * 创建文件名
    * @param fileName
    * @param exportType
    */
-  public static createFileName(fileName: string, exportType: ExportType, appendDate: boolean = true): string {
+  private static createExportFileName(fileName: string, exportType: ExportType, appendDate: boolean | undefined = true): string {
     fileName = fileName || "database";
     if (ExportType.KDBX === exportType) {
       fileName = FileUtils.replaceExt(fileName, ".kdbx");
