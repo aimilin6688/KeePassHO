@@ -44,8 +44,10 @@ struct SettingsDatabase {
 
   onPageShow(): void {
     const dbFileParam = FileService.getDbFileParam();
-    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
-    this.algorithmType = this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
+    if(dbFileParam){
+      this.isDatabaseValid = dbFileParam.database !== undefined;
+      this.algorithmType = this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
+    }
   }
 
   // 修改密码弹框
