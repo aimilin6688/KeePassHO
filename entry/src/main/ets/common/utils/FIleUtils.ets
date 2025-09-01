@@ -99,7 +99,7 @@ export default class FileUtils {
    * @param content 文件内容
    * @returns 结果
    */
-  public static saveLocalFile(fileName: string, createContent: () => Promise<ArrayBuffer>): Promise<void> {
+  public static saveLocalFile(fileName: string, createContent: (filePath:string) => Promise<ArrayBuffer>): Promise<void> {
     // 使用文件选择器让用户选择保存位置
     const documentPicker = new picker.DocumentViewPicker(CommonUtils.getContext());
     const options = new picker.DocumentSaveOptions();
@@ -110,7 +110,7 @@ export default class FileUtils {
       hilog.info(DOMAIN, TAG, `Selected save URIs: ${result}`);
       if (result && result.length > 0) {
         const filePath = result[0];
-        return createContent().then(result => {
+        return createContent(filePath).then(result => {
           return new LocalFileStorage().doWrite(filePath, result).then(result => {
             CommonUtils.showToast($r("app.string.save_success"));
           });

@@ -6,7 +6,7 @@ import ResourceManager from '../common/utils/ResourceManager';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { ExportType } from '../services/TypeDefined';
+import { ExportDataParam, ExportType } from '../services/TypeDefined';
 
 
 @Entry
@@ -77,11 +77,13 @@ struct SettingsDatabase {
 
   // 导出数据库
   private exportDatabase(exportType: ExportType) {
+    FileService.setExportDataParam({
+      exportType: exportType,
+      fileName: FileService.getDbFileParam().fileName,
+      database: FileService.getDbFileParam().database
+    } as ExportDataParam);
     this.router.pushUrl({
-      url: 'pages/open/ExportDatabase',
-      params: {
-        exportType: exportType
-      }
+      url: 'pages/open/SelectLocation',
     });
   }
 

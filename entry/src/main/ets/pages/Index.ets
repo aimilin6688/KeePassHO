@@ -118,7 +118,7 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
-          this.router.pushUrl({ url: 'pages/open/OpenDatabase' }, router.RouterMode.Single)
+          this.router.pushUrl({ url: 'pages/open/SelectLocation' }, router.RouterMode.Single)
         })
 
         // 添加间距
