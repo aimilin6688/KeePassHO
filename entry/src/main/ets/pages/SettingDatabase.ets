@@ -88,14 +88,7 @@ struct SettingsDatabase {
   private resetDatabaseAlgorithm(algorithmId: string) {
     FileService.getDbFileParam().database.header.dataCipherUuid = new KdbxUuid(algorithmId);
     // 保存数据库
-    KdbxUtils.saveDatabase({
-      onSuccess: () => {
-        this.promptAction.showToast({ message: $r("app.string.save_success"), duration: 2000 });
-      },
-      onError: (errorMessage: string) => {
-        this.promptAction.showToast({ message: $r('app.string.save_failed_message', errorMessage), duration: 2000 });
-      }
-    });
+    KdbxUtils.saveDatabase();
   }
 
   build() {
