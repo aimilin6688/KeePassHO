@@ -395,23 +395,15 @@
     },
     {
       "name": "select_open_method_prompt",
-      "value": "请选择%s方式"
+      "value": "请选择位置"
     },
     {
       "name": "local_file_button_title",
       "value": "本地文件"
     },
     {
-      "name": "local_file_button_description",
-      "value": "在设备存储中%s文件"
-    },
-    {
       "name": "webdav_button_title",
       "value": "WebDAV"
-    },
-    {
-      "name": "webdav_button_description",
-      "value": "在WebDAV服务器中%s文件"
     },
     {
       "name": "dialog_confirm_title",
@@ -584,7 +576,7 @@
     },
     {
       "name": "LocalFile_click_to_select",
-      "value": " 点击选择Kdbx文件"
+      "value": " 点击选择文件"
     },
     {
       "name": "recycle_bin",
@@ -1231,16 +1223,32 @@
       "value": "保存"
     },
     {
-      "name": "location_create",
-      "value": "创建"
-    },
-    {
       "name": "location_select",
       "value": "选择"
     },
     {
-      "name": "location_title",
-      "value": "%s位置"
+      "name": "location_title_save",
+      "value": "请选择保存位置"
+    },
+    {
+      "name": "location_local_desc_save",
+      "value": "保存文件到本地存储中"
+    },
+    {
+      "name": "location_webdav_desc_save",
+      "value": "保存文件到WebDAV服务中"
+    },
+    {
+      "name": "location_title_select",
+      "value": "请选择文件"
+    },
+    {
+      "name": "location_local_desc_select",
+      "value": "从本地存储中选择文件"
+    },
+    {
+      "name": "location_webdav_desc_select",
+      "value": "从WebDAV中选择文件"
     }
   ]
 }

@@ -87,7 +87,7 @@ struct CreateDatabase {
           });
         }
       } as ExportDataParam);
-      this.router.pushUrl({ url: 'pages/open/SelectLocation', params: { type: LocationMode.CREATE } });
+      this.router.pushUrl({ url: 'pages/open/SelectLocation', params: { type: LocationMode.SELECT } });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });

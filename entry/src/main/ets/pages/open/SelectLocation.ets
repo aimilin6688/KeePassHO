@@ -6,21 +6,26 @@ import { OpenMethodButton } from '../../components/OpenMethodButton';
 @Component
 struct SelectLocation {
   private router: Router = this.getUIContext().getRouter();
-  @State typeMsg: string = "";
+  @State titleMsg: ResourceStr = '';
+  @State descLocation: ResourceStr = '';
+  @State descWebDav: ResourceStr = '';
 
-  onPageShow(): void {
+  aboutToAppear(): void {
     const params = this.router.getParams() as Record<string, string>;
-    this.typeMsg = this.createTypeMsg(params?.type);
+    this.initMsg(params?.type);
   }
 
   // 类型提示文本
-  private createTypeMsg(type: string): string {
+  private initMsg(type: string): void {
     if (type === LocationMode.SAVE) {
-      return ResourceManager.getString($r("app.string.location_save"));
-    } else if (type === LocationMode.CREATE) {
-      return ResourceManager.getString($r('app.string.location_create'));
+      this.titleMsg = $r('app.string.location_title_save');
+      this.descLocation = ResourceManager.getString($r('app.string.location_local_desc_save'));
+      this.descWebDav = ResourceManager.getString($r('app.string.location_webdav_desc_save'));
+    } else {
+      this.titleMsg = $r('app.string.location_title_select');
+      this.descLocation = ResourceManager.getString($r('app.string.location_local_desc_select'));
+      this.descWebDav = ResourceManager.getString($r('app.string.location_webdav_desc_select'));
     }
-    return ResourceManager.getString($r('app.string.location_select'));
   }
 
   build() {
@@ -36,7 +41,7 @@ struct SelectLocation {
             this.router.back()
           })
 
-        Text($r('app.string.location_title', this.typeMsg))
+        Text(this.titleMsg)
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -51,30 +56,30 @@ struct SelectLocation {
         Column() {
           // 打开方式
           Column() {
-            Text($r('app.string.select_open_method_prompt', this.typeMsg))
+            Text($r('app.string.select_open_method_prompt'))
               .fontSize(14)
               .opacity(0.6)
               .padding({ left: 16, top: 16, bottom: 8 })
               .fontColor($r('app.color.text_primary'))
               .alignSelf(ItemAlign.Start)
 
-            OpenMethodButton(
-              $r('app.media.ic_file'),
-              $r('app.string.local_file_button_title'),
-              $r('app.string.local_file_button_description', this.typeMsg),
-              () => {
+            OpenMethodButton({
+              icon: $r('app.media.ic_file'),
+              title: $r('app.string.local_file_button_title'),
+              description: this.descLocation,
+              onClickEvent: () => {
                 this.router.pushUrl({ url: 'pages/open/LocalFile' })
               }
-            )
+            })
 
-            OpenMethodButton(
-              $r("app.media.ic_webdav"),
-              $r('app.string.webdav_button_title'),
-              $r('app.string.webdav_button_description', this.typeMsg),
-              () => {
+            OpenMethodButton({
+              icon: $r("app.media.ic_webdav"),
+              title: $r('app.string.webdav_button_title'),
+              description: this.descWebDav,
+              onClickEvent: () => {
                 this.router.pushUrl({ url: 'pages/open/WebDAV' })
               }
-            )
+            })
 
           }
           .backgroundColor($r("app.color.card_bg"))
@@ -98,5 +103,5 @@ struct SelectLocation {
  */
 export enum LocationMode {
   SAVE = "SAVE",
-  CREATE = "CREATE"
+  SELECT = "SELECT"
 }
