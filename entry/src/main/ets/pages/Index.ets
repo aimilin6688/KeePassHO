@@ -17,7 +17,10 @@ struct Index {
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
-    this.checkRecentFiles();
+    const params = this.router.getParams() as Record<string, string>;
+    if(!params?.notRedirect){
+      this.checkRecentFiles();
+    }
   }
 
   /**
@@ -118,7 +121,7 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
-          this.router.pushUrl({ url: 'pages/open/SelectLocation' }, router.RouterMode.Single)
+          this.router.pushUrl({ url: 'pages/open/SelectLocation' })
         })
 
         // 添加间距
