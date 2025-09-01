@@ -7,6 +7,7 @@ import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ExportDataParam, ExportType } from '../services/TypeDefined';
+import { LocationMode } from './open/SelectLocation';
 
 
 @Entry
@@ -84,6 +85,9 @@ struct SettingsDatabase {
     } as ExportDataParam);
     this.router.pushUrl({
       url: 'pages/open/SelectLocation',
+      params: {
+        type: LocationMode.SAVE
+      }
     });
   }
 
