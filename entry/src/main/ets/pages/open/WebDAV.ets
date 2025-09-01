@@ -43,6 +43,7 @@ struct WebDAV {
     // 初始化导出
     const dbFileParam = FileService.getDbFileParam();
     if (!(dbFileParam.storageType === StorageType.WEBDAV)) {
+      this.url =  KdbxExportService.createFileName();
       return;
     }
     const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
