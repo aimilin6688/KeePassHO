@@ -45,7 +45,7 @@ export class WebDAVStorage implements IFileStorage {
    * @param path  文件路径
    * @returns 结果
    */
-  public readFile(path: string): Promise<ArrayBuffer> {
+  public read(path: string): Promise<ArrayBuffer> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
@@ -63,7 +63,7 @@ export class WebDAVStorage implements IFileStorage {
     }
   }
 
-  public async writeFile(path: string, data: ArrayBuffer): Promise<void> {
+  public async write(path: string, data: ArrayBuffer): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
@@ -82,7 +82,7 @@ export class WebDAVStorage implements IFileStorage {
    * @returns
    */
   public async exists(path: string): Promise<boolean> {
-    return this.getFileInfo(path).then((fileInfo) => {
+    return this.getInfo(path).then((fileInfo) => {
       return fileInfo != null;
     }).catch((error: Error) => {
       if (error instanceof WebDAVError && error.code === 404) {
@@ -97,7 +97,7 @@ export class WebDAVStorage implements IFileStorage {
    * @param path
    * @returns
    */
-  public async getFileInfo(path: string): Promise<FileInfo> {
+  public async getInfo(path: string): Promise<FileInfo> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));

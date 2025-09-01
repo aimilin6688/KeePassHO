@@ -44,13 +44,13 @@ export class KdbxFileManager {
   public async readFile(path: string): Promise<FileContentInfo> {
     try {
       // 检查文件是否存在
-      const fileInfo = await this.storage.getFileInfo(path);
+      const fileInfo = await this.storage.getInfo(path);
       if (!fileInfo) {
         hilog.error(DOMAIN, TAG, 'KDBX file does not exist: %{public}s', path);
         throw new Error(ResourceManager.getString($r('app.string.file_not_exists')));
       }
       // 读取文件内容
-      const content = await this.storage.readFile(path);
+      const content = await this.storage.read(path);
       // 返回文件内容
       return new FileContentInfo(fileInfo, content);
     } catch (error) {
@@ -68,7 +68,7 @@ export class KdbxFileManager {
   public async writeFile(path: string, content: ArrayBuffer): Promise<void> {
     try {
       // 写入文件内容
-      return this.storage.writeFile(path, content);
+      return this.storage.write(path, content);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to save KDBX file: %{public}s', error.message)
       throw new Error(error.message);
@@ -83,7 +83,7 @@ export class KdbxFileManager {
    */
   public async getFileInfo(path: string): Promise<FileInfo> {
     try {
-      return await this.storage.getFileInfo(path);
+      return await this.storage.getInfo(path);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to get KDBX file info: %{public}s', error.message)
       throw new Error(error.message);

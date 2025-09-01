@@ -18,7 +18,7 @@ export interface IFileStorage {
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果读取失败则抛出异常
    */
-  readFile(path: string): Promise<ArrayBuffer>;
+  read(path: string): Promise<ArrayBuffer>;
 
   /**
    * 写入文件内容
@@ -26,7 +26,7 @@ export interface IFileStorage {
    * @param content 文件内容
    * @throws 如果写入失败则抛出异常
    */
-  writeFile(path: string, content: ArrayBuffer): Promise<void>;
+  write(path: string, content: ArrayBuffer): Promise<void>;
 
   /**
    * 检查文件是否存在
@@ -41,7 +41,7 @@ export interface IFileStorage {
    * @return Promise<FileInfo> 文件信息
    * @throws 如果获取失败则抛出异常
    */
-  getFileInfo(path: string): Promise<FileInfo>;
+  getInfo(path: string): Promise<FileInfo>;
 }
 
 /**

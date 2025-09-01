@@ -111,7 +111,7 @@ export default class FileUtils {
       if (result && result.length > 0) {
         const filePath = result[0];
         return createContent().then(result => {
-          return new LocalFileStorage().doWriteFile(filePath, result).then(result => {
+          return new LocalFileStorage().doWrite(filePath, result).then(result => {
             CommonUtils.showToast($r("app.string.save_success"));
           });
         }).catch((err: Error) => {
@@ -144,8 +144,8 @@ export default class FileUtils {
       const selectResult = await documentPicker.select(options);
       if (selectResult && selectResult.length > 0) {
         for (const filePath of selectResult) {
-          let fileInfo = await localFile.doFileInfo(filePath);
-          let fileContent = await localFile.doReadFile(filePath);
+          let fileInfo = await localFile.doGetInfo(filePath);
+          let fileContent = await localFile.doRead(filePath);
           result.push(new FileContentInfo(fileInfo, fileContent));
         }
         return result;
