@@ -69,11 +69,14 @@ export interface WriteDataOptions{
  * 导出数据参数定义
  */
 export interface  ExportDataParam{
-  fileName: string;
   /**
    * 导出类型
    */
   exportType: ExportType;
+  /**
+   * 文件名
+   */
+  fileName: string;
   /**
    * 文件名追加日期
    */
