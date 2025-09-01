@@ -6,17 +6,15 @@ import ResourceManager from '../common/utils/ResourceManager';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { SettingsService } from '../services/SettingsService';
 
 
 @Entry
 @Component
 struct SettingsDatabase {
   @State isDatabaseValid: boolean = false;
-  @State algorithmType:ResourceStr = ResourceManager.getString($r("app.string.please_select"));
+  @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-
   private changePasswordDialogController: CustomDialogController = new CustomDialogController({
     builder: ChangePasswordDialog({
       onSuccess: this.handlePasswordChange.bind(this)
@@ -32,7 +30,6 @@ struct SettingsDatabase {
     { value: $r('app.string.export_type_xml'), type: ExportType.XML },
     { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
   ];
-
   // 加密算法
   private algorithmOptions: Array<AlgorithmOptions> = [
     { value: $r('app.string.Settings_database_algorithm_aes'), type: CipherId.Aes },
@@ -44,8 +41,8 @@ struct SettingsDatabase {
 
   onPageShow(): void {
     const dbFileParam = FileService.getDbFileParam();
-    if(dbFileParam){
-      this.isDatabaseValid = dbFileParam.database !== undefined;
+    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
+    if(this.isDatabaseValid){
       this.algorithmType = this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
     }
   }
@@ -93,10 +90,10 @@ struct SettingsDatabase {
     // 保存数据库
     KdbxUtils.saveDatabase({
       onSuccess: () => {
-        this.promptAction.showToast({ message: $r("app.string.save_success"),duration: 2000});
+        this.promptAction.showToast({ message: $r("app.string.save_success"), duration: 2000 });
       },
       onError: (errorMessage: string) => {
-        this.promptAction.showToast({message: $r('app.string.save_failed_message', errorMessage), duration: 2000});
+        this.promptAction.showToast({ message: $r('app.string.save_failed_message', errorMessage), duration: 2000 });
       }
     });
   }
@@ -150,7 +147,7 @@ struct SettingsDatabase {
                   .fontSize(16)
                   .flexGrow(1)
                 Blank()
-                Column(){
+                Column() {
                   Select(this.algorithmOptions)
                     .value(this.algorithmType)
                     .font({ size: 16 })
@@ -160,7 +157,7 @@ struct SettingsDatabase {
                     .onSelect(async (index: number) => {
                       this.resetDatabaseAlgorithm(this.algorithmOptions[index].type);
                     })
-                    .padding({right:0})
+                    .padding({ right: 0 })
                 }.width('70%')
                 .alignItems(HorizontalAlign.End)
               }
@@ -262,7 +259,7 @@ struct SettingsDatabase {
                   .fontSize(16)
                   .flexGrow(1)
                 Blank()
-                Column(){
+                Column() {
                   Select(this.exportTypeOptions)
                     .value($r("app.string.please_select"))
                     .font({ size: 16 })
@@ -272,7 +269,7 @@ struct SettingsDatabase {
                     .onSelect(async (index: number) => {
                       this.exportDatabase(this.exportTypeOptions[index].type);
                     })
-                    .padding({right:0})
+                    .padding({ right: 0 })
                 }
                 .width('70%')
                 .alignItems(HorizontalAlign.End)
