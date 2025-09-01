@@ -18,6 +18,6 @@
     "pages/open/WebDAV",
     "pages/open/CreateDatabase",
     "pages/UnLockDatabase",
-    "pages/export/ExportDatabase"
+    "pages/open/ExportDatabase"
   ]
 }

@@ -77,7 +77,7 @@ struct SettingsDatabase {
   // 导出数据库
   private exportDatabase(exportType: ExportType) {
     this.router.pushUrl({
-      url: 'pages/export/ExportDatabase',
+      url: 'pages/open/ExportDatabase',
       params: {
         exportType: exportType
       }
