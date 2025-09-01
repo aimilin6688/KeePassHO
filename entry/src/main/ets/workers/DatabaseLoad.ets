@@ -49,7 +49,7 @@ export class DatabaseLoad {
       hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
       throw new Error();
     }
-    let result = await new KdbxFileManager(request.storageType, request.storageConfig).readFile(request.filePath);
+    let result = await new KdbxFileManager(request.storageType, request.storageConfig).read(request.filePath);
     this.postMessage($r('app.string.load_file_success'));
     return result;
   }

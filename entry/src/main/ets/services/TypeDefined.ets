@@ -254,6 +254,15 @@ export interface RecentFile {
    * 文件名
    */
   fileName: string;
+  /**
+   * 存储类型
+   */
+  storageType: StorageType;
+
+  /**
+   * 存储类型
+   */
+  storageConfig: StorageConfig;
 
   /**
    * 认证方式
@@ -264,16 +273,6 @@ export interface RecentFile {
    * 认证密钥文件路径
    */
   keyFilePath?: string;
-
-  /**
-   * 存储类型
-   */
-  storageType: StorageType;
-
-  /**
-   * 存储类型
-   */
-  storageConfig: StorageConfig;
 
   /**
    * 加密密码信息
