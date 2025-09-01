@@ -1,17 +1,16 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
-import { AuthType } from '../../services/TypeDefined';
+import { DbFileParam, ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { LocalFileStorageConfig, StorageType } from '../../services/kdbx/interfaces';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { StorageType } from '../../services/kdbx/interfaces';
 import * as kdbxweb from 'kdbxweb';
-import { RecentFilesService } from '../../services/RecentFilesService';
 import FileUtils from '../../common/utils/FIleUtils';
 import ResourceManager from '../../common/utils/ResourceManager';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileKeyService } from '../../services/FileKeyService';
+import { FileService } from '../../services/FileService';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -26,7 +25,6 @@ struct CreateDatabase {
   @State errorMsg: string = '';
   @State keyFilePath: string = '';
   @State keyFileName: ResourceStr = $r('app.string.select_key_file_placeholder');
-  private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -63,82 +61,29 @@ struct CreateDatabase {
       if (!fileName.toLowerCase().endsWith('.kdbx')) {
         fileName += '.kdbx';
       }
-
-      // 使用文件选择器让用户选择保存位置
-      const documentPicker = new picker.DocumentViewPicker(this.context);
-      const options = new picker.DocumentSaveOptions();
-      options.newFileNames = [fileName];
-      options.fileSuffixChoices = ['.kdbx'];
-
-      // 显示文件保存对话框
-      documentPicker.save(options).then(async (result) => {
-        hilog.info(DOMAIN, TAG, `Selected URIs: ${result}`);
-        if (result && result.length > 0) {
-          this.saveKdbxFile(result[0]);
+      // 创建认证Key
+      let keyFileContent: ArrayBuffer | null = null;
+      if (this.keyFilePath) {
+        await new KdbxFileManager(StorageType.LOCAL).read(this.keyFilePath).then(fileContent => {
+          keyFileContent = fileContent.content;
+        })
+      }
+      let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password), keyFileContent);
+      // 将kdbx对象转换为ArrayBuffer
+      let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
+      FileService.setDbFileParam({ fileName: fileName, database: newDb } as DbFileParam);
+      this.router.pushUrl({
+        url: 'pages/open/ExportDatabase',
+        params: {
+          exportType: ExportType.KDBX
         }
-      }).catch((err: BusinessError) => {
-        hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
-        this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
-      })
+      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
     } finally {
       this.isCreating = false;
     }
-  }
-
-  /**
-   * 保存数据库文件
-   * @param filePath
-   */
-  private async saveKdbxFile(filePath: string) {
-    hilog.info(DOMAIN, TAG, `Selected URI: ${filePath}`);
-    let keyFileContent: ArrayBuffer | null = null;
-    if (this.keyFilePath) {
-      await new KdbxFileManager(StorageType.LOCAL).read(this.keyFilePath).then(fileContent => {
-        keyFileContent = fileContent.content;
-      })
-    }
-    let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password), keyFileContent);
-    // 将kdbx对象转换为ArrayBuffer
-    let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
-    newDb.save().then((dbContent: ArrayBuffer) => {
-      hilog.info(DOMAIN, TAG, 'saveKdbxFile: ', dbContent.byteLength);
-      // 保存数据库文件
-      this.fileManager.write(filePath, dbContent).then(async () => {
-        hilog.info(DOMAIN, TAG, 'Database saved successfully: %{public}s', filePath);
-        // 显示成功提示
-        this.promptAction.showToast({ message: $r("app.string.CreateDatabase_create_success") });
-        await RecentFilesService.getInstance().addRecentFile({
-          filePath: filePath,
-          fileName: FileUtils.getFileName(filePath),
-          storageType: StorageType.LOCAL,
-          authType: AuthType.PASSWORD,
-          storageConfig: new LocalFileStorageConfig(dbContent.byteLength)
-        }).then((result) => {
-          // 跳转到密码页面
-          this.router.replaceUrl({
-            url: 'pages/Password',
-            params: {
-              filePath: filePath
-            }
-          });
-        }).catch((error: Error) => {
-          // 通过DocumentViewPicker save 保存的文件，不能持久化授权，只能让用户重新选择文件授权
-          hilog.error(DOMAIN, TAG, `Failed to add recent file: ${error.message}`, error.stack);
-          // 跳转到首页面
-          this.router.replaceUrl({ url: 'pages/Index' });
-        });
-
-      }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, `Failed to save database: ${error.message}`, error.stack);
-        this.promptAction.showToast({ message: $r('app.string.save_failed_message', error.message) });
-      });
-    }).catch((error: Error) => {
-      hilog.info(DOMAIN, TAG, `Failed to create database: ${error.message}`, error.stack);
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_create_failed') });
-    });
   }
 
   /**
@@ -183,7 +128,7 @@ struct CreateDatabase {
       // 主要内容区域
       Column() {
         // 数据库名称输入
-        Row(){
+        Row() {
           Text("*")
             .fontColor($r('app.color.required'))
           Text($r("app.string.database_name"))
@@ -213,7 +158,7 @@ struct CreateDatabase {
           })
 
         // 密码输入
-        Row(){
+        Row() {
           Text("*")
             .fontColor($r('app.color.required'))
           Text($r('app.string.password'))
@@ -248,7 +193,7 @@ struct CreateDatabase {
         .borderRadius(8)
 
         // 确认密码输入
-        Row(){
+        Row() {
           Text("*")
             .fontColor($r('app.color.required'))
           Text($r("app.string.confirm_password_label"))
