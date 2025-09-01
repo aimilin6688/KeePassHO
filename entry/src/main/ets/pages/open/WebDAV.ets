@@ -5,9 +5,9 @@ import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
-import { RecentFilesService } from '../../services/RecentFilesService';
-import { ExportType } from '../SettingDatabase';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
+import { DataService } from '../../services/DataService';
+import { ExportType } from '../../services/TypeDefined';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -56,9 +56,9 @@ struct WebDAV {
   private handleConfirm() {
     // 导出数据库
     if (this.exportType) {
-      this.exportDatabase();
+      this.exportData();
     } else {
-      this.loadDatabase();
+      this.loadData();
     }
   }
 
@@ -96,7 +96,7 @@ struct WebDAV {
   }
 
   // 保存WebDAV配置
-  private async loadDatabase() {
+  private async loadData() {
     if (!this.checkParam()) {
       return;
     }
@@ -108,24 +108,11 @@ struct WebDAV {
       // 获取文件信息
       const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-
-      // 设置文件参数
-      FileService.setFileParam({
+      DataService.readData(this.router, {
         filePath: this.url,
         fileName: fileInfo.name,
         storageType: StorageType.WEBDAV,
         storageConfig: storageConfig
-      });
-      // 添加到最近打开的文件列表
-      RecentFilesService.addRecentFile({
-        filePath: this.url,
-        fileName: fileInfo.name,
-        storageType: StorageType.WEBDAV,
-        storageConfig: storageConfig
-      });
-      // 导航到密码输入页面
-      this.router.pushUrl({
-        url: 'pages/Password'
       });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
@@ -140,7 +127,7 @@ struct WebDAV {
   /**
    * 导出数据库
    */
-  private async exportDatabase() {
+  private async exportData() {
     if (!this.checkParam()) {
       return;
     }
@@ -168,26 +155,29 @@ struct WebDAV {
         ],
       }).then(result => {
         if (result.index === 1) {
-          this.exportKdbxFile(storageConfig);
+          this.doExportData(storageConfig);
         }
       });
     } else {
-      this.exportKdbxFile(storageConfig);
+      this.doExportData(storageConfig);
     }
   }
 
-  private exportKdbxFile(storageConfig: StorageConfig) {
+  private doExportData(storageConfig: StorageConfig) {
     if (!this.exportType) {
       return;
     }
     this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
-    KdbxExportService.createExportFile(this.exportType).then(result => {
-      this.fileManager.init(storageConfig).write(this.url, result.content).then(result => {
-        this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
-        this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
-        this.isConnecting = false;
-        this.router.back();
-      });
+    DataService.writeData({
+      exportType: this.exportType,
+      filePath: this.url,
+      storageType: StorageType.WEBDAV,
+      storageConfig: storageConfig
+    }).then(() => {
+      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
+      this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
+      this.isConnecting = false;
+      this.router.back();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
       this.connectionStatus = error.message;

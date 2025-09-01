@@ -2,7 +2,7 @@ import { PromptAction, router, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
 
-import { AuthType, AuthTypeInfo, CredentialsParam, FileParam, RecentFile } from '../services/TypeDefined';
+import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
@@ -48,7 +48,6 @@ struct Password {
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = false;
   private isFaceSupport: boolean = false;
-
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -64,10 +63,6 @@ struct Password {
     // 通过最近文件打开
     if (params && params.filePath) {
       this.openRecentFile(params.filePath);
-    }
-    // 数据库选择器打开
-    else {
-      this.openFileParam();
     }
     // 初始化按钮状态
     this.updateButtonState();
@@ -110,18 +105,6 @@ struct Password {
   }
 
   /**
-   * 数据库选择器打开
-   */
-  private openFileParam() {
-    let fileParam: FileParam = FileService.getFileParam();
-    // 获取从LocalFile页面传递的参数
-    this.filePath = fileParam.filePath ?? '';
-    this.fileName = fileParam.fileName ?? '';
-    this.storageType = fileParam.storageType;
-    this.storageConfig = fileParam.storageConfig;
-  }
-
-  /**
    * 通过最近文件打开
    */
   private openRecentFile(filePath: string) {
@@ -161,7 +144,7 @@ struct Password {
   /**
    * 通过指纹认证
    */
-  private async startAuth(password: string | undefined, authType?: UnlockAuthType)  {
+  private async startAuth(password: string | undefined, authType?: UnlockAuthType) {
     if (!password || password == '') {
       return;
     }
@@ -172,18 +155,19 @@ struct Password {
     // 加密密钥
     this.encryptPassword = password;
     // 默认认证方式
-    authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
+    authType =
+      authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
 
     // 指纹或者人脸验证
-    if(authType === UnlockAuthType.FINGERPRINT) {
+    if (authType === UnlockAuthType.FINGERPRINT) {
       AuthService.startFingerprintAuth(this.authCallback(password));
-    } else if(authType === UnlockAuthType.FACE) {
+    } else if (authType === UnlockAuthType.FACE) {
       AuthService.startFaceAuth(this.authCallback(password));
     }
   }
 
   // 认证结果回调
-  private authCallback(password: string){
+  private authCallback(password: string) {
     return {
       onSuccess: (result) => {
         CryptoUtils.decryptText(password).then(result => {
@@ -497,7 +481,7 @@ struct Password {
               Text($r('app.string.auth_by_fingerprint'))
                 .fontSize(14)
                 .fontColor($r('app.color.button_bg_blue'))
-                .margin({ bottom: 8, left: 8, right: 8  })
+                .margin({ bottom: 8, left: 8, right: 8 })
                 .decoration({
                   type: TextDecorationType.Underline,
                   color: $r('app.color.button_bg_blue')
@@ -511,7 +495,7 @@ struct Password {
               Text($r('app.string.auth_by_face'))
                 .fontSize(14)
                 .fontColor($r('app.color.button_bg_blue'))
-                .margin({ bottom: 8, left: 8, right: 8  })
+                .margin({ bottom: 8, left: 8, right: 8 })
                 .decoration({
                   type: TextDecorationType.Underline,
                   color: $r('app.color.button_bg_blue')

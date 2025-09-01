@@ -6,6 +6,7 @@ import ResourceManager from '../common/utils/ResourceManager';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
+import { ExportType } from '../services/TypeDefined';
 
 
 @Entry
@@ -307,12 +308,6 @@ struct SettingsDatabase {
 export interface ExportTypeOptions {
   value: ResourceStr;
   type: ExportType;
-}
-
-export enum ExportType {
-  KDBX = "KDBX",
-  XML = "XML",
-  CSV = "CSV",
 }
 
 export interface AlgorithmOptions {

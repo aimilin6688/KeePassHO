@@ -1,8 +1,7 @@
-import { ByteUtils } from 'kdbxweb';
+import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import FileUtils from '../../common/utils/FIleUtils';
-import { ExportType } from '../../pages/SettingDatabase';
 import { FileService } from '../FileService';
-import { DbFileParam, ExportFileParam } from '../TypeDefined';
+import { DbFileParam, ExportFileParam, ExportType } from '../TypeDefined';
 import { KdbxCsvService } from './KdbxCsvService';
 
 export class KdbxExportService {
@@ -29,6 +28,11 @@ export class KdbxExportService {
         return new ExportFileParam(fileName, result);
       })
     }
+    if (ExportType.CREATE_KEY === exportType) {
+      return KdbxCredentials.createRandomKeyFile().then(result => {
+        return new ExportFileParam(fileName, ByteUtils.bytesToBuffer(result));
+      });
+    }
     return Promise.reject();
   }
 
@@ -41,11 +45,9 @@ export class KdbxExportService {
     fileName = fileName || "database";
     if (ExportType.KDBX === exportType) {
       fileName = FileUtils.replaceExt(fileName, ".kdbx");
-    }
-    else if (ExportType.XML === exportType) {
+    } else if (ExportType.XML === exportType) {
       fileName = FileUtils.replaceExt(fileName, ".xml");
-    }
-    else if (ExportType.CSV === exportType) {
+    } else if (ExportType.CSV === exportType) {
       fileName = FileUtils.replaceExt(fileName, ".csv");
     }
     return FileUtils.fileNameAppendDate(fileName);
