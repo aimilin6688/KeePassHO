@@ -46,7 +46,7 @@ struct SettingDatabaseMeta {
     }
   }
 
-  onBackPress(){
+  onBackPress() {
     this.handleDialogCancel();
     return true;
   }
@@ -115,7 +115,7 @@ struct SettingDatabaseMeta {
       this.router.back();
       return;
     }
-    CommonUtils.showUnSaveConfirm(this.getUIContext(),{
+    CommonUtils.showUnSaveConfirm(this.getUIContext(), {
       onConfirm: () => {
         this.router.back();
       }
@@ -228,8 +228,8 @@ struct SettingDatabaseMeta {
             // 历史记录设置
             ListItemGroup() {
               ListItem() {
-                Row(){
-                  Column(){
+                Row() {
+                  Column() {
                     Text($r("app.string.history_max_items"))
                       .fontSize(16)
                       .fontColor($r("app.color.text_primary"))
@@ -242,6 +242,7 @@ struct SettingDatabaseMeta {
                   .alignItems(HorizontalAlign.Start)
                   .flexGrow(1)
                   .layoutWeight(1)
+
                   Blank()
                   CounterComponent({
                     options: {
@@ -267,8 +268,8 @@ struct SettingDatabaseMeta {
 
               // 条目最大大小
               ListItem() {
-                Row(){
-                  Column(){
+                Row() {
+                  Column() {
                     Text($r("app.string.history_max_size"))
                       .fontSize(16)
                       .fontColor($r("app.color.text_primary"))
@@ -281,6 +282,7 @@ struct SettingDatabaseMeta {
                   .alignItems(HorizontalAlign.Start)
                   .flexGrow(1)
                   .layoutWeight(1)
+
                   Blank()
                   CounterComponent({
                     options: {
@@ -337,8 +339,8 @@ struct SettingDatabaseMeta {
 
               // 启用压缩
               ListItem() {
-                Row(){
-                  Column(){
+                Row() {
+                  Column() {
                     Text($r("app.string.compression_enabled"))
                       .fontSize(16)
                       .flexGrow(1)
@@ -351,6 +353,7 @@ struct SettingDatabaseMeta {
                   .alignItems(HorizontalAlign.Start)
                   .flexGrow(1)
                   .layoutWeight(1)
+
                   Blank()
                   Column() {
                     Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
@@ -378,7 +381,8 @@ struct SettingDatabaseMeta {
           .margin({ top: 12 })
 
           // 底部占位符
-          List() {}
+          List() {
+          }
           .width('100%')
           .height('100')
         }

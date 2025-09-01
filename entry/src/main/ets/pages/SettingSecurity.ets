@@ -14,15 +14,13 @@ struct SettingsSecurity {
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   @State autoLockTime: number = SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT;
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
-  @State isListShowTotp:boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
-  @State isItemShowTotp:boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
+  @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
+  @State isItemShowTotp: boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
   // 认证方式
   @State fingerprintLogin: boolean = SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT;
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
   @State authTypeOptions: AuthTypeOptions[] = [{ "type": UnlockAuthType.PASSWORD, "value": ResourceManager.getString($r("app.string.password")) }];
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
-
-
   @State isDatabaseValid: boolean = false;
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isFaceSupport: boolean = AuthService.isFaceSupport();
@@ -147,7 +145,6 @@ struct SettingsSecurity {
     }
   }
 
-
   build() {
     Column() {
       // 顶部导航栏
@@ -257,7 +254,12 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
 
           // 搜索历史
@@ -274,7 +276,12 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
 
           // 剪切板自动清理时间
@@ -296,7 +303,12 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
 
           // 至于后台多长时间自动锁定
@@ -318,7 +330,12 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
 
           // 快速解锁密码长度
@@ -340,7 +357,12 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
         }
         .margin({ top: 12, bottom: 12 })
@@ -367,8 +389,14 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
+
           // 条目显示totp字段
           ListItem() {
             Row() {
@@ -383,7 +411,12 @@ struct SettingsSecurity {
                 })
             }
             .width('100%')
-            .padding({left: 16, right: 16, top: 12, bottom: 12})
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
         }
         .margin({ top: 12, bottom: 12 })

@@ -1,5 +1,5 @@
 import { FileService } from '../services/FileService';
-import { UnlockAuthType, SettingsService } from '../services/SettingsService';
+import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 import { DbFileParam } from '../services/TypeDefined';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
@@ -181,7 +181,7 @@ struct UnLockDatabase {
           Text($r('app.string.auth_by_face'))
             .fontSize(14)
             .fontColor($r('app.color.button_bg_blue'))
-            .margin({ bottom: 8, left: 8, right: 8})
+            .margin({ bottom: 8, left: 8, right: 8 })
             .decoration({
               type: TextDecorationType.Underline,
               color: $r('app.color.button_bg_blue')

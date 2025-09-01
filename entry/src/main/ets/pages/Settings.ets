@@ -9,9 +9,8 @@ import { SortConstants, SortMode } from '../common/constants/SortConstants';
 struct Settings {
   @State sortBy: SortMode = SortMode.DEFAULT
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
-
-
-  @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+  @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
+    ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -80,7 +79,7 @@ struct Settings {
               }
               .width('100%')
               .height(48)
-              .padding({ left: 16})
+              .padding({ left: 16 })
             }
           }
 
@@ -130,7 +129,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .onClick(()=>{
+          .onClick(() => {
             this.router.pushUrl({
               url: 'pages/SettingSecurity'
             }, router.RouterMode.Single);
@@ -150,7 +149,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .onClick(()=>{
+          .onClick(() => {
             this.router.pushUrl({
               url: 'pages/SettingDatabase'
             }, router.RouterMode.Single);
@@ -180,7 +179,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .onClick(()=>{
+          .onClick(() => {
             this.router.pushUrl({
               url: 'pages/open/CreateDatabase'
             }, router.RouterMode.Single);
@@ -200,7 +199,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .onClick(()=>{
+          .onClick(() => {
             this.router.pushUrl({
               url: 'pages/open/SelectLocation'
             });
@@ -220,7 +219,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .onClick(()=>{
+          .onClick(() => {
             this.router.pushUrl({
               url: 'pages/RecentFiles'
             }, router.RouterMode.Single);
@@ -249,7 +248,7 @@ struct Settings {
             .width('100%')
             .padding(16)
           }
-          .onClick(()=>{
+          .onClick(() => {
             this.router.pushUrl({
               url: 'pages/About'
             }, router.RouterMode.Single);

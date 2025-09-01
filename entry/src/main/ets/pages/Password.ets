@@ -1,4 +1,4 @@
-import { PromptAction, router, Router } from '@kit.ArkUI';
+import { PromptAction, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
 
@@ -156,7 +156,8 @@ struct Password {
     this.encryptPassword = password;
     // 默认认证方式
     authType =
-      authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
+      authType ?? await SettingsService.getInstance()
+        .get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
 
     // 指纹或者人脸验证
     if (authType === UnlockAuthType.FINGERPRINT) {
@@ -263,7 +264,8 @@ struct Password {
     // 打开加载进度弹框
     this.openLoadingDialog();
     // 打开数据库
-    let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyFilePath, this.storageType, this.storageConfig);
+    let loadDatabase =
+      new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyFilePath, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
         this.loadingMessage = ResourceManager.getString(message.message);
@@ -423,7 +425,8 @@ struct Password {
               if (index >= 0 && index < allTypes.length) {
                 this.authTypeInfo = allTypes[index];
                 // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-                if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type && this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+                if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
+                  this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
                   this.keyFilePath = '';
                   this.keyFileName = '';
                 }

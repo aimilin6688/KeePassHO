@@ -13,7 +13,6 @@ import { FileKeyService } from '../../services/FileKeyService';
 import { FileService } from '../../services/FileService';
 import { DataService } from '../../services/DataService';
 import { LocationMode } from './SelectLocation';
-import { ErrorCodes, KeePassHoError } from '../../services/KeepassHoError';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
