@@ -45,9 +45,9 @@ export class LocalFileStorage implements IFileStorage {
    * @return Promise<ArrayBuffer> 文件内容
    * @throws 如果读取失败则抛出异常
    */
-  public async readFile(path: string): Promise<ArrayBuffer> {
+  public async read(path: string): Promise<ArrayBuffer> {
     return this.checkFilePermission(path, fileShare.OperationMode.READ_MODE).then((result) => {
-      return this.doReadFile(path);
+      return this.doRead(path);
     });
   }
 
@@ -56,7 +56,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param path 文件路径
    * @returns 结果
    */
-  public async doReadFile(path: string): Promise<ArrayBuffer> {
+  public async doRead(path: string): Promise<ArrayBuffer> {
     try {
       // 打开文件
       const file = await fs.open(path, fs.OpenMode.READ_ONLY);
@@ -81,9 +81,9 @@ export class LocalFileStorage implements IFileStorage {
    * @param content 文件内容
    * @throws 如果写入失败则抛出异常
    */
-  public async writeFile(path: string, content: ArrayBuffer): Promise<void> {
+  public async write(path: string, content: ArrayBuffer): Promise<void> {
     return this.checkFilePermission(path, fileShare.OperationMode.WRITE_MODE).then((result) => {
-      return this.doWriteFile(path, content);
+      return this.doWrite(path, content);
     });
   }
 
@@ -93,7 +93,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param content 文件内容
    * @returns Promise<void>
    */
-  public async doWriteFile(path: string, content: ArrayBuffer): Promise<void> {
+  public async doWrite(path: string, content: ArrayBuffer): Promise<void> {
     try {
       // 打开文件（如果不存在则创建）
       const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
@@ -131,9 +131,9 @@ export class LocalFileStorage implements IFileStorage {
    * @return Promise<FileInfo> 文件信息
    * @throws 如果获取失败则抛出异常
    */
-  public async getFileInfo(path: string): Promise<FileInfo> {
+  public async getInfo(path: string): Promise<FileInfo> {
     return this.checkFilePermission(path, fileShare.OperationMode.READ_MODE).then((result) => {
-      return this.doFileInfo(path);
+      return this.doGetInfo(path);
     });
   }
 
@@ -142,7 +142,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param path 文件路径
    * @returns 结果
    */
-  public async doFileInfo(path: string): Promise<FileInfo> {
+  public async doGetInfo(path: string): Promise<FileInfo> {
     try {
       // 打开文件
       const file = await fs.open(path, fs.OpenMode.READ_ONLY);
