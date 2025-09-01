@@ -25,7 +25,7 @@ export interface CredentialsParam {
 /**
  * kdbx文件定义
  */
-export interface FileParam {
+export interface ReadDataOptions {
   /**
    * 文件路径
    */
@@ -45,6 +45,46 @@ export interface FileParam {
    * 存储配置信息
    */
   storageConfig: StorageConfig;
+}
+
+/**
+ * 写入数据库参数定义
+ */
+export interface WriteDataOptions{
+  /**
+   * 文件路径
+   */
+  filePath: string;
+  /**
+   * 存储类型
+   */
+  storageType: StorageType;
+  /**
+   * 存储配置信息
+   */
+  storageConfig: StorageConfig;
+
+  /**
+   * 导出类型
+   */
+  exportType: ExportType;
+
+  /**
+   * 导出之前执行的事件
+   * @param writeDataOptions
+   * @returns
+   */
+  onBeforeWrite?: (writeDataOptions: WriteDataOptions) => Promise<void>;
+}
+
+/**
+ * 导出类型定义
+ */
+export enum ExportType {
+  KDBX = "KDBX",
+  XML = "XML",
+  CSV = "CSV",
+  CREATE_KEY = "CREATE_KEY"
 }
 
 /**

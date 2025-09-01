@@ -5,8 +5,7 @@ import { ContextLoadingDialog } from '../../components/ContextLoadingDialog';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
 import { FileService } from '../../services/FileService';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
-import { DbFileParam } from '../../services/TypeDefined';
-import { ExportType } from '../SettingDatabase';
+import { DbFileParam, ExportType } from '../../services/TypeDefined';
 
 @Entry
 @Component
