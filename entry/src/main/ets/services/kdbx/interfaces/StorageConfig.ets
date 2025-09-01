@@ -14,8 +14,10 @@ export class LocalFileStorageConfig implements StorageConfig {
    */
   size: number = 0;
 
-  constructor(size: number) {
-    this.size = size;
+  constructor(size?: number) {
+    if(size){
+      this.size = size;
+    }
   }
 }
 

@@ -202,7 +202,7 @@ struct Settings {
           }
           .onClick(()=>{
             this.router.pushUrl({
-              url: 'pages/open/OpenDatabase'
+              url: 'pages/open/SelectLocation'
             }, router.RouterMode.Single);
           })
 

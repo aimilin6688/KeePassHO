@@ -1,10 +1,27 @@
 import { Router } from '@kit.ArkUI';
-import {OpenMethodButton} from "../../components/OpenMethodButton";
+import ResourceManager from '../../common/utils/ResourceManager';
+import { OpenMethodButton } from '../../components/OpenMethodButton';
 
 @Entry
 @Component
-struct OpenDatabase {
+struct SelectLocation {
   private router: Router = this.getUIContext().getRouter();
+  @State typeMsg: string = "";
+
+  onPageShow(): void {
+    const params = this.router.getParams() as Record<string, string>;
+    this.typeMsg = this.createTypeMsg(params?.type);
+  }
+
+  // 类型提示文本
+  private createTypeMsg(type: string): string {
+    if (type === LocationMode.SAVE) {
+      return ResourceManager.getString($r("app.string.location_save"));
+    } else if (type === LocationMode.CREATE) {
+      return ResourceManager.getString($r('app.string.location_create'));
+    }
+    return ResourceManager.getString($r('app.string.location_select'));
+  }
 
   build() {
     Column() {
@@ -19,7 +36,7 @@ struct OpenDatabase {
             this.router.back()
           })
 
-        Text($r('app.string.open_database'))
+        Text($r('app.string.location_title', this.typeMsg))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -34,7 +51,7 @@ struct OpenDatabase {
         Column() {
           // 打开方式
           Column() {
-            Text($r('app.string.select_open_method_prompt'))
+            Text($r('app.string.select_open_method_prompt', this.typeMsg))
               .fontSize(14)
               .opacity(0.6)
               .padding({ left: 16, top: 16, bottom: 8 })
@@ -44,7 +61,7 @@ struct OpenDatabase {
             OpenMethodButton(
               $r('app.media.ic_file'),
               $r('app.string.local_file_button_title'),
-              $r('app.string.local_file_button_description'),
+              $r('app.string.local_file_button_description', this.typeMsg),
               () => {
                 this.router.pushUrl({ url: 'pages/open/LocalFile' })
               }
@@ -53,7 +70,7 @@ struct OpenDatabase {
             OpenMethodButton(
               $r("app.media.ic_webdav"),
               $r('app.string.webdav_button_title'),
-              $r('app.string.webdav_button_description'),
+              $r('app.string.webdav_button_description', this.typeMsg),
               () => {
                 this.router.pushUrl({ url: 'pages/open/WebDAV' })
               }
@@ -74,4 +91,12 @@ struct OpenDatabase {
     .backgroundColor($r("app.color.bg_primary"))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
+}
+
+/**
+ * 打开方式类型
+ */
+export enum LocationMode {
+  SAVE = "SAVE",
+  CREATE = "CREATE"
 }

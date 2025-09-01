@@ -46,7 +46,7 @@ export class DataService {
     if (param.onBeforeWrite) {
       param.onBeforeWrite(param);
     }
-    return KdbxExportService.createExportFile(param.exportType).then(result => {
+    return KdbxExportService.createExportFile(param).then(result => {
       return new KdbxFileManager(param.storageType, param.storageConfig).write(param.filePath, result.content);
     });
   }

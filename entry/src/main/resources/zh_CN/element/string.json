@@ -395,7 +395,7 @@
     },
     {
       "name": "select_open_method_prompt",
-      "value": "请选择打开方式"
+      "value": "请选择%s方式"
     },
     {
       "name": "local_file_button_title",
@@ -403,7 +403,7 @@
     },
     {
       "name": "local_file_button_description",
-      "value": "从设备存储中选择数据库文件"
+      "value": "在设备存储中%s文件"
     },
     {
       "name": "webdav_button_title",
@@ -411,7 +411,7 @@
     },
     {
       "name": "webdav_button_description",
-      "value": "从WebDAV服务器打开数据库文件"
+      "value": "在WebDAV服务器中%s文件"
     },
     {
       "name": "dialog_confirm_title",
@@ -1225,6 +1225,22 @@
     {
       "name": "Settings_database_encryption_rounds",
       "value": "加密次数"
+    },
+    {
+      "name": "location_save",
+      "value": "保存"
+    },
+    {
+      "name": "location_create",
+      "value": "创建"
+    },
+    {
+      "name": "location_select",
+      "value": "选择"
+    },
+    {
+      "name": "location_title",
+      "value": "%s位置"
     }
   ]
 }
