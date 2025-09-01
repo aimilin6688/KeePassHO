@@ -7,7 +7,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { DataService } from '../../services/DataService';
-import { ExportType } from '../../services/TypeDefined';
+import { ExportType, WriteDataOptions } from '../../services/TypeDefined';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -29,8 +29,7 @@ struct WebDAV {
   private exportType: ExportType | undefined = undefined;
 
   onPageShow(): void {
-    const params = this.router.getParams() as Record<string, string>;
-    this.exportType = params ? params.exportType as ExportType : undefined;
+    this.exportType = FileService.getExportDataParam().exportType;
     this.initExport();
   }
 
@@ -168,16 +167,18 @@ struct WebDAV {
       return;
     }
     this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
-    DataService.writeData({
-      exportType: this.exportType,
+    const writeDataOptions = {
       filePath: this.url,
       storageType: StorageType.WEBDAV,
       storageConfig: storageConfig
-    }).then(() => {
+    } as WriteDataOptions;
+    DataService.writeData(writeDataOptions).then(() => {
       this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
       this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
       this.isConnecting = false;
-      this.router.back();
+      if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
+        FileService.getExportDataParam().onSuccess(writeDataOptions);
+      }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
       this.connectionStatus = error.message;

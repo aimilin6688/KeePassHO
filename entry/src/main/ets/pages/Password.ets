@@ -212,7 +212,7 @@ struct Password {
    */
   changeDatabase() {
     // 返回到文件选择页面
-    this.router.pushUrl({ url: 'pages/open/OpenDatabase' }, router.RouterMode.Single)
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' }, router.RouterMode.Single)
   }
 
   /**
