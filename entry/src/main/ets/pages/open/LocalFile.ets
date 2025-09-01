@@ -9,8 +9,10 @@ import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageCo
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
 import { FileService } from '../../services/FileService';
-import { ExportDataParam, WriteDataOptions } from '../../services/TypeDefined';
+import { ExportDataParam, LocationDataOptions } from '../../services/TypeDefined';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
+import { BusinessError } from '@kit.BasicServicesKit';
+import ResourceManager from '../../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';
@@ -98,29 +100,43 @@ struct LocalFile {
   // 保存数据库文件到本地
   private exportData() {
     this.isLoading = true;
+    const fileName = KdbxExportService.createFileName();
+    // 使用文件选择器让用户选择保存位置
+    const documentPicker = new picker.DocumentViewPicker(this.context);
+    const options = new picker.DocumentSaveOptions();
+    options.newFileNames = [fileName];
+
+    // 显示文件保存对话框
+    return documentPicker.save(options).then(async (result) => {
+      hilog.info(DOMAIN, TAG, `Selected save URIs: ${result}`);
+      if (result && result.length > 0) {
+        this.doExportData(result[0]);
+      }
+    }).catch((err: BusinessError) => {
+      hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
+      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
+      return Promise.reject(err.message);
+    });
+  }
+
+  // 导出数据库文件
+  private doExportData(filePath: string) {
     let writeDataOptions = {
-      filePath: this.selectedFile,
+      filePath: filePath,
+      fileName: FileUtils.getFileName(filePath),
       storageType: StorageType.LOCAL,
       storageConfig: new LocalFileStorageConfig()
-    } as WriteDataOptions;
-    FileUtils.saveLocalFile(KdbxExportService.createFileName(), (filePath) => {
-      writeDataOptions.filePath = filePath;
-      return KdbxExportService.createExportFile(writeDataOptions).then(result => {
-        return result.content;
-      })
-    })
-      .then(() => {
-        this.isLoading = false;
-        if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
-          FileService.getExportDataParam().onSuccess(writeDataOptions);
-        } else {
-          this.router.back();
-        }
-      })
-      .catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, 'Failed to save file: %{public}s, stack:%{public}s', error.message, error.stack);
-        this.promptAction.showToast({ message: error.message, duration: 3000 });
-      }).finally(() => {
+    } as LocationDataOptions;
+    DataService.writeData(writeDataOptions).then(() => {
+      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
+      this.isLoading = false;
+      if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
+        FileService.getExportDataParam().onSuccess(writeDataOptions);
+      } else {
+        this.router.back();
+      }
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
       this.isLoading = false;
     });
   }

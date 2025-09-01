@@ -1,4 +1,4 @@
-import { ReadDataOptions, WriteDataOptions } from './TypeDefined';
+import { LocationDataOptions } from './TypeDefined';
 import { Router } from '@kit.ArkUI';
 import { RecentFilesService } from './RecentFilesService';
 import { KdbxExportService } from './kdbx/KdbxExportService';
@@ -19,7 +19,7 @@ export class DataService {
    * @param router
    * @param param
    */
-  public static readData(router: Router, param: ReadDataOptions): void {
+  public static readData(router: Router, param: LocationDataOptions): void {
     // 添加到最近打开的文件列表
     RecentFilesService.addRecentFile({
       filePath: param.filePath,
@@ -50,7 +50,7 @@ export class DataService {
   /**
    * 写入数据到指定配置
    */
-  public static writeData(param: WriteDataOptions): Promise<void> {
+  public static writeData(param: LocationDataOptions): Promise<void> {
     return KdbxExportService.createExportFile(param).then(result => {
       return new KdbxFileManager(param.storageType, param.storageConfig).write(param.filePath, result.content);
     });
