@@ -402,23 +402,15 @@
     },
     {
       "name": "select_open_method_prompt",
-      "value": "Select %s method"
+      "value": "Please select location"
     },
     {
       "name": "local_file_button_title",
       "value": "Local file"
     },
     {
-      "name": "local_file_button_description",
-      "value": "The %s file in device storage"
-    },
-    {
       "name": "webdav_button_title",
       "value": "WebDAV"
-    },
-    {
-      "name": "webdav_button_description",
-      "value": "The %s file in the WebDAV server"
     },
     {
       "name": "dialog_confirm_title",
@@ -590,7 +582,7 @@
     },
     {
       "name": "LocalFile_click_to_select",
-      "value": "Click select kdbx file"
+      "value": "Click select file"
     },
     {
       "name": "recycle_bin",
@@ -1229,16 +1221,32 @@
       "value": "Save"
     },
     {
-      "name": "location_create",
-      "value": "Create"
-    },
-    {
       "name": "location_select",
       "value": "Select"
     },
     {
-      "name": "location_title",
-      "value": "%s location"
+      "name": "location_title_save",
+      "value": "Please select the save location"
+    },
+    {
+      "name": "location_local_desc_save",
+      "value": "Save the file to local storage"
+    },
+    {
+      "name": "location_webdav_desc_save",
+      "value": "Save the file to the WebDAV service"
+    },
+    {
+      "name": "location_title_select",
+      "value": "Please select the file"
+    },
+    {
+      "name": "location_local_desc_select",
+      "value": "Select a file from local storage"
+    },
+    {
+      "name": "location_webdav_desc_select",
+      "value": "Select a files from WebDAV"
     }
   ]
 }
