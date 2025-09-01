@@ -1,4 +1,5 @@
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
+import DateUtils from '../../common/utils/DateUtils';
 import FileUtils from '../../common/utils/FIleUtils';
 import { FileService } from '../FileService';
 import { ExportDataParam, ExportFileParam, ExportType, WriteDataOptions } from '../TypeDefined';
@@ -61,7 +62,8 @@ export class KdbxExportService {
    * @param exportType
    */
   private static createExportFileName(fileName: string, exportType: ExportType, appendDate: boolean | undefined = true): string {
-    fileName = fileName || "database";
+    const nowTime = DateUtils.getCurrentDate();
+    fileName = fileName || nowTime;
     if (ExportType.KDBX === exportType) {
       fileName = FileUtils.replaceExt(fileName, ".kdbx");
     } else if (ExportType.XML === exportType) {
@@ -69,7 +71,7 @@ export class KdbxExportService {
     } else if (ExportType.CSV === exportType) {
       fileName = FileUtils.replaceExt(fileName, ".csv");
     }
-    if (appendDate) {
+    if (appendDate && fileName !== nowTime) {
       fileName = FileUtils.fileNameAppendDate(fileName);
     }
     return fileName;
