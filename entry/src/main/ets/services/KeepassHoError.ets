@@ -1,0 +1,22 @@
+
+/**
+ * KeePassHoError
+ */
+export class KeePassHoError extends Error {
+  public readonly code: string;
+
+  constructor(code: string, message?: string) {
+    super('Error ' + code + (message ? ': ' + message : ''));
+
+    this.name = 'KeePassHoError';
+    this.code = code;
+  }
+}
+
+/**
+ * 错误码
+ */
+export enum ErrorCodes {
+  FILE_NOT_PERMISSION = 'FILE_NOT_PERMISSION',
+  FILE_PATH_EMPTY = 'FILE_PATH_EMPTY',
+}

@@ -1,6 +1,6 @@
 import { Router } from '@kit.ArkUI';
-import ResourceManager from '../../common/utils/ResourceManager';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
+import { FileService } from '../../services/FileService';
 
 @Entry
 @Component
@@ -19,12 +19,13 @@ struct SelectLocation {
   private initMsg(type: string): void {
     if (type === LocationMode.SAVE) {
       this.titleMsg = $r('app.string.location_title_save');
-      this.descLocation = ResourceManager.getString($r('app.string.location_local_desc_save'));
-      this.descWebDav = ResourceManager.getString($r('app.string.location_webdav_desc_save'));
+      this.descLocation = $r('app.string.location_local_desc_save');
+      this.descWebDav = $r('app.string.location_webdav_desc_save');
     } else {
       this.titleMsg = $r('app.string.location_title_select');
-      this.descLocation = ResourceManager.getString($r('app.string.location_local_desc_select'));
-      this.descWebDav = ResourceManager.getString($r('app.string.location_webdav_desc_select'));
+      this.descLocation = $r('app.string.location_local_desc_select');
+      this.descWebDav = $r('app.string.location_webdav_desc_select');
+      FileService.initExportDataParam();
     }
   }
 

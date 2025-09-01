@@ -99,7 +99,7 @@ export default class FileUtils {
    * @param content 文件内容
    * @returns 结果
    */
-  public static saveLocalFile(fileName: string, createContent: (filePath:string) => Promise<ArrayBuffer>): Promise<void> {
+  public static saveLocalFile(fileName: string, createContent: (filePath: string) => Promise<ArrayBuffer>): Promise<void> {
     // 使用文件选择器让用户选择保存位置
     const documentPicker = new picker.DocumentViewPicker(CommonUtils.getContext());
     const options = new picker.DocumentSaveOptions();
@@ -155,6 +155,16 @@ export default class FileUtils {
       hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`, error.message, error.stack);
       return Promise.reject(error);
     }
+  }
+
+  /**
+   * 替换文件名
+   * @param url 文件路径
+   * @param fileName 文件名
+   * @returns 文件路径
+   */
+  public static replaceFileName(url: string, fileName: string): string {
+    return url.replace(/[^/]+$/, fileName);
   }
 
   /**

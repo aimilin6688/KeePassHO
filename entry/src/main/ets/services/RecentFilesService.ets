@@ -9,6 +9,7 @@ import { common } from '@kit.AbilityKit';
 import DeviceUtils from '../common/utils/DeviceUtils';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
+import { ErrorCodes, KeePassHoError } from './KeepassHoError';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -56,23 +57,27 @@ export class RecentFilesService {
    * @returns 结果
    */
   public async addRecentFile(recentFile: RecentFile): Promise<void> {
+    if (recentFile.filePath === undefined || recentFile.filePath === '') {
+      throw new KeePassHoError(ErrorCodes.FILE_PATH_EMPTY);
+    }
     if (!recentFile.filePath.startsWith("file://")) {
       return this.doAdd(recentFile);
     }
     // 如果拥有持久化授权，则添加到最近访问列表中
-    return FileUtils.checkPersistPermission(recentFile.filePath, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE).then((result) => {
-      hilog.info(DOMAIN, TAG, 'Check path %{public}s persist permission: %{public}s', recentFile.filePath, result[0]);
-      if (result[0]) {
-        return this.doAdd(recentFile);
-      } else {
-        hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s no permission', recentFile.filePath);
-        if (DeviceUtils.isEmulator()) {
+    return FileUtils.checkPersistPermission(recentFile.filePath, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE)
+      .then((result) => {
+        hilog.info(DOMAIN, TAG, 'Check path %{public}s persist permission: %{public}s', recentFile.filePath, result[0]);
+        if (result[0]) {
           return this.doAdd(recentFile);
         } else {
-          return Promise.reject('No permission');
+          hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s no permission', recentFile.filePath);
+          if (DeviceUtils.isEmulator()) {
+            return this.doAdd(recentFile);
+          } else {
+            throw new KeePassHoError(ErrorCodes.FILE_NOT_PERMISSION);
+          }
         }
-      }
-    });
+      });
   }
 
   /**
