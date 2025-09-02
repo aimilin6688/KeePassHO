@@ -38,7 +38,7 @@ struct SettingCustomIcons {
         return;
       }
       // 添加自定义图标到数据库
-      KdbxUtils.addCustomIcon(FileService.getDbFileParam().database, images, {
+      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
         onSuccess: () => {
           this.isUploading = false;
           this.icons = IconUtils.getAllIcons(true);
@@ -69,7 +69,7 @@ struct SettingCustomIcons {
       secondaryButton: {
         value: $r("app.string.confirm_button_text"),
         action: () => {
-          let kdbx = FileService.getDbFileParam().database;
+          let kdbx = FileService.getDatabase();
           this.selectIcons.forEach((iconId) => {
             kdbx.meta.customIcons.delete(iconId + "");
           });
@@ -99,7 +99,7 @@ struct SettingCustomIcons {
       secondaryButton: {
         value: $r("app.string.confirm_button_text"),
         action: () => {
-          let kdbx = FileService.getDbFileParam().database;
+          let kdbx = FileService.getDatabase();
           kdbx.cleanup({ customIcons: true });
           KdbxUtils.saveDatabase({
             onSuccess: () => {

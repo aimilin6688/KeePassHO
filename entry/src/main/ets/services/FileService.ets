@@ -48,6 +48,15 @@ export class FileService {
   public static getDbFileParam(): DbFileParam {
     return FileService.instance.getDbFileParam();
   }
+
+  public static getFilePath(){
+    return FileService.getDbFileParam().filePath;
+  }
+
+  public static getDatabase(){
+    return FileService.getDbFileParam().database;
+  }
+
   /**
    * 重置数据库文件参数
    * @param kdbx 数据库

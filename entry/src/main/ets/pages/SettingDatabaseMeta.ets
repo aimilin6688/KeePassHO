@@ -30,7 +30,7 @@ struct SettingDatabaseMeta {
 
   aboutToAppear() {
     // 获取数据库对象
-    this.database = FileService.getDbFileParam().database;
+    this.database = FileService.getDatabase();
 
     if (this.database) {
       // 获取数据库元数据
