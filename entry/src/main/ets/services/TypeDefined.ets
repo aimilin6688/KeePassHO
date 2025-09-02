@@ -1,4 +1,5 @@
 import { Kdbx } from 'kdbxweb';
+import { LocationInfo, LocationParam } from './beans/LocationParam';
 import { StorageType } from './kdbx/interfaces';
 import { StorageConfig } from './kdbx/interfaces/StorageConfig';
 
@@ -23,57 +24,6 @@ export interface CredentialsParam {
 }
 
 /**
- * 文件导入导出参数类
- */
-export interface LocationDataOptions {
-  /**
-   * 文件路径
-   */
-  filePath: string;
-
-  /**
-   * 文件名
-   */
-  fileName: string;
-
-  /**
-   * 存储类型
-   */
-  storageType: StorageType;
-
-  /**
-   * 存储配置信息
-   */
-  storageConfig: StorageConfig;
-}
-
-/**
- * 导出数据参数定义
- */
-export interface  ExportDataParam{
-  /**
-   * 导出类型
-   */
-  exportType: ExportType;
-  /**
-   * 文件名
-   */
-  fileName: string;
-  /**
-   * 文件名追加日期
-   */
-  fileNameAppendDate: boolean;
-  /**
-   * 已解密的数据库对象
-   */
-  database?: Kdbx;
-  /**
-   * 导出成功事件
-   */
-  onSuccess: (dataOptions: LocationDataOptions) => Promise<void>;
-}
-
-/**
  * 导出类型定义
  */
 export enum ExportType {
@@ -81,6 +31,43 @@ export enum ExportType {
   XML = "XML",
   CSV = "CSV",
   CREATE_KEY = "CREATE_KEY"
+}
+
+/**
+ * 导出的文件信息
+ */
+export class FileContent{
+  /**
+   * 文件路径
+   */
+  filePath: string;
+  /**
+   * 文件内容
+   */
+  content: ArrayBuffer;
+
+  constructor(filePath: string, content: ArrayBuffer) {
+    this.filePath = filePath;
+    this.content = content;
+  }
+}
+
+/**
+ * 保存数据库参数定义
+ */
+export interface SaveKdbxParam{
+  /**
+   * 导出类型
+   */
+  exportType: ExportType;
+  /**
+   * 数据库对象
+   */
+  kdbx: Kdbx;
+  /**
+   * 导出位置参数
+   */
+  locationInfo: LocationInfo
 }
 
 /**
@@ -145,25 +132,6 @@ export interface DbFileParam extends CredentialsParam{
    * 是否使用密钥文件
    */
   notUseKeyFile?: boolean;
-}
-
-/**
- * 导出的文件信息
- */
-export class ExportFileParam{
-  /**
-   * 文件路径
-   */
-  filePath: string;
-  /**
-   * 文件内容
-   */
-  content: ArrayBuffer;
-
-  constructor(filePath: string, content: ArrayBuffer) {
-    this.filePath = filePath;
-    this.content = content;
-  }
 }
 
 /**

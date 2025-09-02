@@ -1,6 +1,6 @@
 import { Router } from '@kit.ArkUI';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
-import { FileService } from '../../services/FileService';
+import { LocationParam } from '../../services/beans/LocationParam';
 
 @Entry
 @Component
@@ -11,13 +11,12 @@ struct SelectLocation {
   @State descWebDav: ResourceStr = '';
 
   aboutToAppear(): void {
-    const params = this.router.getParams() as Record<string, string>;
-    this.initMsg(params?.type);
+    this.initMsg();
   }
 
   // 类型提示文本
-  private initMsg(type: string): void {
-    if (type === LocationMode.SAVE) {
+  private initMsg(): void {
+    if (LocationParam.isSaveMode()) {
       this.titleMsg = $r('app.string.location_title_save');
       this.descLocation = $r('app.string.location_local_desc_save');
       this.descWebDav = $r('app.string.location_webdav_desc_save');
@@ -25,7 +24,6 @@ struct SelectLocation {
       this.titleMsg = $r('app.string.location_title_select');
       this.descLocation = $r('app.string.location_local_desc_select');
       this.descWebDav = $r('app.string.location_webdav_desc_select');
-      FileService.initExportDataParam();
     }
   }
 

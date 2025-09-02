@@ -1,5 +1,5 @@
 import { Kdbx } from 'kdbxweb';
-import { DbFileParam, ExportDataParam } from './TypeDefined';
+import { DbFileParam } from './TypeDefined';
 
 
 /**
@@ -8,11 +8,9 @@ import { DbFileParam, ExportDataParam } from './TypeDefined';
 export class FileService {
   private static instance: FileService = new FileService();
   private dbFileParam: DbFileParam;
-  private exportDataParam: ExportDataParam;
 
   private constructor() {
     this.dbFileParam = {} as DbFileParam;
-    this.exportDataParam = {} as ExportDataParam;
   }
 
   public static getInstance(): FileService {
@@ -21,7 +19,6 @@ export class FileService {
 
   public init(): void {
     this.initDbFileParam();
-    this.initExportDataParam();
   }
 
   public static init(): void {
@@ -36,24 +33,12 @@ export class FileService {
     this.dbFileParam = {} as DbFileParam;
   }
 
-  public initExportDataParam(): void {
-    this.exportDataParam = {} as ExportDataParam;
-  }
-
-  public static initExportDataParam(): void {
-    FileService.instance.initExportDataParam();
-  }
-
   public setDbFileParam(dbFileParam: DbFileParam): void {
     this.dbFileParam = dbFileParam;
   }
 
   public static setDbFileParam(dbFileParam: DbFileParam): void {
     FileService.instance.setDbFileParam(dbFileParam);
-  }
-
-  public static setExportDataParam(param: ExportDataParam): void {
-    FileService.instance.exportDataParam = param;
   }
 
   public getDbFileParam(): DbFileParam {
@@ -63,11 +48,6 @@ export class FileService {
   public static getDbFileParam(): DbFileParam {
     return FileService.instance.getDbFileParam();
   }
-
-  public static getExportDataParam(): ExportDataParam {
-    return FileService.instance.exportDataParam;
-  }
-
   /**
    * 重置数据库文件参数
    * @param kdbx 数据库

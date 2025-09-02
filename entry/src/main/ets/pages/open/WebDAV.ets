@@ -5,10 +5,8 @@ import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
-import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
-import { DataService } from '../../services/DataService';
-import { ExportType, LocationDataOptions } from '../../services/TypeDefined';
 import FileUtils from '../../common/utils/FIleUtils';
+import { LocationParam } from '../../services/beans/LocationParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -27,28 +25,25 @@ struct WebDAV {
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private exportType: ExportType | undefined = undefined;
 
-  onPageShow(): void {
-    this.initExport();
+  aboutToAppear(): void {
+    this.initSaveParam();
   }
 
   // 导出数据初始化
-  private initExport() {
-    let exportParam = FileService.getExportDataParam();
-    this.exportType = exportParam.exportType;
-    if (!this.exportType) {
+  private initSaveParam() {
+    if (!LocationParam.isSaveMode()) {
       return;
     }
     // 初始化导出
     const dbFileParam = FileService.getDbFileParam();
     if (!(dbFileParam.storageType === StorageType.WEBDAV)) {
-      this.url =  KdbxExportService.createFileName();
+      this.url = LocationParam.getFileName();
       return;
     }
     const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
     if (storageConfig) {
-      this.url = FileUtils.replaceFileName(this.url, KdbxExportService.createFileName());
+      this.url = FileUtils.replaceFileName(this.url, LocationParam.getFileName());
       this.username = WebDAVStorageConfig.getText(storageConfig.username);
       this.password = WebDAVStorageConfig.getText(storageConfig.password);
     }
@@ -57,10 +52,10 @@ struct WebDAV {
   // 处理确认时间
   private handleConfirm() {
     // 导出数据库
-    if (this.exportType) {
-      this.exportData();
+    if (LocationParam.isSaveMode()) {
+      this.selectDir();
     } else {
-      this.loadData();
+      this.selectFile();
     }
   }
 
@@ -98,7 +93,7 @@ struct WebDAV {
   }
 
   // 保存WebDAV配置
-  private async loadData() {
+  private async selectFile() {
     if (!this.checkParam()) {
       return;
     }
@@ -110,7 +105,9 @@ struct WebDAV {
       // 获取文件信息
       const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-      DataService.readData(this.router, {
+      // 回调位置信息
+      LocationParam.callOnLocation({
+        mode: LocationParam.getMode(),
         filePath: this.url,
         fileName: fileInfo.name,
         storageType: StorageType.WEBDAV,
@@ -129,7 +126,7 @@ struct WebDAV {
   /**
    * 导出数据库
    */
-  private async exportData() {
+  private async selectDir() {
     if (!this.checkParam()) {
       return;
     }
@@ -142,55 +139,55 @@ struct WebDAV {
     const existsFile = await this.fileManager.init(storageConfig).exists(this.url);
     hilog.info(DOMAIN, TAG, `Export kdbx file to webDAV path: ${this.url}`);
     if (existsFile) {
-      this.promptAction.showDialog({
-        title: $r('app.string.dialog_prompt_title'),
-        message: $r('app.string.dialog_exists_file_message'),
-        buttons: [
-          {
-            text: $r('app.string.cancel_button_text'),
-            color: $r('app.color.text_secondary')
-          },
-          {
-            text: $r('app.string.replace_button_text'),
-            color: $r("app.color.button_bg_blue"),
-          }
-        ],
-      }).then(result => {
-        if (result.index === 1) {
-          this.doExportData(storageConfig);
-        }
-      });
+      this.confirmDialog(storageConfig);
     } else {
-      this.doExportData(storageConfig);
+      this.handleSelectDir(storageConfig);
     }
   }
 
-  private doExportData(storageConfig: StorageConfig) {
-    if (!this.exportType) {
-      return;
-    }
-    this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
-    const writeDataOptions = {
-      filePath: this.url,
-      fileName: FileUtils.getFileName(this.url),
-      storageType: StorageType.WEBDAV,
-      storageConfig: storageConfig
-    } as LocationDataOptions;
-    DataService.writeData(writeDataOptions).then(() => {
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
-      this.connectionStatus = ResourceManager.getString($r('app.string.save_success'));
-      this.isConnecting = false;
-      if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
-        FileService.getExportDataParam().onSuccess(writeDataOptions);
-      } else {
-        this.router.back();
+  /**
+   * 确认选择
+   * @param storageConfig
+   */
+  private confirmDialog(storageConfig: StorageConfig) {
+    this.promptAction.showDialog({
+      title: $r('app.string.dialog_prompt_title'),
+      message: $r('app.string.dialog_exists_file_message'),
+      buttons: [
+        {
+          text: $r('app.string.cancel_button_text'),
+          color: $r('app.color.text_secondary')
+        },
+        {
+          text: $r('app.string.replace_button_text'),
+          color: $r("app.color.button_bg_blue"),
+        }
+      ],
+    }).then(result => {
+      if (result.index === 1) {
+        this.handleSelectDir(storageConfig);
       }
-    }).catch((error: Error) => {
+    });
+  }
+
+  private handleSelectDir(storageConfig: StorageConfig) {
+    try {
+      this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
+      // 回调位置信息
+      LocationParam.callOnLocation({
+        mode: LocationParam.getMode(),
+        filePath: this.url,
+        fileName: FileUtils.getFileName(this.url),
+        storageType: StorageType.WEBDAV,
+        storageConfig: storageConfig
+      });
+    } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
       this.connectionStatus = error.message;
-      this.isConnecting = false;
       this.isErrorStatus = true;
-    })
+    } finally {
+      this.isConnecting = false;
+    }
   }
 
   /**

@@ -17,6 +17,10 @@ import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { ByteUtils } from '..';
 import { ohosArgon2 } from './argon2-rs';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+
 const EmptySha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 const EmptySha512 =
   'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce' +
@@ -97,23 +101,6 @@ class AesCbcNode extends AesCbc {
     return Promise.resolve().then(() => {
       let ivParamsSpec: cryptoFramework.IvParamsSpec = {
         algName: "IvParamsSpec",
-        iv: {data: ByteUtils.bufferToBytes(iv)}
-      };
-
-      let aesGenerator = cryptoFramework.createSymKeyGenerator('AES256');
-      let symKey = aesGenerator.convertKeySync({data: ByteUtils.bufferToBytes(this.key)});
-
-      let cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
-      cipher.initSync(cryptoFramework.CryptoMode.ENCRYPT_MODE, symKey, ivParamsSpec);
-      let cipherData = cipher.doFinalSync({data: ByteUtils.bufferToBytes(data)});
-      return ByteUtils.bytesToBuffer(cipherData.data);
-    });
-  }
-
-  decrypt(data: ArrayBuffer, iv: ArrayBuffer): Promise<ArrayBuffer> {
-    return Promise.resolve().then(() => {
-      let ivParamsSpec: cryptoFramework.IvParamsSpec = {
-        algName: "IvParamsSpec",
         iv: { data: ByteUtils.bufferToBytes(iv) }
       };
 
@@ -121,9 +108,31 @@ class AesCbcNode extends AesCbc {
       let symKey = aesGenerator.convertKeySync({ data: ByteUtils.bufferToBytes(this.key) });
 
       let cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
-      cipher.initSync(cryptoFramework.CryptoMode.DECRYPT_MODE, symKey, ivParamsSpec);
+      cipher.initSync(cryptoFramework.CryptoMode.ENCRYPT_MODE, symKey, ivParamsSpec);
       let cipherData = cipher.doFinalSync({ data: ByteUtils.bufferToBytes(data) });
       return ByteUtils.bytesToBuffer(cipherData.data);
+    });
+  }
+
+  decrypt(data: ArrayBuffer, iv: ArrayBuffer): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        let ivParamsSpec: cryptoFramework.IvParamsSpec = {
+          algName: "IvParamsSpec",
+          iv: { data: ByteUtils.bufferToBytes(iv) }
+        };
+
+        let aesGenerator = cryptoFramework.createSymKeyGenerator('AES256');
+        let symKey = aesGenerator.convertKeySync({ data: ByteUtils.bufferToBytes(this.key) });
+
+        let cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
+        cipher.initSync(cryptoFramework.CryptoMode.DECRYPT_MODE, symKey, ivParamsSpec);
+        let cipherData = cipher.doFinalSync({ data: ByteUtils.bufferToBytes(data) });
+        resolve(ByteUtils.bytesToBuffer(cipherData.data));
+      } catch (error) {
+        hilog.error(DOMAIN, "AesCbcNode", `decrypt error:${error.message}`);
+        reject(new KdbxError(ErrorCodes.BadSignature));
+      }
     });
   }
 }
@@ -201,8 +210,7 @@ export function argon2(
       type,
       version
     ).then(arrayToBuffer);
-  }
-  else if(ohosArgon2){
+  } else if (ohosArgon2) {
     return ohosArgon2(
       password,
       salt,
