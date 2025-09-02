@@ -226,13 +226,13 @@ export class WebDavClient {
         const dirs: WebDavResource[] = [];
         for (let item of items) {
           if (filter == 0) {
-            item.childrenCount = queryChildrenCount ? await this.getChildrenCount(item.href) : 0;
+            item.childrenCount = (queryChildrenCount && item.type === 'collection') ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);
             continue;
           }
           // 文件夹
           if (item.type === 'collection' && filter === 1) {
-            item.childrenCount = queryChildrenCount ? await this.getChildrenCount(item.href) : 0;
+            item.childrenCount = (queryChildrenCount && item.type === 'collection') ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);
             continue;
           }

@@ -18,6 +18,7 @@
     "pages/open/WebDAV",
     "pages/open/CreateDatabase",
     "pages/UnLockDatabase",
-    "pages/ChangePassword"
+    "pages/ChangePassword",
+    "pages/open/FileList"
   ]
 }
