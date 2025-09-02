@@ -101,6 +101,21 @@ export class KdbxFileManager {
   }
 
   /**
+   * 获取KDBX文件信息
+   * @param path 文件路径
+   * @return Promise<FileInfo> 文件信息
+   * @throws 如果获取失败则抛出异常
+   */
+  public async listDir(path: string): Promise<Array<FileInfo>> {
+    try {
+      return await this.storage.listDir(path);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to list dir: %{public}s', error.message)
+      throw new Error(error.message);
+    }
+  }
+
+  /**
    * 切换存储类型
    * @param storageType 新的存储类型
    * @throws 如果指定类型的存储未注册则抛出异常
