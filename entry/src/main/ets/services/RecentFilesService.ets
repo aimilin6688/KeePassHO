@@ -9,7 +9,7 @@ import { common } from '@kit.AbilityKit';
 import DeviceUtils from '../common/utils/DeviceUtils';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
-import { ErrorCodes, KeePassHoError } from './KeepassHoError';
+import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
