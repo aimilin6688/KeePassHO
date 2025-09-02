@@ -17,6 +17,7 @@
     "pages/open/LocalFile",
     "pages/open/WebDAV",
     "pages/open/CreateDatabase",
-    "pages/UnLockDatabase"
+    "pages/UnLockDatabase",
+    "pages/ChangePassword"
   ]
 }
