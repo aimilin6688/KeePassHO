@@ -5,7 +5,7 @@ import { KdbxExportService } from './kdbx/KdbxExportService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../common/utils/CommonUtils';
-import { ErrorCodes, KeePassHoError } from './KeepassHoError';
+import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
