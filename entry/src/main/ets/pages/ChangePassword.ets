@@ -19,7 +19,6 @@ export struct ChangePassword {
   @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder')); // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
   @State notUseKeyFile: boolean = false; // 不适用keyfile
-
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
 
@@ -39,10 +38,12 @@ export struct ChangePassword {
     // 更新数据库主密码
     KdbxUtils.saveDatabase({
       onSuccess: () => {
-        // 重置最近打开文件的数据库密码
-        RecentFilesService.setPassword(dbFileParam.filePath, this.newPassword);
+        this.errorMessage = '';
         this.handlePasswordChange();
-      }
+      },
+      onError: (message) => {
+        this.errorMessage = message;
+      },
     });
   }
 
@@ -105,10 +106,11 @@ export struct ChangePassword {
    */
   private handlePasswordChange() {
     this.promptAction.showToast({ message: $r('app.string.operation_success'), duration: 2000 });
-    let filePath = FileService.getDbFileParam().filePath;
-    FileService.close();
-    this.router.clear();
-    RecentFilesService.clearPassword(filePath);
+    const filePath = FileService.getFilePath();
+    RecentFilesService.clearPassword(filePath).then(() => {
+      FileService.close();
+      this.router.clear();
+    })
     this.router.pushUrl({
       url: 'pages/Password',
       params: {
@@ -296,7 +298,7 @@ export struct ChangePassword {
           .backgroundColor(Color.Gray)
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
-            this.router.replaceUrl({url: 'pages/SettingDatabase'});
+            this.router.replaceUrl({ url: 'pages/SettingDatabase' });
           })
         Blank()
         Button($r('app.string.confirm_button_text'))
