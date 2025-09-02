@@ -22,6 +22,7 @@ import { FocusController } from '@ohos.arkui.UIContext';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
+import { DataService } from '../services/DataService';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -213,6 +214,7 @@ struct Password {
    */
   changeDatabase() {
     // 返回到文件选择页面
+    DataService.selectKdbx(this.router);
     this.router.pushUrl({ url: 'pages/open/SelectLocation' })
   }
 

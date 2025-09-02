@@ -4,9 +4,12 @@ import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import ResourceManager from '../common/utils/ResourceManager';
 import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
+import { LocationInfo, LocationInterface, LocationParam } from '../services/beans/LocationParam';
+import { DataService } from '../services/DataService';
 import { FileService } from '../services/FileService';
+import { KdbxExportService } from '../services/kdbx/KdbxExportService';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { ExportDataParam, ExportType } from '../services/TypeDefined';
+import { ExportType } from '../services/TypeDefined';
 import { LocationMode } from './open/SelectLocation';
 
 
@@ -79,17 +82,17 @@ struct SettingsDatabase {
 
   // 导出数据库
   private exportDatabase(exportType: ExportType) {
-    FileService.setExportDataParam({
-      exportType: exportType,
-      fileName: FileService.getDbFileParam().fileName,
-      database: FileService.getDbFileParam().database
-    } as ExportDataParam);
-    this.router.pushUrl({
-      url: 'pages/open/SelectLocation',
-      params: {
-        type: LocationMode.SAVE
+    LocationParam.of({
+      mode: LocationMode.SAVE,
+      fileName: KdbxExportService.createFileName(FileService.getDbFileParam().fileName, exportType, true),
+      onLocation: (locationInfo: LocationInfo) => {
+        DataService.saveKdbx({ kdbx: FileService.getDbFileParam().database, exportType: exportType, locationInfo: locationInfo }).then(() => {
+          this.promptAction.showToast({ message: $r("app.string.save_success") });
+          this.router.back();
+        })
       }
-    });
+    } as LocationInterface);
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   // 重新加密算法

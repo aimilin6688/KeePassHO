@@ -1,4 +1,4 @@
-import { LocationDataOptions } from './TypeDefined';
+import { SaveKdbxParam } from './TypeDefined';
 import { Router } from '@kit.ArkUI';
 import { RecentFilesService } from './RecentFilesService';
 import { KdbxExportService } from './kdbx/KdbxExportService';
@@ -6,6 +6,7 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
+import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
@@ -15,27 +16,53 @@ const TAG = 'DataService';
  */
 export class DataService {
   /**
-   * 设置数据库信息，并跳转到打开页面
+   * 保存数据库
+   */
+  public static saveKdbx(param: SaveKdbxParam): Promise<void> {
+    return KdbxExportService.getFileContent(param).then(result => {
+      const location = param.locationInfo;
+      return new KdbxFileManager(location.storageType, location.storageConfig).write(location.filePath, result.content);
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'Failed to save kdbx file: %{public}s, error: %{public}s', param.locationInfo.filePath, error.message);
+      CommonUtils.showToast($r('app.string.open_failed', error.message));
+    });
+  }
+
+  /**
+   * 选择数据库
+   */
+  public static selectKdbx(router: Router) {
+    LocationParam.of({
+      mode: LocationMode.SELECT,
+      fileSuffix: ['kdbx'],
+      onLocation: (locationInfo: LocationInfo) => {
+        DataService.toPasswordPage(router, locationInfo);
+      }
+    });
+  }
+
+  /**
+   * 跳转到数据库打开页面
    * @param router
    * @param param
    */
-  public static readData(router: Router, param: LocationDataOptions): void {
+  public static toPasswordPage(router: Router, locationInfo: LocationInfo): void {
     // 添加到最近打开的文件列表
     RecentFilesService.addRecentFile({
-      filePath: param.filePath,
-      fileName: param.fileName,
-      storageType: param.storageType,
-      storageConfig: param.storageConfig
+      filePath: locationInfo.filePath,
+      fileName: locationInfo.fileName,
+      storageType: locationInfo.storageType,
+      storageConfig: locationInfo.storageConfig
     }).then(() => {
       // 导航到密码输入页面
       router.pushUrl({
         url: 'pages/Password',
         params: {
-          filePath: param.filePath
+          filePath: locationInfo.filePath
         }
       });
     }).catch((error: Error) => {
-      hilog.error(DOMAIN, TAG, 'Failed to read data file: %{public}s, error: %{public}s', param.filePath, error.message);
+      hilog.error(DOMAIN, TAG, 'Failed to read data file: %{public}s, error: %{public}s', locationInfo.filePath, error.message);
       if (error instanceof KeePassHoError) {
         // 本地文件创建之后没有读权限
         if (error.code === ErrorCodes.FILE_NOT_PERMISSION) {
@@ -44,15 +71,6 @@ export class DataService {
       } else {
         CommonUtils.showToast($r('app.string.open_failed', error.message));
       }
-    });
-  }
-
-  /**
-   * 写入数据到指定配置
-   */
-  public static writeData(param: LocationDataOptions): Promise<void> {
-    return KdbxExportService.createExportFile(param).then(result => {
-      return new KdbxFileManager(param.storageType, param.storageConfig).write(param.filePath, result.content);
     });
   }
 }
