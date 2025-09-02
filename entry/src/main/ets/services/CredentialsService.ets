@@ -1,6 +1,5 @@
 import { KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import ResourceManager from '../common/utils/ResourceManager';
-import { StorageType } from './kdbx/interfaces';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { AuthType, CredentialsParam } from './TypeDefined';
 
@@ -22,12 +21,12 @@ export class CredentialsService {
     // 创建凭证
     let credentials: KdbxCredentials;
     if (AuthType.useKeyAuth(param.authType)) {
-      if (param.keyFilePath === undefined) {
+      if (param.keyLocation === undefined) {
         throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
       }
       // 使用密码和密钥文件
-      let keyFileContent = await new KdbxFileManager(StorageType.LOCAL).read(param.keyFilePath);
-      hilog.info(DOMAIN, TAG, 'Load key file content success, keyFilePath: %{public}s', param.keyFilePath);
+      let keyFileContent = await KdbxFileManager.of(param.keyLocation).read(param.keyLocation.filePath);
+      hilog.info(DOMAIN, TAG, 'Load key file content success, keyFilePath: %{public}s', param.keyLocation.filePath);
       credentials = new KdbxCredentials(ProtectedValue.fromString(param.password), keyFileContent.content);
     } else {
       // 仅使用密码

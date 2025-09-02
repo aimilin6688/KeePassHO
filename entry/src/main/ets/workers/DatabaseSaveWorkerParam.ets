@@ -1,4 +1,5 @@
 import { Kdbx } from 'kdbxweb';
+import { LocationInfo } from '../services/beans/LocationParam';
 import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
 import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
 import { MessageType, WorkerMessage } from './WorkerParam';
@@ -20,12 +21,12 @@ export class SaveDatabaseMessage implements WorkerMessage {
       fileName: dbFileParam.fileName,
       password: dbFileParam.password,
       authType: dbFileParam.authType,
-      keyFilePath: dbFileParam.keyFilePath,
+      keyLocation: dbFileParam.keyLocation,
       storageType: dbFileParam.storageType,
       storageConfig: dbFileParam.storageConfig,
       modifiedTime: dbFileParam.modifiedTime,
       newPassword: dbFileParam.newPassword,
-      newKeyFilePath: dbFileParam.newKeyFilePath,
+      newKeyLocation: dbFileParam.newKeyLocation,
       notUseKeyFile: dbFileParam.notUseKeyFile
     } as SaveDatabaseDbParam);
   }
@@ -43,7 +44,7 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   storageConfig: StorageConfig;
   modifiedTime: number;
   newPassword?: string;
-  newKeyFilePath?: string;
+  newKeyLocation?: LocationInfo;
   notUseKeyFile?: boolean;
 
   constructor(dbParam: SaveDatabaseDbParam, message: SaveDatabaseMessage) {
@@ -58,7 +59,7 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.storageConfig = dbParam.storageConfig;
     this.modifiedTime = dbParam.modifiedTime;
     this.newPassword = dbParam.newPassword;
-    this.newKeyFilePath = dbParam.newKeyFilePath;
+    this.newKeyLocation = dbParam.newKeyLocation;
     this.notUseKeyFile = dbParam.notUseKeyFile;
   }
 }
@@ -115,7 +116,7 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
   /**
    * 新密钥文件路径
    */
-  newKeyFilePath?: string;
+  newKeyLocation?: LocationInfo;
 
   /**
    * 是否使用密钥文件
