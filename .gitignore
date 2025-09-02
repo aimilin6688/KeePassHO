@@ -12,3 +12,4 @@
 /.appanalyzer
 .history
 oh-package-lock.json5
+build-profile.json5
