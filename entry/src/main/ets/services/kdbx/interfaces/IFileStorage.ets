@@ -42,6 +42,14 @@ export interface IFileStorage {
    * @throws 如果获取失败则抛出异常
    */
   getInfo(path: string): Promise<FileInfo>;
+
+  /**
+   * 获取目录内容
+   * @param path 目录路径
+   * @return Promise<Array<FileInfo>> 目录内容
+   * @throws 如果获取失败则抛出异常
+   */
+  listDir(path: string): Promise<Array<FileInfo>>;
 }
 
 /**
@@ -67,6 +75,24 @@ export interface FileInfo {
    * 文件路径
    */
   path: string;
+
+  /**
+   * 类型：DIR - 文件夹， FILE - 文件
+   */
+  type: FileType;
+
+  /**
+   * 文件夹子节点个数
+   */
+  childrenCount: number;
+}
+
+/**
+ * 文件类型
+ */
+export enum FileType {
+  DIR = "DIR",
+  FILE = "FILE"
 }
 
 /**
@@ -78,6 +104,8 @@ export class FileContentInfo implements FileInfo {
   modifiedTime: number;
   path: string;
   content: ArrayBuffer;
+  type: FileType;
+  childrenCount: number;
 
   /**
    * 文件内容信息
@@ -90,14 +118,18 @@ export class FileContentInfo implements FileInfo {
     this.modifiedTime = fileInfo.modifiedTime;
     this.path = fileInfo.path;
     this.content = content;
+    this.type = fileInfo.type;
+    this.childrenCount = fileInfo.childrenCount;
   }
 
-  get fileInfo(): FileInfo{
+  get fileInfo(): FileInfo {
     return {
       name: this.name,
       size: this.size,
       modifiedTime: this.modifiedTime,
-      path: this.path
+      path: this.path,
+      type: this.type,
+      childrenCount: this.childrenCount
     };
   }
 }

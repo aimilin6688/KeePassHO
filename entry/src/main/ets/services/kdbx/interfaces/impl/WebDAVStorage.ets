@@ -1,8 +1,9 @@
-import { FileInfo, IFileStorage } from '../IFileStorage';
+import { FileInfo, FileType, IFileStorage } from '../IFileStorage';
 import { WebDAVStorageConfig } from '../StorageConfig';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../../../common/utils/WebDavClient';
 import ResourceManager from '../../../../common/utils/ResourceManager';
+import { StorageError, StorageErrorCodes } from '../../../error/StorageError';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAVStorage';
@@ -48,7 +49,7 @@ export class WebDAVStorage implements IFileStorage {
   public read(path: string): Promise<ArrayBuffer> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
-      return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
     try {
       return this.client.get(path).then((res: ResultInfo) => {
@@ -59,20 +60,20 @@ export class WebDAVStorage implements IFileStorage {
       });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'WebDAV readFile error:%{public}s', error.message);
-      return Promise.reject(new Error(error.message));
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message));
     }
   }
 
   public async write(path: string, data: ArrayBuffer): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
-      return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
     try {
       await this.client.upload(path, data);
     } catch (error) {
       console.error('WebDAV writeFile error:', error);
-      throw new Error('Failed to write file to WebDAV');
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message));
     }
   }
 
@@ -100,9 +101,9 @@ export class WebDAVStorage implements IFileStorage {
   public async getInfo(path: string): Promise<FileInfo> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
-      return Promise.reject(new Error(ResourceManager.getString($r('app.string.webdav_not_init'))));
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
-    return this.client.list(path).then((res: ResultInfo) => {
+    return this.client.list(path, 0, false).then((res: ResultInfo) => {
       if (res.success && res.data && res.data.length > 0) {
         const fileInfo = res.data[0];
         if (fileInfo.type == 'collection') {
@@ -112,8 +113,41 @@ export class WebDAVStorage implements IFileStorage {
           name: fileInfo.displayName,
           size: fileInfo.contentLength,
           modifiedTime: new Date(fileInfo.lastModified).getTime(),
-          path: fileInfo.href
+          path: fileInfo.href,
+          type: fileInfo.type == 'collection' ? FileType.DIR : FileType.FILE,
+          childrenCount: fileInfo.childrenCount
         } as FileInfo);
+      } else {
+        return Promise.reject(new WebDAVError(res.statusCode, res.message));
+      }
+    });
+  }
+
+  /**
+   * 获取目录内容
+   * @param path 目录路径
+   * @returns 目录内容
+   */
+  public async listDir(path: string): Promise<Array<FileInfo>> {
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
+    }
+    return this.client.list(path, 0, true).then((res: ResultInfo) => {
+      if (res.success && res.data && res.data.length > 0) {
+        const files = new Array<FileInfo>(res.data.length);
+        for (let i = 0; i < res.data.length; i++) {
+          const fileInfo = res.data[i];
+          files.push({
+            name: fileInfo.displayName,
+            size: fileInfo.contentLength,
+            modifiedTime: new Date(fileInfo.lastModified).getTime(),
+            path: fileInfo.href,
+            type: fileInfo.type == 'collection' ? FileType.DIR : FileType.FILE,
+            childrenCount: fileInfo.childrenCount
+          } as FileInfo);
+        }
+        return Promise.resolve(files);
       } else {
         return Promise.reject(new WebDAVError(res.statusCode, res.message));
       }
