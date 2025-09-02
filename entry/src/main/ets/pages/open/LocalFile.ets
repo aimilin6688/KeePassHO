@@ -7,12 +7,8 @@ import FileUtils from '../../common/utils/FIleUtils';
 import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { DataService } from '../../services/DataService';
-import { FileService } from '../../services/FileService';
-import { ExportDataParam, LocationDataOptions } from '../../services/TypeDefined';
-import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { BusinessError } from '@kit.BasicServicesKit';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { LocationParam } from '../../services/beans/LocationParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';
@@ -26,33 +22,30 @@ struct LocalFile {
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private exportParam: ExportDataParam | undefined = undefined;
 
   // 处理确认时间
   private handleConfirm() {
-    this.exportParam = FileService.getExportDataParam();
-    // 导出数据库
-    if (this.exportParam && this.exportParam.exportType) {
-      this.exportData();
+    if (LocationParam.isSaveMode()) {
+      this.selectDir();
     } else {
-      this.openFilePicker();
+      this.selectFile();
     }
   }
 
   /**
    * 打开文件选择器
    */
-  private async openFilePicker() {
+  private async selectFile() {
     try {
       const documentPicker = new picker.DocumentViewPicker(this.context);
       const options = new picker.DocumentSelectOptions();
-      options.fileSuffixFilters = ['.kdbx']; // 只显示kdbx文件
+      options.fileSuffixFilters = LocationParam.getFileSuffix(); // 只显示kdbx文件
       options.maxSelectNumber = 1; // 只允许选择一个文件
 
       const result = await documentPicker.select(options);
       if (result && result.length > 0) {
         this.selectedFile = result[0];
-        this.loadData(this.selectedFile);
+        this.handleSelectFile(this.selectedFile);
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`, error.message, error.stack);
@@ -64,10 +57,10 @@ struct LocalFile {
   }
 
   /**
-   * 加载KDBX文件
+   * 处理选择的文件
    * @param path 文件路径
    */
-  async loadData(path: string) {
+  async handleSelectFile(path: string) {
     this.isLoading = true;
     // 永久授权文件访问权限
     FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE)
@@ -77,8 +70,9 @@ struct LocalFile {
         hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
         // 本地配置信息
         const storageConfig = new LocalFileStorageConfig(fileInfo.size);
-        // 设置数据服务
-        DataService.readData(this.router, {
+        // 回调位置信息
+        LocationParam.callOnLocation({
+          mode: LocationParam.getMode(),
           filePath: path,
           fileName: fileInfo.name,
           storageType: StorageType.LOCAL,
@@ -98,46 +92,30 @@ struct LocalFile {
   }
 
   // 保存数据库文件到本地
-  private exportData() {
+  private selectDir() {
     this.isLoading = true;
-    const fileName = KdbxExportService.createFileName();
+    const fileName = LocationParam.getFileName();
     // 使用文件选择器让用户选择保存位置
     const documentPicker = new picker.DocumentViewPicker(this.context);
     const options = new picker.DocumentSaveOptions();
     options.newFileNames = [fileName];
-
     // 显示文件保存对话框
-    return documentPicker.save(options).then(async (result) => {
+    documentPicker.save(options).then(async (result) => {
       hilog.info(DOMAIN, TAG, `Selected save URIs: ${result}`);
       if (result && result.length > 0) {
-        this.doExportData(result[0]);
+        const filePath = result[0];
+        // 回调位置信息
+        LocationParam.callOnLocation({
+          mode: LocationParam.getMode(),
+          filePath: filePath,
+          fileName: FileUtils.getFileName(filePath),
+          storageType: StorageType.LOCAL,
+          storageConfig: new LocalFileStorageConfig()
+        });
       }
     }).catch((err: BusinessError) => {
       hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
-      return Promise.reject(err.message);
-    });
-  }
-
-  // 导出数据库文件
-  private doExportData(filePath: string) {
-    let writeDataOptions = {
-      filePath: filePath,
-      fileName: FileUtils.getFileName(filePath),
-      storageType: StorageType.LOCAL,
-      storageConfig: new LocalFileStorageConfig()
-    } as LocationDataOptions;
-    DataService.writeData(writeDataOptions).then(() => {
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) })
-      this.isLoading = false;
-      if (FileService.getExportDataParam() && FileService.getExportDataParam().onSuccess) {
-        FileService.getExportDataParam().onSuccess(writeDataOptions);
-      } else {
-        this.router.back();
-      }
-    }).catch((error: Error) => {
-      hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
-      this.isLoading = false;
     });
   }
 

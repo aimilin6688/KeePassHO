@@ -3,6 +3,7 @@ import { SettingsService } from '../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
 import { router, Router } from '@kit.ArkUI';
 import { SortConstants, SortMode } from '../common/constants/SortConstants';
+import { DataService } from '../services/DataService';
 
 @Entry
 @Component
@@ -200,6 +201,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
+            DataService.selectKdbx(this.router);
             this.router.pushUrl({
               url: 'pages/open/SelectLocation'
             });
