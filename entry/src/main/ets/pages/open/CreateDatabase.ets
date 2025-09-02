@@ -1,7 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import picker from '@ohos.file.picker';
 import common from '@ohos.app.ability.common';
-import { ExportDataParam, ExportType, LocationDataOptions } from '../../services/TypeDefined';
+import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType } from '../../services/kdbx/interfaces';
 import * as kdbxweb from 'kdbxweb';
@@ -10,9 +10,10 @@ import ResourceManager from '../../common/utils/ResourceManager';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileKeyService } from '../../services/FileKeyService';
-import { FileService } from '../../services/FileService';
 import { DataService } from '../../services/DataService';
 import { LocationMode } from './SelectLocation';
+import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
+import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -74,21 +75,17 @@ struct CreateDatabase {
       // 将kdbx对象转换为ArrayBuffer
       let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
       // 写入导出参数
-      FileService.setExportDataParam({
-        database: newDb,
-        fileName: fileName,
-        exportType: ExportType.KDBX,
-        fileNameAppendDate: false,
-        onSuccess: (param: LocationDataOptions) => {
-          DataService.readData(this.router, {
-            filePath: param.filePath,
-            fileName: FileUtils.getFileName(param.filePath),
-            storageType: param.storageType,
-            storageConfig: param.storageConfig
-          });
+      LocationParam.of({
+        mode: LocationMode.SAVE,
+        fileName: KdbxExportService.createFileName(fileName, ExportType.KDBX, false),
+        onLocation: (locationInfo: LocationInfo) => {
+          DataService.saveKdbx({ kdbx: newDb, exportType: ExportType.KDBX, locationInfo: locationInfo }).then(() => {
+            this.isCreating = false;
+            DataService.toPasswordPage(this.router, locationInfo);
+          })
         }
-      } as ExportDataParam);
-      this.router.pushUrl({ url: 'pages/open/SelectLocation', params: { type: LocationMode.SAVE } });
+      });
+      this.router.pushUrl({ url: 'pages/open/SelectLocation' });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });

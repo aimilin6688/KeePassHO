@@ -2,6 +2,7 @@ import ThemeManager from '../common/utils/ThemeManager';
 import { Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
+import { DataService } from '../services/DataService';
 
 const DOMAIN = 0x0000;
 const TAG = 'Index';
@@ -120,6 +121,7 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
+          DataService.selectKdbx(this.router);
           this.router.pushUrl({ url: 'pages/open/SelectLocation' })
         })
 
@@ -142,9 +144,17 @@ struct Index {
       .width('100%')
       .layoutWeight(1)
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor($r("app.color.bg_primary"))
+
+    .width
+    ('100%'
+    )
+    .height
+    ('100%'
+    )
+    .backgroundColor
+    ($r
+    ("app.color.bg_primary"
+    ))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
