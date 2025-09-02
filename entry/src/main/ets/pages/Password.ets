@@ -4,12 +4,8 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import picker from '@ohos.file.picker';
-import common from '@ohos.app.ability.common';
-import { fileShare } from '@kit.CoreFileKit';
 import { StorageType } from '../services/kdbx/interfaces';
 import { FileService } from '../services/FileService';
-import FileUtils from '../common/utils/FIleUtils';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 import KdbxUtils from '../common/utils/KdbxUtils';
@@ -23,6 +19,7 @@ import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { DataService } from '../services/DataService';
+import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -35,7 +32,7 @@ struct Password {
   @State isLoading: boolean = false;
   @State fileName: string = '';
   @State authTypeInfo: AuthTypeInfo = AuthType.PASSWORD;
-  @State keyFilePath: string = '';
+  @State keyLocation: LocationInfo | undefined = undefined;
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
@@ -45,7 +42,6 @@ struct Password {
   private storageConfig: StorageConfig | undefined = undefined;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = false;
   private isFaceSupport: boolean = false;
@@ -85,8 +81,7 @@ struct Password {
       return;
     }
     if ((this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
-      this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) &&
-      !this.keyFilePath) {
+      this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyLocation) {
       this.buttonEnabled = false;
       return;
     }
@@ -125,9 +120,9 @@ struct Password {
           this.authTypeInfo = recentFile.authType;
         }
         // 获取密钥文件路径
-        if (recentFile.keyFilePath) {
-          this.keyFilePath = recentFile.keyFilePath;
-          this.keyFileName = FileUtils.getFileName(this.keyFilePath);
+        if (recentFile.keyLocation) {
+          this.keyLocation = recentFile.keyLocation;
+          this.keyFileName = this.keyLocation.fileName;
         }
         // 生物认证
         this.startAuth(recentFile.password);
@@ -187,26 +182,17 @@ struct Password {
   /**
    * 选择密钥文件
    */
-  private async selectKeyFile() {
-    const documentPicker = new picker.DocumentViewPicker(this.context);
-    const result = await documentPicker.select({
-      maxSelectNumber: 1,
-      fileSuffixFilters: []
-    });
-    if (result && result.length > 0) {
-      const fileUri = result[0];
-      FileUtils.persistPermission(fileUri, fileShare.OperationMode.READ_MODE).then(async () => {
-        this.keyFilePath = fileUri;
-        this.keyFileName = FileUtils.getFileName(fileUri);
+  private selectKeyFile() {
+    LocationParam.of({
+      mode: LocationMode.SELECT,
+      onLocation: (locationInfo: LocationInfo) => {
+        this.keyLocation = locationInfo;
+        this.keyFileName = locationInfo.fileName;
         this.updateButtonState();
-      }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, 'Failed to open key file: %{public}s', error.message);
-        this.promptAction.showToast({
-          message: $r('app.string.open_failed') + error.message,
-          duration: 2000
-        });
-      });
-    }
+        this.router.back({ url: 'pages/Password' });
+      }
+    });
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   /**
@@ -250,7 +236,7 @@ struct Password {
     }
 
     if ((this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
-      this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyFilePath) {
+      this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyLocation) {
       this.promptAction.showToast({
         message: $r('app.string.select_key_file'),
         duration: 2000
@@ -267,7 +253,7 @@ struct Password {
     this.openLoadingDialog();
     // 打开数据库
     let loadDatabase =
-      new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyFilePath, this.storageType, this.storageConfig);
+      new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
         this.loadingMessage = ResourceManager.getString(message.message);
@@ -315,7 +301,7 @@ struct Password {
     return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
       password: this.password,
       authType: this.authTypeInfo,
-      keyFilePath: this.keyFilePath,
+      keyLocation: this.keyLocation,
     } as CredentialsParam).then((kdbx: Kdbx) => {
       hilog.info(DOMAIN, TAG, 'Array buffer to kdbx time: %{public}d ms', new Date().getTime() - date);
       // 设置数据库文件信息
@@ -324,7 +310,7 @@ struct Password {
         password: this.password,
         fileName: this.fileName,
         database: kdbx,
-        keyFilePath: this.keyFilePath, // 添加密钥文件路径，以便后续保存时使用
+        keyLocation: this.keyLocation, // 添加密钥文件路径，以便后续保存时使用
         authType: this.authTypeInfo, // 添加认证类型
         storageType: this.storageType ?? StorageType.LOCAL,
         storageConfig: this.storageConfig ?? {},
@@ -351,7 +337,7 @@ struct Password {
       fileName: this.fileName,
       storageType: this.storageType ?? StorageType.LOCAL,
       authType: this.authTypeInfo,
-      keyFilePath: this.keyFilePath,
+      keyLocation: this.keyLocation,
       storageConfig: this.storageConfig ?? {}
     } as RecentFile;
     hilog.info(DOMAIN, TAG, '%{public}s', `Put database file to recent file list: ${this.filePath}`)
@@ -429,7 +415,7 @@ struct Password {
                 // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
                 if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
                   this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
-                  this.keyFilePath = '';
+                  this.keyLocation = undefined;
                   this.keyFileName = '';
                 }
               }

@@ -3,6 +3,7 @@ import { FileContentInfo, FileStorageFactory, IFileStorage, StorageConfig, Stora
 import { FileInfo } from './interfaces/IFileStorage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import ResourceManager from '../../common/utils/ResourceManager';
+import { LocationInfo } from '../beans/LocationParam';
 
 
 const DOMAIN = 0x0000;
@@ -24,6 +25,15 @@ export class KdbxFileManager {
     if (storageConfig) {
       this.init(storageConfig);
     }
+  }
+
+  /**
+   * 创建一个KDBX文件管理器实例
+   * @param locationInfo 文件位置信息
+   * @return KDBX文件管理器实例
+   */
+  public static of(locationInfo: LocationInfo) {
+    return new KdbxFileManager(locationInfo.storageType, locationInfo.storageConfig);
   }
 
   /**

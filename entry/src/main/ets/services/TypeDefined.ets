@@ -20,7 +20,7 @@ export interface CredentialsParam {
   /**
    * 认证密码文件路径
    */
-  keyFilePath?: string;
+  keyLocation?: LocationInfo;
 }
 
 /**
@@ -102,7 +102,7 @@ export interface DbFileParam extends CredentialsParam{
   /**
    * 认证密码文件路径
    */
-  keyFilePath?: string;
+  keyLocation?: LocationInfo;
 
   /**
    * 存储类型
@@ -126,7 +126,7 @@ export interface DbFileParam extends CredentialsParam{
   /**
    * 新密钥文件路径
    */
-  newKeyFilePath?: string;
+  newKeyLocation?: LocationInfo;
 
   /**
    * 是否使用密钥文件
@@ -276,7 +276,7 @@ export interface RecentFile {
   /**
    * 认证密钥文件路径
    */
-  keyFilePath?: string;
+  keyLocation?: LocationInfo;
 
   /**
    * 加密密码信息

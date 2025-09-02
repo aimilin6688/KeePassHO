@@ -1,19 +1,15 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import picker from '@ohos.file.picker';
-import common from '@ohos.app.ability.common';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { StorageType } from '../../services/kdbx/interfaces';
 import * as kdbxweb from 'kdbxweb';
-import FileUtils from '../../common/utils/FIleUtils';
 import ResourceManager from '../../common/utils/ResourceManager';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileKeyService } from '../../services/FileKeyService';
 import { DataService } from '../../services/DataService';
 import { LocationMode } from './SelectLocation';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
+import { CommonUtils } from '../../common/utils/CommonUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -26,11 +22,10 @@ struct CreateDatabase {
   @State confirmPassword: string = '';
   @State isCreating: boolean = false;
   @State errorMsg: string = '';
-  @State keyFilePath: string = '';
+  @State keyLocation: LocationInfo | undefined = undefined;
   @State keyFileName: ResourceStr = $r('app.string.select_key_file_placeholder');
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   private validatePasswords() {
     if (this.password.length > 0 && this.confirmPassword.length > 0 && this.password !== this.confirmPassword) {
@@ -66,8 +61,8 @@ struct CreateDatabase {
       }
       // 创建认证Key
       let keyFileContent: ArrayBuffer | null = null;
-      if (this.keyFilePath) {
-        await new KdbxFileManager(StorageType.LOCAL).read(this.keyFilePath).then(fileContent => {
+      if (this.keyLocation) {
+        await KdbxFileManager.of(this.keyLocation).read(this.keyLocation.filePath).then(fileContent => {
           keyFileContent = fileContent.content;
         })
       }
@@ -98,16 +93,30 @@ struct CreateDatabase {
    * 选择密钥文件
    */
   private async selectKeyFile() {
-    const documentPicker = new picker.DocumentViewPicker(this.context);
-    const result = await documentPicker.select({
-      maxSelectNumber: 1,
-      fileSuffixFilters: [] // 只显示key文件
+    LocationParam.of({
+      mode: LocationMode.SELECT,
+      onLocation: (locationInfo: LocationInfo) => {
+        this.keyLocation = locationInfo;
+        this.keyFileName = locationInfo.fileName;
+        this.router.back({ url: 'pages/open/CreateDatabase' });
+      }
     });
-    if (result && result.length > 0) {
-      const fileUri = result[0];
-      this.keyFilePath = fileUri;
-      this.keyFileName = FileUtils.getFileName(fileUri);
-    }
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+  /**
+   * 创建新的密钥文件
+   */
+  private createNewKey() {
+    DataService.saveKey((locationInfo: LocationInfo) => {
+      this.keyLocation = locationInfo;
+      this.keyFileName = locationInfo.fileName;
+      CommonUtils.showToast($r("app.string.save_success"));
+      this.router.back({ url: 'pages/open/CreateDatabase' });
+    }, (error) => {
+      this.router.back();
+    });
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   build() {
@@ -271,7 +280,7 @@ struct CreateDatabase {
             .fontColor($r('app.color.button_text'))
             .backgroundColor(Color.Gray)
             .onClick(() => {
-              FileKeyService.createKeyFile(this.context);
+              this.createNewKey();
             })
         }
         .margin({ top: 8, left: 16, right: 16 })

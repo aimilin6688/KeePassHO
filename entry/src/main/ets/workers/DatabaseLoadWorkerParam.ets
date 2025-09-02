@@ -1,3 +1,4 @@
+import { LocationInfo } from '../services/beans/LocationParam';
 import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
 import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
 import { MessageType, WorkerMessage } from './WorkerParam';
@@ -24,7 +25,7 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
   /**
    * 认证密码文件路径
    */
-  keyFilePath?: string;
+  keyLocation?: LocationInfo;
   /**
    * 存储类型
    */
@@ -35,13 +36,13 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
   storageConfig: StorageConfig;
 
   constructor(filePath: string, fileName: string, password: string, authType: AuthTypeInfo,
-    keyFilePath?: string, storageType?: StorageType, storageConfig?: StorageConfig, asyncLoad?: boolean) {
+    keyLocation?: LocationInfo, storageType?: StorageType, storageConfig?: StorageConfig, asyncLoad?: boolean) {
     this.type = MessageType.LOAD_DATABASE;
     this.filePath = filePath;
     this.fileName = fileName;
     this.password = password;
     this.authType = authType;
-    this.keyFilePath = keyFilePath;
+    this.keyLocation = keyLocation;
     this.storageType = storageType ?? StorageType.LOCAL;
     this.storageConfig = storageConfig ?? {};
   }
@@ -57,7 +58,7 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
       dbFileParam.fileName,
       dbFileParam.password,
       dbFileParam.authType,
-      dbFileParam.keyFilePath,
+      dbFileParam.keyLocation,
       dbFileParam.storageType,
       dbFileParam.storageConfig
     );
