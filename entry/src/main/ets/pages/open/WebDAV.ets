@@ -52,11 +52,28 @@ struct WebDAV {
   // 处理确认时间
   private handleConfirm() {
     // 导出数据库
-    if (LocationParam.isSaveMode()) {
-      this.selectDir();
-    } else {
-      this.selectFile();
+    this.listDir();
+    // if (LocationParam.isSaveMode()) {
+    //   this.selectDir();
+    // } else {
+    //   this.selectFile();
+    // }
+  }
+
+  private listDir(){
+    if (!this.checkParam()) {
+      return;
     }
+    this.router.pushUrl({
+      url: 'pages/open/FileList',
+      params: {
+        mode: LocationParam.getMode(),
+        filePath: this.url,
+        fileName: LocationParam.getFileName(),
+        storageType: StorageType.WEBDAV,
+        storageConfig: this.getStorageConfig()
+      }
+    });
   }
 
   // 测试WebDAV连接
