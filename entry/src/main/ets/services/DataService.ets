@@ -7,6 +7,8 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam';
+import DateUtils from '../common/utils/DateUtils';
+import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
@@ -25,6 +27,27 @@ export class DataService {
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to save kdbx file: %{public}s, error: %{public}s', param.locationInfo.filePath, error.message);
       CommonUtils.showToast($r('app.string.open_failed', error.message));
+    });
+  }
+
+  /**
+   * 保存密钥
+   */
+  public static saveKey(onSuccess: (locationInfo: LocationInfo) => void, onError?: (error: Error) => void) {
+    LocationParam.of({
+      mode: LocationMode.SAVE,
+      fileName: `key_${DateUtils.getCurrentDate()}.key`,
+      onLocation: (locationInfo: LocationInfo) => {
+        KdbxCredentials.createRandomKeyFile().then(keyContent => {
+          KdbxFileManager.of(locationInfo).write(locationInfo.filePath, ByteUtils.bytesToBuffer(keyContent)).then(async () => {
+            onSuccess(locationInfo);
+          }).catch((error: Error) => {
+            hilog.error(DOMAIN, TAG, `Failed to create new key file: ${error.message}`, error.stack);
+            CommonUtils.showToast($r('app.string.save_failed_message', error.message));
+            onError && onError(error);
+          });
+        })
+      }
     });
   }
 

@@ -1,6 +1,6 @@
-import { Kdbx, KdbxCredentials, KdbxError, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
-import { FileContentInfo, StorageType } from '../services/kdbx/interfaces';
+import { FileContentInfo } from '../services/kdbx/interfaces';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { SuccessMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
@@ -100,8 +100,8 @@ export class DatabaseSave {
     if (request.notUseKeyFile) {
       database.credentials.setKeyFile(null);
     } else {
-      if (request.newKeyFilePath) {
-        await new KdbxFileManager(StorageType.LOCAL).read(request.newKeyFilePath).then(newKeyFileContent => {
+      if (request.newKeyLocation) {
+        await KdbxFileManager.of(request.newKeyLocation).read(request.newKeyLocation.filePath).then(newKeyFileContent => {
           database.credentials.setKeyFile(newKeyFileContent.content);
         });
       }

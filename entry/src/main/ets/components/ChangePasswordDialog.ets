@@ -1,11 +1,10 @@
 import KdbxUtils from '../common/utils/KdbxUtils';
 import ResourceManager from '../common/utils/ResourceManager';
 import { FileService } from '../services/FileService';
-import picker from '@ohos.file.picker';
-import { common } from '@kit.AbilityKit';
-import FileUtils from '../common/utils/FIleUtils';
-import { FileKeyService } from '../services/FileKeyService';
 import { RecentFilesService } from '../services/RecentFilesService';
+import { DataService } from '../services/DataService';
+import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
+import { PromptAction, Router } from '@kit.ArkUI';
 
 /**
  * 修改主密码对话框组件
@@ -15,14 +14,15 @@ export struct ChangePasswordDialog {
   @State oldPassword: string = ''; // 旧密码
   @State newPassword: string = ''; // 新密码
   @State confirmPassword: string = ''; // 确认新密码
-  @State keyFilePath: string = ''; // 密钥文件路径
+  @State keyLocation: LocationInfo | undefined = undefined; // 密钥文件路径
   @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder')); // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
   @State notUseKeyFile: boolean = false; // 不适用keyfile
   public onSuccess: () => void = () => {
   };
   private controller: CustomDialogController;
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+  private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private router: Router = this.getUIContext().getRouter();
 
   private changePassword() {
     if (!this.validatePassword()) {
@@ -35,7 +35,7 @@ export struct ChangePasswordDialog {
     }
     // 设置新的数据库密码和密钥文件
     dbFileParam.newPassword = this.newPassword;
-    dbFileParam.newKeyFilePath = this.keyFilePath;
+    dbFileParam.newKeyLocation = this.keyLocation;
     dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
     KdbxUtils.saveDatabase({
@@ -83,16 +83,30 @@ export struct ChangePasswordDialog {
    * 选择密钥文件
    */
   private async selectKeyFile() {
-    const documentPicker = new picker.DocumentViewPicker(this.context);
-    const result = await documentPicker.select({
-      maxSelectNumber: 1,
-      fileSuffixFilters: ['.key'] // 只显示key文件
+    LocationParam.of({
+      mode: LocationMode.SELECT,
+      onLocation: (locationInfo: LocationInfo) => {
+        this.keyLocation = locationInfo;
+        this.keyFileName = locationInfo.fileName;
+        this.router.back({ url: 'pages/SettingsDatabase' });
+      }
     });
-    if (result && result.length > 0) {
-      const fileUri = result[0];
-      this.keyFilePath = fileUri;
-      this.keyFileName = FileUtils.getFileName(fileUri);
-    }
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+  /**
+   * 创建新的密钥文件
+   */
+  private createNewKey() {
+    DataService.saveKey((locationInfo: LocationInfo) => {
+      this.keyLocation = locationInfo;
+      this.keyFileName = locationInfo.fileName;
+      this.promptAction.showToast({ message: $r("app.string.save_success") });
+      this.router.back({ url: 'pages/SettingsDatabase' });
+    }, (error) => {
+      this.router.back();
+    });
+    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   build() {
@@ -221,7 +235,7 @@ export struct ChangePasswordDialog {
               .fontColor($r('app.color.button_text'))
               .backgroundColor(Color.Gray)
               .onClick(() => {
-                FileKeyService.createKeyFile(this.context);
+                this.createNewKey();
               })
           }
           .width("100%")
