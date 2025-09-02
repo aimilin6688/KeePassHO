@@ -3,12 +3,10 @@ import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import ResourceManager from '../common/utils/ResourceManager';
-import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { LocationInfo, LocationInterface, LocationParam } from '../services/beans/LocationParam';
 import { DataService } from '../services/DataService';
 import { FileService } from '../services/FileService';
 import { KdbxExportService } from '../services/kdbx/KdbxExportService';
-import { RecentFilesService } from '../services/RecentFilesService';
 import { ExportType } from '../services/TypeDefined';
 import { LocationMode } from './open/SelectLocation';
 
@@ -20,15 +18,6 @@ struct SettingsDatabase {
   @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-  private changePasswordDialogController: CustomDialogController = new CustomDialogController({
-    builder: ChangePasswordDialog({
-      onSuccess: this.handlePasswordChange.bind(this)
-    }),
-    cancel: this.handleDialogCancel.bind(this),
-    alignment: DialogAlignment.Bottom,
-    customStyle: true,
-    autoCancel: false
-  });
   // 数据库导出类型
   private exportTypeOptions: Array<ExportTypeOptions> = [
     { value: $r('app.string.export_type_kdbx'), type: ExportType.KDBX },
@@ -51,33 +40,6 @@ struct SettingsDatabase {
       this.algorithmType =
         this.algorithmOptions[this.algorithmOptions.findIndex((item) => item.type === dbFileParam.database.header.dataCipherUuid?.id)].value;
     }
-  }
-
-  // 修改密码弹框
-  private showChangePasswordDialog() {
-    this.changePasswordDialogController.open();
-  }
-
-  /**
-   * 密码修改成功回调
-   */
-  private handlePasswordChange() {
-    this.promptAction.showToast({ message: $r('app.string.operation_success'), duration: 2000 });
-    let filePath = FileService.getDbFileParam().filePath;
-    FileService.close();
-    this.router.clear();
-    RecentFilesService.clearPassword(filePath);
-    this.router.pushUrl({
-      url: 'pages/Password',
-      params: {
-        filePath: filePath,
-      }
-    });
-  }
-
-  // 取消修改密码
-  private handleDialogCancel() {
-    this.changePasswordDialogController.close();
   }
 
   // 导出数据库
@@ -140,7 +102,7 @@ struct SettingsDatabase {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.showChangePasswordDialog();
+                this.router.pushUrl({ url: 'pages/ChangePassword' });
               })
             }
 

@@ -39,7 +39,7 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   fileName: string;
   password: string;
   authType: AuthTypeInfo;
-  keyFilePath?: string;
+  keyLocation?: LocationInfo;
   storageType: StorageType;
   storageConfig: StorageConfig;
   modifiedTime: number;
@@ -54,7 +54,7 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.fileName = dbParam.fileName;
     this.password = dbParam.password;
     this.authType = dbParam.authType;
-    this.keyFilePath = dbParam.keyFilePath;
+    this.keyLocation = dbParam.keyLocation;
     this.storageType = dbParam.storageType;
     this.storageConfig = dbParam.storageConfig;
     this.modifiedTime = dbParam.modifiedTime;
@@ -91,7 +91,7 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
   /**
    * 认证密码文件路径
    */
-  keyFilePath?: string;
+  keyLocation?: LocationInfo;
 
   /**
    * 存储类型

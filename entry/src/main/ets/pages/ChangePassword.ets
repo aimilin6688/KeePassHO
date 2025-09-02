@@ -7,10 +7,11 @@ import { LocationInfo, LocationMode, LocationParam } from '../services/beans/Loc
 import { PromptAction, Router } from '@kit.ArkUI';
 
 /**
- * 修改主密码对话框组件
+ * 修改密码
  */
-@CustomDialog
-export struct ChangePasswordDialog {
+@Entry
+@Component
+export struct ChangePassword {
   @State oldPassword: string = ''; // 旧密码
   @State newPassword: string = ''; // 新密码
   @State confirmPassword: string = ''; // 确认新密码
@@ -18,9 +19,7 @@ export struct ChangePasswordDialog {
   @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder')); // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
   @State notUseKeyFile: boolean = false; // 不适用keyfile
-  public onSuccess: () => void = () => {
-  };
-  private controller: CustomDialogController;
+
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
 
@@ -42,8 +41,7 @@ export struct ChangePasswordDialog {
       onSuccess: () => {
         // 重置最近打开文件的数据库密码
         RecentFilesService.setPassword(dbFileParam.filePath, this.newPassword);
-        this.onSuccess();
-        this.close();
+        this.handlePasswordChange();
       }
     });
   }
@@ -73,13 +71,6 @@ export struct ChangePasswordDialog {
   }
 
   /**
-   * 关闭对话框
-   */
-  private close() {
-    this.controller.close();
-  }
-
-  /**
    * 选择密钥文件
    */
   private async selectKeyFile() {
@@ -88,7 +79,7 @@ export struct ChangePasswordDialog {
       onLocation: (locationInfo: LocationInfo) => {
         this.keyLocation = locationInfo;
         this.keyFileName = locationInfo.fileName;
-        this.router.back({ url: 'pages/SettingsDatabase' });
+        this.router.back({ url: 'pages/ChangePassword' });
       }
     });
     this.router.pushUrl({ url: 'pages/open/SelectLocation' });
@@ -102,38 +93,52 @@ export struct ChangePasswordDialog {
       this.keyLocation = locationInfo;
       this.keyFileName = locationInfo.fileName;
       this.promptAction.showToast({ message: $r("app.string.save_success") });
-      this.router.back({ url: 'pages/SettingsDatabase' });
+      this.router.back({ url: 'pages/ChangePassword' });
     }, (error) => {
       this.router.back();
     });
     this.router.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
+  /**
+   * 密码修改成功回调
+   */
+  private handlePasswordChange() {
+    this.promptAction.showToast({ message: $r('app.string.operation_success'), duration: 2000 });
+    let filePath = FileService.getDbFileParam().filePath;
+    FileService.close();
+    this.router.clear();
+    RecentFilesService.clearPassword(filePath);
+    this.router.pushUrl({
+      url: 'pages/Password',
+      params: {
+        filePath: filePath,
+      }
+    });
+  }
+
   build() {
     Column() {
-      // 顶部标题栏
+      // 顶部导航栏
       Row() {
-        Text($r("app.string.change_password"))
+        Image($r("app.media.ic_angle_left"))
+          .width(24)
+          .height(24)
+          .margin({ left: 16 })
+          .fillColor($r('app.color.text_primary'))
+          .onClick(() => {
+            this.router.back();
+          })
+
+        Text($r('app.string.change_password'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
-        Blank()
-        Button() {
-          Image($r('sys.media.ohos_ic_public_cancel_filled'))
-            .width(24)
-            .height(24)
-            .fillColor($r('app.color.text_primary'))
-        }
-        .type(ButtonType.Circle)
-        .backgroundColor('transparent')
-        .onClick(() => {
-          this.close();
-        })
+          .margin({ left: 16 })
+          .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
       .height(56)
-      .padding({ left: 24, right: 16 })
-      .alignItems(VerticalAlign.Center)
-      .borderRadius({ topLeft: 16, topRight: 16 })
+      .backgroundColor($r("app.color.card_bg"))
 
       // 对话框内容
       Column() {
@@ -285,17 +290,17 @@ export struct ChangePasswordDialog {
       // 底部按钮
       Row() {
         Button($r('app.string.cancel_button_text'))
-          .width('48%')
+          .width('45%')
           .height(40)
           .fontSize(16)
           .backgroundColor(Color.Gray)
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
-            this.close();
+            this.router.replaceUrl({url: 'pages/SettingDatabase'});
           })
-
+        Blank()
         Button($r('app.string.confirm_button_text'))
-          .width('48%')
+          .width('45%')
           .height(40)
           .fontSize(16)
           .enabled(this.errorMessage.length == 0)
@@ -306,16 +311,19 @@ export struct ChangePasswordDialog {
           })
       }
       .width('100%')
+      .height(45)
       .padding({
-        left: 24,
-        right: 24,
-        top: 16,
-        bottom: 30
+        top: 12,
+        bottom: 0,
+        left: 16,
+        right: 16
       })
-      .justifyContent(FlexAlign.SpaceBetween)
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -45 }) // 调整位置，确保正确显示
     }
     .width('100%')
+    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .borderRadius(16)
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
