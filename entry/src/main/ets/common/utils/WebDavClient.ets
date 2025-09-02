@@ -25,7 +25,8 @@ export interface DavResource {
   contentType?: string
   // 文件大小
   contentLength?: number
-
+  // 子文件数量
+  childrenCount?: number
 }
 
 export class WebDavResource implements DavResource {
@@ -36,6 +37,7 @@ export class WebDavResource implements DavResource {
   etag: string | undefined = undefined;
   contentType?: string | undefined = undefined;
   contentLength?: number | undefined = undefined;
+  childrenCount?: number | undefined = undefined;
 }
 
 export class ResultInfo {
@@ -204,7 +206,7 @@ export class WebDavClient {
    * @param path
    * @returns
    */
-  public async list(path: string = '/', filter: number = 0): Promise<ResultInfo> {
+  public async list(path: string = '/', filter: number = 0, queryChildrenCount: boolean = false): Promise<ResultInfo> {
     const body = `<?xml version="1.0"?>
       <d:propfind xmlns:d="DAV:">
         <d:prop>
@@ -224,11 +226,13 @@ export class WebDavClient {
         const dirs: WebDavResource[] = [];
         for (let item of items) {
           if (filter == 0) {
+            item.childrenCount = queryChildrenCount ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);
             continue;
           }
           // 文件夹
           if (item.type === 'collection' && filter === 1) {
+            item.childrenCount = queryChildrenCount ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);
             continue;
           }
@@ -243,6 +247,29 @@ export class WebDavClient {
       hilog.info(DOMAIN, TAG, `get dir, return : ${JSON.stringify(rr)}`);
     }
     return rr;
+  }
+
+  /**
+   * 获取目录下的所有文件, 记录总数
+   * @param path 目录
+   * @returns 结果
+   */
+  private async getChildrenCount(path: string): Promise<number> {
+    const body = `<?xml version="1.0"?>
+      <d:propfind xmlns:d="DAV:">
+        <d:prop>
+          <d:resourcetype/>
+        </d:prop>
+      </d:propfind>`;
+    const req = new rcp.Request(path, "PROPFIND", { "Depth": "1" }, body);
+    const rr = await this.request(req);
+    if (rr.statusCode === 200) {
+      const items = this.parseXml(rr.body ? ByteUtils.bytesToString(rr.body) : "");
+      return items?.length || 0;
+    } else {
+      hilog.info(DOMAIN, TAG, `get dir, return : ${JSON.stringify(rr)}`);
+    }
+    return 0;
   }
 
   /**
@@ -323,7 +350,8 @@ export class WebDavClient {
    * @param progressCallback
    * @returns
    */
-  async upload(remoteUri: string, fileBuffer: ArrayBuffer, progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
+  async upload(remoteUri: string, fileBuffer: ArrayBuffer,
+    progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
     // 读取文件
     const customHttpEventsHandler: rcp.HttpEventsHandler = {
       onUploadProgress: (totalSize: number, transferredSize: number) => {
@@ -420,7 +448,7 @@ export class WebDavClient {
    * @param xmlStr
    * @returns
    */
-  parseXml(xmlStr: string | null): WebDavResource[] {
+  private parseXml(xmlStr: string | null): WebDavResource[] {
     let textEncoder: util.TextEncoder = new util.TextEncoder();
     let arrBuffer: Uint8Array = textEncoder.encodeInto(xmlStr); // 对数据编码，防止包含中文字符乱码
     let that: xml.XmlPullParser = new xml.XmlPullParser(arrBuffer.buffer as object as ArrayBuffer, 'UTF-8');

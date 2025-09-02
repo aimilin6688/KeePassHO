@@ -3,7 +3,8 @@ import { FileInfo, IFileStorage } from '../IFileStorage';
 import FileUtils from '../../../../common/utils/FIleUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageConfig } from '..';
+import { FileType, StorageConfig } from '..';
+import { StorageError, StorageErrorCodes } from '../../../error/StorageError';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
@@ -71,7 +72,7 @@ export class LocalFileStorage implements IFileStorage {
       return buffer;
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to read file: %{public}s', error.message)
-      throw new Error(`Failed to read file: ${error.message}`);
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
     }
   }
 
@@ -104,7 +105,7 @@ export class LocalFileStorage implements IFileStorage {
       return Promise.resolve();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to write file: %{public}s', error.message)
-      throw new Error(`Failed to write file: ${error.message}`);
+      throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message);
     }
   }
 
@@ -152,11 +153,22 @@ export class LocalFileStorage implements IFileStorage {
         name: FileUtils.getFileName(path),
         size: stat.size,
         modifiedTime: stat.mtime * 1000,
-        path: path
+        path: path,
+        type: stat.isDirectory() ? FileType.DIR : FileType.FILE,
+        childrenCount: 0
       } as FileInfo;
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to get file info: %{public}s', error.message)
-      throw new Error(`Failed to get file info: ${error.message}`);
+      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, error.message);
     }
+  }
+
+  /**
+   * 获取目录内容
+   * @param path
+   * @returns
+   */
+  public listDir(path: string): Promise<FileInfo[]> {
+    throw new StorageError(StorageErrorCodes.NOT_IMPLEMENTED);
   }
 }
