@@ -46,7 +46,7 @@ export struct IconSelectorDialog {
         return;
       }
       // 添加自定义图标到数据库
-      KdbxUtils.addCustomIcon(FileService.getDbFileParam().database, images, {
+      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
         onSuccess: () => {
           this.isUploading = false;
           this.icons = IconUtils.getAllIcons();

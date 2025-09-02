@@ -48,7 +48,7 @@ struct SettingsDatabase {
       mode: LocationMode.SAVE,
       fileName: KdbxExportService.createFileName(FileService.getDbFileParam().fileName, exportType, true),
       onLocation: (locationInfo: LocationInfo) => {
-        DataService.saveKdbx({ kdbx: FileService.getDbFileParam().database, exportType: exportType, locationInfo: locationInfo }).then(() => {
+        DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
           this.promptAction.showToast({ message: $r("app.string.save_success") });
           this.router.back();
         })
@@ -59,7 +59,7 @@ struct SettingsDatabase {
 
   // 重新加密算法
   private resetDatabaseAlgorithm(algorithmId: string) {
-    FileService.getDbFileParam().database.header.dataCipherUuid = new KdbxUuid(algorithmId);
+    FileService.getDatabase().header.dataCipherUuid = new KdbxUuid(algorithmId);
     // 保存数据库
     KdbxUtils.saveDatabase();
   }
