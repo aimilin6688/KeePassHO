@@ -1253,6 +1253,14 @@
     {
       "name": "Settings_sort_size",
       "value": "按文件大小排序"
+    },
+    {
+      "name": "retry_button_text",
+      "value": "重试"
+    },
+    {
+      "name": "file_name_placeholder",
+      "value": "请输入文件名称"
     }
   ]
 }

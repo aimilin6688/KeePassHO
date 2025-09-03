@@ -1,14 +1,17 @@
-import { Router } from '@kit.ArkUI';
+import { PromptAction, Router } from '@kit.ArkUI';
 import { FileInfo, FileType } from '../../services/kdbx/interfaces';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LocationInfo } from '../../services/beans/LocationParam';
+import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/LocationParam';
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import DateUtils from '../../common/utils/DateUtils';
+import FileUtils from '../../common/utils/FIleUtils';
+import { UrlUtils } from '../../common/utils/UrlUtils';
+import { StringUtils } from '../../common/utils/StringUtils';
 
 const DOMAIN = 0x0000;
-const TAG = 'WebDAVFileList';
+const TAG = 'FileList';
 
 
 export interface PathPart {
@@ -54,20 +57,45 @@ struct FileList {
   @State sortOrder: 'asc' | 'desc' = 'asc';
   @State pathLength: number = 0;
   @State showSortMenu: boolean = false; // 添加状态控制排序菜单显示
+  @State isEnableConfirm: boolean = false;
+  @State selectFileIndex: number = -1;
+  @State saveFileName: string = '';
   private router: Router = this.getUIContext().getRouter();
   private locationInfo: LocationInfo | undefined = undefined;
   private pathScroller: Scroller = new Scroller();
   private dataCache: Map<string, Array<FileInfo>> = new Map();
+  private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
     const params = this.router.getParams() as LocationInfo;
     if (params) {
       this.locationInfo = params;
+      this.currentPath = this.getLocationPath();
+      hilog.debug(DOMAIN, TAG, 'currentPath: %{public}s', this.currentPath);
+      this.saveFileName = this.locationInfo?.fileName || '';
       this.loadItems(this.currentPath);
     } else {
-      this.errorMessage = ResourceManager.getString($r('app.string.invalid_data_file'));
-      this.isError = true;
+      this.showError();
     }
+  }
+
+  private isSaveMode(): boolean {
+    return this.locationInfo?.mode === LocationMode.SAVE;
+  }
+
+  private isSelectMode(): boolean {
+    return this.locationInfo?.mode === LocationMode.SELECT;
+  }
+
+  /**
+   * 获取当前目录路径
+   */
+  private getLocationPath(): string {
+    if (!this.locationInfo) {
+      return "/";
+    }
+    const filePath = this.locationInfo.filePath;
+    return filePath.replace(UrlUtils.getHost(filePath), "");
   }
 
   private async loadItems(path: string) {
@@ -143,15 +171,28 @@ struct FileList {
 
   private navigateToPath(path: string) {
     this.currentPath = path;
+    this.selectFileIndex = -1;
+    if (this.isSaveMode()) {
+      this.isEnableConfirm = true;
+    }
     this.loadItems(path);
     this.pathScroller.scrollEdge(Edge.End);
   }
 
-  private handleItemClick(item: FileInfo) {
+  private handleItemClick(item: FileInfo, selectIndex: number) {
+    // 选择目录
     if (item.type === FileType.DIR) {
       this.navigateToPath(item.path);
-    } else if (item.type === FileType.FILE && item.path.endsWith('.kdbx')) {
-      // 选择了文件
+    }
+    // 选择文件
+    else if (item.type === FileType.FILE && this.isSelectMode()) {
+      if (this.selectFileIndex === selectIndex) {
+        this.selectFileIndex = -1;
+        this.isEnableConfirm = false;
+      } else {
+        this.selectFileIndex = selectIndex;
+        this.isEnableConfirm = true;
+      }
     }
   }
 
@@ -170,14 +211,6 @@ struct FileList {
     }
   }
 
-  private formatDate(timestamp: number | undefined): string {
-    if (timestamp === undefined) {
-      return '-';
-    }
-    const date = new Date(timestamp);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  }
-
   private getPathParts(): Array<PathPart> {
     const result: Array<PathPart> = [{ name: "$", path: "/" }];
     if (this.currentPath === '/') {
@@ -193,6 +226,50 @@ struct FileList {
     });
     this.pathLength = result.length;
     return result;
+  }
+
+  /**
+   * 取消操作
+   */
+  public handleCancel() {
+    this.router.back();
+  }
+
+  /**
+   * 确认操作
+   */
+  private handleConfirm() {
+    let filePath = '';
+    if (this.isSaveMode()) {
+      filePath = UrlUtils.getHost(this.locationInfo?.filePath) + "/" + StringUtils.removeStart(this.currentPath, "/") + this.saveFileName;
+    }
+    if (this.isSelectMode()) {
+      const selectFile = this.itemData.getAll()[this.selectFileIndex];
+      filePath = UrlUtils.getHost(this.locationInfo?.filePath) + "/" + StringUtils.removeStart(selectFile.path, "/");
+    }
+    hilog.debug(DOMAIN, TAG, 'filePath: %{public}s', filePath);
+    // 回调位置信息
+    if (this.locationInfo) {
+      LocationParam.callOnLocation({
+        mode: this.locationInfo.mode,
+        filePath: filePath,
+        fileName: FileUtils.getFileName(filePath),
+        storageType: this.locationInfo.storageType,
+        storageConfig: this.locationInfo.storageConfig
+      });
+    } else {
+      this.showError();
+    }
+  }
+
+  /**
+   * 显示错误信息
+   */
+  private showError() {
+    this.isError = true;
+    this.errorMessage = ResourceManager.getString($r('app.string.invalid_data_file'));
+    this.promptAction.showToast({ message: this.errorMessage });
+    this.router.back();
   }
 
   @Builder
@@ -271,7 +348,7 @@ struct FileList {
             this.router.back();
           })
 
-        Text('WebDAV Files')
+        Text(this.isSaveMode() ? $r('app.string.location_title_save') : $r('app.string.location_title_select'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -329,6 +406,23 @@ struct FileList {
       .backgroundColor($r("app.color.card_bg"))
       .height(46)
 
+      // 保存模式文件名称
+      if (this.isSaveMode()) {
+        Column() {
+          TextInput({ text: this.saveFileName, placeholder: $r('app.string.file_name_placeholder') })
+            .width('100%')
+            .onChange((text: string) => {
+              this.saveFileName = text;
+            })
+        }
+        .margin({ top: 6 })
+        .width('100%')
+        .backgroundColor($r("app.color.card_bg"))
+        .height(50)
+        .alignItems(HorizontalAlign.Center)
+        .justifyContent(FlexAlign.Center)
+      }
+
       // 加载状态或错误提示
       if (this.isLoading) {
         Column() {
@@ -354,7 +448,7 @@ struct FileList {
             .textAlign(TextAlign.Center)
             .padding({ left: 16, right: 16 })
 
-          Button('Retry')
+          Button($r('app.string.retry_button_text'))
             .margin({ top: 24 })
             .backgroundColor($r('app.color.button_bg_blue'))
             .fontColor($r('app.color.button_text_blue'))
@@ -369,7 +463,7 @@ struct FileList {
         Column() {
           // 文件列表
           List() {
-            LazyForEach(this.itemData, (item: FileInfo) => {
+            LazyForEach(this.itemData, (item: FileInfo, index) => {
               ListItem() {
                 Row() {
                   Column() {
@@ -413,14 +507,16 @@ struct FileList {
                   top: 12,
                   bottom: 12
                 })
-                .backgroundColor($r("app.color.card_bg"))
+                .backgroundColor(this.selectFileIndex == index ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
                 .borderRadius(8)
                 .onClick(() => {
-                  this.handleItemClick(item);
+                  this.handleItemClick(item, index);
                 })
               }
               .margin({ bottom: 8 })
             }, (item: FileInfo) => item.path)
+            ListItem() {
+            }.height(170)
           }
           .layoutWeight(1)
           .width('100%')
@@ -428,6 +524,57 @@ struct FileList {
           .padding({ left: 12, right: 12 })
         }.padding({ top: 12 })
       }
+
+      // 操作按钮
+      Row() {
+        // 取消
+        Button() {
+          Row() {
+            Text($r('app.string.cancel_button_text'))
+              .fontSize(16)
+              .fontColor($r('app.color.button_text'))
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('45%')
+        .height(40)
+        .borderRadius(16)
+        .backgroundColor(Color.Gray)
+        .onClick(() => {
+          this.handleCancel();
+        })
+
+        Blank()
+        // 保存
+        Button() {
+          Row() {
+            Text($r('app.string.confirm_button_text'))
+              .fontSize(16)
+              .fontColor($r('app.color.button_text'))
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('45%')
+        .height(40)
+        .borderRadius(16)
+        .backgroundColor($r('app.color.button_bg_blue'))
+        .enabled(this.isEnableConfirm)
+        .onClick(() => {
+          this.handleConfirm();
+        })
+      }
+      .width('100%')
+      .height(45)
+      .padding({
+        top: 12,
+        bottom: 0,
+        left: 16,
+        right: 16
+      })
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -45 }) // 调整位置，确保正确显示
     }
     .width('100%')
     .height('100%')
