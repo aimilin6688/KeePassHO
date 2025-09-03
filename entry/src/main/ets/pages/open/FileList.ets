@@ -4,6 +4,7 @@ import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LocationInfo } from '../../services/beans/LocationParam';
+import { BasicDataSource } from '../../services/beans/BasicDataSource';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAVFileList';
@@ -14,11 +15,37 @@ export interface PathPart {
   path: string;
 }
 
+export class FileListDataSource extends BasicDataSource<FileInfo> {
+  private dataArray: FileInfo[] = [];
+
+  public totalCount(): number {
+    return this.dataArray.length;
+  }
+
+  public getData(index: number): FileInfo {
+    return this.dataArray[index];
+  }
+
+  public getAll(): FileInfo[] {
+    return this.dataArray;
+  }
+
+  public pushData(data: FileInfo): void {
+    this.dataArray.push(data);
+    this.notifyDataAdd(this.dataArray.length - 1);
+  }
+
+  public clear(): void {
+    this.dataArray = [];
+    this.notifyDataReload();
+  }
+}
+
 @Entry
 @Component
 struct FileList {
   @State currentPath: string = '/';
-  @State items: FileInfo[] = [];
+  @State itemData: FileListDataSource = new FileListDataSource();
   @State isLoading: boolean = false;
   @State isError: boolean = false;
   @State errorMessage: string = '';
@@ -27,6 +54,7 @@ struct FileList {
   @State pathLength: number = 0;
   private router: Router = this.getUIContext().getRouter();
   private locationInfo: LocationInfo | undefined = undefined;
+  private pathScroller: Scroller = new Scroller();
 
   aboutToAppear(): void {
     const params = this.router.getParams() as LocationInfo;
@@ -50,8 +78,12 @@ struct FileList {
 
     try {
       // 获取目录内容
-      this.items = await KdbxFileManager.of(this.locationInfo).listDir(path);
-      this.sortItems();
+      let items = await KdbxFileManager.of(this.locationInfo).listDir(path);
+      this.sortItems(items);
+      this.itemData.clear();
+      items.forEach(item => {
+        this.itemData.pushData(item);
+      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load WebDAV items: %{public}s', error.message);
       this.errorMessage = error.message;
@@ -61,8 +93,8 @@ struct FileList {
     }
   }
 
-  private sortItems() {
-    this.items.sort((a, b) => {
+  private sortItems(items: Array<FileInfo>) {
+    items.sort((a, b) => {
       // 文件夹始终排在文件前面
       if (a.type !== b.type) {
         return a.type === FileType.DIR ? -1 : 1;
@@ -97,12 +129,14 @@ struct FileList {
       this.sortType = type;
       this.sortOrder = 'asc';
     }
-    this.sortItems();
+    this.sortItems(this.itemData.getAll());
+    this.itemData.notifyDataReload();
   }
 
   private navigateToPath(path: string) {
     this.currentPath = path;
     this.loadItems(path);
+    this.pathScroller.scrollEdge(Edge.End);
   }
 
   private handleItemClick(item: FileInfo) {
@@ -177,36 +211,42 @@ struct FileList {
       .backgroundColor($r("app.color.card_bg"))
 
       // 路径导航栏
-      Scroll() {
-        Row() {
+      Column() {
+        List({ scroller: this.pathScroller }) {
           ForEach(this.getPathParts(), (part: PathPart, index) => {
-            Row() {
-              Text(part.name)
-                .fontSize(16)
-                .fontColor($r('app.color.text_primary'))
-                .onClick(() => {
-                  this.navigateToPath(part.path);
-                })
-
-              // 添加分隔符（除了最后一个）
-              if (index < this.pathLength - 1) {
-                Text('>')
+            ListItem() {
+              Row() {
+                Text(part.name)
                   .fontSize(16)
-                  .height(16)
-                  .margin({ left: 4, right: 4 })
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor($r('app.color.text_primary'))
+                  .onClick(() => {
+                    this.navigateToPath(part.path);
+                  })
+
+                // 添加分隔符（除了最后一个）
+                if (index < this.pathLength - 1) {
+                  Text('>')
+                    .fontSize(16)
+                    .height(16)
+                    .margin({ left: 5, right: 5 })
+                    .fontColor($r('app.color.text_secondary'))
+                }
               }
+              .height(46)
             }
           }, (item: PathPart) => item.path)
         }
-        .justifyContent(FlexAlign.Start)
         .width('100%')
-        .padding({ left: 16, right: 16 })
+        .height(50)
+        .contentStartOffset(20)
+        .contentEndOffset(20)
+        .scrollBar(BarState.Off)
+        .listDirection(Axis.Horizontal)
       }
+      .margin({ top: 6 })
       .width('100%')
-      .height(40)
-      .margin({top:4})
       .backgroundColor($r("app.color.card_bg"))
+      .height(46)
 
       // 加载状态或错误提示
       if (this.isLoading) {
@@ -275,12 +315,12 @@ struct FileList {
             top: 8,
             bottom: 8
           })
-          .margin({top:4})
+          .margin({ top: 4 })
           .backgroundColor($r("app.color.card_bg"))
 
           // 文件列表
           List() {
-            ForEach(this.items, (item: FileInfo) => {
+            LazyForEach(this.itemData, (item: FileInfo) => {
               ListItem() {
                 Row() {
                   // 图标
@@ -330,6 +370,7 @@ struct FileList {
           }
           .layoutWeight(1)
           .width('100%')
+          .height('auto')
           .padding({ left: 12, right: 12 })
         }
       }
