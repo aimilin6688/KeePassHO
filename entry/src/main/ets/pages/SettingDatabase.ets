@@ -50,7 +50,7 @@ struct SettingsDatabase {
       onLocation: (locationInfo: LocationInfo) => {
         DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
           this.promptAction.showToast({ message: $r("app.string.save_success") });
-          this.router.back();
+          this.router.back({ url: "pages/SettingDatabase" });
         })
       }
     } as LocationInterface);
