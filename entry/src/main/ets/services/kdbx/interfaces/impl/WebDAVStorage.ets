@@ -106,9 +106,6 @@ export class WebDAVStorage implements IFileStorage {
     return this.client.list(path, 0, false).then((res: ResultInfo) => {
       if (res.success && res.data && res.data.length > 0) {
         const fileInfo = res.data[0];
-        if (fileInfo.type == 'collection') {
-          throw new Error(ResourceManager.getString($r('app.string.webdav_not_file')));
-        }
         return Promise.resolve({
           name: fileInfo.displayName,
           size: fileInfo.contentLength,
@@ -141,6 +138,10 @@ export class WebDAVStorage implements IFileStorage {
         const files = new Array<FileInfo>(res.data.length);
         for (let i = 0; i < res.data.length; i++) {
           const fileInfo = res.data[i];
+          // 目录浏览，第一个元素是目录本身，跳过
+          if (i === 0 && fileInfo.type === 'collection') {
+            continue;
+          }
           files.push({
             name: fileInfo.displayName,
             size: fileInfo.contentLength,

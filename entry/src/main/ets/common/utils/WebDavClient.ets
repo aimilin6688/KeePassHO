@@ -226,10 +226,6 @@ export class WebDavClient {
         const dirs: WebDavResource[] = [];
         for (let i = 0; i < items.length; i++) {
           let item = items[i];
-          // 目录浏览，第一个元素是目录本身，跳过
-          if (i === 0 && item.type === 'collection') {
-            continue;
-          }
           if (filter == 0) {
             item.childrenCount = (queryChildrenCount && item.type === 'collection') ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);

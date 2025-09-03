@@ -1251,6 +1251,14 @@
     {
       "name": "Settings_sort_size",
       "value": "Sort by file size"
+    },
+    {
+      "name": "retry_button_text",
+      "value": "Retry"
+    },
+    {
+      "name": "file_name_placeholder",
+      "value": "Please input file name"
     }
   ]
 }

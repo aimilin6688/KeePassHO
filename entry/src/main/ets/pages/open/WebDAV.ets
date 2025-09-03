@@ -1,12 +1,12 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { StorageConfig, StorageType } from '../../services/kdbx/interfaces';
+import { FileType, StorageConfig, StorageType } from '../../services/kdbx/interfaces';
 import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import FileUtils from '../../common/utils/FIleUtils';
-import { LocationParam } from '../../services/beans/LocationParam';
+import { LocationMode, LocationParam } from '../../services/beans/LocationParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -52,15 +52,15 @@ struct WebDAV {
   // 处理确认时间
   private handleConfirm() {
     // 导出数据库
-    this.listDir();
-    // if (LocationParam.isSaveMode()) {
-    //   this.selectDir();
-    // } else {
-    //   this.selectFile();
-    // }
+    if (LocationParam.isSaveMode()) {
+      this.selectDir();
+    } else {
+      this.selectFile();
+    }
   }
 
-  private listDir(){
+  // 跳转到文件预览页面
+  private toFileList() {
     if (!this.checkParam()) {
       return;
     }
@@ -69,6 +69,7 @@ struct WebDAV {
       params: {
         mode: LocationParam.getMode(),
         filePath: this.url,
+        fileSuffix: LocationParam.getFileSuffix(),
         fileName: LocationParam.getFileName(),
         storageType: StorageType.WEBDAV,
         storageConfig: this.getStorageConfig()
@@ -122,14 +123,18 @@ struct WebDAV {
       // 获取文件信息
       const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.url);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-      // 回调位置信息
-      LocationParam.callOnLocation({
-        mode: LocationParam.getMode(),
-        filePath: this.url,
-        fileName: fileInfo.name,
-        storageType: StorageType.WEBDAV,
-        storageConfig: storageConfig
-      });
+      if (fileInfo.type === FileType.DIR) {
+        this.toFileList();
+      } else {
+        // 回调位置信息
+        LocationParam.callOnLocation({
+          mode: LocationParam.getMode(),
+          filePath: this.url,
+          fileName: fileInfo.name,
+          storageType: StorageType.WEBDAV,
+          storageConfig: storageConfig
+        });
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
       this.connectionStatus = error.message;
@@ -150,16 +155,35 @@ struct WebDAV {
     this.isConnecting = true;
     this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
     this.isErrorStatus = false;
-
-    const storageConfig = this.getStorageConfig();
-    // 获取文件信息
-    const existsFile = await this.fileManager.init(storageConfig).exists(this.url);
-    hilog.info(DOMAIN, TAG, `Export kdbx file to webDAV path: ${this.url}`);
-    if (existsFile) {
-      this.confirmDialog(storageConfig);
-    } else {
-      this.handleSelectDir(storageConfig);
+    try {
+      // 配置信息
+      const storageConfig = this.getStorageConfig();
+      this.fileManager.init(storageConfig);
+      // 获取文件类型
+      const fileInfo = await this.fileManager.getInfo(this.url);
+      hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      // 如果是文件夹，则跳转到文件列表页面
+      if (fileInfo.type === FileType.DIR) {
+        this.toFileList();
+      } else {
+        // 获取文件信息
+        const existsFile = await this.fileManager.exists(this.url);
+        hilog.info(DOMAIN, TAG, `Export file to webDAV path: ${this.url}`);
+        if (existsFile) {
+          this.confirmDialog(storageConfig);
+        } else {
+          this.handleSelectDir(storageConfig);
+        }
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
+      this.connectionStatus = error.message;
+      this.isErrorStatus = true;
+      this.promptAction.showToast({ message: error.message });
+    } finally {
+      this.isConnecting = false;
     }
+
   }
 
   /**
