@@ -1247,6 +1247,10 @@
     {
       "name": "location_webdav_desc_select",
       "value": "Select a files from WebDAV"
+    },
+    {
+      "name": "Settings_sort_size",
+      "value": "Sort by file size"
     }
   ]
 }

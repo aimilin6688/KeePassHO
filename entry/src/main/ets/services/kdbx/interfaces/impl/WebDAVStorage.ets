@@ -134,7 +134,10 @@ export class WebDAVStorage implements IFileStorage {
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
     return this.client.list(path, 0, true).then((res: ResultInfo) => {
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
+        if (res.data.length <= 0) {
+          return Promise.resolve([]);
+        }
         const files = new Array<FileInfo>(res.data.length);
         for (let i = 0; i < res.data.length; i++) {
           const fileInfo = res.data[i];

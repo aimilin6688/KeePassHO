@@ -5,6 +5,7 @@ import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LocationInfo } from '../../services/beans/LocationParam';
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
+import DateUtils from '../../common/utils/DateUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAVFileList';
@@ -52,9 +53,11 @@ struct FileList {
   @State sortType: 'name' | 'date' | 'size' = 'name';
   @State sortOrder: 'asc' | 'desc' = 'asc';
   @State pathLength: number = 0;
+  @State showSortMenu: boolean = false; // 添加状态控制排序菜单显示
   private router: Router = this.getUIContext().getRouter();
   private locationInfo: LocationInfo | undefined = undefined;
   private pathScroller: Scroller = new Scroller();
+  private dataCache: Map<string, Array<FileInfo>> = new Map();
 
   aboutToAppear(): void {
     const params = this.router.getParams() as LocationInfo;
@@ -78,7 +81,11 @@ struct FileList {
 
     try {
       // 获取目录内容
-      let items = await KdbxFileManager.of(this.locationInfo).listDir(path);
+      let items = this.dataCache.get(path);
+      if (items === undefined) {
+        items = await KdbxFileManager.of(this.locationInfo).listDir(path);
+        this.dataCache.set(path, items || []);
+      }
       this.sortItems(items);
       this.itemData.clear();
       items.forEach(item => {
@@ -131,6 +138,7 @@ struct FileList {
     }
     this.sortItems(this.itemData.getAll());
     this.itemData.notifyDataReload();
+    this.showSortMenu = false; // 关闭菜单
   }
 
   private navigateToPath(path: string) {
@@ -187,6 +195,69 @@ struct FileList {
     return result;
   }
 
+  @Builder
+  SortMenu() {
+    // 排序菜单
+    Menu() {
+      MenuItem() {
+        Row() {
+          Text($r('app.string.SortConstants_name'))
+            .fontSize(16)
+            .width("120")
+
+          Blank()
+          if (this.sortType === 'name') {
+            Image(this.sortOrder === 'asc' ? $r("app.media.ic_sort_asc") : $r("app.media.ic_sort_desc"))
+              .width(24)
+              .height(24)
+              .margin({ left: 16 })
+              .fillColor($r('app.color.text_primary'))
+          }
+        }
+      }
+      .height(48)
+      .onClick(() => this.changeSort('name'))
+
+      MenuItem() {
+        Row() {
+          Text($r('app.string.Settings_sort_size'))
+            .fontSize(16)
+            .width("120")
+          Blank()
+          if (this.sortType === 'size') {
+            Image(this.sortOrder === 'asc' ? $r("app.media.ic_sort_asc") : $r("app.media.ic_sort_desc"))
+              .width(24)
+              .height(24)
+              .margin({ left: 16 })
+              .fillColor($r('app.color.text_primary'))
+          }
+        }
+      }
+      .height(48)
+      .onClick(() => this.changeSort('size'))
+
+      MenuItem() {
+        Row() {
+          Text($r('app.string.SortConstants_modified'))
+            .fontSize(16)
+            .width("120")
+          Blank()
+          if (this.sortType === 'date') {
+            Image(this.sortOrder === 'asc' ? $r("app.media.ic_sort_asc") : $r("app.media.ic_sort_desc"))
+              .width(24)
+              .height(24)
+              .margin({ left: 16 })
+              .fillColor($r('app.color.text_primary'))
+              .bindMenu(this.SortMenu)
+          }
+        }
+      }
+      .onClick(() => this.changeSort('date'))
+      .height(48)
+    }
+    .padding({ left: 16, right: 16 })
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -205,6 +276,16 @@ struct FileList {
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
           .fontColor($r('app.color.text_primary'))
+
+        Blank()
+
+        // 排序菜单按钮
+        Image($r("app.media.ic_sort"))
+          .width(24)
+          .height(24)
+          .margin({ right: 16 })
+          .fillColor($r('app.color.text_primary'))
+          .bindMenu(this.SortMenu)
       }
       .width('100%')
       .height(56)
@@ -286,76 +367,49 @@ struct FileList {
         .justifyContent(FlexAlign.Center)
       } else {
         Column() {
-          // 文件列表标题栏（带排序功能）
-          Row() {
-            Text('Name')
-              .fontSize(14)
-              .fontWeight(FontWeight.Medium)
-              .layoutWeight(1)
-              .fontColor($r('app.color.text_primary'))
-              .onClick(() => this.changeSort('name'))
-
-            Text('Date')
-              .fontSize(14)
-              .fontWeight(FontWeight.Medium)
-              .width(120)
-              .fontColor($r('app.color.text_primary'))
-              .onClick(() => this.changeSort('date'))
-
-            Text('Size')
-              .fontSize(14)
-              .fontWeight(FontWeight.Medium)
-              .width(80)
-              .fontColor($r('app.color.text_primary'))
-              .onClick(() => this.changeSort('size'))
-          }
-          .padding({
-            left: 16,
-            right: 16,
-            top: 8,
-            bottom: 8
-          })
-          .margin({ top: 4 })
-          .backgroundColor($r("app.color.card_bg"))
-
           // 文件列表
           List() {
             LazyForEach(this.itemData, (item: FileInfo) => {
               ListItem() {
                 Row() {
-                  // 图标
-                  Image(item.type === FileType.DIR ? $r('app.media.ic_folder') : $r('app.media.ic_file'))
-                    .width(24)
-                    .height(24)
-                    .margin({ right: 12 })
-                    .fillColor(item.type === FileType.DIR ? '#FFD700' : $r('app.color.text_primary'))
+                  Column() {
+                    // 图标
+                    Image(item.type === FileType.DIR ? $r('app.media.ic_folder') : $r('app.media.ic_file'))
+                      .width(36)
+                      .height(36)
+                      .fillColor(item.type === FileType.DIR ? '#FFD700' : $r('app.color.text_primary'))
+                  }.width("15%")
+                  .justifyContent(FlexAlign.Start)
 
-                  // 文件名
-                  Text(item.name)
-                    .fontSize(16)
-                    .layoutWeight(1)
-                    .fontColor($r('app.color.text_primary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  Column() {
+                    Row() {
+                      // 文件名
+                      Text(item.name)
+                        .fontSize(16)
+                        .layoutWeight(1)
+                        .fontColor($r('app.color.text_primary'))
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }
 
-                  // 修改时间
-                  Text(this.formatDate(item.modifiedTime))
-                    .fontSize(14)
-                    .width(120)
-                    .fontColor($r('app.color.text_secondary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-                  // 文件大小
-                  Text(item.type === FileType.FILE ? this.formatFileSize(item.size) : item.childrenCount + "")
-                    .fontSize(14)
-                    .width(80)
-                    .fontColor($r('app.color.text_secondary'))
+                    Row() {
+                      // 修改时间
+                      Text(DateUtils.format(new Date(item.modifiedTime)))
+                        .fontSize(14)
+                        .fontColor($r('app.color.text_secondary'))
+                      // 文件大小
+                      Text(item.type === FileType.FILE ? this.formatFileSize(item.size) : item.childrenCount + "")
+                        .fontSize(14)
+                        .fontColor($r('app.color.text_secondary'))
+                        .textAlign(TextAlign.End)
+                        .padding({ right: 12 })
+                    }
+                    .width('100%')
+                    .justifyContent(FlexAlign.SpaceBetween)
+                  }.width('85%')
                 }
                 .width('100%')
                 .padding({
-                  left: 16,
-                  right: 16,
                   top: 12,
                   bottom: 12
                 })
@@ -372,7 +426,7 @@ struct FileList {
           .width('100%')
           .height('auto')
           .padding({ left: 12, right: 12 })
-        }
+        }.padding({ top: 12 })
       }
     }
     .width('100%')
