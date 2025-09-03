@@ -136,6 +136,14 @@ export class LocationParam implements LocationInterface {
   }
 
   /**
+   * 是否是保存模式
+   * @return boolean
+   */
+  public static isSelectMode(): boolean {
+    return LocationMode.SELECT === LocationParam.getInstance().mode;
+  }
+
+  /**
    * 获取模式
    * @return LocationMode
    */
