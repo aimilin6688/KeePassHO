@@ -1,9 +1,9 @@
 import { Router } from '@kit.ArkUI';
-import { FileInfo, FileType, StorageType } from '../../services/kdbx/interfaces';
+import { FileInfo, FileType } from '../../services/kdbx/interfaces';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
+import { LocationInfo } from '../../services/beans/LocationParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAVFileList';
@@ -24,6 +24,7 @@ struct FileList {
   @State errorMessage: string = '';
   @State sortType: 'name' | 'date' | 'size' = 'name';
   @State sortOrder: 'asc' | 'desc' = 'asc';
+  @State pathLength: number = 0;
   private router: Router = this.getUIContext().getRouter();
   private locationInfo: LocationInfo | undefined = undefined;
 
@@ -62,11 +63,6 @@ struct FileList {
 
   private sortItems() {
     this.items.sort((a, b) => {
-      // 文件夹始终排在文件前面
-      if (a.type !== b.type) {
-        return a.type === FileType.DIR ? -1 : 1;
-      }
-
       let result = 0;
       switch (this.sortType) {
         case 'name':
@@ -136,18 +132,19 @@ struct FileList {
   }
 
   private getPathParts(): Array<PathPart> {
+    const result: Array<PathPart> = [{ name: "$", path: "/" }];
     if (this.currentPath === '/') {
-      return [{ name: '/', path: '/' }];
+      this.pathLength = 1;
+      return result;
     }
 
     const parts = this.currentPath.split('/').filter(part => part.length > 0);
-    const result = [{ name: '/', path: '/' } as PathPart];
-
     let currentPath = '';
     parts.forEach(part => {
       currentPath += '/' + part;
-      result.push({ name: part, path: currentPath + (currentPath.endsWith('/') ? '' : '/') } as PathPart);
+      result.push({ name: decodeURIComponent(part), path: currentPath + (currentPath.endsWith('/') ? '' : '/') });
     });
+    this.pathLength = result.length;
     return result;
   }
 
@@ -180,28 +177,30 @@ struct FileList {
           ForEach(this.getPathParts(), (part: PathPart, index) => {
             Row() {
               Text(part.name)
-                .fontSize(14)
+                .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .onClick(() => {
                   this.navigateToPath(part.path);
                 })
 
               // 添加分隔符（除了最后一个）
-              if (index < this.getPathParts().length - 1) {
-                Image($r("app.media.ic_arrow_right"))
-                  .width(16)
+              if (index < this.pathLength - 1) {
+                Text('>')
+                  .fontSize(16)
                   .height(16)
                   .margin({ left: 4, right: 4 })
-                  .fillColor($r('app.color.text_secondary'))
+                  .fontColor($r('app.color.text_secondary'))
               }
             }
-            .padding({ left: 4, right: 4 })
           }, (item: PathPart) => item.path)
         }
+        .justifyContent(FlexAlign.Start)
+        .width('100%')
         .padding({ left: 16, right: 16 })
       }
       .width('100%')
       .height(40)
+      .margin({top:4})
       .backgroundColor($r("app.color.card_bg"))
 
       // 加载状态或错误提示
@@ -271,6 +270,7 @@ struct FileList {
             top: 8,
             bottom: 8
           })
+          .margin({top:4})
           .backgroundColor($r("app.color.card_bg"))
 
           // 文件列表
