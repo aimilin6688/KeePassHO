@@ -63,6 +63,11 @@ struct FileList {
 
   private sortItems() {
     this.items.sort((a, b) => {
+      // 文件夹始终排在文件前面
+      if (a.type !== b.type) {
+        return a.type === FileType.DIR ? -1 : 1;
+      }
+
       let result = 0;
       switch (this.sortType) {
         case 'name':
@@ -325,7 +330,7 @@ struct FileList {
           }
           .layoutWeight(1)
           .width('100%')
-          .padding({ left: 16, right: 16 })
+          .padding({ left: 12, right: 12 })
         }
       }
     }
