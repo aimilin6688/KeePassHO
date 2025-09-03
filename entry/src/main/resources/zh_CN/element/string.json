@@ -1249,6 +1249,10 @@
     {
       "name": "location_webdav_desc_select",
       "value": "从WebDAV中选择文件"
+    },
+    {
+      "name": "Settings_sort_size",
+      "value": "按文件大小排序"
     }
   ]
 }
