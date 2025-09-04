@@ -5,8 +5,15 @@ import { ExportType, FileContent, SaveKdbxParam } from '../TypeDefined';
 import { KdbxCsvService } from './KdbxCsvService';
 import { LocationInfo, LocationInterface, LocationMode, LocationParam } from '../beans/LocationParam';
 import { FileService } from '../FileService';
-import { DataService } from '../DataService';
 import { CommonUtils } from '../../common/utils/CommonUtils';
+import { KdbxFileManager } from './KdbxFileManager';
+import { DataService } from '../DataService';
+
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { StorageType } from './interfaces';
+
+const DOMAIN = 0x0000;
+const TAG = 'KdbxExportService';
 
 export class KdbxExportService {
   /**
@@ -19,15 +26,61 @@ export class KdbxExportService {
       mode: LocationMode.SAVE,
       fileName: KdbxExportService.createFileName(FileService.getDbFileParam().fileName, exportType, true),
       onLocation: (locationInfo: LocationInfo) => {
-        DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
-          CommonUtils.showToast({ message: $r("app.string.save_success") });
-          CommonUtils.back({ url: "pages/SettingDatabase" });
-        })
+        try {
+          KdbxExportService.handlerExport(locationInfo, exportType);
+        } catch (e) {
+          hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
+          CommonUtils.showToast({ message: e.message });
+        }
       }
     } as LocationInterface);
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
+  /**
+   * 处理导出
+   * @param locationInfo
+   */
+  private static async handlerExport(locationInfo: LocationInfo, exportType: ExportType) {
+    let existsError: Error | undefined;
+    // 弹出导出进度提示信息
+    CommonUtils.showToast({ message: $r("app.string.export_saving"), duration: 3000 });
+    const existsFile = locationInfo.storageType !== StorageType.LOCAL && await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath)
+      .catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Exists file stateType:%{public}s filePath:%{public}s error:%{public}s', locationInfo.storageType, locationInfo.filePath, error.message);
+        CommonUtils.showToast({ message: error.message, duration: 3000 });
+        existsError = error;
+      });
+    if (existsError) {
+      return;
+    }
+    if (existsFile) {
+      CommonUtils.getPromptAction().showDialog(CommonUtils.getExistsFileDialog()).then(result => {
+        if (result.index === 1) {
+          KdbxExportService.doExport(locationInfo, exportType);
+        } else {
+          CommonUtils.back({ url: "pages/SettingDatabase" });
+        }
+      });
+    } else {
+      KdbxExportService.doExport(locationInfo, exportType);
+    }
+  }
+
+  /**
+   * 执行数据库导出
+   * @param locationInfo
+   * @param exportType
+   */
+  private static doExport(locationInfo: LocationInfo, exportType: ExportType) {
+    DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
+      CommonUtils.showToast({ message: $r("app.string.export_success") });
+      CommonUtils.back({ url: "pages/SettingDatabase" });
+    }).catch((e: Error) => {
+      hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
+      CommonUtils.showToast({ message: e.message });
+    });
+  }
 
   /**
    * 创建导出文件

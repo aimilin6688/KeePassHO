@@ -5,8 +5,7 @@ import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
-import FileUtils from '../../common/utils/FIleUtils';
-import {LocationParam } from '../../services/beans/LocationParam';
+import { LocationParam } from '../../services/beans/LocationParam';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
 
 const DOMAIN = 0x0000;
@@ -161,21 +160,21 @@ struct WebDAV {
       // 配置信息
       const storageConfig = this.getStorageConfig();
       this.fileManager.init(storageConfig);
-      // 获取文件类型
-      const fileInfo = await this.fileManager.getInfo(this.url);
-      hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-      // 如果是文件夹，则跳转到文件列表页面
-      if (fileInfo.type === FileType.DIR) {
-        this.toFileList();
-      } else {
-        // 获取文件信息
-        const existsFile = await this.fileManager.exists(this.url);
-        hilog.info(DOMAIN, TAG, `Export file to webDAV path: ${this.url}`);
-        if (existsFile) {
-          this.confirmDialog(storageConfig);
+      // 获取文件信息
+      const existsFile = await this.fileManager.exists(this.url);
+      hilog.info(DOMAIN, TAG, `Export file to webDAV path: ${this.url}`);
+      if (existsFile) {
+        // 获取文件类型
+        const fileInfo = await this.fileManager.getInfo(this.url);
+        hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+        // 如果是文件夹，则跳转到文件列表页面
+        if (fileInfo.type === FileType.DIR) {
+          this.toFileList();
         } else {
           this.handleSelectDir(storageConfig);
         }
+      } else {
+        this.handleSelectDir(storageConfig);
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
@@ -186,31 +185,6 @@ struct WebDAV {
       this.isConnecting = false;
     }
 
-  }
-
-  /**
-   * 确认选择
-   * @param storageConfig
-   */
-  private confirmDialog(storageConfig: StorageConfig) {
-    this.promptAction.showDialog({
-      title: $r('app.string.dialog_prompt_title'),
-      message: $r('app.string.dialog_exists_file_message'),
-      buttons: [
-        {
-          text: $r('app.string.cancel_button_text'),
-          color: $r('app.color.text_secondary')
-        },
-        {
-          text: $r('app.string.replace_button_text'),
-          color: $r("app.color.button_bg_blue"),
-        }
-      ],
-    }).then(result => {
-      if (result.index === 1) {
-        this.handleSelectDir(storageConfig);
-      }
-    });
   }
 
   private handleSelectDir(storageConfig: StorageConfig) {

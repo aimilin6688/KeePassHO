@@ -1,10 +1,11 @@
-import { rcp } from "@kit.RemoteCommunicationKit";
-import { xml, util } from '@kit.ArkTS';
+import { rcp } from '@kit.RemoteCommunicationKit';
+import { util, xml } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from "./CommonUtils";
-import { BusinessError, request } from "@kit.BasicServicesKit";
-import ResourceManager from "../utils/ResourceManager";
-import { ByteUtils } from "kdbxweb";
+import { CommonUtils } from './CommonUtils';
+import { BusinessError, request } from '@kit.BasicServicesKit';
+import ResourceManager from '../utils/ResourceManager';
+import { ByteUtils } from 'kdbxweb';
+import { StringUtils } from './StringUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';
@@ -175,7 +176,7 @@ export class WebDavClient {
         requestReturn.success = true;
       } else {
         requestReturn.success = false;
-        requestReturn.message = errorMessage ?? "";
+        requestReturn.message = this.toErrorMsg(errorMessage) || '';
       }
     } catch (err) {
       let errMsg: string = err.message ?? errorMessage ?? err.data ?? "";
@@ -189,6 +190,17 @@ export class WebDavClient {
       }
     }
     return requestReturn;
+  }
+
+  private toErrorMsg(errorMessage?: string): string | undefined {
+    if (!errorMessage) {
+      return errorMessage;
+    }
+    try {
+      return StringUtils.getTagContent(errorMessage, "s:exception") + ": " + StringUtils.getTagContent(errorMessage, "s:message");
+    } catch (e) {
+      return errorMessage;
+    }
   }
 
   /**
