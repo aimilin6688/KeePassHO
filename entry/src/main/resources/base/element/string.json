@@ -1271,6 +1271,14 @@
     {
       "name": "export_success",
       "value": "Export success"
+    },
+    {
+      "name": "import_not_support_type",
+      "value": "Not support file type"
+    },
+    {
+      "name": "import_success",
+      "value": "Import success"
     }
   ]
 }
