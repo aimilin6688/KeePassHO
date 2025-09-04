@@ -10,11 +10,11 @@
     ],
     "requestPermissions": [
       {
-        "name" : "ohos.permission.FILE_ACCESS_PERSIST",
+        "name": "ohos.permission.FILE_ACCESS_PERSIST",
         "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
       },
       {
-        "name" : "ohos.permission.INTERNET",
+        "name": "ohos.permission.INTERNET",
         "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
       },
       {
@@ -41,6 +41,13 @@
             ],
             "actions": [
               "action.system.home"
+            ],
+            "uris": [
+              {
+                "scheme": "file",
+                "type": "com.aimilin.keepassho.kdbx",
+                "linkFeature": "FileOpen"
+              }
             ]
           }
         ]
