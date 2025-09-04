@@ -3,12 +3,10 @@ import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import ResourceManager from '../common/utils/ResourceManager';
-import { LocationInfo, LocationInterface, LocationParam } from '../services/beans/LocationParam';
-import { DataService } from '../services/DataService';
 import { FileService } from '../services/FileService';
 import { KdbxExportService } from '../services/kdbx/KdbxExportService';
+import { KdbxImportService } from '../services/kdbx/KdbxImportService';
 import { ExportType } from '../services/TypeDefined';
-import { LocationMode } from './open/SelectLocation';
 
 
 @Entry
@@ -42,19 +40,14 @@ struct SettingsDatabase {
     }
   }
 
+  // 导入数据库
+  private importDatabase(inputType: ExportType) {
+    KdbxImportService.importDatabase(inputType);
+  }
+
   // 导出数据库
   private exportDatabase(exportType: ExportType) {
-    LocationParam.of({
-      mode: LocationMode.SAVE,
-      fileName: KdbxExportService.createFileName(FileService.getDbFileParam().fileName, exportType, true),
-      onLocation: (locationInfo: LocationInfo) => {
-        DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
-          this.promptAction.showToast({ message: $r("app.string.save_success") });
-          this.router.back({ url: "pages/SettingDatabase" });
-        })
-      }
-    } as LocationInterface);
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    KdbxExportService.exportDatabase(exportType);
   }
 
   // 重新加密算法
@@ -221,7 +214,37 @@ struct SettingsDatabase {
           ListItemGroup() {
             ListItem() {
               Row() {
-                Text($r("app.string.Settings_database_output"))
+                Text($r("app.string.Settings_database_import"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Blank()
+                Column() {
+                  Select(this.exportTypeOptions)
+                    .value($r("app.string.please_select"))
+                    .font({ size: 16 })
+                    .selectedOptionFont({ size: 16 })
+                    .optionFont({ size: 16 })
+                    .backgroundColor($r("app.color.card_bg"))
+                    .onSelect(async (index: number) => {
+                      this.importDatabase(this.exportTypeOptions[index].type);
+                    })
+                    .padding({ right: 0 })
+                }
+                .width('70%')
+                .alignItems(HorizontalAlign.End)
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 9,
+                bottom: 9
+              })
+            }
+
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_database_export"))
                   .fontSize(16)
                   .flexGrow(1)
                 Blank()

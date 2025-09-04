@@ -1,10 +1,12 @@
 import { util } from '@kit.ArkTS';
-import { promptAction } from '@kit.ArkUI';
+import { promptAction, Router, router } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
+import { ErrorCodes, KeePassHoError } from '../../services/error/KeepassHoError';
 
 export class CommonUtils {
   private static instance: CommonUtils = new CommonUtils();
   private context: common.UIAbilityContext | null = null;
+  private uiContext: UIContext | undefined = undefined;
 
   /**
    * 初始化主题管理器
@@ -12,6 +14,15 @@ export class CommonUtils {
    */
   public init(context: common.UIAbilityContext): void {
     this.context = context;
+  }
+
+
+  /**
+   * 设置UIContext
+   * @param uiContext
+   */
+  public static setUIContext(uiContext: UIContext) {
+    CommonUtils.instance.uiContext = uiContext;
   }
 
   /**
@@ -80,8 +91,64 @@ export class CommonUtils {
    * @param message
    * @param duration
    */
-  public static showToast(message: ResourceStr, duration?: number): void {
-    promptAction.showToast({ message: message, duration: duration ?? 2000 });
+  public static showToast(message: ResourceStr | promptAction.ShowToastOptions, duration?: number): void {
+    message = CommonUtils.toShowToastOptions(message, duration);
+    if (CommonUtils.instance.uiContext) {
+      CommonUtils.instance.uiContext.getPromptAction().showToast(message);
+    } else {
+      promptAction.showToast(message);
+    }
+  }
+
+  /**
+   * 获取路由
+   * @returns
+   */
+  public static getRouter(): Router {
+    if (CommonUtils.instance.uiContext) {
+      return CommonUtils.instance.uiContext.getRouter();
+    }
+    throw new KeePassHoError(ErrorCodes.UI_CONTEXT_NOT_INIT);
+  }
+
+  /**
+   * 跳转页面
+   * @param options
+   * @returns
+   */
+  public static pushUrl(options: router.RouterOptions): Promise<void> {
+    if (CommonUtils.instance.uiContext) {
+      return CommonUtils.instance.uiContext.getRouter().pushUrl(options);
+    }
+    return router.pushUrl(options);
+  }
+
+  /**
+   * 返回
+   * @param options
+   */
+  public static back(options?: router.RouterOptions): void {
+    if (CommonUtils.instance.uiContext) {
+      CommonUtils.instance.uiContext.getRouter().back(options);
+    } else {
+      router.back(options);
+    }
+  }
+
+  /**
+   * 转换为提示信息参数
+   * @param message 消息格式
+   * @param duration 延时时间
+   * @returns 结果
+   */
+  private static toShowToastOptions(param: ResourceStr | promptAction.ShowToastOptions, duration?: number): promptAction.ShowToastOptions {
+    if (typeof param === 'string') {
+      return { message: param, duration: duration ?? 2000 };
+    }
+    if (Object.keys(param).indexOf('bundleName') !== -1) {
+      return { message: param as ResourceStr, duration: duration ?? 2000 };
+    }
+    return param as promptAction.ShowToastOptions;
   }
 
   /**
