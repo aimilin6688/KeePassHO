@@ -5,25 +5,13 @@ import { CommonUtils } from './CommonUtils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import DateUtils from './DateUtils';
+import { FilenameUtils } from './FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
 
 export default class FileUtils {
   private static FolderAuthorization: string = 'SystemCapability.FileManagement.AppFileService.FolderAuthorization';
-
-  /**
-   * 获取文件名
-   * @param filePath 文件路径
-   */
-  public static getFileName(filePath: string): string {
-    if (!filePath) {
-      return "";
-    }
-    const fileNameMatch = filePath.match(/[^/]+$/);
-    return fileNameMatch ? decodeURIComponent(fileNameMatch[0]) : '';
-  }
-
 
   /**
    * 激活文件权限
@@ -157,51 +145,41 @@ export default class FileUtils {
     }
   }
 
-  /**
-   * 替换文件名
-   * @param url 文件路径
-   * @param fileName 文件名
-   * @returns 文件路径
-   */
-  public static replaceFileName(url: string, fileName: string): string {
-    return url.replace(/[^/]+$/, fileName);
-  }
-
-  /**
-   * 替换文件名后缀
-   * @param fileName 文件名
-   * @param ext 后缀
-   * @returns 文件名
-   */
-  public static replaceExt(fileName: string, ext: string): string {
-    if (!fileName) {
-      return "";
+  public static getFileIcon(fileName: string): Resource {
+    const fileExt = FilenameUtils.getFileExt(fileName).toLowerCase();
+    switch (fileExt) {
+      case 'txt':
+        return $r('app.media.file_text');
+      case 'pdf':
+        return $r('app.media.file_pdf');
+      case 'doc':
+      case 'docx':
+        return $r('app.media.file_word');
+      case 'xls':
+      case 'xlsx':
+        return $r('app.media.file_excel');
+      case 'ppt':
+      case 'pptx':
+        return $r('app.media.file_powerpoint');
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return $r('app.media.file_image');
+      case 'iav':
+      case 'mp3':
+        return $r('app.media.file_audio');
+      case 'mp4':
+        return $r('app.media.file_video');
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return $r('app.media.file_zipper');
+      case 'kdbx':
+        return $r('app.media.startIcon');
+      case 'csv':
+        return $r('app.media.file_csv');
     }
-    // 如果文件名中没有后缀，或者最后一个字符是点，则去掉最后一个点并添加新后缀
-    if (!fileName.includes('.') || fileName.endsWith('.')) {
-      const trimmedFileName = fileName.endsWith('.') ? fileName.slice(0, -1) : fileName;
-      return `${trimmedFileName}${ext}`;
-    }
-    // 替换文件名后缀为指定的后缀
-    return fileName.replace(/\.[^.]+$/, ext);
-  }
-
-  /**
-   * 文件名追加日期
-   * @param fileName 文件名
-   * @returns 添加日期后的文件名
-   */
-  public static fileNameAppendDate(fileName: string): string {
-    if (!fileName) {
-      return DateUtils.getCurrentDate();
-    }
-    const currentDate = DateUtils.getCurrentDate();
-    const lastDotIndex = fileName.lastIndexOf('.');
-    if (lastDotIndex === -1) {
-      return `${fileName}_${currentDate}`;
-    }
-    const namePart = fileName.substring(0, lastDotIndex);
-    const extPart = fileName.substring(lastDotIndex);
-    return `${namePart}_${currentDate}${extPart}`;
+    return $r('app.media.file_text');
   }
 }

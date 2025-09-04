@@ -1,5 +1,6 @@
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import DateUtils from '../../common/utils/DateUtils';
+import { FilenameUtils } from '../../common/utils/FilenameUtils';
 import FileUtils from '../../common/utils/FIleUtils';
 import { ExportType, FileContent, SaveKdbxParam } from '../TypeDefined';
 import { KdbxCsvService } from './KdbxCsvService';
@@ -47,14 +48,14 @@ export class KdbxExportService {
     const nowTime = DateUtils.getCurrentDate();
     fileName = fileName || nowTime;
     if (ExportType.KDBX === exportType) {
-      fileName = FileUtils.replaceExt(fileName, ".kdbx");
+      fileName = FilenameUtils.replaceExt(fileName, ".kdbx");
     } else if (ExportType.XML === exportType) {
-      fileName = FileUtils.replaceExt(fileName, ".xml");
+      fileName = FilenameUtils.replaceExt(fileName, ".xml");
     } else if (ExportType.CSV === exportType) {
-      fileName = FileUtils.replaceExt(fileName, ".csv");
+      fileName = FilenameUtils.replaceExt(fileName, ".csv");
     }
     if (appendDate && fileName !== nowTime) {
-      fileName = FileUtils.fileNameAppendDate(fileName);
+      fileName = FilenameUtils.fileNameAppendDate(fileName);
     }
     return fileName;
   }

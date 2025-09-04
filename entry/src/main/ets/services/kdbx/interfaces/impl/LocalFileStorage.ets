@@ -5,6 +5,7 @@ import FileUtils from '../../../../common/utils/FIleUtils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileType, StorageConfig } from '..';
 import { StorageError, StorageErrorCodes } from '../../../error/StorageError';
+import { FilenameUtils } from '../../../../common/utils/FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
@@ -150,7 +151,7 @@ export class LocalFileStorage implements IFileStorage {
       const stat = await fs.stat(file.fd);
       await fs.close(file.fd);
       return {
-        name: FileUtils.getFileName(path),
+        name: FilenameUtils.getFileName(path),
         size: stat.size,
         modifiedTime: stat.mtime * 1000,
         path: path,
