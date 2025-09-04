@@ -1,6 +1,9 @@
-import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import util from '@ohos.util';
 import KdbxUtils from '../../common/utils/KdbxUtils';
+import { FileContentInfo } from './interfaces';
+import { ErrorCodes, KeePassHoError } from '../error/KeepassHoError';
+import { FileService } from '../FileService';
 
 export enum CsvTitle {
   Group = "Group",
@@ -16,6 +19,159 @@ export enum CsvTitle {
 }
 
 export class KdbxCsvService {
+  /**
+   * 导入csv文件
+   * @param csvFile
+   * @returns
+   */
+  public static async import(csvFile: FileContentInfo): Promise<KdbxGroup> {
+    return new Promise<KdbxGroup>(async (resolve, reject) => {
+      try {
+        return resolve(KdbxCsvService.parseLines(csvFile.content));
+      } catch (e) {
+        return reject(e);
+      }
+    });
+  }
+
+  /**
+   * 解析CSV行
+   * @param csvContent
+   * @returns
+   */
+  private static parseLines(csvContent: ArrayBuffer): KdbxGroup {
+    // 获取CSV行
+    const csvLines: string[] = ByteUtils.bytesToString(csvContent).split("\n");
+    if (csvLines.length === 0) {
+      throw new KeePassHoError(ErrorCodes.FILE_EMPTY);
+    }
+    const rootGroup = new KdbxGroup();
+    let currentGroup: KdbxGroup = rootGroup;
+    let groupIndex: number | undefined = undefined;
+
+    const heads = KdbxCsvService.checkHeader(csvLines[0]);
+    const fieldProtection = KdbxCsvService.createFieldProtection();
+    for (let i = 1; i < csvLines.length; i++) {
+      const line = csvLines[i].split(',');
+      // 包含分组信息
+      currentGroup = rootGroup;
+      groupIndex = heads.get(CsvTitle.Group);
+      if (groupIndex != undefined) {
+        currentGroup = KdbxCsvService.getGroupByPath(rootGroup, line[groupIndex]);
+      }
+      let entry = KdbxCsvService.parseEntry(heads, line, currentGroup, fieldProtection);
+      entry.parentGroup = currentGroup;
+      currentGroup.entries.push(entry);
+    }
+    return rootGroup;
+  }
+
+  /**
+   * 设值字段保护
+   * @returns
+   */
+  private static createFieldProtection(): Map<string, boolean> {
+    const fieldProtection = FileService.getDatabase().meta.memoryProtection;
+    return new Map<string, boolean>([
+      [CsvTitle.Title, fieldProtection.title || false],
+      [CsvTitle.Username, fieldProtection.userName || false],
+      [CsvTitle.Password, fieldProtection.password || false],
+      [CsvTitle.URL, fieldProtection.url || false],
+      [CsvTitle.Notes, fieldProtection.notes || false],
+      [CsvTitle.TOTP, false],
+      [CsvTitle.Icon, false],
+      [CsvTitle.Last_Modified, false],
+      [CsvTitle.Created, false]
+    ]);
+  }
+
+  /**
+   * 解析CSV行
+   * @param heads
+   * @param line
+   * @returns
+   */
+  private static parseEntry(heads: Map<string, number>, line: string[], parentGroup: KdbxGroup, fieldProtection: Map<string, boolean>): KdbxEntry {
+    const entry = KdbxEntry.create(FileService.getDatabase().meta, parentGroup);
+    for (let item of heads) {
+      const fieldName = item[0];
+      const fieldValue = line[item[1]];
+      if (!fieldValue || fieldValue.trim() === '') {
+        continue;
+      }
+      if (fieldName === CsvTitle.Group) {
+        continue;
+      }
+      if (fieldName === CsvTitle.Icon) {
+        entry.icon = parseInt(fieldValue);
+        continue;
+      }
+      if (fieldName === CsvTitle.Created) {
+        entry.times.creationTime = new Date(fieldValue);
+        continue;
+      }
+      if (fieldName === CsvTitle.Last_Modified) {
+        entry.times.lastModTime = new Date(fieldValue);
+        continue;
+      }
+      entry.setField(fieldName, fieldValue, fieldProtection.get(fieldName));
+    }
+    return entry;
+  }
+
+  /**
+   * 获取分组
+   * @param rootGroup 根分组
+   * @param groupPath 分组路径
+   * @returns 结果
+   */
+  private static getGroupByPath(rootGroup: KdbxGroup, groupPath: string): KdbxGroup {
+    if (!groupPath || groupPath === '') {
+      return rootGroup;
+    }
+    let currentGroup: KdbxGroup = rootGroup;
+    const groups = groupPath.split("/");
+    for (let groupName of groups) {
+      if (!groupName) {
+        continue;
+      }
+      let find = false;
+      for (let child of currentGroup.groups) {
+        if (child.name === groupName) {
+          currentGroup = child;
+          find = true;
+          break;
+        }
+      }
+      // 未查到创建新分组
+      if (false === find) {
+        const subGroup = KdbxGroup.create(groupName, currentGroup);
+        currentGroup.groups.push(subGroup);
+        currentGroup = subGroup;
+      }
+    }
+    return currentGroup;
+  }
+
+  /**
+   * 检查CSV标题行
+   * @param csvHeader
+   * @returns
+   */
+  private static checkHeader(csvHeader: string): Map<string, number> {
+    const result = new Map<string, number>();
+    const headerFields = csvHeader.split(',');
+    const fields = Object.values(CsvTitle) as string[];
+    for (let i = 0; i < headerFields.length; i++) {
+      const field = headerFields[i].trim();
+      if (!fields.includes(field)) {
+        throw new KeePassHoError(ErrorCodes.INVALID_CSV_HEADER, `Invalid CSV header ${field}`);
+      }
+      result.set(field, i);
+    }
+    return result;
+  }
+
   /**
    * 导出数据库到csv文件格式
    * @param database

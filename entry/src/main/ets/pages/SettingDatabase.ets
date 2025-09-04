@@ -22,6 +22,13 @@ struct SettingsDatabase {
     { value: $r('app.string.export_type_xml'), type: ExportType.XML },
     { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
   ];
+
+  // 数据库导入类型
+  private importTypeOptions: Array<ExportTypeOptions> = [
+    { value: $r('app.string.export_type_xml'), type: ExportType.XML },
+    { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
+  ];
+
   // 加密算法
   private algorithmOptions: Array<AlgorithmOptions> = [
     { value: $r('app.string.Settings_database_algorithm_aes'), type: CipherId.Aes },
@@ -219,14 +226,14 @@ struct SettingsDatabase {
                   .flexGrow(1)
                 Blank()
                 Column() {
-                  Select(this.exportTypeOptions)
+                  Select(this.importTypeOptions)
                     .value($r("app.string.please_select"))
                     .font({ size: 16 })
                     .selectedOptionFont({ size: 16 })
                     .optionFont({ size: 16 })
                     .backgroundColor($r("app.color.card_bg"))
                     .onSelect(async (index: number) => {
-                      this.importDatabase(this.exportTypeOptions[index].type);
+                      this.importDatabase(this.importTypeOptions[index].type);
                     })
                     .padding({ right: 0 })
                 }
