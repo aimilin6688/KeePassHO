@@ -1,9 +1,9 @@
-import DateUtils from "./DateUtils";
+import DateUtils from './DateUtils';
 
 /**
  * 文件名工具类
  */
-export class FilenameUtils{
+export class FilenameUtils {
   /**
    * 获取文件名
    * @param filePath 文件路径
@@ -82,6 +82,11 @@ export class FilenameUtils{
     return false;
   }
 
+  /**
+   * 获取文件后缀
+   * @param fileName 文件名
+   * @returns 文件后缀
+   */
   public static getFileExt(fileName: string): string {
     if (!fileName) {
       return '';
@@ -91,5 +96,18 @@ export class FilenameUtils{
       return '';
     }
     return fileName.substring(lastDotIndex + 1);
+  }
+
+  /**
+   * 获取文件路径，将给定的多个字符串组合成路径
+   */
+  public static getFilePath(...paths: string[]): string {
+    // 如果是空字符串，则返回空字符串
+    if (paths.length === 0) {
+      return '';
+    }
+    // 如果字符串 以 / 开头需要去掉
+    paths = paths.map(path => path.startsWith('/') ? path.substring(1) : path);
+    return paths.join('/');
   }
 }
