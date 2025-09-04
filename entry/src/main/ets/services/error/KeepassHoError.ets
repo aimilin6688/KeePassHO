@@ -19,4 +19,5 @@ export class KeePassHoError extends Error {
 export enum ErrorCodes {
   FILE_NOT_PERMISSION = 'FILE_NOT_PERMISSION',
   FILE_PATH_EMPTY = 'FILE_PATH_EMPTY',
+  UI_CONTEXT_NOT_INIT = "UI_CONTEXT_NOT_INIT"
 }

@@ -1123,7 +1123,11 @@
       "value": "附件"
     },
     {
-      "name": "Settings_database_output",
+      "name": "Settings_database_import",
+      "value": "导入数据库"
+    },
+    {
+      "name": "Settings_database_export",
       "value": "导出数据库"
     },
     {

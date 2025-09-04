@@ -1,11 +1,34 @@
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import DateUtils from '../../common/utils/DateUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
-import FileUtils from '../../common/utils/FIleUtils';
 import { ExportType, FileContent, SaveKdbxParam } from '../TypeDefined';
 import { KdbxCsvService } from './KdbxCsvService';
+import { LocationInfo, LocationInterface, LocationMode, LocationParam } from '../beans/LocationParam';
+import { FileService } from '../FileService';
+import { DataService } from '../DataService';
+import { CommonUtils } from '../../common/utils/CommonUtils';
 
 export class KdbxExportService {
+  /**
+   * 导出数据库
+   * @param router
+   * @param exportType
+   */
+  public static exportDatabase(exportType: ExportType) {
+    LocationParam.of({
+      mode: LocationMode.SAVE,
+      fileName: KdbxExportService.createFileName(FileService.getDbFileParam().fileName, exportType, true),
+      onLocation: (locationInfo: LocationInfo) => {
+        DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
+          CommonUtils.showToast({ message: $r("app.string.save_success") });
+          CommonUtils.back({ url: "pages/SettingDatabase" });
+        })
+      }
+    } as LocationInterface);
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+
   /**
    * 创建导出文件
    * @param exportType 导出类型
