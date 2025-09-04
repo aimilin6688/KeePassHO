@@ -266,7 +266,7 @@ export class KdbxEntry {
         }
     }
 
-    private setField(name: string, str: string, secure = false) {
+    public setField(name: string, str: string, secure = false) {
         this.fields.set(name, secure ? ProtectedValue.fromString(str) : str);
     }
 

@@ -4,10 +4,11 @@ import { ExportType } from '../TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from './KdbxFileManager';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
-import { ByteUtils, Kdbx, KdbxCredentials } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxCredentials, KdbxGroup } from 'kdbxweb';
 import { FileService } from '../FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import { ErrorCodes, KeePassHoError } from '../error/KeepassHoError';
+import { KdbxCsvService } from './KdbxCsvService';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxImportService';
@@ -53,10 +54,25 @@ export class KdbxImportService {
       return;
     }
     // 转换为导入数据库
-    const importKdbx: Kdbx = await KdbxImportService.toKdbx(locationInfo, fileExt);
-    // 合并数据库
-    const srcKdbx: Kdbx = FileService.getDatabase();
-    srcKdbx.merge(importKdbx);
+    const newGroup: KdbxGroup = await KdbxImportService.toKdbxGroup(locationInfo, fileExt);
+    const rootGroup = FileService.getDatabase().getDefaultGroup();
+    // 添加分组信息
+    if (newGroup.groups && newGroup.groups.length > 0) {
+      for (let index = 0; index < newGroup.groups.length; index++) {
+        const addGroup = newGroup.groups[index];
+        addGroup.parentGroup = rootGroup;
+        rootGroup.groups.push(addGroup);
+      }
+    }
+    // 添加条目信息
+    if (newGroup.entries && newGroup.entries.length > 0) {
+      for (let index = 0; index < newGroup.entries.length; index++) {
+        const addEntry = newGroup.entries[index];
+        addEntry.parentGroup = rootGroup;
+        rootGroup.entries.push(addEntry);
+      }
+    }
+    hilog.debug(DOMAIN, TAG, 'Import database group:%{public}d, entry:%{public}d', newGroup.groups.length, newGroup.entries.length);
     KdbxUtils.saveDatabase({
       onSuccess: () => {
         CommonUtils.showToast({ message: $r("app.string.import_success") });
@@ -71,19 +87,38 @@ export class KdbxImportService {
   /**
    * 解析文件为数据库文件
    */
-  private static toKdbx(locationInfo: LocationInfo, fileExt: string): Kdbx | PromiseLike<Kdbx> {
-    if (fileExt.toUpperCase() === ExportType.XML) {
-      return KdbxFileManager.of(locationInfo).read(locationInfo.filePath).then(result => {
-        return Kdbx.loadXml(ByteUtils.bytesToString(result.content), new KdbxCredentials(null));
-      }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, 'Failed to parse XML file: %{public}s', error.message);
-        throw new KeePassHoError(ErrorCodes.FILE_IMPORT_ERROR, error.message);
-      });
-    }
-    if (fileExt.toUpperCase() === ExportType.CSV) {
-    }
-    hilog.error(DOMAIN, TAG, 'Unsupported file type: %{public}s', fileExt);
-    throw new KeePassHoError(ErrorCodes.FILE_TYPE_NOT_SUPPORT);
+  private static toKdbxGroup(locationInfo: LocationInfo, fileExt: string): KdbxGroup | PromiseLike<KdbxGroup> {
+    return KdbxFileManager.of(locationInfo).read(locationInfo.filePath).then(result => {
+      // xml格式
+      if (fileExt.toUpperCase() === ExportType.XML) {
+        return Kdbx.loadXml(ByteUtils.bytesToString(result.content), new KdbxCredentials(null)).then(result => {
+          return result.getDefaultGroup();
+        }).catch((error: Error) => {
+          if (error instanceof KeePassHoError) {
+            throw error;
+          }
+          throw new KeePassHoError(ErrorCodes.FILE_IMPORT_ERROR, error.message);
+        });
+      }
+
+      // csv格式
+      if (fileExt.toUpperCase() === ExportType.CSV) {
+        return KdbxCsvService.import(result).catch((error: Error) => {
+          if (error instanceof KeePassHoError) {
+            throw error;
+          }
+          throw new KeePassHoError(ErrorCodes.FILE_IMPORT_ERROR, error.message);
+        });
+      }
+      return new KdbxGroup();
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'Failed to import: %{public}s', error.message);
+      CommonUtils.showToast(error.message, 3000);
+      if (error instanceof KeePassHoError) {
+        throw error;
+      }
+      throw new KeePassHoError(ErrorCodes.FILE_IMPORT_ERROR, error.message);
+    });
   }
 
   /**
