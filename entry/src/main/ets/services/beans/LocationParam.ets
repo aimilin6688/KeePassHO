@@ -35,6 +35,11 @@ export interface LocationInfo {
   fileName: string;
 
   /**
+   * 文件后缀
+   */
+  fileSuffix?: Array<string>;
+
+  /**
    * 存储类型
    */
   storageType: StorageType;
