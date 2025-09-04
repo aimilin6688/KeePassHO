@@ -1263,6 +1263,14 @@
     {
       "name": "file_name_placeholder",
       "value": "Please input file name"
+    },
+    {
+      "name": "export_saving",
+      "value": "Exporting..."
+    },
+    {
+      "name": "export_success",
+      "value": "Export success"
     }
   ]
 }
