@@ -11,7 +11,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
  */
 @Entry
 @Component
-export struct ChangePassword {
+struct ChangePassword {
   @State oldPassword: string = ''; // 旧密码
   @State newPassword: string = ''; // 新密码
   @State confirmPassword: string = ''; // 确认新密码
