@@ -42,6 +42,10 @@
       "value": "#007AFF"
     },
     {
+      "name": "item_selected",
+      "value": "#0393ff"
+    },
+    {
       "name": "button_bg_disabled",
       "value": "#a8a8a8"
     },

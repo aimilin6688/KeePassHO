@@ -179,6 +179,8 @@ export default class FileUtils {
         return $r('app.media.startIcon');
       case 'csv':
         return $r('app.media.file_csv');
+      case 'xml':
+        return $r('app.media.file_code');
     }
     return $r('app.media.file_text');
   }

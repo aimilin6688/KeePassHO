@@ -813,7 +813,7 @@ struct DatabaseView {
                   .width('100%')
                   .height(60)
                   .borderRadius(8)
-                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.button_bg_blue") :
+                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
                   $r("app.color.card_bg"))
                   .padding({ left: 10, right: 10 })
                   .onClick(() => {

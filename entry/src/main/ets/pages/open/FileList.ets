@@ -520,7 +520,7 @@ struct FileList {
                   top: 12,
                   bottom: 12
                 })
-                .backgroundColor(this.selectFileIndex == index ? $r("app.color.button_bg_blue") : $r("app.color.card_bg"))
+                .backgroundColor(this.selectFileIndex == index ? $r("app.color.item_selected") : $r("app.color.card_bg"))
                 .borderRadius(8)
                 .onClick(() => {
                   this.handleItemClick(item, index);
