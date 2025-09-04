@@ -6,7 +6,8 @@ import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import FileUtils from '../../common/utils/FIleUtils';
-import { LocationMode, LocationParam } from '../../services/beans/LocationParam';
+import {LocationParam } from '../../services/beans/LocationParam';
+import { FilenameUtils } from '../../common/utils/FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -43,7 +44,7 @@ struct WebDAV {
     }
     const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
     if (storageConfig) {
-      this.url = FileUtils.replaceFileName(this.url, LocationParam.getFileName());
+      this.url = FilenameUtils.replaceFileName(this.url, LocationParam.getFileName());
       this.username = WebDAVStorageConfig.getText(storageConfig.username);
       this.password = WebDAVStorageConfig.getText(storageConfig.password);
     }
@@ -131,6 +132,7 @@ struct WebDAV {
           mode: LocationParam.getMode(),
           filePath: this.url,
           fileName: fileInfo.name,
+          fileSuffix: LocationParam.getFileSuffix(),
           storageType: StorageType.WEBDAV,
           storageConfig: storageConfig
         });
@@ -218,7 +220,8 @@ struct WebDAV {
       LocationParam.callOnLocation({
         mode: LocationParam.getMode(),
         filePath: this.url,
-        fileName: FileUtils.getFileName(this.url),
+        fileName: FilenameUtils.getFileName(this.url),
+        fileSuffix: LocationParam.getFileSuffix(),
         storageType: StorageType.WEBDAV,
         storageConfig: storageConfig
       });

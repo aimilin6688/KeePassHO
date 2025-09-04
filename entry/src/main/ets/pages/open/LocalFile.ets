@@ -9,6 +9,7 @@ import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageCo
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { LocationParam } from '../../services/beans/LocationParam';
+import { FilenameUtils } from '../../common/utils/FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';
@@ -75,8 +76,9 @@ struct LocalFile {
           mode: LocationParam.getMode(),
           filePath: path,
           fileName: fileInfo.name,
+          fileSuffix: LocationParam.getFileSuffix(),
           storageType: StorageType.LOCAL,
-          storageConfig: storageConfig
+          storageConfig: storageConfig,
         });
       })
       .catch((error: Error) => {
@@ -108,7 +110,8 @@ struct LocalFile {
         LocationParam.callOnLocation({
           mode: LocationParam.getMode(),
           filePath: filePath,
-          fileName: FileUtils.getFileName(filePath),
+          fileName: FilenameUtils.getFileName(filePath),
+          fileSuffix: LocationParam.getFileSuffix(),
           storageType: StorageType.LOCAL,
           storageConfig: new LocalFileStorageConfig()
         });

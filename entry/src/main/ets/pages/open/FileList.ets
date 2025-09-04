@@ -6,9 +6,10 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/LocationParam';
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import DateUtils from '../../common/utils/DateUtils';
-import FileUtils from '../../common/utils/FIleUtils';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { StringUtils } from '../../common/utils/StringUtils';
+import { FilenameUtils } from '../../common/utils/FilenameUtils';
+import FileUtils from '../../common/utils/FIleUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
@@ -60,6 +61,7 @@ struct FileList {
   @State isEnableConfirm: boolean = false;
   @State selectFileIndex: number = -1;
   @State saveFileName: string = '';
+  @State fileSuffix: string[] = [];
   private router: Router = this.getUIContext().getRouter();
   private locationInfo: LocationInfo | undefined = undefined;
   private pathScroller: Scroller = new Scroller();
@@ -73,6 +75,7 @@ struct FileList {
       this.currentPath = this.getLocationPath();
       hilog.debug(DOMAIN, TAG, 'currentPath: %{public}s', this.currentPath);
       this.saveFileName = this.locationInfo?.fileName || '';
+      this.fileSuffix = this.locationInfo?.fileSuffix || [];
       this.loadItems(this.currentPath);
     } else {
       this.showError();
@@ -114,6 +117,7 @@ struct FileList {
         items = await KdbxFileManager.of(this.locationInfo).listDir(path);
         this.dataCache.set(path, items || []);
       }
+      items = this.filterFile(items);
       this.sortItems(items);
       this.itemData.clear();
       items.forEach(item => {
@@ -126,6 +130,15 @@ struct FileList {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private filterFile(items: Array<FileInfo>): Array<FileInfo> {
+    if (this.isSelectMode() && this.fileSuffix.length > 0) {
+      return items.filter(item => {
+        return item.type === FileType.DIR || FilenameUtils.hasSuffix(item.name, this.fileSuffix);
+      });
+    }
+    return items;
   }
 
   private sortItems(items: Array<FileInfo>) {
@@ -253,7 +266,7 @@ struct FileList {
       LocationParam.callOnLocation({
         mode: this.locationInfo.mode,
         filePath: filePath,
-        fileName: FileUtils.getFileName(filePath),
+        fileName: FilenameUtils.getFileName(filePath),
         storageType: this.locationInfo.storageType,
         storageConfig: this.locationInfo.storageConfig
       });
@@ -468,7 +481,7 @@ struct FileList {
                 Row() {
                   Column() {
                     // 图标
-                    Image(item.type === FileType.DIR ? $r('app.media.ic_folder') : $r('app.media.ic_file'))
+                    Image(item.type === FileType.DIR ? $r('app.media.ic_folder') : FileUtils.getFileIcon(item.name))
                       .width(36)
                       .height(36)
                       .fillColor(item.type === FileType.DIR ? '#FFD700' : $r('app.color.text_primary'))
