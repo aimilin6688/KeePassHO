@@ -10,11 +10,24 @@ export class KdbxImportService {
   public static importDatabase(inputType?: ExportType) {
     LocationParam.of({
       mode: LocationMode.SELECT,
-      fileSuffix: ['.kdbx', '.xml', '.csv'],
+      fileSuffix: KdbxImportService.createFileSuffix(inputType),
       onLocation: (locationInfo: LocationInfo) => {
-        
+
       }
     } as LocationInterface);
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+  private static createFileSuffix(inputType?: ExportType) {
+    if (inputType === ExportType.KDBX) {
+      return ['.kdbx'];
+    }
+    if (inputType === ExportType.XML) {
+      return ['.xml'];
+    }
+    if (inputType === ExportType.CSV) {
+      return ['.csv'];
+    }
+    return ['.kdbx', '.xml', '.csv'];
   }
 }

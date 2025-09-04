@@ -1,4 +1,5 @@
 import DateUtils from './DateUtils';
+import { StringUtils } from './StringUtils';
 
 /**
  * 文件名工具类
@@ -107,7 +108,14 @@ export class FilenameUtils {
       return '';
     }
     // 如果字符串 以 / 开头需要去掉
-    paths = paths.map(path => path.startsWith('/') ? path.substring(1) : path);
+    paths = paths.map(path => {
+      if (!path) {
+        return '';
+      }
+      path = path.startsWith('/') ? path.substring(1) : path;
+      path = path.endsWith('/') ? path.substring(0, path.length - 1) : path;
+      return path;
+    }).filter(path => StringUtils.isNotBlank(path));
     return paths.join('/');
   }
 }

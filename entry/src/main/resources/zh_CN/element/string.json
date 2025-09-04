@@ -1265,6 +1265,14 @@
     {
       "name": "file_name_placeholder",
       "value": "请输入文件名称"
+    },
+    {
+      "name": "export_saving",
+      "value": "导出中..."
+    },
+    {
+      "name": "export_success",
+      "value": "导出成功"
     }
   ]
 }
