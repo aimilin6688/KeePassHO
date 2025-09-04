@@ -7,7 +7,6 @@ import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import DateUtils from '../../common/utils/DateUtils';
 import { UrlUtils } from '../../common/utils/UrlUtils';
-import { StringUtils } from '../../common/utils/StringUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
 import FileUtils from '../../common/utils/FIleUtils';
 
@@ -254,11 +253,11 @@ struct FileList {
   private handleConfirm() {
     let filePath = '';
     if (this.isSaveMode()) {
-      filePath = UrlUtils.getHost(this.locationInfo?.filePath) + "/" + StringUtils.removeStart(this.currentPath, "/") + this.saveFileName;
+      filePath = FilenameUtils.getFilePath(UrlUtils.getHost(this.locationInfo?.filePath), this.currentPath, this.saveFileName);
     }
     if (this.isSelectMode()) {
       const selectFile = this.itemData.getAll()[this.selectFileIndex];
-      filePath = UrlUtils.getHost(this.locationInfo?.filePath) + "/" + StringUtils.removeStart(selectFile.path, "/");
+      filePath = FilenameUtils.getFilePath(UrlUtils.getHost(this.locationInfo?.filePath), selectFile.path);
     }
     hilog.debug(DOMAIN, TAG, 'filePath: %{public}s', filePath);
     // 回调位置信息
