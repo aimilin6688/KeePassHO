@@ -15,9 +15,9 @@ const TAG = 'WebDAV';
 @Entry
 @Component
 struct WebDAV {
-  @State url: string = 'https://dav.jianguoyun.com/dav/MyFiles/test-1.kdbx';
-  @State username: string = 'aimilin@yeah.net';
-  @State password: string = 'a77u9ewde6gyaqxg';
+  @State url: string = '';
+  @State username: string = '';
+  @State password: string = '';
   @State isLoading: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
