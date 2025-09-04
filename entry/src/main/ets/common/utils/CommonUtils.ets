@@ -1,5 +1,5 @@
 import { util } from '@kit.ArkTS';
-import { promptAction, Router, router } from '@kit.ArkUI';
+import { PromptAction, promptAction, Router, router } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { ErrorCodes, KeePassHoError } from '../../services/error/KeepassHoError';
 
@@ -109,6 +109,38 @@ export class CommonUtils {
       return CommonUtils.instance.uiContext.getRouter();
     }
     throw new KeePassHoError(ErrorCodes.UI_CONTEXT_NOT_INIT);
+  }
+
+  /**
+   * 获取提示框
+   * @returns
+   */
+  public static getPromptAction(): PromptAction {
+    if (CommonUtils.instance.uiContext) {
+      return CommonUtils.instance.uiContext.getPromptAction();
+    }
+    throw new KeePassHoError(ErrorCodes.UI_CONTEXT_NOT_INIT);
+  }
+
+  /**
+   * 获取已存在文件弹框
+   * @returns
+   */
+  public static getExistsFileDialog(): promptAction.ShowDialogOptions {
+    return {
+      title: $r('app.string.dialog_prompt_title'),
+      message: $r('app.string.dialog_exists_file_message'),
+      buttons: [
+        {
+          text: $r('app.string.cancel_button_text'),
+          color: $r('app.color.text_secondary')
+        },
+        {
+          text: $r('app.string.replace_button_text'),
+          color: $r("app.color.button_bg_blue"),
+        }
+      ],
+    }
   }
 
   /**
