@@ -1121,8 +1121,12 @@
       "value": "Attachment"
     },
     {
-      "name": "Settings_database_output",
-      "value": "Output database"
+      "name": "Settings_database_import",
+      "value": "Import database"
+    },
+    {
+      "name": "Settings_database_export",
+      "value": "Export database"
     },
     {
       "name": "please_select",
