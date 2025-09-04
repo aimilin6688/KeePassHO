@@ -1,0 +1,12 @@
+{
+  "UniformDataTypeDeclarations": [
+    {
+      "TypeId": "com.aimilin.keepassho.kdbx",
+      "BelongingToTypes": ["general.object"],
+      "FilenameExtensions": [".kdbx"],
+      "MIMETypes": ["application/octet-stream"],
+      "Description": ".kdbx",
+      "ReferenceURL": ""
+    }
+  ]
+}

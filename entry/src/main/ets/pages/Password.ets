@@ -20,6 +20,7 @@ import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
+import { Constants } from '../common/constants/Constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -57,8 +58,13 @@ struct Password {
 
   aboutToAppear() {
     const params = this.router.getParams() as Record<string, string>;
+    // 通过位置信息直接打开
+    const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
+    if (locationInfo) {
+      this.openLocationInfo(locationInfo);
+    }
     // 通过最近文件打开
-    if (params && params.filePath) {
+    else if (params && params.filePath) {
       this.openRecentFile(params.filePath);
     }
     // 初始化按钮状态
@@ -72,6 +78,18 @@ struct Password {
 
   aboutToDisappear() {
     KdbxLoadService.stopWorker();
+  }
+
+  /**
+   * 通过位置信息打开
+   */
+  private openLocationInfo(locationInfo: LocationInfo) {
+    hilog.debug(DOMAIN, TAG, 'Open Location Info: %{public}s', locationInfo)
+    this.fileName = locationInfo.fileName;
+    this.filePath = locationInfo.filePath;
+    this.storageType = locationInfo.storageType;
+    this.storageConfig = locationInfo.storageConfig;
+    AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
   }
 
   // 更新按钮状态
