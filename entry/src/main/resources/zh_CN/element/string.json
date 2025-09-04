@@ -1273,6 +1273,14 @@
     {
       "name": "export_success",
       "value": "导出成功"
+    },
+    {
+      "name": "import_not_support_type",
+      "value": "不支持的文件类型"
+    },
+    {
+      "name": "import_success",
+      "value": "导入成功"
     }
   ]
 }
