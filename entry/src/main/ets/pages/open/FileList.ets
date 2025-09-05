@@ -122,6 +122,9 @@ struct FileList {
       items.forEach(item => {
         this.itemData.pushData(item);
       });
+      if(this.locationInfo.mode === LocationMode.SAVE){
+        this.isEnableConfirm = true;
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load WebDAV items: %{public}s', error.message);
       this.errorMessage = error.message;
@@ -251,6 +254,7 @@ struct FileList {
    * 确认操作
    */
   private handleConfirm() {
+    this.promptAction.showToast({ message: $r('app.string.handling') });
     let filePath = '';
     if (this.isSaveMode()) {
       filePath = FilenameUtils.getFilePath(UrlUtils.getHost(this.locationInfo?.filePath), this.currentPath, this.saveFileName);

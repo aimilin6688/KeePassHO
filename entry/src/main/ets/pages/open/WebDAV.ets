@@ -43,7 +43,7 @@ struct WebDAV {
     }
     const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
     if (storageConfig) {
-      this.url = FilenameUtils.replaceFileName(storageConfig.url, LocationParam.getFileName());
+      this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
       this.username = WebDAVStorageConfig.getText(storageConfig.username);
       this.password = WebDAVStorageConfig.getText(storageConfig.password);
     }
