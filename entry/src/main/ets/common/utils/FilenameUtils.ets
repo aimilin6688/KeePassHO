@@ -58,11 +58,29 @@ export class FilenameUtils {
     const currentDate = DateUtils.getCurrentDate();
     const lastDotIndex = fileName.lastIndexOf('.');
     if (lastDotIndex === -1) {
-      return `${fileName}_${currentDate}`;
+      return FilenameUtils.replaceDateIfExists(fileName, currentDate);
     }
+
     const namePart = fileName.substring(0, lastDotIndex);
     const extPart = fileName.substring(lastDotIndex);
-    return `${namePart}_${currentDate}${extPart}`;
+    return FilenameUtils.replaceDateIfExists(namePart, currentDate) + extPart;
+  }
+
+  /**
+   * 替换字符串末尾的日期为指定日期
+   * @param str 字符串
+   * @param newDate 新日期
+   * @returns 替换后的字符串
+   */
+  private static replaceDateIfExists(str: string, newDate: string): string {
+    // 检查字符串是否以日期格式结尾 (yyyyMMdd)
+    const datePattern = /(\d{4})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$/;
+    const match = str.match(datePattern);
+    if (match) {
+      // 如果是日期结尾，替换为新日期
+      return str.substring(0, match.index) + newDate;
+    }
+    return `${str}_${newDate}`;
   }
 
   /**
