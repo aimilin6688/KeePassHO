@@ -213,7 +213,7 @@ struct WebDAV {
    */
   private checkParam(): boolean {
     if (!this.url) {
-      this.connectionStatus = ResourceManager.getString($r('app.string.url_placeholder'));
+      this.connectionStatus = ResourceManager.getString($r("app.string.webdav_url_placeholder"));
       this.isErrorStatus = true;
       return false;
     }
@@ -271,7 +271,7 @@ struct WebDAV {
             .margin({ top: 20, left: 16 })
             .fontColor($r('app.color.text_primary'))
             .textAlign(TextAlign.Start)
-          TextArea({ text: this.url, placeholder: $r('app.string.url_placeholder') })
+          TextArea({ text: this.url, placeholder: $r("app.string.webdav_url_placeholder") })
             .lineHeight(24)
             .height(96)
             .type(TextAreaType.URL)
