@@ -1285,6 +1285,10 @@
     {
       "name": "handling",
       "value": "处理中..."
+    },
+    {
+      "name": "location_not_set_callback",
+      "value": "请先设置回调"
     }
   ]
 }
