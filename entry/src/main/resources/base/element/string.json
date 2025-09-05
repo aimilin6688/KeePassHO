@@ -1283,6 +1283,10 @@
     {
       "name": "handling",
       "value": "Handling..."
+    },
+    {
+      "name": "location_not_set_callback",
+      "value": "Please set the callback first"
     }
   ]
 }
