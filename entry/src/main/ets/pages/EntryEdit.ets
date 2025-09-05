@@ -879,7 +879,7 @@ struct EntryEdit {
                 .margin({ bottom: 8 })
                 .alignSelf(ItemAlign.Start)
 
-              TextArea({ text: this.url, placeholder: $r('app.string.url_placeholder') })
+              TextArea({ text: this.url, placeholder: $r("app.string.webdav_url_placeholder") })
                 .width('100%')
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
