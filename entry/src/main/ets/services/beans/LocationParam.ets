@@ -1,3 +1,4 @@
+import { CommonUtils } from '../../common/utils/CommonUtils';
 import DateUtils from '../../common/utils/DateUtils';
 import { StorageConfig, StorageType } from '../kdbx/interfaces';
 
@@ -180,6 +181,8 @@ export class LocationParam implements LocationInterface {
     const instance = LocationParam.getInstance();
     if (instance && instance.onLocation !== undefined) {
       return instance.onLocation(param);
+    } else {
+      CommonUtils.showToast($r('app.string.location_not_set_callback'));
     }
   }
 }
