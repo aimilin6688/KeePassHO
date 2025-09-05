@@ -1279,6 +1279,10 @@
     {
       "name": "import_success",
       "value": "Import success"
+    },
+    {
+      "name": "handling",
+      "value": "Handling..."
     }
   ]
 }
