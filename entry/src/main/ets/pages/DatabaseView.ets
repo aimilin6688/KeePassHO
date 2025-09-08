@@ -625,7 +625,7 @@ struct DatabaseView {
                 .fontColor($r('app.color.text_primary'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .width('60%')
+                .width('55%')
               Blank()
               // 搜索按钮
               Image($r('app.media.ic_search'))
@@ -667,11 +667,11 @@ struct DatabaseView {
                     .onClick(() => {
                       this.router.back();
                     })
+                  Blank()
                 }
-                Blank()
                 // 搜索框
                 Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
-                  .width('65%')
+                  .width('63%')
                   .margin({ left: 16 })
                   .height(40)
                   .key("searchKey")
