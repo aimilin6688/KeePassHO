@@ -113,11 +113,9 @@ struct EntryView {
         continue;
       }
       const value = field[1];
-      const isProtected = typeof value !== 'string';
-      const strValue = KdbxUtils.getFieldValueString(this.entry.fields, key);
-
+      const strValue = KdbxUtils.getValueString(value);
       if (strValue !== '') {
-        this.fields.push(new FieldView(key, strValue, isProtected, true));
+        this.fields.push(new FieldView(key, strValue, KdbxUtils.isProtectedValue(value), true));
       }
     }
 
@@ -598,6 +596,6 @@ struct EntryView {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

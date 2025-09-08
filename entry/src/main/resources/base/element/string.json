@@ -1295,6 +1295,14 @@
     {
       "name": "get_file_info",
       "value": "Get file info..."
+    },
+    {
+      "name": "Settings_default_protected_field",
+      "value": "Default protected field"
+    },
+    {
+      "name": "Setting_enable_protected_field",
+      "value": "Whether the %s is protected by default only affects new entries"
     }
   ]
 }

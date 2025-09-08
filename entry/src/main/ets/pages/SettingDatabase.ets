@@ -206,6 +206,27 @@ struct SettingsDatabase {
                 });
               })
             }
+
+            // 默认保护字段
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_default_protected_field"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                this.router.pushUrl({
+                  url: 'pages/SettingDatabaseProtectedFiled',
+                  params: {}
+                });
+              })
+            }
           }
           .margin({ top: 12, bottom: 12 })
           .backgroundColor($r("app.color.card_bg"))
