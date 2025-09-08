@@ -750,7 +750,6 @@ struct EntryEdit {
         }
         .width('100%')
         .height(56)
-        .backgroundColor($r("app.color.card_bg"))
 
         // 表单内容
         Scroll() {
@@ -1209,6 +1208,6 @@ struct EntryEdit {
     .height('100%')
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
 }

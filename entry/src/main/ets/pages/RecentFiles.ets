@@ -146,7 +146,6 @@ struct RecentFiles {
       .width('100%')
       .height(56)
       .padding({ left: 16, right: 16 })
-      .backgroundColor($r("app.color.card_bg"))
 
       // 文件列表
       if (this.isLoading) {
@@ -218,16 +217,15 @@ struct RecentFiles {
         .height('100%')
         .layoutWeight(1)
         .padding({
-          left: 16,
-          right: 16,
-          top: 12,
-          bottom: 0
+          left: 12,
+          right: 12,
+          top: 12
         })
       }
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
 }
