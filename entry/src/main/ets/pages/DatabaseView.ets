@@ -606,18 +606,18 @@ struct DatabaseView {
       Column() {
         // 顶部导航栏
         Row() {
-          if (this.showBack) {
-            Image($r("app.media.ic_angle_left"))
-              .width(24)
-              .height(24)
-              .margin({ left: 16 })
-              .fillColor($r('app.color.text_primary'))
-              .onClick(() => {
-                this.router.back();
-              })
-          }
           if (!this.isSearching) {
             Row() {
+              if (this.showBack) {
+                Image($r("app.media.ic_angle_left"))
+                  .width(24)
+                  .height(24)
+                  .margin({ left: 16 })
+                  .fillColor($r('app.color.text_primary'))
+                  .onClick(() => {
+                    this.router.back();
+                  })
+              }
               Text(this.titleName)
                 .fontSize(20)
                 .fontWeight(FontWeight.Medium)
@@ -658,10 +658,20 @@ struct DatabaseView {
           } else {
             Column(){
               Row(){
+                if (this.showBack) {
+                  Image($r("app.media.ic_angle_left"))
+                    .width(24)
+                    .height(24)
+                    .margin({ left: 16 })
+                    .fillColor($r('app.color.text_primary'))
+                    .onClick(() => {
+                      this.router.back();
+                    })
+                }
                 Blank()
                 // 搜索框
                 Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
-                  .width('70%')
+                  .width('65%')
                   .margin({ left: 16 })
                   .height(40)
                   .key("searchKey")
