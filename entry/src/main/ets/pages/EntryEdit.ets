@@ -39,7 +39,7 @@ struct EntryEdit {
   @State currentFieldKey: string = ''; // 当前字段的键
   @State currentFieldValue: string = ''; // 当前字段的值
   @State currentFieldProtected: boolean = false; // 当前字段是否受保护
-  @State customFieldsVisibility: boolean[] = []; // 自定义字段值的可见性状态
+  @State customFieldsVisibility: Map<string, boolean> = new Map(); // 自定义字段值的可见性状态
   @State isModified: boolean = false; // 是否有字段被修改
   @State iconId: number | string | undefined = Icons.Key; // 当前选择的图标ID
   @State tags: string = ''; // 标签，以逗号分隔
@@ -50,8 +50,7 @@ struct EntryEdit {
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
-  private standardFields: Array<string> =
-    [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+  private standardFields: Array<string> = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器
@@ -229,7 +228,7 @@ struct EntryEdit {
    */
   private loadCustomFields() {
     this.customFields = [];
-    this.customFieldsVisibility = [];
+    this.customFieldsVisibility = new Map();
     if (this.entry) {
       // 获取所有字段
       const fields = this.entry.fields;
@@ -238,6 +237,8 @@ struct EntryEdit {
       fields.forEach((value, key) => {
         // 跳过标准字段
         if (this.standardFields.includes(key)) {
+          // 保护字段默认隐藏
+          this.customFieldsVisibility.set(key, !KdbxUtils.isProtectedValue(value));
           return;
         }
 
@@ -260,7 +261,7 @@ struct EntryEdit {
         });
 
         // 初始化可见性状态为false（隐藏）
-        this.customFieldsVisibility.push(false);
+        this.customFieldsVisibility.set(key, false);
       });
     }
   }
@@ -494,7 +495,7 @@ struct EntryEdit {
         };
 
         // 重置该字段的可见性状态为隐藏
-        this.customFieldsVisibility[this.editingFieldIndex] = false;
+        this.customFieldsVisibility.set(customField.key, false);
         // 标记为已修改
         this.checkEntryModified();
         this.fieldDialogController.close();
@@ -519,7 +520,7 @@ struct EntryEdit {
       });
 
       // 添加新字段的可见性状态，默认为隐藏
-      this.customFieldsVisibility.push(false);
+      this.customFieldsVisibility.set(customField.key, false);
       // 标记为已修改
       this.checkEntryModified();
       this.fieldDialogController.close();
@@ -550,7 +551,7 @@ struct EntryEdit {
         if (result.index === 1) {
           this.customFields.splice(index, 1);
           // 同时删除对应的可见性状态
-          this.customFieldsVisibility.splice(index, 1);
+          this.customFieldsVisibility.delete(fieldKey);
           // 标记为已修改
           this.checkEntryModified();
         }
@@ -562,9 +563,9 @@ struct EntryEdit {
    * 切换自定义字段的可见性状态
    * @param index 字段索引
    */
-  private toggleCustomFieldVisibility(index: number) {
-    if (index >= 0 && index < this.customFieldsVisibility.length) {
-      this.customFieldsVisibility[index] = !this.customFieldsVisibility[index];
+  private toggleCustomFieldVisibility(fieldKey: string) {
+    if (this.customFieldsVisibility.has(fieldKey)) {
+      this.customFieldsVisibility.set(fieldKey, !this.customFieldsVisibility.get(fieldKey));
     }
   }
 
@@ -1048,7 +1049,7 @@ struct EntryEdit {
                     .width('100%')
 
                     Row() {
-                      Text(field.isProtected && !this.customFieldsVisibility[index] ? '******' : field.value)
+                      Text(field.isProtected && !this.customFieldsVisibility.get(field.key) ? '******' : field.value)
                         .fontSize(16)
                         .fontColor($r('app.color.text_primary'))
                         .lineHeight(24)
@@ -1064,13 +1065,13 @@ struct EntryEdit {
                         })
 
                       if (field.isProtected) {
-                        Image(this.customFieldsVisibility[index] ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
+                        Image(this.customFieldsVisibility.get(field.key) ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
                           .width(24)
                           .height(24)
                           .fillColor($r('app.color.text_secondary'))
                           .margin({ left: 8, right: 8 })
                           .onClick((event) => {
-                            this.toggleCustomFieldVisibility(index);
+                            this.toggleCustomFieldVisibility(field.key);
                             return false;
                           })
                       }
@@ -1208,6 +1209,6 @@ struct EntryEdit {
     .height('100%')
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
