@@ -1297,6 +1297,14 @@
     {
       "name": "get_file_info",
       "value": "获取中..."
+    },
+    {
+      "name": "Settings_default_protected_field",
+      "value": "默认保护字段"
+    },
+    {
+      "name": "Setting_enable_protected_field",
+      "value": "%s是否默认启用保护，只影响新增条目"
     }
   ]
 }
