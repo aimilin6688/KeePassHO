@@ -57,7 +57,7 @@ export class KdbxExportService {
         return;
       }
       if (existsFile) {
-        CommonUtils.getPromptAction().showDialog(CommonUtils.getExistsFileDialog()).then(async result => {
+        CommonUtils.showDialog(CommonUtils.getExistsFileDialog()).then(async result => {
           if (result.index === 1) {
             await KdbxExportService.doExport(locationInfo, exportType);
           } else {
