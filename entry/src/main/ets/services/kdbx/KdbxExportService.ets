@@ -25,9 +25,9 @@ export class KdbxExportService {
     LocationParam.of({
       mode: LocationMode.SAVE,
       fileName: KdbxExportService.createFileName(FileService.getDbFileParam().fileName, exportType, true),
-      onLocation: (locationInfo: LocationInfo) => {
+      onLocation: async (locationInfo: LocationInfo) => {
         try {
-          KdbxExportService.handlerExport(locationInfo, exportType);
+          await KdbxExportService.handlerExport(locationInfo, exportType);
         } catch (e) {
           hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
           CommonUtils.showToast({ message: e.message });
@@ -42,28 +42,34 @@ export class KdbxExportService {
    * @param locationInfo
    */
   private static async handlerExport(locationInfo: LocationInfo, exportType: ExportType) {
-    let existsError: Error | undefined;
-    // 弹出导出进度提示信息
-    CommonUtils.showToast({ message: $r("app.string.export_saving"), duration: 3000 });
-    const existsFile = locationInfo.storageType !== StorageType.LOCAL && await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath)
-      .catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, 'Exists file stateType:%{public}s filePath:%{public}s error:%{public}s', locationInfo.storageType, locationInfo.filePath, error.message);
-        CommonUtils.showToast({ message: error.message, duration: 3000 });
-        existsError = error;
-      });
-    if (existsError) {
-      return;
-    }
-    if (existsFile) {
-      CommonUtils.getPromptAction().showDialog(CommonUtils.getExistsFileDialog()).then(result => {
-        if (result.index === 1) {
-          KdbxExportService.doExport(locationInfo, exportType);
-        } else {
-          CommonUtils.back({ url: "pages/SettingDatabase" });
-        }
-      });
-    } else {
-      KdbxExportService.doExport(locationInfo, exportType);
+    try {
+      let existsError: Error | undefined;
+      // 弹出导出进度提示信息
+      CommonUtils.showToast({ message: $r("app.string.export_saving"), duration: 3000 });
+      const existsFile = locationInfo.storageType !== StorageType.LOCAL && await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath)
+        .catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, 'Exists file stateType:%{public}s filePath:%{public}s error:%{public}s', locationInfo.storageType, locationInfo.filePath,
+            error.message);
+          CommonUtils.showToast({ message: error.message, duration: 3000 });
+          existsError = error;
+        });
+      if (existsError) {
+        return;
+      }
+      if (existsFile) {
+        CommonUtils.getPromptAction().showDialog(CommonUtils.getExistsFileDialog()).then(async result => {
+          if (result.index === 1) {
+            await KdbxExportService.doExport(locationInfo, exportType);
+          } else {
+            CommonUtils.back({ url: "pages/SettingDatabase" });
+          }
+        });
+      } else {
+        await KdbxExportService.doExport(locationInfo, exportType);
+      }
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
+      CommonUtils.showToast({ message: e.message });
     }
   }
 
@@ -72,8 +78,9 @@ export class KdbxExportService {
    * @param locationInfo
    * @param exportType
    */
-  private static doExport(locationInfo: LocationInfo, exportType: ExportType) {
-    DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
+  private static async doExport(locationInfo: LocationInfo, exportType: ExportType) {
+    CommonUtils.showToast({ message: $r("app.string.handling"), duration: 3000 });
+    return await DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
       CommonUtils.showToast({ message: $r("app.string.export_success") });
       CommonUtils.back({ url: "pages/SettingDatabase" });
     }).catch((e: Error) => {
