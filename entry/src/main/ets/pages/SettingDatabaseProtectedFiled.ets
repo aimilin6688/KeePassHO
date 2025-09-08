@@ -75,6 +75,12 @@ struct SettingDatabaseKeyFunction {
       List() {
         if (this.isDatabaseValid) {
           // 主要内容区域
+          ListItem(){
+            Text($r("app.string.Setting_enable_protected_field_tips"))
+              .fontSize(16)
+          }
+          .margin({ top: 12 })
+
           ListItemGroup() {
             // 标题启用保护
             ListItem() {
@@ -83,11 +89,6 @@ struct SettingDatabaseKeyFunction {
                   Text($r("app.string.title"))
                     .fontSize(16)
                     .flexGrow(1)
-
-                  Text(ResourceManager.getString($r("app.string.Setting_enable_protected_field"), ResourceManager.getString($r("app.string.title"))))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .padding({ top: 4 })
                 }
                 .alignItems(HorizontalAlign.Start)
                 .flexGrow(1)
@@ -114,12 +115,6 @@ struct SettingDatabaseKeyFunction {
                   Text($r("app.string.username"))
                     .fontSize(16)
                     .flexGrow(1)
-
-                  Text(ResourceManager.getString($r("app.string.Setting_enable_protected_field"),
-                    ResourceManager.getString($r("app.string.username"))))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .padding({ top: 4 })
                 }
                 .alignItems(HorizontalAlign.Start)
                 .flexGrow(1)
@@ -146,12 +141,6 @@ struct SettingDatabaseKeyFunction {
                   Text($r("app.string.password"))
                     .fontSize(16)
                     .flexGrow(1)
-
-                  Text(ResourceManager.getString($r("app.string.Setting_enable_protected_field"),
-                    ResourceManager.getString($r("app.string.password"))))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .padding({ top: 4 })
                 }
                 .alignItems(HorizontalAlign.Start)
                 .flexGrow(1)
@@ -178,11 +167,6 @@ struct SettingDatabaseKeyFunction {
                   Text($r("app.string.url"))
                     .fontSize(16)
                     .flexGrow(1)
-
-                  Text(ResourceManager.getString($r("app.string.Setting_enable_protected_field"), ResourceManager.getString($r("app.string.url"))))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .padding({ top: 4 })
                 }
                 .alignItems(HorizontalAlign.Start)
                 .flexGrow(1)
@@ -209,11 +193,6 @@ struct SettingDatabaseKeyFunction {
                   Text($r("app.string.notes"))
                     .fontSize(16)
                     .flexGrow(1)
-
-                  Text(ResourceManager.getString($r("app.string.Setting_enable_protected_field"), ResourceManager.getString($r("app.string.notes"))))
-                    .fontSize(12)
-                    .fontColor($r("app.color.text_secondary"))
-                    .padding({ top: 4 })
                 }
                 .alignItems(HorizontalAlign.Start)
                 .flexGrow(1)
