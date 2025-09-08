@@ -89,11 +89,12 @@ export struct EntryViewFieldItem {
    */
   private copyToClipboard(text: string) {
     // 获取系统剪贴板实例
-    const pasteboardData = pasteboard.createData('text/plain', text);
+    const pasteboardData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
     // 将数据写入剪贴板
     this.systemPasteboard.setData(pasteboardData, (error, data) => {
       if (error) {
-        hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %{public}s %{public}s %{public}s %{public}s', error.message, error.code, error.name, error.stack);
+        hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %{public}s %{public}s %{public}s %{public}s', error.message, error.code, error.name,
+          error.stack);
         this.promptAction.showToast({ message: $r("app.string.copy_failed") });
       } else {
         this.clearClipboard(pasteboardData);
@@ -116,7 +117,10 @@ export struct EntryViewFieldItem {
         this.timeOutObj = -1;
       }
       this.timeOutObj = setTimeout(() => {
-        pasteboard.getSystemPasteboard().clearData();
+        pasteboard.getSystemPasteboard().clearData().then(() => {
+          hilog.debug(DOMAIN, TAG, 'Clear clipboard success');
+          this.timeOutObj = -1;
+        });
       }, 1000 * this.autoClearClipboardTime);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to clear clipboard: ${error}`)
