@@ -165,78 +165,78 @@ struct SettingsSecurity {
 
 
       List() {
-        ListItemGroup() {
-          if (this.isFingerprintSupport) {
-            // 指纹登录
-            ListItem() {
-              Row() {
-                Text($r("app.string.auth_by_fingerprint"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Toggle({ type: ToggleType.Switch, isOn: this.fingerprintLogin })
-                  .selectedColor('#007DFF')
-                  .switchPointColor('#FFFFFF')
-                  .onChange((isOn: boolean) => {
-                    this.changeFingerprintLogin(isOn);
-                  })
+        if (this.isFingerprintSupport || this.isFaceSupport) {
+          ListItemGroup() {
+            if (this.isFingerprintSupport) {
+              // 指纹登录
+              ListItem() {
+                Row() {
+                  Text($r("app.string.auth_by_fingerprint"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Toggle({ type: ToggleType.Switch, isOn: this.fingerprintLogin })
+                    .selectedColor('#007DFF')
+                    .switchPointColor('#FFFFFF')
+                    .onChange((isOn: boolean) => {
+                      this.changeFingerprintLogin(isOn);
+                    })
+                }
+                .width('100%')
+                .padding(16)
               }
-              .width('100%')
-              .padding(16)
             }
-          }
-          if (this.isFaceSupport) {
-            // 人脸登录
-            ListItem() {
-              Row() {
-                Text($r("app.string.auth_by_face"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Toggle({ type: ToggleType.Switch, isOn: this.faceLogin })
-                  .selectedColor('#007DFF')
-                  .switchPointColor('#FFFFFF')
-                  .onChange((isOn: boolean) => {
-                    this.changeFaceLogin(isOn);
-                  })
+            if (this.isFaceSupport) {
+              // 人脸登录
+              ListItem() {
+                Row() {
+                  Text($r("app.string.auth_by_face"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Toggle({ type: ToggleType.Switch, isOn: this.faceLogin })
+                    .selectedColor('#007DFF')
+                    .switchPointColor('#FFFFFF')
+                    .onChange((isOn: boolean) => {
+                      this.changeFaceLogin(isOn);
+                    })
+                }
+                .width('100%')
+                .padding(16)
               }
-              .width('100%')
-              .padding(16)
             }
-          }
-          if (this.isFingerprintSupport || this.isFaceSupport) {
-            // 选择默认登录方式
-            ListItem() {
-              Row() {
-                Text($r("app.string.auth_type_default"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Select(this.authTypeOptions)
-                  .value(this.authTypeOptions[this.authTypeOptions.findIndex((item) => item.type === this.defaultAuthType)].value)
-                  .font({ size: 16 })
-                  .selectedOptionFont({ size: 16 })
-                  .optionFont({ size: 16 })
-                  .backgroundColor($r("app.color.card_bg"))
-                  .onSelect(async (index: number) => {
-                    this.defaultAuthType = this.authTypeOptions[index].type;
-                    this.settingsService.put(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType);
-                  })
+              // 选择默认登录方式
+              ListItem() {
+                Row() {
+                  Text($r("app.string.auth_type_default"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Select(this.authTypeOptions)
+                    .value(this.authTypeOptions[this.authTypeOptions.findIndex((item) => item.type === this.defaultAuthType)].value)
+                    .font({ size: 16 })
+                    .selectedOptionFont({ size: 16 })
+                    .optionFont({ size: 16 })
+                    .backgroundColor($r("app.color.card_bg"))
+                    .onSelect(async (index: number) => {
+                      this.defaultAuthType = this.authTypeOptions[index].type;
+                      this.settingsService.put(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType);
+                    })
+                }
+                .width('100%')
+                .padding({
+                  left: 16,
+                  right: 16,
+                  top: 9,
+                  bottom: 9
+                })
               }
-              .width('100%')
-              .padding({
-                left: 16,
-                right: 16,
-                top: 9,
-                bottom: 9
-              })
-            }
           }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
         }
-        .margin({ top: 12, bottom: 12 })
-        .backgroundColor($r("app.color.card_bg"))
-        .borderRadius(12)
-        .divider({
-          strokeWidth: 1,
-          color: $r('app.color.divider'),
-        })
 
         ListItemGroup() {
           // 下拉刷新
