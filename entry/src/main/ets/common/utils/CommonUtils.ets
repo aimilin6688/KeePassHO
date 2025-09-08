@@ -1,12 +1,10 @@
 import { util } from '@kit.ArkTS';
-import { PromptAction, promptAction, Router, router } from '@kit.ArkUI';
+import { promptAction, router, ShowDialogSuccessResponse } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
-import { ErrorCodes, KeePassHoError } from '../../services/error/KeepassHoError';
 
 export class CommonUtils {
   private static instance: CommonUtils = new CommonUtils();
   private context: common.UIAbilityContext | null = null;
-  private uiContext: UIContext | undefined = undefined;
 
   /**
    * 初始化主题管理器
@@ -16,14 +14,6 @@ export class CommonUtils {
     this.context = context;
   }
 
-
-  /**
-   * 设置UIContext
-   * @param uiContext
-   */
-  public static setUIContext(uiContext: UIContext) {
-    CommonUtils.instance.uiContext = uiContext;
-  }
 
   /**
    * 获取单例实例
@@ -92,34 +82,16 @@ export class CommonUtils {
    * @param duration
    */
   public static showToast(message: ResourceStr | promptAction.ShowToastOptions, duration?: number): void {
-    message = CommonUtils.toShowToastOptions(message, duration);
-    if (CommonUtils.instance.uiContext) {
-      CommonUtils.instance.uiContext.getPromptAction().showToast(message);
-    } else {
-      promptAction.showToast(message);
-    }
+    promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
   }
 
   /**
-   * 获取路由
+   * 显示弹框
+   * @param showDialogOptions
    * @returns
    */
-  public static getRouter(): Router {
-    if (CommonUtils.instance.uiContext) {
-      return CommonUtils.instance.uiContext.getRouter();
-    }
-    throw new KeePassHoError(ErrorCodes.UI_CONTEXT_NOT_INIT);
-  }
-
-  /**
-   * 获取提示框
-   * @returns
-   */
-  public static getPromptAction(): PromptAction {
-    if (CommonUtils.instance.uiContext) {
-      return CommonUtils.instance.uiContext.getPromptAction();
-    }
-    throw new KeePassHoError(ErrorCodes.UI_CONTEXT_NOT_INIT);
+  public static showDialog(showDialogOptions: promptAction.ShowDialogOptions):Promise<ShowDialogSuccessResponse> {
+    return promptAction.showDialog(showDialogOptions);
   }
 
   /**
@@ -149,9 +121,6 @@ export class CommonUtils {
    * @returns
    */
   public static pushUrl(options: router.RouterOptions): Promise<void> {
-    if (CommonUtils.instance.uiContext) {
-      return CommonUtils.instance.uiContext.getRouter().pushUrl(options);
-    }
     return router.pushUrl(options);
   }
 
@@ -160,11 +129,7 @@ export class CommonUtils {
    * @param options
    */
   public static back(options?: router.RouterOptions): void {
-    if (CommonUtils.instance.uiContext) {
-      CommonUtils.instance.uiContext.getRouter().back(options);
-    } else {
-      router.back(options);
-    }
+    router.back(options);
   }
 
   /**
