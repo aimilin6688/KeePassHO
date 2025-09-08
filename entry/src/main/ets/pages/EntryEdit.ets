@@ -305,12 +305,13 @@ struct EntryEdit {
         this.entry = this.database.createEntry(this.parentGroup);
       }
 
+      const memoryProtection = this.database.meta.memoryProtection ?? {};
       // 设置基础字段
-      this.entry.fields.set(KdbxUtils.FIELD_TITLE, this.title.trim());
-      this.entry.fields.set(KdbxUtils.FIELD_USERNAME, this.username.trim());
-      this.entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(this.password));
-      this.entry.fields.set(KdbxUtils.FIELD_URL, this.url.trim());
-      this.entry.fields.set(KdbxUtils.FIELD_NOTES, this.notes.trim());
+      this.entry.setField(KdbxUtils.FIELD_TITLE, this.title, memoryProtection.title);
+      this.entry.setField(KdbxUtils.FIELD_USERNAME, this.username, memoryProtection.userName);
+      this.entry.setField(KdbxUtils.FIELD_PASSWORD, this.password, memoryProtection.password ?? true);
+      this.entry.setField(KdbxUtils.FIELD_URL, this.url, memoryProtection.url);
+      this.entry.setField(KdbxUtils.FIELD_NOTES, this.notes, memoryProtection.notes);
       this.entry.overrideUrl = this.overrideUrl;
       this.entry.times.expires = this.isExpiryEnabled;
       this.entry.times.expiryTime = this.isExpiryEnabled ? this.expiryTime : undefined;
