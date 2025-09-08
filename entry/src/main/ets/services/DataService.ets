@@ -22,11 +22,12 @@ export class DataService {
    */
   public static saveKdbx(param: SaveKdbxParam): Promise<void> {
     return KdbxExportService.getFileContent(param).then(result => {
+      CommonUtils.showToast({ message: $r("app.string.handling"), duration: 3000 });
       const location = param.locationInfo;
       return new KdbxFileManager(location.storageType, location.storageConfig).write(location.filePath, result.content);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to save kdbx file: %{public}s, error: %{public}s', param.locationInfo.filePath, error.message);
-      CommonUtils.showToast($r('app.string.open_failed', error.message));
+      CommonUtils.showToast(error.message);
     });
   }
 

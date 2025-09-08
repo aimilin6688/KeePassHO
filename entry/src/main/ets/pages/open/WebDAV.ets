@@ -160,11 +160,13 @@ struct WebDAV {
       // 配置信息
       const storageConfig = this.getStorageConfig();
       this.fileManager.init(storageConfig);
+      this.connectionStatus = ResourceManager.getString($r("app.string.check_file_existing"));
       // 获取文件信息
       const existsFile = await this.fileManager.exists(this.url);
       hilog.info(DOMAIN, TAG, `Export file to webDAV path: ${this.url}`);
       if (existsFile) {
         // 获取文件类型
+        this.connectionStatus = ResourceManager.getString($r('app.string.get_file_info'));
         const fileInfo = await this.fileManager.getInfo(this.url);
         hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
         // 如果是文件夹，则跳转到文件列表页面
