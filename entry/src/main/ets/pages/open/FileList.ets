@@ -382,7 +382,6 @@ struct FileList {
       }
       .width('100%')
       .height(56)
-      .backgroundColor($r("app.color.card_bg"))
 
       // 路径导航栏
       Column() {
@@ -417,7 +416,6 @@ struct FileList {
         .scrollBar(BarState.Off)
         .listDirection(Axis.Horizontal)
       }
-      .margin({ top: 6 })
       .width('100%')
       .backgroundColor($r("app.color.card_bg"))
       .height(46)
@@ -595,6 +593,6 @@ struct FileList {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
 }

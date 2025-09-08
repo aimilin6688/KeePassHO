@@ -418,7 +418,6 @@ struct EntryView {
         }
         .width('100%')
         .height(56)
-        .backgroundColor($r("app.color.card_bg"))
 
         if (this.isLoading) {
           // 加载中状态
@@ -457,12 +456,9 @@ struct EntryView {
           .padding({
             left: 16,
             right: 16,
-            top: 12,
             bottom: 0
           })
           .layoutWeight(1)
-          .backgroundColor($r("app.color.bg_primary"))
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
           // 操作按钮
           Row() {
@@ -602,6 +598,6 @@ struct EntryView {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
 }
