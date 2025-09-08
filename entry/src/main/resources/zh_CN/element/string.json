@@ -1303,8 +1303,8 @@
       "value": "默认保护字段"
     },
     {
-      "name": "Setting_enable_protected_field",
-      "value": "%s是否默认启用保护，只影响新增条目"
+      "name": "Setting_enable_protected_field_tips",
+      "value": "启用保护，只影响新增条目"
     }
   ]
 }

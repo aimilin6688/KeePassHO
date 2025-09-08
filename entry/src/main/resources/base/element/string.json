@@ -1301,8 +1301,8 @@
       "value": "Default protected field"
     },
     {
-      "name": "Setting_enable_protected_field",
-      "value": "Whether the %s is protected by default only affects new entries"
+      "name": "Setting_enable_protected_field_tips",
+      "value": "Enable protection, which only affects new entries"
     }
   ]
 }
