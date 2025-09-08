@@ -119,6 +119,8 @@ struct LocalFile {
     }).catch((err: BusinessError) => {
       hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
+    }).finally(() => {
+      this.isLoading = false;
     });
   }
 

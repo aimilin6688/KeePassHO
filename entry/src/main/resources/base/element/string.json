@@ -1287,6 +1287,14 @@
     {
       "name": "location_not_set_callback",
       "value": "Please set the callback first"
+    },
+    {
+      "name": "check_file_existing",
+      "value": "Check file existing"
+    },
+    {
+      "name": "get_file_info",
+      "value": "Get file info..."
     }
   ]
 }

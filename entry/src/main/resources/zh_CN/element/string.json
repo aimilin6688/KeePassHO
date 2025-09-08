@@ -1289,6 +1289,14 @@
     {
       "name": "location_not_set_callback",
       "value": "请先设置回调"
+    },
+    {
+      "name": "check_file_existing",
+      "value": "检测中..."
+    },
+    {
+      "name": "get_file_info",
+      "value": "获取中..."
     }
   ]
 }
