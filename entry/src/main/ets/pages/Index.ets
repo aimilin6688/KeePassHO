@@ -3,7 +3,6 @@ import { Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
-import { CommonUtils } from '../common/utils/CommonUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'Index';
@@ -14,7 +13,6 @@ struct Index {
   private router: Router = this.getUIContext().getRouter();
 
   aboutToAppear() {
-    CommonUtils.setUIContext(this.getUIContext());
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
