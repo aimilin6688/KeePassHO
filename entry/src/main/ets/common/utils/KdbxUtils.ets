@@ -1,4 +1,17 @@
-import { ByteUtils, Consts, Kdbx, KdbxCredentials, KdbxCustomIcon, KdbxEntry, KdbxEntryField, KdbxError, KdbxGroup, KdbxMeta, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import {
+  ByteUtils,
+  Consts,
+  Kdbx,
+  KdbxCredentials,
+  KdbxCustomIcon,
+  KdbxEntry,
+  KdbxEntryField,
+  KdbxError,
+  KdbxGroup,
+  KdbxMeta,
+  KdbxUuid,
+  ProtectedValue
+} from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
@@ -67,6 +80,15 @@ export default class KdbxUtils {
       return value.getText();
     }
     return value.toString();
+  }
+
+  /**
+   * 判断字段是否是保护字段
+   * @param value 字段值
+   * @returns 结果
+   */
+  public static isProtectedValue(value: KdbxEntryField | undefined): boolean {
+    return value instanceof ProtectedValue;
   }
 
   /**
@@ -195,7 +217,8 @@ export default class KdbxUtils {
    * @param iconId 图标id
    * @param customIcon 自定义图标
    */
-  public static getIcon(iconId: number | undefined, customIcon: KdbxUuid | undefined, defaultResource: Resource, kdbxMeta?: KdbxMeta | undefined): ResourceStr {
+  public static getIcon(iconId: number | undefined, customIcon: KdbxUuid | undefined, defaultResource: Resource,
+    kdbxMeta?: KdbxMeta | undefined): ResourceStr {
     if (iconId === undefined && customIcon === undefined) {
       return defaultResource;
     }
@@ -260,7 +283,8 @@ export default class KdbxUtils {
    * 将ArrayBuffer转换为对象
    * @param arrayBuffer ArrayBuffer对象
    */
-  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer | Kdbx, credentialsParam: CredentialsParam, credentials?: KdbxCredentials): Promise<Kdbx> {
+  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer | Kdbx, credentialsParam: CredentialsParam,
+    credentials?: KdbxCredentials): Promise<Kdbx> {
     if (arrayBuffer instanceof Kdbx) {
       return arrayBuffer;
     }
