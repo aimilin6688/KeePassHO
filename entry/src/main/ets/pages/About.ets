@@ -90,7 +90,6 @@ struct About {
         }
         .width('100%')
         .height(56)
-        .backgroundColor($r("app.color.card_bg"))
 
         // 内容
         Column() {
@@ -162,11 +161,11 @@ struct About {
         }
         .width('100%')
         .height('100%')
-        .padding(12)
+        .padding(16)
       }
     }
     .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .width('100%')
     .height('100%')
   }
