@@ -297,7 +297,7 @@ struct ChangePassword {
           .backgroundColor(Color.Gray)
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
-            this.router.replaceUrl({ url: 'pages/SettingDatabase' });
+            this.router.replaceUrl({ url: 'pages/setting/SettingDatabase' });
           })
         Blank()
         Button($r('app.string.confirm_button_text'))

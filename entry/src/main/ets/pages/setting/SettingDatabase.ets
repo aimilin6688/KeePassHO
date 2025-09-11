@@ -150,7 +150,7 @@ struct SettingsDatabase {
               .padding(16)
               .onClick(() => {
                 this.router.pushUrl({
-                  url: 'pages/SettingDatabaseKeyFunction',
+                  url: 'pages/setting/SettingDatabaseKeyFunction',
                   params: {}
                 });
               })
@@ -180,7 +180,7 @@ struct SettingsDatabase {
               .padding(16)
               .onClick(() => {
                 this.router.pushUrl({
-                  url: 'pages/SettingDatabaseMeta',
+                  url: 'pages/setting/SettingDatabaseMeta',
                   params: {}
                 });
               })
@@ -201,7 +201,7 @@ struct SettingsDatabase {
               .padding(16)
               .onClick(() => {
                 this.router.pushUrl({
-                  url: 'pages/SettingCustomIcons',
+                  url: 'pages/setting/SettingCustomIcons',
                   params: {}
                 });
               })
@@ -222,7 +222,7 @@ struct SettingsDatabase {
               .padding(16)
               .onClick(() => {
                 this.router.pushUrl({
-                  url: 'pages/SettingDatabaseProtectedFiled',
+                  url: 'pages/setting/SettingDatabaseProtectedFiled',
                   params: {}
                 });
               })

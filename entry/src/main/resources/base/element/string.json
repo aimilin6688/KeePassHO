@@ -1307,6 +1307,10 @@
     {
       "name": "totp_title",
       "value": "TOTP"
+    },
+    {
+      "name": "about_give_a_reward",
+      "value": "Give a reward"
     }
   ]
 }

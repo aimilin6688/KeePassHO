@@ -91,7 +91,7 @@ struct Index {
           .height(24)
           .margin({ right: 16 })
           .onClick(() => {
-            this.router.pushUrl({ url: 'pages/Settings' })
+            this.router.pushUrl({ url: 'pages/setting/Settings' })
           })
       }
       .width('100%')
