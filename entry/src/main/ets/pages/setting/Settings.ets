@@ -131,7 +131,7 @@ struct Settings {
           }
           .onClick(() => {
             this.router.pushUrl({
-              url: 'pages/SettingSecurity'
+              url: 'pages/setting/SettingSecurity'
             }, router.RouterMode.Single);
           })
 
@@ -151,7 +151,7 @@ struct Settings {
           }
           .onClick(() => {
             this.router.pushUrl({
-              url: 'pages/SettingDatabase'
+              url: 'pages/setting/SettingDatabase'
             }, router.RouterMode.Single);
           })
 
@@ -251,7 +251,7 @@ struct Settings {
           }
           .onClick(() => {
             this.router.pushUrl({
-              url: 'pages/About'
+              url: 'pages/about/About'
             }, router.RouterMode.Single);
           })
         }

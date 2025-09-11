@@ -649,7 +649,7 @@ struct DatabaseView {
                 .height(24)
                 .margin({ right: 16 })
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/Settings' })
+                  this.router.pushUrl({ url: 'pages/setting/Settings' })
                 })
             }
             .alignItems(VerticalAlign.Center)

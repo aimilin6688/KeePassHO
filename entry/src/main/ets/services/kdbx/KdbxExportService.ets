@@ -61,7 +61,7 @@ export class KdbxExportService {
           if (result.index === 1) {
             await KdbxExportService.doExport(locationInfo, exportType);
           } else {
-            CommonUtils.back({ url: "pages/SettingDatabase" });
+            CommonUtils.back({ url: "pages/setting/SettingDatabase" });
           }
         });
       } else {
@@ -82,7 +82,7 @@ export class KdbxExportService {
     CommonUtils.showToast({ message: $r("app.string.handling"), duration: 3000 });
     return await DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
       CommonUtils.showToast({ message: $r("app.string.export_success") });
-      CommonUtils.back({ url: "pages/SettingDatabase" });
+      CommonUtils.back({ url: "pages/setting/SettingDatabase" });
     }).catch((e: Error) => {
       hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
       CommonUtils.showToast({ message: e.message });
