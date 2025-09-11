@@ -316,7 +316,7 @@ struct EntryView {
   HistoryItem(item: EntryHistoryView) {
     Row() {
       // 左侧图标
-      Image($r('app.media.ic_history'))
+      Image($r("app.media.ic_clock"))
         .width(40)
         .height(40)
         .margin({ right: 12 })
@@ -564,7 +564,7 @@ struct EntryView {
                 .backgroundColor($r("app.color.bg_primary"))
               } else {
                 Column() {
-                  Image($r('app.media.ic_history'))
+                  Image($r("app.media.ic_clock"))
                     .width(80)
                     .height(80)
                     .fillColor($r('app.color.text_secondary'))
