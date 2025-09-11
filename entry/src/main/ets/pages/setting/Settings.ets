@@ -1,9 +1,9 @@
-import { ThemeConstants, ThemeMode } from '../common/constants/ThemeConstants';
-import { SettingsService } from '../services/SettingsService';
+import { ThemeConstants, ThemeMode } from '../../common/constants/ThemeConstants';
+import { SettingsService } from '../../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
 import { router, Router } from '@kit.ArkUI';
-import { SortConstants, SortMode } from '../common/constants/SortConstants';
-import { DataService } from '../services/DataService';
+import { SortConstants, SortMode } from '../../common/constants/SortConstants';
+import { DataService } from '../../services/DataService';
 
 @Entry
 @Component

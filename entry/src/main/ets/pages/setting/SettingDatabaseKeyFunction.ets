@@ -1,7 +1,7 @@
 import { Router } from '@kit.ArkUI';
 import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import { FileService } from '../services/FileService';
+import KdbxUtils from '../../common/utils/KdbxUtils';
+import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
