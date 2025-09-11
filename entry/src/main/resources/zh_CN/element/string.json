@@ -1309,6 +1309,10 @@
     {
       "name": "totp_title",
       "value": "时间令牌"
+    },
+    {
+      "name": "about_give_a_reward",
+      "value": "打赏作者"
     }
   ]
 }
