@@ -46,6 +46,7 @@ struct Password {
   private focusController: FocusController = new FocusController();
   private isFingerprintSupport: boolean = false;
   private isFaceSupport: boolean = false;
+  private allAuthType: AuthTypeInfo[] = AuthType.getAllTypes();
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -108,14 +109,8 @@ struct Password {
 
   // 获取认证类型的索引，用于Select组件
   private getAuthTypeIndex(): number {
-    const allTypes = AuthType.getAllTypes();
-    const index = allTypes.findIndex(item => item.type === this.authTypeInfo.type);
+    const index = this.allAuthType.findIndex(item => item.type === this.authTypeInfo.type);
     return index >= 0 ? index : 0;
-  }
-
-  // 获取认证类型的文本描述，用于Select组件
-  private getAuthTypeText(): ResourceStr {
-    return this.authTypeInfo.description;
   }
 
   /**
@@ -417,9 +412,8 @@ struct Password {
             .margin({ bottom: 16 })
             .alignSelf(ItemAlign.Start)
 
-          Select(AuthType.getAllTypes().map(type => ({ value: type.description } as SelectOption)))
-            .selected(this.getAuthTypeIndex())
-            .value(this.getAuthTypeText())
+          Select(this.allAuthType.map(type => ({ value: type.description } as SelectOption)))
+            .value(this.authTypeInfo.description)
             .font({ size: 16 })
             .fontColor($r('app.color.text_primary'))
             .selectedOptionFont({ size: 16 })
@@ -522,7 +516,7 @@ struct Password {
         // 底部固定按钮栏
         Row() {
           // 左侧 - 更改数据库按钮
-          Button($r('app.string.change_database'))
+          Button($r("app.string.change_database"))
             .height(48)
             .layoutWeight(1)
             .margin({ left: 16, right: 8 })
@@ -555,7 +549,7 @@ struct Password {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 
   /**
