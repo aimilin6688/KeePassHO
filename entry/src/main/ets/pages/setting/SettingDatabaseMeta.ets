@@ -1,10 +1,10 @@
 import { CounterComponent, CounterType, PromptAction, Router } from '@kit.ArkUI';
-import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { FileService } from '../../services/FileService';
+import KdbxUtils from '../../common/utils/KdbxUtils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Consts, Kdbx } from 'kdbxweb';
-import { EventBus } from '../services/EventBus';
-import { CommonUtils } from '../common/utils/CommonUtils';
+import { EventBus } from '../../services/EventBus';
+import { CommonUtils } from '../../common/utils/CommonUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseMeta';

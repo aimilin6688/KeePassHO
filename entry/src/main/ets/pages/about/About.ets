@@ -1,5 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import ResourceManager from '../common/utils/ResourceManager';
+import ResourceManager from '../../common/utils/ResourceManager';
 import { bundleManager, common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';

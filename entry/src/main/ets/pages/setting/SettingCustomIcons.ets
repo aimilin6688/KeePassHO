@@ -1,12 +1,12 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../common/utils/CommonUtils';
+import { CommonUtils } from '../../common/utils/CommonUtils';
 import { Router } from '@kit.ArkUI';
-import { IconResource } from '../services/TypeDefined';
-import { ImagePickerUtils } from '../common/utils/ImagePickerUtils';
+import { IconResource } from '../../services/TypeDefined';
+import { ImagePickerUtils } from '../../common/utils/ImagePickerUtils';
 import { common } from '@kit.AbilityKit';
-import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import IconUtils from '../common/utils/IconUtils';
+import { FileService } from '../../services/FileService';
+import KdbxUtils from '../../common/utils/KdbxUtils';
+import IconUtils from '../../common/utils/IconUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingCustomIcons';

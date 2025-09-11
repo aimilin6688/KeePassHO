@@ -1,9 +1,9 @@
 import { Router } from '@kit.ArkUI';
 import { KdbxMemoryProtection } from 'kdbxweb';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import { FileService } from '../services/FileService';
+import KdbxUtils from '../../common/utils/KdbxUtils';
+import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import ResourceManager from '../common/utils/ResourceManager';
+import ResourceManager from '../../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseKeyFunction';
