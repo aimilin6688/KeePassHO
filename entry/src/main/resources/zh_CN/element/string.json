@@ -1305,6 +1305,10 @@
     {
       "name": "Setting_enable_protected_field_tips",
       "value": "启用保护，只影响新增条目"
+    },
+    {
+      "name": "totp_title",
+      "value": "时间令牌"
     }
   ]
 }
