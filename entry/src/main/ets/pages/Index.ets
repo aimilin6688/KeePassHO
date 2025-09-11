@@ -134,7 +134,7 @@ struct Index {
 
         // 最近打开的文件按钮
         Column() {
-          this.MainButton($r('app.media.ic_history'), $r('app.string.recent_files_title'), () => {
+          this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
             this.router.pushUrl({ url: 'pages/RecentFiles' })
           })
         }
