@@ -1303,6 +1303,10 @@
     {
       "name": "Setting_enable_protected_field_tips",
       "value": "Enable protection, which only affects new entries"
+    },
+    {
+      "name": "totp_title",
+      "value": "TOTP"
     }
   ]
 }
