@@ -1016,24 +1016,43 @@ struct DatabaseView {
         });
       })
 
-      // 主添加按钮
-      Button() {
-        Image($r('app.media.ic_add'))
-          .width(24)
-          .height(24)
-          .fillColor(Color.White)
+      if(!(this.showAddButtons || this.moveParam)){
+        // 显示TOTP
+        Button() {
+          Image($r('app.media.ic_clock'))
+            .width(30)
+            .height(30)
+            .fillColor(Color.White)
+        }
+        .width(60)
+        .height(60)
+        .borderRadius(30)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .position({ right: 12, bottom: 84 })
+        .enabled(!this.isLoading)
+        .opacity(this.isLoading ? 0.5 : 1)
+        .onClick(() => {
+          this.router.pushUrl({ url: 'pages/TotpView' });
+        })
+
+        // 主添加按钮
+        Button() {
+          Image($r('app.media.ic_add'))
+            .width(30)
+            .height(30)
+            .fillColor(Color.White)
+        }
+        .width(60)
+        .height(60)
+        .borderRadius(30)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .position({ right: 12, bottom: 12 })
+        .enabled(!this.isLoading)
+        .opacity(this.isLoading ? 0.5 : 1)
+        .onClick(() => {
+          this.showAddButtons = true;
+        })
       }
-      .width(60)
-      .height(60)
-      .borderRadius(30)
-      .backgroundColor($r("app.color.button_bg_blue"))
-      .position({ right: 12, bottom: 12 })
-      .enabled(!this.isLoading)
-      .opacity(this.isLoading ? 0.5 : 1)
-      .visibility((this.showAddButtons || this.moveParam) ? Visibility.None : Visibility.Visible)
-      .onClick(() => {
-        this.showAddButtons = true;
-      })
 
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {

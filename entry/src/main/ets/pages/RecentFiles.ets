@@ -158,9 +158,10 @@ struct RecentFiles {
             .width(100)
             .height(100)
             .margin({ bottom: 16 })
+            .fillColor(Color.Gray)
           Text($r('app.string.no_recent_files'))
             .fontSize(16)
-            .fontColor('#999999')
+            .fontColor(Color.Gray)
         }
         .width('100%')
         .height('80%')

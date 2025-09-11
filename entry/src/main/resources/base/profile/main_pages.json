@@ -13,6 +13,7 @@
     "pages/RecentFiles",
     "pages/EntryEdit",
     "pages/EntryView",
+    "pages/TotpView",
     "pages/About",
     "pages/open/SelectLocation",
     "pages/open/LocalFile",
