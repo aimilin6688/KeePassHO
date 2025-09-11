@@ -76,7 +76,7 @@ export class KdbxImportService {
     KdbxUtils.saveDatabase({
       onSuccess: () => {
         CommonUtils.showToast({ message: $r("app.string.import_success") });
-        CommonUtils.back({ url: "pages/SettingDatabase" });
+        CommonUtils.back({ url: "pages/setting/SettingDatabase" });
       },
       onError: (message) => {
         CommonUtils.showToast(message);

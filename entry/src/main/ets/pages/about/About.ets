@@ -145,6 +145,24 @@ struct About {
                 .width('100%')
                 .padding(16)
               }
+
+              // 打赏作者
+              ListItem() {
+                Row() {
+                  Text($r("app.string.about_give_a_reward"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .onClick(() => {
+                  this.rate();
+                })
+                .width('100%')
+                .padding(16)
+              }
             }
             .margin({ top: 12, bottom: 12 })
             .backgroundColor($r("app.color.card_bg"))
