@@ -1020,15 +1020,15 @@ struct DatabaseView {
         // 显示TOTP
         Button() {
           Image($r('app.media.ic_clock'))
-            .width(30)
-            .height(30)
+            .width(28)
+            .height(28)
             .fillColor(Color.White)
         }
-        .width(60)
-        .height(60)
-        .borderRadius(30)
+        .width(56)
+        .height(56)
+        .borderRadius(28)
         .backgroundColor($r("app.color.button_bg_blue"))
-        .position({ right: 12, bottom: 84 })
+        .position({ right: 12, bottom: 80 })
         .enabled(!this.isLoading)
         .opacity(this.isLoading ? 0.5 : 1)
         .onClick(() => {
@@ -1038,13 +1038,13 @@ struct DatabaseView {
         // 主添加按钮
         Button() {
           Image($r('app.media.ic_add'))
-            .width(30)
-            .height(30)
+            .width(28)
+            .height(28)
             .fillColor(Color.White)
         }
-        .width(60)
-        .height(60)
-        .borderRadius(30)
+        .width(56)
+        .height(56)
+        .borderRadius(28)
         .backgroundColor($r("app.color.button_bg_blue"))
         .position({ right: 12, bottom: 12 })
         .enabled(!this.isLoading)
