@@ -1,9 +1,9 @@
-import { SettingsService, UnlockAuthType } from '../services/SettingsService';
+import { SettingsService, UnlockAuthType } from '../../services/SettingsService';
 import { Router } from '@kit.ArkUI';
-import ResourceManager from '../common/utils/ResourceManager';
-import { FileService } from '../services/FileService';
-import { AuthService } from '../services/AuthService';
-import { RecentFilesService } from '../services/RecentFilesService';
+import ResourceManager from '../../common/utils/ResourceManager';
+import { FileService } from '../../services/FileService';
+import { AuthService } from '../../services/AuthService';
+import { RecentFilesService } from '../../services/RecentFilesService';
 
 
 @Entry
