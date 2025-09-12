@@ -1,19 +1,109 @@
-/*
+import { Router } from '@kit.ArkUI';
+import { promptAction } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
 
-- ¥10 赏一杯奶茶，助我代码丝滑 ~ 🥤
-简介：嘿，朋友！每一个让代码跑起来的深夜，都少不了一杯奶茶的陪伴。你的这杯奶茶，就是最及时的加油声，能让我立刻精神百倍，继续为你敲出更优雅的代码！❤️
-答谢：哇哦！奶茶已收到 🥤✨ 感谢你的甜蜜投喂！这杯奶茶会让我接下来的代码写得更加丝滑～
+@Entry
+@Component
+struct Reward {
+  @State isShowOtherPay:boolean = false;
 
-¥30 赞助一顿午餐，给我满满能量！🍜
-简介：哇，是午餐时间！忙碌了一上午，正需要一顿美食来补充能量。你的这份心意，就像一份热气腾腾的外卖，能让我饱餐一顿，然后以双倍的干劲投入到下午的开发中，解决更多的难题！
-答谢：午餐券解锁成功！🍜 感谢你的丰盛款待！这顿午餐给了我满满的能量，下午又能火力全开地敲代码啦！
+  private router: Router = this.getUIContext().getRouter();
+  private promptAction = this.getUIContext().getPromptAction();
 
-¥50 成为助力伙伴，我们一起前行！(最受欢迎)🚀
-简介：太棒了！你不仅仅是在支持我，更是正式成为了我们项目旅程中的‘合伙人’。你的这份支持，就像一份坚实的后盾，让我能更安心地购置开发资源、尝试酷炫的新技术，让我们一起把心中的想法变成更强大的现实！
-答谢：叮！你已成为【超级助力伙伴】！🚀 感谢你的强力支持！这不仅是鼓励，更是我们并肩前行的动力。接下来的新功能，有你一份功劳！
+  build() {
+    // 内容区域
+    Column() {
+      // 标题栏
+      Row() {
+        Image($r("app.media.ic_angle_left"))
+          .width(24)
+          .height(24)
+          .margin({ left: 12, right: 12 })
+          .fillColor($r('app.color.text_primary'))
+          .onClick(() => {
+            this.router.back()
+          })
+        Text($r('app.string.about_give_a_reward'))
+          .fontSize(18)
+          .fontWeight(FontWeight.Medium)
+        Blank()
+      }
+      .width('100%')
+      .height(56)
 
-¥100 坐上产品经理席，发布你的需求！👑
-简介：天哪！这简直是飞跃式的支持！欢迎你坐上‘超级产品经理’的专属席位。你的声音将会被格外重视，你的支持将直接助力我们规划未来的功能蓝图。下一个令人兴奋的更新，将由你我共同决定！
-答谢：热烈欢迎【超级产品经理】闪亮登场！👑 感谢你的鼎力支持！你获得了我们的终极敬意！你的支持将直接影响产品的发展优先级，敬请期待！
+      // 内容
+      List(){
+        ListItem(){
+          // Logo或应用图标
+          Column() {
+            Image($r('app.media.startIcon'))
+              .width(90)
+              .height(90)
+              .margin({ top: 40, bottom: 10 })
 
-*/
+            Text($r('app.string.reward_thanks'))
+              .fontSize(18)
+              .fontWeight(FontWeight.Medium)
+              .margin({ top: 20, bottom: 10 })
+
+            Text($r('app.string.reward_description'))
+              .margin({ top: 10, bottom: 30 })
+              .fontColor($r('app.color.text_secondary'))
+              .fontSize(16)
+              .textAlign(TextAlign.Center)
+          }
+          .width('100%')
+        }
+
+        // 其他打赏方式
+        if(this.isShowOtherPay){
+          // 微信支付
+          ListItem(){
+            // 微信支付
+            Column() {
+              Text($r('app.string.reward_wechat_pay'))
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .margin({ bottom: 10 })
+
+              // 使用应用图标作为占位符
+              Image($r("app.media.startIcon"))
+                .width(200)
+                .height(200)
+                .margin({ bottom: 10 })
+                .borderRadius(8)
+                .backgroundColor($r('app.color.card_bg'))
+            }
+            .width('100%')
+          }
+          .margin({ bottom: 30 })
+
+          // 支付宝
+          ListItem(){
+            Column() {
+              Text($r('app.string.reward_alipay'))
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .margin({ bottom: 10 })
+
+              // 使用应用图标作为占位符
+              Image($r("app.media.startIcon"))
+                .width(200)
+                .height(200)
+                .margin({ bottom: 10 })
+                .borderRadius(8)
+                .backgroundColor($r('app.color.card_bg'))
+            }
+            .width('100%')
+          }
+        }
+      }
+      .width('100%')
+      .height('100%')
+      .padding(16)
+    }
+    .backgroundColor($r('app.color.bg_primary'))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    .width('100%')
+  }
+}
