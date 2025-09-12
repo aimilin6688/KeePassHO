@@ -15,7 +15,7 @@
     "pages/EntryView",
     "pages/TotpView",
     "pages/about/About",
-    "pages/about/Reward",
+    "pages/about/Support",
     "pages/open/SelectLocation",
     "pages/open/LocalFile",
     "pages/open/WebDAV",
