@@ -146,10 +146,10 @@ struct About {
                 .padding(16)
               }
 
-              // 打赏作者
+              // 支持作者
               ListItem() {
                 Row() {
-                  Text($r("app.string.about_give_a_reward"))
+                  Text($r("app.string.about_support"))
                     .fontSize(16)
                     .flexGrow(1)
                   Image($r('app.media.ic_arrow_right'))
@@ -158,7 +158,7 @@ struct About {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/about/Reward' })
+                  this.router.pushUrl({ url: 'pages/about/Support' })
                 })
                 .width('100%')
                 .padding(16)
