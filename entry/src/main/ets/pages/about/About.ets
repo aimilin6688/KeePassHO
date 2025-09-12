@@ -158,7 +158,7 @@ struct About {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .onClick(() => {
-                  this.rate();
+                  this.router.pushUrl({ url: 'pages/about/Reward' })
                 })
                 .width('100%')
                 .padding(16)

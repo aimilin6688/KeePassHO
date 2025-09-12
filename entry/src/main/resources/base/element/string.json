@@ -1311,6 +1311,22 @@
     {
       "name": "about_give_a_reward",
       "value": "Give a reward"
+    },
+    {
+      "name": "reward_thanks",
+      "value": "Thank you for your support!"
+    },
+    {
+      "name": "reward_description",
+      "value": "Your support is our motivation to keep improving. If you like this app, please consider rewarding the developer."
+    },
+    {
+      "name": "reward_wechat_pay",
+      "value": "WeChat Pay"
+    },
+    {
+      "name": "reward_alipay",
+      "value": "Alipay"
     }
   ]
 }
