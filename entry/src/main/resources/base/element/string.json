@@ -1309,60 +1309,64 @@
       "value": "TOTP"
     },
     {
-      "name": "about_give_a_reward",
-      "value": "Give a reward"
+      "name": "about_support",
+      "value": "Support"
     },
     {
-      "name": "reward_thanks",
+      "name": "support_thanks",
       "value": "Thank you for your support!"
     },
     {
-      "name": "reward_description",
+      "name": "support_description",
       "value": "Your support is our motivation to keep improving. If you like this app, please consider rewarding the developer."
     },
     {
-      "name": "reward_wechat_pay",
+      "name": "support_wechat_pay",
       "value": "WeChat Pay"
     },
     {
-      "name": "reward_alipay",
+      "name": "support_alipay",
       "value": "Alipay"
     },
     {
-      "name": "reward_milk_tea_desc",
-      "value": "Hey, friend! Every late night when the code is running, a cup of milk tea is needed for company. Your milk tea is the most timely encouragement that can immediately energize me to continue writing more elegant code! ❤️"
+      "name": "support_milk_tea_title",
+      "value": "Buy me a milk tea for smooth coding ~ 🥤"
     },
     {
-      "name": "reward_milk_tea_thanks",
+      "name": "support_milk_tea_thanks",
       "value": "Wow! Milk tea received 🥤✨ Thank you for your sweet support! This cup of milk tea will make my code smoother!"
     },
     {
-      "name": "reward_lunch_desc",
-      "value": "Wow, it's lunch time! After a busy morning, I need a delicious meal to replenish my energy. Your kind gesture is like a steaming hot takeout that can satisfy my hunger and then double my energy for afternoon development to solve more problems!"
+      "name": "support_lunch_title",
+      "value": "Sponsor a lunch and fuel my day with energy!🍜"
     },
     {
-      "name": "reward_lunch_thanks",
+      "name": "support_lunch_thanks",
       "value": "Lunch voucher unlocked successfully! 🍜 Thank you for your generous treat! This meal gives me full energy to code with full power in the afternoon!"
     },
     {
-      "name": "reward_partner_desc",
-      "value": "Awesome! You're not just supporting me, but officially becoming a 'partner' on our project journey. Your support is like a solid backing that allows me to安心 purchase development resources and try cool new technologies. Let's turn our ideas into more powerful realities together!"
+      "name": "support_partner_title",
+      "value": "Become a booster and let’s journey together! 🚀(Most Popular)"
     },
     {
-      "name": "reward_partner_thanks",
+      "name": "support_partner_thanks",
       "value": "Ding! You've become a [Super Support Partner]! 🚀 Thank you for your strong support! This is not just encouragement, but also the driving force for us to move forward together. The upcoming new features will have your contribution!"
     },
     {
-      "name": "reward_pm_desc",
-      "value": "Oh my god! This is a leapfrog support! Welcome to take the exclusive seat of 'Super Product Manager'. Your voice will be highly valued, and your support will directly help us plan the future feature roadmap. The next exciting update will be decided by you and me together!"
+      "name": "support_pm_title",
+      "value": "Take the Product Manager’s seat and call the shots! 👑"
     },
     {
-      "name": "reward_pm_thanks",
+      "name": "support_pm_thanks",
       "value": "Warmly welcome [Super Product Manager] to make a brilliant appearance! 👑 Thank you for your powerful support! You have gained our ultimate respect! Your support will directly affect the development priority of the product, so stay tuned!"
     },
     {
-      "name": "reward_support",
+      "name": "support_support",
       "value": "Support"
+    },
+    {
+      "name": "support_other_pay",
+      "value": "Other"
     }
   ]
 }
