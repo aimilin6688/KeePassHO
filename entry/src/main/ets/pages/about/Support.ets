@@ -27,25 +27,25 @@ struct Support {
   private context = this.getUIContext().getHostContext();
   private rewardOptions: Array<RewardOption> = [
     {
-      goodId: "10000",
+      goodId: "10010",
       amount: '¥10',
       title: $r("app.string.support_milk_tea_title"),
       thanksMessage: $r("app.string.support_milk_tea_thanks")
     },
     {
-      goodId: "10001",
+      goodId: "10011",
       amount: '¥30',
       title: $r("app.string.support_lunch_title"),
       thanksMessage: $r("app.string.support_lunch_thanks")
     },
     {
-      goodId: "10002",
+      goodId: "10012",
       amount: '¥50',
       title: $r("app.string.support_partner_title"),
       thanksMessage: $r("app.string.support_partner_thanks")
     },
     {
-      goodId: "10003",
+      goodId: "10013",
       amount: '¥100',
       title: $r("app.string.support_pm_title"),
       thanksMessage: $r("app.string.support_pm_thanks")
@@ -69,7 +69,7 @@ struct Support {
    */
   private pay(option: RewardOption) {
     try {
-      iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.NONCONSUMABLE }).then(result => {
+      iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.CONSUMABLE }).then(result => {
         SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
         SettingsService.put(SettingsService.KEY_APP_INSTALL_TIME, DateUtils.offset(new Date(), -3, DateUnit.Month).getTime());
         this.showThankYouMessage(option.thanksMessage);
