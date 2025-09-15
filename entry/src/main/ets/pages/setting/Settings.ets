@@ -113,7 +113,7 @@ struct Settings {
           color: $r('app.color.divider'),
         })
 
-        // 数据库设置
+        // 安全设置
         ListItemGroup() {
           // 安全设置
           ListItem() {
@@ -152,6 +152,26 @@ struct Settings {
           .onClick(() => {
             this.router.pushUrl({
               url: 'pages/setting/SettingDatabase'
+            }, router.RouterMode.Single);
+          })
+
+          // 应用设置
+          ListItem() {
+            Row() {
+              Text($r('app.string.Settings_application'))
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .onClick(() => {
+            this.router.pushUrl({
+              url: 'pages/setting/SettingApplication'
             }, router.RouterMode.Single);
           })
 
