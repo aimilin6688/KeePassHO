@@ -176,7 +176,7 @@ struct Support {
                 .margin({ bottom: 10 })
 
               // 使用应用图标作为占位符
-              Image($r("app.media.startIcon"))
+              Image($r("app.media.pay_wechat"))
                 .width(200)
                 .height(200)
                 .margin({ bottom: 10 })
@@ -196,7 +196,7 @@ struct Support {
                 .margin({ bottom: 10 })
 
               // 使用应用图标作为占位符
-              Image($r("app.media.startIcon"))
+              Image($r("app.media.pay_ali"))
                 .width(200)
                 .height(200)
                 .margin({ bottom: 10 })
