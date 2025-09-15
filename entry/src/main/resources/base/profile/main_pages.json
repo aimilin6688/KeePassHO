@@ -9,6 +9,7 @@
     "pages/setting/SettingCustomIcons",
     "pages/setting/SettingDatabaseKeyFunction",
     "pages/setting/SettingDatabaseProtectedFiled",
+    "pages/setting/SettingApplication",
     "pages/Password",
     "pages/RecentFiles",
     "pages/EntryEdit",
