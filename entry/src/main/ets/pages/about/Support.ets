@@ -3,6 +3,8 @@ import { iap } from '@kit.IAPKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../../common/utils/CommonUtils';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { photoAccessHelper } from '@kit.MediaLibraryKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
@@ -73,6 +75,33 @@ struct Support {
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
       this.promptAction.showToast({ message: err.message })
+    }
+  }
+
+  /**
+   * 保存图片到本地
+   */
+  private async saveImg(result: SaveButtonOnClickResult, imgResource: Resource): Promise<void> {
+    if (result === SaveButtonOnClickResult.SUCCESS) {
+      try {
+        this.context?.resourceManager.getMediaContent(imgResource, async (err, data) => {
+          if(err){
+            hilog.error(DOMAIN, TAG, 'Failed to get resource file content: ' + err.message);
+            this.promptAction.showToast({ message: err.message });
+            return;
+          }
+          let helper = photoAccessHelper.getPhotoAccessHelper(this.context);
+          let uri = await helper.createAsset(photoAccessHelper.PhotoType.IMAGE, 'png');
+          let destFile: fs.File = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+          await fs.write(destFile.fd, data.buffer).then(() => {
+            this.promptAction.showToast({ message: $r('app.string.save_success') });
+          });
+          await fs.close(destFile.fd);
+        })
+      } catch (err) {
+        console.error('Save file failed with error message: ' + err.message + ', error code: ' + err.code);
+        this.promptAction.showToast({ message: err.message });
+      }
     }
   }
 
@@ -182,6 +211,10 @@ struct Support {
                 .margin({ bottom: 10 })
                 .borderRadius(8)
                 .backgroundColor($r('app.color.card_bg'))
+              // 保存图标
+              SaveButton().onClick((event, result: SaveButtonOnClickResult) => {
+                this.saveImg(result, $r("app.media.pay_wechat"));
+              })
             }
             .width('100%')
           }
@@ -202,6 +235,10 @@ struct Support {
                 .margin({ bottom: 10 })
                 .borderRadius(8)
                 .backgroundColor($r('app.color.card_bg'))
+              // 保存图标
+              SaveButton().onClick((event, result: SaveButtonOnClickResult) => {
+                this.saveImg(result, $r("app.media.pay_ali"));
+              });
             }
             .width('100%')
           }
@@ -259,7 +296,12 @@ struct Support {
         .fontWeight(FontWeight.Medium)
         .fontColor($r('app.color.text_primary'))
         .textAlign(TextAlign.Start)
-        .padding({ left: 16, right: 16, top: 8, bottom: 16 })
+        .padding({
+          left: 16,
+          right: 16,
+          top: 8,
+          bottom: 16
+        })
         .width('100%')
     }
     .width('100%')
