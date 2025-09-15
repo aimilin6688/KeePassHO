@@ -365,6 +365,15 @@ struct Password {
     }
   }
 
+  /**
+   * 获取认证方式名称
+   * @param authType
+   * @returns
+   */
+  private getAuthTypeName(authType: AuthTypeInfo): ResourceStr {
+    return this.allAuthType.find(item => item.type === authType.type)?.value ?? this.allAuthType[0].value;
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -412,8 +421,8 @@ struct Password {
             .margin({ bottom: 16 })
             .alignSelf(ItemAlign.Start)
 
-          Select(this.allAuthType.map(type => ({ value: type.description } as SelectOption)))
-            .value(this.authTypeInfo.description)
+          Select(this.allAuthType)
+            .value(this.getAuthTypeName(this.authTypeInfo))
             .font({ size: 16 })
             .fontColor($r('app.color.text_primary'))
             .selectedOptionFont({ size: 16 })
