@@ -67,7 +67,7 @@ struct Support {
    */
   private pay(option: RewardOption) {
     try {
-      iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.NONCONSUMABLE }).then(result => {
+      iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.CONSUMABLE }).then(result => {
         this.showThankYouMessage(option.thanksMessage);
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
