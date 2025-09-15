@@ -25,10 +25,12 @@ export struct TotpConfigDialog {
   @State name:string = '';
   @State issuer:string = '';
   @State fieldName:string = 'otp';
+  @State showFieldName:boolean =false;
   @State private selectedType: string = TotpType.RFC6238;
   @State private selectedAlgorithm: string = TotpAlgorithm.SHA1;
   @State private errorMessage: string = '';
   @State private showMarkOptions: boolean = false;
+
   // 确认前校验字段名称是否存在
   public checkFieldName: (fieldName: string) => boolean = () => {return false;};
   // 确认事件回调
@@ -149,6 +151,7 @@ export struct TotpConfigDialog {
     if (this.validateConfig()) {
       if(this.checkFieldName(this.fieldName)){
         this.errorMessage = ResourceManager.getString($r("app.string.field_name_exists"));
+        this.showFieldName = true;
         return;
       }
       const optUrl = TotpService.getInstance().generateUri(this.totpConfig);
@@ -184,38 +187,41 @@ export struct TotpConfigDialog {
 
 
       List() {
-        ListItemGroup(){
-          ListItem(){
-            Column() {
-              Row() {
-                Text("*").fontColor($r('app.color.required'))
-                Text($r('app.string.custom_field_name')).fontSize(16).fontWeight(FontWeight.Medium)
-                Blank()
-                TextInput({ text: this.fieldName })
-                  .height(40)
-                  .fontSize(14)
-                  .width("75%")
-                  .onChange((value: string) => {
-                    this.fieldName = value;
-                  })
+        // 字段名称
+        if(this.showFieldName){
+          ListItemGroup(){
+            ListItem(){
+              Column() {
+                Row() {
+                  Text("*").fontColor($r('app.color.required'))
+                  Text($r('app.string.custom_field_name')).fontSize(16).fontWeight(FontWeight.Medium)
+                  Blank()
+                  TextInput({ text: this.fieldName })
+                    .height(40)
+                    .fontSize(14)
+                    .width("75%")
+                    .onChange((value: string) => {
+                      this.fieldName = value;
+                    })
+                }
+                .width('100%')
+                .padding({ top: 10, bottom: 10 })
               }
+              .padding({ left: 12, right: 12 })
               .width('100%')
-              .padding({ top: 10, bottom: 10 })
             }
-            .padding({ left: 12, right: 12 })
-            .width('100%')
-          }
-        }.backgroundColor($r("app.color.card_bg"))
-        .margin({ top: 12, bottom: 12 })
-        .borderRadius(12)
-        .divider({
-          strokeWidth: 1,
-          color: $r('app.color.divider'),
-        })
+          }.backgroundColor($r("app.color.card_bg"))
+          .margin({ top: 12, bottom: 12 })
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
+        }
 
-
-        // 令牌类型
+        // 令牌字段
         ListItemGroup() {
+          // 令牌类型
           ListItem() {
             Row() {
               Text($r("app.string.totp_type"))
@@ -237,17 +243,8 @@ export struct TotpConfigDialog {
             .width('100%')
             .height(48)
           }
-        }
-        .backgroundColor($r("app.color.card_bg"))
-        .margin({ bottom: 12 })
-        .borderRadius(12)
-        .divider({
-          strokeWidth: 1,
-          color: $r('app.color.divider'),
-        })
 
-        // 自定义
-        ListItemGroup() {
+          // 令牌字段
           ListItem() {
             // 密钥
             Column() {
