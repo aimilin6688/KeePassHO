@@ -10,6 +10,7 @@ import { FileService } from '../services/FileService';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
+import { SupportService } from '../services/SupportService';
 import DateUtils from '../common/utils/DateUtils';
 import { EventBus } from '../services/EventBus';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
@@ -91,6 +92,8 @@ struct DatabaseView {
     });
     // 监听排序方式变化
     this.settingsService.registerObserver(this.onSettingChanged);
+    // 显示支持弹框
+    new SupportService().showSupportDialog(this.getUIContext());
   }
 
   aboutToDisappear() {

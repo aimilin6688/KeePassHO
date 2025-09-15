@@ -5,6 +5,8 @@ import { CommonUtils } from '../../common/utils/CommonUtils';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
+import { SettingsService } from '../../services/SettingsService';
+import DateUtils, { DateUnit } from '../../common/utils/DateUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
@@ -68,6 +70,8 @@ struct Support {
   private pay(option: RewardOption) {
     try {
       iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.NONCONSUMABLE }).then(result => {
+        SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
+        SettingsService.put(SettingsService.KEY_APP_INSTALL_TIME, DateUtils.offset(new Date(), -3, DateUnit.Month).getTime());
         this.showThankYouMessage(option.thanksMessage);
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
@@ -86,7 +90,7 @@ struct Support {
     if (result === SaveButtonOnClickResult.SUCCESS) {
       try {
         this.context?.resourceManager.getMediaContent(imgResource, async (err, data) => {
-          if(err){
+          if (err) {
             hilog.error(DOMAIN, TAG, 'Failed to get resource file content: ' + err.message);
             this.promptAction.showToast({ message: err.message });
             return;
@@ -103,6 +107,21 @@ struct Support {
         console.error('Save file failed with error message: ' + err.message + ', error code: ' + err.code);
         this.promptAction.showToast({ message: err.message });
       }
+    }
+  }
+
+  /**
+   * 显示感谢信息
+   * @param message 感谢信息
+   */
+  private showThankYouMessage(message: Resource) {
+    try {
+      this.promptAction.showToast({
+        message: message,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('显示感谢信息失败:', error);
     }
   }
 
@@ -309,20 +328,5 @@ struct Support {
     .backgroundColor($r('app.color.card_bg'))
     .borderRadius(12)
     .margin({ bottom: 12 })
-  }
-
-  /**
-   * 显示感谢信息
-   * @param message 感谢信息
-   */
-  private showThankYouMessage(message: Resource) {
-    try {
-      this.promptAction.showToast({
-        message: message,
-        duration: 3000
-      });
-    } catch (error) {
-      console.error('显示感谢信息失败:', error);
-    }
   }
 }

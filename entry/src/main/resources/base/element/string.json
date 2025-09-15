@@ -1367,6 +1367,26 @@
     {
       "name": "support_other_pay",
       "value": "Other"
+    },
+    {
+      "name": "support_dialog_title",
+      "value": "Support us"
+    },
+    {
+      "name": "support_dialog_message",
+      "value": "If you also like this software, please buy the author a cup of milk tea!"
+    },
+    {
+      "name": "Settings_application",
+      "value": "App settings"
+    },
+    {
+      "name": "application_hide_support",
+      "value": "Hide the support pop-up box"
+    },
+    {
+      "name": "application_hide_support_tips",
+      "value": "It can only be hidden after donation or use for a period of time"
     }
   ]
 }
