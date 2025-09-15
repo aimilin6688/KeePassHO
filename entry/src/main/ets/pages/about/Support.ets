@@ -71,10 +71,11 @@ struct Support {
         this.showThankYouMessage(option.thanksMessage);
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
+        this.promptAction.showToast({ message: err.message });
       });
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
-      this.promptAction.showToast({ message: err.message })
+      this.promptAction.showToast({ message: err.message });
     }
   }
 
