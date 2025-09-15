@@ -11,6 +11,7 @@ import { FilenameUtils } from '../common/utils/FilenameUtils';
 import { LocalFileStorageConfig, StorageType } from '../services/kdbx/interfaces';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
+import { SupportService } from '../services/SupportService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -46,7 +47,11 @@ export default class EntryAbility extends UIAbility {
     // 最近打开的文件服务
     RecentFilesService.getInstance().init(this.context);
     // 初始化设置服务
-    await SettingsService.getInstance().init(this.context);
+    await SettingsService.getInstance().init(this.context).then(()=>{
+      // 设值应用安装时间
+      SupportService.initAppInstallTime();
+    })
+
   }
 
   onDestroy(): void {
