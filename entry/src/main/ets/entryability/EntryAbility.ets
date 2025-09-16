@@ -39,7 +39,7 @@ export default class EntryAbility extends UIAbility {
   private async init() {
     this.context.area = contextConstant.AreaMode.EL4;
     // 初始化通用工具类
-    CommonUtils.getInstance().init(this.context);
+    CommonUtils.init(this.context);
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
     // 初始化资源管理器
@@ -62,6 +62,11 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageCreate');
     this.windowStage = windowStage;
+    // 初始化UIContext
+    window.getLastWindow(this.context).then((data: window.Window) => {
+      CommonUtils.init(this.context, data.getUIContext());
+    });
+
     // 通过URL打开数据库
     if (this.createUrl) {
       this.createStorage(this.createUrl);
