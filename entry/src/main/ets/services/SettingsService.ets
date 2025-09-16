@@ -52,7 +52,6 @@ export class SettingsService {
   public static readonly KEY_SHOW_SUPPORT_DIALOG = "show_support_dialog";
   public static readonly KEY_SHOW_SUPPORT_DIALOG_DEFAULT = true;
   public static readonly KEY_APP_INSTALL_TIME = "app_install_time";
-
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -222,6 +221,46 @@ export class SettingsService {
     SettingsService.getInstance().get(key, defValue).then(value => {
       callback(value);
     });
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public deleteSync(key: string) {
+    this.preferences?.deleteSync(key);
+    this.preferences?.flushSync();
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public static deleteSync(key: string) {
+    SettingsService.getInstance().deleteSync(key);
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public delete(key: string): Promise<void> {
+    return new Promise<void>(async resolve => {
+      if (!this.preferences) {
+        return resolve();
+      }
+      this.preferences.deleteSync(key);
+      this.preferences.flushSync();
+      return resolve();
+    });
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public static delete(key: string): Promise<void> {
+    return SettingsService.getInstance().delete(key);
   }
 
 
