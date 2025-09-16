@@ -1,21 +1,32 @@
 import DateUtils, { DateUnit } from '../common/utils/DateUtils';
 import { SettingsService } from './SettingsService';
 import { promptAction } from '@kit.ArkUI';
+import { CommonUtils } from '../common/utils/CommonUtils';
+import { iap } from '@kit.IAPKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
+const DOMAIN = 0x0000;
+const TAG = 'SupportService';
 
 export class SupportService {
   constructor() {
   }
 
-  public showSupportDialog(context: UIContext) {
-    if (!this.isShowSupport()) {
-      return;
-    }
-    context.getPromptAction().showDialog(this.getShowSupportDialog()).then(async result => {
-      SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_TIME, new Date().getTime());
-      if (result.index === 1) {
-        context.getRouter().pushUrl({ url: "pages/about/Support" });
+  /**
+   * 显示支持弹框
+   */
+  public static showSupportDialog(context: UIContext): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!SupportService.isShowSupport()) {
+        return resolve();
       }
+      CommonUtils.showDialog(SupportService.getShowSupportDialog(), context).then(async result => {
+        SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_TIME, new Date().getTime());
+        if (result.index === 1) {
+          context.getRouter().pushUrl({ url: "pages/about/Support" });
+        }
+      });
     });
   }
 
@@ -32,19 +43,24 @@ export class SupportService {
   /**
    * 是否可以隐藏支持
    */
-  public static isCanHideSupport(): boolean {
-    const appInstallTime = SettingsService.getSync(SettingsService.KEY_APP_INSTALL_TIME, -1);
-    if (appInstallTime <= 0) {
-      return false;
-    }
-    return DateUtils.offset(new Date(), -1, DateUnit.Month).getTime() >= appInstallTime;
+  public static isCanHideSupport(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      // 获取安装时间
+      const appInstallTime = SettingsService.getSync(SettingsService.KEY_APP_INSTALL_TIME, -1);
+      // 没有安装时间
+      if (appInstallTime <= 0) {
+        return resolve(false);
+      }
+      // 安装时间超过一个月
+      return resolve(DateUtils.offset(new Date(), -1, DateUnit.Month).getTime() >= appInstallTime || SupportService.isSupported());
+    });
   }
 
 
   /**
    * 获取支持弹框
    */
-  private getShowSupportDialog(): promptAction.ShowDialogOptions {
+  private static getShowSupportDialog(): promptAction.ShowDialogOptions {
     return {
       title: $r('app.string.support_dialog_title'),
       message: $r('app.string.support_dialog_message'),
@@ -61,20 +77,35 @@ export class SupportService {
     }
   }
 
+  /**
+   * 查询账户是否已经支持过
+   * @returns
+   */
+  private static isSupported(): Promise<boolean> {
+    const parameter: iap.QueryPurchasesParameter = {
+      productType: iap.ProductType.CONSUMABLE,
+      queryType: iap.PurchaseQueryType.ALL
+    }
+    return iap.queryPurchases(CommonUtils.getContext(), parameter).then((data: iap.QueryPurchaseResult) => {
+      hilog.info(DOMAIN, TAG, `Succeeded in querying purchases. data len: ${data.purchaseDataList?.length}`);
+      return data.purchaseDataList?.length > 0;
+    }).catch((err: BusinessError) => {
+      hilog.error(DOMAIN, TAG, `Failed to query purchases. Code is ${err.code}, message is ${err.message}`);
+      return false;
+    });
+  }
 
   /**
    * 是否需要显示支持弹框
    */
-  private isShowSupport(): boolean {
+  private static isShowSupport(): boolean {
     // 不需要显示支持弹框
     if (!SettingsService.getSync(SettingsService.KEY_SHOW_SUPPORT_DIALOG, SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT)) {
       return false;
     }
     // 今天支持弹款已经显示过了
     const lastShowTime = SettingsService.getSync(SettingsService.KEY_SHOW_SUPPORT_TIME, -1);
-    if (lastShowTime <= 0) {
-      return true;
-    }
-    return DateUtils.isNotToday(new Date(lastShowTime));
+    hilog.debug(DOMAIN, TAG, `Last show support time: ${lastShowTime}`);
+    return lastShowTime <= 0 || DateUtils.isNotToday(new Date(lastShowTime));
   }
 }
