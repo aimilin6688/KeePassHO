@@ -82,17 +82,22 @@ export class SupportService {
    * @returns
    */
   private static isSupported(): Promise<boolean> {
-    const parameter: iap.QueryPurchasesParameter = {
-      productType: iap.ProductType.CONSUMABLE,
-      queryType: iap.PurchaseQueryType.ALL
+    try {
+      const parameter: iap.QueryPurchasesParameter = {
+        productType: iap.ProductType.CONSUMABLE,
+        queryType: iap.PurchaseQueryType.ALL
+      }
+      return iap.queryPurchases(CommonUtils.getContext(), parameter).then((data: iap.QueryPurchaseResult) => {
+        hilog.info(DOMAIN, TAG, `Succeeded in querying purchases. data len: ${data.purchaseDataList?.length}`);
+        return data.purchaseDataList?.length > 0;
+      }).catch((err: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `Failed to query purchases. Code is ${err.code}, message is ${err.message}`);
+        return false;
+      });
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `Failed to query purchases. message is ${err.message}`);
+      return Promise.resolve(false);
     }
-    return iap.queryPurchases(CommonUtils.getContext(), parameter).then((data: iap.QueryPurchaseResult) => {
-      hilog.info(DOMAIN, TAG, `Succeeded in querying purchases. data len: ${data.purchaseDataList?.length}`);
-      return data.purchaseDataList?.length > 0;
-    }).catch((err: BusinessError) => {
-      hilog.error(DOMAIN, TAG, `Failed to query purchases. Code is ${err.code}, message is ${err.message}`);
-      return false;
-    });
   }
 
   /**
