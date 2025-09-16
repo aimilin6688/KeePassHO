@@ -7,15 +7,16 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { SettingsService } from '../../services/SettingsService';
 import DateUtils, { DateUnit } from '../../common/utils/DateUtils';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
 
-interface RewardOption {
+interface ProductOption {
   goodId: string;
   amount: string;
-  title: Resource;
-  thanksMessage: Resource;
+  title: ResourceStr;
+  thanksMessage: ResourceStr;
 }
 
 @Entry
@@ -25,7 +26,7 @@ struct Support {
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext();
-  private rewardOptions: Array<RewardOption> = [
+  private products: Array<ProductOption> = [
     {
       goodId: "10010",
       amount: '¥10',
@@ -56,7 +57,8 @@ struct Support {
     try {
       // 查询支付环境状态
       iap.queryEnvironmentStatus(this.context).then(result => {
-        hilog.info(DOMAIN, TAG, 'Environment status: ' + result)
+        hilog.info(DOMAIN, TAG, 'Environment status: ' + result);
+        this.queryProductList();
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Failed to query environment status: ' + err.message);
         this.promptAction.showToast({ message: err.message });
@@ -67,10 +69,41 @@ struct Support {
   }
 
   /**
+   * 查询打赏金额列表
+   * @returns
+   */
+  private queryProductList(): void {
+    const existsProd: string[] = this.products.map(item => item.goodId);
+    const parameter: iap.QueryProductsParameter = {
+      productType: iap.ProductType.CONSUMABLE,
+      productIds: existsProd
+    }
+    iap.queryProducts(this.context as common.UIAbilityContext, parameter).then((data: Array<iap.Product>) => {
+      console.info(`Succeeded in querying products. data length: ${data?.length}`);
+      if (!data || data.length === 0) {
+        return;
+      }
+      for (let i = 0; i < data.length; i++) {
+        const product = data[i];
+        if (existsProd.indexOf(product.id) != -1) {
+          for (let j = 0; j < this.products.length; j++) {
+            const option = this.products[j];
+            if (product.id === option.goodId) {
+              option.amount = product.localPrice ?? product.price;
+            }
+          }
+        }
+      }
+    }).catch((err: BusinessError) => {
+      console.error(`Failed to query products. Code is ${err.code}, message is ${err.message}`);
+    });
+  }
+
+  /**
    * 支付
    * @param option
    */
-  private pay(option: RewardOption) {
+  private pay(option: ProductOption) {
     try {
       iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.CONSUMABLE }).then(result => {
         SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
@@ -117,7 +150,7 @@ struct Support {
    * 显示感谢信息
    * @param message 感谢信息
    */
-  private showThankYouMessage(message: Resource) {
+  private showThankYouMessage(message: ResourceStr) {
     try {
       this.promptAction.showToast({
         message: message,
@@ -176,7 +209,7 @@ struct Support {
         // 打赏金额选项
         ListItem() {
           Column() {
-            ForEach(this.rewardOptions, (option: RewardOption, index: number) => {
+            ForEach(this.products, (option: ProductOption, index: number) => {
               this.RewardOption(
                 option.amount,
                 option.title,
@@ -291,7 +324,7 @@ struct Support {
    * @param onClick 点击事件
    */
   @Builder
-  private RewardOption(amount: string, title: Resource, onClick: () => void) {
+  private RewardOption(amount: string, title: ResourceStr, onClick: () => void) {
     Column() {
       Row() {
         Text(amount)
