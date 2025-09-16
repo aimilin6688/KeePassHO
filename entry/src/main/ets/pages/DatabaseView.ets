@@ -93,7 +93,7 @@ struct DatabaseView {
     // 监听排序方式变化
     this.settingsService.registerObserver(this.onSettingChanged);
     // 显示支持弹框
-    new SupportService().showSupportDialog(this.getUIContext());
+    SupportService.showSupportDialog(this.getUIContext());
   }
 
   aboutToDisappear() {

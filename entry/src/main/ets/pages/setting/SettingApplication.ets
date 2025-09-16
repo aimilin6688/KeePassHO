@@ -27,14 +27,16 @@ struct SettingApplication {
   private hideSupportDialog(isOn: boolean) {
     // 开启隐藏时处理
     if (isOn) {
-      if (!SupportService.isCanHideSupport()) {
-        this.promptAction.showToast({ message: $r('app.string.application_hide_support_tips'), duration: 2000 });
-        this.isHideSupportDialog = false;
-        return;
-      }
-      this.isHideSupportDialog = true;
-      // 已经使用过一段时间了,隐藏捐赠弹框
-      SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
+      SupportService.isCanHideSupport().then(result => {
+        // 已经使用过一段时间了,隐藏捐赠弹框
+        if (result) {
+          this.isHideSupportDialog = true;
+          SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
+        } else {
+          this.promptAction.showToast({ message: $r('app.string.application_hide_support_tips'), duration: 2000 });
+          this.isHideSupportDialog = false;
+        }
+      })
     } else {
       this.isHideSupportDialog = false;
       SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, true);
