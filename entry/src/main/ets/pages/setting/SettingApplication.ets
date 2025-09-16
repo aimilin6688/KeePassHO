@@ -1,15 +1,27 @@
 import { SettingsService } from '../../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import { SupportService } from '../../services/SupportService';
+import { ContextLoadingDialog } from '../../components/ContextLoadingDialog';
+import ResourceManager from '../../common/utils/ResourceManager';
 
 
 @Entry
 @Component
 struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
+  @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
+  // 带内容的进度弹框
+  private loadingDialog: CustomDialogController = new CustomDialogController({
+    builder: ContextLoadingDialog({
+      loadingMessage: this.loadingMessage,
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
 
   aboutToAppear(): void {
     this.initSettings();
@@ -27,6 +39,7 @@ struct SettingApplication {
   private hideSupportDialog(isOn: boolean) {
     // 开启隐藏时处理
     if (isOn) {
+      this.loadingDialog.open();
       SupportService.isCanHideSupport().then(result => {
         // 已经使用过一段时间了,隐藏捐赠弹框
         if (result) {
@@ -36,6 +49,7 @@ struct SettingApplication {
           this.promptAction.showToast({ message: $r('app.string.application_hide_support_tips'), duration: 2000 });
           this.isHideSupportDialog = false;
         }
+        this.loadingDialog.close();
       })
     } else {
       this.isHideSupportDialog = false;
