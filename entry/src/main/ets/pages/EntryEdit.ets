@@ -66,7 +66,8 @@ struct EntryEdit {
       }
     }),
     alignment: DialogAlignment.Bottom,
-    customStyle: true
+    customStyle: true,
+    autoCancel: false
   });
   // 图标选择器对话框控制器
   private iconSelectorController: CustomDialogController = new CustomDialogController({
@@ -92,7 +93,7 @@ struct EntryEdit {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
-    autoCancel: true
+    autoCancel: false
   });
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
@@ -121,7 +122,7 @@ struct EntryEdit {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
-    autoCancel: true
+    autoCancel: false
   });
 
   aboutToAppear() {
