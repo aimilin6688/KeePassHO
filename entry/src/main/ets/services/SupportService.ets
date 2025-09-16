@@ -21,7 +21,7 @@ export class SupportService {
       if (!SupportService.isShowSupport()) {
         return resolve();
       }
-      CommonUtils.showDialog(SupportService.getShowSupportDialog(), context).then(async result => {
+      CommonUtils.showDialog(SupportService.getShowSupportDialog()).then(async result => {
         SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_TIME, new Date().getTime());
         if (result.index === 1) {
           context.getRouter().pushUrl({ url: "pages/about/Support" });
