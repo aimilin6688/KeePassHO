@@ -81,8 +81,12 @@ export class CommonUtils {
    * @param message
    * @param duration
    */
-  public static showToast(message: ResourceStr | promptAction.ShowToastOptions, duration?: number): void {
-    promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
+  public static showToast(message: ResourceStr | promptAction.ShowToastOptions, duration?: number, context?: UIContext): void {
+    if (context) {
+      context.getPromptAction().showToast(CommonUtils.toShowToastOptions(message, duration));
+    } else {
+      promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
+    }
   }
 
   /**
@@ -90,8 +94,12 @@ export class CommonUtils {
    * @param showDialogOptions
    * @returns
    */
-  public static showDialog(showDialogOptions: promptAction.ShowDialogOptions):Promise<ShowDialogSuccessResponse> {
-    return promptAction.showDialog(showDialogOptions);
+  public static showDialog(showDialogOptions: promptAction.ShowDialogOptions, context?: UIContext): Promise<ShowDialogSuccessResponse> {
+    if (context) {
+      return context.getPromptAction().showDialog(showDialogOptions);
+    } else {
+      return promptAction.showDialog(showDialogOptions);
+    }
   }
 
   /**
