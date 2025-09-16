@@ -57,6 +57,9 @@ struct Support {
       // 查询支付环境状态
       iap.queryEnvironmentStatus(this.context).then(result => {
         hilog.info(DOMAIN, TAG, 'Environment status: ' + result)
+      }).catch((err: BusinessError) => {
+        hilog.error(DOMAIN, TAG, 'Failed to query environment status: ' + err.message);
+        this.promptAction.showToast({ message: err.message });
       });
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to query environment status: ' + err.message);
