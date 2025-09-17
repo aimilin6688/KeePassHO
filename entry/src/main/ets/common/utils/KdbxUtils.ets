@@ -22,7 +22,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { SaveDatabaseCallback } from '../../workers/DatabaseSave';
 import ResourceManager from './ResourceManager';
-import { CommonUtils } from './CommonUtils';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -403,13 +403,15 @@ export default class KdbxUtils {
     if (callback == undefined) {
       callback = {
         onSuccess: () => {
-          CommonUtils.showToast($r("app.string.save_success"), 2000);
+          LoadingDialog.hideLoading();
+          LoadingDialog.showSuccess($r("app.string.save_success"));
         },
         onError: (errorMessage: string) => {
-          CommonUtils.showToast($r('app.string.save_failed_message', errorMessage), 2000);
+          LoadingDialog.hideLoading();
+          LoadingDialog.showFailure(errorMessage);
         },
         onMessage: (message: string) => {
-          CommonUtils.showToast(message, 2000);
+          LoadingDialog.showLoading(message);
         },
         showToast: true
       };
