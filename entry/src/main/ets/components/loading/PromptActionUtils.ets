@@ -57,7 +57,7 @@ export class PromptActionUtils {
         offset: value.options?.offset ?? loadingDialogGlobalSettings.offset,
         transition: value.options?.transition ?? loadingDialogGlobalSettings.transition,
         showInSubWindow: value.options?.showInSubWindow ?? loadingDialogGlobalSettings.showInSubWindow,
-        keyboardAvoidMode: KeyboardAvoidMode.NONE,
+        keyboardAvoidMode: value.options?.keyboardAvoidMode ?? loadingDialogGlobalSettings.keyboardAvoidMode,
         isModal: value.options?.isModal ?? loadingDialogGlobalSettings.isModal,
         onWillDismiss: (action: DismissDialogAction) => {
           if (action.reason == DismissReason.PRESS_BACK && hideOnSystemBack) {
