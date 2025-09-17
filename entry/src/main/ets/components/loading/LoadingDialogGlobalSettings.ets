@@ -18,6 +18,7 @@ export class LoadingDialogGlobalSettings {
   hideOnSystemBack: boolean = false
   showInSubWindow: boolean = false
   isModal: boolean = false
+  keyboardAvoidMode: KeyboardAvoidMode = KeyboardAvoidMode.DEFAULT
 }
 
 export let loadingDialogGlobalSettings = new LoadingDialogGlobalSettings()

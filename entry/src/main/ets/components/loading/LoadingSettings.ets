@@ -74,5 +74,10 @@ export interface LoadingSettings {
   /**
    * 是否是模态窗口，模态窗口有蒙层，非模态窗口无蒙层， 默认是 true
    */
-  isModal?: boolean
+  isModal?: boolean,
+
+  /**
+   * 键盘弹起时，弹窗是否自动上移，默认是true
+   */
+  keyboardAvoidMode?: KeyboardAvoidMode
 }
