@@ -45,12 +45,13 @@ struct DatabaseView {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State searchHistory: Array<string> = [];
+  @State currentGroup: KdbxGroup | undefined = undefined;
+
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private currentGroup: KdbxGroup | undefined = undefined;
   private settingsService: SettingsService = SettingsService.getInstance();
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
@@ -804,7 +805,7 @@ struct DatabaseView {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
               // 没有数据
-              if(this.groups.length ===0  && this.entries.length ===0){
+              if(this.currentGroup?.groups.length === 0  && this.currentGroup?.entries.length === 0){
                 ListItem(){
                   Column() {
                     Image($r('app.media.ic_empty'))
