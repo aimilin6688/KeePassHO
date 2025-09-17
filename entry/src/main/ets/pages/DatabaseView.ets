@@ -287,7 +287,7 @@ struct DatabaseView {
         .width(80)
         .height(60)
         .fontColor($r('app.color.text_primary'))
-        .backgroundColor($r('app.color.yellow'))
+        .backgroundColor($r("app.color.warn"))
         .fontSize(14)
         .onClick(() => {
           // 判断是分组还是条目
@@ -301,7 +301,7 @@ struct DatabaseView {
       Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
         .width(80)
         .height(60)
-        .backgroundColor($r('app.color.danger'))
+        .backgroundColor($r("app.color.error"))
         .fontColor($r('app.color.text_primary'))
         .fontSize(14)
         .onClick(() => {

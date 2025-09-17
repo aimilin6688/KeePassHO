@@ -249,7 +249,7 @@ struct ChangePassword {
 
           Text($r('app.string.change_password_key_file_tip'))
             .fontSize(12)
-            .fontColor($r('app.color.yellow'))
+            .fontColor($r("app.color.warn"))
             .margin({ top: 4 })
         }
         // 不适用密钥文件
