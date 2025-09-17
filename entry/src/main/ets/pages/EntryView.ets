@@ -479,7 +479,7 @@ struct EntryView {
             .width('45%')
             .height(40)
             .borderRadius(16)
-            .backgroundColor($r('app.color.danger'))
+            .backgroundColor($r("app.color.error"))
             .onClick(() => {
               this.rollbackToHistory();
             })
