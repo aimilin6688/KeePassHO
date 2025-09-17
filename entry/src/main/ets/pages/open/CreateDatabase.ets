@@ -290,7 +290,7 @@ struct CreateDatabase {
         Text($r("app.string.key_file_tip"))
           .fontSize(12)
           .fontWeight(FontWeight.Medium)
-          .fontColor($r('app.color.yellow'))
+          .fontColor($r("app.color.warn"))
           .margin({ top: 4, left: 28, right: 16 })
           .width('100%')
           .textAlign(TextAlign.Start)
