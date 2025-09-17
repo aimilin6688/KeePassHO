@@ -34,6 +34,10 @@
       "value": "#FFFFFF"
     },
     {
+      "name": "toast_bg",
+      "value": "#FEFEFF"
+    },
+    {
       "name": "button_text_blue",
       "value": "#FFFFFF"
     },
