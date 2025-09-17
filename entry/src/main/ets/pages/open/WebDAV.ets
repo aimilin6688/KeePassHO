@@ -323,7 +323,7 @@ struct WebDAV {
             Text(this.connectionStatus)
               .fontSize(14)
               .margin({ top: 10 })
-              .fontColor(this.isErrorStatus ? $r('app.color.danger') : $r('app.color.success'))
+              .fontColor(this.isErrorStatus ? $r("app.color.error") : $r('app.color.success'))
           }
 
           // 加载中状态
