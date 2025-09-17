@@ -63,23 +63,23 @@ struct LoadingDialogView {
         } else if (this.state == LoadingState.SUCCESS) {
           Image(this.settings?.successSrc ?? loadingDialogGlobalSettings.successSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.ERROR) {
           Image(this.settings?.failureSrc ?? loadingDialogGlobalSettings.failureSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.INFO) {
           Image(this.settings?.infoSrc ?? loadingDialogGlobalSettings.infoSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.WARN) {
           Image(this.settings?.warnSrc ?? loadingDialogGlobalSettings.warnSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.PROGRESS) {
           Stack() {
             Progress({ value: this.progress, total: 100, type: ProgressType.Ring })
@@ -105,7 +105,7 @@ struct LoadingDialogView {
 
         if (this.msg != '') {
           if(this.iconState.includes(this.state)){
-            Blank().width(16);
+            Blank().width(10);
           }
           Text(this.msg)
             .fontColor(this.settings?.textColor ?? loadingDialogGlobalSettings.textColor)
