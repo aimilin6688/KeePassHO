@@ -76,17 +76,10 @@ struct DatabaseView {
   aboutToAppear() {
     this.clearUrl();
     this.initSettings();
-    // 注册数据库合并事件
-    EventBus.on<void>(EventBus.DATABASE_RELOAD, () => {
-      this.reloadDatabase();
-    });
-    EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
-      this.updateUI();
-    });
+    this.resetDatabaseEvent();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
-
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
@@ -98,15 +91,31 @@ struct DatabaseView {
   }
 
   aboutToDisappear() {
-    // 移除监听器
-    EventBus.off<void>(EventBus.DATABASE_RELOAD);
-    EventBus.off<void>(EventBus.DATABASE_UPDATE);
+    // 移除主题监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
+    // 移除配置监听器
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+  }
+
+  /**
+   * 监听数据库变化
+   */
+  private resetDatabaseEvent() {
+    // 注册数据库合并事件
+    EventBus.off(EventBus.DATABASE_RELOAD);
+    EventBus.on(EventBus.DATABASE_RELOAD, () => {
+      this.reloadDatabase();
+    });
+
+    // 注册数据库更新事件
+    EventBus.off(EventBus.DATABASE_UPDATE);
+    EventBus.on(EventBus.DATABASE_UPDATE, () => {
+      this.updateUI();
+    });
   }
 
   /**
@@ -186,7 +195,7 @@ struct DatabaseView {
         message: $r('app.string.invalid_database'),
         duration: 2000
       });
-      this.router.back();
+      this.routerBack();
       return;
     }
     if (this.isLoading == true) {
@@ -207,11 +216,8 @@ struct DatabaseView {
 
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
-        this.promptAction.showToast({
-          message: $r('app.string.invalid_group'),
-          duration: 2000
-        });
-        this.router.back();
+        hilog.info(DOMAIN, TAG, '%{public}s', `Invalid group: ${dbShowParam?.groupId}`)
+        this.promptAction.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
       KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
@@ -223,7 +229,7 @@ struct DatabaseView {
       this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
-        this.router.back();
+        this.routerBack();
       }, 2000);
     } finally {
       this.isLoading = false;
@@ -603,6 +609,12 @@ struct DatabaseView {
 
   private isShowHistory(): boolean {
     return this.isSearching && this.searchHistory && this.searchHistory.length > 0;
+  }
+
+  private routerBack() {
+    if (parseInt(this.router.getLength()) > 0) {
+      this.router.back();
+    }
   }
 
   build() {
