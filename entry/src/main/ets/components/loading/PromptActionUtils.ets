@@ -91,6 +91,7 @@ export class PromptActionUtils {
    */
   static async closeCustomDialog(dialogId?: string): Promise<void> {
     try {
+      hilog.debug(DOMAIN, TAG, `closeCustomDialog dialogId = ${dialogId}`);
       const promptAction = CommonUtils.getUiContext().getPromptAction();
       let info: PromptActionInfo | undefined = undefined
       if (dialogId) {
@@ -101,10 +102,10 @@ export class PromptActionUtils {
       if (info) {
         return promptAction.closeCustomDialog(info.componentContent)
       } else {
-        hilog.debug(DOMAIN, TAG, ` closeCustomDialog error = info is undefined`)
+        hilog.debug(DOMAIN, TAG, `closeCustomDialog error = info is undefined`)
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, ` closeCustomDialog error = ${JSON.stringify(error)}`)
+      hilog.error(DOMAIN, TAG, `closeCustomDialog error = ${JSON.stringify(error)}`)
     }
   }
 
