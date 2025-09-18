@@ -1,11 +1,11 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Constants } from '../../common/constants/Constants';
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { FileService } from '../../services/FileService';
-import { DatabaseSave, SaveDatabaseCallback } from '../../workers/DatabaseSave';
+import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
+import { DatabaseSave } from '../../workers/DatabaseSave';
 import { SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
@@ -18,6 +18,7 @@ const TAG = 'KdbxSaveService';
  */
 export default class KdbxSaveService {
   private static databaseWorker: worker.ThreadWorker | null = null;
+
   /**
    * 保存数据库
    * @returns 结果信息
@@ -93,38 +94,34 @@ export default class KdbxSaveService {
       if (callback && callback.onError) {
         callback.onError(err.message);
       }
-      if (callback && callback.showToast) {
-        CommonUtils.showToast(err.message);
-      }
     }
   }
 
   static callbackWarp(callback?: SaveDatabaseCallback): SaveDatabaseCallback {
     return {
       onSuccess: (message: SuccessMessage) => {
-        KdbxSaveService.handleSuccess(message, callback?.onSuccess);
+        KdbxSaveService.handleSuccess(message, callback);
       },
       onError: callback?.onError,
-      onMessage: callback?.onMessage,
-      showToast: callback?.showToast == undefined ? true : callback.showToast
+      onMessage: callback?.onMessage
     }
   }
 
-  static handleSuccess(message: SuccessMessage, onSuccess: ((message: SuccessMessage) => void) | undefined) {
+  static handleSuccess(message: SuccessMessage, callback?: SaveDatabaseCallback) {
     // 数据库加载成功
     FileService.getDbFileParam().modifiedTime = message.modifiedTime;
     if (message.isMerge) {
       KdbxUtils.arrayBufferToKdbx(message.data, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
         EventBus.emit<void>(EventBus.DATABASE_RELOAD);
-        if (onSuccess) {
-          onSuccess(message);
+        if (callback && callback.onSuccess) {
+          callback.onSuccess(message);
         }
       })
     } else {
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
-      if (onSuccess) {
-        onSuccess(message);
+      if (callback && callback.onSuccess) {
+        callback.onSuccess(message);
       }
     }
   }
@@ -142,9 +139,6 @@ export default class KdbxSaveService {
     if (!callback) {
       return;
     }
-    if (callback.showToast) {
-      CommonUtils.showToast(ResourceManager.getString(data.message));
-    }
     if (callback.onMessage) {
       callback.onMessage(ResourceManager.getString(data.message));
     }
@@ -153,9 +147,6 @@ export default class KdbxSaveService {
   static onError(data: LoadMessage, callback?: SaveDatabaseCallback) {
     if (!callback) {
       return;
-    }
-    if (callback.showToast) {
-      CommonUtils.showToast(ResourceManager.getString(data.message));
     }
     if (callback.onError) {
       callback.onError(ResourceManager.getString(data.message));
