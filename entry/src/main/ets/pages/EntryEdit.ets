@@ -15,6 +15,7 @@ import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
 import FileUtils from '../common/utils/FIleUtils';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -404,7 +405,6 @@ struct EntryEdit {
     if (this.database) {
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
       KdbxUtils.saveDatabase({
-        showToast: false,
         onSuccess: () => {
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           let timeOut = setTimeout(() => {
@@ -420,7 +420,7 @@ struct EntryEdit {
         onError: (error) => {
           this.handleSaveError(error);
         }
-      })
+      });
     }
   }
 

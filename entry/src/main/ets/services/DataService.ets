@@ -9,6 +9,7 @@ import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam';
 import DateUtils from '../common/utils/DateUtils';
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
+import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
@@ -22,12 +23,13 @@ export class DataService {
    */
   public static saveKdbx(param: SaveKdbxParam): Promise<void> {
     return KdbxExportService.getFileContent(param).then(result => {
-      CommonUtils.showToast({ message: $r("app.string.handling"), duration: 3000 });
+      LoadingDialog.showLoading($r("app.string.handling"));
       const location = param.locationInfo;
       return new KdbxFileManager(location.storageType, location.storageConfig).write(location.filePath, result.content);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to save kdbx file: %{public}s, error: %{public}s', param.locationInfo.filePath, error.message);
-      CommonUtils.showToast(error.message);
+      LoadingDialog.hideLoading();
+      LoadingDialog.showError(error.message);
     });
   }
 
