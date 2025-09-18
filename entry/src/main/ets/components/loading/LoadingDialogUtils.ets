@@ -19,7 +19,12 @@ export class LoadingDialogUtils {
    * @param value 可不传
    */
   async showLoading(value: ResourceStr | LoadingSettings = ''): Promise<void> {
-    await this.showDialog(new LoadingActionOptions(LoadingState.LOADING, value))
+    let loading = new LoadingActionOptions(LoadingState.LOADING, value)
+    if (PromptActionUtils.existsCustomDialog(LoadingState.LOADING)) {
+      this.updateDialog(loading)
+    } else {
+      await this.showDialog(loading)
+    }
   }
 
 
@@ -27,7 +32,9 @@ export class LoadingDialogUtils {
    * 隐藏 hud
    */
   async hideLoading(): Promise<void> {
-    return await this.hide(LoadingState.LOADING);
+    this.hide(LoadingState.LOADING).catch((err: Error) => {
+      this.hideDialogDelay(LoadingState.LOADING, { hideDelay: 100 });
+    })
   }
 
 
