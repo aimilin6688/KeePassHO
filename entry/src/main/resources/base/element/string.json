@@ -562,7 +562,7 @@
     },
     {
       "name": "load_file_success",
-      "value": "File loaded successfully!"
+      "value": "Loading file..."
     },
     {
       "name": "EntryEdit_invalid_db_or_group",
