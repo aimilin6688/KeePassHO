@@ -2,7 +2,8 @@ import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
-import { DatabaseSave, SaveDatabaseCallback } from './DatabaseSave';
+import { DatabaseSave } from './DatabaseSave';
+import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseSaveWorker';

@@ -5,6 +5,8 @@ import { LoadingActionOptions, LoadingDialogBuilder, LoadingState } from './Load
 import { PromptActionUtils } from './PromptActionUtils'
 
 export class LoadingDialogUtils {
+  private timeoutMap: Map<string, number> = new Map();
+
   /**
    * 设置全局默认参数
    */
@@ -17,7 +19,12 @@ export class LoadingDialogUtils {
    * @param value 可不传
    */
   async showLoading(value: ResourceStr | LoadingSettings = ''): Promise<void> {
-    await this.showDialog(new LoadingActionOptions(LoadingState.LOADING, value))
+    let loading = new LoadingActionOptions(LoadingState.LOADING, value)
+    if (PromptActionUtils.existsCustomDialog(LoadingState.LOADING)) {
+      this.updateDialog(loading)
+    } else {
+      await this.showDialog(loading)
+    }
   }
 
 
@@ -25,7 +32,9 @@ export class LoadingDialogUtils {
    * 隐藏 hud
    */
   async hideLoading(): Promise<void> {
-   return this.hide(LoadingState.LOADING);
+    this.hide(LoadingState.LOADING).catch((err: Error) => {
+      this.hideDialogDelay(LoadingState.LOADING, { hideDelay: 100 });
+    })
   }
 
 
@@ -42,7 +51,7 @@ export class LoadingDialogUtils {
    * 显示 failure hud
    * @param value 可不传
    */
-  async showFailure(value: ResourceStr | LoadingSettings = ''): Promise<void> {
+  async showError(value: ResourceStr | LoadingSettings = ''): Promise<void> {
     await this.showDialog(new LoadingActionOptions(LoadingState.ERROR, value))
     this.hideDialogDelay(LoadingState.ERROR, value)
   }
@@ -121,9 +130,17 @@ export class LoadingDialogUtils {
     } else {
       hideDelay = (value as LoadingSettings).hideDelay ?? loadingDialogGlobalSettings.hideDelay
     }
-    setTimeout(() => {
-      this.hide(dialogId)
-    }, hideDelay)
+    if (dialogId && this.timeoutMap.has(dialogId)) {
+      clearTimeout(this.timeoutMap.get(dialogId));
+      this.timeoutMap.delete(dialogId);
+    }
+    const timeout = setTimeout(() => {
+      this.hide(dialogId);
+    }, hideDelay);
+
+    if (dialogId) {
+      this.timeoutMap.set(dialogId, timeout);
+    }
   }
 }
 

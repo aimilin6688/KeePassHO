@@ -19,6 +19,7 @@ import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import ResourceManager from '../common/utils/ResourceManager';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -46,7 +47,6 @@ struct DatabaseView {
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
-
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
@@ -76,17 +76,10 @@ struct DatabaseView {
   aboutToAppear() {
     this.clearUrl();
     this.initSettings();
-    // 注册数据库合并事件
-    EventBus.on<void>(EventBus.DATABASE_RELOAD, () => {
-      this.reloadDatabase();
-    });
-    EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
-      this.updateUI();
-    });
+    this.resetDatabaseEvent();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
-
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
@@ -98,15 +91,31 @@ struct DatabaseView {
   }
 
   aboutToDisappear() {
-    // 移除监听器
-    EventBus.off<void>(EventBus.DATABASE_RELOAD);
-    EventBus.off<void>(EventBus.DATABASE_UPDATE);
+    // 移除主题监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
+    // 移除配置监听器
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+  }
+
+  /**
+   * 监听数据库变化
+   */
+  private resetDatabaseEvent() {
+    // 注册数据库合并事件
+    EventBus.off(EventBus.DATABASE_RELOAD);
+    EventBus.on(EventBus.DATABASE_RELOAD, () => {
+      this.reloadDatabase();
+    });
+
+    // 注册数据库更新事件
+    EventBus.off(EventBus.DATABASE_UPDATE);
+    EventBus.on(EventBus.DATABASE_UPDATE, () => {
+      this.updateUI();
+    });
   }
 
   /**
@@ -186,7 +195,7 @@ struct DatabaseView {
         message: $r('app.string.invalid_database'),
         duration: 2000
       });
-      this.router.back();
+      this.routerBack();
       return;
     }
     if (this.isLoading == true) {
@@ -207,11 +216,8 @@ struct DatabaseView {
 
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
-        this.promptAction.showToast({
-          message: $r('app.string.invalid_group'),
-          duration: 2000
-        });
-        this.router.back();
+        hilog.info(DOMAIN, TAG, '%{public}s', `Invalid group: ${dbShowParam?.groupId}`)
+        this.promptAction.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
       KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
@@ -223,7 +229,7 @@ struct DatabaseView {
       this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
-        this.router.back();
+        this.routerBack();
       }, 2000);
     } finally {
       this.isLoading = false;
@@ -344,11 +350,11 @@ struct DatabaseView {
    */
   private saveDatabase() {
     if (this.database) {
-      KdbxUtils.saveDatabase({
+      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
           this.updateUI();
         }
-      });
+      }));
     }
   }
 
@@ -601,8 +607,14 @@ struct DatabaseView {
     });
   }
 
-  private isShowHistory():boolean{
+  private isShowHistory(): boolean {
     return this.isSearching && this.searchHistory && this.searchHistory.length > 0;
+  }
+
+  private routerBack() {
+    if (parseInt(this.router.getLength()) > 0) {
+      this.router.back();
+    }
   }
 
   build() {
@@ -660,8 +672,8 @@ struct DatabaseView {
             .width('auto')
             .layoutWeight(1)
           } else {
-            Column(){
-              Row(){
+            Column() {
+              Row() {
                 if (this.showBack) {
                   Image($r("app.media.ic_angle_left"))
                     .width(24)
@@ -725,9 +737,10 @@ struct DatabaseView {
                     this.filteredEntries = [...this.entries];
                   })
               }.width('100%')
+
               // 显示搜索历史
               if (this.isShowHistory()) {
-                Row(){
+                Row() {
                   RelativeContainer() {
                     List() {
                       ForEach(this.searchHistory, (searchItem: string, index: number) => {
@@ -775,7 +788,7 @@ struct DatabaseView {
                   .height(58)
                   .borderRadius(8)
                 }.width('100%')
-                .padding({left:12, right:12})
+                .padding({ left: 12, right: 12 })
               }
             }.width('100%')
           }
@@ -805,8 +818,8 @@ struct DatabaseView {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
               // 没有数据
-              if(this.currentGroup?.groups.length === 0  && this.currentGroup?.entries.length === 0){
-                ListItem(){
+              if (this.currentGroup?.groups.length === 0 && this.currentGroup?.entries.length === 0) {
+                ListItem() {
                   Column() {
                     Image($r('app.media.ic_empty'))
                       .width(100)
@@ -821,7 +834,7 @@ struct DatabaseView {
                   .height('80%')
                   .justifyContent(FlexAlign.Center)
                 }
-              } else{
+              } else {
                 // 分组信息显示
                 ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
                   ListItem() {
@@ -1039,7 +1052,7 @@ struct DatabaseView {
         });
       })
 
-      if(!(this.showAddButtons || this.moveParam)){
+      if (!(this.showAddButtons || this.moveParam)) {
         // 显示TOTP
         Button() {
           Image($r('app.media.ic_clock'))
@@ -1122,6 +1135,6 @@ struct DatabaseView {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
