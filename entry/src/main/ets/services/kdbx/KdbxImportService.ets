@@ -9,6 +9,7 @@ import { FileService } from '../FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import { ErrorCodes, KeePassHoError } from '../error/KeepassHoError';
 import { KdbxCsvService } from './KdbxCsvService';
+import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxImportService';
@@ -73,15 +74,11 @@ export class KdbxImportService {
       }
     }
     hilog.debug(DOMAIN, TAG, 'Import database group:%{public}d, entry:%{public}d', newGroup.groups.length, newGroup.entries.length);
-    KdbxUtils.saveDatabase({
+    KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
       onSuccess: () => {
-        CommonUtils.showToast({ message: $r("app.string.import_success") });
         CommonUtils.back({ url: "pages/setting/SettingDatabase" });
-      },
-      onError: (message) => {
-        CommonUtils.showToast(message);
-      },
-    });
+      }
+    }));
   }
 
   /**

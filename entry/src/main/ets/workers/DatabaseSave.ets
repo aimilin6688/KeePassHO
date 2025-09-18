@@ -7,7 +7,7 @@ import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './Databa
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import ResourceManager from '../common/utils/ResourceManager';
 import KdbxUtils from '../common/utils/KdbxUtils';
-import { CommonUtils } from '../common/utils/CommonUtils';
+import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoad';
@@ -126,13 +126,7 @@ export class DatabaseSave {
   postMessage(message: string | Resource) {
     const msgText = ResourceManager.getString(message);
     hilog.info(DOMAIN, TAG, 'Save database message:  %{public}s', msgText);
-    if (!this.callback) {
-      return;
-    }
-    if (this.callback.showToast) {
-      CommonUtils.showToast(msgText);
-    }
-    if (this.callback.onMessage) {
+    if (this.callback && this.callback.onMessage) {
       this.callback.onMessage(msgText);
     }
   }
@@ -143,14 +137,8 @@ export class DatabaseSave {
    */
   postErrorMessage(message: string) {
     const msgText = ResourceManager.getString(message);
-    if (!this.callback) {
-      return;
-    }
-    if (this.callback.onError) {
+    if (this.callback && this.callback.onError) {
       this.callback.onError(msgText);
-    }
-    if (this.callback.showToast) {
-      CommonUtils.showToast(msgText);
     }
   }
 
@@ -159,36 +147,8 @@ export class DatabaseSave {
    * @param message 消息
    */
   postSuccessMessage(message: SuccessMessage) {
-    if (!this.callback) {
-      return;
-    }
-    if (this.callback.onSuccess) {
+    if (this.callback && this.callback.onSuccess) {
       this.callback.onSuccess(message);
     }
   }
-}
-
-
-export interface SaveDatabaseCallback {
-  /**
-   * 保存成功
-   */
-  onSuccess?: (message: SuccessMessage) => void;
-
-  /**
-   * 保存失败
-   * @param message 异常消息
-   */
-  onError?: (message: string) => void;
-
-  /**
-   * 过程消息
-   * @param message
-   */
-  onMessage?: (message: string) => void;
-
-  /**
-   * 是否显示提示信息
-   */
-  showToast?: boolean | undefined;
 }
