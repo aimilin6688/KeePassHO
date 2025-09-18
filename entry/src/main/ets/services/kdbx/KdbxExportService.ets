@@ -31,7 +31,7 @@ export class KdbxExportService {
           await KdbxExportService.handlerExport(locationInfo, exportType);
         } catch (e) {
           hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
-          CommonUtils.showToast({ message: e.message });
+          LoadingDialog.showError(e.message);
         }
       }
     } as LocationInterface);
@@ -49,7 +49,8 @@ export class KdbxExportService {
       LoadingDialog.showLoading($r("app.string.export_saving"));
       const existsFile = locationInfo.storageType !== StorageType.LOCAL && await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath)
         .catch((error: Error) => {
-          hilog.error(DOMAIN, TAG, 'Exists file stateType:%{public}s filePath:%{public}s error:%{public}s', locationInfo.storageType, locationInfo.filePath, error.message);
+          hilog.error(DOMAIN, TAG, 'Exists file stateType:%{public}s filePath:%{public}s error:%{public}s', locationInfo.storageType, locationInfo.filePath,
+            error.message);
           existsError = error;
           LoadingDialog.hideLoading();
           LoadingDialog.showError(error.message);
