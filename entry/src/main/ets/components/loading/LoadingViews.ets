@@ -58,28 +58,28 @@ struct LoadingDialogView {
         if (this.state == LoadingState.LOADING) {
           LoadingProgress()
             .color(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(18)
+            .height(18)
         } else if (this.state == LoadingState.SUCCESS) {
           Image(this.settings?.successSrc ?? loadingDialogGlobalSettings.successSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.ERROR) {
           Image(this.settings?.failureSrc ?? loadingDialogGlobalSettings.failureSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.INFO) {
           Image(this.settings?.infoSrc ?? loadingDialogGlobalSettings.infoSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.WARN) {
           Image(this.settings?.warnSrc ?? loadingDialogGlobalSettings.warnSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(16)
+            .height(16)
         } else if (this.state == LoadingState.PROGRESS) {
           Stack() {
             Progress({ value: this.progress, total: 100, type: ProgressType.Ring })
@@ -99,13 +99,13 @@ struct LoadingDialogView {
               .fontColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
               .textAlign(TextAlign.Center)
           }
-          .width(50)
-          .height(50)
+          .width(48)
+          .height(48)
         }
 
         if (this.msg != '') {
           if(this.iconState.includes(this.state)){
-            Blank().width(16);
+            Blank().width(10);
           }
           Text(this.msg)
             .fontColor(this.settings?.textColor ?? loadingDialogGlobalSettings.textColor)
@@ -115,8 +115,8 @@ struct LoadingDialogView {
       .padding({
         left: 16,
         right: 16,
-        top: 8,
-        bottom: 8
+        top: 10,
+        bottom: 10
       })
       .margin({bottom: '16%'})
       .backgroundColor(this.settings?.backgroundColor ?? loadingDialogGlobalSettings.backgroundColor)
