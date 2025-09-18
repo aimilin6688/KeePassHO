@@ -32,7 +32,7 @@ interface PromptActionInfo {
   componentContent: ComponentContent<object>
 }
 
-let promptActionInfos: PromptActionInfo[] = []
+let promptActionInfos: PromptActionInfo[] = [];
 
 function getPromptActionInfoByDialogId(dialogId: string): PromptActionInfo | undefined {
   return promptActionInfos.find(item => dialogId == item.dialogId)
@@ -57,7 +57,7 @@ export class PromptActionUtils {
         offset: value.options?.offset ?? loadingDialogGlobalSettings.offset,
         transition: value.options?.transition ?? loadingDialogGlobalSettings.transition,
         showInSubWindow: value.options?.showInSubWindow ?? loadingDialogGlobalSettings.showInSubWindow,
-        keyboardAvoidMode: KeyboardAvoidMode.NONE,
+        keyboardAvoidMode: value.options?.keyboardAvoidMode ?? loadingDialogGlobalSettings.keyboardAvoidMode,
         isModal: value.options?.isModal ?? loadingDialogGlobalSettings.isModal,
         onWillDismiss: (action: DismissDialogAction) => {
           if (action.reason == DismissReason.PRESS_BACK && hideOnSystemBack) {
@@ -70,18 +70,16 @@ export class PromptActionUtils {
           const index = promptActionInfos.findIndex(item => item.dialogId == value.params.dialogId)
           if (index >= 0) {
             promptActionInfos.splice(index, 1)
-          } else {
-            promptActionInfos.shift()
           }
         }
       }
 
       if (!PromptActionUtils.existsCustomDialog(value.params.dialogId)) {
-        promptActionInfos.unshift({
+        promptActionInfos.push({
           dialogId: value.params.dialogId,
           componentContent: componentContent
         })
-        return promptAction.openCustomDialog(componentContent, options)
+        return promptAction.openCustomDialog(componentContent, options);
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, ` openCustomDialog error = ${JSON.stringify(error)}`)
