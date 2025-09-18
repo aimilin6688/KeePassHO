@@ -9,6 +9,8 @@ import { FileService } from '../FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import { ErrorCodes, KeePassHoError } from '../error/KeepassHoError';
 import { KdbxCsvService } from './KdbxCsvService';
+import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxImportService';
@@ -29,7 +31,7 @@ export class KdbxImportService {
           KdbxImportService.handlerImport(locationInfo);
         } catch (e) {
           hilog.error(DOMAIN, TAG, 'Import database error:' + e.message);
-          CommonUtils.showToast({ message: e.message });
+          LoadingDialog.showError(e.message);
         }
       }
     } as LocationInterface);
@@ -44,13 +46,13 @@ export class KdbxImportService {
     const exists = await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath);
     // 文件不存在
     if (!exists) {
-      CommonUtils.showToast({ message: $r("app.string.file_not_exists") });
+      LoadingDialog.showError($r("app.string.file_not_exists"));
       return;
     }
     const fileExt = FilenameUtils.getFileExt(locationInfo.filePath);
     // 检查格式
     if (!KdbxImportService.isSupportType(fileExt)) {
-      CommonUtils.showToast({ message: $r("app.string.import_not_support_type") });
+      LoadingDialog.showError($r("app.string.import_not_support_type"));
       return;
     }
     // 转换为导入数据库
@@ -73,15 +75,11 @@ export class KdbxImportService {
       }
     }
     hilog.debug(DOMAIN, TAG, 'Import database group:%{public}d, entry:%{public}d', newGroup.groups.length, newGroup.entries.length);
-    KdbxUtils.saveDatabase({
+    KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
       onSuccess: () => {
-        CommonUtils.showToast({ message: $r("app.string.import_success") });
         CommonUtils.back({ url: "pages/setting/SettingDatabase" });
-      },
-      onError: (message) => {
-        CommonUtils.showToast(message);
-      },
-    });
+      }
+    }));
   }
 
   /**
@@ -113,7 +111,7 @@ export class KdbxImportService {
       return new KdbxGroup();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to import: %{public}s', error.message);
-      CommonUtils.showToast(error.message, 3000);
+      LoadingDialog.showError(error.message);
       if (error instanceof KeePassHoError) {
         throw error;
       }

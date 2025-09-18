@@ -5,7 +5,7 @@ export class LoadingDialogGlobalSettings {
   tintColor: ResourceColor = $r('app.color.text_primary')
   textColor: ResourceColor = $r('app.color.text_primary')
   hideDelay: number = 2000
-  fontSize: number | string | Resource = '16'
+  fontSize: number | string | Resource = '14'
   backgroundColor: ResourceColor = $r("app.color.toast_bg")
   maskColor: ResourceColor = Color.Transparent
   borderRadius: Length | BorderRadiuses = 20

@@ -5,6 +5,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 import { PromptAction, Router } from '@kit.ArkUI';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 /**
  * 修改密码
@@ -36,7 +37,7 @@ struct ChangePassword {
     dbFileParam.newKeyLocation = this.keyLocation;
     dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
-    KdbxUtils.saveDatabase({
+    KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
       onSuccess: () => {
         this.errorMessage = '';
         this.handlePasswordChange();
@@ -44,7 +45,7 @@ struct ChangePassword {
       onError: (message) => {
         this.errorMessage = message;
       },
-    });
+    }));
   }
 
   /**
@@ -105,7 +106,6 @@ struct ChangePassword {
    * 密码修改成功回调
    */
   private handlePasswordChange() {
-    this.promptAction.showToast({ message: $r('app.string.operation_success'), duration: 2000 });
     const filePath = FileService.getFilePath();
     RecentFilesService.clearPassword(filePath).then(() => {
       FileService.close();
@@ -325,6 +325,6 @@ struct ChangePassword {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

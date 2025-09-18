@@ -33,22 +33,26 @@ export function LoadingDialogBuilder(options: LoadingActionOptions) {
   })
 }
 
-@Component
+@ComponentV2
 struct LoadingDialogView {
-  @Prop value: ResourceStr | LoadingSettings = ''
-  @Prop state: LoadingState = LoadingState.LOADING
-  @Prop progress: number = 0
-  private msg: ResourceStr = ''
+  @Param value: ResourceStr | LoadingSettings = ''
+  @Param state: LoadingState = LoadingState.LOADING
+  @Param progress: number = 0
   private settings?: LoadingSettings
   private iconState: LoadingState[] = [LoadingState.LOADING, LoadingState.SUCCESS, LoadingState.ERROR, LoadingState.INFO, LoadingState.WARN, LoadingState.PROGRESS];
 
   aboutToAppear(): void {
+    if(!ResourceUtils.isResourceStr(this.value)){
+      this.settings = this.value as LoadingSettings;
+    }
+  }
+
+  @Computed
+  get msg(): ResourceStr{
     if (ResourceUtils.isResourceStr(this.value)) {
-      this.msg = this.value as ResourceStr;
+      return this.value as ResourceStr;
     } else {
-      const setting = this.value as LoadingSettings;
-      this.msg = setting.msg ?? loadingDialogGlobalSettings.msg
-      this.settings = setting;
+      return (this.value as LoadingSettings).msg ?? loadingDialogGlobalSettings.msg;
     }
   }
 
@@ -58,8 +62,8 @@ struct LoadingDialogView {
         if (this.state == LoadingState.LOADING) {
           LoadingProgress()
             .color(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
-            .width(24)
-            .height(24)
+            .width(18)
+            .height(18)
         } else if (this.state == LoadingState.SUCCESS) {
           Image(this.settings?.successSrc ?? loadingDialogGlobalSettings.successSrc)
             .fillColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
@@ -99,8 +103,8 @@ struct LoadingDialogView {
               .fontColor(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
               .textAlign(TextAlign.Center)
           }
-          .width(50)
-          .height(50)
+          .width(48)
+          .height(48)
         }
 
         if (this.msg != '') {
@@ -115,8 +119,8 @@ struct LoadingDialogView {
       .padding({
         left: 16,
         right: 16,
-        top: 8,
-        bottom: 8
+        top: 10,
+        bottom: 10
       })
       .margin({bottom: '16%'})
       .backgroundColor(this.settings?.backgroundColor ?? loadingDialogGlobalSettings.backgroundColor)

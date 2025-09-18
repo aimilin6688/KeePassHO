@@ -2,7 +2,6 @@ import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { JSON, util } from '@kit.ArkTS'
 import { LoadingSettings } from './LoadingSettings'
 import { loadingDialogGlobalSettings } from './LoadingDialogGlobalSettings'
-import { common } from '@kit.AbilityKit'
 
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { CommonUtils } from '../../common/utils/CommonUtils'
@@ -32,7 +31,7 @@ interface PromptActionInfo {
   componentContent: ComponentContent<object>
 }
 
-let promptActionInfos: PromptActionInfo[] = []
+let promptActionInfos: PromptActionInfo[] = [];
 
 function getPromptActionInfoByDialogId(dialogId: string): PromptActionInfo | undefined {
   return promptActionInfos.find(item => dialogId == item.dialogId)
@@ -70,21 +69,20 @@ export class PromptActionUtils {
           const index = promptActionInfos.findIndex(item => item.dialogId == value.params.dialogId)
           if (index >= 0) {
             promptActionInfos.splice(index, 1)
-          } else {
-            promptActionInfos.shift()
           }
         }
       }
 
       if (!PromptActionUtils.existsCustomDialog(value.params.dialogId)) {
-        promptActionInfos.unshift({
+        promptActionInfos.push({
           dialogId: value.params.dialogId,
           componentContent: componentContent
         })
-        return promptAction.openCustomDialog(componentContent, options)
+        return promptAction.openCustomDialog(componentContent, options);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, ` openCustomDialog error = ${JSON.stringify(error)}`)
+      hilog.error(DOMAIN, TAG, ` openCustomDialog dialogId: ${value.params.dialogId}, error = ${JSON.stringify(error)}`)
+      return Promise.reject(error);
     }
   }
 
@@ -93,20 +91,22 @@ export class PromptActionUtils {
    */
   static async closeCustomDialog(dialogId?: string): Promise<void> {
     try {
+      hilog.debug(DOMAIN, TAG, `closeCustomDialog dialogId = ${dialogId}`);
       const promptAction = CommonUtils.getUiContext().getPromptAction();
       let info: PromptActionInfo | undefined = undefined
       if (dialogId) {
         info = getPromptActionInfoByDialogId(dialogId)
       } else {
-        info = promptActionInfos.length > 0 ? promptActionInfos[0] : undefined
+        info = promptActionInfos.length > 0 ? promptActionInfos[promptActionInfos.length - 1] : undefined
       }
       if (info) {
-        return promptAction.closeCustomDialog(info.componentContent)
+        return await promptAction.closeCustomDialog(info.componentContent)
       } else {
-        hilog.debug(DOMAIN, TAG, ` closeCustomDialog error = info is undefined`)
+        hilog.debug(DOMAIN, TAG, `closeCustomDialog info is undefined`)
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, ` closeCustomDialog error = ${JSON.stringify(error)}`)
+      hilog.error(DOMAIN, TAG, `closeCustomDialog dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
+      return Promise.reject(error);
     }
   }
 

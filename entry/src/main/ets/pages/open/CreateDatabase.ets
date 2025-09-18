@@ -10,6 +10,7 @@ import { LocationMode } from './SelectLocation';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { CommonUtils } from '../../common/utils/CommonUtils';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -75,6 +76,7 @@ struct CreateDatabase {
         fileName: KdbxExportService.createFileName(fileName, ExportType.KDBX, false),
         onLocation: (locationInfo: LocationInfo) => {
           DataService.saveKdbx({ kdbx: newDb, exportType: ExportType.KDBX, locationInfo: locationInfo }).then(() => {
+            LoadingDialog.hideLoading();
             this.isCreating = false;
             DataService.toPasswordPage(this.router, locationInfo);
           })
