@@ -556,7 +556,7 @@
     },
     {
       "name": "load_file_success",
-      "value": "加载内容成功"
+      "value": "加载内容..."
     },
     {
       "name": "EntryEdit_invalid_db_or_group",
