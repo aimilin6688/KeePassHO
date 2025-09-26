@@ -15,6 +15,7 @@ import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
 import FileUtils from '../common/utils/FIleUtils';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -66,7 +67,8 @@ struct EntryEdit {
       }
     }),
     alignment: DialogAlignment.Bottom,
-    customStyle: true
+    customStyle: true,
+    autoCancel: false
   });
   // 图标选择器对话框控制器
   private iconSelectorController: CustomDialogController = new CustomDialogController({
@@ -92,7 +94,7 @@ struct EntryEdit {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
-    autoCancel: true
+    autoCancel: false
   });
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
@@ -121,7 +123,7 @@ struct EntryEdit {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
-    autoCancel: true
+    autoCancel: false
   });
 
   aboutToAppear() {
@@ -403,7 +405,6 @@ struct EntryEdit {
     if (this.database) {
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
       KdbxUtils.saveDatabase({
-        showToast: false,
         onSuccess: () => {
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           let timeOut = setTimeout(() => {
@@ -419,7 +420,7 @@ struct EntryEdit {
         onError: (error) => {
           this.handleSaveError(error);
         }
-      })
+      });
     }
   }
 

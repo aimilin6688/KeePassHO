@@ -5,6 +5,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Consts, Kdbx } from 'kdbxweb';
 import { EventBus } from '../../services/EventBus';
 import { CommonUtils } from '../../common/utils/CommonUtils';
+import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseMeta';
@@ -78,26 +79,14 @@ struct SettingDatabaseMeta {
       this.database.header.compression = this.compressionEnabled ? Consts.CompressionAlgorithm.GZip : Consts.CompressionAlgorithm.None;
 
       // 保存数据库
-      KdbxUtils.saveDatabase({
+      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
-          // 显示成功提示
-          this.promptAction.showToast({
-            message: $r("app.string.save_success"),
-            duration: 2000
-          });
           // 通知数据库已更新
           EventBus.emit<void>(EventBus.DATABASE_UPDATE);
           // 返回上一页
           this.router.back();
-        },
-        onError: (errorMessage: string) => {
-          hilog.error(DOMAIN, TAG, 'Failed to save database metadata: %{public}s', errorMessage);
-          this.promptAction.showToast({
-            message: $r('app.string.save_failed_message', errorMessage),
-            duration: 2000
-          });
         }
-      });
+      }));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to update database metadata: %{public}s', error.message);
       this.promptAction.showToast({

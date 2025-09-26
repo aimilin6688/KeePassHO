@@ -47,6 +47,11 @@ export class SettingsService {
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = true;
+  // 支持弹框
+  public static readonly KEY_SHOW_SUPPORT_TIME = "show_support_time";
+  public static readonly KEY_SHOW_SUPPORT_DIALOG = "show_support_dialog";
+  public static readonly KEY_SHOW_SUPPORT_DIALOG_DEFAULT = true;
+  public static readonly KEY_APP_INSTALL_TIME = "app_install_time";
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -166,6 +171,15 @@ export class SettingsService {
     }
   }
 
+  /**
+   * 写入数据并通知观察者
+   * @param key 键
+   * @param value 值
+   */
+  public static put(key: string, value: preferences.ValueType): Promise<void> {
+    return SettingsService.getInstance().put(key, value);
+  }
+
   // 读取数据
   public async get<T extends preferences.ValueType>(key: string, defValue: T): Promise<T> {
     if (!this.preferences) {
@@ -193,11 +207,60 @@ export class SettingsService {
     }
   }
 
+  /**
+   * 读取数据
+   * @param key 键
+   * @param defValue 默认值
+   */
+  public static getSync<T extends preferences.ValueType>(key: string, defValue: T): T {
+    return SettingsService.getInstance().getSync(key, defValue);
+  }
+
   // 读取数据
   public static get<T extends preferences.ValueType>(key: string, defValue: T, callback: (value: T) => void): void {
     SettingsService.getInstance().get(key, defValue).then(value => {
       callback(value);
     });
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public deleteSync(key: string) {
+    this.preferences?.deleteSync(key);
+    this.preferences?.flushSync();
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public static deleteSync(key: string) {
+    SettingsService.getInstance().deleteSync(key);
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public delete(key: string): Promise<void> {
+    return new Promise<void>(async resolve => {
+      if (!this.preferences) {
+        return resolve();
+      }
+      this.preferences.deleteSync(key);
+      this.preferences.flushSync();
+      return resolve();
+    });
+  }
+
+  /**
+   * 删除数据
+   * @param key
+   */
+  public static delete(key: string): Promise<void> {
+    return SettingsService.getInstance().delete(key);
   }
 
 
@@ -223,7 +286,8 @@ export class SettingsService {
   }
 
   public static isFingerprintAuthEnable(): boolean {
-    return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT);
+    return SettingsService.getInstance()
+      .getSync(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT);
   }
 
   public static isFaceAuthEnable(): boolean {
@@ -231,6 +295,7 @@ export class SettingsService {
   }
 
   public static isSearchHistoryEnable(): boolean {
-    return SettingsService.getInstance().getSync(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT);
+    return SettingsService.getInstance()
+      .getSync(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT);
   }
 }

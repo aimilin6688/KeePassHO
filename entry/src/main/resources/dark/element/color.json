@@ -34,6 +34,10 @@
       "value": "#2C2C2E"
     },
     {
+      "name": "toast_bg",
+      "value": "#2D2F32"
+    },
+    {
       "name": "button_text_blue",
       "value": "#FFFFFF"
     },
@@ -54,24 +58,24 @@
       "value": "#FFFFFF"
     },
     {
-      "name": "danger",
+      "name": "error",
       "value": "#FF3B30"
     },
     {
-      "name": "yellow",
+      "name": "warn",
       "value": "#f0bf2f"
     },
     {
-      "name": "gray",
+      "name": "info",
       "value": "#f0f0f0"
-    },
-    {
-      "name": "icon_normal",
-      "value": "#777777"
     },
     {
       "name": "success",
       "value": "#89c812"
+    },
+    {
+      "name": "icon_normal",
+      "value": "#777777"
     },
     {
       "name": "required",

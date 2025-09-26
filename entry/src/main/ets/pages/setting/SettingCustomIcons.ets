@@ -7,6 +7,7 @@ import { common } from '@kit.AbilityKit';
 import { FileService } from '../../services/FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import IconUtils from '../../common/utils/IconUtils';
+import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingCustomIcons';
@@ -73,11 +74,11 @@ struct SettingCustomIcons {
           this.selectIcons.forEach((iconId) => {
             kdbx.meta.customIcons.delete(iconId + "");
           });
-          KdbxUtils.saveDatabase({
+          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
             onSuccess: () => {
               this.icons = IconUtils.getAllIcons(true);
             }
-          });
+          }));
         }
       }
     });
@@ -101,11 +102,11 @@ struct SettingCustomIcons {
         action: () => {
           let kdbx = FileService.getDatabase();
           kdbx.cleanup({ customIcons: true });
-          KdbxUtils.saveDatabase({
+          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
             onSuccess: () => {
               this.icons = IconUtils.getAllIcons(true);
             }
-          });
+          }));
         }
       }
     });
