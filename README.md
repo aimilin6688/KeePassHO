@@ -34,7 +34,7 @@ KeePassHO是一款免费、开源且广受赞誉的密码管理软件。它的�
 
 1. 克隆仓库
    ```bash
-   git clone https://gitee.com/milin/kee-pass-ho.git
+   git clone https://github.com/aimilin6688/KeePassHO.git
    ```
 
 2. 使用DevEco Studio打开项目
@@ -80,19 +80,6 @@ KeePassHO/
 - HarmonyOS UI组件
 - kdbxweb库（用于处理KeePass数据库）
 
-### 主要特性
-
-- 在浏览器或Node.js中运行
-- 无原生插件依赖
-- 使用WebCrypto进行快速加密
-- 完全支持Kdbx功能
-- 受保护的值在内存中以XOR方式存储
-- 支持无冲突合并
-- 高代码覆盖率
-- 严格的TypeScript支持
-
-更多关于kdbxweb库的信息，请参见[kdbxweb目录](./kdbxweb/README.md)。
-
 ## 贡献指南
 
 我们欢迎所有形式的贡献，包括但不限于：
@@ -103,23 +90,14 @@ KeePassHO/
 - 改进文档
 - 提交新功能
 
-### 贡献步骤
-
-1. Fork项目
-2. 创建您的特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交您的更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开Pull Request
-
 ## 许可证
 
-本项目采用MIT许可证 - 详情请参见[LICENSE](LICENSE)文件。
+本项目采用MIT许可证 - 详情请参见[GLP 3.0](LICENSE)文件。
 
 ## 致谢
 1. [kdbxweb](https://github.com/keeweb/kdbxweb)
 
 2. [Font-Awesome](https://github.com/FortAwesome/Font-Awesome/tree/7.x)
-
 
 
 ## 联系方式
