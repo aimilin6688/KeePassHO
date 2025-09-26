@@ -11,6 +11,7 @@ import { DataService } from '../DataService';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { StorageType } from './interfaces';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxExportService';
@@ -30,7 +31,7 @@ export class KdbxExportService {
           await KdbxExportService.handlerExport(locationInfo, exportType);
         } catch (e) {
           hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
-          CommonUtils.showToast({ message: e.message });
+          LoadingDialog.showError(e.message);
         }
       }
     } as LocationInterface);
@@ -45,13 +46,14 @@ export class KdbxExportService {
     try {
       let existsError: Error | undefined;
       // 弹出导出进度提示信息
-      CommonUtils.showToast({ message: $r("app.string.export_saving"), duration: 3000 });
+      LoadingDialog.showLoading($r("app.string.export_saving"));
       const existsFile = locationInfo.storageType !== StorageType.LOCAL && await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath)
         .catch((error: Error) => {
           hilog.error(DOMAIN, TAG, 'Exists file stateType:%{public}s filePath:%{public}s error:%{public}s', locationInfo.storageType, locationInfo.filePath,
             error.message);
-          CommonUtils.showToast({ message: error.message, duration: 3000 });
           existsError = error;
+          LoadingDialog.hideLoading();
+          LoadingDialog.showError(error.message);
         });
       if (existsError) {
         return;
@@ -67,9 +69,10 @@ export class KdbxExportService {
       } else {
         await KdbxExportService.doExport(locationInfo, exportType);
       }
-    } catch (e) {
-      hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
-      CommonUtils.showToast({ message: e.message });
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Export database error:' + error.message);
+      LoadingDialog.hideLoading();
+      LoadingDialog.showError(error.message);
     }
   }
 
@@ -79,13 +82,15 @@ export class KdbxExportService {
    * @param exportType
    */
   private static async doExport(locationInfo: LocationInfo, exportType: ExportType) {
-    CommonUtils.showToast({ message: $r("app.string.handling"), duration: 3000 });
+    LoadingDialog.showLoading($r("app.string.handling"));
     return await DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
-      CommonUtils.showToast({ message: $r("app.string.export_success") });
+      LoadingDialog.hideLoading();
+      LoadingDialog.showSuccess($r("app.string.export_success"));
       CommonUtils.back({ url: "pages/setting/SettingDatabase" });
     }).catch((e: Error) => {
       hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
-      CommonUtils.showToast({ message: e.message });
+      LoadingDialog.hideLoading();
+      LoadingDialog.showError(e.message);
     });
   }
 

@@ -10,6 +10,7 @@ import { FileService } from '../services/FileService';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
+import { SupportService } from '../services/SupportService';
 import DateUtils from '../common/utils/DateUtils';
 import { EventBus } from '../services/EventBus';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
@@ -18,6 +19,7 @@ import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import ResourceManager from '../common/utils/ResourceManager';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -44,12 +46,12 @@ struct DatabaseView {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State searchHistory: Array<string> = [];
+  @State currentGroup: KdbxGroup | undefined = undefined;
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private currentGroup: KdbxGroup | undefined = undefined;
   private settingsService: SettingsService = SettingsService.getInstance();
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
@@ -74,35 +76,46 @@ struct DatabaseView {
   aboutToAppear() {
     this.clearUrl();
     this.initSettings();
-    // 注册数据库合并事件
-    EventBus.on<void>(EventBus.DATABASE_RELOAD, () => {
-      this.reloadDatabase();
-    });
-    EventBus.on<void>(EventBus.DATABASE_UPDATE, () => {
-      this.updateUI();
-    });
+    this.resetDatabaseEvent();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
-
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
     // 监听排序方式变化
     this.settingsService.registerObserver(this.onSettingChanged);
+    // 显示支持弹框
+    SupportService.showSupportDialog(this.getUIContext());
   }
 
   aboutToDisappear() {
-    // 移除监听器
-    EventBus.off<void>(EventBus.DATABASE_RELOAD);
-    EventBus.off<void>(EventBus.DATABASE_UPDATE);
+    // 移除主题监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
+    // 移除配置监听器
     this.settingsService.unregisterObserver(this.onSettingChanged);
   }
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+  }
+
+  /**
+   * 监听数据库变化
+   */
+  private resetDatabaseEvent() {
+    // 注册数据库合并事件
+    EventBus.off(EventBus.DATABASE_RELOAD);
+    EventBus.on(EventBus.DATABASE_RELOAD, () => {
+      this.reloadDatabase();
+    });
+
+    // 注册数据库更新事件
+    EventBus.off(EventBus.DATABASE_UPDATE);
+    EventBus.on(EventBus.DATABASE_UPDATE, () => {
+      this.updateUI();
+    });
   }
 
   /**
@@ -182,7 +195,7 @@ struct DatabaseView {
         message: $r('app.string.invalid_database'),
         duration: 2000
       });
-      this.router.back();
+      this.routerBack();
       return;
     }
     if (this.isLoading == true) {
@@ -203,11 +216,8 @@ struct DatabaseView {
 
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
-        this.promptAction.showToast({
-          message: $r('app.string.invalid_group'),
-          duration: 2000
-        });
-        this.router.back();
+        hilog.info(DOMAIN, TAG, '%{public}s', `Invalid group: ${dbShowParam?.groupId}`)
+        this.promptAction.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
       KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
@@ -219,7 +229,7 @@ struct DatabaseView {
       this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
-        this.router.back();
+        this.routerBack();
       }, 2000);
     } finally {
       this.isLoading = false;
@@ -284,7 +294,7 @@ struct DatabaseView {
         .width(80)
         .height(60)
         .fontColor($r('app.color.text_primary'))
-        .backgroundColor($r('app.color.yellow'))
+        .backgroundColor($r("app.color.warn"))
         .fontSize(14)
         .onClick(() => {
           // 判断是分组还是条目
@@ -298,7 +308,7 @@ struct DatabaseView {
       Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
         .width(80)
         .height(60)
-        .backgroundColor($r('app.color.danger'))
+        .backgroundColor($r("app.color.error"))
         .fontColor($r('app.color.text_primary'))
         .fontSize(14)
         .onClick(() => {
@@ -340,11 +350,11 @@ struct DatabaseView {
    */
   private saveDatabase() {
     if (this.database) {
-      KdbxUtils.saveDatabase({
+      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
           this.updateUI();
         }
-      });
+      }));
     }
   }
 
@@ -597,8 +607,14 @@ struct DatabaseView {
     });
   }
 
-  private isShowHistory():boolean{
+  private isShowHistory(): boolean {
     return this.isSearching && this.searchHistory && this.searchHistory.length > 0;
+  }
+
+  private routerBack() {
+    if (parseInt(this.router.getLength()) > 0) {
+      this.router.back();
+    }
   }
 
   build() {
@@ -656,8 +672,8 @@ struct DatabaseView {
             .width('auto')
             .layoutWeight(1)
           } else {
-            Column(){
-              Row(){
+            Column() {
+              Row() {
                 if (this.showBack) {
                   Image($r("app.media.ic_angle_left"))
                     .width(24)
@@ -721,9 +737,10 @@ struct DatabaseView {
                     this.filteredEntries = [...this.entries];
                   })
               }.width('100%')
+
               // 显示搜索历史
               if (this.isShowHistory()) {
-                Row(){
+                Row() {
                   RelativeContainer() {
                     List() {
                       ForEach(this.searchHistory, (searchItem: string, index: number) => {
@@ -771,7 +788,7 @@ struct DatabaseView {
                   .height(58)
                   .borderRadius(8)
                 }.width('100%')
-                .padding({left:12, right:12})
+                .padding({ left: 12, right: 12 })
               }
             }.width('100%')
           }
@@ -800,125 +817,144 @@ struct DatabaseView {
           Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
             // 数据库内容
             List({ space: 8, scroller: this.listScroller }) {
-              // 分组信息显示
-              ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
+              // 没有数据
+              if (this.currentGroup?.groups.length === 0 && this.currentGroup?.entries.length === 0) {
                 ListItem() {
-                  Row() {
-                    Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
-                      .width(28)
-                      .height(28)
-                      .margin(10)
-                    Column() {
-                      Text(KdbxUtils.getFieldName(itemGroup.name))
-                        .fontSize(18)
-                        .textAlign(TextAlign.Start)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .flexGrow(1)
-                        .maxLines(1)
-                      Text($r("app.string.group_items_message", this.groupItemCount(itemGroup)))
-                        .fontSize(12)
-                        .textAlign(TextAlign.Start)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .flexGrow(1)
-                        .margin({ top: 4 })
-                        .maxLines(2)
-                    }
-                    .flexGrow(1)
-                    .alignItems(HorizontalAlign.Start)
-                    .layoutWeight(1)
-
-                    Image($r('app.media.ic_arrow_right'))
-                      .width(20)
-                      .height(20)
-                      .margin({ right: 10 })
-                      .fillColor($r('app.color.text_primary'))
+                  Column() {
+                    Image($r('app.media.ic_empty'))
+                      .width(100)
+                      .height(100)
+                      .margin({ bottom: 16 })
+                      .fillColor(Color.Gray)
+                    Text($r('app.string.no_recent_files'))
+                      .fontSize(16)
+                      .fontColor(Color.Gray)
                   }
                   .width('100%')
-                  .height(60)
-                  .borderRadius(8)
-                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
-                  $r("app.color.card_bg"))
-                  .padding({ left: 10, right: 10 })
-                  .onClick(() => {
-                    this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
-                  })
+                  .height('80%')
+                  .justifyContent(FlexAlign.Center)
                 }
-                .swipeAction({
-                  end: {
-                    builder: this.SwipeActionButtons(index, itemGroup)
-                  }
-                })
-              }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
-
-              // 条目数据展示
-              ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
-                ListItem() {
-                  Row() {
-                    Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
-                    KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
-                      .width(28)
-                      .height(28)
-                      .margin(10)
-                    Column() {
-                      Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
-                        .fontSize(18)
-                        .textAlign(TextAlign.Start)
-                        .flexGrow(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .maxLines(1)
-                        .decoration({
-                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
-                          TextDecorationType.None)
-                        })
-                      Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
-                        .fontSize(12)
-                        .textAlign(TextAlign.Start)
-                        .flexGrow(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .maxLines(1)
-                        .margin({ top: 4 })
-                        .decoration({
-                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
-                          TextDecorationType.None)
-                        })
-                      // TOTP 字段展示
-                      if (this.isListShowTotp) {
-                        ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string, index: number) => {
-                          TotpPreviewComponent({ totpUrl: totpUrl })
-                        });
+              } else {
+                // 分组信息显示
+                ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
+                  ListItem() {
+                    Row() {
+                      Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
+                        .width(28)
+                        .height(28)
+                        .margin(10)
+                      Column() {
+                        Text(KdbxUtils.getFieldName(itemGroup.name))
+                          .fontSize(18)
+                          .textAlign(TextAlign.Start)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .flexGrow(1)
+                          .maxLines(1)
+                        Text($r("app.string.group_items_message", this.groupItemCount(itemGroup)))
+                          .fontSize(12)
+                          .textAlign(TextAlign.Start)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .flexGrow(1)
+                          .margin({ top: 4 })
+                          .maxLines(2)
                       }
+                      .flexGrow(1)
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
+
+                      Image($r('app.media.ic_arrow_right'))
+                        .width(20)
+                        .height(20)
+                        .margin({ right: 10 })
+                        .fillColor($r('app.color.text_primary'))
                     }
-                    .flexGrow(1)
-                    .alignItems(HorizontalAlign.Start)
-                    .layoutWeight(1)
-
-                    Image($r('app.media.ic_arrow_right'))
-                      .width(20)
-                      .height(20)
-                      .margin({ right: 10 })
-                      .fillColor($r('app.color.text_primary'))
+                    .width('100%')
+                    .height(60)
+                    .borderRadius(8)
+                    .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
+                    $r("app.color.card_bg"))
+                    .padding({ left: 10, right: 10 })
+                    .onClick(() => {
+                      this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
+                    })
                   }
-                  .width('100%')
-                  .borderRadius(8)
-                  .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :
-                  $r("app.color.card_bg"))
-                  .padding({
-                    left: 10,
-                    right: 10,
-                    top: 8,
-                    bottom: 8
+                  .swipeAction({
+                    end: {
+                      builder: this.SwipeActionButtons(index, itemGroup)
+                    }
                   })
-                  .onClick(() => {
-                    this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
-                  })
-                }
-                .swipeAction({
-                  end: {
-                    builder: this.SwipeActionButtons(index, itemEntry)
-                  }
-                })
-              }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+                }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
 
+                // 条目数据展示
+                ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
+                  ListItem() {
+                    Row() {
+                      Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
+                      KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                        .width(28)
+                        .height(28)
+                        .margin(10)
+                      Column() {
+                        Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
+                          .fontSize(18)
+                          .textAlign(TextAlign.Start)
+                          .flexGrow(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .maxLines(1)
+                          .decoration({
+                            type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
+                            TextDecorationType.None)
+                          })
+                        Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
+                          .fontSize(12)
+                          .textAlign(TextAlign.Start)
+                          .flexGrow(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .maxLines(1)
+                          .margin({ top: 4 })
+                          .decoration({
+                            type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
+                            TextDecorationType.None)
+                          })
+                        // TOTP 字段展示
+                        if (this.isListShowTotp) {
+                          ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string, index: number) => {
+                            TotpPreviewComponent({ totpUrl: totpUrl })
+                          });
+                        }
+                      }
+                      .flexGrow(1)
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
+
+                      Image($r('app.media.ic_arrow_right'))
+                        .width(20)
+                        .height(20)
+                        .margin({ right: 10 })
+                        .fillColor($r('app.color.text_primary'))
+                    }
+                    .width('100%')
+                    .borderRadius(8)
+                    .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :
+                    $r("app.color.card_bg"))
+                    .padding({
+                      left: 10,
+                      right: 10,
+                      top: 8,
+                      bottom: 8
+                    })
+                    .onClick(() => {
+                      this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
+                    })
+                  }
+                  .swipeAction({
+                    end: {
+                      builder: this.SwipeActionButtons(index, itemEntry)
+                    }
+                  })
+                }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+
+              }
               ListItem() {
                 Row()
                   .height(100)
@@ -1016,7 +1052,7 @@ struct DatabaseView {
         });
       })
 
-      if(!(this.showAddButtons || this.moveParam)){
+      if (!(this.showAddButtons || this.moveParam)) {
         // 显示TOTP
         Button() {
           Image($r('app.media.ic_clock'))
@@ -1099,6 +1135,6 @@ struct DatabaseView {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

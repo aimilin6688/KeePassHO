@@ -556,7 +556,7 @@
     },
     {
       "name": "load_file_success",
-      "value": "加载内容成功"
+      "value": "加载内容..."
     },
     {
       "name": "EntryEdit_invalid_db_or_group",
@@ -1369,6 +1369,26 @@
     {
       "name": "support_other_pay",
       "value": "其他"
+    },
+    {
+      "name": "support_dialog_title",
+      "value": "支持我们"
+    },
+    {
+      "name": "support_dialog_message",
+      "value": "如果你也喜欢这款软件，就请作者喝杯奶茶吧！"
+    },
+    {
+      "name": "Settings_application",
+      "value": "应用设置"
+    },
+    {
+      "name": "application_hide_support",
+      "value": "隐藏支持弹框"
+    },
+    {
+      "name": "application_hide_support_tips",
+      "value": "只有当捐赠或者使用一段时间后才可以隐藏"
     }
   ]
 }
