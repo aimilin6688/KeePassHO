@@ -1,8 +1,8 @@
 import { i18n, intl } from '@kit.LocalizationKit';
 
 export default class DateUtils {
-  private static dateFormat: intl.DateTimeFormat = new intl.DateTimeFormat(i18n.System.getSystemLocale(), { "dateStyle": "long", "timeStyle": "medium" });
-
+  private static dateFormat: intl.DateTimeFormat =
+    new intl.DateTimeFormat(i18n.System.getSystemLocale(), { "dateStyle": "long", "timeStyle": "medium" });
 
   /**
    * 获取当前时间：yyyyMMdd
@@ -54,10 +54,79 @@ export default class DateUtils {
    * @param date
    * @returns
    */
-  public static isExpired(isEnableExpire:boolean, date: Date | undefined): boolean {
+  public static isExpired(isEnableExpire: boolean, date: Date | undefined): boolean {
     if (isEnableExpire == false || !date) {
       return false;
     }
     return new Date().getTime() - date.getTime() >= 0;
   }
+
+  /**
+   * 判断日期是否是今天，不判断日期
+   */
+  public static isToday(date: Date | undefined): boolean {
+    if (!date) {
+      return false;
+    }
+    const now = new Date();
+    return date.getFullYear() == now.getFullYear() && date.getMonth() == now.getMonth() && date.getDate() == now.getDate();
+  }
+
+  /**
+   * 获取日期是否不是今天
+   */
+  public static isNotToday(data: Date | undefined): boolean {
+    return !DateUtils.isToday(data);
+  }
+
+  /**
+   * 获取偏移量
+   * @param unit
+   * @returns
+   */
+  public static offset(date: Date, offset: number, unit: DateUnit): Date {
+    return new Date(date.getTime() + (offset * DateUtils.getOffset(unit)));
+  }
+
+  /**
+   * 获取偏移量
+   * @param unit
+   * @returns
+   */
+  private static getOffset(unit: DateUnit): number {
+    switch (unit) {
+      case DateUnit.Millisecond:
+        return 1;
+      case DateUnit.Second:
+        return 1000;
+      case DateUnit.Minute:
+        return 1000 * 60;
+      case DateUnit.Hour:
+        return 1000 * 60 * 60;
+      case DateUnit.Day:
+        return 1000 * 60 * 60 * 24;
+      case DateUnit.Week:
+        return 1000 * 60 * 60 * 24 * 7;
+      case DateUnit.Month:
+        return 1000 * 60 * 60 * 24 * 30;
+      case DateUnit.Year:
+        return 1000 * 60 * 60 * 24 * 365;
+      default:
+        return 0;
+    }
+  }
+}
+
+/**
+ * 时间单位
+ */
+export enum DateUnit {
+  Millisecond = 'millisecond',
+  Second = 'second',
+  Minute = 'minute',
+  Hour = 'hour',
+  Day = 'day',
+  Week = 'week',
+  Month = 'month',
+  Year = 'year'
 }

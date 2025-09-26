@@ -18,8 +18,8 @@ export struct ContextLoadingDialog {
           .margin({ left: 12 })
       }
       .backgroundColor($r("app.color.card_bg"))
-      .borderRadius(8)
-      .padding(16)
+      .borderRadius(20)
+      .padding({left: 16, right: 16, top: 8, bottom: 8})
     }
     .width('100%')
     .height('30%')
