@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg"  width="21" height="21" viewBox="0 0 21 21" fill="none">
+  <!-- 外圆框 - 时钟部分 -->
+  <circle cx="12" cy="12" r="8" stroke="#1976D2" stroke-width="1.5" fill="none"/>
+
+  <!-- 时钟刻度 - 简化版 -->
+  <line x1="12" y1="7" x2="12" y2="8" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
+  <line x1="17" y1="12" x2="16" y2="12" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
+  <line x1="12" y1="17" x2="12" y2="16" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
+  <line x1="7" y1="12" x2="8" y2="12" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- 时钟中心点 -->
+  <circle cx="12" cy="12" r="0.8" fill="#1976D2"/>
+
+  <!-- 时针 -->
+  <line x1="12" y1="12" x2="14" y2="10" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- 分针 -->
+  <line x1="12" y1="12" x2="10" y2="14" stroke="#1976D2" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- 数字代码元素 - 表示一次性密码 -->
+  <rect x="9" y="14.5" width="6" height="3" rx="1" fill="#2196F3" />
+
+  <!-- 数字代码上的点 - 表示数字 -->
+  <circle cx="10.5" cy="16" r="0.7" fill="white"/>
+  <circle cx="12" cy="16" r="0.7" fill="white"/>
+  <circle cx="13.5" cy="16" r="0.7" fill="white"/>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "devices": {
+    "general": [
+      "phone",
+      "tablet"
+    ]
+  },
+  "development": {
+    "addedSysCaps": [
+      "SystemCapability.FileManagement.AppFileService.FolderAuthorization"
+    ]
+  }
+}

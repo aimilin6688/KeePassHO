@@ -1,0 +1,81 @@
+{
+  "color": [
+    {
+      "name": "primary",
+      "value": "#000000"
+    },
+    {
+      "name": "text_primary",
+      "value": "#000000"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#666666"
+    },
+
+    {
+      "name": "start_bg_window",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "bg_primary",
+      "value": "#F1F3F5"
+    },
+    {
+      "name": "bg_secondary",
+      "value": "#e6e8e9"
+    },
+    {
+      "name": "divider",
+      "value": "#E0E0E0"
+    },
+    {
+      "name": "card_bg",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "button_text_blue",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "button_bg_blue",
+      "value": "#007DFF"
+    },
+    {
+      "name": "item_selected",
+      "value": "#B3E5FF"
+    },
+    {
+      "name": "button_bg_disabled",
+      "value": "#CCCCCC"
+    },
+    {
+      "name": "button_text",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "danger",
+      "value": "#FF3B30"
+    },
+    {
+      "name": "yellow",
+      "value": "#f0bf2f"
+    },
+    {
+      "name": "gray",
+      "value": "#f0f0f0"
+    },
+    {
+      "name": "icon_normal",
+      "value": "#333333"
+    },
+    {
+      "name": "success",
+      "value": "#89c812"
+    },
+    {
+      "name": "required",
+      "value": "#FF3B30"
+    }
+  ]
+}

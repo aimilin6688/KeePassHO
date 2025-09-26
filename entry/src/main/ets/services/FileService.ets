@@ -1,0 +1,71 @@
+import { Kdbx } from 'kdbxweb';
+import { DbFileParam } from './TypeDefined';
+
+
+/**
+ * 文件服务对象
+ */
+export class FileService {
+  private static instance: FileService = new FileService();
+  private dbFileParam: DbFileParam;
+
+  private constructor() {
+    this.dbFileParam = {} as DbFileParam;
+  }
+
+  public static getInstance(): FileService {
+    return FileService.instance;
+  }
+
+  public init(): void {
+    this.initDbFileParam();
+  }
+
+  public static init(): void {
+    FileService.instance.init();
+  }
+
+  public static close(): void {
+    FileService.instance.init();
+  }
+
+  public initDbFileParam(): void {
+    this.dbFileParam = {} as DbFileParam;
+  }
+
+  public setDbFileParam(dbFileParam: DbFileParam): void {
+    this.dbFileParam = dbFileParam;
+  }
+
+  public static setDbFileParam(dbFileParam: DbFileParam): void {
+    FileService.instance.setDbFileParam(dbFileParam);
+  }
+
+  public getDbFileParam(): DbFileParam {
+    return this.dbFileParam;
+  }
+
+  public static getDbFileParam(): DbFileParam {
+    return FileService.instance.getDbFileParam();
+  }
+
+  public static getFilePath(){
+    return FileService.getDbFileParam().filePath;
+  }
+
+  public static getDatabase(){
+    return FileService.getDbFileParam().database;
+  }
+
+  /**
+   * 重置数据库文件参数
+   * @param kdbx 数据库
+   * @param modifiedTime 修改时间
+   * @returns 结果
+   */
+  public static resetDbFileParam(kdbx: Kdbx, modifiedTime: number): DbFileParam {
+    FileService.getDbFileParam().database = kdbx;
+    FileService.getDbFileParam().modifiedTime = modifiedTime;
+    return FileService.getDbFileParam();
+  }
+}
