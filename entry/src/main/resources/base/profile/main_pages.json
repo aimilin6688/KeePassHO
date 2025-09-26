@@ -1,0 +1,27 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/DatabaseView",
+    "pages/setting/Settings",
+    "pages/setting/SettingSecurity",
+    "pages/setting/SettingDatabase",
+    "pages/setting/SettingDatabaseMeta",
+    "pages/setting/SettingCustomIcons",
+    "pages/setting/SettingDatabaseKeyFunction",
+    "pages/setting/SettingDatabaseProtectedFiled",
+    "pages/Password",
+    "pages/RecentFiles",
+    "pages/EntryEdit",
+    "pages/EntryView",
+    "pages/TotpView",
+    "pages/about/About",
+    "pages/about/Support",
+    "pages/open/SelectLocation",
+    "pages/open/LocalFile",
+    "pages/open/WebDAV",
+    "pages/open/CreateDatabase",
+    "pages/UnLockDatabase",
+    "pages/ChangePassword",
+    "pages/open/FileList"
+  ]
+}
