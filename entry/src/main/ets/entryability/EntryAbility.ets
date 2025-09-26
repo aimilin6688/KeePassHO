@@ -11,6 +11,7 @@ import { FilenameUtils } from '../common/utils/FilenameUtils';
 import { LocalFileStorageConfig, StorageType } from '../services/kdbx/interfaces';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
+import { SupportService } from '../services/SupportService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -38,7 +39,7 @@ export default class EntryAbility extends UIAbility {
   private async init() {
     this.context.area = contextConstant.AreaMode.EL4;
     // 初始化通用工具类
-    CommonUtils.getInstance().init(this.context);
+    CommonUtils.init(this.context);
     // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
     // 初始化资源管理器
@@ -46,7 +47,11 @@ export default class EntryAbility extends UIAbility {
     // 最近打开的文件服务
     RecentFilesService.getInstance().init(this.context);
     // 初始化设置服务
-    await SettingsService.getInstance().init(this.context);
+    await SettingsService.getInstance().init(this.context).then(() => {
+      // 设值应用安装时间
+      SupportService.initAppInstallTime();
+    })
+
   }
 
   onDestroy(): void {
@@ -59,18 +64,17 @@ export default class EntryAbility extends UIAbility {
     this.windowStage = windowStage;
     // 通过URL打开数据库
     if (this.createUrl) {
-      this.createStorage(this.createUrl);
-      windowStage.loadContent('pages/Password', (err, data) => {
-        this.loadContentCallback(err, data)
-      });
+      this.openDatabase(this.createUrl);
     } else {
-      windowStage.loadContent('pages/Index');
+      this.openPage('pages/Index');
     }
   }
 
 
   onWindowStageDestroy(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageDestroy');
+    this.windowStage = undefined;
+    this.createUrl = undefined;
   }
 
   onForeground(): void {
@@ -89,8 +93,27 @@ export default class EntryAbility extends UIAbility {
     let uri = want.uri;
     hilog.info(DOMAIN, TAG, 'Ability onNewWant: %{public}s', uri);
     if (this.windowStage && uri) {
-      this.createStorage(uri);
-      this.windowStage.loadContent('pages/Password', (err, data) => {
+      this.openDatabase(uri);
+    }
+  }
+
+  /**
+   * 打开数据库
+   */
+  private openDatabase(dbUrl: string): void {
+    if (this.windowStage && dbUrl) {
+      this.createStorage(dbUrl);
+      this.openPage('pages/Password');
+    }
+  }
+
+  /**
+   * 打开页面
+   * @param page
+   */
+  private openPage(page: string): void {
+    if (this.windowStage) {
+      this.windowStage.loadContent(page, (err, data) => {
         this.loadContentCallback(err, data)
       });
     }
@@ -108,6 +131,11 @@ export default class EntryAbility extends UIAbility {
       hilog.info(DOMAIN, TAG, 'Ability onWindowStageCreate success');
       this.createUrl = undefined;
     }
+    if (this.windowStage) {
+      this.windowStage.getMainWindow().then((win) => {
+        CommonUtils.init(this.context, win.getUIContext());
+      });
+    }
   }
 
   /**
@@ -124,28 +152,28 @@ export default class EntryAbility extends UIAbility {
     });
   }
 
+  /**
+   * 是否锁屏
+   * @returns
+   */
   private isLockScreen(): boolean {
     let dbFileParam = FileService.getDbFileParam();
     return dbFileParam && dbFileParam.filePath !== undefined;
   }
 
+  /**
+   * 尝试锁屏
+   */
   private async tryLockScreen() {
     if (this.backgroundTime == 0) {
       return;
     }
     const elapsed = new Date().getTime() - this.backgroundTime;
-    const autoLockTime =
-      await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTO_LOCK_TIME, SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT);
+    const autoLockTime = SettingsService.getSync(SettingsService.KEY_SECURITY_AUTO_LOCK_TIME, SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT);
     // 检查是否超过30秒
     if (autoLockTime > 0 && elapsed >= autoLockTime * 1000) {
-      this.showLockScreen(); // 显示锁定界面
+      // 显示解锁界面
+      this.openPage('pages/UnLockDatabase');
     }
-  }
-
-  // 显示锁定界面
-  private showLockScreen(): void {
-    window.getLastWindow(this.context).then((win) => {
-      win.setUIContent("pages/UnLockDatabase"); // 跳转到锁定页面
-    });
   }
 }

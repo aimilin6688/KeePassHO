@@ -3,23 +3,16 @@ import { promptAction, router, ShowDialogSuccessResponse } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 
 export class CommonUtils {
-  private static instance: CommonUtils = new CommonUtils();
-  private context: common.UIAbilityContext | null = null;
+  private static context: common.UIAbilityContext | null = null;
+  private static uiContext: UIContext | undefined = undefined;
 
   /**
    * 初始化主题管理器
    * @param context UIAbilityContext
    */
-  public init(context: common.UIAbilityContext): void {
-    this.context = context;
-  }
-
-
-  /**
-   * 获取单例实例
-   */
-  public static getInstance(): CommonUtils {
-    return CommonUtils.instance;
+  public static init(context: common.UIAbilityContext, uiContext?: UIContext): void {
+    CommonUtils.context = context;
+    CommonUtils.uiContext = uiContext;
   }
 
   /**
@@ -27,7 +20,11 @@ export class CommonUtils {
    * @returns
    */
   public static getContext(): common.UIAbilityContext {
-    return CommonUtils.getInstance().context as common.UIAbilityContext;
+    return CommonUtils.context as common.UIAbilityContext;
+  }
+
+  public static getUiContext(): UIContext {
+    return CommonUtils.uiContext as UIContext;
   }
 
   /**
@@ -82,7 +79,11 @@ export class CommonUtils {
    * @param duration
    */
   public static showToast(message: ResourceStr | promptAction.ShowToastOptions, duration?: number): void {
-    promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
+    if (CommonUtils.uiContext) {
+      CommonUtils.uiContext.getPromptAction().showToast(CommonUtils.toShowToastOptions(message, duration));
+    } else {
+      promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
+    }
   }
 
   /**
@@ -90,8 +91,12 @@ export class CommonUtils {
    * @param showDialogOptions
    * @returns
    */
-  public static showDialog(showDialogOptions: promptAction.ShowDialogOptions):Promise<ShowDialogSuccessResponse> {
-    return promptAction.showDialog(showDialogOptions);
+  public static showDialog(showDialogOptions: promptAction.ShowDialogOptions): Promise<ShowDialogSuccessResponse> {
+    if (CommonUtils.uiContext) {
+      return CommonUtils.uiContext.getPromptAction().showDialog(showDialogOptions);
+    } else {
+      return promptAction.showDialog(showDialogOptions);
+    }
   }
 
   /**
@@ -121,6 +126,9 @@ export class CommonUtils {
    * @returns
    */
   public static pushUrl(options: router.RouterOptions): Promise<void> {
+    if (CommonUtils.uiContext) {
+      return CommonUtils.uiContext.getRouter().pushUrl(options);
+    }
     return router.pushUrl(options);
   }
 
@@ -129,7 +137,10 @@ export class CommonUtils {
    * @param options
    */
   public static back(options?: router.RouterOptions): void {
-    router.back(options);
+    if (CommonUtils.uiContext) {
+      return CommonUtils.uiContext.getRouter().back(options);
+    }
+    return router.back(options);
   }
 
   /**
