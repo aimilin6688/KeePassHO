@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "commonjs",
+    "preserveConstEnums": true,
+    "strict": true,
+    "baseUrl": "../src/main/ets",
+    "noEmitOnError": true,
+    "types": ["node"],
+    "outDir": "../dist"
+  },
+  "include": ["../src/main/ets/**/*.ts"]
+}
