@@ -21,20 +21,21 @@ export class EventBus {
   }
 
   // 订阅事件
-  static on<T>(event: string, callback: (data?: T) => void) {
+  static on(event: string, callback: Callback<emitter.EventData>) {
     hilog.debug(DOMAIN, TAG, `Subscribe event: ${event}`);
-    emitter.on(event, (eventData: emitter.GenericEventData<T>): void => {
-      callback(eventData?.data);
-    });
+    emitter.on(event, callback);
   }
 
-  // 取消订阅
-  static off<T>(event: string, callback?: (data?: T) => void) {
+  /**
+   * 取消事件所有订阅者
+   * @param event
+   */
+  static off(event: string, callback?: Callback<emitter.EventData>) {
     hilog.debug(DOMAIN, TAG, `Unsubscribe event: ${event}`);
-    emitter.off(event, (eventData: emitter.GenericEventData<T>): void => {
-      if(callback){
-        callback(eventData?.data);
-      }
-    });
+    if (callback) {
+      emitter.off(event, callback);
+    } else {
+      emitter.off(event);
+    }
   }
 }

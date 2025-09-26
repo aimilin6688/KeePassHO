@@ -6,6 +6,7 @@ import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 import DateUtils from '../common/utils/DateUtils';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 
 const DOMAIN = 0xFF00;
@@ -269,11 +270,11 @@ struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.removeHistory(this.selectedHistoryIndex);
-            KdbxUtils.saveDatabase({
+            KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
                 this.router.back();
               }
-            });
+            }));
           }
         }
       }
@@ -298,11 +299,11 @@ struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.copyFrom(this.entry);
-            KdbxUtils.saveDatabase({
+            KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
                 this.router.back();
               }
-            });
+            }));
           }
         }
       }
@@ -479,7 +480,7 @@ struct EntryView {
             .width('45%')
             .height(40)
             .borderRadius(16)
-            .backgroundColor($r('app.color.danger'))
+            .backgroundColor($r("app.color.error"))
             .onClick(() => {
               this.rollbackToHistory();
             })
