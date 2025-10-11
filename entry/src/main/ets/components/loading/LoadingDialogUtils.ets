@@ -91,9 +91,9 @@ export class LoadingDialogUtils {
   async showProgress(value: ResourceStr | LoadingSettings = '', progress: number = 0): Promise<void> {
     let options = new LoadingActionOptions(LoadingState.PROGRESS, value, progress)
     if (PromptActionUtils.existsCustomDialog(LoadingState.PROGRESS)) {
-      this.updateDialog(options)
+      return this.updateDialog(options)
     } else {
-      await this.showDialog(options)
+      return await this.showDialog(options)
     }
   }
 
@@ -112,7 +112,7 @@ export class LoadingDialogUtils {
     } else {
       await this.hide(options.dialogId);
     }
-    return await PromptActionUtils.openCustomDialog<LoadingActionOptions>({
+    return PromptActionUtils.openCustomDialog<LoadingActionOptions>({
       builder: wrapBuilder(LoadingDialogBuilder),
       params: options,
       options: settings
