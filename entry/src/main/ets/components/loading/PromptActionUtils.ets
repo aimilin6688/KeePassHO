@@ -43,6 +43,9 @@ export class PromptActionUtils {
    */
   static async openCustomDialog<T extends PromptActionBean>(value: PromptActionOptions<T>): Promise<void> {
     try {
+      if (PromptActionUtils.existsCustomDialog(value.params.dialogId)) {
+        return;
+      }
       const uiContext = CommonUtils.getUiContext();
       const promptAction = uiContext.getPromptAction()
       const componentContent = new ComponentContent(uiContext, value.builder, value.params)
@@ -66,20 +69,14 @@ export class PromptActionUtils {
           }
         },
         onWillDisappear: () => {
-          const index = promptActionInfos.findIndex(item => item.dialogId == value.params.dialogId)
-          if (index >= 0) {
-            promptActionInfos.splice(index, 1)
-          }
+          PromptActionUtils.removeDialogInfo(value.params.dialogId);
         }
       }
-
-      if (!PromptActionUtils.existsCustomDialog(value.params.dialogId)) {
-        promptActionInfos.push({
-          dialogId: value.params.dialogId,
-          componentContent: componentContent
-        })
-        return promptAction.openCustomDialog(componentContent, options);
-      }
+      promptActionInfos.push({
+        dialogId: value.params.dialogId,
+        componentContent: componentContent
+      })
+      return promptAction.openCustomDialog(componentContent, options);
     } catch (error) {
       hilog.error(DOMAIN, TAG, ` openCustomDialog dialogId: ${value.params.dialogId}, error = ${JSON.stringify(error)}`)
       return Promise.reject(error);
@@ -100,7 +97,9 @@ export class PromptActionUtils {
         info = promptActionInfos.length > 0 ? promptActionInfos[promptActionInfos.length - 1] : undefined
       }
       if (info) {
-        return await promptAction.closeCustomDialog(info.componentContent)
+        return await promptAction.closeCustomDialog(info.componentContent).then(() => {
+          PromptActionUtils.removeDialogInfo(dialogId);
+        });
       } else {
         hilog.debug(DOMAIN, TAG, `closeCustomDialog info is undefined`)
       }
@@ -126,5 +125,18 @@ export class PromptActionUtils {
   static existsCustomDialog(dialogId: string): boolean {
     let info = getPromptActionInfoByDialogId(dialogId)
     return info != undefined
+  }
+
+  /**
+   * 移除弹窗信息
+   */
+  private static removeDialogInfo(dialogId?: string) {
+    if (!dialogId) {
+      return;
+    }
+    const index = promptActionInfos.findIndex(item => item.dialogId == dialogId)
+    if (index >= 0) {
+      promptActionInfos.splice(index, 1)
+    }
   }
 }
