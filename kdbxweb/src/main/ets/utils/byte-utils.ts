@@ -7,94 +7,102 @@ const base64 = new util.Base64Helper();
 type ArrayBufferOrArray = ArrayBuffer | Uint8Array;
 
 export function arrayBufferEquals(ab1: ArrayBuffer, ab2: ArrayBuffer): boolean {
-    if (ab1.byteLength !== ab2.byteLength) {
-        return false;
+  if (ab1.byteLength !== ab2.byteLength) {
+    return false;
+  }
+  const arr1 = new Uint8Array(ab1);
+  const arr2 = new Uint8Array(ab2);
+  for (let i = 0, len = arr1.length; i < len; i++) {
+    if (arr1[i] !== arr2[i]) {
+      return false;
     }
-    const arr1 = new Uint8Array(ab1);
-    const arr2 = new Uint8Array(ab2);
-    for (let i = 0, len = arr1.length; i < len; i++) {
-        if (arr1[i] !== arr2[i]) {
-            return false;
-        }
-    }
-    return true;
+  }
+  return true;
 }
 
 export function bytesToString(arr: ArrayBufferOrArray): string {
-    let bytes:Uint8Array = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
-    return textDecoder.decodeToString(bytes);
+  let bytes: Uint8Array = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+  return textDecoder.decodeToString(bytes);
 }
 
 export function stringToBytes(str: string): Uint8Array {
-    if(str === null || str.length === 0){
-        return new Uint8Array(0);
-    }
-    return textEncoder.encodeInto(str);
+  if (str === null || str.length === 0) {
+    return new Uint8Array(0);
+  }
+  return textEncoder.encodeInto(str);
 }
 
 export function base64ToBytes(str: string): Uint8Array {
-    if(str === null || str.length === 0){
-        return new Uint8Array(0);
-    }
-    return base64.decodeSync(str);
+  if (str === null || str.length === 0) {
+    return new Uint8Array(0);
+  }
+  return base64.decodeSync(str);
 }
 
+export function base64ToString(str: string): string {
+  if (str === null || str.length === 0) {
+    return '';
+  }
+  return textDecoder.decodeToString(base64.decodeSync(str));
+}
+
+
 export function bytesToBase64(arr: ArrayBufferOrArray): string {
-    const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
-    if(intArr.length === 0){
-        return '';
-    }
-    return bytesToString(base64.encodeSync(intArr));
+  const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+  if (intArr.length === 0) {
+    return '';
+  }
+  return bytesToString(base64.encodeSync(intArr));
 }
 
 export function hexToBytes(hex: string): Uint8Array {
-    const arr = new Uint8Array(Math.ceil(hex.length / 2));
-    for (let i = 0; i < arr.length; i++) {
-        arr[i] = parseInt(hex.substr(i * 2, 2), 16);
-    }
-    return arr;
+  const arr = new Uint8Array(Math.ceil(hex.length / 2));
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return arr;
 }
 
 export function bytesToHex(arr: ArrayBufferOrArray): string {
-    const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
-    let str = '';
-    for (let i = 0; i < intArr.length; i++) {
-        const byte = intArr[i].toString(16);
-        if (byte.length === 1) {
-            str += '0';
-        }
-        str += byte;
+  const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+  let str = '';
+  for (let i = 0; i < intArr.length; i++) {
+    const byte = intArr[i].toString(16);
+    if (byte.length === 1) {
+      str += '0';
     }
-    return str;
+    str += byte;
+  }
+  return str;
 }
 
 export function bytesToBuffer(arr: ArrayBufferOrArray): ArrayBuffer {
-    return arrayToBuffer(arr);
+  return arrayToBuffer(arr);
 }
 
 export function bufferToBytes(arr: ArrayBufferOrArray): Uint8Array {
-    if(arr instanceof Uint8Array){
-        return arr;
-    }
-    return new Uint8Array(arr);
+  if (arr instanceof Uint8Array) {
+    return arr;
+  }
+  return new Uint8Array(arr);
 }
 
 export function arrayToBuffer(arr: ArrayBufferOrArray): ArrayBuffer {
-    if (arr instanceof ArrayBuffer) {
-        return arr;
-    }
-    const ab = arr.buffer;
-    if (arr.byteOffset === 0 && arr.byteLength === ab.byteLength) {
-        return ab;
-    }
-    return arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength);
+  if (arr instanceof ArrayBuffer) {
+    return arr;
+  }
+  const ab = arr.buffer;
+  if (arr.byteOffset === 0 && arr.byteLength === ab.byteLength) {
+    return ab;
+  }
+  return arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength);
 }
 
 export function stringToBuffer(str: string): ArrayBuffer {
-    return stringToBytes(str).buffer;
+  return stringToBytes(str).buffer;
 }
 
 export function zeroBuffer(arr: ArrayBufferOrArray): void {
-    const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
-    intArr.fill(0);
+  const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+  intArr.fill(0);
 }

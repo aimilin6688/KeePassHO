@@ -1387,6 +1387,14 @@
     {
       "name": "application_hide_support_tips",
       "value": "It can only be hidden after donation or use for a period of time"
+    },
+    {
+      "name": "about_contact_author",
+      "value": "联系作者"
+    },
+    {
+      "name": "about_source_code",
+      "value": "源代码"
     }
   ]
 }
