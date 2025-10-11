@@ -1,15 +1,14 @@
-import { pasteboard } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { KdbxEntry } from 'kdbxweb';
 
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Icons } from '../services/TypeDefined';
 import { SettingsService } from '../services/SettingsService';
 import FileUtils from '../common/utils/FIleUtils';
 import { common } from '@kit.AbilityKit';
 import { TotpPreviewComponent } from './TotpPreviewComponent';
 import ResourceManager from '../common/utils/ResourceManager';
+import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -58,8 +57,6 @@ export struct EntryViewFieldItem {
   @State entry: KdbxEntry | null = null;
   @State autoClearClipboardTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private timeOutObj: number = -1;
-  private systemPasteboard: pasteboard.SystemPasteboard = pasteboard.getSystemPasteboard();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   aboutToAppear(): void {
@@ -88,43 +85,7 @@ export struct EntryViewFieldItem {
    * 复制文本到剪贴板
    */
   private copyToClipboard(text: string) {
-    // 获取系统剪贴板实例
-    const pasteboardData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
-    // 将数据写入剪贴板
-    this.systemPasteboard.setData(pasteboardData, (error, data) => {
-      if (error) {
-        hilog.error(DOMAIN, TAG, 'Failed to copy to clipboard: %{public}s %{public}s %{public}s %{public}s', error.message, error.code, error.name,
-          error.stack);
-        this.promptAction.showToast({ message: $r("app.string.copy_failed") });
-      } else {
-        this.clearClipboard(pasteboardData);
-        this.promptAction.showToast({ message: $r("app.string.copied"), duration: 2000 });
-      }
-    });
-  }
-
-  /**
-   * 清理剪切板数据
-   * @param pasteData
-   */
-  private clearClipboard(pasteData?: pasteboard.PasteData) {
-    try {
-      if (this.autoClearClipboardTime <= 0) {
-        return;
-      }
-      if (this.timeOutObj != -1) {
-        clearTimeout(this.timeOutObj);
-        this.timeOutObj = -1;
-      }
-      this.timeOutObj = setTimeout(() => {
-        pasteboard.getSystemPasteboard().clearData().then(() => {
-          hilog.debug(DOMAIN, TAG, 'Clear clipboard success');
-          this.timeOutObj = -1;
-        });
-      }, 1000 * this.autoClearClipboardTime);
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to clear clipboard: ${error}`)
-    }
+    ClipboardUtils.copy(text, this.autoClearClipboardTime);
   }
 
   /**
