@@ -97,9 +97,7 @@ export class PromptActionUtils {
         info = promptActionInfos.length > 0 ? promptActionInfos[promptActionInfos.length - 1] : undefined
       }
       if (info) {
-        return await promptAction.closeCustomDialog(info.componentContent).then(() => {
-          PromptActionUtils.removeDialogInfo(dialogId);
-        });
+        return await promptAction.closeCustomDialog(info.componentContent);
       } else {
         hilog.debug(DOMAIN, TAG, `closeCustomDialog info is undefined`)
       }
