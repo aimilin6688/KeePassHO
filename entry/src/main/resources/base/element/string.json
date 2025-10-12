@@ -1390,11 +1390,11 @@
     },
     {
       "name": "about_contact_author",
-      "value": "联系作者"
+      "value": "Contact"
     },
     {
       "name": "about_source_code",
-      "value": "源代码"
+      "value": "Source Code"
     }
   ]
 }
