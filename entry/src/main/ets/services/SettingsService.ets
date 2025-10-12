@@ -37,9 +37,9 @@ export class SettingsService {
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 3;
   // 认证方式
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
-  public static readonly KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT = true;
+  public static readonly KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT = false;
   public static readonly KEY_SECURITY_FACE_LOGIN = 'Database_face_login';
-  public static readonly KEY_SECURITY_FACE_LOGIN_DEFAULT = true;
+  public static readonly KEY_SECURITY_FACE_LOGIN_DEFAULT = false;
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.FACE;
   // 显示TOTP设置

@@ -3,6 +3,7 @@ import ResourceManager from '../../common/utils/ResourceManager';
 import { bundleManager, common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ClipboardUtils } from '../../common/utils/ClipboardUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'About';
@@ -15,6 +16,8 @@ struct About {
   private context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private bundleName: string = '';
+  private authEmail: string = "aimilin@yeah.net";
+  private codeUrl: string = "https://github.com/aimilin6688/KeePassHO";
 
   aboutToAppear() {
     this.setVersion();
@@ -39,16 +42,17 @@ struct About {
 
     let sendMail: Want = {
       action: 'ohos.want.action.sendToData',
-      uri: `mailto:aimilin@yeah.net?subject=${subject}&body=${body}`
+      uri: `mailto:${this.authEmail}?subject=${subject}&body=${body}`
     };
 
     // 唤起邮件应用
     this.context.startAbility(sendMail)
       .then(() => {
-        hilog.info(DOMAIN, TAG, '邮件发送成功');
+        hilog.info(DOMAIN, TAG, 'Succeeded to send mail.');
       })
       .catch((error: BusinessError) => {
-        hilog.error(DOMAIN, TAG, '邮件发送失败：' + error.message);
+        hilog.error(DOMAIN, TAG, 'Failed to send mail：' + error.message);
+        this.promptAction.showToast({ message: error.message });
       });
   }
 
@@ -64,7 +68,40 @@ struct About {
       hilog.info(DOMAIN, TAG, "Succeeded in starting Ability successfully.")
     }).catch((error: BusinessError) => {
       hilog.error(DOMAIN, TAG, `Failed to startAbility.Code: ${error.code}, message is ${error.message}`);
+      this.promptAction.showToast({ message: error.message });
     });
+  }
+
+  /**
+   * 访问源代码
+   */
+  private goSourceCode() {
+    try {
+      ClipboardUtils.copy(this.codeUrl);
+      let want: Want = {
+        action: 'ohos.want.action.viewData',
+        entities: ['entity.system.browsable'],
+        uri: this.codeUrl,
+      };
+      this.context.startAbility(want)
+        .then(() => {
+          hilog.info(DOMAIN, TAG, 'Open browser successfully');
+        })
+        .catch((err: BusinessError) => {
+          hilog.info(DOMAIN, TAG, 'Failed to open browser. Error code: ' + err.code + ', message: ' + err.message);
+          this.promptAction.showToast({ message: err.message });
+        });
+    } catch (error) {
+      hilog.info(DOMAIN, TAG, 'An unexpected error occurred. Error code: ' + error.code + ', message: ' + error.message);
+      this.promptAction.showToast({ message: error.message });
+    }
+  }
+
+  /**
+   * 联系作者
+   */
+  private contactAuthor() {
+    ClipboardUtils.copy(this.authEmail);
   }
 
   build() {
@@ -171,6 +208,52 @@ struct About {
               strokeWidth: 1,
               color: $r('app.color.divider'),
             })
+
+
+            ListItemGroup() {
+              // 联系作者
+              ListItem() {
+                Row() {
+                  Text($r("app.string.about_contact_author"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Blank()
+                  Text(this.authEmail)
+                    .fontSize(16)
+                    .enableDataDetector(true)
+                }
+                .width('100%')
+                .padding(16)
+                .onClick(() => {
+                  this.contactAuthor();
+                })
+              }
+
+              // 源代码
+              ListItem() {
+                Row() {
+                  Text($r("app.string.about_source_code"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .onClick(() => {
+                  this.goSourceCode();
+                })
+                .width('100%')
+                .padding(16)
+              }
+            }
+            .margin({ top: 12, bottom: 12 })
+            .backgroundColor($r("app.color.card_bg"))
+            .borderRadius(12)
+            .divider({
+              strokeWidth: 1,
+              color: $r('app.color.divider'),
+            })
           }
           .width('100%')
           .height('auto')
@@ -183,7 +266,7 @@ struct About {
       }
     }
     .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .width('100%')
     .height('100%')
   }

@@ -30,17 +30,6 @@ KeePassHO是一款免费、开源且广受赞誉的密码管理软件。它的�
 2. 搜索"KeePassHO"
 3. 点击安装
 
-### 从源代码构建
-
-1. 克隆仓库
-   ```bash
-   git clone https://github.com/aimilin6688/KeePassHO.git
-   ```
-
-2. 使用DevEco Studio打开项目
-
-3. 构建并运行应用
-
 ## 使用方法
 
 ### 创建新数据库
@@ -59,26 +48,12 @@ KeePassHO是一款免费、开源且广受赞誉的密码管理软件。它的�
 4. 输入密码和/或选择密钥文件
 5. 访问您的密码
 
-## 项目结构
-
-```
-KeePassHO/
-├── AppScope/            # 应用级配置
-├── entry/               # 应用入口模块
-│   └── src/
-│       ├── main/        # 主要源代码
-│       │   ├── ets/     # ArkTS代码
-│       │   └── resources/ # 资源文件
-│       └── test/        # 测试代码
-├── kdbxweb/             # KeePass数据库处理库
-└── oh-package.json5     # 项目配置文件
-```
 
 ## 技术栈
 
 - HarmonyOS ArkTS
 - HarmonyOS UI组件
-- kdbxweb库（用于处理KeePass数据库）
+- [kdbxweb](https://github.com/keeweb/kdbxweb)库（用于处理KeePass数据库）
 
 ## 贡献指南
 
@@ -103,7 +78,14 @@ KeePassHO/
 ## 联系方式
 
 - 项目维护者: [艾米林](mailto:aimilin@yeah.net)
-- 项目主页: [Gitee仓库](https://gitee.com/milin/kee-pass-ho/)
+- 项目主页: [Gitee](https://gitee.com/milin/kee-pass-ho/)  [Github](https://github.com/aimilin6688/KeePassHO)
+
+## 捐赠
+微信支持  
+![微信支持](entry/src/main/resources/base/media/pay_wechat.png)
+
+支付宝支持  
+![支付宝支持](entry/src/main/resources/base/media/pay_ali.png)
 
 ---
 

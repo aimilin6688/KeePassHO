@@ -109,7 +109,7 @@ export class KdbxExportService {
         });
       }
       if (ExportType.XML === exportType) {
-        return kdbx.saveXml(true, false).then(result => {
+        return kdbx.saveXml(true, true).then(result => {
           return new FileContent(location.filePath, ByteUtils.stringToBuffer(result));
         });
       }
