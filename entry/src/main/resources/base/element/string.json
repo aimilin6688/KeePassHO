@@ -1387,6 +1387,14 @@
     {
       "name": "application_hide_support_tips",
       "value": "It can only be hidden after donation or use for a period of time"
+    },
+    {
+      "name": "about_contact_author",
+      "value": "Contact"
+    },
+    {
+      "name": "about_source_code",
+      "value": "Source Code"
     }
   ]
 }

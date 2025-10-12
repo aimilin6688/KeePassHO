@@ -419,7 +419,7 @@ export class KdbxMeta {
                         );
                     }
                     if (lastModified) {
-                        XmlUtils.setDate(
+                        ctx.setXmlDate(
                             XmlUtils.addChildNode(itemNode, XmlNames.Elem.LastModTime),
                             lastModified
                         );
