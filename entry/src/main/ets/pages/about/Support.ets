@@ -1,13 +1,13 @@
 import { Router } from '@kit.ArkUI';
 import { iap } from '@kit.IAPKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { SettingsService } from '../../services/SettingsService';
 import DateUtils, { DateUnit } from '../../common/utils/DateUtils';
 import { common } from '@kit.AbilityKit';
+import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
@@ -19,13 +19,30 @@ interface ProductOption {
   thanksMessage: ResourceStr;
 }
 
+interface PurchaseData {
+  type: number,
+  jwsPurchaseOrder: string,
+  jwsSubscriptionStatus: string
+}
+
+/**
+ * https://developer.huawei.com/consumer/cn/doc/harmonyos-references/iap-data-model#section260562820380
+ */
+interface PurchaseOrderPayload {
+  environment: string,
+  purchaseOrderId: string,
+  purchaseToken: string,
+  productId: string,
+  productType: string
+}
+
 @Entry
 @Component
 struct Support {
   @State isShowOtherPay: boolean = false;
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-  private context = this.getUIContext().getHostContext();
+  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private products: Array<ProductOption> = [
     {
       goodId: "10010",
@@ -78,7 +95,7 @@ struct Support {
       productType: iap.ProductType.CONSUMABLE,
       productIds: existsProd
     }
-    iap.queryProducts(this.context as common.UIAbilityContext, parameter).then((data: Array<iap.Product>) => {
+    iap.queryProducts(this.context, parameter).then((data: Array<iap.Product>) => {
       console.info(`Succeeded in querying products. data length: ${data?.length}`);
       if (!data || data.length === 0) {
         return;
@@ -95,7 +112,7 @@ struct Support {
         }
       }
     }).catch((err: BusinessError) => {
-      console.error(`Failed to query products. Code is ${err.code}, message is ${err.message}`);
+      hilog.error(DOMAIN, TAG, `Failed to query products. Code is ${err.code}, message is ${err.message}`);
     });
   }
 
@@ -105,10 +122,8 @@ struct Support {
    */
   private pay(option: ProductOption) {
     try {
-      iap.createPurchase(CommonUtils.getContext(), { productId: option.goodId, productType: iap.ProductType.CONSUMABLE }).then(result => {
-        SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
-        SettingsService.put(SettingsService.KEY_APP_INSTALL_TIME, DateUtils.offset(new Date(), -3, DateUnit.Month).getTime());
-        this.showThankYouMessage(option.thanksMessage);
+      iap.createPurchase(this.context, { productId: option.goodId, productType: iap.ProductType.CONSUMABLE }).then(result => {
+        this.paySuccess(result, option);
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
         this.promptAction.showToast({ message: err.message });
@@ -117,6 +132,32 @@ struct Support {
       hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
       this.promptAction.showToast({ message: err.message });
     }
+  }
+
+  /**
+   * 支付成功
+   * @param result 结果
+   * @param option 商品
+   */
+  private paySuccess(result: iap.CreatePurchaseResult, option: ProductOption) {
+    hilog.debug(DOMAIN, TAG, 'Payment result: ' + JSON.stringify(result));
+    const purchaseData: PurchaseData = JSON.parse(result.purchaseData);
+    const payload: string = ByteUtils.base64ToString(purchaseData.jwsPurchaseOrder.split('.')[1]);
+    const jwsPurchaseOrder: PurchaseOrderPayload = JSON.parse(payload);
+    const finishPurchaseParam: iap.FinishPurchaseParameter = {
+      productType: iap.ProductType.CONSUMABLE,
+      purchaseToken: jwsPurchaseOrder.purchaseToken,
+      purchaseOrderId: jwsPurchaseOrder.purchaseOrderId
+    };
+    iap.finishPurchase(this.context, finishPurchaseParam).then(result => {
+      hilog.debug(DOMAIN, TAG, 'Finish purchase success: ' + JSON.stringify(result));
+      SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
+      SettingsService.put(SettingsService.KEY_APP_INSTALL_TIME, DateUtils.offset(new Date(), -3, DateUnit.Month).getTime());
+      this.showThankYouMessage(option.thanksMessage);
+    }).catch((err: BusinessError) => {
+      hilog.error(DOMAIN, TAG, 'Finish purchase failed: ' + err.message);
+      this.promptAction.showToast({ message: err.message });
+    });
   }
 
   /**
@@ -140,7 +181,7 @@ struct Support {
           await fs.close(destFile.fd);
         })
       } catch (err) {
-        console.error('Save file failed with error message: ' + err.message + ', error code: ' + err.code);
+        hilog.error(DOMAIN, TAG, 'Save file failed with error message: ' + err.message + ', error code: ' + err?.code);
         this.promptAction.showToast({ message: err.message });
       }
     }
@@ -156,8 +197,8 @@ struct Support {
         message: message,
         duration: 3000
       });
-    } catch (error) {
-      console.error('显示感谢信息失败:', error);
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, 'Show thanks message failed:' + err.message + ', error code: ' + err?.code);
     }
   }
 
