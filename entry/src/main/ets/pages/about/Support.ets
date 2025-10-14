@@ -39,6 +39,7 @@ interface PurchaseOrderPayload {
 @Entry
 @Component
 struct Support {
+  @State clickCount: number = 0;
   @State isShowOtherPay: boolean = false;
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
@@ -71,6 +72,7 @@ struct Support {
   ];
 
   aboutToAppear(): void {
+    this.clickCount = 0;
     try {
       // 查询支付环境状态
       iap.queryEnvironmentStatus(this.context).then(result => {
@@ -202,6 +204,21 @@ struct Support {
     }
   }
 
+  /**
+   * 显示其他支付方式
+   */
+  private showOtherPay() {
+    if (this.isShowOtherPay === false) {
+      this.clickCount += 1;
+      if (this.clickCount >= 5) {
+        this.isShowOtherPay = true;
+      }
+    } else {
+      this.clickCount = 0;
+      this.isShowOtherPay = false;
+    }
+  }
+
   build() {
     // 内容区域
     Column() {
@@ -232,6 +249,9 @@ struct Support {
               .width(90)
               .height(90)
               .margin({ top: 40, bottom: 10 })
+              .onClick(() => {
+                this.showOtherPay();
+              })
 
             Text($r("app.string.support_thanks"))
               .fontSize(18)
@@ -258,32 +278,6 @@ struct Support {
                   this.pay(option);
                 }
               )
-            })
-          }
-          .width('100%')
-          .padding({ top: 10, bottom: 20 })
-        }
-
-        ListItem() {
-          Column() {
-            Button() {
-              Text($r("app.string.support_other_pay"))
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor($r('app.color.text_primary'))
-                .textAlign(TextAlign.Center)
-                .padding({
-                  top: 10,
-                  bottom: 10,
-                  left: 20,
-                  right: 20
-                })
-            }
-            .backgroundColor($r('app.color.card_bg'))
-            .borderRadius(12)
-            .width('40%')
-            .onClick(() => {
-              this.isShowOtherPay = !this.isShowOtherPay;
             })
           }
           .width('100%')
