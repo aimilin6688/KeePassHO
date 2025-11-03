@@ -373,7 +373,7 @@ struct Password {
       RecentFilesService.getInstance().addRecentFile(recentFile);
     }
   }
-  
+
   build() {
     Column() {
       // 顶部导航栏
