@@ -64,6 +64,9 @@ struct EntryEdit {
       onConfirm: (customField: CustomField) => {
         hilog.info(DOMAIN, TAG, '%{public}s', `Received field: ${JSON.stringify(customField)}`);
         this.confirmCustomField(customField);
+      },
+      onCancel: () =>{
+        this.initCustomField();
       }
     }),
     alignment: DialogAlignment.Bottom,
@@ -458,6 +461,17 @@ struct EntryEdit {
     this.currentFieldValue = field.value;
     this.currentFieldProtected = field.isProtected;
     this.fieldDialogController.open();
+  }
+
+  /**
+   * 初始化自定义字段
+   */
+  private initCustomField(){
+    this.isEditingField = false;
+    this.editingFieldIndex = -1;
+    this.currentFieldKey = '';
+    this.currentFieldValue = '';
+    this.currentFieldProtected = false;
   }
 
   /**
