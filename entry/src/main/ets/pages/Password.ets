@@ -373,16 +373,7 @@ struct Password {
       RecentFilesService.getInstance().addRecentFile(recentFile);
     }
   }
-
-  /**
-   * 获取认证方式名称
-   * @param authType
-   * @returns
-   */
-  private getAuthTypeName(authType: AuthTypeInfo): ResourceStr {
-    return this.allAuthType.find(item => item.type === authType.type)?.value ?? this.allAuthType[0].value;
-  }
-
+  
   build() {
     Column() {
       // 顶部导航栏
