@@ -32,9 +32,19 @@ struct SettingCustomIcons {
    */
   private async uploadCustomIcon() {
     this.isUploading = true;
+    // 选择图片
+    this.saveCustomIcon(() => {
+      return ImagePickerUtils.selectImage(this.context, 64);
+    });
+  }
+
+  /**
+   * 保存自定义图标
+   * @param images 图片BASE64
+   */
+  private async saveCustomIcon(loadImages: () => Promise<string[] | null>) {
     try {
-      // 选择图片
-      const images: string[] | null = await ImagePickerUtils.selectImage(this.context, 64);
+      const images: string[] | null = await loadImages();
       if (!images || images.length === 0) {
         return;
       }
@@ -257,6 +267,6 @@ struct SettingCustomIcons {
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
