@@ -757,8 +757,9 @@ struct DatabaseView {
                   .maxLines(1)
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
               }
-              .width('55%')
-              Blank()
+              .margin({right: 25})
+              .layoutWeight(1)
+              .flexShrink(1)
               Row(){
                 // 搜索按钮
                 Image($r('app.media.ic_search'))
@@ -782,9 +783,12 @@ struct DatabaseView {
                   .height(24)
                   .margin({ right: 16 })
                   .onClick(() => {
-                    this.router.pushUrl({ url: 'pages/setting/Settings' })
+                    this.router.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
+                      hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings' );
+                    });
                   })
               }
+              .flexShrink(0)
               .width(112)
             }
             .alignItems(VerticalAlign.Center)
