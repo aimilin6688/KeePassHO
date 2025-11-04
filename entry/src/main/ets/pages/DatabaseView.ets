@@ -624,52 +624,57 @@ struct DatabaseView {
         Row() {
           if (!this.isSearching) {
             Row() {
-              if (this.showBack) {
-                Image($r("app.media.ic_angle_left"))
+              Row(){
+                if (this.showBack) {
+                  Image($r("app.media.ic_angle_left"))
+                    .width(24)
+                    .height(24)
+                    .margin({ left: 16 })
+                    .fillColor($r('app.color.text_primary'))
+                    .onClick(() => {
+                      this.router.back();
+                    })
+                }
+                Text(this.titleName)
+                  .fontSize(20)
+                  .fontWeight(FontWeight.Medium)
+                  .margin({ left: 16 })
+                  .fontColor($r('app.color.text_primary'))
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+              }
+              .width('55%')
+              Blank()
+              Row(){
+                // 搜索按钮
+                Image($r('app.media.ic_search'))
                   .width(24)
                   .height(24)
-                  .margin({ left: 16 })
+                  .margin({ right: 12 })
+                  .onClick(() => {
+                    this.showSearch();
+                  })
+                // 锁定数据库
+                Image($r('app.media.ic_lock'))
+                  .width(24)
+                  .height(24)
+                  .margin({ right: 12 })
                   .fillColor($r('app.color.text_primary'))
                   .onClick(() => {
-                    this.router.back();
+                    this.lockDatabase();
+                  })
+                Image($r('app.media.ic_settings'))
+                  .width(24)
+                  .height(24)
+                  .margin({ right: 16 })
+                  .onClick(() => {
+                    this.router.pushUrl({ url: 'pages/setting/Settings' })
                   })
               }
-              Text(this.titleName)
-                .fontSize(20)
-                .fontWeight(FontWeight.Medium)
-                .margin({ left: 16 })
-                .fontColor($r('app.color.text_primary'))
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .width('55%')
-              Blank()
-              // 搜索按钮
-              Image($r('app.media.ic_search'))
-                .width(24)
-                .height(24)
-                .margin({ right: 16 })
-                .onClick(() => {
-                  this.showSearch();
-                })
-              // 锁定数据库
-              Image($r('app.media.ic_lock'))
-                .width(24)
-                .height(24)
-                .margin({ right: 16 })
-                .fillColor($r('app.color.text_primary'))
-                .onClick(() => {
-                  this.lockDatabase();
-                })
-              Image($r('app.media.ic_settings'))
-                .width(24)
-                .height(24)
-                .margin({ right: 16 })
-                .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/setting/Settings' })
-                })
+              .width(112)
             }
             .alignItems(VerticalAlign.Center)
-            .width('auto')
+            .width('100%')
             .layoutWeight(1)
           } else {
             Column() {
@@ -687,7 +692,7 @@ struct DatabaseView {
                 }
                 // 搜索框
                 Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
-                  .width('63%')
+                  .width('60%')
                   .margin({ left: 16 })
                   .height(40)
                   .key("searchKey")
@@ -731,12 +736,9 @@ struct DatabaseView {
                   .margin({ right: 16 })
                   .padding({ left: 5, right: 5 })
                   .onClick(() => {
-                    this.searchText = '';
-                    this.isSearching = false;
-                    this.filteredGroups = [...this.groups];
-                    this.filteredEntries = [...this.entries];
                   })
-              }.width('100%')
+              }
+              .width('100%')
 
               // 显示搜索历史
               if (this.isShowHistory()) {
