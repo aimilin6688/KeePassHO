@@ -622,7 +622,121 @@ struct DatabaseView {
       Column() {
         // 顶部导航栏
         Row() {
-          if (!this.isSearching) {
+          if (this.isSearching) {
+            Column() {
+              Row() {
+                // 搜索框
+                Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
+                  .margin({ left: 16 })
+                  .height(40)
+                  .layoutWeight(1)
+                  .flexShrink(1)
+                  .key("searchKey")
+                  .searchIcon({
+                    src: $r('sys.media.ohos_ic_public_search_filled')
+                  })
+                  .cancelButton({
+                    style: CancelButtonStyle.CONSTANT,
+                    icon: {
+                      src: $r('sys.media.ohos_ic_public_cancel_filled')
+                    },
+                  })
+                  .enterKeyType(EnterKeyType.Search)
+                  .padding({ left: 10, right: 10 })
+                  .onChange((value: string) => {
+                    this.searchText = value;
+                    this.performSearch();
+                  })
+                  .onSubmit((value: string) => {
+                    this.searchText = value;
+                    this.performSearch();
+                    this.addAndGetSearchHistory();
+                  })
+                  .onAppear(() => {
+                    try {
+                      this.searchController.requestFocus('searchKey'); // 传入组件key
+                    } catch (error) {
+                      hilog.error(DOMAIN, TAG, 'SearchKey con not get focus: %{public}s', error?.message);
+                    }
+                  })
+                  .onBlur(() => {
+                    this.addAndGetSearchHistory();
+                  })
+                Button($r('app.string.cancel_button_text'))
+                  .width(70)
+                  .height(40)
+                  .fontSize(16)
+                  .flexShrink(0)
+                  .fontColor($r('app.color.text_primary'))
+                  .backgroundColor($r("app.color.card_bg"))
+                  .margin({ right: 16 })
+                  .padding({ left: 5, right: 5 })
+                  .onClick(() => {
+                    this.searchText = '';
+                    this.isSearching = false;
+                    this.filteredGroups = [...this.groups];
+                    this.filteredEntries = [...this.entries];
+                  })
+              }
+              .width('100%')
+              // 显示搜索历史
+              if (this.isShowHistory()) {
+                Row() {
+                  RelativeContainer() {
+                    List() {
+                      ForEach(this.searchHistory, (searchItem: string, index: number) => {
+                        ListItem() {
+                          Button(searchItem)
+                            .height(34)
+                            .fontSize(16)
+                            .fontColor($r('app.color.text_primary'))
+                            .backgroundColor($r("app.color.card_bg"))
+                            .padding({ left: 10, right: 10 })
+                            .onClick(() => {
+                              this.searchText = searchItem;
+                              this.performSearch();
+                            })
+                        }
+                      })
+                    }
+                    .padding({
+                      left: 10,
+                      right: 10,
+                      top: 10,
+                      bottom: 6
+                    })
+                    .listDirection(Axis.Horizontal)
+                    .scrollBar(BarState.Off)
+                    .width('100%')
+                    .height('auto')
+
+                    // 清空历史记录图标
+                    Image($r('app.media.ic_delete'))
+                      .width(22)
+                      .height(22)
+                      .margin({ right: 32, top: 16 })
+                      .fillColor($r('app.color.button_bg_disabled'))
+                      .borderRadius(4)
+                      .alignRules({
+                        middle: { anchor: "__container__", align: HorizontalAlign.End },
+                        top: { anchor: "__container__", align: VerticalAlign.Top }
+                      })
+                      .onClick(() => {
+                        this.clearSearchHistory();
+                      })
+                  }
+                  .margin({ top: 4 })
+                  .width('100%')
+                  .backgroundColor($r("app.color.card_bg"))
+                  .height(58)
+                  .borderRadius(8)
+                }.width('100%')
+                .padding({ left: 12, right: 12 })
+              }
+            }
+            .margin({ top: 12})
+            .width('100%')
+          } else {
             Row() {
               Row(){
                 if (this.showBack) {
@@ -676,123 +790,6 @@ struct DatabaseView {
             .alignItems(VerticalAlign.Center)
             .width('100%')
             .layoutWeight(1)
-          } else {
-            Column() {
-              Row() {
-                if (this.showBack) {
-                  Image($r("app.media.ic_angle_left"))
-                    .width(24)
-                    .height(24)
-                    .margin({ left: 16 })
-                    .fillColor($r('app.color.text_primary'))
-                    .onClick(() => {
-                      this.router.back();
-                    })
-                  Blank()
-                }
-                // 搜索框
-                Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
-                  .width('60%')
-                  .margin({ left: 16 })
-                  .height(40)
-                  .key("searchKey")
-                  .searchIcon({
-                    src: $r('sys.media.ohos_ic_public_search_filled')
-                  })
-                  .cancelButton({
-                    style: CancelButtonStyle.CONSTANT,
-                    icon: {
-                      src: $r('sys.media.ohos_ic_public_cancel_filled')
-                    },
-                  })
-                  .enterKeyType(EnterKeyType.Search)
-                  .padding({ left: 10, right: 10 })
-                  .onChange((value: string) => {
-                    this.searchText = value;
-                    this.performSearch();
-                  })
-                  .onSubmit((value: string) => {
-                    this.searchText = value;
-                    this.performSearch();
-                    this.addAndGetSearchHistory();
-                  })
-                  .onAppear(() => {
-                    try {
-                      this.searchController.requestFocus('searchKey'); // 传入组件key
-                    } catch (error) {
-                      hilog.error(DOMAIN, TAG, 'SearchKey con not get focus: %{public}s', error?.message);
-                    }
-                  })
-                  .onBlur(() => {
-                    this.addAndGetSearchHistory();
-                  })
-                Blank()
-                Button($r('app.string.cancel_button_text'))
-                  .width(70)
-                  .height(40)
-                  .fontSize(16)
-                  .fontColor($r('app.color.text_primary'))
-                  .backgroundColor($r("app.color.card_bg"))
-                  .margin({ right: 16 })
-                  .padding({ left: 5, right: 5 })
-                  .onClick(() => {
-                  })
-              }
-              .width('100%')
-
-              // 显示搜索历史
-              if (this.isShowHistory()) {
-                Row() {
-                  RelativeContainer() {
-                    List() {
-                      ForEach(this.searchHistory, (searchItem: string, index: number) => {
-                        ListItem() {
-                          Button(searchItem)
-                            .height(34)
-                            .fontSize(16)
-                            .fontColor($r('app.color.text_primary'))
-                            .backgroundColor($r("app.color.card_bg"))
-                            .padding({ left: 10, right: 10 })
-                            .onClick(() => {
-                              this.searchText = searchItem;
-                              this.performSearch();
-                            })
-                        }
-                      })
-                    }
-                    .padding({
-                      left: 10,
-                      right: 10,
-                      top: 10,
-                      bottom: 6
-                    })
-                    .listDirection(Axis.Horizontal)
-                    .scrollBar(BarState.Off)
-
-                    // 清空历史记录图标
-                    Image($r('app.media.ic_delete'))
-                      .width(22)
-                      .height(22)
-                      .margin({ right: 32, top: 16 })
-                      .fillColor($r('app.color.button_bg_disabled'))
-                      .borderRadius(4)
-                      .alignRules({
-                        middle: { anchor: "__container__", align: HorizontalAlign.End },
-                        top: { anchor: "__container__", align: VerticalAlign.Top }
-                      })
-                      .onClick(() => {
-                        this.clearSearchHistory();
-                      })
-                  }
-                  .margin({ top: 4 })
-                  .width('100%')
-                  .backgroundColor($r("app.color.card_bg"))
-                  .height(58)
-                  .borderRadius(8)
-                }.width('100%')
-                .padding({ left: 12, right: 12 })
-              }
-            }.width('100%')
           }
         }
         .width('100%')
