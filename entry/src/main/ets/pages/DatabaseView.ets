@@ -45,8 +45,10 @@ struct DatabaseView {
   @State refreshText: ResourceStr = $r('app.string.refreshing_message');
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
+  @State isShowSearchHistory: boolean = SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
+  @State headerHeight: number = 56;
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
@@ -130,6 +132,10 @@ struct DatabaseView {
     // 列表显示TOTP
     this.settingsService.get(SettingsService.KEY_SECURITY_LIST_SHOW_TOTP, SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT).then(result => {
       this.isListShowTotp = result;
+    });
+    // 搜索历史改变
+    this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT).then(result => {
+      this.isShowSearchHistory = result;
     });
   }
 
@@ -558,6 +564,20 @@ struct DatabaseView {
     this.filteredEntries = [...this.entries];
     // 获取搜索历史
     this.loadSearchHistory();
+    this.showSearchAnimate();
+  }
+
+  /**
+   * 显示搜索动画
+   */
+  private showSearchAnimate() {
+    this.getUIContext().animateTo({ curve: Curve.Ease, duration: 200 }, () => {
+      if (this.isShowHistory()) {
+        this.headerHeight = 114;
+      } else {
+        this.headerHeight = 56;
+      }
+    });
   }
 
   /**
@@ -576,9 +596,11 @@ struct DatabaseView {
    * 获取搜索历史
    */
   private loadSearchHistory() {
-    RecentFilesService.getSearchHistory(this.filePath).then(history => {
-      this.searchHistory = history;
-    });
+    if(this.isShowSearchHistory){
+      RecentFilesService.getSearchHistory(this.filePath).then(history => {
+        this.searchHistory = history;
+      });
+    }
   }
 
   /**
@@ -608,7 +630,7 @@ struct DatabaseView {
   }
 
   private isShowHistory(): boolean {
-    return this.isSearching && this.searchHistory && this.searchHistory.length > 0;
+    return this.isSearching && this.isShowSearchHistory;
   }
 
   private routerBack() {
@@ -672,13 +694,15 @@ struct DatabaseView {
                   .margin({ right: 16 })
                   .padding({ left: 5, right: 5 })
                   .onClick(() => {
-                    this.searchText = '';
                     this.isSearching = false;
+                    this.showSearchAnimate();
+                    this.searchText = '';
                     this.filteredGroups = [...this.groups];
                     this.filteredEntries = [...this.entries];
                   })
               }
               .width('100%')
+
               // 显示搜索历史
               if (this.isShowHistory()) {
                 Row() {
@@ -734,11 +758,11 @@ struct DatabaseView {
                 .padding({ left: 12, right: 12 })
               }
             }
-            .margin({ top: 12})
+            .margin({ top: 12 })
             .width('100%')
           } else {
             Row() {
-              Row(){
+              Row() {
                 if (this.showBack) {
                   Image($r("app.media.ic_angle_left"))
                     .width(24)
@@ -757,10 +781,11 @@ struct DatabaseView {
                   .maxLines(1)
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
               }
-              .margin({right: 25})
+              .margin({ right: 25 })
               .layoutWeight(1)
               .flexShrink(1)
-              Row(){
+
+              Row() {
                 // 搜索按钮
                 Image($r('app.media.ic_search'))
                   .width(24)
@@ -784,7 +809,7 @@ struct DatabaseView {
                   .margin({ right: 16 })
                   .onClick(() => {
                     this.router.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
-                      hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings' );
+                      hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
                     });
                   })
               }
@@ -797,7 +822,7 @@ struct DatabaseView {
           }
         }
         .width('100%')
-        .height(this.isShowHistory() ? 114 : 56)
+        .height(this.headerHeight)
 
         if (this.isLoading) {
           // 加载中状态
@@ -875,7 +900,7 @@ struct DatabaseView {
                     .height(60)
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
-                    $r("app.color.card_bg"))
+                      $r("app.color.card_bg"))
                     .padding({ left: 10, right: 10 })
                     .onClick(() => {
                       this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
@@ -893,7 +918,7 @@ struct DatabaseView {
                   ListItem() {
                     Row() {
                       Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
-                      KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                        KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
                         .width(28)
                         .height(28)
                         .margin(10)
@@ -906,7 +931,7 @@ struct DatabaseView {
                           .maxLines(1)
                           .decoration({
                             type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
-                            TextDecorationType.None)
+                              TextDecorationType.None)
                           })
                         Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_USERNAME))
                           .fontSize(12)
@@ -917,7 +942,7 @@ struct DatabaseView {
                           .margin({ top: 4 })
                           .decoration({
                             type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
-                            TextDecorationType.None)
+                              TextDecorationType.None)
                           })
                         // TOTP 字段展示
                         if (this.isListShowTotp) {
@@ -939,7 +964,7 @@ struct DatabaseView {
                     .width('100%')
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :
-                    $r("app.color.card_bg"))
+                      $r("app.color.card_bg"))
                     .padding({
                       left: 10,
                       right: 10,
@@ -947,7 +972,10 @@ struct DatabaseView {
                       bottom: 8
                     })
                     .onClick(() => {
-                      this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
+                      this.router.pushUrl({
+                        url: 'pages/EntryView',
+                        params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id }
+                      });
                     })
                   }
                   .swipeAction({
