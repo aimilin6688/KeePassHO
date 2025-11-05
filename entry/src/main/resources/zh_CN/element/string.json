@@ -1427,6 +1427,14 @@
     {
       "name": "download_image_failed_message",
       "value": "下载失败"
+    },
+    {
+      "name": "add_from_local",
+      "value": "本地上传"
+    },
+    {
+      "name": "add_from_web",
+      "value": "网络下载"
     }
   ]
 }
