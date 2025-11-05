@@ -23,7 +23,6 @@ struct SettingCustomIcons {
   private readonly iconSize: number = 52;
   private router: Router = this.getUIContext().getRouter();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  
   // 下载图片对话框控制器
   private downloadImageDialogController: CustomDialogController = new CustomDialogController({
     builder: DownloadImageDialog({
@@ -38,7 +37,6 @@ struct SettingCustomIcons {
     customStyle: true,
     autoCancel: false
   });
-
 
   aboutToAppear() {
     this.icons = IconUtils.getAllIcons(true);
@@ -169,6 +167,27 @@ struct SettingCustomIcons {
     }
   }
 
+  @Builder
+  AddMenu() {
+    Menu() {
+      MenuItem({
+        startIcon: $r('app.media.ic_add'),
+        content: $r('app.string.add_from_local'),
+      }).onClick(() => {
+        this.uploadCustomIcon();
+      })
+      MenuItem({
+        startIcon: $r('app.media.ic_download'),
+        content: $r('app.string.add_from_web'),
+      }).onClick(() => {
+        this.downloadImageDialogController.open();
+      })
+    }
+    .subMenuExpandingMode(SubMenuExpandingMode.EMBEDDED_EXPAND)
+    .backgroundColor($r("app.color.bg_secondary"))
+    .fontColor($r('app.color.text_primary'))
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -186,24 +205,7 @@ struct SettingCustomIcons {
           .margin({ left: 12 })
 
         Blank()
-        
-        // 网络下载按钮
-        Button() {
-          Image($r('app.media.ic_download'))
-            .width(28)
-            .height(28)
-            .fillColor($r('app.color.text_primary'))
-        }
-        .width(36)
-        .height(36)
-        .margin({ right: 0 })
-        .borderRadius(20)
-        .backgroundColor(Color.Transparent)
-        .enabled(!this.isUploading)
-        .onClick(() => {
-          this.downloadImageDialogController.open();
-        })
-        
+
         // 本地添加按钮
         Button() {
           Image($r('app.media.ic_add'))
@@ -217,9 +219,7 @@ struct SettingCustomIcons {
         .borderRadius(20)
         .backgroundColor(Color.Transparent)
         .enabled(!this.isUploading)
-        .onClick(() => {
-          this.uploadCustomIcon();
-        })
+        .bindMenu(this.AddMenu)
       }
       .width('100%')
       .height(56)
