@@ -23,9 +23,10 @@ export class WebImageDownloader {
       throw new Error(ResourceManager.getString($r("app.string.download_image_url_invalid_message")));
     }
 
+    let session: rcp.Session | null = null;
     try {
       // 创建HTTP会话
-      const session = rcp.createSession({
+      session = rcp.createSession({
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'image/*'
@@ -59,14 +60,20 @@ export class WebImageDownloader {
       // 处理图片
       const base64Image = await WebImageDownloader.processImageData(arrayBuffer, contentType, size);
 
-      // 关闭会话
-      session.close();
-
       return base64Image;
 
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Download image failed: ' + error.message);
-      return Promise.reject(new Error(error.message));
+      throw new Error(error.message);
+    } finally {
+      // 确保会话被关闭
+      if (session) {
+        try {
+          session.close();
+        } catch (closeError) {
+          hilog.warn(DOMAIN, TAG, 'Close session failed: ' + closeError.message);
+        }
+      }
     }
   }
 
@@ -151,7 +158,7 @@ export class WebImageDownloader {
 
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Process image data failed: ' + error.message);
-      return Promise.reject(new Error(error.message));
+      throw new Error(error.message);
     }
   }
 }
