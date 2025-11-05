@@ -8,6 +8,7 @@ import { FileService } from '../../services/FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import IconUtils from '../../common/utils/IconUtils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
+import { DownloadImageDialog } from '../../components/DownloadImageDialog';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingCustomIcons';
@@ -22,6 +23,22 @@ struct SettingCustomIcons {
   private readonly iconSize: number = 52;
   private router: Router = this.getUIContext().getRouter();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+  
+  // 下载图片对话框控制器
+  private downloadImageDialogController: CustomDialogController = new CustomDialogController({
+    builder: DownloadImageDialog({
+      onSuccess: (imageData: string) => {
+        this.saveCustomIconFromWeb([imageData]);
+      },
+      onCancel: () => {
+        // 取消操作
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
+
 
   aboutToAppear() {
     this.icons = IconUtils.getAllIcons(true);
@@ -60,6 +77,28 @@ struct SettingCustomIcons {
       CommonUtils.showToast(error.message);
     } finally {
       this.isUploading = false;
+    }
+  }
+
+  /**
+   * 保存从web下载的图标
+   * @param images 图片BASE64数组
+   */
+  private async saveCustomIconFromWeb(images: string[]) {
+    try {
+      if (!images || images.length === 0) {
+        return;
+      }
+      // 添加自定义图标到数据库
+      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
+        onSuccess: () => {
+          this.icons = IconUtils.getAllIcons(true);
+          CommonUtils.showToast($r('app.string.save_success'));
+        },
+      });
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Save web icon failed：' + error.message);
+      CommonUtils.showToast(error.message);
     }
   }
 
@@ -134,6 +173,7 @@ struct SettingCustomIcons {
     Column() {
       // 顶部导航栏
       Row() {
+        // 返回按钮
         Image($r("app.media.ic_angle_left"))
           .width(24)
           .height(24)
@@ -146,14 +186,33 @@ struct SettingCustomIcons {
           .margin({ left: 12 })
 
         Blank()
+        
+        // 网络下载按钮
         Button() {
-          Image($r('app.media.ic_add'))
-            .width(26)
-            .height(26)
+          Image($r('app.media.ic_download'))
+            .width(28)
+            .height(28)
             .fillColor($r('app.color.text_primary'))
         }
-        .width(48)
-        .height(48)
+        .width(36)
+        .height(36)
+        .margin({ right: 0 })
+        .borderRadius(20)
+        .backgroundColor(Color.Transparent)
+        .enabled(!this.isUploading)
+        .onClick(() => {
+          this.downloadImageDialogController.open();
+        })
+        
+        // 本地添加按钮
+        Button() {
+          Image($r('app.media.ic_add'))
+            .width(30)
+            .height(30)
+            .fillColor($r('app.color.text_primary'))
+        }
+        .width(36)
+        .height(36)
         .margin({ right: 16 })
         .borderRadius(20)
         .backgroundColor(Color.Transparent)
