@@ -1427,6 +1427,14 @@
     {
       "name": "download_image_failed_message",
       "value": "Download Failed"
+    },
+    {
+      "name": "add_from_local",
+      "value": "Local upload"
+    },
+    {
+      "name": "add_from_web",
+      "value": "Web download"
     }
   ]
 }
