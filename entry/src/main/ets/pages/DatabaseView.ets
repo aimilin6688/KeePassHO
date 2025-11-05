@@ -868,8 +868,8 @@ struct DatabaseView {
                   ListItem() {
                     Row() {
                       Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
-                        .width(28)
-                        .height(28)
+                        .width(36)
+                        .height(36)
                         .margin(10)
                       Column() {
                         Text(KdbxUtils.getFieldName(itemGroup.name))
@@ -891,9 +891,9 @@ struct DatabaseView {
                       .layoutWeight(1)
 
                       Image($r('app.media.ic_arrow_right'))
-                        .width(20)
-                        .height(20)
-                        .margin({ right: 10 })
+                        .width(28)
+                        .height(28)
+                        .margin({ right: 0 })
                         .fillColor($r('app.color.text_primary'))
                     }
                     .width('100%')
@@ -901,7 +901,7 @@ struct DatabaseView {
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
                       $r("app.color.card_bg"))
-                    .padding({ left: 10, right: 10 })
+                    .padding({ left: 6, right: 6 })
                     .onClick(() => {
                       this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
                     })
@@ -919,8 +919,8 @@ struct DatabaseView {
                     Row() {
                       Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
                         KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
-                        .width(28)
-                        .height(28)
+                        .width(36)
+                        .height(36)
                         .margin(10)
                       Column() {
                         Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
@@ -956,9 +956,9 @@ struct DatabaseView {
                       .layoutWeight(1)
 
                       Image($r('app.media.ic_arrow_right'))
-                        .width(20)
-                        .height(20)
-                        .margin({ right: 10 })
+                        .width(28)
+                        .height(28)
+                        .margin({ right: 0 })
                         .fillColor($r('app.color.text_primary'))
                     }
                     .width('100%')
@@ -966,8 +966,8 @@ struct DatabaseView {
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :
                       $r("app.color.card_bg"))
                     .padding({
-                      left: 10,
-                      right: 10,
+                      left: 6,
+                      right: 6,
                       top: 8,
                       bottom: 8
                     })
