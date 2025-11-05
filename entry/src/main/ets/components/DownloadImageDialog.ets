@@ -169,8 +169,8 @@ export struct DownloadImageDialog {
               this.onCancel();
             }
           })
-          .backgroundColor('#E0E0E0')
-          .fontColor('#666666')
+          .backgroundColor(Color.Gray)
+          .fontColor($r('app.color.button_text'))
           .width('45%')
           .height(40)
           .borderRadius(16)
