@@ -898,7 +898,7 @@ struct DatabaseView {
                         .fillColor($r('app.color.text_primary'))
                     }
                     .width('100%')
-                    .height(64)
+                    .height(66)
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
                       $r("app.color.card_bg"))
@@ -969,8 +969,8 @@ struct DatabaseView {
                     .padding({
                       left: 6,
                       right: 6,
-                      top: 10,
-                      bottom: 10
+                      top: 8,
+                      bottom: 8
                     })
                     .onClick(() => {
                       this.router.pushUrl({
