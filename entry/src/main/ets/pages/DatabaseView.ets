@@ -273,8 +273,8 @@ struct DatabaseView {
   SwipeActionButtons(index: number, item: KdbxGroup | KdbxEntry) {
     Row() {
       Button($r('app.string.edit_button_text'), { type: ButtonType.Normal })
-        .width(80)
-        .height(60)
+        .width(70)
+        .height('100%')
         .backgroundColor($r("app.color.button_bg_blue"))
         .fontColor(Color.White)
         .fontSize(14)
@@ -297,8 +297,8 @@ struct DatabaseView {
           this.listScroller.closeAllSwipeActions();
         })
       Button($r('app.string.move_button_text'), { type: ButtonType.Normal })
-        .width(80)
-        .height(60)
+        .width(70)
+        .height('100%')
         .fontColor($r('app.color.text_primary'))
         .backgroundColor($r("app.color.warn"))
         .fontSize(14)
@@ -312,8 +312,8 @@ struct DatabaseView {
           this.listScroller.closeAllSwipeActions();
         })
       Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
-        .width(80)
-        .height(60)
+        .width(70)
+        .height('100%')
         .backgroundColor($r("app.color.error"))
         .fontColor($r('app.color.text_primary'))
         .fontSize(14)
@@ -349,6 +349,7 @@ struct DatabaseView {
           })
         })
     }
+    .height('100%')
   }
 
   /**
@@ -897,7 +898,7 @@ struct DatabaseView {
                         .fillColor($r('app.color.text_primary'))
                     }
                     .width('100%')
-                    .height(60)
+                    .height(64)
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
                       $r("app.color.card_bg"))
@@ -968,8 +969,8 @@ struct DatabaseView {
                     .padding({
                       left: 6,
                       right: 6,
-                      top: 8,
-                      bottom: 8
+                      top: 10,
+                      bottom: 10
                     })
                     .onClick(() => {
                       this.router.pushUrl({
