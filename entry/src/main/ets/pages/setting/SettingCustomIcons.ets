@@ -1,80 +1,22 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import { Router } from '@kit.ArkUI';
 import { IconResource } from '../../services/TypeDefined';
-import { ImagePickerUtils } from '../../common/utils/ImagePickerUtils';
-import { common } from '@kit.AbilityKit';
 import { FileService } from '../../services/FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import IconUtils from '../../common/utils/IconUtils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
-import { DownloadImageDialog } from '../../components/DownloadImageDialog';
-
-const DOMAIN = 0x0000;
-const TAG = 'SettingCustomIcons';
+import { ImageAddComponent } from '../../components/ImageAddComponent';
 
 @Entry
 @Component
 struct SettingCustomIcons {
   @State icons: IconResource[] = [];
-  @State isUploading: boolean = false;
   @State selectIcons: Set<string | number> = new Set();
   // 图标大小
   private readonly iconSize: number = 52;
   private router: Router = this.getUIContext().getRouter();
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  // 下载图片对话框控制器
-  private downloadImageDialogController: CustomDialogController = new CustomDialogController({
-    builder: DownloadImageDialog({
-      onSuccess: (imageData: string) => {
-        this.saveCustomIcon([imageData]);
-      },
-      onCancel: () => {
-        // 取消操作
-      }
-    }),
-    alignment: DialogAlignment.Bottom,
-    customStyle: true,
-    autoCancel: false
-  });
 
   aboutToAppear() {
     this.icons = IconUtils.getAllIcons(true);
-  }
-
-  /**
-   * 上传自定义图片
-   */
-  private async uploadCustomIcon() {
-    this.isUploading = true;
-    ImagePickerUtils.selectImage(this.context, 64).then((images) => {
-      this.saveCustomIcon(images);
-    });
-  }
-
-  /**
-   * 保存图标
-   * @param images 图片BASE64数组
-   */
-  private async saveCustomIcon(images: string[] | null) {
-    try {
-      if (!images || images.length === 0) {
-        return;
-      }
-      // 添加自定义图标到数据库
-      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
-        onSuccess: () => {
-          this.isUploading = false;
-          this.icons = IconUtils.getAllIcons(true);
-          CommonUtils.showToast($r('app.string.save_success'));
-        },
-      });
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Save web icon failed：' + error.message);
-      CommonUtils.showToast(error.message);
-    } finally {
-      this.isUploading = false;
-    }
   }
 
   /**
@@ -144,25 +86,11 @@ struct SettingCustomIcons {
     }
   }
 
-  @Builder
-  AddMenu() {
-    Menu() {
-      MenuItem({
-        startIcon: $r('app.media.ic_add'),
-        content: $r('app.string.add_from_local'),
-      }).onClick(() => {
-        this.uploadCustomIcon();
-      })
-      MenuItem({
-        startIcon: $r('app.media.ic_download'),
-        content: $r('app.string.add_from_web'),
-      }).onClick(() => {
-        this.downloadImageDialogController.open();
-      })
-    }
-    .subMenuExpandingMode(SubMenuExpandingMode.EMBEDDED_EXPAND)
-    .backgroundColor($r("app.color.bg_secondary"))
-    .fontColor($r('app.color.text_primary'))
+  /**
+   * 刷新图标列表
+   */
+  private refreshIcons() {
+    this.icons = IconUtils.getAllIcons(true);
   }
 
   build() {
@@ -182,21 +110,22 @@ struct SettingCustomIcons {
           .margin({ left: 12 })
 
         Blank()
-
-        // 本地添加按钮
+        // 图片添加组件
         Button() {
-          Image($r('app.media.ic_add'))
+          ImageAddComponent({
+            onSuccess: () => {
+              this.refreshIcons();
+            }
+          })
             .width(30)
             .height(30)
-            .fillColor($r('app.color.text_primary'))
         }
         .width(36)
         .height(36)
         .margin({ right: 16 })
         .borderRadius(20)
         .backgroundColor(Color.Transparent)
-        .enabled(!this.isUploading)
-        .bindMenu(this.AddMenu)
+
       }
       .width('100%')
       .height(56)
