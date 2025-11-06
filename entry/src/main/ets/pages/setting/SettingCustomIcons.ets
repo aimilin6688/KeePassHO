@@ -27,7 +27,7 @@ struct SettingCustomIcons {
   private downloadImageDialogController: CustomDialogController = new CustomDialogController({
     builder: DownloadImageDialog({
       onSuccess: (imageData: string) => {
-        this.saveCustomIconFromWeb([imageData]);
+        this.saveCustomIcon([imageData]);
       },
       onCancel: () => {
         // 取消操作
@@ -47,19 +47,17 @@ struct SettingCustomIcons {
    */
   private async uploadCustomIcon() {
     this.isUploading = true;
-    // 选择图片
-    this.saveCustomIcon(() => {
-      return ImagePickerUtils.selectImage(this.context, 64);
+    ImagePickerUtils.selectImage(this.context, 64).then((images) => {
+      this.saveCustomIcon(images);
     });
   }
 
   /**
-   * 保存自定义图标
-   * @param images 图片BASE64
+   * 保存图标
+   * @param images 图片BASE64数组
    */
-  private async saveCustomIcon(loadImages: () => Promise<string[] | null>) {
+  private async saveCustomIcon(images: string[] | null) {
     try {
-      const images: string[] | null = await loadImages();
       if (!images || images.length === 0) {
         return;
       }
@@ -68,35 +66,14 @@ struct SettingCustomIcons {
         onSuccess: () => {
           this.isUploading = false;
           this.icons = IconUtils.getAllIcons(true);
-        },
-      });
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Upload custom icon failed：' + error.message);
-      CommonUtils.showToast(error.message);
-    } finally {
-      this.isUploading = false;
-    }
-  }
-
-  /**
-   * 保存从web下载的图标
-   * @param images 图片BASE64数组
-   */
-  private async saveCustomIconFromWeb(images: string[]) {
-    try {
-      if (!images || images.length === 0) {
-        return;
-      }
-      // 添加自定义图标到数据库
-      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
-        onSuccess: () => {
-          this.icons = IconUtils.getAllIcons(true);
           CommonUtils.showToast($r('app.string.save_success'));
         },
       });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Save web icon failed：' + error.message);
       CommonUtils.showToast(error.message);
+    } finally {
+      this.isUploading = false;
     }
   }
 
