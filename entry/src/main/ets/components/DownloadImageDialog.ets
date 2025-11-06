@@ -1,7 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../common/utils/CommonUtils';
 import { WebImageDownloader } from '../common/utils/WebImageDownloader';
 import { UrlUtils } from '../common/utils/UrlUtils';
+import { LoadingDialog } from './loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DownloadImageDialog';
@@ -42,7 +42,7 @@ export struct DownloadImageDialog {
         if (this.onSuccess) {
           this.onSuccess(imageData);
         }
-        CommonUtils.showToast($r('app.string.download_image_success_message'));
+        LoadingDialog.showSuccess($r('app.string.download_image_success_message'));
       } else {
         this.errorMessage = $r('app.string.download_image_failed_message');
       }
