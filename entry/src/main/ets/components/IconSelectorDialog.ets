@@ -7,17 +7,17 @@ import { Kdbx } from 'kdbxweb';
 import { FileService } from '../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../common/utils/CommonUtils';
+import { DownloadImageDialog } from './DownloadImageDialog';
 
 const DOMAIN = 0x0000;
 const TAG = 'IconSelectorDialog';
-
 
 @CustomDialog
 export struct IconSelectorDialog {
   @State selectedIconId: number | string = -1;
   @State isUploading: boolean = false;
   @State icons: IconResource[] = [];
-  private controller: CustomDialogController;
+
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   public onIconSelected: (iconId: number | string) => void = () => {
   };
@@ -29,6 +29,22 @@ export struct IconSelectorDialog {
   // 图标间距
   private readonly iconGap: number = 16;
 
+  // 下载图片对话框控制器
+  private downloadImageDialogController: CustomDialogController = new CustomDialogController({
+    builder: DownloadImageDialog({
+      onSuccess: (imageData: string) => {
+        this.saveCustomIcon([imageData]);
+      },
+      onCancel: () => {
+        // 取消操作
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
+  private controller: CustomDialogController;
+
   aboutToAppear() {
     // 获取所有图标
     this.icons = IconUtils.getAllIcons();
@@ -39,9 +55,17 @@ export struct IconSelectorDialog {
    */
   private async uploadCustomIcon() {
     this.isUploading = true;
+    ImagePickerUtils.selectImage(this.context, 64).then((images) => {
+      this.saveCustomIcon(images);
+    });
+  }
+
+  /**
+   * 保存图标
+   * @param images 图片BASE64数组
+   */
+  private async saveCustomIcon(images: string[] | null) {
     try {
-      // 选择图片
-      const images: string[] | null = await ImagePickerUtils.selectImage(this.context, 64);
       if (!images || images.length === 0) {
         return;
       }
@@ -49,15 +73,37 @@ export struct IconSelectorDialog {
       KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
         onSuccess: () => {
           this.isUploading = false;
-          this.icons = IconUtils.getAllIcons();
+          this.icons = IconUtils.getAllIcons(true);
+          CommonUtils.showToast($r('app.string.save_success'));
         },
       });
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Upload custom icon failed：' + error.message);
+      hilog.error(DOMAIN, TAG, 'Save web icon failed：' + error.message);
       CommonUtils.showToast(error.message);
     } finally {
       this.isUploading = false;
     }
+  }
+
+  @Builder
+  AddMenu() {
+    Menu() {
+      MenuItem({
+        startIcon: $r('app.media.ic_add'),
+        content: $r('app.string.add_from_local'),
+      }).onClick(() => {
+        this.uploadCustomIcon();
+      })
+      MenuItem({
+        startIcon: $r('app.media.ic_download'),
+        content: $r('app.string.add_from_web'),
+      }).onClick(() => {
+        this.downloadImageDialogController.open();
+      })
+    }
+    .subMenuExpandingMode(SubMenuExpandingMode.EMBEDDED_EXPAND)
+    .backgroundColor($r("app.color.bg_secondary"))
+    .fontColor($r('app.color.text_primary'))
   }
 
   build() {
@@ -134,9 +180,7 @@ export struct IconSelectorDialog {
           .borderRadius(this.iconSize / 2)
           .backgroundColor($r("app.color.button_bg_blue"))
           .enabled(!this.isUploading)
-          .onClick(() => {
-            this.uploadCustomIcon();
-          })
+          .bindMenu(this.AddMenu)
         }
       }
       .height('90%')
