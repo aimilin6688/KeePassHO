@@ -1435,6 +1435,14 @@
     {
       "name": "add_from_web",
       "value": "Web download"
+    },
+    {
+      "name": "application_limit_db_ext",
+      "value": "Limit db suffix"
+    },
+    {
+      "name": "application_limit_db_ext_tips",
+      "value": "Only data ending with .kdbx can be selected"
     }
   ]
 }
