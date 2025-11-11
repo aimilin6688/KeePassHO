@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
-import FileUtils from '../../../../main/ets/common/utils/FIleUtils';
+import {FilenameUtils} from '../../../../main/ets/common/utils/FilenameUtils';
 import DateUtils from '../../../../main/ets/common/utils/DateUtils';
 
 export default function FileUtilsTest() {
@@ -18,38 +18,38 @@ export default function FileUtilsTest() {
 
     it('replaceExt replaces file extension correctly', 0, () => {
       // 测试正常的文件名替换后缀
-      expect(FileUtils.replaceExt('test.txt', '.kdbx')).assertEqual('test.kdbx');
-      expect(FileUtils.replaceExt('document.pdf', '.docx')).assertEqual('document.docx');
-      expect(FileUtils.replaceExt('archive.tar.gz', '.zip')).assertEqual('archive.tar.zip');
+      expect(FilenameUtils.replaceExt('test.txt', '.kdbx')).assertEqual('test.kdbx');
+      expect(FilenameUtils.replaceExt('document.pdf', '.docx')).assertEqual('document.docx');
+      expect(FilenameUtils.replaceExt('archive.tar.gz', '.zip')).assertEqual('archive.tar.zip');
     });
 
     it('replaceExt handles edge cases', 0, () => {
       // 测试没有后缀的文件名
-      expect(FileUtils.replaceExt('README', '.txt')).assertEqual('README.txt');
+      expect(FilenameUtils.replaceExt('README', '.txt')).assertEqual('README.txt');
       // 测试以点结尾的文件名
-      expect(FileUtils.replaceExt('file.', '.txt')).assertEqual('file.txt');
+      expect(FilenameUtils.replaceExt('file.', '.txt')).assertEqual('file.txt');
       // 测试空文件名
-      expect(FileUtils.replaceExt('', '.txt')).assertEqual('');
+      expect(FilenameUtils.replaceExt('', '.txt')).assertEqual('');
     });
 
     it('fileNameAppendDate appends date to filename correctly', 0, () => {
       // 保存原始getCurrentDate函数
       const originalGetCurrentDate = DateUtils.getCurrentDate();
       // 测试正常的文件名添加日期
-      expect(FileUtils.fileNameAppendDate('test.txt')).assertEqual(`test_${originalGetCurrentDate}.txt`);
-      expect(FileUtils.fileNameAppendDate('document.pdf')).assertEqual(`document_${originalGetCurrentDate}.pdf`);
-      expect(FileUtils.fileNameAppendDate('archive.tar.gz')).assertEqual(`archive.tar_${originalGetCurrentDate}.gz`);
+      expect(FilenameUtils.fileNameAppendDate('test.txt')).assertEqual(`test_${originalGetCurrentDate}.txt`);
+      expect(FilenameUtils.fileNameAppendDate('document.pdf')).assertEqual(`document_${originalGetCurrentDate}.pdf`);
+      expect(FilenameUtils.fileNameAppendDate('archive.tar.gz')).assertEqual(`archive.tar_${originalGetCurrentDate}.gz`);
     });
 
     it('fileNameAppendDate handles edge cases', 0, () => {
       // 保存原始getCurrentDate函数
       const originalGetCurrentDate = DateUtils.getCurrentDate();
         // 测试没有后缀的文件名
-        expect(FileUtils.fileNameAppendDate('README')).assertEqual(`README_${originalGetCurrentDate}`);
+        expect(FilenameUtils.fileNameAppendDate('README')).assertEqual(`README_${originalGetCurrentDate}`);
         // 测试以点结尾的文件名
-        expect(FileUtils.fileNameAppendDate('file.')).assertEqual(`file_${originalGetCurrentDate}.`);
+        expect(FilenameUtils.fileNameAppendDate('file.')).assertEqual(`file_${originalGetCurrentDate}.`);
         // 测试空文件名
-        expect(FileUtils.fileNameAppendDate('')).assertEqual(`${originalGetCurrentDate}`);
+        expect(FilenameUtils.fileNameAppendDate('')).assertEqual(`${originalGetCurrentDate}`);
     });
   });
 }
