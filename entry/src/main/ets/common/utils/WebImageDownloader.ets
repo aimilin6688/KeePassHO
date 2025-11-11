@@ -89,7 +89,8 @@ export class WebImageDownloader {
       'image/png',
       'image/gif',
       'image/webp',
-      'image/bmp'
+      'image/bmp',
+      'image/x-icon'
     ];
     return supportedTypes.some(type => contentType.includes(type));
   }
