@@ -166,7 +166,7 @@ struct SettingCustomIcons {
           })
         }
         .width('100%')
-        .height('100%')
+        .height('auto')
         .padding({
           top: 12,
           left: 12,
