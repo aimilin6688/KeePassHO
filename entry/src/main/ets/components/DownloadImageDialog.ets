@@ -26,6 +26,9 @@ export struct DownloadImageDialog {
       return;
     }
 
+    // 如果URL不包含图片格式后缀，自动添加  favicon.ico
+    this.url = this.resetUrlIcon(this.url.trim());
+
     if (!UrlUtils.isValidUrl(this.url.trim())) {
       this.errorMessage = $r("app.string.download_image_url_invalid_message");
       return;
@@ -35,7 +38,7 @@ export struct DownloadImageDialog {
     this.errorMessage = '';
 
     try {
-      const imageData = await WebImageDownloader.downloadImage(this.url.trim(), 64);
+      const imageData = await WebImageDownloader.downloadImage(this.url.trim());
 
       if (imageData) {
         this.controller.close();
@@ -61,6 +64,19 @@ export struct DownloadImageDialog {
     if (this.errorMessage) {
       this.errorMessage = '';
     }
+  }
+
+  /**
+   * 重置URL图标,
+   * 如果URL不包含图片格式后缀，自动添加  favicon.ico
+   */
+  private resetUrlIcon(url: string): string {
+    const imgExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico'];
+    // 忽略大小写包含
+    if (imgExtensions.some(ext => url.toLowerCase().includes(`.${ext}`))) {
+      return url;
+    }
+    return `${url}/favicon.ico`
   }
 
   build() {
