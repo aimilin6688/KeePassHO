@@ -1435,6 +1435,14 @@
     {
       "name": "add_from_web",
       "value": "网络下载"
+    },
+    {
+      "name": "application_limit_db_ext",
+      "value": "限制打开数据库后缀"
+    },
+    {
+      "name": "application_limit_db_ext_tips",
+      "value": "仅能选择.kdbx结尾的数据库,取消不限制"
     }
   ]
 }
