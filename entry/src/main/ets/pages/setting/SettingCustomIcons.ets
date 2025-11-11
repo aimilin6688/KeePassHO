@@ -132,7 +132,7 @@ struct SettingCustomIcons {
 
       // 图标网格
       Scroll() {
-        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
           ForEach(this.icons, (icon: IconResource) => {
             Column() {
               Stack() {
@@ -174,6 +174,7 @@ struct SettingCustomIcons {
           bottom: 100
         })
       }
+      .align(Alignment.TopStart)
       .width('100%')
       .height('100%')
 
