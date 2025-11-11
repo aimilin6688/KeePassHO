@@ -52,6 +52,10 @@ export class SettingsService {
   public static readonly KEY_SHOW_SUPPORT_DIALOG = "show_support_dialog";
   public static readonly KEY_SHOW_SUPPORT_DIALOG_DEFAULT = true;
   public static readonly KEY_APP_INSTALL_TIME = "app_install_time";
+  // 限制数据库后缀
+  public static readonly KEY_APP_LIMIT_DB_EXT = "app_limit_db_ext";
+  public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = true;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
