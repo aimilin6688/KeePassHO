@@ -50,7 +50,7 @@ export struct ImageAddComponent {
    */
   private async uploadCustomIcon() {
     this.isUploading = true;
-    ImagePickerUtils.selectImage(this.context, 128).then((images) => {
+    ImagePickerUtils.selectImage(this.context, 64).then((images) => {
       this.saveCustomIcon(images);
     }).catch((error: Error) => {
       this.isUploading = false;
