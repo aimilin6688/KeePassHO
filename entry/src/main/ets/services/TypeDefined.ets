@@ -1,5 +1,5 @@
 import { Kdbx } from 'kdbxweb';
-import { LocationInfo, LocationParam } from './beans/LocationParam';
+import { LocationInfo } from './beans/LocationParam';
 import { StorageType } from './kdbx/interfaces';
 import { StorageConfig } from './kdbx/interfaces/StorageConfig';
 
@@ -36,7 +36,7 @@ export enum ExportType {
 /**
  * 导出的文件信息
  */
-export class FileContent{
+export class FileContent {
   /**
    * 文件路径
    */
@@ -55,15 +55,17 @@ export class FileContent{
 /**
  * 保存数据库参数定义
  */
-export interface SaveKdbxParam{
+export interface SaveKdbxParam {
   /**
    * 导出类型
    */
   exportType: ExportType;
+
   /**
    * 数据库对象
    */
   kdbx: Kdbx;
+
   /**
    * 导出位置参数
    */
@@ -73,7 +75,7 @@ export interface SaveKdbxParam{
 /**
  * 数据库文件定义，只会存储在内容中
  */
-export interface DbFileParam extends CredentialsParam{
+export interface DbFileParam extends CredentialsParam {
   /**
    * 文件路径
    */
@@ -123,6 +125,7 @@ export interface DbFileParam extends CredentialsParam{
    * 新密码
    */
   newPassword?: string;
+
   /**
    * 新密钥文件路径
    */
@@ -146,7 +149,7 @@ export interface AuthTypeInfo {
   /**
    * 认证方式的描述，用于UI显示
    */
-  value: ResourceStr;
+  value: Resource;
 }
 
 /**
@@ -217,22 +220,49 @@ export class AuthType {
     return [
       AuthType.PASSWORD,
       AuthType.PASSWORD_KEYFILE,
-      AuthType.PASSWORD_OTP,
-      AuthType.PASSWORD_OTP_RECOVERY,
-      AuthType.PASSWORD_CHALLENGE_RESPONSE,
-      AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY,
-      AuthType.PASSWORD_CHALLENGE_RESPONSE_XC,
-      AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC
+      // AuthType.PASSWORD_OTP,
+      // AuthType.PASSWORD_OTP_RECOVERY,
+      // AuthType.PASSWORD_CHALLENGE_RESPONSE,
+      // AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY,
+      // AuthType.PASSWORD_CHALLENGE_RESPONSE_XC,
+      // AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC
     ];
+  }
+
+  /**
+   * 根据认证方式类型获取索引
+   * @param type 认证方式类型
+   * @returns 索引，如果未找到则返回-1
+   */
+  public static getIndexByType(type: string): number {
+    const types = AuthType.getAllTypes();
+    for (let i = 0; i < types.length; i++) {
+      if (types[i].type === type) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * 根据索引获取认证方式信息
+   * @param index 索引
+   * @returns 认证方式信息，如果索引无效则返回 PASSWORD
+   */
+  public static getByIndex(index: number): AuthTypeInfo {
+    if (index < 0 || index >= AuthType.getAllTypes().length) {
+      return AuthType.PASSWORD;
+    }
+    return AuthType.getAllTypes()[index];
   }
 
   /**
    * 根据类型获取认证方式信息
    * @param type 认证方式类型
-   * @returns 认证方式信息，如果未找到则返回null
+   * @returns 认证方式信息，如果未找到则返回 PASSWORD
    */
-  public static getByType(type: string): AuthTypeInfo | null {
-    return AuthType.getAllTypes().find(item => item.type === type) || null;
+  public static getByType(type: string): AuthTypeInfo {
+    return AuthType.getAllTypes().find(item => item.type === type) || AuthType.PASSWORD;
   }
 
   /**
@@ -258,6 +288,7 @@ export interface RecentFile {
    * 文件名
    */
   fileName: string;
+
   /**
    * 存储类型
    */

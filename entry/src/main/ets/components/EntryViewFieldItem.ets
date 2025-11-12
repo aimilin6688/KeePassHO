@@ -161,8 +161,8 @@ export struct EntryViewFieldItem {
     Row() {
       // 左侧图标
       Image(this.getFieldIcon(this.field))
-        .width(32)
-        .height(32)
+        .width(36)
+        .height(36)
         .margin({ right: 12 })
       // 中间内容区域
       Column() {

@@ -174,6 +174,27 @@ export default class KdbxUtils {
   }
 
   /**
+   * 搜索条目
+   * @param totpEntries 条目
+   * @param searchText 搜索文本
+   * @returns
+   */
+  public static searchInEntries(entries: Array<KdbxEntry>, searchText: string): Array<KdbxEntry> {
+    const result = new Array<KdbxEntry>();
+    if (!entries || entries.length === 0 || !searchText) {
+      return result;
+    }
+
+    const searchTextLower = searchText.toLowerCase().trim();
+    for (const entry of entries) {
+      if (KdbxUtils.entryMatchesSearch(entry, searchTextLower)) {
+        result.push(entry);
+      }
+    }
+    return result;
+  }
+
+  /**
    * 检查条目是否匹配搜索文本
    * @param entry 要检查的条目
    * @param searchText 搜索文本（小写）

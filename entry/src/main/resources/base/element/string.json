@@ -1395,6 +1395,54 @@
     {
       "name": "about_source_code",
       "value": "Source Code"
+    },
+    {
+      "name": "download_image_title",
+      "value": "Download"
+    },
+    {
+      "name": "download_image_url_placeholder",
+      "value": "Please enter the image url address"
+    },
+    {
+      "name": "download_image_tips",
+      "value": "Support jpg png gif webp bmp icon"
+    },
+    {
+      "name": "download_button_text",
+      "value": "Download"
+    },
+    {
+      "name": "download_image_url_empty_message",
+      "value": "The URL address of the image cannot be empty"
+    },
+    {
+      "name": "download_image_url_invalid_message",
+      "value": "Invalid image URL address"
+    },
+    {
+      "name": "download_image_success_message",
+      "value": "Download Successfully"
+    },
+    {
+      "name": "download_image_failed_message",
+      "value": "Download Failed"
+    },
+    {
+      "name": "add_from_local",
+      "value": "Local upload"
+    },
+    {
+      "name": "add_from_web",
+      "value": "Web download"
+    },
+    {
+      "name": "application_limit_db_ext",
+      "value": "Limit db suffix"
+    },
+    {
+      "name": "application_limit_db_ext_tips",
+      "value": "Only data ending with .kdbx can be selected"
     }
   ]
 }

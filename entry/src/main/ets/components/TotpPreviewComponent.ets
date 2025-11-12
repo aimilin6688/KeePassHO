@@ -22,7 +22,11 @@ export struct TotpPreviewComponent {
   @State remainingSeconds: number = 30;
   @State isGeneratingToken: boolean = false;
   @State errorMessage: string = '';
-  onChange: (value: string) => void = () => {};
+  onChange: (value: string) => void = () => {
+  };
+  doClick: (value: string, event?: ClickEvent) => boolean = () => {
+    return true
+  };
   controller: TotpPreviewController | undefined = undefined;
   private totpService: TotpService = TotpService.getInstance();
   private tokenUpdateTimer: number = -1;
@@ -53,7 +57,7 @@ export struct TotpPreviewComponent {
 
   build() {
     Column() {
-      if(this.previewToken){
+      if (this.previewToken) {
         Row() {
           Text(this.previewToken)
             .fontSize(24)
@@ -76,6 +80,9 @@ export struct TotpPreviewComponent {
       }
     }
     .width('auto')
+    .onClick(event => {
+      return this.doClick(this.previewToken, event);
+    });
   }
 
   private parseTotpUrl(totpUrl: string) {
@@ -98,7 +105,7 @@ export struct TotpPreviewComponent {
       this.parseTotpUrl(this.totpUrl);
     }
 
-    if(!this.totpConfig || !this.totpConfig.secret){
+    if (!this.totpConfig || !this.totpConfig.secret) {
       this.previewToken = '';
       return;
     }
@@ -157,7 +164,7 @@ export struct TotpPreviewComponent {
    * 验证配置是否有效
    */
   public isConfigValid(): boolean {
-    if(!this.totpConfig) {
+    if (!this.totpConfig) {
       this.errorMessage = ResourceManager.getString($r('app.string.totp_config_error_empty_secret'));
       return false;
     }

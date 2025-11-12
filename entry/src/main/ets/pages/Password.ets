@@ -33,6 +33,8 @@ struct Password {
   @State isLoading: boolean = false;
   @State fileName: string = '';
   @State authTypeInfo: AuthTypeInfo = AuthType.PASSWORD;
+  @State authTypeIndex: number = 0;
+  @State authTypeText: string = '';
   @State keyLocation: LocationInfo | undefined = undefined;
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
@@ -58,6 +60,9 @@ struct Password {
   });
 
   aboutToAppear() {
+    //初始化认证方式
+    this.setAuthType(this.authTypeInfo);
+
     const params = this.router.getParams() as Record<string, string>;
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
@@ -107,12 +112,6 @@ struct Password {
     this.buttonEnabled = true;
   }
 
-  // 获取认证类型的索引，用于Select组件
-  private getAuthTypeIndex(): number {
-    const index = this.allAuthType.findIndex(item => item.type === this.authTypeInfo.type);
-    return index >= 0 ? index : 0;
-  }
-
   /**
    * 通过最近文件打开
    */
@@ -130,7 +129,7 @@ struct Password {
         this.storageConfig = recentFile.storageConfig;
         // 设置认证类型
         if (recentFile.authType) {
-          this.authTypeInfo = recentFile.authType;
+          this.setAuthType(recentFile.authType);
         }
         // 获取密钥文件路径
         if (recentFile.keyLocation) {
@@ -148,6 +147,16 @@ struct Password {
       });
       this.router.back();
     });
+  }
+
+  /**
+   * 设置认证方式
+   */
+  private setAuthType(authType: AuthTypeInfo) {
+    const type = AuthType.getByType(authType.type);
+    this.authTypeInfo = type;
+    this.authTypeIndex = AuthType.getIndexByType(type.type);
+    this.authTypeText = ResourceManager.getString(type.value);
   }
 
   /**
@@ -365,15 +374,6 @@ struct Password {
     }
   }
 
-  /**
-   * 获取认证方式名称
-   * @param authType
-   * @returns
-   */
-  private getAuthTypeName(authType: AuthTypeInfo): ResourceStr {
-    return this.allAuthType.find(item => item.type === authType.type)?.value ?? this.allAuthType[0].value;
-  }
-
   build() {
     Column() {
       // 顶部导航栏
@@ -422,22 +422,20 @@ struct Password {
             .alignSelf(ItemAlign.Start)
 
           Select(this.allAuthType)
-            .value(this.getAuthTypeName(this.authTypeInfo))
+            .selected(this.authTypeIndex)
+            .value(this.authTypeText)
             .font({ size: 16 })
             .fontColor($r('app.color.text_primary'))
             .selectedOptionFont({ size: 16 })
             .optionFont({ size: 16 })
             .width('100%')
             .onSelect((index: number, value: string) => {
-              const allTypes = AuthType.getAllTypes();
-              if (index >= 0 && index < allTypes.length) {
-                this.authTypeInfo = allTypes[index];
-                // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-                if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
-                  this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
-                  this.keyLocation = undefined;
-                  this.keyFileName = '';
-                }
+              this.setAuthType(AuthType.getByIndex(index));
+              // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
+              if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
+                this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+                this.keyLocation = undefined;
+                this.keyFileName = '';
               }
               this.updateButtonState(); // 更新按钮状态
             })

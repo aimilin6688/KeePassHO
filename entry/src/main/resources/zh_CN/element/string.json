@@ -252,7 +252,6 @@
       "name": "enter_group_name",
       "value": "请输入分组名称"
     },
-
     {
       "name": "edit_custom_field",
       "value": "编辑自定义字段"
@@ -453,7 +452,6 @@
       "name": "generate_button_text",
       "value": "生成"
     },
-
     {
       "name": "no_custom_fields_message",
       "value": "暂无自定义字段"
@@ -1397,6 +1395,54 @@
     {
       "name": "about_source_code",
       "value": "源代码"
+    },
+    {
+      "name": "download_image_title",
+      "value": "下载图片"
+    },
+    {
+      "name": "download_image_url_placeholder",
+      "value": "请输入图片URL地址"
+    },
+    {
+      "name": "download_image_tips",
+      "value": "仅支持 jpg、png、gif、webp、bmp、icon格式图片"
+    },
+    {
+      "name": "download_button_text",
+      "value": "下载"
+    },
+    {
+      "name": "download_image_url_empty_message",
+      "value": "图片URL地址不能为空"
+    },
+    {
+      "name": "download_image_url_invalid_message",
+      "value": "无效的图片URL地址"
+    },
+    {
+      "name": "download_image_success_message",
+      "value": "下载成功"
+    },
+    {
+      "name": "download_image_failed_message",
+      "value": "下载失败"
+    },
+    {
+      "name": "add_from_local",
+      "value": "本地上传"
+    },
+    {
+      "name": "add_from_web",
+      "value": "网络下载"
+    },
+    {
+      "name": "application_limit_db_ext",
+      "value": "限制打开数据库后缀"
+    },
+    {
+      "name": "application_limit_db_ext_tips",
+      "value": "仅能选择.kdbx结尾的数据库,取消不限制"
     }
   ]
 }
