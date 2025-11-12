@@ -1,4 +1,5 @@
 import util from '@ohos.util';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
 const textEncoder = new util.TextEncoder();
 const textDecoder = new util.TextDecoder();
@@ -105,4 +106,16 @@ export function stringToBuffer(str: string): ArrayBuffer {
 export function zeroBuffer(arr: ArrayBufferOrArray): void {
   const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
   intArr.fill(0);
+}
+
+export function randomData(length: number): Uint8Array {
+  try {
+    return cryptoFramework.createRandom().generateRandomSync(length).data;
+  } catch (error) {
+    const arr = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      arr[i] = Math.floor(Math.random() * 256);
+    }
+    return arr;
+  }
 }
