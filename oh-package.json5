@@ -2,8 +2,6 @@
   "modelVersion": "5.0.5",
   "description": "Please describe the basic information.",
   "dependencies": {
-    "@xmldom/xmldom": "^0.9.8",
-    "fflate": "^0.8.2"
   },
   "devDependencies": {
     "@ohos/hypium": "1.0.22",

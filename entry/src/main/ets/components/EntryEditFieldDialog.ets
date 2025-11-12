@@ -11,6 +11,7 @@ export struct EntryEditFieldDialog {
   @Link isProtected: boolean;
 
   public onConfirm: (customField: CustomField) => void = ()=>{};
+  public onCancel: () => void = ()=>{};
   private controller: CustomDialogController;
 
   @State tempKey: string = '';
@@ -53,6 +54,7 @@ export struct EntryEditFieldDialog {
    * 取消操作
    */
   private cancel() {
+    this.onCancel();
     this.controller.close();
   }
 

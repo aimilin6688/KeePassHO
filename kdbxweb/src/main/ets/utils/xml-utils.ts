@@ -1,4 +1,4 @@
-import { gunzipSync } from 'fflate';
+import { ungzip } from '@ohos/flate2';
 import { KdbxError } from '../errors/kdbx-error';
 import { ErrorCodes } from '../defs/consts';
 import * as XmlNames from '../defs/xml-names';
@@ -281,7 +281,7 @@ export function getProtectedBinary(node: Node): KdbxBinaryOrRef | undefined {
   const compressed = strToBoolean((<Element> node).getAttribute(XmlNames.Attr.Compressed));
   let bytes = base64ToBytes(text);
   if (compressed) {
-    bytes = gunzipSync(bytes);
+    bytes = ungzip(bytes);
   }
   return arrayToBuffer(bytes);
 }

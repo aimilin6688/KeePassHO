@@ -115,8 +115,7 @@ export class CryptoUtils {
     if (!plainText) {
       return Promise.resolve('');
     }
-    await CryptoUtils.generateKey();
-    const iv = CryptoUtils.rand.generateRandomSync(CryptoUtils.IV_LENGTH).data;
+    const iv = ByteUtils.randomData(CryptoUtils.IV_LENGTH);
     let encryptResult: string = '';
     let handle: number = -1;
     let options: huks.HuksOptions = CryptoUtils.getEncryptProperties(plainText, iv);
