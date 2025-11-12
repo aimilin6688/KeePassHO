@@ -55,7 +55,6 @@ export class SettingsService {
   // 限制数据库后缀
   public static readonly KEY_APP_LIMIT_DB_EXT = "app_limit_db_ext";
   public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = true;
-
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -191,7 +190,9 @@ export class SettingsService {
     }
 
     try {
-      return (this.preferences.get(key, defValue)) as T;
+      return (this.preferences.get(key, defValue).catch(() => {
+        return defValue;
+      })) as T;
     } catch (err) {
       hilog.error(DOMAIN, TAG, `Failed to get value. Code: ${(err as BusinessError).code}`);
       return defValue;
@@ -232,8 +233,16 @@ export class SettingsService {
    * @param key
    */
   public deleteSync(key: string) {
-    this.preferences?.deleteSync(key);
-    this.preferences?.flushSync();
+    try {
+      this.preferences?.deleteSync(key);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to delete ${key}. Code: ${error}`);
+    }
+    try {
+      this.preferences?.flushSync();
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to flush ${key}. Code: ${error}`);
+    }
   }
 
   /**
@@ -253,8 +262,7 @@ export class SettingsService {
       if (!this.preferences) {
         return resolve();
       }
-      this.preferences.deleteSync(key);
-      this.preferences.flushSync();
+      this.deleteSync(key);
       return resolve();
     });
   }
