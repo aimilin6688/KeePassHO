@@ -6,6 +6,7 @@ import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import DateUtils from '../common/utils/DateUtils';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
+import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 @Entry
 @Component
@@ -184,7 +185,12 @@ struct TotpView {
                       })
                     // TOTP 字段展示
                     ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string, index: number) => {
-                      TotpPreviewComponent({ totpUrl: totpUrl })
+                      TotpPreviewComponent({
+                        totpUrl: totpUrl, doClick: (value) => {
+                          ClipboardUtils.copyAutoClear(value);
+                          return false;
+                        }
+                      }).margin({top: 6})
                     });
                   }
                   .flexGrow(1)
@@ -192,17 +198,17 @@ struct TotpView {
                   .layoutWeight(1)
 
                   Image($r('app.media.ic_arrow_right'))
-                    .width(20)
-                    .height(20)
-                    .margin({ right: 10 })
+                    .width(28)
+                    .height(28)
+                    .margin({ right: 0 })
                     .fillColor($r('app.color.text_primary'))
                 }
                 .width('100%')
                 .borderRadius(8)
                 .backgroundColor($r("app.color.card_bg"))
                 .padding({
-                  left: 10,
-                  right: 10,
+                  left: 6,
+                  right: 6,
                   top: 8,
                   bottom: 8
                 })
