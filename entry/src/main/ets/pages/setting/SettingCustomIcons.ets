@@ -1,56 +1,22 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import { Router } from '@kit.ArkUI';
 import { IconResource } from '../../services/TypeDefined';
-import { ImagePickerUtils } from '../../common/utils/ImagePickerUtils';
-import { common } from '@kit.AbilityKit';
 import { FileService } from '../../services/FileService';
 import KdbxUtils from '../../common/utils/KdbxUtils';
 import IconUtils from '../../common/utils/IconUtils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
-
-const DOMAIN = 0x0000;
-const TAG = 'SettingCustomIcons';
+import { ImageAddComponent } from '../../components/ImageAddComponent';
 
 @Entry
 @Component
 struct SettingCustomIcons {
   @State icons: IconResource[] = [];
-  @State isUploading: boolean = false;
   @State selectIcons: Set<string | number> = new Set();
   // 图标大小
   private readonly iconSize: number = 52;
   private router: Router = this.getUIContext().getRouter();
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   aboutToAppear() {
     this.icons = IconUtils.getAllIcons(true);
-  }
-
-  /**
-   * 上传自定义图片
-   */
-  private async uploadCustomIcon() {
-    this.isUploading = true;
-    try {
-      // 选择图片
-      const images: string[] | null = await ImagePickerUtils.selectImage(this.context, 64);
-      if (!images || images.length === 0) {
-        return;
-      }
-      // 添加自定义图标到数据库
-      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, {
-        onSuccess: () => {
-          this.isUploading = false;
-          this.icons = IconUtils.getAllIcons(true);
-        },
-      });
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Upload custom icon failed：' + error.message);
-      CommonUtils.showToast(error.message);
-    } finally {
-      this.isUploading = false;
-    }
   }
 
   /**
@@ -120,10 +86,18 @@ struct SettingCustomIcons {
     }
   }
 
+  /**
+   * 刷新图标列表
+   */
+  private refreshIcons() {
+    this.icons = IconUtils.getAllIcons(true);
+  }
+
   build() {
     Column() {
       // 顶部导航栏
       Row() {
+        // 返回按钮
         Image($r("app.media.ic_angle_left"))
           .width(24)
           .height(24)
@@ -136,28 +110,29 @@ struct SettingCustomIcons {
           .margin({ left: 12 })
 
         Blank()
+        // 图片添加组件
         Button() {
-          Image($r('app.media.ic_add'))
-            .width(26)
-            .height(26)
-            .fillColor($r('app.color.text_primary'))
+          ImageAddComponent({
+            onSuccess: () => {
+              this.refreshIcons();
+            }
+          })
+            .width(30)
+            .height(30)
         }
-        .width(48)
-        .height(48)
+        .width(36)
+        .height(36)
         .margin({ right: 16 })
         .borderRadius(20)
         .backgroundColor(Color.Transparent)
-        .enabled(!this.isUploading)
-        .onClick(() => {
-          this.uploadCustomIcon();
-        })
+
       }
       .width('100%')
       .height(56)
 
       // 图标网格
       Scroll() {
-        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
           ForEach(this.icons, (icon: IconResource) => {
             Column() {
               Stack() {
@@ -191,7 +166,7 @@ struct SettingCustomIcons {
           })
         }
         .width('100%')
-        .height('100%')
+        .height('auto')
         .padding({
           top: 12,
           left: 12,
@@ -199,6 +174,7 @@ struct SettingCustomIcons {
           bottom: 100
         })
       }
+      .align(Alignment.TopStart)
       .width('100%')
       .height('100%')
 
@@ -257,6 +233,6 @@ struct SettingCustomIcons {
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

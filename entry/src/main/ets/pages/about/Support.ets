@@ -213,9 +213,6 @@ struct Support {
       if (this.clickCount >= 5) {
         this.isShowOtherPay = true;
       }
-    } else {
-      this.clickCount = 0;
-      this.isShowOtherPay = false;
     }
   }
 
