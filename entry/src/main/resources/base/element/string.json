@@ -1406,7 +1406,7 @@
     },
     {
       "name": "download_image_tips",
-      "value": "Support jpg|png|gif|webp|bmp"
+      "value": "Support jpg png gif webp bmp icon"
     },
     {
       "name": "download_button_text",

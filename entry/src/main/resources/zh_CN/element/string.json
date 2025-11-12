@@ -1406,7 +1406,7 @@
     },
     {
       "name": "download_image_tips",
-      "value": "仅支持 jpg、png、gif、webp、bmp格式图片"
+      "value": "仅支持 jpg、png、gif、webp、bmp、icon格式图片"
     },
     {
       "name": "download_button_text",
