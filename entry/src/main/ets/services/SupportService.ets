@@ -5,6 +5,7 @@ import { CommonUtils } from '../common/utils/CommonUtils';
 import { iap } from '@kit.IAPKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'SupportService';
@@ -56,11 +57,63 @@ export class SupportService {
     });
   }
 
+  /**
+   * 自动完成
+   */
+  public static autoFinish(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const parameter: iap.QueryPurchasesParameter = {
+        productType: iap.ProductType.CONSUMABLE,
+        queryType: iap.PurchaseQueryType.UNFINISHED
+      }
+      iap.queryPurchases(CommonUtils.getContext(), parameter).then((data: iap.QueryPurchaseResult) => {
+        hilog.info(DOMAIN, TAG, `Succeeded in querying purchases. data len: ${data.purchaseDataList?.length}`);
+        if (data.purchaseDataList?.length > 0) {
+          data.purchaseDataList.forEach(purchaseData => {
+            SupportService.finishPurchase(purchaseData)
+          })
+        }
+        resolve();
+      }).catch((err: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `Failed to query purchases. Code is ${err.code}, message is ${err.message}`);
+        reject(err);
+      });
+    });
+  }
+
+
+  /**
+   * 完成购买
+   * @param purchaseData
+   */
+  public static finishPurchase(purchaseString: string, onSuccess?: () => void, onError?: (err: BusinessError) => void) {
+    try {
+      const purchaseData: PurchaseData = JSON.parse(purchaseString);
+      const payload: string = ByteUtils.base64ToString(purchaseData.jwsPurchaseOrder.split('.')[1]);
+      const jwsPurchaseOrder: PurchaseOrderPayload = JSON.parse(payload);
+      const finishPurchaseParam: iap.FinishPurchaseParameter = {
+        productType: iap.ProductType.CONSUMABLE,
+        purchaseToken: jwsPurchaseOrder.purchaseToken,
+        purchaseOrderId: jwsPurchaseOrder.purchaseOrderId
+      };
+      iap.finishPurchase(CommonUtils.getContext(), finishPurchaseParam).then(() => {
+        hilog.debug(DOMAIN, TAG, 'Finish purchase success: ' + jwsPurchaseOrder.purchaseOrderId);
+        onSuccess && onSuccess();
+      }).catch((err: BusinessError) => {
+        hilog.error(DOMAIN, TAG, 'Finish purchase failed: ' + err.message);
+        onError && onError(err);
+      });
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, 'Finish purchase failed: ' + err.message);
+      onError && onError(err as BusinessError);
+    }
+  }
 
   /**
    * 获取支持弹框
    */
-  private static getShowSupportDialog(): promptAction.ShowDialogOptions {
+  private static getShowSupportDialog():
+    promptAction.ShowDialogOptions {
     return {
       title: $r('app.string.support_dialog_title'),
       message: $r('app.string.support_dialog_message'),
@@ -81,17 +134,19 @@ export class SupportService {
    * 查询账户是否已经支持过
    * @returns
    */
-  private static isSupported(): Promise<boolean> {
+  private static isSupported():
+    Promise<boolean> {
     try {
-      const parameter: iap.QueryPurchasesParameter = {
-        productType: iap.ProductType.CONSUMABLE,
-        queryType: iap.PurchaseQueryType.ALL
-      }
+      const
+        parameter: iap.QueryPurchasesParameter = {
+          productType: iap.ProductType.CONSUMABLE,
+          queryType: iap.PurchaseQueryType.ALL
+        }
       return iap.queryPurchases(CommonUtils.getContext(), parameter).then((data: iap.QueryPurchaseResult) => {
-        hilog.info(DOMAIN, TAG, `Succeeded in querying purchases. data len: ${data.purchaseDataList?.length}`);
+        hilog.info(DOMAIN, TAG, `Succeeded in querying purchases. data len:${data.purchaseDataList?.length}`);
         return data.purchaseDataList?.length > 0;
       }).catch((err: BusinessError) => {
-        hilog.error(DOMAIN, TAG, `Failed to query purchases. Code is ${err.code}, message is ${err.message}`);
+        hilog.error(DOMAIN, TAG, `Failed to query purchases. Code is ${err.code}, message is${err.message}`);
         return false;
       });
     } catch (err) {
@@ -103,7 +158,8 @@ export class SupportService {
   /**
    * 是否需要显示支持弹框
    */
-  private static isShowSupport(): boolean {
+  private static isShowSupport():
+    boolean {
     // 不需要显示支持弹框
     if (!SettingsService.getSync(SettingsService.KEY_SHOW_SUPPORT_DIALOG, SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT)) {
       return false;
@@ -113,4 +169,21 @@ export class SupportService {
     hilog.debug(DOMAIN, TAG, `Last show support time: ${lastShowTime}`);
     return lastShowTime <= 0 || DateUtils.isNotToday(new Date(lastShowTime));
   }
+}
+
+interface PurchaseData {
+  type: number,
+  jwsPurchaseOrder: string,
+  jwsSubscriptionStatus: string
+}
+
+/**
+ * https://developer.huawei.com/consumer/cn/doc/harmonyos-references/iap-data-model#section260562820380
+ */
+interface PurchaseOrderPayload {
+  environment: string,
+  purchaseOrderId: string,
+  purchaseToken: string,
+  productId: string,
+  productType: string
 }
