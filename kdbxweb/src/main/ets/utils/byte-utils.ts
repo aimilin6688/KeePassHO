@@ -37,12 +37,20 @@ export function base64ToBytes(str: string): Uint8Array {
   if (str === null || str.length === 0) {
     return new Uint8Array(0);
   }
+  // 如果字符串长度不是4的整数倍，则在字符串末尾追加 =
+  if (str.length % 4 !== 0) {
+    str += '='.repeat(4 - str.length % 4);
+  }
   return base64.decodeSync(str);
 }
 
 export function base64ToString(str: string): string {
   if (str === null || str.length === 0) {
     return '';
+  }
+  // 如果字符串长度不是4的整数倍，则在字符串末尾追加 =
+  if (str.length % 4 !== 0) {
+    str += '='.repeat(4 - str.length % 4);
   }
   return textDecoder.decodeToString(base64.decodeSync(str));
 }
