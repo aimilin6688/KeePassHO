@@ -56,7 +56,7 @@
     ],
     "products": [
       {
-        "name": "win_debug",
+        "name": "default",
         "signingConfig": "win_debug",
         "targetSdkVersion": "5.0.5(17)",
         "compatibleSdkVersion": "5.0.5(17)",
@@ -125,7 +125,7 @@
         {
           "name": "default",
           "applyToProducts": [
-            "win_debug",
+            "default",
             "win_release",
             "mac_debug",
             "mac_release"
