@@ -373,6 +373,10 @@
       "value": "Generate password"
     },
     {
+      "name": "PasswordGenerator_ensureEachType",
+      "value": "At least one of each symbol"
+    },
+    {
       "name": "database_name",
       "value": "Database name"
     },

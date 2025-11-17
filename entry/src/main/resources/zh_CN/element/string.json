@@ -365,6 +365,10 @@
       "value": "生成密码"
     },
     {
+      "name": "PasswordGenerator_ensureEachType",
+      "value": "每种符号至少一种"
+    },
+    {
       "name": "database_name",
       "value": "数据库名称"
     },
