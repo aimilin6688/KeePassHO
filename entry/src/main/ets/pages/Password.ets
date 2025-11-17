@@ -94,13 +94,13 @@ struct Password {
    * 通过位置信息打开
    */
   private openLocationInfo(locationInfo: LocationInfo) {
+    setTimeout(() => {this.passwordInputFocus();}, 10);
     hilog.debug(DOMAIN, TAG, 'Open Location Info: %{public}s', locationInfo)
     this.fileName = locationInfo.fileName;
     this.filePath = locationInfo.filePath;
     this.storageType = locationInfo.storageType;
     this.storageConfig = locationInfo.storageConfig;
     AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
-    this.passwordInputFocus();
   }
 
   // 更新按钮状态
