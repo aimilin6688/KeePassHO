@@ -107,7 +107,7 @@ class AesCbcNode extends AesCbc {
       let aesGenerator = cryptoFramework.createSymKeyGenerator('AES256');
       let symKey = aesGenerator.convertKeySync({ data: ByteUtils.bufferToBytes(this.key) });
 
-      let cipher = cryptoFramework.createCipher('AES256|CBC|NoPadding');
+      let cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
       cipher.initSync(cryptoFramework.CryptoMode.ENCRYPT_MODE, symKey, ivParamsSpec);
       let cipherData = cipher.doFinalSync({ data: ByteUtils.bufferToBytes(data) });
       return ByteUtils.bytesToBuffer(cipherData.data);
