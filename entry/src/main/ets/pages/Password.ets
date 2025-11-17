@@ -73,6 +73,10 @@ struct Password {
     else if (params && params.filePath) {
       this.openRecentFile(params.filePath);
     }
+    // 其他方式打开
+    else {
+      this.passwordInputFocus();
+    }
     // 初始化按钮状态
     this.updateButtonState();
   }
@@ -96,6 +100,7 @@ struct Password {
     this.storageType = locationInfo.storageType;
     this.storageConfig = locationInfo.storageConfig;
     AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
+    this.passwordInputFocus();
   }
 
   // 更新按钮状态
@@ -164,10 +169,12 @@ struct Password {
    */
   private async startAuth(password: string | undefined, authType?: UnlockAuthType) {
     if (!password || password == '') {
+      this.passwordInputFocus();
       return;
     }
     if (!this.isFingerprintSupport && !this.isFaceSupport) {
       hilog.debug(DOMAIN, TAG, `auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isFaceSupport: ${this.isFaceSupport}`);
+      this.passwordInputFocus();
       return;
     }
     // 加密密钥
@@ -182,6 +189,8 @@ struct Password {
       AuthService.startFingerprintAuth(this.authCallback(password));
     } else if (authType === UnlockAuthType.FACE) {
       AuthService.startFaceAuth(this.authCallback(password));
+    } else {
+      this.passwordInputFocus();
     }
   }
 
@@ -374,6 +383,17 @@ struct Password {
     }
   }
 
+  /**
+   * 密码输入框获取焦点
+   */
+  private passwordInputFocus() {
+    try {
+      this.focusController.requestFocus("passwordInput");
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
+    }
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -461,13 +481,6 @@ struct Password {
             })
             .onSubmit(() => {
               this.verifyAndOpenDatabase();
-            })
-            .onAppear(() => {
-              try {
-                this.focusController.requestFocus("passwordInput");
-              } catch (error) {
-                hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
-              }
             })
         }
         .width('90%')
