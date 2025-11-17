@@ -338,7 +338,7 @@
     },
     {
       "name": "PasswordGenerator_special",
-      "value": "特殊字符 (!@#$%^&*_+~`|;?><,./-=)"
+      "value": "特殊字符 (!@#$%^&*=+~`|;?><,.)"
     },
     {
       "name": "PasswordGenerator_brackets",
