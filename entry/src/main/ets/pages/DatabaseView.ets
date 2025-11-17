@@ -517,7 +517,7 @@ struct DatabaseView {
         this.filteredGroups = [...this.groups];
         this.filteredEntries = [...this.entries];
       }
-    }, 20);
+    }, 10);
   }
 
   /**
