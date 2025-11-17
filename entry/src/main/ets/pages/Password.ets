@@ -94,7 +94,9 @@ struct Password {
    * 通过位置信息打开
    */
   private openLocationInfo(locationInfo: LocationInfo) {
-    setTimeout(() => {this.passwordInputFocus();}, 10);
+    setTimeout(() => {
+      this.passwordInputFocus();
+    }, 0);
     hilog.debug(DOMAIN, TAG, 'Open Location Info: %{public}s', locationInfo)
     this.fileName = locationInfo.fileName;
     this.filePath = locationInfo.filePath;
