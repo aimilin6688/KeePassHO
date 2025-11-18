@@ -1447,6 +1447,10 @@
     {
       "name": "application_limit_db_ext_tips",
       "value": "Only data ending with .kdbx can be selected"
+    },
+    {
+      "name": "Settings_database_not_value",
+      "value": "Please enter the required fields"
     }
   ]
 }
