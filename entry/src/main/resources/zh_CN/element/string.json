@@ -1033,7 +1033,7 @@
       "value": "扫码内容不是有效的TOTP URI"
     },
     {
-      "name": "name",
+      "name": "totp_name",
       "value": "名称"
     },
     {
