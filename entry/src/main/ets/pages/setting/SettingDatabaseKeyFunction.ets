@@ -13,7 +13,7 @@ struct SettingDatabaseKeyFunction {
   @State isDatabaseValid: boolean = false;
   @State algoType: string = Consts.KdfId.Argon2d;
   @State iteration: number = HeaderConst.DefaultKdfIterations;
-  @State memory: number = HeaderConst.DefaultKdfMemory;
+  @State memory: string = "6";
   @State parallelism: number = HeaderConst.DefaultKdfParallelism;
   @State rounds: number = Consts.Defaults.KeyEncryptionRounds;
   private keyFunctionOptions: Array<KeyFunctionOption> = [
@@ -44,7 +44,7 @@ struct SettingDatabaseKeyFunction {
       this.algoType = ByteUtils.bytesToBase64(kdfParameters.get('$UUID') as ArrayBuffer);
       if (this.isArgon2()) {
         this.iteration = kdfParameters.get('I') as number;
-        this.memory = kdfParameters.get('M') as number / 1024 / 1024;
+        this.memory = (kdfParameters.get('M') as number / 1024 / 1024) + "";
         this.parallelism = kdfParameters.get('P') as number;
       } else if (this.isAes()) {
         this.rounds = kdfParameters.get('R') as number;
@@ -66,9 +66,11 @@ struct SettingDatabaseKeyFunction {
       const dbFileParam = FileService.getDbFileParam();
       const kdfParameters = dbFileParam.database.header.kdfParameters;
       if (kdfParameters && this.isArgon2()) {
+        // 设置内存最大值为512M
+        this.memory = Math.min(Number(this.memory), 512) + "";
         kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
         kdfParameters.set('I', VarDictionary.ValueType.UInt64, Int64.from(this.iteration));
-        kdfParameters.set('M', VarDictionary.ValueType.UInt64, Int64.from(this.memory * 1024 * 1024));
+        kdfParameters.set('M', VarDictionary.ValueType.UInt64, Int64.from(Number(this.memory) * 1024 * 1024));
         kdfParameters.set('P', VarDictionary.ValueType.UInt32, this.parallelism);
       } else if (kdfParameters && this.algoType === Consts.KdfId.Aes) {
         kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
@@ -131,7 +133,6 @@ struct SettingDatabaseKeyFunction {
                     .backgroundColor($r("app.color.card_bg"))
                     .onSelect(async (index: number) => {
                       this.algoType = this.keyFunctionOptions[index].type;
-                      this.saveAlgoParams();
                     })
                     .margin({ right: 0 })
                 }.width('70%')
@@ -162,7 +163,6 @@ struct SettingDatabaseKeyFunction {
                       .onChange((value: string) => {
                         if (this.iteration != Number(value)) {
                           this.iteration = Number(value);
-                          this.saveAlgoParams();
                         }
                       })
                   }
@@ -186,16 +186,13 @@ struct SettingDatabaseKeyFunction {
                     .flexGrow(1)
                   Blank()
                   Column() {
-                    TextInput({ text: this.memory + "" })
+                    TextInput({ text: $$this.memory })
                       .type(InputType.Number)
                       .fontSize(16)
                       .fontColor($r('app.color.text_primary'))
                       .width(70)
                       .onChange((value: string) => {
-                        if (this.memory != Number(value)) {
-                          this.memory = Number(value);
-                          this.saveAlgoParams();
-                        }
+                        this.memory = Math.max(Math.min(Number(value), 512), 1) + "";
                       })
                   }
                   .padding({ right: 16 })
@@ -226,7 +223,6 @@ struct SettingDatabaseKeyFunction {
                       .onChange((value: string) => {
                         if (this.parallelism != Number(value)) {
                           this.parallelism = Number(value);
-                          this.saveAlgoParams();
                         }
                       })
                   }
@@ -260,7 +256,6 @@ struct SettingDatabaseKeyFunction {
                       .onChange((value: string) => {
                         if (this.rounds != Number(value)) {
                           this.rounds = Number(value);
-                          this.saveAlgoParams();
                         }
                       })
                   }
@@ -299,11 +294,61 @@ struct SettingDatabaseKeyFunction {
       .width('100%')
       .layoutWeight(1)
       .padding({ left: 12, right: 12 })
+
+      // 操作按钮
+      Row() {
+        // 取消
+        Button() {
+          Row() {
+            Text($r('app.string.cancel_button_text'))
+              .fontSize(16)
+              .fontColor($r('app.color.button_text'))
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('45%')
+        .height(40)
+        .borderRadius(16)
+        .backgroundColor(Color.Gray)
+        .onClick(() => {
+          this.router.back();
+        })
+
+        Blank()
+        // 保存
+        Button() {
+          Row() {
+            Text($r('app.string.save_button_text'))
+              .fontSize(16)
+              .fontColor($r('app.color.button_text'))
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('45%')
+        .height(40)
+        .borderRadius(16)
+        .backgroundColor($r('app.color.button_bg_blue'))
+        .onClick(() => {
+          this.saveAlgoParams();
+        })
+      }
+      .width('100%')
+      .height(45)
+      .padding({
+        top: 12,
+        bottom: 0,
+        left: 16,
+        right: 16
+      })
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -45 }) // 调整位置，确保正确显示
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
 
