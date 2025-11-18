@@ -1033,7 +1033,7 @@
       "value": "The scanned code content is not a valid TOTP URI"
     },
     {
-      "name": "name",
+      "name": "totp_name",
       "value": "Name"
     },
     {
