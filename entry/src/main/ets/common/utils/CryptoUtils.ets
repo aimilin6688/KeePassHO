@@ -115,6 +115,7 @@ export class CryptoUtils {
     if (!plainText) {
       return Promise.resolve('');
     }
+    await CryptoUtils.generateKey();
     const iv = ByteUtils.randomData(CryptoUtils.IV_LENGTH);
     let encryptResult: string = '';
     let handle: number = -1;
