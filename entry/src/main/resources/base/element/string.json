@@ -1086,7 +1086,7 @@
     },
     {
       "name": "kdbx_error_InvalidKey",
-      "value": "InvalidKey"
+      "value": "The entered voucher is invalid. Please check it"
     },
     {
       "name": "kdbx_error_MergeError",
