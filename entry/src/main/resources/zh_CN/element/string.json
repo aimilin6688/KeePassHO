@@ -1086,7 +1086,7 @@
     },
     {
       "name": "kdbx_error_InvalidKey",
-      "value": "联合密码错误，请检查"
+      "value": "输入的凭证无效，请检查"
     },
     {
       "name": "kdbx_error_MergeError",
