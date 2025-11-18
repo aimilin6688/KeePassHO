@@ -1447,6 +1447,10 @@
     {
       "name": "application_limit_db_ext_tips",
       "value": "仅能选择.kdbx结尾的数据库,取消不限制"
+    },
+    {
+      "name": "Settings_database_not_value",
+      "value": "请输入必填项"
     }
   ]
 }
