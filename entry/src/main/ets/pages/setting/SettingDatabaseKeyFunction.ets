@@ -13,7 +13,7 @@ struct SettingDatabaseKeyFunction {
   @State isDatabaseValid: boolean = false;
   @State algoType: string = Consts.KdfId.Argon2d;
   @State iteration: number = HeaderConst.DefaultKdfIterations;
-  @State memory: string = "6";
+  @State memory: string = (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "";
   @State parallelism: number = HeaderConst.DefaultKdfParallelism;
   @State rounds: number = Consts.Defaults.KeyEncryptionRounds;
   private keyFunctionOptions: Array<KeyFunctionOption> = [
@@ -60,6 +60,7 @@ struct SettingDatabaseKeyFunction {
     }
     if (!((this.isArgon2() && this.iteration && this.memory && this.parallelism) || (this.isAes() && this.rounds))) {
       hilog.debug(DOMAIN, TAG, `algoType: ${this.algoType}, iteration: ${this.iteration}, memory: ${this.memory}, parallelism: ${this.parallelism}`);
+      this.promptAction.showToast({ message: $r("app.string.Settings_database_not_value") });
       return;
     }
     try {
@@ -67,7 +68,7 @@ struct SettingDatabaseKeyFunction {
       const kdfParameters = dbFileParam.database.header.kdfParameters;
       if (kdfParameters && this.isArgon2()) {
         // 设置内存最大值为512M
-        this.memory = Math.min(Number(this.memory), 512) + "";
+        this.memory = this.resetMemory(this.memory,  (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
         kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
         kdfParameters.set('I', VarDictionary.ValueType.UInt64, Int64.from(this.iteration));
         kdfParameters.set('M', VarDictionary.ValueType.UInt64, Int64.from(Number(this.memory) * 1024 * 1024));
@@ -92,6 +93,18 @@ struct SettingDatabaseKeyFunction {
 
   private isAes(): boolean {
     return this.algoType === Consts.KdfId.Aes;
+  }
+
+  /**
+   * 重置内存大小
+   * @param memory 内存大小
+   * @returns 结果
+   */
+  private resetMemory(memory: string, defaultValue: string = ""): string {
+    if (memory && !isNaN(Number(memory))) {
+      return Math.max(Math.min(Number(memory), 512), 1) + "";
+    }
+    return memory ? memory : defaultValue;
   }
 
   build() {
@@ -192,7 +205,7 @@ struct SettingDatabaseKeyFunction {
                       .fontColor($r('app.color.text_primary'))
                       .width(70)
                       .onChange((value: string) => {
-                        this.memory = Math.max(Math.min(Number(value), 512), 1) + "";
+                        this.memory = this.resetMemory(value);
                       })
                   }
                   .padding({ right: 16 })
