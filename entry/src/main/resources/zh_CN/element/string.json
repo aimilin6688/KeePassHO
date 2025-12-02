@@ -338,7 +338,7 @@
     },
     {
       "name": "PasswordGenerator_special",
-      "value": "特殊字符 (!@#$%^&*_+~`|;?><,./-=)"
+      "value": "特殊字符 (!@#$%^&*=+~`|;?><,.)"
     },
     {
       "name": "PasswordGenerator_brackets",
@@ -363,6 +363,10 @@
     {
       "name": "PasswordGenerator_generate",
       "value": "生成密码"
+    },
+    {
+      "name": "PasswordGenerator_ensureEachType",
+      "value": "每种符号至少一种"
     },
     {
       "name": "database_name",
@@ -1029,7 +1033,7 @@
       "value": "扫码内容不是有效的TOTP URI"
     },
     {
-      "name": "name",
+      "name": "totp_name",
       "value": "名称"
     },
     {
@@ -1082,7 +1086,7 @@
     },
     {
       "name": "kdbx_error_InvalidKey",
-      "value": "联合密码错误，请检查"
+      "value": "输入的凭证无效，请检查"
     },
     {
       "name": "kdbx_error_MergeError",
@@ -1443,6 +1447,10 @@
     {
       "name": "application_limit_db_ext_tips",
       "value": "仅能选择.kdbx结尾的数据库,取消不限制"
+    },
+    {
+      "name": "Settings_database_not_value",
+      "value": "请输入必填项"
     }
   ]
 }

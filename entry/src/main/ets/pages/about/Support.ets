@@ -4,10 +4,11 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
+
+import { common } from '@kit.AbilityKit';
+import { SupportService } from '../../services/SupportService';
 import { SettingsService } from '../../services/SettingsService';
 import DateUtils, { DateUnit } from '../../common/utils/DateUtils';
-import { common } from '@kit.AbilityKit';
-import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
@@ -17,23 +18,6 @@ interface ProductOption {
   amount: string;
   title: ResourceStr;
   thanksMessage: ResourceStr;
-}
-
-interface PurchaseData {
-  type: number,
-  jwsPurchaseOrder: string,
-  jwsSubscriptionStatus: string
-}
-
-/**
- * https://developer.huawei.com/consumer/cn/doc/harmonyos-references/iap-data-model#section260562820380
- */
-interface PurchaseOrderPayload {
-  environment: string,
-  purchaseOrderId: string,
-  purchaseToken: string,
-  productId: string,
-  productType: string
 }
 
 @Entry
@@ -82,6 +66,7 @@ struct Support {
         hilog.error(DOMAIN, TAG, 'Failed to query environment status: ' + err.message);
         this.promptAction.showToast({ message: err.message });
       });
+      SupportService.autoFinish();
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to query environment status: ' + err.message);
     }
@@ -143,21 +128,11 @@ struct Support {
    */
   private paySuccess(result: iap.CreatePurchaseResult, option: ProductOption) {
     hilog.debug(DOMAIN, TAG, 'Payment result: ' + JSON.stringify(result));
-    const purchaseData: PurchaseData = JSON.parse(result.purchaseData);
-    const payload: string = ByteUtils.base64ToString(purchaseData.jwsPurchaseOrder.split('.')[1]);
-    const jwsPurchaseOrder: PurchaseOrderPayload = JSON.parse(payload);
-    const finishPurchaseParam: iap.FinishPurchaseParameter = {
-      productType: iap.ProductType.CONSUMABLE,
-      purchaseToken: jwsPurchaseOrder.purchaseToken,
-      purchaseOrderId: jwsPurchaseOrder.purchaseOrderId
-    };
-    iap.finishPurchase(this.context, finishPurchaseParam).then(result => {
-      hilog.debug(DOMAIN, TAG, 'Finish purchase success: ' + JSON.stringify(result));
+    SupportService.finishPurchase(result.purchaseData, () => {
       SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
       SettingsService.put(SettingsService.KEY_APP_INSTALL_TIME, DateUtils.offset(new Date(), -3, DateUnit.Month).getTime());
       this.showThankYouMessage(option.thanksMessage);
-    }).catch((err: BusinessError) => {
-      hilog.error(DOMAIN, TAG, 'Finish purchase failed: ' + err.message);
+    }, (err: BusinessError) => {
       this.promptAction.showToast({ message: err.message });
     });
   }
@@ -197,7 +172,7 @@ struct Support {
     try {
       this.promptAction.showToast({
         message: message,
-        duration: 3000
+        duration: 8000
       });
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Show thanks message failed:' + err.message + ', error code: ' + err?.code);
