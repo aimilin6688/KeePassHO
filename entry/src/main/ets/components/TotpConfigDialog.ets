@@ -422,7 +422,7 @@ export struct TotpConfigDialog {
             ListItem() {
               Column() {
                 Row() {
-                  Text($r('app.string.name')).fontSize(16).fontWeight(FontWeight.Medium)
+                  Text($r('app.string.totp_name')).fontSize(16).fontWeight(FontWeight.Medium)
                   Blank()
                   TextInput({ text: this.totpConfig.name })
                     .height(40)
