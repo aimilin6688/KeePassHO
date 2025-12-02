@@ -20,6 +20,7 @@ import ResourceManager from '../common/utils/ResourceManager';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
+import { emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -75,10 +76,25 @@ struct DatabaseView {
     autoCancel: true
   })
 
+  /**
+   *  数据库重载事件
+   */
+  onDatabaseReload : Callback<emitter.EventData> = (eventData:emitter.EventData)=>{
+    this.reloadDatabase();
+  }
+  /**
+   * 数据库更新事件
+   */
+  onDatabaseUpdate : Callback<emitter.EventData> = (eventData:emitter.EventData)=>{
+    hilog.debug(DOMAIN, TAG, 'Receive database update event');
+    this.updateUI();
+  }
+
   aboutToAppear() {
     this.clearUrl();
     this.initSettings();
-    this.resetDatabaseEvent();
+    // 注册数据库事件
+    this.registerDatabaseEvent();
     this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
@@ -93,6 +109,8 @@ struct DatabaseView {
   }
 
   aboutToDisappear() {
+    EventBus.off(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
+    EventBus.off(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
     // 移除主题监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     // 移除配置监听器
@@ -106,18 +124,9 @@ struct DatabaseView {
   /**
    * 监听数据库变化
    */
-  private resetDatabaseEvent() {
-    // 注册数据库合并事件
-    EventBus.off(EventBus.DATABASE_RELOAD);
-    EventBus.on(EventBus.DATABASE_RELOAD, () => {
-      this.reloadDatabase();
-    });
-
-    // 注册数据库更新事件
-    EventBus.off(EventBus.DATABASE_UPDATE);
-    EventBus.on(EventBus.DATABASE_UPDATE, () => {
-      this.updateUI();
-    });
+  private registerDatabaseEvent() {
+    EventBus.on(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
+    EventBus.on(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
   }
 
   /**
@@ -458,13 +467,6 @@ struct DatabaseView {
       this.database.move(sourceItem, this.currentGroup);
       // 保存数据库
       this.saveDatabase();
-      // 更新UI
-      this.updateUI();
-      // 显示成功提示
-      this.promptAction.showToast({
-        message: $r('app.string.operation_success'),
-        duration: 2000
-      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to move item: %{public}s', error.message);
       this.promptAction.showToast({
@@ -489,11 +491,16 @@ struct DatabaseView {
    * 强制组件刷新
    */
   private updateUI() {
+    hilog.debug(DOMAIN, TAG, 'Execute updateUI');
     // 强制刷新UI - 先清空数组，再重新加载
     this.groups = [];
     this.entries = [];
     // 延迟一帧后重新加载数据，确保UI更新
     setTimeout(() => {
+      // 重新更新当前分组
+      if(this.currentGroup){
+        this.currentGroup = this.database?.getGroup(this.currentGroup.uuid);
+      }
       // 获取分组和条目
       let groups = [...this.currentGroup?.groups || []];
       let entries = [...this.currentGroup?.entries || []];
