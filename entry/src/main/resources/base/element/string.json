@@ -346,7 +346,7 @@
     },
     {
       "name": "PasswordGenerator_special",
-      "value": "Special characters (!@#$%^&*_+~`|;?><,./-=)"
+      "value": "Special characters (!@#$%^&*=+~`|;?><,.)"
     },
     {
       "name": "PasswordGenerator_brackets",
@@ -371,6 +371,10 @@
     {
       "name": "PasswordGenerator_generate",
       "value": "Generate password"
+    },
+    {
+      "name": "PasswordGenerator_ensureEachType",
+      "value": "At least one of each symbol"
     },
     {
       "name": "database_name",
@@ -1029,7 +1033,7 @@
       "value": "The scanned code content is not a valid TOTP URI"
     },
     {
-      "name": "name",
+      "name": "totp_name",
       "value": "Name"
     },
     {
@@ -1082,7 +1086,7 @@
     },
     {
       "name": "kdbx_error_InvalidKey",
-      "value": "InvalidKey"
+      "value": "The entered voucher is invalid. Please check it"
     },
     {
       "name": "kdbx_error_MergeError",
@@ -1443,6 +1447,10 @@
     {
       "name": "application_limit_db_ext_tips",
       "value": "Only data ending with .kdbx can be selected"
+    },
+    {
+      "name": "Settings_database_not_value",
+      "value": "Please enter the required fields"
     }
   ]
 }

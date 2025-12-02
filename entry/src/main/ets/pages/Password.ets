@@ -73,6 +73,10 @@ struct Password {
     else if (params && params.filePath) {
       this.openRecentFile(params.filePath);
     }
+    // 其他方式打开
+    else {
+      this.passwordInputFocus();
+    }
     // 初始化按钮状态
     this.updateButtonState();
   }
@@ -90,6 +94,9 @@ struct Password {
    * 通过位置信息打开
    */
   private openLocationInfo(locationInfo: LocationInfo) {
+    setTimeout(() => {
+      this.passwordInputFocus();
+    }, 0);
     hilog.debug(DOMAIN, TAG, 'Open Location Info: %{public}s', locationInfo)
     this.fileName = locationInfo.fileName;
     this.filePath = locationInfo.filePath;
@@ -164,10 +171,12 @@ struct Password {
    */
   private async startAuth(password: string | undefined, authType?: UnlockAuthType) {
     if (!password || password == '') {
+      this.passwordInputFocus();
       return;
     }
     if (!this.isFingerprintSupport && !this.isFaceSupport) {
       hilog.debug(DOMAIN, TAG, `auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isFaceSupport: ${this.isFaceSupport}`);
+      this.passwordInputFocus();
       return;
     }
     // 加密密钥
@@ -182,6 +191,8 @@ struct Password {
       AuthService.startFingerprintAuth(this.authCallback(password));
     } else if (authType === UnlockAuthType.FACE) {
       AuthService.startFaceAuth(this.authCallback(password));
+    } else {
+      this.passwordInputFocus();
     }
   }
 
@@ -374,6 +385,17 @@ struct Password {
     }
   }
 
+  /**
+   * 密码输入框获取焦点
+   */
+  private passwordInputFocus() {
+    try {
+      this.focusController.requestFocus("passwordInput");
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
+    }
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -461,13 +483,6 @@ struct Password {
             })
             .onSubmit(() => {
               this.verifyAndOpenDatabase();
-            })
-            .onAppear(() => {
-              try {
-                this.focusController.requestFocus("passwordInput");
-              } catch (error) {
-                hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
-              }
             })
         }
         .width('90%')

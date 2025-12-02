@@ -41,7 +41,7 @@ export class SettingsService {
   public static readonly KEY_SECURITY_FACE_LOGIN = 'Database_face_login';
   public static readonly KEY_SECURITY_FACE_LOGIN_DEFAULT = false;
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
-  public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.FACE;
+  public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.PASSWORD;
   // 显示TOTP设置
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP = "Security_list_show_totp";
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;

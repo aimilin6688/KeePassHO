@@ -216,7 +216,6 @@ export class TotpService {
       await macObj.init(symKey);
       await macObj.update({ data: counterBytes });
       const hmacResult = await macObj.doFinal();
-      hilog.debug(DOMAIN, TAG, `HMAC计算结果: ${hmacResult.data}`);
       // 转换为Uint8Array
       return hmacResult.data;
     } catch (error) {

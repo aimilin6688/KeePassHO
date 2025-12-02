@@ -41,6 +41,10 @@ struct UnLockDatabase {
       if (this.defaultAuthType === UnlockAuthType.FACE) {
         this.startFaceAuth();
       }
+      // 默认密码解锁
+      if (this.defaultAuthType === UnlockAuthType.PASSWORD) {
+        this.passwordInputFocus();
+      }
     });
   }
 
@@ -81,14 +85,22 @@ struct UnLockDatabase {
    * 开始指纹验证
    */
   private startFingerprintAuth() {
-    AuthService.startFingerprintAuth(this.authServiceCallback());
+    if (SettingsService.isFingerprintAuthEnable()) {
+      AuthService.startFingerprintAuth(this.authServiceCallback());
+    } else {
+      this.passwordInputFocus();
+    }
   }
 
   /**
    * 开始人脸认证
    */
   private startFaceAuth() {
-    AuthService.startFaceAuth(this.authServiceCallback());
+    if (SettingsService.isFaceAuthEnable()) {
+      AuthService.startFaceAuth(this.authServiceCallback());
+    } else {
+      this.passwordInputFocus();
+    }
   }
 
   private authServiceCallback() {
@@ -100,6 +112,17 @@ struct UnLockDatabase {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
       }
     } as AuthServiceCallback;
+  }
+
+  /**
+   * 密码输入框获取焦点
+   */
+  private passwordInputFocus() {
+    try {
+      this.focusController.requestFocus("quickPasswordInput");
+    } catch (error) {
+      hilog.info(DOMAIN, TAG, 'FocusController quickPasswordInput error: ' + error.message);
+    }
   }
 
   build() {
@@ -145,13 +168,6 @@ struct UnLockDatabase {
             .onSubmit(() => {
               this.quickUnlock();
             })
-            .onAppear(() => {
-              try {
-                this.focusController.requestFocus("quickPasswordInput");
-              } catch (error) {
-                hilog.info(DOMAIN, TAG, 'FocusController quickPasswordInput error: ' + error.message);
-              }
-            })
         }
         .width('100%')
         .margin({ top: 16 })
@@ -165,7 +181,7 @@ struct UnLockDatabase {
       Row() {
         if (this.isFingerprintSupport) {
           Text($r('app.string.auth_by_fingerprint'))
-            .fontSize(14)
+            .fontSize(16)
             .fontColor($r('app.color.button_bg_blue'))
             .margin({ bottom: 8, left: 8, right: 8 })
             .decoration({
@@ -179,7 +195,7 @@ struct UnLockDatabase {
 
         if (this.isFaceSupport) {
           Text($r('app.string.auth_by_face'))
-            .fontSize(14)
+            .fontSize(16)
             .fontColor($r('app.color.button_bg_blue'))
             .margin({ bottom: 8, left: 8, right: 8 })
             .decoration({
@@ -262,6 +278,6 @@ struct UnLockDatabase {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
