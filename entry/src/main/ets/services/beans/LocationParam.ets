@@ -1,6 +1,6 @@
 import { CommonUtils } from '../../common/utils/CommonUtils';
 import DateUtils from '../../common/utils/DateUtils';
-import { StorageConfig, StorageType } from '../kdbx/interfaces';
+import { StorageConfig, StorageType } from '../../storage';
 
 /**
  * 打开方式类型

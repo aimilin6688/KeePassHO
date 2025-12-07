@@ -1,6 +1,4 @@
-import { FileContentInfo, FileStorageFactory, IFileStorage, StorageConfig, StorageType } from './interfaces';
-// 导出FileInfo类型
-import { FileInfo } from './interfaces/IFileStorage';
+import { FileContentInfo, FileStorageFactory, IFileStorage, FileInfo, StorageConfig, StorageType } from '../../storage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { LocationInfo } from '../beans/LocationParam';

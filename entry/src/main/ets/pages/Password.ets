@@ -4,10 +4,9 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { StorageType } from '../services/kdbx/interfaces';
+import { StorageType, StorageConfig } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
 import KdbxUtils from '../common/utils/KdbxUtils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
