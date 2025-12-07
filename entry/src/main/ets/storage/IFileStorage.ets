@@ -1,10 +1,16 @@
-import { StorageConfig } from ".";
+import { PageConfig, StorageConfig } from '.';
 
 /**
  * 文件存储接口
  * 定义了文件操作的基本行为，支持不同的存储方式（本地文件、WebDAV、FTP等）
  */
 export interface IFileStorage {
+
+  /**
+   * 获取页面配置
+   * @return PageConfig 页面配置
+   */
+  getPageConfig(): PageConfig;
 
   /**
    * 初始化存储配置

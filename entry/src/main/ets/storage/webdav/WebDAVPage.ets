@@ -1,6 +1,6 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileType, StorageConfig, StorageType } from '../../services/kdbx/interfaces';
-import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
+import { FileType, StorageConfig, StorageType } from '..';
+import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';

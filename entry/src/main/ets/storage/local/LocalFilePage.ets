@@ -1,11 +1,9 @@
 import { fileShare, picker } from '@kit.CoreFileKit';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { StorageType } from '../../services/kdbx/interfaces';
+import { StorageType, LocalFileStorageConfig } from '..';
 import { PromptAction, Router } from '@kit.ArkUI';
 import FileUtils from '../../common/utils/FIleUtils';
-import { LocalFileStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
-
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -205,6 +203,6 @@ struct LocalFile {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

@@ -1,14 +1,14 @@
 import { Router } from '@kit.ArkUI';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
 import { LocationParam } from '../../services/beans/LocationParam';
+import { FileStorage, PageConfig } from '../../storage';
 
 @Entry
 @Component
 struct SelectLocation {
   private router: Router = this.getUIContext().getRouter();
   @State titleMsg: ResourceStr = '';
-  @State descLocation: ResourceStr = '';
-  @State descWebDav: ResourceStr = '';
+  private pageConfigs: PageConfig[] = [];
 
   aboutToAppear(): void {
     this.initMsg();
@@ -18,13 +18,10 @@ struct SelectLocation {
   private initMsg(): void {
     if (LocationParam.isSaveMode()) {
       this.titleMsg = $r('app.string.location_title_save');
-      this.descLocation = $r('app.string.location_local_desc_save');
-      this.descWebDav = $r('app.string.location_webdav_desc_save');
     } else {
       this.titleMsg = $r('app.string.location_title_select');
-      this.descLocation = $r('app.string.location_local_desc_select');
-      this.descWebDav = $r('app.string.location_webdav_desc_select');
     }
+    this.pageConfigs = FileStorage.getAllPageConfig();
   }
 
   build() {
@@ -61,24 +58,16 @@ struct SelectLocation {
               .fontColor($r('app.color.text_primary'))
               .alignSelf(ItemAlign.Start)
 
-            OpenMethodButton({
-              icon: $r('app.media.ic_file'),
-              title: $r('app.string.local_file_button_title'),
-              description: this.descLocation,
-              onClickEvent: () => {
-                this.router.pushUrl({ url: 'pages/open/LocalFile' })
-              }
-            })
-
-            OpenMethodButton({
-              icon: $r("app.media.ic_webdav"),
-              title: $r('app.string.webdav_button_title'),
-              description: this.descWebDav,
-              onClickEvent: () => {
-                this.router.pushUrl({ url: 'pages/open/WebDAV' })
-              }
-            })
-
+            ForEach(this.pageConfigs, (config: PageConfig, index) => {
+              OpenMethodButton({
+                icon: config.icon,
+                title: config.title,
+                description: LocationParam.isSaveMode() ? config.saveDesc : config.selectDesc,
+                onClickEvent: () => {
+                  this.router.pushUrl({ url: config.pageUrl })
+                }
+              })
+            }, (item: PageConfig) => item.pageUrl)
           }
           .backgroundColor($r("app.color.card_bg"))
           .margin({ top: 12 })
@@ -92,7 +81,7 @@ struct SelectLocation {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
 
