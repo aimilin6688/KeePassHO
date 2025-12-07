@@ -1,6 +1,6 @@
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
-import { FileContentInfo } from '../services/kdbx/interfaces';
+import { FileContentInfo } from '../storage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { SuccessMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
