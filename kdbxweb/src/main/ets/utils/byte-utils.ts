@@ -44,6 +44,13 @@ export function base64ToBytes(str: string): Uint8Array {
   return base64.decodeSync(str);
 }
 
+export function stringToBase64(str: string): string {
+  if (str === null || str.length === 0) {
+    return '';
+  }
+  return bytesToString(base64.encodeSync(textEncoder.encodeInto(str)));
+}
+
 export function base64ToString(str: string): string {
   if (str === null || str.length === 0) {
     return '';
