@@ -10,7 +10,7 @@ import { KdbxFileManager } from './KdbxFileManager';
 import { DataService } from '../DataService';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageType } from './interfaces';
+import { StorageType } from '../../storage';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;

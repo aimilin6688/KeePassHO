@@ -1,5 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileInfo, FileType } from '../../services/kdbx/interfaces';
+import { FileInfo, FileType } from '../../storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import ResourceManager from '../../common/utils/ResourceManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';

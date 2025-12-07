@@ -8,7 +8,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { FileService } from '../services/FileService';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { FilenameUtils } from '../common/utils/FilenameUtils';
-import { LocalFileStorageConfig, StorageType } from '../services/kdbx/interfaces';
+import { LocalFileStorageConfig, StorageType } from '../storage';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';

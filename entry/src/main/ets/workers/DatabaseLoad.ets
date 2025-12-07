@@ -1,6 +1,6 @@
 import { Kdbx, KdbxCredentials } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
-import { FileContentInfo } from '../services/kdbx/interfaces';
+import { FileContentInfo } from '../storage';
 import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';

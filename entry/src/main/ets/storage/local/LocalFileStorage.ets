@@ -1,11 +1,13 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
 import { FileInfo, IFileStorage } from '../IFileStorage';
-import FileUtils from '../../../../common/utils/FIleUtils';
+import FileUtils from '../../common/utils/FIleUtils';
+import { FilenameUtils } from '../../common/utils/FilenameUtils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileType, StorageConfig } from '..';
-import { StorageError, StorageErrorCodes } from '../../../error/StorageError';
-import { FilenameUtils } from '../../../../common/utils/FilenameUtils';
+import { FileType, PageConfig, StorageConfig } from '..';
+import { StorageError, StorageErrorCodes } from '../../services/error/StorageError';
+import { LocalFilePageConfig } from './LocalFileConfig';
+
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
@@ -15,6 +17,14 @@ const TAG = 'LocalFileStorage';
  * 使用鸿蒙系统的文件API实现本地文件的读写操作
  */
 export class LocalFileStorage implements IFileStorage {
+  /**
+   * 获取页面配置
+   * @returns
+   */
+  public getPageConfig(): PageConfig {
+    return LocalFilePageConfig;
+  }
+
   /**
    * 初始化
    * @param config
