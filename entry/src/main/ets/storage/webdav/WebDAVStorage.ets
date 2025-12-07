@@ -1,9 +1,9 @@
-import { FileInfo, FileType, IFileStorage } from '../IFileStorage';
-import { WebDAVStorageConfig } from '../StorageConfig';
+import { FileInfo, FileType, IFileStorage, PageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ResultInfo, WebDavClient } from '../../../../common/utils/WebDavClient';
-import ResourceManager from '../../../../common/utils/ResourceManager';
-import { StorageError, StorageErrorCodes } from '../../../error/StorageError';
+import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
+import ResourceManager from '../../common/utils/ResourceManager';
+import { StorageError, StorageErrorCodes } from '../../services/error/StorageError';
+import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAVStorage';
@@ -19,6 +19,10 @@ export class WebDAVStorage implements IFileStorage {
     if (config) {
       this.init(config);
     }
+  }
+
+  public getPageConfig(): PageConfig {
+    return WebDAVPageConfig;
   }
 
   public init(config: WebDAVStorageConfig) {

@@ -3,7 +3,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageType } from '../services/kdbx/interfaces/StorageType';
+import { StorageType } from '../storage/StorageType';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
