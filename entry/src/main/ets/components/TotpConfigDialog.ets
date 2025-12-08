@@ -422,7 +422,7 @@ export struct TotpConfigDialog {
             ListItem() {
               Column() {
                 Row() {
-                  Text($r('app.string.name')).fontSize(16).fontWeight(FontWeight.Medium)
+                  Text($r('app.string.totp_name')).fontSize(16).fontWeight(FontWeight.Medium)
                   Blank()
                   TextInput({ text: this.totpConfig.name })
                     .height(40)
@@ -494,51 +494,52 @@ export struct TotpConfigDialog {
             color: $r('app.color.divider'),
           })
         }
+
+        // 错误消息（如果有）
+        if (this.errorMessage) {
+          ListItemGroup(){
+            ListItem(){
+              Text(this.errorMessage)
+                .fontSize(14)
+                .fontColor(Color.Red)
+                .width('100%')
+                .textAlign(TextAlign.Center)
+                .margin({ bottom: 10 })
+            }
+          }
+        }
+        ListItemGroup(){
+          ListItem(){
+            // 底部按钮
+            Row() {
+              Button($r('app.string.cancel_button_text'))
+                .width('48%')
+                .height(40)
+                .fontSize(16)
+                .backgroundColor(Color.Gray)
+                .fontColor($r('app.color.button_text'))
+                .onClick(() => {
+                  this.controller.close();
+                })
+
+              Button($r('app.string.confirm_button_text'))
+                .width('48%')
+                .height(40)
+                .fontSize(16)
+                .fontColor($r('app.color.button_text'))
+                .backgroundColor($r("app.color.button_bg_blue"))
+                .onClick(() => {
+                  this.handlerConfirm();
+                })
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceBetween)
+          }
+          .padding({ top: 16})
+        }
       }
       .width('100%')
       .height('auto')
-
-
-      // 错误消息（如果有）
-      if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(14)
-          .fontColor(Color.Red)
-          .width('100%')
-          .textAlign(TextAlign.Center)
-          .margin({ bottom: 10 })
-      }
-
-      // 底部按钮
-      Row() {
-        Button($r('app.string.cancel_button_text'))
-          .width('48%')
-          .height(40)
-          .fontSize(16)
-          .backgroundColor(Color.Gray)
-          .fontColor($r('app.color.button_text'))
-          .onClick(() => {
-            this.controller.close();
-          })
-
-        Button($r('app.string.confirm_button_text'))
-          .width('48%')
-          .height(40)
-          .fontSize(16)
-          .fontColor($r('app.color.button_text'))
-          .backgroundColor($r("app.color.button_bg_blue"))
-          .onClick(() => {
-            this.handlerConfirm();
-          })
-      }
-      .width('100%')
-      .padding({
-        left: 24,
-        right: 24,
-        top: 16,
-        bottom: 30
-      })
-      .justifyContent(FlexAlign.SpaceBetween)
     }
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))

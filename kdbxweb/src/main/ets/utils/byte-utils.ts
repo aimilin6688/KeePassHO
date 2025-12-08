@@ -1,4 +1,5 @@
 import util from '@ohos.util';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
 const textEncoder = new util.TextEncoder();
 const textDecoder = new util.TextDecoder();
@@ -36,12 +37,20 @@ export function base64ToBytes(str: string): Uint8Array {
   if (str === null || str.length === 0) {
     return new Uint8Array(0);
   }
+  // 如果字符串长度不是4的整数倍，则在字符串末尾追加 =
+  if (str.length % 4 !== 0) {
+    str += '='.repeat(4 - str.length % 4);
+  }
   return base64.decodeSync(str);
 }
 
 export function base64ToString(str: string): string {
   if (str === null || str.length === 0) {
     return '';
+  }
+  // 如果字符串长度不是4的整数倍，则在字符串末尾追加 =
+  if (str.length % 4 !== 0) {
+    str += '='.repeat(4 - str.length % 4);
   }
   return textDecoder.decodeToString(base64.decodeSync(str));
 }
@@ -105,4 +114,16 @@ export function stringToBuffer(str: string): ArrayBuffer {
 export function zeroBuffer(arr: ArrayBufferOrArray): void {
   const intArr = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
   intArr.fill(0);
+}
+
+export function randomData(length: number): Uint8Array {
+  try {
+    return cryptoFramework.createRandom().generateRandomSync(length).data;
+  } catch (error) {
+    const arr = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      arr[i] = Math.floor(Math.random() * 256);
+    }
+    return arr;
+  }
 }

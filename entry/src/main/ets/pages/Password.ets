@@ -33,6 +33,8 @@ struct Password {
   @State isLoading: boolean = false;
   @State fileName: string = '';
   @State authTypeInfo: AuthTypeInfo = AuthType.PASSWORD;
+  @State authTypeIndex: number = 0;
+  @State authTypeText: string = '';
   @State keyLocation: LocationInfo | undefined = undefined;
   @State keyFileName: string = '';
   @State showPassword: boolean = false;
@@ -58,6 +60,9 @@ struct Password {
   });
 
   aboutToAppear() {
+    //初始化认证方式
+    this.setAuthType(this.authTypeInfo);
+
     const params = this.router.getParams() as Record<string, string>;
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
@@ -67,6 +72,10 @@ struct Password {
     // 通过最近文件打开
     else if (params && params.filePath) {
       this.openRecentFile(params.filePath);
+    }
+    // 其他方式打开
+    else {
+      this.passwordInputFocus();
     }
     // 初始化按钮状态
     this.updateButtonState();
@@ -85,6 +94,9 @@ struct Password {
    * 通过位置信息打开
    */
   private openLocationInfo(locationInfo: LocationInfo) {
+    setTimeout(() => {
+      this.passwordInputFocus();
+    }, 0);
     hilog.debug(DOMAIN, TAG, 'Open Location Info: %{public}s', locationInfo)
     this.fileName = locationInfo.fileName;
     this.filePath = locationInfo.filePath;
@@ -107,12 +119,6 @@ struct Password {
     this.buttonEnabled = true;
   }
 
-  // 获取认证类型的索引，用于Select组件
-  private getAuthTypeIndex(): number {
-    const index = this.allAuthType.findIndex(item => item.type === this.authTypeInfo.type);
-    return index >= 0 ? index : 0;
-  }
-
   /**
    * 通过最近文件打开
    */
@@ -130,7 +136,7 @@ struct Password {
         this.storageConfig = recentFile.storageConfig;
         // 设置认证类型
         if (recentFile.authType) {
-          this.authTypeInfo = recentFile.authType;
+          this.setAuthType(recentFile.authType);
         }
         // 获取密钥文件路径
         if (recentFile.keyLocation) {
@@ -151,14 +157,26 @@ struct Password {
   }
 
   /**
+   * 设置认证方式
+   */
+  private setAuthType(authType: AuthTypeInfo) {
+    const type = AuthType.getByType(authType.type);
+    this.authTypeInfo = type;
+    this.authTypeIndex = AuthType.getIndexByType(type.type);
+    this.authTypeText = ResourceManager.getString(type.value);
+  }
+
+  /**
    * 通过指纹认证
    */
   private async startAuth(password: string | undefined, authType?: UnlockAuthType) {
     if (!password || password == '') {
+      this.passwordInputFocus();
       return;
     }
     if (!this.isFingerprintSupport && !this.isFaceSupport) {
       hilog.debug(DOMAIN, TAG, `auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isFaceSupport: ${this.isFaceSupport}`);
+      this.passwordInputFocus();
       return;
     }
     // 加密密钥
@@ -173,6 +191,8 @@ struct Password {
       AuthService.startFingerprintAuth(this.authCallback(password));
     } else if (authType === UnlockAuthType.FACE) {
       AuthService.startFaceAuth(this.authCallback(password));
+    } else {
+      this.passwordInputFocus();
     }
   }
 
@@ -366,12 +386,14 @@ struct Password {
   }
 
   /**
-   * 获取认证方式名称
-   * @param authType
-   * @returns
+   * 密码输入框获取焦点
    */
-  private getAuthTypeName(authType: AuthTypeInfo): ResourceStr {
-    return this.allAuthType.find(item => item.type === authType.type)?.value ?? this.allAuthType[0].value;
+  private passwordInputFocus() {
+    try {
+      this.focusController.requestFocus("passwordInput");
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
+    }
   }
 
   build() {
@@ -422,22 +444,20 @@ struct Password {
             .alignSelf(ItemAlign.Start)
 
           Select(this.allAuthType)
-            .value(this.getAuthTypeName(this.authTypeInfo))
+            .selected(this.authTypeIndex)
+            .value(this.authTypeText)
             .font({ size: 16 })
             .fontColor($r('app.color.text_primary'))
             .selectedOptionFont({ size: 16 })
             .optionFont({ size: 16 })
             .width('100%')
             .onSelect((index: number, value: string) => {
-              const allTypes = AuthType.getAllTypes();
-              if (index >= 0 && index < allTypes.length) {
-                this.authTypeInfo = allTypes[index];
-                // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-                if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
-                  this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
-                  this.keyLocation = undefined;
-                  this.keyFileName = '';
-                }
+              this.setAuthType(AuthType.getByIndex(index));
+              // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
+              if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
+                this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+                this.keyLocation = undefined;
+                this.keyFileName = '';
               }
               this.updateButtonState(); // 更新按钮状态
             })
@@ -463,13 +483,6 @@ struct Password {
             })
             .onSubmit(() => {
               this.verifyAndOpenDatabase();
-            })
-            .onAppear(() => {
-              try {
-                this.focusController.requestFocus("passwordInput");
-              } catch (error) {
-                hilog.error(DOMAIN, TAG, 'PasswordInput con not get focus: %{public}s', error?.message);
-              }
             })
         }
         .width('90%')

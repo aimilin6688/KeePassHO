@@ -10,6 +10,7 @@ import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam
 import DateUtils from '../common/utils/DateUtils';
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
+import { SettingsService } from './SettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
@@ -58,9 +59,13 @@ export class DataService {
    * 选择数据库
    */
   public static selectKdbx(router: Router) {
+    const fileSuffix : Array<string> = [];
+    if(SettingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT)){
+      fileSuffix.push('kdbx');
+    }
     LocationParam.of({
       mode: LocationMode.SELECT,
-      fileSuffix: ['kdbx'],
+      fileSuffix: fileSuffix,
       onLocation: (locationInfo: LocationInfo) => {
         DataService.toPasswordPage(router, locationInfo);
       }
