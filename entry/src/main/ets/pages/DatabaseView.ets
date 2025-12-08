@@ -3,20 +3,17 @@ import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 
-import ThemeManager from '../common/utils/ThemeManager';
+import { ThemeManager, KdbxUtils, DateUtils, ResourceManager } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
 import { SupportService } from '../services/SupportService';
-import DateUtils from '../common/utils/DateUtils';
 import { EventBus } from '../services/EventBus';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
-import ResourceManager from '../common/utils/ResourceManager';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
@@ -75,17 +72,16 @@ struct DatabaseView {
     customStyle: true,
     autoCancel: true
   })
-
   /**
    *  数据库重载事件
    */
-  onDatabaseReload : Callback<emitter.EventData> = (eventData:emitter.EventData)=>{
+  onDatabaseReload: Callback<emitter.EventData> = (eventData: emitter.EventData) => {
     this.reloadDatabase();
   }
   /**
    * 数据库更新事件
    */
-  onDatabaseUpdate : Callback<emitter.EventData> = (eventData:emitter.EventData)=>{
+  onDatabaseUpdate: Callback<emitter.EventData> = (eventData: emitter.EventData) => {
     hilog.debug(DOMAIN, TAG, 'Receive database update event');
     this.updateUI();
   }
@@ -143,9 +139,10 @@ struct DatabaseView {
       this.isListShowTotp = result;
     });
     // 搜索历史改变
-    this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT).then(result => {
-      this.isShowSearchHistory = result;
-    });
+    this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT)
+      .then(result => {
+        this.isShowSearchHistory = result;
+      });
   }
 
   /**
@@ -498,7 +495,7 @@ struct DatabaseView {
     // 延迟一帧后重新加载数据，确保UI更新
     setTimeout(() => {
       // 重新更新当前分组
-      if(this.currentGroup){
+      if (this.currentGroup) {
         this.currentGroup = this.database?.getGroup(this.currentGroup.uuid);
       }
       // 获取分组和条目
@@ -604,7 +601,7 @@ struct DatabaseView {
    * 获取搜索历史
    */
   private loadSearchHistory() {
-    if(this.isShowSearchHistory){
+    if (this.isShowSearchHistory) {
       RecentFilesService.getSearchHistory(this.filePath).then(history => {
         this.searchHistory = history;
       });

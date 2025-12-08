@@ -3,18 +3,13 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import IconUtils from '../common/utils/IconUtils';
+import { KdbxUtils, IconUtils, ResourceManager, DateUtils, CommonUtils, FileUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
-import ResourceManager from '../common/utils/ResourceManager';
-import DateUtils from '../common/utils/DateUtils';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
-import { CommonUtils } from '../common/utils/CommonUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
-import FileUtils from '../common/utils/FIleUtils';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -50,7 +45,8 @@ struct EntryEdit {
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
-  private standardFields: Array<string> =  [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+  private standardFields: Array<string> =
+    [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器

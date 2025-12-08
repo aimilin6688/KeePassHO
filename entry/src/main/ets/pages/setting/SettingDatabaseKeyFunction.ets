@@ -1,6 +1,6 @@
 import { Router } from '@kit.ArkUI';
 import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
-import KdbxUtils from '../../common/utils/KdbxUtils';
+import { KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -68,7 +68,7 @@ struct SettingDatabaseKeyFunction {
       const kdfParameters = dbFileParam.database.header.kdfParameters;
       if (kdfParameters && this.isArgon2()) {
         // 设置内存最大值为512M
-        this.memory = this.resetMemory(this.memory,  (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
+        this.memory = this.resetMemory(this.memory, (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
         kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
         kdfParameters.set('I', VarDictionary.ValueType.UInt64, Int64.from(this.iteration));
         kdfParameters.set('M', VarDictionary.ValueType.UInt64, Int64.from(Number(this.memory) * 1024 * 1024));

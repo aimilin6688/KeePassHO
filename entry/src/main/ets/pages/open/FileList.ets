@@ -1,14 +1,12 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileInfo, FileType } from '../../storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager, DateUtils, FileUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/LocationParam';
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
-import DateUtils from '../../common/utils/DateUtils';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
-import FileUtils from '../../common/utils/FIleUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
@@ -122,7 +120,7 @@ struct FileList {
       items.forEach(item => {
         this.itemData.pushData(item);
       });
-      if(this.locationInfo.mode === LocationMode.SAVE){
+      if (this.locationInfo.mode === LocationMode.SAVE) {
         this.isEnableConfirm = true;
       }
     } catch (error) {
@@ -593,6 +591,6 @@ struct FileList {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
