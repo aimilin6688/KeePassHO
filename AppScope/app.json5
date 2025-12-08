@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "com.aimilin.keepassho",
     "vendor": "艾米林",
-    "versionCode": 1006004,
-    "versionName": "1.6.4",
+    "versionCode": 1006007,
+    "versionName": "1.6.7",
     "icon": "$media:layered_image",
     "label": "$string:app_name"
   }

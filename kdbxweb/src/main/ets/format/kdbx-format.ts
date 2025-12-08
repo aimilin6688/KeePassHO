@@ -1,4 +1,4 @@
-import { gzipSync, gunzipSync } from 'fflate';
+import { gzip, ungzip } from '@ohos/flate2';
 import { Kdbx } from './kdbx';
 import { CipherId, CompressionAlgorithm, ErrorCodes } from '../defs/consts';
 import { KdbxError } from '../errors/kdbx-error';
@@ -82,7 +82,7 @@ export class KdbxFormat {
                                 zeroBuffer(keys.cipherKey);
                                 if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
                                     const date = new Date().getTime();
-                                    data = arrayToBuffer(gunzipSync(new Uint8Array(data)));
+                                    data = arrayToBuffer(ungzip(new Uint8Array(data)));
                                     console.log("kdbx gunzip time: " + (new Date().getTime() - date) + "ms");
                                 }
                                 stm = new BinaryStream(arrayToBuffer(data));
@@ -177,7 +177,7 @@ export class KdbxFormat {
                         zeroBuffer(innerHeaderData);
                         if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
                             const date = new Date().getTime();
-                            data = arrayToBuffer(gzipSync(new Uint8Array(data)));
+                            data = arrayToBuffer(gzip(new Uint8Array(data)));
                             console.log("kdbx gzip time: " + (new Date().getTime() - date) + "ms");
                         }
                         return this.encryptData(arrayToBuffer(data), keys.cipherKey).then(
@@ -223,7 +223,7 @@ export class KdbxFormat {
                 data = this.trimStartBytesV3(data);
                 return HashedBlockTransform.decrypt(data).then((data) => {
                     if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
-                        data = arrayToBuffer(gunzipSync(new Uint8Array(data)));
+                        data = arrayToBuffer(ungzip(new Uint8Array(data)));
                     }
                     return bytesToString(data);
                 });
@@ -238,7 +238,7 @@ export class KdbxFormat {
         const xml = XmlUtils.serialize(this.kdbx.xml);
         let data = arrayToBuffer(stringToBytes(xml));
         if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
-            data = arrayToBuffer(gzipSync(new Uint8Array(data)));
+            data = arrayToBuffer(gzip(new Uint8Array(data)));
         }
         return HashedBlockTransform.encrypt(arrayToBuffer(data)).then((data) => {
             if (!this.kdbx.header.streamStartBytes) {
