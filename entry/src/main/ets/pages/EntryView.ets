@@ -133,9 +133,7 @@ struct EntryView {
     // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields =
-        [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
-          KdbxUtils.FIELD_OVERRIDE_URL];
+      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,KdbxUtils.FIELD_OVERRIDE_URL];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 
@@ -146,7 +144,7 @@ struct EntryView {
       } else if (bIndex >= 0) {
         return 1;
       } else {
-        return a.key.localeCompare(b.key);
+        return this.fields.indexOf(a) - this.fields.indexOf(b);
       }
     });
 

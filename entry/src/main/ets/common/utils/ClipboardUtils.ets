@@ -1,5 +1,6 @@
 import { pasteboard } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { SettingsService } from '../../services/SettingsService';
 import { CommonUtils } from './CommonUtils';
 
 const DOMAIN = 0x0000;
@@ -7,6 +8,17 @@ const TAG = 'EntryViewFieldItem';
 
 export class ClipboardUtils {
   private static timeOutObj: number = -1;
+
+  /**
+   * 复制文本到剪贴板，并自动清理
+   * @param text 文本
+   * @param timeoutClear 自动清理时间，单位秒, 小于等于0则不进行清理
+   */
+  public static copyAutoClear(text: string) {
+    SettingsService.get(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT, (value) => {
+      ClipboardUtils.copy(text, value);
+    });
+  }
 
   /**
    * 复制文本到剪贴板

@@ -174,6 +174,27 @@ export default class KdbxUtils {
   }
 
   /**
+   * 搜索条目
+   * @param totpEntries 条目
+   * @param searchText 搜索文本
+   * @returns
+   */
+  public static searchInEntries(entries: Array<KdbxEntry>, searchText: string): Array<KdbxEntry> {
+    const result = new Array<KdbxEntry>();
+    if (!entries || entries.length === 0 || !searchText) {
+      return result;
+    }
+
+    const searchTextLower = searchText.toLowerCase().trim();
+    for (const entry of entries) {
+      if (KdbxUtils.entryMatchesSearch(entry, searchTextLower)) {
+        result.push(entry);
+      }
+    }
+    return result;
+  }
+
+  /**
    * 检查条目是否匹配搜索文本
    * @param entry 要检查的条目
    * @param searchText 搜索文本（小写）
@@ -302,8 +323,6 @@ export default class KdbxUtils {
    * @param sortMod 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
    */
   public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
-    // 排序前分组名称
-    hilog.debug(DOMAIN, TAG, 'Before sort group names: %{public}s, %{public}s', sortMode, groups.map(group => group.name).join(','));
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
@@ -330,8 +349,6 @@ export default class KdbxUtils {
       // 默认排序，不做额外处理
         break;
     }
-    // 排序后分组名称
-    hilog.debug(DOMAIN, TAG, 'After sort group names: %{public}s, %{public}s', sortMode, groups.map(group => group.name).join(','));
   }
 
   /**
@@ -359,7 +376,6 @@ export default class KdbxUtils {
    * @returns 字段名称
    */
   public static getFieldName(fileKey: string | undefined): string | Resource | undefined {
-    hilog.debug(DOMAIN, TAG, 'Get field name: %{public}s', fileKey);
     switch (fileKey) {
       case KdbxUtils.FIELD_USERNAME:
         return $r("app.string.username");
