@@ -1,6 +1,6 @@
 import { SettingsService, UnlockAuthType } from '../../services/SettingsService';
 import { Router } from '@kit.ArkUI';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { AuthService } from '../../services/AuthService';
 import { RecentFilesService } from '../../services/RecentFilesService';
@@ -203,31 +203,31 @@ struct SettingsSecurity {
                 .padding(16)
               }
             }
-              // 选择默认登录方式
-              ListItem() {
-                Row() {
-                  Text($r("app.string.auth_type_default"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Select(this.authTypeOptions)
-                    .value(this.authTypeOptions[this.authTypeOptions.findIndex((item) => item.type === this.defaultAuthType)].value)
-                    .font({ size: 16 })
-                    .selectedOptionFont({ size: 16 })
-                    .optionFont({ size: 16 })
-                    .backgroundColor($r("app.color.card_bg"))
-                    .onSelect(async (index: number) => {
-                      this.defaultAuthType = this.authTypeOptions[index].type;
-                      this.settingsService.put(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType);
-                    })
-                }
-                .width('100%')
-                .padding({
-                  left: 16,
-                  right: 16,
-                  top: 9,
-                  bottom: 9
-                })
+            // 选择默认登录方式
+            ListItem() {
+              Row() {
+                Text($r("app.string.auth_type_default"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Select(this.authTypeOptions)
+                  .value(this.authTypeOptions[this.authTypeOptions.findIndex((item) => item.type === this.defaultAuthType)].value)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.defaultAuthType = this.authTypeOptions[index].type;
+                    this.settingsService.put(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType);
+                  })
               }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 9,
+                bottom: 9
+              })
+            }
           }
           .margin({ top: 12, bottom: 12 })
           .backgroundColor($r("app.color.card_bg"))
@@ -434,7 +434,7 @@ struct SettingsSecurity {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
 

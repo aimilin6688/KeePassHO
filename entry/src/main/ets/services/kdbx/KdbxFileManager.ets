@@ -1,6 +1,6 @@
 import { FileContentInfo, FileStorageFactory, IFileStorage, FileInfo, StorageConfig, StorageType } from '../../storage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import ResourceManager from '../../common/utils/ResourceManager';
+import {ResourceManager} from '../../common/utils';
 import { LocationInfo } from '../beans/LocationParam';
 
 

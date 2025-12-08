@@ -1,7 +1,7 @@
 import preferences from '@ohos.data.preferences';
 import { BusinessError } from '@ohos.base';
 import { ThemeMode } from '../common/constants/ThemeConstants';
-import ThemeManager from '../common/utils/ThemeManager';
+import { ThemeManager } from '../common/utils';
 import common from '@ohos.app.ability.common';
 import { SortMode } from '../common/constants/SortConstants';
 
@@ -70,15 +70,18 @@ export class SettingsService {
    * @param context UIAbilityContext
    */
   public async init(context: common.UIAbilityContext): Promise<void> {
-    try {
-      this.preferences = await preferences.getPreferences(context, SettingsService.PREFERENCES_NAME);
-
-      // 初始化主题
-      const themeMode = await this.getThemeMode();
-      await ThemeManager.getInstance().setThemeMode(themeMode);
-    } catch (err) {
-      hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-    }
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.preferences = await preferences.getPreferences(context, SettingsService.PREFERENCES_NAME);
+        // 初始化主题
+        const themeMode = await this.getThemeMode();
+        await ThemeManager.getInstance().setThemeMode(themeMode);
+        resolve();
+      } catch (err) {
+        hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+        reject(err);
+      }
+    });
   }
 
   /**

@@ -2,7 +2,7 @@ import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager } from '../../common/utils';
 import { DatabaseLoad } from '../../workers/DatabaseLoad';
 import { Constants } from '../../common/constants/Constants';
 
@@ -92,7 +92,8 @@ export default class KdbxLoadService {
    */
   private static handleSuccessMessage(data: WorkerMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
     const successMessage = data as SuccessMessage;
-    hilog.info(DOMAIN, TAG, 'Received success message: modifiedTime:%{public}d, isMerge:%{public}s', successMessage.modifiedTime, successMessage.isMerge);
+    hilog.info(DOMAIN, TAG, 'Received success message: modifiedTime:%{public}d, isMerge:%{public}s', successMessage.modifiedTime,
+      successMessage.isMerge);
     if (onSuccessMessage) {
       onSuccessMessage(successMessage);
     }

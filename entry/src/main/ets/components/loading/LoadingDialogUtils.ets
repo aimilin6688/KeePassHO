@@ -1,4 +1,4 @@
-import ResourceUtils from '../../common/utils/ResourceUtils'
+import { ResourceUtils } from '../../common/utils'
 import { LoadingDialogGlobalSettings, loadingDialogGlobalSettings } from './LoadingDialogGlobalSettings'
 import { LoadingSettings } from './LoadingSettings'
 import { LoadingActionOptions, LoadingDialogBuilder, LoadingState } from './LoadingViews'
