@@ -3,10 +3,9 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import FileUtils from '../common/utils/FIleUtils';
+import { FileUtils, FilenameUtils, DeviceUtils } from '../common/utils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
-import DeviceUtils from '../common/utils/DeviceUtils';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';

@@ -1,7 +1,6 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
 import { FileInfo, IFileStorage } from '../IFileStorage';
-import FileUtils from '../../common/utils/FIleUtils';
-import { FilenameUtils } from '../../common/utils/FilenameUtils';
+import { FileUtils, FilenameUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileType, PageConfig, StorageConfig } from '..';

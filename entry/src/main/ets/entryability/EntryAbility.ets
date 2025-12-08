@@ -2,12 +2,9 @@ import { AbilityConstant, contextConstant, UIAbility, Want } from '@kit.AbilityK
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { SettingsService } from '../services/SettingsService';
-import ThemeManager from '../common/utils/ThemeManager';
-import ResourceManager from '../common/utils/ResourceManager';
+import { ThemeManager, ResourceManager, CommonUtils, Sm4Utils, FilenameUtils } from '../common/utils';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { FileService } from '../services/FileService';
-import { CommonUtils } from '../common/utils/CommonUtils';
-import { FilenameUtils } from '../common/utils/FilenameUtils';
 import { LocalFileStorageConfig, StorageType } from '../storage';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
@@ -47,11 +44,12 @@ export default class EntryAbility extends UIAbility {
     // 最近打开的文件服务
     RecentFilesService.getInstance().init(this.context);
     // 初始化设置服务
-    await SettingsService.getInstance().init(this.context).then(() => {
+    SettingsService.getInstance().init(this.context).then(() => {
       // 设值应用安装时间
       SupportService.initAppInstallTime();
     })
-
+    // 初始化加解密KEY
+    Sm4Utils.init();
   }
 
   onDestroy(): void {

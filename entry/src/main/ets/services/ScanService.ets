@@ -6,7 +6,7 @@ import { TotpService } from './TotpService';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import ResourceManager from '../common/utils/ResourceManager';
+import { ResourceManager } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'ScanService';

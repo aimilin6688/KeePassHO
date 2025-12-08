@@ -2,11 +2,10 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager, FilenameUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
-import { FilenameUtils } from '../../common/utils/FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -376,6 +375,6 @@ struct WebDAV {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

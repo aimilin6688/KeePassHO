@@ -1,9 +1,7 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import image from '@ohos.multimedia.image';
-import KdbxUtils from './KdbxUtils';
-import ResourceManager from './ResourceManager';
-import { UrlUtils } from './UrlUtils';
+import { KdbxUtils, ResourceManager, UrlUtils } from '.';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebImageDownloader';

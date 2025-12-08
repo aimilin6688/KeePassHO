@@ -1,13 +1,11 @@
 import { PromptAction } from '@kit.ArkUI';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import {KdbxUtils, FileUtils, ResourceManager} from '../common/utils';
 import { KdbxEntry } from 'kdbxweb';
 
 import { Icons } from '../services/TypeDefined';
 import { SettingsService } from '../services/SettingsService';
-import FileUtils from '../common/utils/FIleUtils';
 import { common } from '@kit.AbilityKit';
 import { TotpPreviewComponent } from './TotpPreviewComponent';
-import ResourceManager from '../common/utils/ResourceManager';
 import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 const DOMAIN = 0x0000;

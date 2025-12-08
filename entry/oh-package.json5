@@ -6,7 +6,8 @@
   "author": "艾米林",
   "license": "",
   "dependencies": {
-    "kdbxweb": "file:../kdbxweb"
+    "kdbxweb": "file:../kdbxweb",
+    "@hw-agconnect/petal-aegis": "^1.4.11-300"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
