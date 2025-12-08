@@ -2,7 +2,33 @@
   "app": {
     "signingConfigs": [
       {
-        "name": "release",
+        "name": "win_release",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "D:/workspace/harmonyos/key/KeePassHO_release.p12",
+          "storePassword": "000000194B548CE7A0B9088B192F518A7EA9B00C697FE63331087FAD97BB408B282BD7DB9CE2323170",
+          "keyAlias": "keepassho",
+          "keyPassword": "00000019450F49559F22E13404264D28B35D72C6AD4B72077CEA8496281D7C58CD2A6CC525560000D5",
+          "signAlg": "SHA256withECDSA",
+          "profile": "D:/workspace/harmonyos/key/KeePassHO_release.p7b",
+          "certpath": "D:/workspace/harmonyos/key/KeePassHO_release.cer"
+        }
+      },
+      {
+        "name": "win_debug",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "D:/workspace/harmonyos/key/KeePassHO_debug.p12",
+          "storePassword": "000000193EC7120965935167DF18280965BFEF228DE5805F083D5412BB1AA3E0BBD5A6A92E0816CC67",
+          "keyAlias": "keepassho",
+          "keyPassword": "000000191ECD113D594531BE1C6F17E0966E492857F0B908492E9916A6DF8D154A15B7C33E86E42D1A",
+          "signAlg": "SHA256withECDSA",
+          "profile": "D:/workspace/harmonyos/key/KeePassHO_debug.p7b",
+          "certpath": "D:/workspace/harmonyos/key/KeePassHO_debug.cer"
+        }
+      },
+      {
+        "name": "mac_release",
         "type": "HarmonyOS",
         "material": {
           "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_release.p12",
@@ -15,7 +41,7 @@
         }
       },
       {
-        "name": "default",
+        "name": "mac_debug",
         "type": "HarmonyOS",
         "material": {
           "storeFile": "/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/key/KeePassHO_debug.p12",
@@ -31,7 +57,7 @@
     "products": [
       {
         "name": "default",
-        "signingConfig": "default",
+        "signingConfig": "win_debug",
         "targetSdkVersion": "5.0.5(17)",
         "compatibleSdkVersion": "5.0.5(17)",
         "runtimeOS": "HarmonyOS",
@@ -43,8 +69,34 @@
         },
       },
       {
-        "name": "release",
-        "signingConfig": "release",
+        "name": "win_release",
+        "signingConfig": "win_release",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        },
+      },
+      {
+        "name": "mac_debug",
+        "signingConfig": "mac_debug",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        },
+      },
+      {
+        "name": "mac_release",
+        "signingConfig": "mac_release",
         "targetSdkVersion": "5.0.5(17)",
         "compatibleSdkVersion": "5.0.5(17)",
         "runtimeOS": "HarmonyOS",
@@ -74,7 +126,9 @@
           "name": "default",
           "applyToProducts": [
             "default",
-            "release"
+            "win_release",
+            "mac_debug",
+            "mac_release"
           ]
         }
       ]

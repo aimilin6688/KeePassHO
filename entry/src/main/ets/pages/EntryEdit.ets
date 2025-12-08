@@ -15,7 +15,6 @@ import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { CommonUtils } from '../common/utils/CommonUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
 import FileUtils from '../common/utils/FIleUtils';
-import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -51,7 +50,7 @@ struct EntryEdit {
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
-  private standardFields: Array<string> = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+  private standardFields: Array<string> =  [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器
@@ -64,6 +63,9 @@ struct EntryEdit {
       onConfirm: (customField: CustomField) => {
         hilog.info(DOMAIN, TAG, '%{public}s', `Received field: ${JSON.stringify(customField)}`);
         this.confirmCustomField(customField);
+      },
+      onCancel: () => {
+        this.initCustomField();
       }
     }),
     alignment: DialogAlignment.Bottom,
@@ -458,6 +460,17 @@ struct EntryEdit {
     this.currentFieldValue = field.value;
     this.currentFieldProtected = field.isProtected;
     this.fieldDialogController.open();
+  }
+
+  /**
+   * 初始化自定义字段
+   */
+  private initCustomField() {
+    this.isEditingField = false;
+    this.editingFieldIndex = -1;
+    this.currentFieldKey = '';
+    this.currentFieldValue = '';
+    this.currentFieldProtected = false;
   }
 
   /**
@@ -1011,83 +1024,96 @@ struct EntryEdit {
 
               // 自定义字段列表
               if (this.customFields.length > 0) {
-                ForEach(this.customFields, (field: CustomField, index) => {
-                  Column() {
-                    Row() {
-                      Text(field.key)
-                        .fontSize(14)
-                        .fontColor($r('app.color.text_secondary'))
-                        .height(32)
-                      Blank()
-                      Button() {
-                        Image($r('app.media.ic_edit'))
-                          .width(16)
-                          .height(16)
-                          .fillColor($r('app.color.text_primary'))
+                Row() {
+                  List() {
+                    ForEach(this.customFields, (field: CustomField, index) => {
+                      ListItem() {
+                        Column() {
+                          Row() {
+                            Text(field.key)
+                              .fontSize(14)
+                              .fontColor($r('app.color.text_secondary'))
+                              .height(32)
+                            Blank()
+                            Button() {
+                              Image($r('app.media.ic_edit'))
+                                .width(16)
+                                .height(16)
+                                .fillColor($r('app.color.text_primary'))
 
-                      }
-                      .width(32)
-                      .height(32)
-                      .borderRadius(16)
-                      .backgroundColor($r("app.color.bg_secondary"))
-                      .onClick(() => {
-                        this.openEditFieldDialog(index);
-                      })
+                            }
+                            .width(32)
+                            .height(32)
+                            .borderRadius(16)
+                            .backgroundColor($r("app.color.bg_secondary"))
+                            .onClick(() => {
+                              this.openEditFieldDialog(index);
+                            })
 
-                      Button() {
-                        Image($r('app.media.ic_delete'))
-                          .width(16)
-                          .height(16)
-                          .fillColor($r('app.color.text_primary'))
-                      }
-                      .width(32)
-                      .height(32)
-                      .borderRadius(16)
-                      .backgroundColor($r("app.color.bg_secondary"))
-                      .onClick(() => {
-                        this.deleteCustomField(index);
-                      })
-                    }
-                    .width('100%')
+                            Button() {
+                              Image($r('app.media.ic_delete'))
+                                .width(16)
+                                .height(16)
+                                .fillColor($r('app.color.text_primary'))
+                            }
+                            .width(32)
+                            .height(32)
+                            .borderRadius(16)
+                            .backgroundColor($r("app.color.bg_secondary"))
+                            .onClick(() => {
+                              this.deleteCustomField(index);
+                            })
+                          }
+                          .width('100%')
 
-                    Row() {
-                      Text(field.isProtected && !this.customFieldsVisibility.get(field.key) ? '******' : field.value)
-                        .fontSize(16)
-                        .fontColor($r('app.color.text_primary'))
-                        .lineHeight(24)
-                        .borderWidth(0)
-                        .padding({
-                          left: 0,
-                          right: 0
-                        })
-                        .layoutWeight(1)
+                          Row() {
+                            Text(field.isProtected && !this.customFieldsVisibility.get(field.key) ? '******' : field.value)
+                              .fontSize(16)
+                              .fontColor($r('app.color.text_primary'))
+                              .lineHeight(24)
+                              .borderWidth(0)
+                              .padding({
+                                left: 0,
+                                right: 0
+                              })
+                              .layoutWeight(1)
+                              .backgroundColor($r("app.color.bg_secondary"))
+                              .onClick(() => {
+                                this.openEditFieldDialog(index);
+                              })
+
+                            if (field.isProtected) {
+                              Image(this.customFieldsVisibility.get(field.key) ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
+                                .width(24)
+                                .height(24)
+                                .fillColor($r('app.color.text_secondary'))
+                                .margin({ left: 8, right: 8 })
+                                .onClick((event) => {
+                                  this.toggleCustomFieldVisibility(field.key);
+                                  return false;
+                                })
+                            }
+                          }
+                          .width('100%')
+                          .alignItems(VerticalAlign.Center)
+                        }
+                        .width('100%')
+                        .height('auto')
+                        .padding({ top: 12, bottom: 12, left: 12 })
                         .backgroundColor($r("app.color.bg_secondary"))
-                        .onClick(() => {
-                          this.openEditFieldDialog(index);
-                        })
-
-                      if (field.isProtected) {
-                        Image(this.customFieldsVisibility.get(field.key) ? $r('app.media.ic_eye_off') : $r('app.media.ic_eye'))
-                          .width(24)
-                          .height(24)
-                          .fillColor($r('app.color.text_secondary'))
-                          .margin({ left: 8, right: 8 })
-                          .onClick((event) => {
-                            this.toggleCustomFieldVisibility(field.key);
-                            return false;
-                          })
+                        .borderRadius(8)
+                        .margin({ bottom: 8 })
                       }
-                    }
-                    .width('100%')
-                    .alignItems(VerticalAlign.Center)
+                    }, (field: CustomField) => field.key)
+                      .onMove((fromIndex: number, toIndex: number) => {
+                        let tmp = this.customFields.splice(fromIndex, 1);
+                        this.customFields.splice(toIndex, 0, tmp[0]);
+                        this.isModified = true;
+                      })
                   }
                   .width('100%')
                   .height('auto')
-                  .padding({ top: 12, bottom: 12, left: 12 })
-                  .backgroundColor($r("app.color.bg_secondary"))
-                  .borderRadius(8)
-                  .margin({ bottom: 8 })
-                })
+                }
               } else {
                 Text($r('app.string.no_custom_fields_message'))
                   .fontSize(14)

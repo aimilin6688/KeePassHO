@@ -41,7 +41,7 @@ export class SettingsService {
   public static readonly KEY_SECURITY_FACE_LOGIN = 'Database_face_login';
   public static readonly KEY_SECURITY_FACE_LOGIN_DEFAULT = false;
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
-  public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.FACE;
+  public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.PASSWORD;
   // 显示TOTP设置
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP = "Security_list_show_totp";
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;
@@ -52,6 +52,9 @@ export class SettingsService {
   public static readonly KEY_SHOW_SUPPORT_DIALOG = "show_support_dialog";
   public static readonly KEY_SHOW_SUPPORT_DIALOG_DEFAULT = true;
   public static readonly KEY_APP_INSTALL_TIME = "app_install_time";
+  // 限制数据库后缀
+  public static readonly KEY_APP_LIMIT_DB_EXT = "app_limit_db_ext";
+  public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = true;
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -187,7 +190,9 @@ export class SettingsService {
     }
 
     try {
-      return (this.preferences.get(key, defValue)) as T;
+      return (this.preferences.get(key, defValue).catch(() => {
+        return defValue;
+      })) as T;
     } catch (err) {
       hilog.error(DOMAIN, TAG, `Failed to get value. Code: ${(err as BusinessError).code}`);
       return defValue;
@@ -228,8 +233,16 @@ export class SettingsService {
    * @param key
    */
   public deleteSync(key: string) {
-    this.preferences?.deleteSync(key);
-    this.preferences?.flushSync();
+    try {
+      this.preferences?.deleteSync(key);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to delete ${key}. Code: ${error}`);
+    }
+    try {
+      this.preferences?.flushSync();
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to flush ${key}. Code: ${error}`);
+    }
   }
 
   /**
@@ -249,8 +262,7 @@ export class SettingsService {
       if (!this.preferences) {
         return resolve();
       }
-      this.preferences.deleteSync(key);
-      this.preferences.flushSync();
+      this.deleteSync(key);
       return resolve();
     });
   }
