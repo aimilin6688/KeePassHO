@@ -1,15 +1,14 @@
 import { fileShare, picker } from '@kit.CoreFileKit';
 import { FileContentInfo, LocalFileStorage } from '../../storage';
-import { CommonUtils } from './CommonUtils';
+import { CommonUtils,FilenameUtils } from '.';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { FilenameUtils } from './FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFileStorage';
 
-export default class FileUtils {
+export class FileUtils {
   private static FolderAuthorization: string = 'SystemCapability.FileManagement.AppFileService.FolderAuthorization';
 
   /**

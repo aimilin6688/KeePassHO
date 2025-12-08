@@ -1,11 +1,9 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { util, xml } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from './CommonUtils';
 import { BusinessError, request } from '@kit.BasicServicesKit';
-import ResourceManager from '../utils/ResourceManager';
 import { ByteUtils } from 'kdbxweb';
-import { StringUtils } from './StringUtils';
+import { StringUtils, ResourceManager, CommonUtils } from '.';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';

@@ -2,14 +2,13 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager, CommonUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
 import { LocationMode } from './SelectLocation';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
@@ -320,11 +319,11 @@ struct CreateDatabase {
       }
       .width('100%')
       .layoutWeight(1)
-      .padding({left: 16, right: 16, bottom: 16})
+      .padding({ left: 16, right: 16, bottom: 16 })
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
