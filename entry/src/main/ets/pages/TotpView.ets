@@ -1,12 +1,10 @@
 import { KdbxEntry } from 'kdbxweb';
 import { SortMode } from '../common/constants/SortConstants';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { KdbxUtils, DateUtils, ClipboardUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
-import DateUtils from '../common/utils/DateUtils';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
-import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 @Entry
 @Component
@@ -190,7 +188,7 @@ struct TotpView {
                           ClipboardUtils.copyAutoClear(value);
                           return false;
                         }
-                      }).margin({top: 6})
+                      }).margin({ top: 6 })
                     });
                   }
                   .flexGrow(1)

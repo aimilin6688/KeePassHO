@@ -1,5 +1,4 @@
-import KdbxUtils from '../common/utils/KdbxUtils';
-import ResourceManager from '../common/utils/ResourceManager';
+import { KdbxUtils, ResourceManager } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';

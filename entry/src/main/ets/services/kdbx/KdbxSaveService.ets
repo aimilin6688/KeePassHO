@@ -1,8 +1,7 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Constants } from '../../common/constants/Constants';
-import KdbxUtils from '../../common/utils/KdbxUtils';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
