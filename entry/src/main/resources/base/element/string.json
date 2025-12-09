@@ -1451,6 +1451,14 @@
     {
       "name": "Settings_database_not_value",
       "value": "Please enter the required fields"
+    },
+    {
+      "name": "about_check_update",
+      "value": "Check for updates"
+    },
+    {
+      "name": "About_app_later_version_not_exist",
+      "value": "Already the latest version"
     }
   ]
 }
