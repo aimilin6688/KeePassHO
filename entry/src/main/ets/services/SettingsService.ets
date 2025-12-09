@@ -93,8 +93,7 @@ export class SettingsService {
       return;
     }
     try {
-      await this.preferences.put(SettingsService.KEY_THEME_MODE, mode);
-      await this.preferences.flush();
+      this.put(SettingsService.KEY_THEME_MODE, mode);
       // 应用新的主题模式
       await ThemeManager.getInstance().setThemeMode(mode);
     } catch (err) {
