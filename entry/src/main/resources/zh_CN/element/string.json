@@ -1451,6 +1451,14 @@
     {
       "name": "Settings_database_not_value",
       "value": "请输入必填项"
+    },
+    {
+      "name": "about_check_update",
+      "value": "检查更新"
+    },
+    {
+      "name": "About_app_later_version_not_exist",
+      "value": "已是最新版本"
     }
   ]
 }
