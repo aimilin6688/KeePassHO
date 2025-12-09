@@ -2,7 +2,7 @@ import { FileInfo, FileType, IFileStorage, PageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
-import { StorageError, StorageErrorCodes } from '../../services/error/StorageError';
+import { StorageError, StorageErrorCodes } from '../StorageError';
 import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;

@@ -4,7 +4,7 @@ import { FileUtils, FilenameUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileType, PageConfig, StorageConfig } from '..';
-import { StorageError, StorageErrorCodes } from '../../services/error/StorageError';
+import { StorageError, StorageErrorCodes } from '../StorageError';
 import { LocalFilePageConfig } from './LocalFileConfig';
 
 
