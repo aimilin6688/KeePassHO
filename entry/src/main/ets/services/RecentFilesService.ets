@@ -168,7 +168,6 @@ export class RecentFilesService {
         // 递归调用，尝试加载下一个文件
         return await this.loadMostRecentFile();
       }
-
       return recentFile;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Load most recent file error: ${error}`);
@@ -204,6 +203,7 @@ export class RecentFilesService {
       const prefs = await this.getPreferences();
       await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
       await prefs.flush();
+      hilog.debug(DOMAIN, TAG, 'Remove recent file filePath:%{public}s', recentFile.filePath);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Remove recent file error: ${error}`);
       throw new Error(error);
