@@ -1459,6 +1459,14 @@
     {
       "name": "About_app_later_version_not_exist",
       "value": "Already the latest version"
+    },
+    {
+      "name": "application_sync_data",
+      "value": "Cross-device synchronous Settings"
+    },
+    {
+      "name": "application_sync_data_tips",
+      "value": "For the same Huawei account, there is no need to synchronize application configuration information between devices"
     }
   ]
 }
