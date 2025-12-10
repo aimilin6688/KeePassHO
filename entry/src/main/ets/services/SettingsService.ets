@@ -4,8 +4,12 @@ import { ThemeMode } from '../common/constants/ThemeConstants';
 import { ThemeManager } from '../common/utils';
 import common from '@ohos.app.ability.common';
 import { SortMode } from '../common/constants/SortConstants';
+import { distributedKVStore } from '@kit.ArkData';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { DistributedKVService } from './DistributedKVService';
+import { EventBus } from './EventBus';
+import { emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingsService';
@@ -55,6 +59,9 @@ export class SettingsService {
   // 限制数据库后缀
   public static readonly KEY_APP_LIMIT_DB_EXT = "app_limit_db_ext";
   public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = true;
+  // 跨设备同步设置
+  public static readonly KEY_APP_SYNC_SETTING_ENABLE = "app_sync_setting_enable";
+  public static readonly KEY_APP_SYNC_SETTING_ENABLE_DEFAULT = false;
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -76,6 +83,8 @@ export class SettingsService {
         // 初始化主题
         const themeMode = await this.getThemeMode();
         await ThemeManager.getInstance().setThemeMode(themeMode);
+        // 订阅 KVStore 远端数据变化
+        EventBus.on(EventBus.KV_DATA_CHANGE, SettingsService.remoteDataChange);
         resolve();
       } catch (err) {
         hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
@@ -160,7 +169,7 @@ export class SettingsService {
 
 
   // 写入数据并通知观察者
-  public async put(key: string, value: preferences.ValueType): Promise<void> {
+  public async put(key: string, value: preferences.ValueType, syncKv: boolean = true): Promise<void> {
     if (!this.preferences) {
       return;
     }
@@ -168,6 +177,10 @@ export class SettingsService {
     try {
       await this.preferences.put(key, value);
       await this.preferences.flush(); // 重要！确保数据持久化
+      // 同步设置
+      if (syncKv) {
+        SettingsService.syncSetting(SyncType.ADD, key, value);
+      }
       // 通知所有观察者
       this.observers.forEach(observer => observer(key));
       return Promise.resolve();
@@ -234,9 +247,13 @@ export class SettingsService {
    * 删除数据
    * @param key
    */
-  public deleteSync(key: string) {
+  public deleteSync(key: string, syncKv: boolean = true) {
     try {
       this.preferences?.deleteSync(key);
+      // 同步设置
+      if (syncKv) {
+        SettingsService.syncSetting(SyncType.DELETE, key);
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to delete ${key}. Code: ${error}`);
     }
@@ -312,4 +329,89 @@ export class SettingsService {
     return SettingsService.getInstance()
       .getSync(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT);
   }
+
+  /**
+   * 跨设备同步设置
+   */
+  private static syncSetting(type: SyncType, key: string, value?: preferences.ValueType): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        const syncSetting: boolean = SettingsService.getSync(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT);
+        if (!syncSetting) {
+          return resolve();
+        }
+        key = `Setting:${key}`
+        hilog.debug(DOMAIN, TAG, `Sync setting to KVStore: ${key}`);
+        if (SyncType.DELETE === type) {
+          DistributedKVService.delete(key);
+        }
+        if (SyncType.ADD === type) {
+          if (value === undefined) {
+            return resolve();
+          }
+          if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string' || value instanceof Uint8Array) {
+            DistributedKVService.put(key, value);
+          } else {
+            DistributedKVService.put(key, JSON.stringify(value));
+          }
+        }
+        return resolve();
+      } catch (err) {
+        hilog.error(DOMAIN, TAG, `Sync setting to KVStore failed: ${err}`);
+        return reject(err);
+      }
+    });
+  }
+
+  /**
+   * 同步远程设置
+   */
+  private static remoteDataChange(eventData: emitter.EventData) {
+    try {
+      const changeData = eventData.data as distributedKVStore.ChangeNotification;
+      // 新增设置
+      if (changeData.insertEntries && changeData.insertEntries.length > 0) {
+        changeData.insertEntries.forEach(entry => {
+          SettingsService.updateSetting(entry.key, entry.value);
+        });
+      }
+      // 更新设置
+      if (changeData.updateEntries && changeData.updateEntries.length > 0) {
+        changeData.updateEntries.forEach(entry => {
+          SettingsService.updateSetting(entry.key, entry.value.value);
+        });
+      }
+      // 删除设置
+      if (changeData.deleteEntries && changeData.deleteEntries.length > 0) {
+        changeData.deleteEntries.forEach(entry => {
+          SettingsService.getInstance().deleteSync(entry.key, false);
+        });
+      }
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `Sync remote setting failed: ${err}`);
+    }
+  }
+
+  /**
+   * 更新设置
+   * @param key
+   * @param value
+   */
+  private static updateSetting(key: string, value: preferences.ValueType) {
+    if (key && key.startsWith('Setting:')) {
+      const realKey = key.substring(8);
+      SettingsService.getInstance().put(realKey, value, false).then(() => {
+        hilog.debug(DOMAIN, TAG, `Sync remote setting: ${key}, ${value}`);
+        EventBus.emit(EventBus.SETTING_REMOTE_CHANGE, key);
+      });
+    }
+  }
+}
+
+/**
+ * 同步类型
+ */
+enum SyncType {
+  ADD,
+  DELETE
 }
