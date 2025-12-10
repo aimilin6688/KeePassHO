@@ -9,6 +9,8 @@ import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
+  @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
+
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -21,6 +23,10 @@ struct SettingApplication {
     // 是否隐藏支持对话框
     this.settingsService.get(SettingsService.KEY_SHOW_SUPPORT_DIALOG, SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT).then(result => {
       this.isHideSupportDialog = !result;
+    });
+    // 是否开启跨设备同步数据
+    this.settingsService.get(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT).then(result => {
+      this.isSyncSetting = result;
     });
     this.isLimitDbExt = this.settingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT);
   }
@@ -98,7 +104,7 @@ struct SettingApplication {
             .padding(16)
           }
 
-          // 隐藏支持对话框
+          // 限制打开数据库后缀
           ListItem() {
             Row() {
               Column() {
@@ -121,6 +127,35 @@ struct SettingApplication {
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_APP_LIMIT_DB_EXT, isOn);
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 跨设备同步数据
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_sync_data"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_sync_data_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+
+              Toggle({ type: ToggleType.Switch, isOn: this.isSyncSetting })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, isOn);
                 })
             }
             .width('100%')
