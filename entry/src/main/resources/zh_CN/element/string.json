@@ -1459,6 +1459,14 @@
     {
       "name": "About_app_later_version_not_exist",
       "value": "已是最新版本"
+    },
+    {
+      "name": "application_sync_data",
+      "value": "跨设备同步设置"
+    },
+    {
+      "name": "application_sync_data_tips",
+      "value": "同一个华为账号，不用设备之间同步应用配置信息"
     }
   ]
 }
