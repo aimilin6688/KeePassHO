@@ -9,6 +9,7 @@ import { LocalFileStorageConfig, StorageType } from '../storage';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';
+import { DistributedKVService } from '../services/DistributedKVService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -50,11 +51,14 @@ export default class EntryAbility extends UIAbility {
     })
     // 初始化加解密KEY
     Sm4Utils.init();
+    // 初始化kv数据库
+    DistributedKVService.init(this.context);
   }
 
   onDestroy(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onDestroy');
     FileService.close();
+    DistributedKVService.close();
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
