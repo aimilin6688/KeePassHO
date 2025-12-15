@@ -18,6 +18,7 @@ import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { emitter } from '@kit.BasicServicesKit';
+import { DraggableButtonContainer } from '../components/DraggableButtonContainer';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -33,7 +34,7 @@ struct DatabaseView {
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
-  @State showAddButtons: boolean = false; // 控制是否显示添加分组和添加条目按钮
+
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
   @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
@@ -1020,111 +1021,26 @@ struct DatabaseView {
       .width('100%')
       .height('100%')
 
-      // 点击空白区域隐藏添加按钮
-      Column()
-        .width('100%')
-        .height('100%')
-        .onClick(() => {
-          if (this.showAddButtons) {
-            this.showAddButtons = false;
-          }
-        })
-        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-
-      // 添加分组按钮
-      Button() {
-        Row() {
-          Image($r('app.media.ic_folder'))
-            .width(20)
-            .height(20)
-            .fillColor($r('app.color.button_text_blue'))
-          Text($r('app.string.add_group_button'))
-            .fontSize(14)
-            .fontColor($r('app.color.button_text_blue'))
-            .margin({ left: 8 })
-        }
-      }
-      .width(120)
-      .height(40)
-      .borderRadius(20)
-      .backgroundColor($r("app.color.button_bg_blue"))
-      .position({ right: 12, bottom: 72 })
-      .enabled(!this.isLoading)
-      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-      .onClick(() => {
-        this.showAddButtons = false;
-        this.editingGroupIndex = -1;
-        this.newGroupName = "";
-        this.dialogController.open();
-      })
-
-      // 添加条目按钮
-      Button() {
-        Row() {
-          Image($r('app.media.ic_file'))
-            .width(20)
-            .height(20)
-            .fillColor($r("app.color.button_text_blue"))
-          Text($r('app.string.add_entry_button'))
-            .fontSize(14)
-            .fontColor($r("app.color.button_text_blue"))
-            .margin({ left: 8 })
-        }
-      }
-      .width(120)
-      .height(40)
-      .borderRadius(20)
-      .backgroundColor($r("app.color.button_bg_blue"))
-      .position({ right: 12, bottom: 120 })
-      .enabled(!this.isLoading)
-      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-      .onClick(() => {
-        this.showAddButtons = false;
-        this.router.pushUrl({
-          url: 'pages/EntryEdit',
-          params: {
-            groupId: this.currentGroup?.uuid.id
-          }
-        });
-      })
-
-      if (!(this.showAddButtons || this.moveParam)) {
-        // 显示TOTP
-        Button() {
-          Image($r('app.media.ic_clock'))
-            .width(28)
-            .height(28)
-            .fillColor(Color.White)
-        }
-        .width(56)
-        .height(56)
-        .borderRadius(28)
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .position({ right: 12, bottom: 80 })
-        .enabled(!this.isLoading)
-        .opacity(this.isLoading ? 0.5 : 1)
-        .onClick(() => {
+      // 可拖拽的按钮容器
+      DraggableButtonContainer({
+        onAddEntry: () => {
+          this.router.pushUrl({
+            url: 'pages/EntryEdit',
+            params: {
+              groupId: this.currentGroup?.uuid.id
+            }
+          });
+        },
+        onAddGroup: () => {
+          this.editingGroupIndex = -1;
+          this.newGroupName = "";
+          this.dialogController.open();
+        },
+        onShowTotp: () => {
           this.router.pushUrl({ url: 'pages/TotpView' });
-        })
-
-        // 主添加按钮
-        Button() {
-          Image($r('app.media.ic_add'))
-            .width(28)
-            .height(28)
-            .fillColor(Color.White)
         }
-        .width(56)
-        .height(56)
-        .borderRadius(28)
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .position({ right: 12, bottom: 12 })
-        .enabled(!this.isLoading)
-        .opacity(this.isLoading ? 0.5 : 1)
-        .onClick(() => {
-          this.showAddButtons = true;
-        })
-      }
+      })
+      .visibility(this.moveParam ? Visibility.Hidden : Visibility.Visible)
 
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
