@@ -34,7 +34,6 @@ struct DatabaseView {
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
-
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
   @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
@@ -1040,7 +1039,10 @@ struct DatabaseView {
           this.router.pushUrl({ url: 'pages/TotpView' });
         }
       })
-      .visibility(this.moveParam ? Visibility.Hidden : Visibility.Visible)
+        .visibility(this.moveParam ? Visibility.Hidden : Visibility.Visible)
+        .position({ x: 0, y: 0 })
+        .width(0)
+        .height(0)
 
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
