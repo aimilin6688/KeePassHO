@@ -40,9 +40,9 @@ export struct DraggableButtonContainer {
    */
   private updateInitialPosition() {
     this.maxX = this.screenWidth - this.containerWidth;
-    this.maxY = this.screenHeight - this.containerHeight - 30;
+    this.maxY = this.screenHeight - this.containerHeight;
     this.containerX = this.maxX - 22;
-    this.containerY = this.maxY - 60;
+    this.containerY = this.maxY - 32;
   }
 
   /**
@@ -61,7 +61,7 @@ export struct DraggableButtonContainer {
   }
 
   build() {
-    Column() {
+    Stack() {
       // 容器内容
       Column() {
         // 添加分组按钮
@@ -168,17 +168,13 @@ export struct DraggableButtonContainer {
             this.isDragging = false;
           })
       )
-      .position({ x: this.containerX, y: this.containerY })
+      .position({x: this.containerX, y: this.containerY})
       .animation({
         duration: 200,
         curve: Curve.EaseInOut
       })
     }
-    .width('100%')
-    .height('100%')
-    .position({ x: 0, y: 0 })
-    .onClick(() => {
-      this.showAddButtons = false;
-    });
+    .width('auto')
+    .height('auto')
   }
 }
