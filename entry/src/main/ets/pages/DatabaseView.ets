@@ -1041,9 +1041,9 @@ struct DatabaseView {
       })
         .visibility(this.moveParam ? Visibility.Hidden : Visibility.Visible)
         .position({ x: 0, y: 0 })
-        .width(0)
-        .height(0)
-
+        // .width('100%').height('100%')
+        .width('auto').height('auto')
+        .backgroundColor(Color.Red) // 调试用背景色
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
         Column() {
