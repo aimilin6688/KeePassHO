@@ -3,7 +3,7 @@ import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 
-import { ThemeManager, KdbxUtils, DateUtils, ResourceManager } from '../common/utils';
+import { DateUtils, KdbxUtils, ResourceManager, ThemeManager } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -18,7 +18,7 @@ import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { emitter } from '@kit.BasicServicesKit';
-import { DraggableButtonContainer } from '../components/DraggableButtonContainer';
+import display from '@ohos.display';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -34,6 +34,7 @@ struct DatabaseView {
   @State groups: Array<KdbxGroup> = [];
   @State entries: Array<KdbxEntry> = [];
   @State showBack: boolean = false;
+  @State showAddButtons: boolean = false; // 控制是否显示添加分组和添加条目按钮
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
   @State filteredGroups: Array<KdbxGroup> = []; // 过滤后的分组列表
@@ -47,6 +48,19 @@ struct DatabaseView {
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
   @State headerHeight: number = 56;
+  // 拖拽组件
+  @StorageLink("containerX") containerX: number = 0; // 容器X坐标
+  @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
+  @State isDragging: boolean = false; // 是否正在拖拽
+  private screenWidth: number = 360; // 屏幕宽度（默认值）
+  private screenHeight: number = 640; // 屏幕高度（默认值）
+  private maxX: number = 0; // 可移动x轴最大值
+  private maxY: number = 0; // 可移动y轴最大值
+  private containerWidth: number = 75; // 容器宽度
+  private containerHeight: number = 135; // 容器高度
+  private oldContainerX: number = 0; // 容器X坐标
+  private oldContainerY: number = 0; // 容器Y坐标
+  // 其他参数
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
@@ -102,6 +116,8 @@ struct DatabaseView {
     this.settingsService.registerObserver(this.onSettingChanged);
     // 显示支持弹框
     SupportService.showSupportDialog(this.getUIContext());
+    // 初始化屏幕大小
+    this.initScreenSize();
   }
 
   aboutToDisappear() {
@@ -115,6 +131,26 @@ struct DatabaseView {
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+  }
+
+  /**
+   * 初始化屏幕大小
+   */
+  private initScreenSize() {
+    // 第一次初始化执行一次
+    if (this.containerX == 0) {
+      try {
+        // 获取屏幕尺寸
+        this.screenWidth = this.getUIContext().px2vp(display.getDefaultDisplaySync().width);
+        this.screenHeight = this.getUIContext().px2vp(display.getDefaultDisplaySync().height);
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${error?.code}, ${error?.message}`,);
+      }
+      this.maxX = this.screenWidth - this.containerWidth;
+      this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
+      this.containerX = this.maxX - 22;
+      this.containerY = this.maxY - 32;
+    }
   }
 
   /**
@@ -1020,30 +1056,140 @@ struct DatabaseView {
       .width('100%')
       .height('100%')
 
-      // 可拖拽的按钮容器
-      DraggableButtonContainer({
-        onAddEntry: () => {
+      // 点击空白区域隐藏添加按钮
+      Column()
+        .width('100%')
+        .height('100%')
+        .onClick(() => {
+          this.showAddButtons = false;
+        })
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+
+      // 可以拖拽的控制按钮
+      Column() {
+        // 添加分组按钮
+        Button() {
+          Row() {
+            Image($r('app.media.ic_folder'))
+              .width(20)
+              .height(20)
+              .fillColor($r('app.color.button_text_blue'))
+            Text($r('app.string.add_group_button'))
+              .fontSize(14)
+              .fontColor($r('app.color.button_text_blue'))
+              .margin({ left: 8 })
+          }
+        }
+        .width(120)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 12 })
+        .enabled(!this.isLoading)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+          this.editingGroupIndex = -1;
+          this.newGroupName = "";
+          this.dialogController.open();
+        })
+
+        // 添加条目按钮
+        Button() {
+          Row() {
+            Image($r('app.media.ic_file'))
+              .width(20)
+              .height(20)
+              .fillColor($r("app.color.button_text_blue"))
+            Text($r('app.string.add_entry_button'))
+              .fontSize(14)
+              .fontColor($r("app.color.button_text_blue"))
+              .margin({ left: 8 })
+          }
+        }
+        .width(120)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 4 })
+        .enabled(!this.isLoading)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
           this.router.pushUrl({
             url: 'pages/EntryEdit',
             params: {
               groupId: this.currentGroup?.uuid.id
             }
           });
-        },
-        onAddGroup: () => {
-          this.editingGroupIndex = -1;
-          this.newGroupName = "";
-          this.dialogController.open();
-        },
-        onShowTotp: () => {
-          this.router.pushUrl({ url: 'pages/TotpView' });
+        })
+
+        // 显示TOTP
+        Button() {
+          Image($r('app.media.ic_clock'))
+            .width(28)
+            .height(28)
+            .fillColor(Color.White)
         }
+        .width(56)
+        .height(56)
+        .borderRadius(28)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 8 })
+        .enabled(!this.isLoading)
+        .opacity(this.isLoading ? 0.5 : 1)
+        .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
+        .onClick(() => {
+          this.router.pushUrl({ url: 'pages/TotpView' });
+        })
+
+        // 主添加按钮
+        Button() {
+          Image($r('app.media.ic_add'))
+            .width(28)
+            .height(28)
+            .fillColor(Color.White)
+        }
+        .width(56)
+        .height(56)
+        .borderRadius(28)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .enabled(!this.isLoading)
+        .opacity(this.isLoading ? 0.5 : 1)
+        .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
+        .onClick(() => {
+          this.showAddButtons = true;
+        })
+      }
+      .width(this.containerWidth)
+      .height(this.containerHeight)
+      .visibility(this.moveParam ? Visibility.None : Visibility.Visible)
+      .zIndex(999)
+      .gesture(
+        // 拖拽手势
+        PanGesture({ fingers: 1, direction: PanDirection.All })
+          .onActionStart(() => {
+            this.isDragging = true;
+            this.oldContainerX = this.containerX;
+            this.oldContainerY = this.containerY;
+          })
+          .onActionUpdate((event: GestureEvent) => {
+            // 计算新位置
+            if (this.isDragging) {
+              this.containerX = Math.max(0, Math.min(this.oldContainerX + event.offsetX, this.maxX));
+              this.containerY = Math.max(0, Math.min(this.oldContainerY + event.offsetY, this.maxY));
+            }
+          })
+          .onActionEnd(() => {
+            this.isDragging = false;
+          })
+      )
+      .position({ x: this.containerX, y: this.containerY })
+      .animation({
+        duration: 200,
+        curve: Curve.EaseInOut
       })
-        .visibility(this.moveParam ? Visibility.Hidden : Visibility.Visible)
-        .position({ x: 0, y: 0 })
-        // .width('100%').height('100%')
-        .width('auto').height('auto')
-        .backgroundColor(Color.Red) // 调试用背景色
+
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
         Column() {
