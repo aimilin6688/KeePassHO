@@ -45,21 +45,6 @@ export struct DraggableButtonContainer {
     this.containerY = this.maxY - 32;
   }
 
-  /**
-   * 更新容器位置以确保不超出屏幕范围
-   */
-  private updateContainerPosition() {
-    // 确保容器不超出屏幕底部
-    if (this.containerY + this.containerHeight > this.screenHeight) {
-      this.containerY = this.maxY;
-    }
-
-    // 确保容器不超出屏幕右侧
-    if (this.containerX + this.containerWidth > this.screenWidth) {
-      this.containerX = this.maxX;
-    }
-  }
-
   build() {
     Stack() {
       // 容器内容
@@ -123,7 +108,7 @@ export struct DraggableButtonContainer {
         .height(56)
         .borderRadius(28)
         .backgroundColor($r("app.color.button_bg_blue"))
-        .margin({ bottom: 8 })
+        .margin({ bottom: 8, top: 8 })
         .onClick(() => {
           this.onShowTotp?.();
         })
@@ -143,38 +128,38 @@ export struct DraggableButtonContainer {
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
           this.showAddButtons = !this.showAddButtons;
-          // 切换状态后更新位置以确保不超出屏幕
-          this.updateContainerPosition();
         })
       }
       .width(this.containerWidth)
       .height(this.containerHeight)
-      .gesture(
-        // 拖拽手势
-        PanGesture({ fingers: 1, direction: PanDirection.All })
-          .onActionStart(() => {
-            this.isDragging = true;
-            this.oldContainerX = this.containerX;
-            this.oldContainerY = this.containerY;
-          })
-          .onActionUpdate((event: GestureEvent) => {
-            if (this.isDragging) {
-              // 计算新位置
-              this.containerX = Math.max(0, Math.min(this.oldContainerX + event.offsetX, this.maxX));
-              this.containerY = Math.max(0, Math.min(this.oldContainerY + event.offsetY, this.maxY));
-            }
-          })
-          .onActionEnd(() => {
-            this.isDragging = false;
-          })
-      )
-      .position({x: this.containerX, y: this.containerY})
-      .animation({
-        duration: 200,
-        curve: Curve.EaseInOut
-      })
     }
+    .zIndex(999)
     .width('auto')
     .height('auto')
+    .gesture(
+      // 拖拽手势
+      PanGesture({ fingers: 1, direction: PanDirection.All })
+        .onActionStart(() => {
+          this.isDragging = true;
+          this.oldContainerX = this.containerX;
+          this.oldContainerY = this.containerY;
+        })
+        .onActionUpdate((event: GestureEvent) => {
+          if (this.isDragging) {
+            // 计算新位置
+            this.containerX = Math.max(0, Math.min(this.oldContainerX + event.offsetX, this.maxX));
+            this.containerY = Math.max(0, Math.min(this.oldContainerY + event.offsetY, this.maxY));
+          }
+        })
+        .onActionEnd(() => {
+          this.isDragging = false;
+        })
+    )
+    .position({x: this.containerX, y: this.containerY})
+    .animation({
+      duration: 200,
+      curve: Curve.EaseInOut
+    })
+    .backgroundColor(Color.Red) // 调试用背景色
   }
 }
