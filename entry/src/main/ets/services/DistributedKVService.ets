@@ -54,7 +54,7 @@ export class DistributedKVService {
               // 订阅远端数据变化
               DistributedKVService.kvStore.on('dataChange', distributedKVStore.SubscribeType.SUBSCRIBE_TYPE_REMOTE, DistributedKVService.onDataChange);
             })
-            .catch((err: BusinessError) => {
+            .catch((err: BusinessError<Object>) => {
               hilog.error(DOMAIN, TAG, `Failed to get KVStore.code is ${err.code},message is ${err.message}`);
             });
         })
@@ -75,7 +75,7 @@ export class DistributedKVService {
   public static put(key: string, value: Uint8Array | string | number | boolean): Promise<void> {
     hilog.debug(DOMAIN, TAG, `KVStore put data. Key:${key}, Value:${value}`);
     return new Promise((resolve, reject) => {
-      return DistributedKVService.kvStore?.put(key, value).catch((err: BusinessError) => {
+      return DistributedKVService.kvStore?.put(key, value).catch((err: BusinessError<Object>) => {
         hilog.error(DOMAIN, TAG, `Failed to put data. Key:${key}, Code:${err?.code},message:${err?.message}`);
         return reject(err);
       });
@@ -89,7 +89,7 @@ export class DistributedKVService {
    */
   public static get(key: string): Promise<boolean | string | number | Uint8Array> {
     return new Promise((resolve, reject) => {
-      return DistributedKVService.kvStore?.get(key).catch((err: BusinessError) => {
+      return DistributedKVService.kvStore?.get(key).catch((err: BusinessError<Object>) => {
         hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
         return reject(err);
       });
@@ -103,7 +103,7 @@ export class DistributedKVService {
    */
   public static delete(key: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      return DistributedKVService.kvStore?.delete(key).catch((err: BusinessError) => {
+      return DistributedKVService.kvStore?.delete(key).catch((err: BusinessError<Object>) => {
         hilog.error(DOMAIN, TAG, `Failed to delete data. Key:${key}, Code:${err?.code},message:${err?.message}`);
         return reject(err);
       });
@@ -116,9 +116,9 @@ export class DistributedKVService {
   public static close(): void {
     try {
       if (DistributedKVService.kvManager) {
-        DistributedKVService.kvManager.closeKVStore(DistributedKVService.appId, DistributedKVService.kvStoreName, (err: BusinessError) => {
+        DistributedKVService.kvManager.closeKVStore(DistributedKVService.appId, DistributedKVService.kvStoreName, (err: BusinessError<void>) => {
           if (err) {
-            hilog.error(DOMAIN, TAG, `Failed to close KVStore.code is ${err.code},message is ${err.message}`);
+            hilog.error(DOMAIN, TAG, `Failed to close KVStore.code is ${err?.code},message is ${err?.message}`);
             return;
           }
           hilog.info(DOMAIN, TAG, 'Succeeded in closing KVStore');
