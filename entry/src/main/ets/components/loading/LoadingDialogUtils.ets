@@ -23,7 +23,7 @@ export class LoadingDialogUtils {
     if (PromptActionUtils.existsCustomDialog(LoadingState.LOADING)) {
       this.updateDialog(loading)
     } else {
-      await this.showDialog(loading)
+      this.showDialog(loading)
     }
   }
 
@@ -101,7 +101,7 @@ export class LoadingDialogUtils {
    * 隐藏 hud
    */
   async hide(dialogId?: string): Promise<void> {
-    return await PromptActionUtils.closeCustomDialog(dialogId)
+    return PromptActionUtils.closeCustomDialog(dialogId)
   }
 
   /////////////////////////////////  privates  /////////////////////////////////
