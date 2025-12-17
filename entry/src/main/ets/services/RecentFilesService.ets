@@ -3,7 +3,7 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileUtils, FilenameUtils, DeviceUtils } from '../common/utils';
+import { DeviceUtils, FileUtils } from '../common/utils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
@@ -21,15 +21,23 @@ export class RecentFilesService {
   private static instance: RecentFilesService = new RecentFilesService();
   private static readonly PREFERENCES_NAME = 'recent_files';
   private static readonly RECENT_FILES_KEY = 'recent_files_list';
-  private static readonly MAX_RECENT_FILES = 10; // 最多保存10个最近打开的文件
-  private context: common.UIAbilityContext | null = null;
+  private static readonly MAX_RECENT_FILES = 30; // 最多保存10个最近打开的文件
+  private preferences: preferences.Preferences | null = null;
 
   /**
    * 初始化主题管理器
    * @param context UIAbilityContext
    */
-  public init(context: common.UIAbilityContext): void {
-    this.context = context;
+  public init(context: common.UIAbilityContext): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.preferences = await preferences.getPreferences(context, RecentFilesService.PREFERENCES_NAME);
+        return resolve();
+      } catch (err) {
+        hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+        return reject(err);
+      }
+    });
   }
 
   /**
@@ -37,17 +45,6 @@ export class RecentFilesService {
    */
   public static getInstance(): RecentFilesService {
     return RecentFilesService.instance;
-  }
-
-  /**
-   * 获取首选项实例
-   */
-  private async getPreferences(): Promise<preferences.Preferences> {
-    if (this.context === null) {
-      hilog.error(DOMAIN, TAG, 'Context is null');
-      throw new Error('Context is null');
-    }
-    return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
   }
 
   /**
@@ -94,6 +91,10 @@ export class RecentFilesService {
   private async doAdd(recentFile: RecentFile): Promise<void> {
     try {
       hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s', recentFile.filePath);
+      if (!this.preferences) {
+        return;
+      }
+
       // 获取当前的最近文件列表
       const recentFiles = await this.getRecentFiles();
 
@@ -116,9 +117,8 @@ export class RecentFilesService {
       }
 
       // 保存更新后的列表
-      const prefs = await this.getPreferences();
-      await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles));
-      await prefs.flush();
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles));
+      await this.preferences.flush();
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Add recent file error: ${error}`);
       throw new Error(error);
@@ -130,8 +130,10 @@ export class RecentFilesService {
    */
   public async getRecentFiles(): Promise<RecentFile[]> {
     try {
-      const prefs = await this.getPreferences();
-      const recentFilesJson = await prefs.get(RecentFilesService.RECENT_FILES_KEY, '[]');
+      if (!this.preferences) {
+        return [];
+      }
+      const recentFilesJson = await this.preferences.get(RecentFilesService.RECENT_FILES_KEY, '[]');
       return JSON.parse(recentFilesJson.toString());
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Get all recent files error: ${error}`);
@@ -193,6 +195,9 @@ export class RecentFilesService {
    */
   public async removeRecentFile(recentFile: RecentFile): Promise<void> {
     try {
+      if (!this.preferences) {
+        return;
+      }
       // 获取当前的最近文件列表
       const recentFiles = await this.getRecentFiles();
 
@@ -200,9 +205,8 @@ export class RecentFilesService {
       const updatedFiles = recentFiles.filter(file => file.filePath !== recentFile.filePath);
 
       // 保存更新后的列表
-      const prefs = await this.getPreferences();
-      await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
-      await prefs.flush();
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
+      await this.preferences.flush();
       hilog.debug(DOMAIN, TAG, 'Remove recent file filePath:%{public}s', recentFile.filePath);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Remove recent file error: ${error}`);
@@ -215,9 +219,11 @@ export class RecentFilesService {
    */
   public async clearRecentFiles(): Promise<void> {
     try {
-      const prefs = await this.getPreferences();
-      await prefs.put(RecentFilesService.RECENT_FILES_KEY, '[]');
-      await prefs.flush();
+      if (!this.preferences) {
+        return;
+      }
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, '[]');
+      await this.preferences.flush();
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Clear Recent file error: ${error}`);
       throw new Error(error);
