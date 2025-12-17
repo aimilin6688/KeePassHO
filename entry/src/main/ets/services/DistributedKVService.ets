@@ -60,7 +60,7 @@ export class DistributedKVService {
         })
       } catch (err) {
         hilog.error(DOMAIN, TAG, `DistributedKVService init error: ${err?.code}, ${err?.message}`);
-        reject(err)
+        return reject(err)
       }
     })
   }
