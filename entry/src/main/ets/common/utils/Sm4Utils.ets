@@ -27,9 +27,9 @@ export class Sm4Utils {
     return new Promise((resolve, reject) => {
       try {
         Sm4Utils.initKey();
-        resolve();
+        return resolve();
       } catch (error) {
-        reject(error);
+        return reject(error);
       }
     });
   }
