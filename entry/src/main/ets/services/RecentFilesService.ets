@@ -28,16 +28,12 @@ export class RecentFilesService {
    * 初始化主题管理器
    * @param context UIAbilityContext
    */
-  public init(context: common.UIAbilityContext): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        this.preferences = await preferences.getPreferences(context, RecentFilesService.PREFERENCES_NAME);
-        return resolve();
-      } catch (err) {
-        hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-        return reject(err);
-      }
-    });
+  public async init(context: common.UIAbilityContext): Promise<void> {
+    try {
+      this.preferences = preferences.getPreferencesSync(context, {name: RecentFilesService.PREFERENCES_NAME} as preferences.Options);
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+    }
   }
 
   /**
