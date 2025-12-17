@@ -9,7 +9,7 @@ import { LocalFileStorageConfig, StorageType } from '../storage';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';
-import { DistributedKVService } from '../services/DistributedKVService';
+import { DistributedKVService } from '../services/store/DistributedKVService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
