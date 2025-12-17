@@ -54,10 +54,14 @@ export default class KdbxLoadService {
     }
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onAllErrors = (err: ErrorEvent) => {
-      hilog.error(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
-      if (err.message.indexOf('NativeCustomSpan') != -1) {
+      // 忽略NativeCustomSpan和ViewV2错误
+      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1){
+        hilog.debug(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
         return;
       }
+
+      // 打印错误日志
+      hilog.error(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
       if (callback?.onAllErrors) {
         callback.onAllErrors(err);
       }
