@@ -79,10 +79,10 @@ export class SettingsService {
         // 初始化主题
         const themeMode = await this.getThemeMode();
         await ThemeManager.getInstance().setThemeMode(themeMode);
-        resolve();
+        return resolve();
       } catch (err) {
         hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-        reject(err);
+        return reject(err);
       }
     });
   }
