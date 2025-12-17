@@ -28,7 +28,8 @@ export abstract class PromptActionBean {
 
 interface PromptActionInfo {
   dialogId: string
-  componentContent: ComponentContent<object>
+  componentContent: ComponentContent<object>,
+  dialogController: promptAction.DialogController
 }
 
 let promptActionInfos: PromptActionInfo[] = [];
@@ -47,7 +48,7 @@ export class PromptActionUtils {
         return;
       }
       const uiContext = CommonUtils.getUiContext();
-      const promptAction = uiContext.getPromptAction()
+      const uiPromptAction = uiContext.getPromptAction()
       const componentContent = new ComponentContent(uiContext, value.builder, value.params)
 
       let hideOnSystemBack = value.options?.hideOnSystemBack ?? loadingDialogGlobalSettings.hideOnSystemBack
@@ -72,11 +73,18 @@ export class PromptActionUtils {
           PromptActionUtils.removeDialogInfo(value.params.dialogId);
         }
       }
+      const dialogController = new promptAction.DialogController();
       promptActionInfos.push({
         dialogId: value.params.dialogId,
-        componentContent: componentContent
+        componentContent: componentContent,
+        dialogController: dialogController
+
       })
-      return promptAction.openCustomDialog(componentContent, options);
+      return uiPromptAction.openCustomDialogWithController(componentContent, dialogController, options).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, ` openCustomDialog dialogId: ${value.params.dialogId}, error = ${JSON.stringify(error)}`);
+        PromptActionUtils.removeDialogInfo(value.params.dialogId);
+        return Promise.reject(error);
+      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, ` openCustomDialog dialogId: ${value.params.dialogId}, error = ${JSON.stringify(error)}`)
       return Promise.reject(error);
@@ -96,11 +104,26 @@ export class PromptActionUtils {
       } else {
         info = promptActionInfos.length > 0 ? promptActionInfos[promptActionInfos.length - 1] : undefined
       }
-      if (info) {
-        return await promptAction.closeCustomDialog(info.componentContent);
-      } else {
-        hilog.debug(DOMAIN, TAG, `closeCustomDialog info is undefined`)
+      if (!info) {
+        hilog.debug(DOMAIN, TAG, `closeCustomDialog info is not found`)
+        return;
       }
+      // 通过控制器关闭弹窗
+      try {
+        info.dialogController.close();
+      } catch (error) {
+        hilog.info(DOMAIN, TAG, `closeCustomDialog use dialogController close error, dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
+      }
+
+      // 通过组件内容关闭弹窗
+      promptAction.closeCustomDialog(info.componentContent).catch((error: BusinessError) => {
+        // 103303 弹窗已关闭
+        if (error.code == 103303) {
+          return;
+        }
+        hilog.error(DOMAIN, TAG, `closeCustomDialog dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
+        return Promise.reject(error);
+      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `closeCustomDialog dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
       return Promise.reject(error);
