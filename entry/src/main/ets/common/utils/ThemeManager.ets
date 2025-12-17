@@ -41,9 +41,10 @@ export class ThemeManager {
           this.applyTheme();
           this.notifyThemeChangeListeners();
         }
+        return resolve();
       } catch (err) {
         hilog.error(DOMAIN, TAG, `ThemeManager init failed: ${err?.code}, ${err?.message}`);
-        reject(err);
+        return reject(err);
       }
     });
   }
