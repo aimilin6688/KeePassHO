@@ -1467,6 +1467,10 @@
     {
       "name": "application_sync_data_tips",
       "value": "For the same Huawei account, there is no need to synchronize application configuration information between devices"
+    },
+    {
+      "name": "Permission_DISTRIBUTED_DATASYNC_reason",
+      "value": "Synchronize user preferences across devices"
     }
   ]
 }
