@@ -1,7 +1,7 @@
 import { distributedKVStore } from '@kit.ArkData';
 import { bundleManager, common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { EventBus } from './EventBus';
+import { EventBus } from '../EventBus';
 
 const DOMAIN = 0x0000;
 const TAG = 'DistributedKVService';
