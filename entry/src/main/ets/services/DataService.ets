@@ -29,7 +29,7 @@ export class DataService {
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to save kdbx file: %{public}s, error: %{public}s', param.locationInfo.filePath, error.message);
       LoadingDialog.hideLoading();
-      LoadingDialog.showError(error.message);
+      CommonUtils.showToast(error.message);
     });
   }
 
