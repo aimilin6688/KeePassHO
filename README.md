@@ -27,8 +27,11 @@ KeePassHO是一款免费、开源且广受赞誉的密码管理软件。它的�
 ### 从应用市场安装
 
 1. 在HarmonyOS设备上打开AppGallery（华为应用市场）
-2. 搜索"KeePassHO"
-3. 点击安装
+2. 搜索"KeePassHO" 进行安装
+3. 编译项目
+```bash
+ hvigorw  clean --mode module -p product=default -p buildMode=debug assembleHap --analyze=normal --parallel --incremental --enable-build-script-type-check --daemon
+```
 
 ## 使用方法
 
