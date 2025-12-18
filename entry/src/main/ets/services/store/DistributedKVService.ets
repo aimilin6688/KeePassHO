@@ -75,9 +75,17 @@ export class DistributedKVService {
    */
   public static put(key: string, value: Uint8Array | string | number | boolean): Promise<void> {
     hilog.debug(DOMAIN, TAG, `KVStore put data. Key:${key}, Value:${value}`);
-    return DistributedKVService.kvStore?.put(key, value).catch((err: BusinessError<Object>) => {
-      hilog.error(DOMAIN, TAG, `Failed to put data. Key:${key}, Code:${err?.code},message:${err?.message}`);
-      return reject(err);
+    return new Promise((resolve, reject) => {
+      if (!DistributedKVService.kvStore) {
+        reject(new Error('KVStore is not initialized'));
+        return;
+      }
+      DistributedKVService.kvStore.put(key, value).then(() => {
+        resolve();
+      }).catch((err: BusinessError<Object>) => {
+        hilog.error(DOMAIN, TAG, `Failed to put data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+        reject(err);
+      });
     });
   }
 
@@ -87,9 +95,17 @@ export class DistributedKVService {
    * @returns
    */
   public static get(key: string): Promise<boolean | string | number | Uint8Array> {
-    return DistributedKVService.kvStore?.get(key).catch((err: BusinessError<Object>) => {
-      hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
-      return reject(err);
+    return new Promise((resolve, reject) => {
+      if (!DistributedKVService.kvStore) {
+        reject(new Error('KVStore is not initialized'));
+        return;
+      }
+      DistributedKVService.kvStore.get(key).then((value) => {
+        resolve(value);
+      }).catch((err: BusinessError<Object>) => {
+        hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+        reject(err);
+      });
     });
   }
 
@@ -99,9 +115,17 @@ export class DistributedKVService {
    * @returns
    */
   public static delete(key: string): Promise<void> {
-    return DistributedKVService.kvStore?.delete(key).catch((err: BusinessError<Object>) => {
-      hilog.error(DOMAIN, TAG, `Failed to delete data. Key:${key}, Code:${err?.code},message:${err?.message}`);
-      return reject(err);
+    return new Promise((resolve, reject) => {
+      if (!DistributedKVService.kvStore) {
+        reject(new Error('KVStore is not initialized'));
+        return;
+      }
+      DistributedKVService.kvStore.delete(key).then(() => {
+        resolve();
+      }).catch((err: BusinessError<Object>) => {
+        hilog.error(DOMAIN, TAG, `Failed to delete data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+        reject(err);
+      });
     });
   }
 

@@ -2,6 +2,7 @@ import { SettingsService } from '../../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import { SupportService } from '../../services/SupportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
+import { SyncSettingsService } from '../../services/store/SyncSettingsService';
 
 
 @Entry
@@ -10,7 +11,6 @@ struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
   @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
-
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -156,11 +156,53 @@ struct SettingApplication {
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, isOn);
+                  this.isSyncSetting = isOn;
                 })
             }
             .width('100%')
             .padding(16)
           }
+
+          // 手动同步
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_manual_sync"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_manual_sync_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+
+              Button($r("app.string.application_sync_button"))
+                .fontSize(14)
+                .enabled(this.isSyncSetting)
+                .opacity(this.isSyncSetting ? 1 : 0.5)
+                .onClick(() => {
+                  if (this.isSyncSetting) {
+                    LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
+                      SyncSettingsService.triggerFullSync().then(() => {
+                        LoadingDialog.hideLoading();
+                        LoadingDialog.showSuccess($r("app.string.application_sync_complete"));
+                      }).catch((error: Error) => {
+                        LoadingDialog.hideLoading();
+                        LoadingDialog.showError(error.message);
+                      });
+                    });
+                  }
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .visibility(this.isSyncSetting ? Visibility.Visible : Visibility.None)
         }
         .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
