@@ -1,3 +1,4 @@
+import { CommonUtils } from '../../common/utils/CommonUtils';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SuccessMessage } from '../WorkerParam';
 import { SaveDatabaseCallback } from './SaveDatabaseCallback';
@@ -14,7 +15,7 @@ export class ToastSaveDatabaseCallback implements SaveDatabaseCallback {
 
   onSuccess(message: SuccessMessage): void {
     LoadingDialog.hideLoading();
-    LoadingDialog.showSuccess($r("app.string.save_success"));
+    CommonUtils.showToast($r("app.string.save_success"));
     if (this.call && this.call.onSuccess) {
       this.call.onSuccess(message);
     }
@@ -22,7 +23,7 @@ export class ToastSaveDatabaseCallback implements SaveDatabaseCallback {
 
   onError(message: string): void {
     LoadingDialog.hideLoading();
-    LoadingDialog.showError(message);
+    CommonUtils.showToast(message);
     if (this.call && this.call.onError) {
       this.call.onError(message);
     }
