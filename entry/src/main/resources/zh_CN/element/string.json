@@ -1471,6 +1471,26 @@
     {
       "name": "Permission_DISTRIBUTED_DATASYNC_reason",
       "value": "跨设备同步用户首选项"
+    },
+    {
+      "name": "application_manual_sync",
+      "value": "手动同步"
+    },
+    {
+      "name": "application_manual_sync_tips",
+      "value": "手动触发一次全量数据同步"
+    },
+    {
+      "name": "application_sync_button",
+      "value": "同步"
+    },
+    {
+      "name": "application_sync_loading",
+      "value": "正在同步数据..."
+    },
+    {
+      "name": "application_sync_complete",
+      "value": "同步完成"
     }
   ]
 }
