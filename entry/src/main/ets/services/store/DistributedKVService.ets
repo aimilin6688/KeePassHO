@@ -2,6 +2,7 @@ import { distributedKVStore } from '@kit.ArkData';
 import { bundleManager, common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { EventBus } from '../EventBus';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'DistributedKVService';
@@ -74,11 +75,9 @@ export class DistributedKVService {
    */
   public static put(key: string, value: Uint8Array | string | number | boolean): Promise<void> {
     hilog.debug(DOMAIN, TAG, `KVStore put data. Key:${key}, Value:${value}`);
-    return new Promise((resolve, reject) => {
-      return DistributedKVService.kvStore?.put(key, value).catch((err: BusinessError<Object>) => {
-        hilog.error(DOMAIN, TAG, `Failed to put data. Key:${key}, Code:${err?.code},message:${err?.message}`);
-        return reject(err);
-      });
+    return DistributedKVService.kvStore?.put(key, value).catch((err: BusinessError<Object>) => {
+      hilog.error(DOMAIN, TAG, `Failed to put data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+      return reject(err);
     });
   }
 
@@ -88,25 +87,21 @@ export class DistributedKVService {
    * @returns
    */
   public static get(key: string): Promise<boolean | string | number | Uint8Array> {
-    return new Promise((resolve, reject) => {
-      return DistributedKVService.kvStore?.get(key).catch((err: BusinessError<Object>) => {
-        hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
-        return reject(err);
-      });
+    return DistributedKVService.kvStore?.get(key).catch((err: BusinessError<Object>) => {
+      hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+      return reject(err);
     });
   }
 
   /**
-   * 调用get()方法从键值数据库中获取数据
+   * 调用delete()方法从键值数据库中删除数据
    * @param key
    * @returns
    */
   public static delete(key: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      return DistributedKVService.kvStore?.delete(key).catch((err: BusinessError<Object>) => {
-        hilog.error(DOMAIN, TAG, `Failed to delete data. Key:${key}, Code:${err?.code},message:${err?.message}`);
-        return reject(err);
-      });
+    return DistributedKVService.kvStore?.delete(key).catch((err: BusinessError<Object>) => {
+      hilog.error(DOMAIN, TAG, `Failed to delete data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+      return reject(err);
     });
   }
 
