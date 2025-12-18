@@ -62,6 +62,7 @@ export class PromptActionUtils {
         showInSubWindow: value.options?.showInSubWindow ?? loadingDialogGlobalSettings.showInSubWindow,
         keyboardAvoidMode: value.options?.keyboardAvoidMode ?? loadingDialogGlobalSettings.keyboardAvoidMode,
         isModal: value.options?.isModal ?? loadingDialogGlobalSettings.isModal,
+        focusable: false,
         onWillDismiss: (action: DismissDialogAction) => {
           if (action.reason == DismissReason.PRESS_BACK && hideOnSystemBack) {
             action.dismiss()
@@ -105,7 +106,7 @@ export class PromptActionUtils {
         info = promptActionInfos.length > 0 ? promptActionInfos[promptActionInfos.length - 1] : undefined
       }
       if (!info) {
-        hilog.debug(DOMAIN, TAG, `closeCustomDialog info is not found`)
+        hilog.debug(DOMAIN, TAG, `closeCustomDialog ${dialogId} is not found`)
         return;
       }
       // 通过控制器关闭弹窗
@@ -116,16 +117,9 @@ export class PromptActionUtils {
       }
 
       // 通过组件内容关闭弹窗
-      promptAction.closeCustomDialog(info.componentContent).catch((error: BusinessError) => {
-        // 103303 弹窗已关闭
-        if (error.code == 103303) {
-          return;
-        }
-        hilog.error(DOMAIN, TAG, `closeCustomDialog dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
-        return Promise.reject(error);
-      });
+      return await promptAction.closeCustomDialog(info.componentContent);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `closeCustomDialog dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
+      hilog.info(DOMAIN, TAG, `closeCustomDialog dialogId: ${dialogId}, error = ${JSON.stringify(error)}`);
       return Promise.reject(error);
     }
   }

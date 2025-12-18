@@ -3,7 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import { KdbxUtils, IconUtils, ResourceManager, DateUtils, CommonUtils, FileUtils } from '../common/utils';
+import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
@@ -404,6 +404,7 @@ struct EntryEdit {
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
       KdbxUtils.saveDatabase({
         onSuccess: () => {
+          CommonUtils.showToast($r('app.string.save_success'));
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           let timeOut = setTimeout(() => {
             this.isLoading = false;
@@ -428,7 +429,7 @@ struct EntryEdit {
    */
   private handleSaveError(error: string) {
     hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-    this.promptAction.showToast({ message: $r('app.string.save_failed_message', error) });
+    CommonUtils.showToast({ message: $r('app.string.save_failed_message', error) });
     this.isLoading = false;
     this.loadingDialogController.close();
   }

@@ -6,6 +6,7 @@ import { PromptActionUtils } from './PromptActionUtils'
 
 export class LoadingDialogUtils {
   private timeoutMap: Map<string, number> = new Map();
+  private loadingList: Array<ResourceStr | LoadingSettings> = [];
 
   /**
    * 设置全局默认参数
@@ -19,12 +20,19 @@ export class LoadingDialogUtils {
    * @param value 可不传
    */
   async showLoading(value: ResourceStr | LoadingSettings = ''): Promise<void> {
-    let loading = new LoadingActionOptions(LoadingState.LOADING, value)
-    if (PromptActionUtils.existsCustomDialog(LoadingState.LOADING)) {
-      this.updateDialog(loading)
-    } else {
-      this.showDialog(loading)
-    }
+    this.loadingList.push(value);
+    // 延时100ms，避免loading闪烁
+    setTimeout(() => {
+      const param = this.loadingList.pop();
+      if (param) {
+        let loading = new LoadingActionOptions(LoadingState.LOADING, param)
+        if (PromptActionUtils.existsCustomDialog(LoadingState.LOADING)) {
+          this.updateDialog(loading)
+        } else {
+          this.showDialog(loading)
+        }
+      }
+    }, 100);
   }
 
 
@@ -32,7 +40,10 @@ export class LoadingDialogUtils {
    * 隐藏 hud
    */
   async hideLoading(): Promise<void> {
-    this.hide(LoadingState.LOADING).catch((err: Error) => {
+    if (this.loadingList.length > 0) {
+      this.loadingList = [];
+    }
+    this.hide(LoadingState.LOADING).catch(() => {
       this.hideDialogDelay(LoadingState.LOADING, { hideDelay: 100 });
     })
   }
