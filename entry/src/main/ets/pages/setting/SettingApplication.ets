@@ -185,6 +185,7 @@ struct SettingApplication {
                 .fontSize(14)
                 .enabled(this.isSyncSetting)
                 .opacity(this.isSyncSetting ? 1 : 0.5)
+                .padding({left: 12, right: 12, top: 4, bottom: 4})
                 .onClick(() => {
                   if (this.isSyncSetting) {
                     LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
