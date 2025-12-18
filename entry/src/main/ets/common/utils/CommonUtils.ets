@@ -1,6 +1,10 @@
 import { util } from '@kit.ArkTS';
 import { promptAction, router, ShowDialogSuccessResponse } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'CommonUtils';
 
 export class CommonUtils {
   private static context: common.UIAbilityContext | null = null;
@@ -79,10 +83,14 @@ export class CommonUtils {
    * @param duration
    */
   public static showToast(message: ResourceStr | promptAction.ShowToastOptions, duration?: number): void {
-    if (CommonUtils.uiContext) {
-      CommonUtils.uiContext.getPromptAction().showToast(CommonUtils.toShowToastOptions(message, duration));
-    } else {
-      promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
+    try {
+      if (CommonUtils.uiContext) {
+        CommonUtils.uiContext.getPromptAction().showToast(CommonUtils.toShowToastOptions(message, duration));
+      } else {
+        promptAction.showToast(CommonUtils.toShowToastOptions(message, duration));
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `showToast error: ${error?.message}`);
     }
   }
 
@@ -93,9 +101,15 @@ export class CommonUtils {
    */
   public static showDialog(showDialogOptions: promptAction.ShowDialogOptions): Promise<ShowDialogSuccessResponse> {
     if (CommonUtils.uiContext) {
-      return CommonUtils.uiContext.getPromptAction().showDialog(showDialogOptions);
+      return CommonUtils.uiContext.getPromptAction().showDialog(showDialogOptions).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `uiContext showDialog error: ${error?.message}`);
+        return Promise.reject(error);
+      });
     } else {
-      return promptAction.showDialog(showDialogOptions);
+      return promptAction.showDialog(showDialogOptions).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `showDialog error: ${error?.message}`);
+        return Promise.reject(error);
+      });
     }
   }
 
@@ -127,9 +141,15 @@ export class CommonUtils {
    */
   public static pushUrl(options: router.RouterOptions): Promise<void> {
     if (CommonUtils.uiContext) {
-      return CommonUtils.uiContext.getRouter().pushUrl(options);
+      return CommonUtils.uiContext.getRouter().pushUrl(options).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `uiContext pushUrl error: ${error?.message}`);
+        return Promise.reject(error);
+      });
     }
-    return router.pushUrl(options);
+    return router.pushUrl(options).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, `pushUrl error: ${error?.message}`);
+      return Promise.reject(error);
+    });
   }
 
   /**
