@@ -1471,6 +1471,26 @@
     {
       "name": "Permission_DISTRIBUTED_DATASYNC_reason",
       "value": "Synchronize user preferences across devices"
+    },
+    {
+      "name": "application_manual_sync",
+      "value": "Manual sync"
+    },
+    {
+      "name": "application_manual_sync_tips",
+      "value": "Manually trigger a full data synchronization"
+    },
+    {
+      "name": "application_sync_button",
+      "value": "Sync"
+    },
+    {
+      "name": "application_sync_loading",
+      "value": "Syncing data..."
+    },
+    {
+      "name": "application_sync_complete",
+      "value": "Sync completed"
     }
   ]
 }

@@ -9,6 +9,7 @@ import { common } from '@kit.AbilityKit';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
+import { SyncSettingsService } from './store/SyncSettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -30,7 +31,7 @@ export class RecentFilesService {
    */
   public async init(context: common.UIAbilityContext): Promise<void> {
     try {
-      this.preferences = preferences.getPreferencesSync(context, {name: RecentFilesService.PREFERENCES_NAME} as preferences.Options);
+      this.preferences = preferences.getPreferencesSync(context, { name: RecentFilesService.PREFERENCES_NAME } as preferences.Options);
     } catch (err) {
       hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
     }
@@ -115,6 +116,9 @@ export class RecentFilesService {
       // 保存更新后的列表
       await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles));
       await this.preferences.flush();
+
+      // 同步到远端设备
+      SyncSettingsService.syncRecentFiles(recentFiles);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Add recent file error: ${error}`);
       throw new Error(error);
@@ -130,7 +134,14 @@ export class RecentFilesService {
         return [];
       }
       const recentFilesJson = await this.preferences.get(RecentFilesService.RECENT_FILES_KEY, '[]');
-      return JSON.parse(recentFilesJson.toString());
+      let localFiles: RecentFile[] = JSON.parse(recentFilesJson.toString()) as RecentFile[];
+
+      // 如果本地没有数据，尝试从远端加载
+      if (localFiles.length === 0) {
+        localFiles = await SyncSettingsService.getAndMergeRecentFiles();
+      }
+
+      return localFiles;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Get all recent files error: ${error}`);
       return [];
@@ -186,6 +197,32 @@ export class RecentFilesService {
   }
 
   /**
+   * 合并最近文件列表（用于同步）
+   * @param mergedFiles 合并后的文件列表
+   */
+  public async doAddMerged(mergedFiles: RecentFile[]): Promise<void> {
+    try {
+      if (!this.preferences) {
+        return;
+      }
+
+      // 限制最大数量
+      if (mergedFiles.length > RecentFilesService.MAX_RECENT_FILES) {
+        mergedFiles = mergedFiles.slice(0, RecentFilesService.MAX_RECENT_FILES);
+      }
+
+      // 保存合并后的列表
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(mergedFiles));
+      await this.preferences.flush();
+
+      hilog.info(DOMAIN, TAG, `Merged recent files, count: ${mergedFiles.length}`);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Merge recent files error: ${error}`);
+      throw new Error(error);
+    }
+  }
+
+  /**
    * 移除最近打开的文件
    * @param filePath 文件路径
    */
@@ -203,6 +240,10 @@ export class RecentFilesService {
       // 保存更新后的列表
       await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
       await this.preferences.flush();
+
+      // 同步到远端设备
+      SyncSettingsService.syncRecentFiles(updatedFiles);
+
       hilog.debug(DOMAIN, TAG, 'Remove recent file filePath:%{public}s', recentFile.filePath);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Remove recent file error: ${error}`);
