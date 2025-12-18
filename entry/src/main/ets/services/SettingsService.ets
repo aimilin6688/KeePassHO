@@ -6,6 +6,7 @@ import common from '@ohos.app.ability.common';
 import { SortMode } from '../common/constants/SortConstants';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { SyncSettingsService } from './store/SyncSettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingsService';
@@ -79,6 +80,8 @@ export class SettingsService {
         // 初始化主题
         const themeMode = await this.getThemeMode();
         await ThemeManager.getInstance().setThemeMode(themeMode);
+        // 初始化同步服务
+        await SyncSettingsService.init();
         return resolve();
       } catch (err) {
         hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
@@ -171,6 +174,10 @@ export class SettingsService {
     try {
       await this.preferences.put(key, value);
       await this.preferences.flush(); // 重要！确保数据持久化
+
+      // 自动同步到远端设备
+      SyncSettingsService.syncSetting(key, value);
+
       // 通知所有观察者
       this.observers.forEach(observer => observer(key));
       return Promise.resolve();
@@ -278,6 +285,23 @@ export class SettingsService {
    */
   public static delete(key: string): Promise<void> {
     return SettingsService.getInstance().delete(key);
+  }
+
+  /**
+   * 获取所有的数据
+   * @returns
+   */
+  public static getAll(): Object {
+    try {
+      const pref = SettingsService.getInstance().preferences;
+      if (!pref) {
+        return new Object();
+      }
+      return pref.getAllSync();
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to get all. Code: ${error}`);
+    }
+    return new Object();
   }
 
 
