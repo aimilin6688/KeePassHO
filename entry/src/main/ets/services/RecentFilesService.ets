@@ -136,10 +136,8 @@ export class RecentFilesService {
       const recentFilesJson = await this.preferences.get(RecentFilesService.RECENT_FILES_KEY, '[]');
       let localFiles: RecentFile[] = JSON.parse(recentFilesJson.toString()) as RecentFile[];
 
-      // 如果本地没有数据，尝试从远端加载
-      if (localFiles.length === 0) {
-        localFiles = await SyncSettingsService.getAndMergeRecentFiles();
-      }
+      // 总是尝试与远端数据合并
+      localFiles = await this.syncWithRemote(localFiles);
 
       return localFiles;
     } catch (error) {
@@ -197,6 +195,90 @@ export class RecentFilesService {
   }
 
   /**
+   * 与远端数据同步
+   * @param localFiles 本地文件列表
+   * @returns 同步后的文件列表
+   */
+  private async syncWithRemote(localFiles: RecentFile[]): Promise<RecentFile[]> {
+    try {
+      if (!SyncSettingsService.isSyncEnabled()) {
+        return localFiles;
+      }
+
+      // 确保同步服务已初始化
+      await SyncSettingsService.init();
+      const remoteFiles = await SyncSettingsService.getRemoteRecentFiles();
+      
+      if (remoteFiles && remoteFiles.length > 0) {
+        hilog.info(DOMAIN, TAG, `Found ${remoteFiles.length} remote recent files, merging with local`);
+        // 合并本地和远端文件列表
+        const mergedFiles = RecentFilesService.mergeRecentFileLists(localFiles, remoteFiles);
+        
+        // 如果有合并结果，保存到本地
+        if (mergedFiles.length > 0) {
+          await this.doAddMerged(mergedFiles);
+        }
+        
+        return mergedFiles;
+      }
+      
+      return localFiles;
+    } catch (syncError) {
+      hilog.warn(DOMAIN, TAG, `Failed to sync with remote: ${syncError}`);
+      return localFiles;
+    }
+  }
+
+  /**
+   * 合并最近文件列表
+   * @param localFiles 本地文件列表
+   * @param remoteFiles 远端文件列表
+   * @returns 合并后的文件列表
+   */
+  public static mergeRecentFileLists(localFiles: RecentFile[], remoteFiles: RecentFile[]): RecentFile[] {
+    const fileMap = new Map<string, RecentFile>();
+
+    // 添加本地文件（优先级更高）
+    localFiles.forEach(file => {
+      if (file.filePath) {
+        fileMap.set(file.filePath, file);
+      }
+    });
+
+    // 添加远端文件（如果不存在则添加）
+    remoteFiles.forEach(file => {
+      if (file.filePath && !fileMap.has(file.filePath)) {
+        fileMap.set(file.filePath, file);
+      }
+    });
+
+    // 转换为数组：先保留本地文件的顺序，然后添加远端独有的文件
+    const mergedFiles: RecentFile[] = [];
+    
+    // 首先添加本地文件，保持原有顺序
+    localFiles.forEach(file => {
+      if (file.filePath && fileMap.has(file.filePath)) {
+        mergedFiles.push(fileMap.get(file.filePath)!);
+        fileMap.delete(file.filePath); // 从map中删除，避免重复添加
+      }
+    });
+    
+    // 然后添加远端独有的文件
+    remoteFiles.forEach(file => {
+      if (file.filePath && fileMap.has(file.filePath)) {
+        mergedFiles.push(fileMap.get(file.filePath)!);
+      }
+    });
+
+    // 限制最大数量
+    if (mergedFiles.length > RecentFilesService.MAX_RECENT_FILES) {
+      return mergedFiles.slice(0, RecentFilesService.MAX_RECENT_FILES);
+    }
+
+    return mergedFiles;
+  }
+
+  /**
    * 合并最近文件列表（用于同步）
    * @param mergedFiles 合并后的文件列表
    */
@@ -206,16 +288,17 @@ export class RecentFilesService {
         return;
       }
 
-      // 限制最大数量
-      if (mergedFiles.length > RecentFilesService.MAX_RECENT_FILES) {
-        mergedFiles = mergedFiles.slice(0, RecentFilesService.MAX_RECENT_FILES);
+      // 创建副本并限制最大数量
+      let filesToSave = mergedFiles;
+      if (filesToSave.length > RecentFilesService.MAX_RECENT_FILES) {
+        filesToSave = filesToSave.slice(0, RecentFilesService.MAX_RECENT_FILES);
       }
 
       // 保存合并后的列表
-      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(mergedFiles));
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(filesToSave));
       await this.preferences.flush();
 
-      hilog.info(DOMAIN, TAG, `Merged recent files, count: ${mergedFiles.length}`);
+      hilog.info(DOMAIN, TAG, `Merged recent files, count: ${filesToSave.length}`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Merge recent files error: ${error}`);
       throw new Error(error);
