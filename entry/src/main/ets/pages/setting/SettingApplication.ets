@@ -3,6 +3,7 @@ import { Router } from '@kit.ArkUI';
 import { SupportService } from '../../services/SupportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SyncSettingsService } from '../../services/store/SyncSettingsService';
+import { CommonUtils } from '../../common/utils';
 
 
 @Entry
@@ -42,7 +43,7 @@ struct SettingApplication {
             this.isHideSupportDialog = true;
             SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
           } else {
-            LoadingDialog.showToast($r('app.string.application_hide_support_tips'));
+            CommonUtils.showToast($r('app.string.application_hide_support_tips'));
             this.isHideSupportDialog = false;
           }
           LoadingDialog.hideLoading();
@@ -191,10 +192,10 @@ struct SettingApplication {
                     LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
                       SyncSettingsService.triggerFullSync().then(() => {
                         LoadingDialog.hideLoading();
-                        LoadingDialog.showSuccess($r("app.string.application_sync_complete"));
+                        CommonUtils.showToast($r("app.string.application_sync_complete"));
                       }).catch((error: Error) => {
                         LoadingDialog.hideLoading();
-                        LoadingDialog.showError(error.message);
+                        CommonUtils.showToast(error.message);
                       });
                     });
                   }
