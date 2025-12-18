@@ -29,7 +29,7 @@ export class KdbxExportService {
           await KdbxExportService.handlerExport(locationInfo, exportType);
         } catch (e) {
           hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
-          LoadingDialog.showError(e.message);
+          CommonUtils.showToast(e.message);
         }
       }
     } as LocationInterface);
@@ -51,7 +51,7 @@ export class KdbxExportService {
             error.message);
           existsError = error;
           LoadingDialog.hideLoading();
-          LoadingDialog.showError(error.message);
+          CommonUtils.showToast(error.message);
         });
       if (existsError) {
         return;
@@ -70,7 +70,7 @@ export class KdbxExportService {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Export database error:' + error.message);
       LoadingDialog.hideLoading();
-      LoadingDialog.showError(error.message);
+      CommonUtils.showToast(error.message);
     }
   }
 
@@ -83,12 +83,12 @@ export class KdbxExportService {
     LoadingDialog.showLoading($r("app.string.handling"));
     return await DataService.saveKdbx({ kdbx: FileService.getDatabase(), exportType: exportType, locationInfo: locationInfo }).then(() => {
       LoadingDialog.hideLoading();
-      LoadingDialog.showSuccess($r("app.string.export_success"));
+      CommonUtils.showToast($r("app.string.export_success"));
       CommonUtils.back({ url: "pages/setting/SettingDatabase" });
     }).catch((e: Error) => {
       hilog.error(DOMAIN, TAG, 'Export database error:' + e.message);
       LoadingDialog.hideLoading();
-      LoadingDialog.showError(e.message);
+      CommonUtils.showToast(e.message);
     });
   }
 
