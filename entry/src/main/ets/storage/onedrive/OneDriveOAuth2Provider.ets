@@ -1,8 +1,8 @@
 import { http } from '@kit.NetworkKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { BaseOAuth2Provider } from './BaseOAuth2Provider';
-import { OAuth2Config, OAuth2Token, OAuth2UserInfo } from './OAuth2Types';
-import { OAuth2Error, OAuth2ErrorCodes } from './OAuth2Error';
+import { BaseOAuth2Provider } from '../oauth2/BaseOAuth2Provider';
+import { OAuth2Config, OAuth2Token, OAuth2UserInfo } from '../oauth2/OAuth2Types';
+import { OAuth2Error, OAuth2ErrorCodes } from '../oauth2/OAuth2Error';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveOAuth2Provider';
