@@ -19,17 +19,3 @@ export * from './OAuth2Error'
  */
 export * from './BaseOAuth2Provider'
 
-/**
- * GitHub OAuth2 提供者
- */
-export * from './GitHubOAuth2Provider'
-
-/**
- * Google OAuth2 提供者
- */
-export * from './GoogleOAuth2Provider'
-
-/**
- * OneDrive OAuth2 提供者
- */
-export * from './OneDriveOAuth2Provider'
