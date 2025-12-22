@@ -279,29 +279,117 @@ export class SyncSettingsService {
     try {
       hilog.info(DOMAIN, TAG, 'Triggering full sync');
 
-      // 同步所有设置
-      const settingsService = SettingsService.getInstance();
-      for (const key of Object.keys(SettingsService.getAll())) {
-        if (key === 'recent_files') {
-          continue;
+      // 先从远端拉取最新数据进行合并
+      await SyncSettingsService.fetchAndMergeRemoteData();
+
+      // 然后同步本地数据到远端
+      await SyncSettingsService.pushLocalDataToRemote();
+
+      hilog.info(DOMAIN, TAG, 'Full sync completed');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to trigger full sync: ${error}`);
+    }
+  }
+
+  /**
+   * 从远端获取数据并与本地合并
+   */
+  private static async fetchAndMergeRemoteData(): Promise<void> {
+    try {
+      hilog.debug(DOMAIN, TAG, 'Fetching and merging remote data');
+
+      // 获取并合并远端最近文件
+      const remoteRecentFiles = await SyncSettingsService.getRemoteRecentFiles();
+      if (remoteRecentFiles) {
+        const remoteSyncData: SyncData = {
+          key: 'recent_files',
+          value: remoteRecentFiles,
+          timestamp: Date.now(), // 使用当前时间作为合并时间戳
+          deviceId: SyncSettingsService.deviceId
+        };
+        await SyncSettingsService.mergeRecentFiles(remoteSyncData);
+      }
+
+      // 获取并合并远端设置数据
+      await SyncSettingsService.fetchAndMergeRemoteSettings();
+
+      hilog.debug(DOMAIN, TAG, 'Remote data fetch and merge completed');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote data: ${error}`);
+    }
+  }
+
+  /**
+   * 获取并合并远端设置数据
+   */
+  private static async fetchAndMergeRemoteSettings(): Promise<void> {
+    try {
+      // 获取所有本地设置键
+      const allSettings = SettingsService.getAll();
+      const localSettingKeys = Object.keys(allSettings);
+
+      // 过滤掉时间戳键和同步相关键，只获取真实的设置键
+      const realSettingKeys = localSettingKeys.filter(key => 
+        !key.startsWith('timestamp_') && 
+        key !== SettingsService.KEY_APP_SYNC_SETTING_ENABLE
+      );
+
+      for (const key of realSettingKeys) {
+        try {
+          const remoteSyncDataJson = await DistributedKVService.get(`sync_${key}`);
+          if (remoteSyncDataJson) {
+            const remoteSyncData: SyncData = JSON.parse(remoteSyncDataJson.toString()) as SyncData;
+            if (remoteSyncData.key === key && remoteSyncData.deviceId !== SyncSettingsService.deviceId) {
+              await SyncSettingsService.mergeSetting(remoteSyncData);
+            }
+          }
+        } catch (error) {
+          hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote setting ${key}: ${error}`);
         }
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote settings: ${error}`);
+    }
+  }
+
+  /**
+   * 推送本地数据到远端
+   */
+  private static async pushLocalDataToRemote(): Promise<void> {
+    try {
+      hilog.debug(DOMAIN, TAG, 'Pushing local data to remote');
+
+      // 推送设置数据
+      const settingsService = SettingsService.getInstance();
+      
+      // 获取所有本地设置键，自动发现需要同步的设置
+      const allSettings = SettingsService.getAll();
+      const localSettingKeys = Object.keys(allSettings);
+
+      // 过滤掉时间戳键和同步相关键，只同步真实的设置键
+      const realSettingKeys = localSettingKeys.filter(key => 
+        !key.startsWith('timestamp_') && 
+        key !== SettingsService.KEY_APP_SYNC_SETTING_ENABLE
+      );
+
+      for (const key of realSettingKeys) {
         try {
           const value = await settingsService.get(key, '' as preferences.ValueType);
           if (value !== undefined && value !== '') {
             await SyncSettingsService.syncSetting(key, value);
           }
         } catch (error) {
-          hilog.error(DOMAIN, TAG, `Failed to sync key ${key} during full sync: ${error}`);
+          hilog.error(DOMAIN, TAG, `Failed to push setting ${key} during full sync: ${error}`);
         }
       }
 
-      // 同步最近文件
+      // 推送最近文件
       const recentFiles = await RecentFilesService.getInstance().getRecentFiles();
       await SyncSettingsService.syncRecentFiles(recentFiles);
 
-      hilog.info(DOMAIN, TAG, 'Full sync completed');
+      hilog.info(DOMAIN, TAG, 'Local data push to remote completed');
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to trigger full sync: ${error}`);
+      hilog.error(DOMAIN, TAG, `Failed to push local data to remote: ${error}`);
     }
   }
 
