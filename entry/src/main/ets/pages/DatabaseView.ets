@@ -137,17 +137,18 @@ struct DatabaseView {
    * 初始化屏幕大小
    */
   private initScreenSize() {
+    try {
+      // 获取屏幕尺寸
+      this.screenWidth = this.getUIContext().px2vp(display.getDefaultDisplaySync().width);
+      this.screenHeight = this.getUIContext().px2vp(display.getDefaultDisplaySync().height);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${error?.code}, ${error?.message}`,);
+    }
+    this.maxX = this.screenWidth - this.containerWidth;
+    this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
+
     // 第一次初始化执行一次
     if (this.containerX == 0) {
-      try {
-        // 获取屏幕尺寸
-        this.screenWidth = this.getUIContext().px2vp(display.getDefaultDisplaySync().width);
-        this.screenHeight = this.getUIContext().px2vp(display.getDefaultDisplaySync().height);
-      } catch (error) {
-        hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${error?.code}, ${error?.message}`,);
-      }
-      this.maxX = this.screenWidth - this.containerWidth;
-      this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
       this.containerX = this.maxX - 22;
       this.containerY = this.maxY - 32;
     }
