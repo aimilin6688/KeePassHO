@@ -75,7 +75,7 @@ export class SyncSettingsService {
   /**
    * 检查是否启用同步
    */
-  private static isSyncEnabled(): boolean {
+  public static isSyncEnabled(): boolean {
     return SettingsService.getInstance().getSync(
       SettingsService.KEY_APP_SYNC_SETTING_ENABLE,
       SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT
@@ -230,7 +230,7 @@ export class SyncSettingsService {
 
       if (!localTimestamp || remoteSyncData.timestamp > localTimestamp) {
         // 远端数据更新，合并文件列表
-        const mergedFiles = SyncSettingsService.mergeRecentFileLists(localRecentFiles, remoteRecentFiles);
+        const mergedFiles = RecentFilesService.mergeRecentFileLists(localRecentFiles, remoteRecentFiles);
         await recentFilesService.doAddMerged(mergedFiles);
         await SyncSettingsService.setLocalTimestamp('recent_files', remoteSyncData.timestamp);
         hilog.debug(DOMAIN, TAG, 'Merged remote recent files');
@@ -242,30 +242,7 @@ export class SyncSettingsService {
     }
   }
 
-  /**
-   * 合并最近文件列表
-   */
-  private static mergeRecentFileLists(localFiles: RecentFile[], remoteFiles: RecentFile[]): RecentFile[] {
-    const fileMap = new Map<string, RecentFile>();
 
-    // 添加本地文件
-    localFiles.forEach(file => {
-      if (file.filePath) {
-        fileMap.set(file.filePath, file);
-      }
-    });
-
-    // 添加远端文件（如果不存在则添加）
-    remoteFiles.forEach(file => {
-      if (file.filePath && !fileMap.has(file.filePath)) {
-        fileMap.set(file.filePath, file);
-      }
-    });
-
-    // 转换为数组并按文件名排序（作为替代方案）
-    const mergedFiles = Array.from(fileMap.values());
-    return mergedFiles.sort((a, b) => a.fileName.localeCompare(b.fileName));
-  }
 
   /**
    * 获取本地时间戳
@@ -345,30 +322,5 @@ export class SyncSettingsService {
       hilog.error(DOMAIN, TAG, `Failed to get remote recent files: ${error}`);
       return null;
     }
-  }
-
-  /**
-   * 从远端获取最近打开的文件，并合并到本地
-   * @returns
-   */
-  public static async getAndMergeRecentFiles(): Promise<RecentFile[]> {
-    try {
-      if (!(SyncSettingsService.isSyncEnabled())) {
-        return [];
-      }
-      hilog.info(DOMAIN, TAG, 'No local recent files found, trying to load from remote');
-      // 确保同步服务已初始化
-      await SyncSettingsService.init();
-      const remoteFiles = await SyncSettingsService.getRemoteRecentFiles();
-      if (remoteFiles && remoteFiles.length > 0) {
-        hilog.info(DOMAIN, TAG, `Loaded ${remoteFiles.length} recent files from remote`);
-        // 保存到本地
-        await RecentFilesService.getInstance().doAddMerged(remoteFiles);
-        return remoteFiles;
-      }
-    } catch (syncError) {
-      hilog.warn(DOMAIN, TAG, `Failed to load remote recent files: ${syncError}`);
-    }
-    return [];
   }
 }
