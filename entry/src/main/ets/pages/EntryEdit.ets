@@ -3,13 +3,14 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager } from '../common/utils';
+import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -209,6 +210,10 @@ struct EntryEdit {
       this.isEditMode = false;
       this.username = this.database.meta.defaultUser || '';
     }
+  }
+
+  onPageShow(): void {
+      WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   onBackPress() {

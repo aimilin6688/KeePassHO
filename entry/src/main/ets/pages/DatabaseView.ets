@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { DateUtils, KdbxUtils, ResourceManager, ThemeManager } from '../common/utils';
+import { DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -20,6 +20,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -134,6 +135,7 @@ struct DatabaseView {
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   /**
