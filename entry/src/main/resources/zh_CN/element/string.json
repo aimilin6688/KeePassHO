@@ -1491,6 +1491,14 @@
     {
       "name": "application_sync_complete",
       "value": "同步完成"
+    },
+    {
+      "name": "application_holding_hand",
+      "value": "启用智感握姿"
+    },
+    {
+      "name": "application_holding_hand_tips",
+      "value": "启用时首页面按钮会跟随握姿自动调整位置"
     }
   ]
 }
