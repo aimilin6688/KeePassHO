@@ -2,7 +2,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
-import { ResourceManager, CommonUtils } from '../../common/utils';
+import { ResourceManager, CommonUtils, WindowUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
@@ -10,6 +10,7 @@ import { LocationMode } from './SelectLocation';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
@@ -26,6 +27,10 @@ struct CreateDatabase {
   @State keyFileName: ResourceStr = $r('app.string.select_key_file_placeholder');
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+
+  onPageShow(): void {
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+  }
 
   private validatePasswords() {
     if (this.password.length > 0 && this.confirmPassword.length > 0 && this.password !== this.confirmPassword) {

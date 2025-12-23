@@ -36,6 +36,9 @@ export class SettingsService {
   public static readonly KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT = 30;
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH = 'Security_quick_lock_password_length';
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 3;
+  public static readonly KEY_SECURITY_PRIVACY_WINDOW = 'Security_privacy_window';
+  public static readonly KEY_SECURITY_PRIVACY_WINDOW_DEFAULT = true;
+
   // 认证方式
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT = false;

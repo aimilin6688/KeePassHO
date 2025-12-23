@@ -1,10 +1,11 @@
 import { KdbxEntry } from 'kdbxweb';
 import { SortMode } from '../common/constants/SortConstants';
-import { KdbxUtils, DateUtils, ClipboardUtils } from '../common/utils';
+import { KdbxUtils, DateUtils, ClipboardUtils, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
+import { common } from '@kit.AbilityKit';
 
 @Entry
 @Component
@@ -17,6 +18,10 @@ struct TotpView {
 
   aboutToAppear(): void {
     this.loadTotpEntries();
+  }
+
+  onPageAppear(): void {
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   private loadTotpEntries(): void {
