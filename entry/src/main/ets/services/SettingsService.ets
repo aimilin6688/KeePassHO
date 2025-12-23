@@ -48,6 +48,8 @@ export class SettingsService {
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = true;
+
+  // --------------- APP 设置信息 ---------------------
   // 支持弹框
   public static readonly KEY_SHOW_SUPPORT_TIME = "show_support_time";
   public static readonly KEY_SHOW_SUPPORT_DIALOG = "show_support_dialog";
@@ -59,6 +61,10 @@ export class SettingsService {
   // 跨设备同步设置
   public static readonly KEY_APP_SYNC_SETTING_ENABLE = "app_sync_setting_enable";
   public static readonly KEY_APP_SYNC_SETTING_ENABLE_DEFAULT = false;
+  // 启用智感握姿
+  public static readonly KEY_APP_HOLDING_HAND_ENABLE = "app_holding_hand_enable";
+  public static readonly KEY_APP_HOLDING_HAND_ENABLE_DEFAULT = false;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
