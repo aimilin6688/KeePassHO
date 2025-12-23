@@ -7,7 +7,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { StorageType, StorageConfig } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { KdbxUtils, ResourceManager, CryptoUtils } from '../common/utils';
+import { KdbxUtils, ResourceManager, CryptoUtils, WindowUtils} from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
@@ -18,6 +18,7 @@ import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 import { Constants } from '../common/constants/Constants';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -81,6 +82,7 @@ struct Password {
   onPageShow(): void {
     this.isFingerprintSupport = AuthService.isFingerprintSupportAndEnabled();
     this.isFaceSupport = AuthService.isFaceSupportAndEnabled();
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   aboutToDisappear() {
