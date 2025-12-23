@@ -12,6 +12,7 @@ struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
   @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
+  @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -26,10 +27,11 @@ struct SettingApplication {
       this.isHideSupportDialog = !result;
     });
     // 是否开启跨设备同步数据
-    this.settingsService.get(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT).then(result => {
-      this.isSyncSetting = result;
-    });
+    this.isSyncSetting = this.settingsService.getSync(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT);
+    // 是否限制打开数据库后缀
     this.isLimitDbExt = this.settingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT);
+    // 智感握姿
+    this.isHoldingHand = this.settingsService.getSync(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT);
   }
 
   // 隐藏支持弹框
@@ -170,6 +172,35 @@ struct SettingApplication {
                       });
                     });
                   }
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 启用智感握姿
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_holding_hand"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_holding_hand_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+              Toggle({ type: ToggleType.Switch, isOn: this.isHoldingHand })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.isHoldingHand = isOn;
+                  this.settingsService.put(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, isOn);
                 })
             }
             .width('100%')
