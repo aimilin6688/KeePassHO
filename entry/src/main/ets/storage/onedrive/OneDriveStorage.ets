@@ -1,28 +1,14 @@
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { OneDriveResultInfo, OneDriveClient, OneDriveResource, OneDriveClientOptions } from './OneDriveClient';
-import { ResourceManager } from '../../common/utils';
+import { OneDriveClient, OneDriveResource, OneDriveClientOptions } from './OneDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
 import { OAuth2Config } from '../oauth2/OAuth2Types';
-import { OneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
+import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
+import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveStorage';
-
-/**
- * OneDrive错误类
- */
-export class OneDriveError extends Error {
-  public readonly code: number;
-
-  constructor(code: number, message?: string) {
-    super('Error ' + code + (message ? ': ' + message : ''));
-
-    this.name = 'OneDriveError';
-    this.code = code;
-  }
-}
 
 /**
  * OneDrive存储实现类
@@ -41,10 +27,6 @@ export class OneDriveStorage implements IFileStorage {
    * OAuth2配置
    */
   private oauth2Config: OAuth2Config | undefined;
-  /**
-   * OAuth2提供者
-   */
-  private oauth2Provider: OneDriveOAuth2Provider | undefined;
 
   /**
    * 构造函数
@@ -84,9 +66,6 @@ export class OneDriveStorage implements IFileStorage {
       scope: 'Files.ReadWrite User.Read offline_access'
     };
     this.oauth2Config = authConfig;
-    // 创建OAuth2提供者
-    this.oauth2Provider = new OneDriveOAuth2Provider(this.oauth2Config as OneDriveOAuth2Config);
-
 
     // 创建OneDrive客户端
     const clientConfig: OneDriveClientOptions = {
@@ -124,7 +103,7 @@ export class OneDriveStorage implements IFileStorage {
    * @throws 如果刷新失败则抛出异常
    */
   private async refreshAccessToken(): Promise<void> {
-    if (!this.client || !this.config || !this.oauth2Provider) {
+    if (!this.client || !this.config) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized');
     }
 
@@ -216,14 +195,8 @@ export class OneDriveStorage implements IFileStorage {
       await this.refreshAccessToken();
     }
 
-    return this.getInfo(path).then((fileInfo) => {
-      return fileInfo != null;
-    }).catch((error: Error) => {
-      if (error instanceof OneDriveError && error.code === 404) {
-        return false;
-      }
-      return Promise.reject(error);
-    });
+    const result = await this.client.getInfo(path);
+    return result.success;
   }
 
   /**
@@ -243,21 +216,22 @@ export class OneDriveStorage implements IFileStorage {
       await this.refreshAccessToken();
     }
 
-    return this.client.getInfo(path).then((result: OneDriveResultInfo) => {
-      if (result.success && result.data && result.data.length > 0) {
-        const resource = result.data[0];
-        return Promise.resolve({
-          name: resource.name,
-          size: resource.size,
-          modifiedTime: new Date(resource.lastModified).getTime(),
-          path: resource.path,
-          type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
-          childrenCount: resource.childrenCount || 0
-        } as FileInfo);
-      } else {
-        return Promise.reject(new OneDriveError(result.statusCode, result.message));
-      }
-    });
+    const result = await this.client.getInfo(path);
+    if (result.success && result.body) {
+      const jsonStr = ByteUtils.bytesToString(result.body);
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const resource = this.client.parseResource(data);
+      return {
+        name: resource.name,
+        size: resource.size,
+        modifiedTime: new Date(resource.lastModified).getTime(),
+        path: resource.path,
+        type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
+        childrenCount: resource.childrenCount || 0
+      };
+    } else {
+      throw new Error(result.message);
+    }
   }
 
   /**
@@ -277,14 +251,17 @@ export class OneDriveStorage implements IFileStorage {
       await this.refreshAccessToken();
     }
 
-    return this.client.list(path, 0).then((result: OneDriveResultInfo) => {
-      if (result.success && result.data) {
-        if (result.data.length <= 0) {
-          return Promise.resolve([]);
-        }
-        const files = new Array<FileInfo>(result.data.length);
-        for (let i = 0; i < result.data.length; i++) {
-          const resource = result.data[i];
+    const result = await this.client.list(path, 0);
+    if (result.success && result.body) {
+      const jsonStr = ByteUtils.bytesToString(result.body);
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const files: FileInfo[] = [];
+
+      const value = data['value'];
+      if (value && Array.isArray(value)) {
+        for (const item of value as Array<Object>) {
+          const itemData = item as Record<string, Object>;
+          const resource = this.client.parseResource(itemData);
           files.push({
             name: resource.name,
             size: resource.size,
@@ -292,13 +269,13 @@ export class OneDriveStorage implements IFileStorage {
             path: resource.path,
             type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
             childrenCount: resource.childrenCount || 0
-          } as FileInfo);
+          });
         }
-        return Promise.resolve(files);
-      } else {
-        return Promise.reject(new OneDriveError(result.statusCode, result.message));
       }
-    });
+      return files;
+    } else {
+      throw new Error(result.message);
+    }
   }
 
   /**
