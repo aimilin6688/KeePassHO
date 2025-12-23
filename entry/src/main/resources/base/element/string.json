@@ -1499,6 +1499,14 @@
     {
       "name": "application_holding_hand_tips",
       "value": "When enabled, the button on the home page will automatically adjust its position according to the grip posture"
+    },
+    {
+      "name": "security_privacy_window",
+      "value": "Enable the privacy window"
+    },
+    {
+      "name": "security_privacy_window_tips",
+      "value": "Enabling the window will prohibit screenshots and screen recording"
     }
   ]
 }

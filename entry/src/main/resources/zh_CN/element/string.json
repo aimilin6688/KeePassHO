@@ -1499,6 +1499,14 @@
     {
       "name": "application_holding_hand_tips",
       "value": "启用时首页面按钮会跟随握姿自动调整位置"
+    },
+    {
+      "name": "security_privacy_window",
+      "value": "启用隐私窗口"
+    },
+    {
+      "name": "security_privacy_window_tips",
+      "value": "启用窗口将禁止截屏和录屏"
     }
   ]
 }
