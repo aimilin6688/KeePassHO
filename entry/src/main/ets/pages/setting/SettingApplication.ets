@@ -158,36 +158,7 @@ struct SettingApplication {
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, isOn);
                   this.isSyncSetting = isOn;
-                })
-            }
-            .width('100%')
-            .padding(16)
-          }
-
-          // 手动同步
-          ListItem() {
-            Row() {
-              Column() {
-                Text($r("app.string.application_manual_sync"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Text($r("app.string.application_manual_sync_tips"))
-                  .fontSize(12)
-                  .fontColor($r("app.color.text_secondary"))
-                  .margin({ top: 4 })
-              }
-              .alignItems(HorizontalAlign.Start)
-              .flexGrow(1)
-              .layoutWeight(1)
-
-              Blank()
-
-              Button($r("app.string.application_sync_button"))
-                .fontSize(14)
-                .enabled(this.isSyncSetting)
-                .opacity(this.isSyncSetting ? 1 : 0.5)
-                .padding({left: 12, right: 12, top: 4, bottom: 4})
-                .onClick(() => {
+                  // 开启同步时，触发全量同步
                   if (this.isSyncSetting) {
                     LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
                       SyncSettingsService.triggerFullSync().then(() => {
@@ -204,7 +175,6 @@ struct SettingApplication {
             .width('100%')
             .padding(16)
           }
-          .visibility(this.isSyncSetting ? Visibility.Visible : Visibility.None)
         }
         .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
