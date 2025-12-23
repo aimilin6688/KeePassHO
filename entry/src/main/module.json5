@@ -34,7 +34,10 @@
         }
       },
       {
-        "name" : "ohos.permission.DETECT_GESTURE"
+        "name": "ohos.permission.DETECT_GESTURE"
+      },
+      {
+        "name": "ohos.permission.PRIVACY_WINDOW"
       }
     ],
     "deliveryWithInstall": true,
