@@ -46,6 +46,7 @@ struct DatabaseView {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State isShowSearchHistory: boolean = SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT;
+  @State isHoldingHandEnable: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
   @State headerHeight: number = 56;
@@ -163,6 +164,9 @@ struct DatabaseView {
   private onHoldingHandChange() {
     //订阅握持手感知
     try {
+      if (!this.isHoldingHandEnable) {
+        return;
+      }
       if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
         motion.on('holdingHandChanged', (status: motion.HoldingHandStatus) => {
           // 检测到左手
@@ -219,6 +223,12 @@ struct DatabaseView {
       .then(result => {
         this.isShowSearchHistory = result;
       });
+    // 智感握姿
+    this.settingsService.get(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT).then(result => {
+      this.isHoldingHandEnable = result;
+      this.unBindHoldingHandChange();
+      this.onHoldingHandChange();
+    });
   }
 
   /**

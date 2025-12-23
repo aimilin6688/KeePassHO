@@ -1491,6 +1491,14 @@
     {
       "name": "application_sync_complete",
       "value": "Sync completed"
+    },
+    {
+      "name": "application_holding_hand",
+      "value": "Enable the smart grip posture"
+    },
+    {
+      "name": "application_holding_hand_tips",
+      "value": "When enabled, the button on the home page will automatically adjust its position according to the grip posture"
     }
   ]
 }
