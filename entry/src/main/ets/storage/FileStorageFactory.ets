@@ -1,6 +1,7 @@
 import { IFileStorage, PageConfig, StorageType } from './index';
 import { LocalFileStorage } from './local/LocalFileStorage';
 import { WebDAVStorage } from './webdav/WebDAVStorage';
+import { OneDriveStorage } from './onedrive/OneDriveStorage';
 
 /**
  * 文件存储工厂类
@@ -16,6 +17,7 @@ export class FileStorageFactory {
   private constructor() {
     this.registerStorage(StorageType.LOCAL, new LocalFileStorage());
     this.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
+    this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
   }
 
   /**
