@@ -4,6 +4,8 @@ import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { StorageType } from '../storage/StorageType';
+import { common } from '@kit.AbilityKit';
+import { WindowUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
@@ -18,6 +20,10 @@ struct RecentFiles {
 
   aboutToAppear() {
     this.loadRecentFiles();
+  }
+
+  onPageShow(): void {
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   /**
@@ -227,6 +233,6 @@ struct RecentFiles {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

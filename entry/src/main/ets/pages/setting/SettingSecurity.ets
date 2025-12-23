@@ -16,6 +16,7 @@ struct SettingsSecurity {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State isItemShowTotp: boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
+  @State isPrivacyWindow: boolean = SettingsService.KEY_SECURITY_PRIVACY_WINDOW_DEFAULT;
   // 认证方式
   @State fingerprintLogin: boolean = SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT;
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
@@ -125,6 +126,9 @@ struct SettingsSecurity {
     if (this.isFaceSupport) {
       this.authTypeOptions.push({ "type": UnlockAuthType.FACE, "value": ResourceManager.getString($r("app.string.face")) });
     }
+    this.settingsService.get(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, this.isPrivacyWindow).then(result => {
+      this.isPrivacyWindow = result;
+    });
   }
 
   // 修改指纹登录选项
@@ -272,6 +276,39 @@ struct SettingsSecurity {
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, isOn);
+                })
+            }
+            .width('100%')
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
+          }
+
+          // 隐私窗口
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.security_privacy_window"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.security_privacy_window_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+              Blank()
+              Toggle({ type: ToggleType.Switch, isOn: this.isPrivacyWindow })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.isPrivacyWindow = isOn;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, isOn);
                 })
             }
             .width('100%')
