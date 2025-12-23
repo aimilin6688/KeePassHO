@@ -33,6 +33,9 @@
           "when": "inuse"
         }
       },
+      {
+        "name" : "ohos.permission.DETECT_GESTURE"
+      }
     ],
     "deliveryWithInstall": true,
     "installationFree": false,

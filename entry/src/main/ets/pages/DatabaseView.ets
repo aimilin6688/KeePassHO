@@ -2,6 +2,7 @@ import { AddGroupDialog } from '../components/AddGroupDialog';
 import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
+import { motion } from '@kit.MultimodalAwarenessKit';
 
 import { DateUtils, KdbxUtils, ResourceManager, ThemeManager } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
@@ -127,6 +128,7 @@ struct DatabaseView {
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     // 移除配置监听器
     this.settingsService.unregisterObserver(this.onSettingChanged);
+    this.unBindHoldingHandChange();
   }
 
   onPageShow(): void {
@@ -151,6 +153,43 @@ struct DatabaseView {
     if (this.containerX == 0) {
       this.containerX = this.maxX - 22;
       this.containerY = this.maxY - 32;
+    }
+    this.onHoldingHandChange();
+  }
+
+  /**
+   * 订阅握持手感知
+   */
+  private onHoldingHandChange() {
+    //订阅握持手感知
+    try {
+      if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
+        motion.on('holdingHandChanged', (status: motion.HoldingHandStatus) => {
+          // 检测到左手
+          if (motion.HoldingHandStatus.LEFT_HAND_HELD == status) {
+            this.containerX = 0 + 22;
+          }
+          // 检测到右手
+          else if (motion.HoldingHandStatus.RIGHT_HAND_HELD == status) {
+            this.containerX = this.maxX - 22;
+          }
+        });
+      }
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `订阅握持手感知失败: ${err?.code}, ${err?.message}`);
+    }
+  }
+
+  /**
+   * 取消订阅握持手感知
+   */
+  private unBindHoldingHandChange() {
+    try {
+      if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
+        motion.off('holdingHandChanged');
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `取消订阅握持手感知失败: ${error?.code}, ${error?.message}`);
     }
   }
 
