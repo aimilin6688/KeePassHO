@@ -16,5 +16,10 @@ export enum StorageType {
   /**
    * FTP存储
    */
-  FTP = 'FTP'
+  FTP = 'FTP',
+
+  /**
+   * Microsoft OneDrive存储
+   */
+  ONEDRIVE = 'ONEDRIVE'
 }
