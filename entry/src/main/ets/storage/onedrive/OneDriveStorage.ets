@@ -1,9 +1,9 @@
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { OneDriveClient, OneDriveResource, OneDriveClientOptions } from './OneDriveClient';
+import { OneDriveClient, OneDriveClientOptions } from './OneDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
-import { OAuth2Config } from '../oauth2/OAuth2Types';
+import { OAuth2Config } from '../../common/oauth2';
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
 import { ByteUtils } from 'kdbxweb';
 
