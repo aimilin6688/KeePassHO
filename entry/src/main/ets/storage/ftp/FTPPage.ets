@@ -1,8 +1,8 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileType, StorageConfig, StorageType } from '..';
+import { StorageType } from '..';
 import { FTPStorageConfig } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, FilenameUtils, WindowUtils } from '../../common/utils';
+import { ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -51,7 +51,7 @@ struct FTP {
         const rest = fileName.substring(protocolEnd + 3);
         const slashPos = rest.indexOf('/');
         const colonPos = rest.indexOf(':');
-        
+
         if (colonPos > 0) {
           this.host = rest.substring(0, colonPos);
           if (slashPos > colonPos) {
@@ -370,8 +370,8 @@ struct FTP {
           .margin({ bottom: 16 })
 
           // 连接测试按钮
-          Button(this.isConnecting ? 
-            ResourceManager.getString($r('app.string.testing')) : 
+          Button(this.isConnecting ?
+            ResourceManager.getString($r('app.string.testing')) :
             ResourceManager.getString($r('app.string.test_connection')))
             .width('100%')
             .height(44)
@@ -398,8 +398,8 @@ struct FTP {
 
       // 底部确认按钮
       Column() {
-        Button(LocationParam.isSaveMode() ? 
-          $r('app.string.save_button_text') : 
+        Button(LocationParam.isSaveMode() ?
+          $r('app.string.save_button_text') :
           $r('app.string.confirm_button_text'))
           .width('100%')
           .height(50)
@@ -414,6 +414,7 @@ struct FTP {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#FFFFFF')
+    .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
