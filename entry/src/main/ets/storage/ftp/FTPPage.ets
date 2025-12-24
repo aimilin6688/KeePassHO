@@ -141,11 +141,6 @@ struct FTP {
     }
   }
 
-  // 选择文件（导入模式）
-  private selectFile() {
-    this.toFileList();
-  }
-
   // 保存文件（导出模式）
   private async saveFile() {
     if (!this.checkParam()) {
@@ -207,11 +202,12 @@ struct FTP {
 
   build() {
     Column() {
-      // 标题栏
+      // 顶部导航栏
       Row() {
         Image($r("app.media.ic_angle_left"))
           .width(24)
           .height(24)
+          .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
             this.router.back();
@@ -220,140 +216,102 @@ struct FTP {
         Text($r('app.string.ftp_button_title'))
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-          .margin({ right: 40 })
+          .margin({ left: 16 })
+          .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
       .height(56)
-      .justifyContent(FlexAlign.SpaceBetween)
-      .alignItems(VerticalAlign.Center)
-      .padding({ left: 16, right: 16 })
 
+      // 主要内容区域
       Scroll() {
         Column() {
-          // 服务器地址
-          Column() {
-            Text(ResourceManager.getString($r('app.string.ftp_host')))
-              .fontSize(14)
-              .fontColor('#666666')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
+          // 服务器地址输入
+          Text($r('app.string.ftp_host'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          TextInput({ text: this.host, placeholder: ResourceManager.getString($r('app.string.ftp_host_placeholder')) })
+            .height(40)
+            .margin({ top: 20 })
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r("app.color.card_bg"))
+            .onChange((value: string) => {
+              this.host = value;
+            })
 
-            TextInput({ placeholder: ResourceManager.getString($r('app.string.ftp_host_placeholder')) })
-              .width('100%')
-              .height(44)
-              .backgroundColor('#F5F5F5')
-              .borderRadius(8)
-              .fontSize(14)
-              .padding({ left: 12, right: 12 })
-              .onChange((value: string) => {
-                this.host = value;
-              })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .margin({ bottom: 16 })
+          // 端口输入
+          Text($r('app.string.ftp_port'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          TextInput({ text: this.port })
+            .height(40)
+            .margin({ top: 20 })
+            .type(InputType.Number)
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r("app.color.card_bg"))
+            .onChange((value: string) => {
+              this.port = value;
+            })
 
-          // 端口
-          Column() {
-            Text(ResourceManager.getString($r('app.string.ftp_port')))
-              .fontSize(14)
-              .fontColor('#666666')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
+          // 用户名输入
+          Text($r('app.string.username'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          TextInput({ text: this.username, placeholder: ResourceManager.getString($r('app.string.username_placeholder')) })
+            .height(40)
+            .margin({ top: 20 })
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r("app.color.card_bg"))
+            .onChange((value: string) => {
+              this.username = value;
+            })
 
-            TextInput({ text: this.port })
-              .width('100%')
-              .height(44)
-              .backgroundColor('#F5F5F5')
-              .borderRadius(8)
-              .fontSize(14)
-              .padding({ left: 12, right: 12 })
-              .type(InputType.Number)
-              .onChange((value: string) => {
-                this.port = value;
-              })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .margin({ bottom: 16 })
+          // 密码输入
+          Text($r('app.string.password'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          TextInput({ text: this.password, placeholder: ResourceManager.getString($r('app.string.password_placeholder')) })
+            .height(40)
+            .margin({ top: 20 })
+            .type(InputType.Password)
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r("app.color.card_bg"))
+            .onChange((value: string) => {
+              this.password = value;
+            })
 
-          // 用户名
-          Column() {
-            Text(ResourceManager.getString($r('app.string.username')))
-              .fontSize(14)
-              .fontColor('#666666')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
-
-            TextInput({ placeholder: ResourceManager.getString($r('app.string.username_placeholder')) })
-              .width('100%')
-              .height(44)
-              .backgroundColor('#F5F5F5')
-              .borderRadius(8)
-              .fontSize(14)
-              .padding({ left: 12, right: 12 })
-              .onChange((value: string) => {
-                this.username = value;
-              })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .margin({ bottom: 16 })
-
-          // 密码
-          Column() {
-            Text(ResourceManager.getString($r('app.string.password')))
-              .fontSize(14)
-              .fontColor('#666666')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
-
-            TextInput({ placeholder: ResourceManager.getString($r('app.string.password_placeholder')) })
-              .width('100%')
-              .height(44)
-              .backgroundColor('#F5F5F5')
-              .borderRadius(8)
-              .fontSize(14)
-              .padding({ left: 12, right: 12 })
-              .type(InputType.Password)
-              .onChange((value: string) => {
-                this.password = value;
-              })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .margin({ bottom: 16 })
-
-          // 根路径
-          Column() {
-            Text(ResourceManager.getString($r('app.string.ftp_root_path')))
-              .fontSize(14)
-              .fontColor('#666666')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
-
-            TextInput({ text: this.rootPath })
-              .width('100%')
-              .height(44)
-              .backgroundColor('#F5F5F5')
-              .borderRadius(8)
-              .fontSize(14)
-              .padding({ left: 12, right: 12 })
-              .onChange((value: string) => {
-                this.rootPath = value || '/';
-              })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .margin({ bottom: 16 })
+          // 根路径输入
+          Text($r('app.string.ftp_root_path'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          TextInput({ text: this.rootPath })
+            .height(40)
+            .margin({ top: 20 })
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r("app.color.card_bg"))
+            .onChange((value: string) => {
+              this.rootPath = value || '/';
+            })
 
           // 安全连接
           Row() {
-            Text(ResourceManager.getString($r('app.string.ftp_secure')))
-              .fontSize(14)
-              .fontColor('#333333')
+            Text($r('app.string.ftp_secure'))
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
               .layoutWeight(1)
 
             Toggle({ type: ToggleType.Switch, isOn: this.secure })
@@ -362,55 +320,64 @@ struct FTP {
               })
           }
           .width('100%')
-          .height(44)
-          .padding({ left: 12, right: 12 })
+          .height(40)
+          .margin({ top: 20 })
           .alignItems(VerticalAlign.Center)
-          .backgroundColor('#F5F5F5')
-          .borderRadius(8)
-          .margin({ bottom: 16 })
-
-          // 连接测试按钮
-          Button(this.isConnecting ?
-            ResourceManager.getString($r('app.string.testing')) :
-            ResourceManager.getString($r('app.string.test_connection')))
-            .width('100%')
-            .height(44)
-            .fontSize(16)
-            .backgroundColor('#007AFF')
-            .enabled(!this.isConnecting)
-            .onClick(() => {
-              this.testConnection();
-            })
-            .margin({ bottom: 16 })
 
           // 连接状态
           if (this.connectionStatus) {
             Text(this.connectionStatus)
               .fontSize(14)
-              .fontColor(this.isErrorStatus ? '#FF3B30' : '#34C759')
-              .textAlign(TextAlign.Center)
-              .margin({ bottom: 16 })
+              .margin({ top: 10 })
+              .fontColor(this.isErrorStatus ? $r("app.color.error") : $r('app.color.success'))
           }
-        }
-        .padding(16)
-      }
-      .layoutWeight(1)
 
-      // 底部确认按钮
-      Column() {
-        Button(LocationParam.isSaveMode() ?
-          $r('app.string.save_button_text') :
-          $r('app.string.confirm_button_text'))
-          .width('100%')
-          .height(50)
-          .fontSize(16)
-          .backgroundColor(this.isLoading ? '#CCCCCC' : '#007AFF')
-          .enabled(!this.isLoading)
-          .onClick(() => {
-            this.handleConfirm();
-          })
-          .margin({ left: 16, right: 16, bottom: 16 })
+          // 加载中状态
+          if (this.isConnecting) {
+            Row() {
+              LoadingProgress()
+                .width(50)
+                .height(50)
+                .color($r('app.color.text_primary'))
+
+              Text($r('app.string.connecting'))
+                .fontSize(16)
+                .margin({ top: 16 })
+                .fontColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+          }
+
+          Row() {
+            // 测试连接按钮
+            Button($r('app.string.test_connection'))
+              .height(40)
+              .margin({ top: 20 })
+              .backgroundColor(Color.Gray)
+              .fontColor(Color.White)
+              .enabled(!this.isConnecting)
+              .onClick(() => {
+                this.testConnection();
+              })
+            Blank()
+            // 确定按钮
+            Button($r('app.string.confirm_button_text'))
+              .height(40)
+              .margin({ top: 20 })
+              .backgroundColor($r('app.color.button_bg_blue'))
+              .fontColor($r('app.color.button_text_blue'))
+              .onClick(() => {
+                this.handleConfirm();
+              })
+          }
+          .width("100%")
+        }
+        .width('90%')
+        .height('100%')
+        .alignItems(HorizontalAlign.Start)
       }
+      .width('100%')
+      .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
