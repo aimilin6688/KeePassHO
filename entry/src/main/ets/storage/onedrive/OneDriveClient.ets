@@ -1,7 +1,8 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../oauth2/OAuth2Types';
-import { HttpUtils, HttpResponse, RcpRequestConfig } from '../../common/utils/HttpUtils';
+import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig, AxiosError, AxiosResponseHeaders } from '@ohos/axios';
+import { util } from '@kit.ArkTS';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveClient';
@@ -67,14 +68,48 @@ export interface OneDriveClientOptions {
 }
 
 /**
+ * HTTP响应类（兼容原有接口）
+ */
+export class HttpResponse {
+  /**
+   * 是否成功
+   */
+  success: boolean = true;
+  /**
+   * HTTP状态码
+   */
+  statusCode: number = 200;
+  /**
+   * 错误消息
+   */
+  message: string = '';
+  /**
+   * 响应头
+   */
+  headers: Record<string, string> = {};
+  /**
+   * 响应体
+   */
+  body?: ArrayBuffer = undefined;
+
+  constructor(success: boolean, statusCode: number, message: string, headers: Record<string, string>, body?: ArrayBuffer) {
+    this.success = success;
+    this.statusCode = statusCode;
+    this.message = message;
+    this.headers = headers;
+    this.body = body;
+  }
+}
+
+/**
  * OneDrive客户端类
  * 用于与Microsoft Graph API交互，操作OneDrive文件
  */
 export class OneDriveClient {
   /**
-   * HTTP工具类实例
+   * Axios实例
    */
-  private httpUtils: HttpUtils;
+  private axiosInstance: AxiosInstance | null = null;
   /**
    * 客户端配置
    */
@@ -90,7 +125,6 @@ export class OneDriveClient {
    * @param oauth2Config OAuth2配置（用于刷新令牌）
    */
   constructor(options?: OneDriveClientOptions, oauth2Config?: OAuth2Config) {
-    this.httpUtils = new HttpUtils();
     if (options !== undefined) {
       this.updateOptions(options);
     }
@@ -105,10 +139,14 @@ export class OneDriveClient {
    */
   public updateOptions(options: OneDriveClientOptions): void {
     this.config = options;
-    this.httpUtils.close();
-    this.httpUtils.initSession(options.apiBaseUrl, options.timeout);
-    this.httpUtils.setHeaders({
-      'Authorization': `Bearer ${options.accessToken}`
+    this.axiosInstance = axios.create({
+      baseURL: options.apiBaseUrl,
+      timeout: options.timeout || 30000,
+      headers: {
+        'Authorization': `Bearer ${options.accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
     });
   }
 
@@ -125,11 +163,9 @@ export class OneDriveClient {
    * @param accessToken 访问令牌
    */
   public updateAccessToken(accessToken: string): void {
-    if (this.config) {
+    if (this.config && this.axiosInstance) {
       this.config.accessToken = accessToken;
-      this.httpUtils.setHeaders({
-        'Authorization': `Bearer ${accessToken}`
-      });
+      this.axiosInstance.defaults.headers['Authorization'] = `Bearer ${accessToken}`;
     }
   }
 
@@ -137,7 +173,7 @@ export class OneDriveClient {
    * 关闭连接
    */
   public close(): void {
-    this.httpUtils.close();
+    this.axiosInstance = null;
   }
 
   /**
@@ -147,6 +183,132 @@ export class OneDriveClient {
     if (this.config != null) {
       this.updateOptions(this.config);
     }
+  }
+
+  /**
+   * URL编码
+   * @param data 要编码的数据
+   * @returns 编码后的字符串
+   */
+  private urlEncode(data: Record<string, string>): string {
+    const params: string[] = [];
+    const entries: Array<[string, string]> = Object.entries(data);
+    for (let i = 0; i < entries.length; i++) {
+      const key = entries[i][0];
+      const value = entries[i][1];
+      params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    }
+    return params.join('&');
+  }
+
+  /**
+   * 从对象中提取字符串值
+   * @param obj 对象
+   * @param key 键
+   * @param defaultValue 默认值
+   * @returns 字符串值
+   */
+  private extractStringFromObject(obj: Record<string, Object>, key: string, defaultValue?: string): string {
+    const value = obj[key];
+    if (value !== undefined && value !== null && typeof value === 'string') {
+      return value;
+    }
+    if (defaultValue !== undefined) {
+      return defaultValue;
+    }
+    throw new Error(`Missing required field: ${key}`);
+  }
+
+  /**
+   * 从对象中提取可选字符串值
+   * @param obj 对象
+   * @param key 键
+   * @returns 字符串值或undefined
+   */
+  private extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string | undefined {
+    const value = obj[key];
+    if (value !== undefined && value !== null && typeof value === 'string') {
+      return value;
+    }
+    return undefined;
+  }
+
+  /**
+   * 从对象中提取可选数字值
+   * @param obj 对象
+   * @param key 键
+   * @returns 数字值或undefined
+   */
+  private extractOptionalNumberFromObject(obj: Record<string, Object>, key: string): number | undefined {
+    const value = obj[key];
+    if (value !== undefined && value !== null && typeof value === 'number') {
+      return value;
+    }
+    return undefined;
+  }
+
+  /**
+   * 转换Axios响应为HttpResponse
+   * @param response Axios响应
+   * @returns HttpResponse
+   */
+  private convertAxiosResponse(response: AxiosResponse): HttpResponse {
+    const headers: Record<string, string> = {};
+    if (response.headers) {
+      const headerEntries = Object.entries(response.headers) as Array<[string, string]>;
+      for (let i = 0; i < headerEntries.length; i++) {
+        const key = headerEntries[i][0];
+        const value = headerEntries[i][1];
+        headers[key] = value;
+      }
+    }
+
+    let body: ArrayBuffer | undefined = undefined;
+    if (response.data) {
+      if (response.data instanceof ArrayBuffer) {
+        body = response.data;
+      }
+    }
+
+    return new HttpResponse(
+      true,
+      response.status,
+      response.statusText || '',
+      headers,
+      body
+    );
+  }
+
+  /**
+   * 转换Axios错误为HttpResponse
+   * @param error Axios错误
+   * @returns HttpResponse
+   */
+  private convertAxiosError(error: AxiosError): HttpResponse {
+    const headers: Record<string, string> = {};
+    if (error.response?.headers) {
+      const headerEntries = Object.entries(error.response.headers) as Array<[string, string]>;
+      for (let i = 0; i < headerEntries.length; i++) {
+        const key = headerEntries[i][0];
+        const value = headerEntries[i][1];
+        headers[key] = value;
+      }
+    }
+
+    let errorData: ArrayBuffer | undefined = undefined;
+    if (error.response?.data) {
+      if (error.response.data instanceof ArrayBuffer) {
+        errorData = error.response.data;
+      }
+    }
+
+    return new HttpResponse(
+      false,
+      error.response?.status || 0,
+      error.message || 'Unknown error',
+      headers,
+      errorData
+    );
   }
 
   /**
@@ -169,16 +331,23 @@ export class OneDriveClient {
       };
 
       const url = this.oauth2Config.tokenEndpoint;
-      const response: HttpResponse = await this.httpUtils.post(url, this.httpUtils.urlEncode(body), {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }, this.config?.timeout);
+      const axiosInstance = axios.create({
+        timeout: this.config?.timeout || 30000
+      });
 
-      if (response.success && response.body) {
-        const result = response.body;
-        const jsonStr = ByteUtils.bytesToString(result);
+      const config: AxiosRequestConfig = {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      };
+      const response: AxiosResponse = await axiosInstance.post(url, this.urlEncode(body), config);
+
+      const httpResponse = this.convertAxiosResponse(response);
+      if (httpResponse.success && httpResponse.body) {
+        const jsonStr = ByteUtils.bytesToString(httpResponse.body);
         return this.parseTokenResponse(JSON.parse(jsonStr));
       } else {
-        throw new Error(`HTTP ${response.statusCode}: ${response.message}`);
+        throw new Error(`HTTP ${httpResponse.statusCode}: ${httpResponse.message}`);
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Refresh token failed: %{public}s', (error as Error).message);
@@ -191,8 +360,15 @@ export class OneDriveClient {
    * @returns Promise<HttpResponse> 验证结果
    */
   public async valid(): Promise<HttpResponse> {
-    const requestConfig: RcpRequestConfig = new RcpRequestConfig('GET', '/me/drive/root');
-    return await this.httpUtils.rcpRequest(requestConfig);
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      const response: AxiosResponse = await this.axiosInstance.get('/me/drive/root');
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
   }
 
   /**
@@ -201,9 +377,16 @@ export class OneDriveClient {
    * @returns Promise<HttpResponse> 结果信息
    */
   public async getInfo(path: string = ''): Promise<HttpResponse> {
-    let apiPath = path ? this.pathToApiPath(path) : '/me/drive/root';
-    const requestConfig: RcpRequestConfig = new RcpRequestConfig('GET', apiPath);
-    return await this.httpUtils.rcpRequest(requestConfig);
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      let apiPath = path ? this.pathToApiPath(path) : '/me/drive/root';
+      const response: AxiosResponse = await this.axiosInstance.get(apiPath);
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
   }
 
   /**
@@ -213,10 +396,17 @@ export class OneDriveClient {
    * @returns Promise<HttpResponse> 结果信息
    */
   public async list(path: string = '', filter: number = 0): Promise<HttpResponse> {
-    let apiPath = path ? this.pathToApiPath(path) : '/me/drive/root';
-    apiPath += '/children';
-    const requestConfig: RcpRequestConfig = new RcpRequestConfig('GET', apiPath);
-    return await this.httpUtils.rcpRequest(requestConfig);
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      let apiPath = path ? this.pathToApiPath(path) : '/me/drive/root';
+      apiPath += '/children';
+      const response: AxiosResponse = await this.axiosInstance.get(apiPath);
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
   }
 
   /**
@@ -225,10 +415,17 @@ export class OneDriveClient {
    * @returns Promise<HttpResponse> 结果信息
    */
   public async get(path: string): Promise<HttpResponse> {
-    let apiPath = this.pathToApiPath(path);
-    apiPath += '/content';
-    const requestConfig: RcpRequestConfig = new RcpRequestConfig('GET', apiPath);
-    return await this.httpUtils.rcpRequest(requestConfig);
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      let apiPath = this.pathToApiPath(path);
+      apiPath += '/content';
+      const response: AxiosResponse = await this.axiosInstance.get(apiPath);
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
   }
 
   /**
@@ -238,14 +435,23 @@ export class OneDriveClient {
    * @returns Promise<HttpResponse> 结果信息
    */
   public async upload(remoteUri: string, fileBuffer: ArrayBuffer): Promise<HttpResponse> {
-    hilog.info(DOMAIN, TAG, `File upload url: ${remoteUri}, size: ${fileBuffer.byteLength}`);
-    const uploadHeaders: Record<string, string> = {
-      'Content-Type': 'application/octet-stream'
-    };
-    const requestConfig: RcpRequestConfig = new RcpRequestConfig('PUT', remoteUri, uploadHeaders, fileBuffer);
-    const rr = await this.httpUtils.rcpRequest(requestConfig);
-    hilog.info(DOMAIN, TAG, 'File upload result: %{public}s', rr.message);
-    return rr;
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      hilog.info(DOMAIN, TAG, `File upload url: ${remoteUri}, size: ${fileBuffer.byteLength}`);
+      const config: AxiosRequestConfig = {
+        headers: {
+          'Content-Type': 'application/octet-stream'
+        }
+      };
+      const response: AxiosResponse = await this.axiosInstance.put(remoteUri, fileBuffer, config);
+      const result = this.convertAxiosResponse(response);
+      hilog.info(DOMAIN, TAG, 'File upload result: %{public}s', result.message);
+      return result;
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
   }
 
   /**
@@ -254,16 +460,16 @@ export class OneDriveClient {
    * @returns OneDriveResource 资源信息
    */
   public parseResource(data: Record<string, Object>): OneDriveResource {
-    const id = this.httpUtils.extractOptionalStringFromObject(data, 'id');
-    const name = this.httpUtils.extractOptionalStringFromObject(data, 'name');
-    const size = this.httpUtils.extractOptionalNumberFromObject(data, 'size') || 0;
-    const lastModified = this.httpUtils.extractOptionalStringFromObject(data, 'lastModifiedDateTime');
+    const id = this.extractOptionalStringFromObject(data, 'id');
+    const name = this.extractOptionalStringFromObject(data, 'name');
+    const size = this.extractOptionalNumberFromObject(data, 'size') || 0;
+    const lastModified = this.extractOptionalStringFromObject(data, 'lastModifiedDateTime');
     const path = this.extractPath(data);
-    const downloadUrl = this.httpUtils.extractOptionalStringFromObject(data, '@microsoft.graph.downloadUrl');
+    const downloadUrl = this.extractOptionalStringFromObject(data, '@microsoft.graph.downloadUrl');
 
     const isFolder = data['folder'] !== undefined && data['folder'] !== null;
-    const childrenCount = isFolder ? this.httpUtils.extractOptionalNumberFromObject(data['folder'] as Record<string, Object>, 'childCount') || 0 : 0;
-    const mimeType = isFolder ? undefined : this.httpUtils.extractOptionalStringFromObject(data['file'] as Record<string, Object>, 'mimeType');
+    const childrenCount = isFolder ? this.extractOptionalNumberFromObject(data['folder'] as Record<string, Object>, 'childCount') || 0 : 0;
+    const mimeType = isFolder ? undefined : this.extractOptionalStringFromObject(data['file'] as Record<string, Object>, 'mimeType');
 
     return {
       id: id || '',
@@ -318,15 +524,15 @@ export class OneDriveClient {
    * @returns OAuth2Token 令牌信息
    */
   private parseTokenResponse(response: Record<string, Object>): OAuth2Token {
-    const accessToken = this.httpUtils.extractStringFromObject(response, 'access_token');
-    const tokenType = this.httpUtils.extractStringFromObject(response, 'token_type', 'Bearer');
-    const refreshToken = this.httpUtils.extractOptionalStringFromObject(response, 'refresh_token');
-    const expiresIn = this.httpUtils.extractOptionalNumberFromObject(response, 'expires_in');
-    const scope = this.httpUtils.extractOptionalStringFromObject(response, 'scope');
+    const accessToken = this.extractStringFromObject(response, 'access_token');
+    const tokenType = this.extractStringFromObject(response, 'token_type', 'Bearer');
+    const refreshToken = this.extractOptionalStringFromObject(response, 'refresh_token');
+    const expiresIn = this.extractOptionalNumberFromObject(response, 'expires_in');
+    const scope = this.extractOptionalStringFromObject(response, 'scope');
 
     if (!accessToken || accessToken.trim().length === 0) {
-      const error = this.httpUtils.extractStringFromObject(response, 'error', 'Unknown error');
-      const errorDescription = this.httpUtils.extractStringFromObject(response, 'error_description', '');
+      const error = this.extractStringFromObject(response, 'error', 'Unknown error');
+      const errorDescription = this.extractStringFromObject(response, 'error_description', '');
       throw new Error(`${error}: ${errorDescription}`);
     }
 
