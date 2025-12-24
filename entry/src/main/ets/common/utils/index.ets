@@ -6,7 +6,6 @@ export * from './DateUtils';
 export * from './DeviceUtils';
 export * from './FilenameUtils';
 export * from './FileUtils';
-export * from './HttpUtils';
 export * from './IconUtils';
 export * from './ImagePickerUtils';
 export * from './KdbxUtils';
