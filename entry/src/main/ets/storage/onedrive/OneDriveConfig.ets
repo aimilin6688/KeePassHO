@@ -1,4 +1,3 @@
-import { ProtectedValue } from 'kdbxweb';
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 
@@ -10,6 +9,7 @@ export interface OneDriveStorageConfigOptions {
    * 根路径（可选）
    */
   rootPath?: string;
+
   /**
    * 超时时间（毫秒，可选）
    */
