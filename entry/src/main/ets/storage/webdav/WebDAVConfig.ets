@@ -1,4 +1,3 @@
-import { ProtectedValue } from 'kdbxweb';
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 
