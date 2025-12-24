@@ -1,8 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils } from 'kdbxweb';
-import { OAuth2Config, OAuth2Token } from '../oauth2/OAuth2Types';
-import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig, AxiosError, AxiosResponseHeaders } from '@ohos/axios';
-import { util } from '@kit.ArkTS';
+import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveClient';
@@ -15,34 +14,42 @@ export interface OneDriveResource {
    * 资源ID
    */
   id: string;
+
   /**
    * 资源名称
    */
   name: string;
+
   /**
    * 资源类型：file 或 folder
    */
   type: string;
+
   /**
    * 文件大小
    */
   size: number;
+
   /**
    * 最后修改时间
    */
   lastModified: string;
+
   /**
    * 资源路径
    */
   path: string;
+
   /**
    * 下载URL
    */
   downloadUrl?: string;
+
   /**
    * 子节点数量（仅文件夹）
    */
   childrenCount?: number;
+
   /**
    * 文件MIME类型
    */
@@ -57,10 +64,12 @@ export interface OneDriveClientOptions {
    * OneDrive API基础URL
    */
   apiBaseUrl: string;
+
   /**
    * 访问令牌
    */
   accessToken: string;
+
   /**
    * 超时时间（毫秒）
    */

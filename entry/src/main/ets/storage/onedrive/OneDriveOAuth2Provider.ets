@@ -1,8 +1,6 @@
 import { http } from '@kit.NetworkKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { BaseOAuth2Provider } from '../oauth2/BaseOAuth2Provider';
-import { OAuth2Config, OAuth2Token, OAuth2UserInfo } from '../oauth2/OAuth2Types';
-import { OAuth2Error, OAuth2ErrorCodes } from '../oauth2/OAuth2Error';
+import { BaseOAuth2Provider, OAuth2Config, OAuth2Error, OAuth2ErrorCodes, OAuth2UserInfo } from '../../common/oauth2';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveOAuth2Provider';
@@ -15,6 +13,7 @@ export interface OneDriveOAuth2Config extends OAuth2Config {
    * Microsoft Graph API基础URL
    */
   apiBaseUrl?: string;
+
   /**
    * 租户ID，默认为common
    */
