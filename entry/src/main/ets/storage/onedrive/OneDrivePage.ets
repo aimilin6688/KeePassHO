@@ -94,7 +94,7 @@ struct OneDrive {
   /**
    * 测试OneDrive连接
    */
-  private async testConnection(): void {
+  private async testConnection(): Promise<void> {
     if (!this.checkParam()) {
       return;
     }
@@ -125,7 +125,7 @@ struct OneDrive {
   /**
    * 保存OneDrive配置（选择文件）
    */
-  private async selectFile(): void {
+  private async selectFile(): Promise<void> {
     if (!this.checkParam()) {
       return;
     }
@@ -164,7 +164,7 @@ struct OneDrive {
   /**
    * 导出数据库（选择目录）
    */
-  private async selectDir(): void {
+  private async selectDir(): Promise<void> {
     if (!this.checkParam()) {
       return;
     }
@@ -363,7 +363,7 @@ struct OneDrive {
             .margin({ top: 20, left: 16 })
             .fontColor($r('app.color.text_primary'))
             .textAlign(TextAlign.Start)
-          TextInput({ text: this.redirectUri, placeholder: 'Enter redirect URI' })
+          TextArea({ text: this.redirectUri, placeholder: 'Enter redirect URI' })
             .height(40)
             .type(TextAreaType.URL)
             .margin({ top: 20 })
