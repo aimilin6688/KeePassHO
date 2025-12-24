@@ -9,7 +9,6 @@
     "kdbxweb": "file:../kdbxweb",
     "@hw-agconnect/petal-aegis": "^1.4.11-300",
     "@ohos/basic-ftp": "^1.0.3",
-    "@pura/harmony-utils": "^1.3.9",
     "@ohos/axios": "^2.2.6"
   },
   "devDependencies": {},
