@@ -7,7 +7,8 @@
   "license": "",
   "dependencies": {
     "kdbxweb": "file:../kdbxweb",
-    "@hw-agconnect/petal-aegis": "^1.4.11-300"
+    "@hw-agconnect/petal-aegis": "^1.4.11-300",
+    "@ohos/basic-ftp": "^1.0.3"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
