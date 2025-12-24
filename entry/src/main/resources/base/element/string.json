@@ -417,6 +417,10 @@
       "value": "WebDAV"
     },
     {
+      "name": "ftp_button_title",
+      "value": "FTP"
+    },
+    {
       "name": "dialog_confirm_title",
       "value": "Confirm deletion"
     },
@@ -731,6 +735,50 @@
     {
       "name": "webdav_not_init",
       "value": "WebDAV not initialized"
+    },
+    {
+      "name": "ftp_not_init",
+      "value": "FTP not initialized"
+    },
+    {
+      "name": "ftp_host",
+      "value": "FTP Server"
+    },
+    {
+      "name": "ftp_host_placeholder",
+      "value": "Please enter FTP server address"
+    },
+    {
+      "name": "ftp_host_empty",
+      "value": "FTP server address cannot be empty"
+    },
+    {
+      "name": "ftp_port",
+      "value": "Port"
+    },
+    {
+      "name": "ftp_port_invalid",
+      "value": "Invalid port number"
+    },
+    {
+      "name": "ftp_root_path",
+      "value": "Root Path"
+    },
+    {
+      "name": "ftp_secure",
+      "value": "Use FTPS (FTP over TLS)"
+    },
+    {
+      "name": "ftp_username_empty",
+      "value": "Username cannot be empty"
+    },
+    {
+      "name": "ftp_password_empty",
+      "value": "Password cannot be empty"
+    },
+    {
+      "name": "testing",
+      "value": "Testing..."
     },
     {
       "name": "merging_database",
@@ -1245,6 +1293,10 @@
       "value": "Save the file to the WebDAV service"
     },
     {
+      "name": "location_ftp_desc_save",
+      "value": "Save the file to the FTP server"
+    },
+    {
       "name": "location_title_select",
       "value": "Please select the file"
     },
@@ -1255,6 +1307,10 @@
     {
       "name": "location_webdav_desc_select",
       "value": "Select a files from WebDAV"
+    },
+    {
+      "name": "location_ftp_desc_select",
+      "value": "Select a file from FTP server"
     },
     {
       "name": "Settings_sort_size",
