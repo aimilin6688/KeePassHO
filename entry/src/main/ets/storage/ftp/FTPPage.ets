@@ -1,8 +1,8 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { StorageType } from '..';
+import { FileType, StorageConfig, StorageType } from '..';
 import { FTPStorageConfig } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, WindowUtils } from '../../common/utils';
+import { ResourceManager, FilenameUtils, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -86,9 +86,9 @@ struct FTP {
   private handleConfirm() {
     // 导出数据库
     if (LocationParam.isSaveMode()) {
-      this.saveFile();
+      this.selectDir();
     } else {
-      this.toFileList();
+      this.selectFile();
     }
   }
 
@@ -121,7 +121,7 @@ struct FTP {
     this.isErrorStatus = false;
 
     try {
-      // 测试连接
+      // 简单测试连接
       this.fileManager.init(this.getStorageConfig());
       const testPath = this.rootPath;
       const result = await this.fileManager.exists(testPath);
@@ -131,34 +131,113 @@ struct FTP {
       } else {
         this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
         this.isErrorStatus = true;
+        hilog.error(DOMAIN, TAG, 'FTP connection error: %{public}s', this.connectionStatus);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'FTP connection test failed: ' + error.message);
-      this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed')) + ': ' + error.message;
+      this.connectionStatus = error.message;
       this.isErrorStatus = true;
+      hilog.error(DOMAIN, TAG, 'FTP connection error: %{public}s', this.connectionStatus);
+    } finally {
+      this.isConnecting = false;
+    }
+  }
+
+  // 选择文件（导入模式）
+  private async selectFile() {
+    if (!this.checkParam()) {
+      return;
+    }
+    this.isConnecting = true;
+    this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
+    this.isErrorStatus = false;
+    try {
+      const storageConfig = this.getStorageConfig();
+      // 获取文件信息
+      const path = this.rootPath + LocationParam.getFileName();
+      const fileInfo = await this.fileManager.init(storageConfig).getInfo(path);
+      hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      if (fileInfo.type === FileType.DIR) {
+        this.toFileList();
+      } else {
+        // 回调位置信息
+        LocationParam.callOnLocation({
+          mode: LocationParam.getMode(),
+          filePath: path,
+          fileName: fileInfo.name,
+          fileSuffix: LocationParam.getFileSuffix(),
+          storageType: StorageType.FTP,
+          storageConfig: storageConfig
+        });
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.rootPath, error.message, error.stack);
+      this.connectionStatus = error.message;
+      this.isErrorStatus = true;
+      this.promptAction.showToast({ message: error.message });
+    } finally {
+      this.isConnecting = false;
+    }
+  }
+
+  /**
+   * 导出数据库
+   */
+  private async selectDir() {
+    if (!this.checkParam()) {
+      return;
+    }
+    this.isConnecting = true;
+    this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
+    this.isErrorStatus = false;
+    try {
+      // 配置信息
+      const storageConfig = this.getStorageConfig();
+      this.fileManager.init(storageConfig);
+      this.connectionStatus = ResourceManager.getString($r("app.string.check_file_existing"));
+      // 获取文件信息
+      const path = this.rootPath + LocationParam.getFileName();
+      const existsFile = await this.fileManager.exists(path);
+      hilog.info(DOMAIN, TAG, `Export file to FTP path: ${path}`);
+      if (existsFile) {
+        // 获取文件类型
+        this.connectionStatus = ResourceManager.getString($r('app.string.get_file_info'));
+        const fileInfo = await this.fileManager.getInfo(path);
+        hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+        // 如果是文件夹，则跳转到文件列表页面
+        if (fileInfo.type === FileType.DIR) {
+          this.toFileList();
+        } else {
+          this.handleSelectDir(storageConfig, path);
+        }
+      } else {
+        this.handleSelectDir(storageConfig, path);
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.rootPath, error.message, error.stack);
+      this.connectionStatus = error.message;
+      this.isErrorStatus = true;
+      this.promptAction.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }
   }
 
   // 保存文件（导出模式）
-  private async saveFile() {
-    if (!this.checkParam()) {
-      return;
-    }
-    this.isLoading = true;
+  private async handleSelectDir(storageConfig: StorageConfig, filePath: string) {
     try {
-      const filePath = this.rootPath + LocationParam.getFileName();
+      this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
       const database = FileService.getDatabase();
       const buffer = await database.save();
-      await this.fileManager.init(this.getStorageConfig()).write(filePath, buffer);
+      await this.fileManager.init(storageConfig).write(filePath, buffer);
       this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) });
       this.router.back();
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Save file error: ' + error.message);
+      hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
+      this.connectionStatus = error.message;
+      this.isErrorStatus = true;
       this.promptAction.showToast({ message: error.message });
     } finally {
-      this.isLoading = false;
+      this.isConnecting = false;
     }
   }
 
