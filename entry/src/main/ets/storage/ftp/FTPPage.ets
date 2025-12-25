@@ -2,7 +2,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { FTPStorageConfig, ProtocolType } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -196,7 +196,7 @@ struct FTP {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.rootPath, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }
@@ -239,7 +239,7 @@ struct FTP {
       hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.rootPath, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }
@@ -252,13 +252,13 @@ struct FTP {
       const database = FileService.getDatabase();
       const buffer = await database.save();
       await this.fileManager.init(storageConfig).write(filePath, buffer);
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.save_success')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.save_success')) });
       this.router.back();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }
@@ -267,20 +267,20 @@ struct FTP {
   // 参数校验
   private checkParam(): boolean {
     if (!this.host) {
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.ftp_host_empty')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.ftp_host_empty')) });
       return false;
     }
     if (!this.username) {
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.ftp_username_empty')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.ftp_username_empty')) });
       return false;
     }
     if (!this.password) {
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.ftp_password_empty')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.ftp_password_empty')) });
       return false;
     }
     const portNum = parseInt(this.port);
     if (isNaN(portNum) || portNum <= 0 || portNum > 65535) {
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.ftp_port_invalid')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.ftp_port_invalid')) });
       return false;
     }
     return true;
