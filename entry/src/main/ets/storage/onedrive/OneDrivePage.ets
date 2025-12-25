@@ -456,7 +456,6 @@ struct OneDrive {
           .width("100%")
         }
         .width('90%')
-        .height('100%')
         .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
