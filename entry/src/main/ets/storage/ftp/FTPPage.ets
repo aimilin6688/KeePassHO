@@ -1,8 +1,8 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
-import { FTPStorageConfig } from './FTPConfig';
+import { FTPStorageConfig, ProtocolType } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, FilenameUtils, WindowUtils } from '../../common/utils';
+import { ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -20,6 +20,7 @@ struct FTP {
   @State password: string = '';
   @State rootPath: string = '/';
   @State secure: boolean = false;
+  @State protocol: ProtocolType = ProtocolType.FTP;
   @State isLoading: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
@@ -48,9 +49,19 @@ struct FTP {
       // 尝试从文件名中提取主机信息
       if (fileName.includes('://')) {
         const protocolEnd = fileName.indexOf('://');
+        const protocol = fileName.substring(0, protocolEnd).toLowerCase();
         const rest = fileName.substring(protocolEnd + 3);
         const slashPos = rest.indexOf('/');
         const colonPos = rest.indexOf(':');
+
+        // 根据协议设置类型和默认端口
+        if (protocol === 'sftp') {
+          this.protocol = ProtocolType.SFTP;
+          this.port = '22';
+        } else {
+          this.protocol = ProtocolType.FTP;
+          this.port = '21';
+        }
 
         if (colonPos > 0) {
           this.host = rest.substring(0, colonPos);
@@ -79,6 +90,18 @@ struct FTP {
       this.password = storageConfig.getPasswordText();
       this.rootPath = storageConfig.rootPath || '/';
       this.secure = storageConfig.secure === true;
+      this.protocol = storageConfig.protocol || ProtocolType.FTP;
+    }
+  }
+
+  // 协议切换时的处理
+  private onProtocolChange(value: ProtocolType) {
+    this.protocol = value;
+    // 根据协议设置默认端口
+    if (value === ProtocolType.SFTP) {
+      this.port = '22';
+    } else {
+      this.port = '21';
     }
   }
 
@@ -274,7 +297,8 @@ struct FTP {
         port: portNum,
         rootPath: this.rootPath || '/',
         secure: this.secure,
-        timeout: 30000
+        timeout: 30000,
+        protocol: this.protocol
       }
     );
   }
@@ -319,6 +343,36 @@ struct FTP {
             .onChange((value: string) => {
               this.host = value;
             })
+
+          // 协议选择
+          Text('协议')
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          Row() {
+            Button('FTP')
+              .height(40)
+              .layoutWeight(1)
+              .margin({ right: 8 })
+              .backgroundColor(this.protocol === ProtocolType.FTP ? $r('app.color.button_bg_blue') : Color.Gray)
+              .fontColor(Color.White)
+              .onClick(() => {
+                this.onProtocolChange(ProtocolType.FTP);
+              })
+            Button('SFTP')
+              .height(40)
+              .layoutWeight(1)
+              .margin({ left: 8 })
+              .backgroundColor(this.protocol === ProtocolType.SFTP ? $r('app.color.button_bg_blue') : Color.Gray)
+              .fontColor(Color.White)
+              .onClick(() => {
+                this.onProtocolChange(ProtocolType.SFTP);
+              })
+          }
+          .width('100%')
+          .margin({ top: 20 })
 
           // 端口输入
           Text($r('app.string.ftp_port'))
@@ -386,22 +440,24 @@ struct FTP {
               this.rootPath = value || '/';
             })
 
-          // 安全连接
-          Row() {
-            Text($r('app.string.ftp_secure'))
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .layoutWeight(1)
+          // 安全连接（仅FTP可用）
+          if (this.protocol === ProtocolType.FTP) {
+            Row() {
+              Text($r('app.string.ftp_secure'))
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .layoutWeight(1)
 
-            Toggle({ type: ToggleType.Switch, isOn: this.secure })
-              .onChange((isOn: boolean) => {
-                this.secure = isOn;
-              })
+              Toggle({ type: ToggleType.Switch, isOn: this.secure })
+                .onChange((isOn: boolean) => {
+                  this.secure = isOn;
+                })
+            }
+            .width('100%')
+            .height(40)
+            .margin({ top: 20 })
+            .alignItems(VerticalAlign.Center)
           }
-          .width('100%')
-          .height(40)
-          .margin({ top: 20 })
-          .alignItems(VerticalAlign.Center)
 
           // 连接状态
           if (this.connectionStatus) {

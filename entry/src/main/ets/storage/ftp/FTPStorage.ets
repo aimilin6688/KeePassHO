@@ -1,20 +1,23 @@
 import { FileInfo, FileType, IFileStorage, PageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { Client } from '@ohos/basic-ftp';
 import { CommonUtils, ResourceManager } from '../../common/utils';
 import { StorageError, StorageErrorCodes } from '../StorageError';
-import { FTPPageConfig, FTPStorageConfig } from './FTPConfig';
+import { FTPPageConfig, FTPStorageConfig, ProtocolType } from './FTPConfig';
+import { IFTPHandler } from './IFTPHandler';
+import { SFTPHandler } from './SFTPHandler';
+import { FTPHandler } from './FTPHandler';
 
 const DOMAIN = 0x0000;
 const TAG = 'FTPStorage';
 
 /**
  * FTP存储实现类
+ * 作为FTP和SFTP的统一接口，根据配置选择合适的处理器
  */
 export class FTPStorage implements IFileStorage {
   private config: FTPStorageConfig | undefined;
-  private client: Client | undefined;
+  private handler: IFTPHandler | undefined;
 
   constructor(config?: FTPStorageConfig) {
     if (config) {
@@ -28,107 +31,137 @@ export class FTPStorage implements IFileStorage {
 
   public init(config: FTPStorageConfig): void {
     this.config = this.parseConfig(config);
-    if (this.client) {
-      this.client.close();
-    }
-    this.client = new Client(CommonUtils.getContext(), this.config.timeout);
+    this.createHandler();
   }
 
   private parseConfig(config: FTPStorageConfig): FTPStorageConfig {
     if (config instanceof FTPStorageConfig) {
       return config;
     }
-    config = config as FTPStorageConfig;
-    return new FTPStorageConfig(config.host, config.getUserNameText(), config.getPasswordText(), {
-      rootPath: config.rootPath,
-      timeout: config.timeout,
-      secure: config.secure,
-      port: config.port
-    });
+    const inputConfig: Record<string, Object> = config;
+    const protocolValue = inputConfig['protocol'] as string | undefined;
+    let protocol = ProtocolType.FTP;
+    if (protocolValue === 'SFTP') {
+      protocol = ProtocolType.SFTP;
+    }
+
+    const portValue = inputConfig['port'] as number | string | undefined;
+    const port: number | undefined = typeof portValue === 'string' ? parseInt(portValue) : portValue;
+
+    return new FTPStorageConfig(
+      inputConfig['host'] as string,
+      (inputConfig['getUserNameText'] as () => string)(),
+      (inputConfig['getPasswordText'] as () => string)(),
+      {
+        rootPath: inputConfig['rootPath'] as string | undefined,
+        timeout: inputConfig['timeout'] as number | undefined,
+        secure: inputConfig['secure'] as boolean | undefined,
+        port: port,
+        protocol: protocol
+      }
+    );
   }
 
-  private async ensureConnected(): Promise<Client> {
-    if (!this.client) {
-      hilog.error(DOMAIN, TAG, 'FTP client not initialized');
+  private createHandler(): void {
+    if (!this.config) {
+      return;
+    }
+
+    const config = this.config;
+
+    // 根据协议类型创建对应的处理器
+    if (config.isSFTP()) {
+      this.handler = new SFTPHandler({
+        host: config.host,
+        port: config.port,
+        username: config.getUserNameText(),
+        password: config.getPasswordText(),
+        timeout: config.timeout
+      });
+    } else {
+      this.handler = new FTPHandler({
+        host: config.host,
+        port: config.port,
+        username: config.getUserNameText(),
+        password: config.getPasswordText(),
+        secure: config.secure,
+        timeout: config.timeout
+      });
+    }
+  }
+
+  /**
+   * 确保已连接
+   */
+  private async ensureConnected(): Promise<IFTPHandler> {
+    if (!this.handler) {
+      hilog.error(DOMAIN, TAG, 'Storage handler not initialized');
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.ftp_not_init')));
     }
 
     if (!this.config) {
-      hilog.error(DOMAIN, TAG, 'FTP config not initialized');
+      hilog.error(DOMAIN, TAG, 'Storage config not initialized');
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.ftp_not_init')));
     }
 
-    try {
-      // 连接到FTP服务器
-      await this.client.ftp.reset();
-      await this.client.access({
-        host: this.config.host,
-        port: this.config.port,
-        user: this.config.getUserNameText(),
-        password: this.config.getPasswordText(),
-        secure: this.config.secure
-      });
-      return this.client;
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'FTP connection failed: ' + error.message);
-      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
+    const config = this.config;
+
+    // 检查连接状态，如果未连接则连接
+    const ftpHandler = this.handler as FTPHandler;
+    const sftpHandler = this.handler as SFTPHandler;
+
+    if (config.isSFTP() && sftpHandler.isClosed()) {
+      await sftpHandler.connect();
+    } else if (!config.isSFTP() && ftpHandler.isClosed()) {
+      await ftpHandler.connect();
     }
+
+    return this.handler;
   }
 
   private getFullPath(path: string): string {
-    if (!this.config?.rootPath) {
+    const config = this.config;
+    if (!config?.rootPath) {
       return path;
     }
-    // 确保路径格式正确
-    const rootPath = this.config.rootPath.startsWith('/') ? this.config.rootPath : '/' + this.config.rootPath;
+    const rootPath = config.rootPath.startsWith('/') ? config.rootPath : '/' + config.rootPath;
     const targetPath = path.startsWith('/') ? path : '/' + path;
     return rootPath + targetPath;
   }
 
   /**
    * 读取文件内容
-   * @param path 文件路径
-   * @returns 结果
    */
   public async read(path: string): Promise<ArrayBuffer> {
+    const config = this.config;
     try {
-      const client = await this.ensureConnected();
       const fullPath = this.getFullPath(path);
-
-      // 创建临时文件来存储下载内容
       const tempDir = CommonUtils.getContext().cacheDir;
       const tempFilePath = tempDir + '/temp_' + Date.now() + '.tmp';
 
       try {
-        // 下载文件到临时位置
-        await client.downloadTo(tempFilePath, fullPath);
+        const handler = await this.ensureConnected();
+        await handler.downloadFrom(fullPath, tempFilePath);
 
-        // 读取临时文件内容
         const file = await fs.open(tempFilePath, fs.OpenMode.READ_ONLY);
         const fileInfo = await fs.stat(file.fd);
         const buffer = new ArrayBuffer(fileInfo.size);
         await fs.read(file.fd, buffer);
         await fs.close(file.fd);
-
-        // 删除临时文件
         await fs.unlink(tempFilePath);
 
         return buffer;
       } catch (downloadError) {
-        // 清理临时文件（如果存在）
         try {
           await fs.unlink(tempFilePath);
-        } catch (cleanupError) {
+        } catch {
           // 忽略清理错误
         }
-        if (downloadError instanceof Error) {
-          throw downloadError;
-        } else {
-          throw new Error(String(downloadError));
-        }
+        const err = downloadError instanceof Error ? downloadError : new Error(String(downloadError));
+        throw err;
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'FTP read error: ' + error.message);
+      hilog.error(DOMAIN, TAG, `${config?.protocol || 'FTP'} read error: ${error.message}`);
       if (error instanceof StorageError) {
         throw error;
       }
@@ -136,41 +169,35 @@ export class FTPStorage implements IFileStorage {
     }
   }
 
+  /**
+   * 写入文件内容
+   */
   public async write(path: string, content: ArrayBuffer): Promise<void> {
+    const config = this.config;
     try {
-      const client = await this.ensureConnected();
       const fullPath = this.getFullPath(path);
-
-      // 创建临时文件来存储上传内容
       const tempDir = CommonUtils.getContext().cacheDir;
       const tempFilePath = tempDir + '/temp_upload_' + Date.now() + '.tmp';
 
       try {
-        // 写入内容到临时文件
         const file = await fs.open(tempFilePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
         await fs.write(file.fd, content);
         await fs.close(file.fd);
 
-        // 从临时文件上传到FTP服务器
-        await client.uploadFrom(fullPath, tempFilePath);
-
-        // 删除临时文件
+        const handler = await this.ensureConnected();
+        await handler.uploadTo(tempFilePath, fullPath);
         await fs.unlink(tempFilePath);
       } catch (uploadError) {
-        // 清理临时文件（如果存在）
         try {
           await fs.unlink(tempFilePath);
-        } catch (cleanupError) {
+        } catch {
           // 忽略清理错误
         }
-        if (uploadError instanceof Error) {
-          throw uploadError;
-        } else {
-          throw new Error(String(uploadError));
-        }
+        const err = uploadError instanceof Error ? uploadError : new Error(String(uploadError));
+        throw err;
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'FTP write error: ' + error.message);
+      hilog.error(DOMAIN, TAG, `${config?.protocol || 'FTP'} write error: ${error.message}`);
       if (error instanceof StorageError) {
         throw error;
       }
@@ -180,60 +207,42 @@ export class FTPStorage implements IFileStorage {
 
   /**
    * 检查文件是否存在
-   * @param path 文件路径
-   * @returns 是否存在
    */
   public async exists(path: string): Promise<boolean> {
     try {
-      const fileInfo = await this.getInfo(path);
-      return fileInfo != null;
+      const handler = await this.ensureConnected();
+      return await handler.exists(this.getFullPath(path));
     } catch (error) {
       if (error instanceof StorageError) {
-        // 检查是否是文件未找到错误
         const err = error as StorageError;
         if (err.message && err.message.includes('File not found')) {
           return false;
         }
       }
-      if (error instanceof Error) {
-        throw error;
-      } else {
-        throw new Error(String(error));
-      }
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw err;
     }
   }
 
   /**
    * 获取文件信息
-   * @param path 文件路径
-   * @returns 文件信息
    */
   public async getInfo(path: string): Promise<FileInfo> {
     try {
-      const client = await this.ensureConnected();
+      const handler = await this.ensureConnected();
       const fullPath = this.getFullPath(path);
-
-      // 获取文件所在目录的信息
-      const dirPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
-      const fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
-
-      const files = await client.list(dirPath);
-      const targetFile = files.find(file => file.name === fileName);
-
-      if (!targetFile) {
-        throw new Error('File not found: ' + path);
-      }
+      const fileInfo = await handler.getFileInfo(fullPath);
 
       return {
-        name: targetFile.name,
-        size: targetFile.size,
-        modifiedTime: targetFile.modifiedAt ? targetFile.modifiedAt.getTime() : 0,
+        name: fileInfo.name,
+        size: fileInfo.size,
+        modifiedTime: fileInfo.modifiedTime,
         path: fullPath,
-        type: targetFile.isDirectory ? FileType.DIR : FileType.FILE,
+        type: fileInfo.isDirectory ? FileType.DIR : FileType.FILE,
         childrenCount: 0
       } as FileInfo;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'FTP get info error: ' + error.message);
+      hilog.error(DOMAIN, TAG, `${this.config?.protocol || 'FTP'} get info error: ${error.message}`);
       if (error instanceof StorageError) {
         throw error;
       }
@@ -243,22 +252,19 @@ export class FTPStorage implements IFileStorage {
 
   /**
    * 获取目录内容
-   * @param path 目录路径
-   * @returns 目录内容
    */
   public async listDir(path: string): Promise<Array<FileInfo>> {
     try {
-      const client = await this.ensureConnected();
+      const handler = await this.ensureConnected();
       const fullPath = this.getFullPath(path);
-
-      const files = await client.list(fullPath);
+      const files = await handler.listDir(fullPath);
       const result = new Array<FileInfo>();
 
       for (const file of files) {
         result.push({
           name: file.name,
           size: file.size,
-          modifiedTime: file.modifiedAt ? file.modifiedAt.getTime() : 0,
+          modifiedTime: file.modifiedTime,
           path: fullPath + (fullPath.endsWith('/') ? '' : '/') + file.name,
           type: file.isDirectory ? FileType.DIR : FileType.FILE,
           childrenCount: 0
@@ -267,7 +273,7 @@ export class FTPStorage implements IFileStorage {
 
       return result;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'FTP list dir error: ' + error.message);
+      hilog.error(DOMAIN, TAG, `${this.config?.protocol || 'FTP'} list dir error: ${error.message}`);
       if (error instanceof StorageError) {
         throw error;
       }
@@ -276,12 +282,12 @@ export class FTPStorage implements IFileStorage {
   }
 
   /**
-   * 清理资源
+   * 关闭连接
    */
-  public close(): void {
-    if (this.client) {
-      this.client.close();
-      this.client = undefined;
+  public async close(): Promise<void> {
+    if (this.handler) {
+      await this.handler.close();
+      this.handler = undefined;
     }
   }
 }
