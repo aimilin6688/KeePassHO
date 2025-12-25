@@ -410,7 +410,7 @@
     },
     {
       "name": "ftp_button_title",
-      "value": "FTP"
+      "value": "FTP/SFTP"
     },
     {
       "name": "dialog_confirm_title",
@@ -738,19 +738,19 @@
     },
     {
       "name": "ftp_not_init",
-      "value": "FTP 未初始化"
+      "value": "FTP/SFTP 未初始化"
     },
     {
       "name": "ftp_host",
-      "value": "FTP 服务器"
+      "value": "服务器地址"
     },
     {
       "name": "ftp_host_placeholder",
-      "value": "请输入FTP服务器地址"
+      "value": "请输入服务器地址"
     },
     {
       "name": "ftp_host_empty",
-      "value": "FTP服务器地址不能为空"
+      "value": "服务器地址不能为空"
     },
     {
       "name": "ftp_port",
@@ -1294,7 +1294,7 @@
     },
     {
       "name": "location_ftp_desc_save",
-      "value": "保存文件到FTP服务器中"
+      "value": "保存文件到FTP/SFTP服务器中"
     },
     {
       "name": "location_title_select",
@@ -1310,7 +1310,7 @@
     },
     {
       "name": "location_ftp_desc_select",
-      "value": "从FTP服务器中选择文件"
+      "value": "从FTP/SFTP服务器中选择文件"
     },
     {
       "name": "Settings_sort_size",
