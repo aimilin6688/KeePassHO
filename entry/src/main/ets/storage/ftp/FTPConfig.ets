@@ -1,6 +1,13 @@
-import { ProtectedValue } from 'kdbxweb';
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+
+/**
+ * 协议类型枚举
+ */
+export enum ProtocolType {
+  FTP = 'FTP',
+  SFTP = 'SFTP'
+}
 
 /**
  * FTP存储配置选项类
@@ -10,6 +17,7 @@ export interface FTPStorageConfigOptions {
   timeout?: number;
   secure?: boolean | "implicit";
   port?: number;
+  protocol?: ProtocolType;
 }
 
 /**
@@ -21,7 +29,7 @@ export class FTPStorageConfig implements StorageConfig {
    */
   host: string;
   /**
-   * 端口号，默认21
+   * 端口号，默认21 (SFTP默认22)
    */
   port: number;
   /**
@@ -44,15 +52,20 @@ export class FTPStorageConfig implements StorageConfig {
    * 是否使用FTP over TLS (可选)
    */
   secure?: boolean | "implicit";
+  /**
+   * 协议类型 (可选)，默认 FTP
+   */
+  protocol?: ProtocolType;
 
   constructor(host: string, username: string, password: string, options?: FTPStorageConfigOptions) {
     this.host = host;
-    this.port = options?.port || 21;
+    this.port = options?.port || ((options?.protocol === ProtocolType.SFTP) ? 22 : 21);
     this.username = Sm4Utils.encryptWithPrefix(username);
     this.password = Sm4Utils.encryptWithPrefix(password);
     this.rootPath = options?.rootPath;
     this.timeout = options?.timeout || 30000;
     this.secure = options?.secure;
+    this.protocol = options?.protocol || ProtocolType.FTP;
   }
 
   public getUserNameText(): string {
@@ -61,6 +74,10 @@ export class FTPStorageConfig implements StorageConfig {
 
   public getPasswordText(): string {
     return Sm4Utils.decryptWithPrefix(this.password);
+  }
+
+  public isSFTP(): boolean {
+    return this.protocol === ProtocolType.SFTP;
   }
 }
 
