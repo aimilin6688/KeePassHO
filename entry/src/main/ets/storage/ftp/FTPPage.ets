@@ -14,10 +14,10 @@ const TAG = 'FTP';
 @Entry
 @Component
 struct FTP {
-  @State host: string = '';
+  @State host: string = '47.101.211.173';
   @State port: string = '21';
-  @State username: string = '';
-  @State password: string = '';
+  @State username: string = 'root';
+  @State password: string = 'Xiake520.';
   @State rootPath: string = '/';
   @State secure: boolean = false;
   @State protocol: ProtocolType = ProtocolType.FTP;
@@ -27,7 +27,6 @@ struct FTP {
   @State isErrorStatus: boolean = false;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.FTP);
   private router: Router = this.getUIContext().getRouter();
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
     this.initSaveParam();
@@ -120,12 +119,11 @@ struct FTP {
     if (!this.checkParam()) {
       return;
     }
-    const path = this.rootPath + LocationParam.getFileName();
     this.router.pushUrl({
       url: 'pages/open/FileList',
       params: {
         mode: LocationParam.getMode(),
-        filePath: path,
+        filePath: this.rootPath,
         fileSuffix: LocationParam.getFileSuffix(),
         fileName: LocationParam.getFileName(),
         storageType: StorageType.FTP,
@@ -176,8 +174,7 @@ struct FTP {
     try {
       const storageConfig = this.getStorageConfig();
       // 获取文件信息
-      const path = this.rootPath + LocationParam.getFileName();
-      const fileInfo = await this.fileManager.init(storageConfig).getInfo(path);
+      const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.rootPath);
       hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
       if (fileInfo.type === FileType.DIR) {
         this.toFileList();
@@ -185,7 +182,7 @@ struct FTP {
         // 回调位置信息
         LocationParam.callOnLocation({
           mode: LocationParam.getMode(),
-          filePath: path,
+          filePath: this.rootPath,
           fileName: fileInfo.name,
           fileSuffix: LocationParam.getFileSuffix(),
           storageType: StorageType.FTP,
