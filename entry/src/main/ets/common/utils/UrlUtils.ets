@@ -1,4 +1,8 @@
 import { url } from '@kit.ArkTS';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'FTP';
 
 /**
  * UrlUtils
@@ -14,8 +18,13 @@ export class UrlUtils {
     if (!urlString) {
       return "";
     }
-    let parsedUrl = url.URL.parseURL(urlString);
-    return parsedUrl.protocol + "//" + parsedUrl.host;
+    try {
+      let parsedUrl = url.URL.parseURL(urlString);
+      return parsedUrl.protocol + "//" + parsedUrl.host;
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, "getHost error: " + e);
+      return "";
+    }
   }
 
 
