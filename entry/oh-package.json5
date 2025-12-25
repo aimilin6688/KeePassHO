@@ -9,7 +9,8 @@
     "kdbxweb": "file:../kdbxweb",
     "@hw-agconnect/petal-aegis": "^1.4.11-300",
     "@ohos/basic-ftp": "^1.0.3",
-    "@ohos/axios": "^2.2.6"
+    "@ohos/axios": "^2.2.6",
+    "@ohos-rs/ssh": "^0.0.1"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
