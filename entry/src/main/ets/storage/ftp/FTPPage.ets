@@ -328,22 +328,6 @@ struct FTP {
       // 主要内容区域
       Scroll() {
         Column() {
-          // 服务器地址输入
-          Text($r('app.string.ftp_host'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.host, placeholder: ResourceManager.getString($r('app.string.ftp_host_placeholder')) })
-            .height(40)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.host = value;
-            })
-
           // 协议选择
           Text('协议')
             .fontSize(16)
@@ -373,6 +357,22 @@ struct FTP {
           }
           .width('100%')
           .margin({ top: 20 })
+
+          // 服务器地址输入
+          Text($r('app.string.ftp_host'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+          TextInput({ text: this.host, placeholder: ResourceManager.getString($r('app.string.ftp_host_placeholder')) })
+            .height(40)
+            .margin({ top: 20 })
+            .fontColor($r('app.color.text_primary'))
+            .backgroundColor($r("app.color.card_bg"))
+            .onChange((value: string) => {
+              this.host = value;
+            })
 
           // 端口输入
           Text($r('app.string.ftp_port'))
@@ -508,7 +508,6 @@ struct FTP {
           .width("100%")
         }
         .width('90%')
-        .height('100%')
         .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
