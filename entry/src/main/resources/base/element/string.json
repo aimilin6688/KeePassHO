@@ -418,7 +418,7 @@
     },
     {
       "name": "ftp_button_title",
-      "value": "FTP"
+      "value": "FTP/SFTP"
     },
     {
       "name": "dialog_confirm_title",
@@ -738,19 +738,19 @@
     },
     {
       "name": "ftp_not_init",
-      "value": "FTP not initialized"
+      "value": "FTP/SFTP not initialized"
     },
     {
       "name": "ftp_host",
-      "value": "FTP Server"
+      "value": "Server Address"
     },
     {
       "name": "ftp_host_placeholder",
-      "value": "Please enter FTP server address"
+      "value": "Please enter server address"
     },
     {
       "name": "ftp_host_empty",
-      "value": "FTP server address cannot be empty"
+      "value": "Server address cannot be empty"
     },
     {
       "name": "ftp_port",
@@ -1294,7 +1294,7 @@
     },
     {
       "name": "location_ftp_desc_save",
-      "value": "Save the file to the FTP server"
+      "value": "Save the file to the FTP/SFTP server"
     },
     {
       "name": "location_title_select",
@@ -1310,7 +1310,7 @@
     },
     {
       "name": "location_ftp_desc_select",
-      "value": "Select a file from FTP server"
+      "value": "Select a file from FTP/SFTP server"
     },
     {
       "name": "Settings_sort_size",
