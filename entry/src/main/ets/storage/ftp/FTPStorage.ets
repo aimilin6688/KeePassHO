@@ -50,8 +50,8 @@ export class FTPStorage implements IFileStorage {
 
     return new FTPStorageConfig(
       inputConfig['host'] as string,
-      (inputConfig['getUserNameText'] as () => string)(),
-      (inputConfig['getPasswordText'] as () => string)(),
+      inputConfig['username'] as string,
+      inputConfig['password'] as string,
       {
         rootPath: inputConfig['rootPath'] as string | undefined,
         timeout: inputConfig['timeout'] as number | undefined,

@@ -120,15 +120,18 @@ struct FTP {
     if (!this.checkParam()) {
       return;
     }
-    AppStorage.setOrCreate(Constants.APP_STORAGE_LOCATION_INFO, {
-      mode: LocationParam.getMode(),
-      filePath: this.rootPath,
-      fileSuffix: LocationParam.getFileSuffix(),
-      fileName: LocationParam.getFileName(),
-      storageType: StorageType.FTP,
-      storageConfig: this.getStorageConfig()
-    });
-    this.router.pushUrl({ url: 'pages/open/FileList' });
+    this.router.pushUrl(
+      {
+        url: 'pages/open/FileList',
+        params: {
+          mode: LocationParam.getMode(),
+          filePath: this.rootPath,
+          fileSuffix: LocationParam.getFileSuffix(),
+          fileName: LocationParam.getFileName(),
+          storageType: StorageType.FTP,
+          storageConfig: this.getStorageConfig()
+        }
+      });
   }
 
   // 测试FTP连接
