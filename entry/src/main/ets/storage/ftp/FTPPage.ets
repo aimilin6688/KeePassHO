@@ -7,6 +7,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
+import { Constants } from '../../common/constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'FTP';
@@ -119,17 +120,15 @@ struct FTP {
     if (!this.checkParam()) {
       return;
     }
-    this.router.pushUrl({
-      url: 'pages/open/FileList',
-      params: {
-        mode: LocationParam.getMode(),
-        filePath: this.rootPath,
-        fileSuffix: LocationParam.getFileSuffix(),
-        fileName: LocationParam.getFileName(),
-        storageType: StorageType.FTP,
-        storageConfig: this.getStorageConfig()
-      }
+    AppStorage.setOrCreate(Constants.APP_STORAGE_LOCATION_INFO, {
+      mode: LocationParam.getMode(),
+      filePath: this.rootPath,
+      fileSuffix: LocationParam.getFileSuffix(),
+      fileName: LocationParam.getFileName(),
+      storageType: StorageType.FTP,
+      storageConfig: this.getStorageConfig()
     });
+    this.router.pushUrl({ url: 'pages/open/FileList' });
   }
 
   // 测试FTP连接
