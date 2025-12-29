@@ -1,13 +1,12 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileInfo, FileType } from '../../storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, DateUtils, FileUtils } from '../../common/utils';
+import { DateUtils, FileUtils, ResourceManager } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/LocationParam';
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
-import { Constants } from '../../common/constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
@@ -67,7 +66,7 @@ struct FileList {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
-    const params = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO) as LocationInfo;
+    const params = this.router.getParams() as LocationInfo;
     if (params) {
       this.locationInfo = params;
       this.currentPath = this.getLocationPath();
