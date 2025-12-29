@@ -136,26 +136,33 @@ export class SFTPHandler implements IFTPHandler {
    */
   public async listDir(path: string): Promise<Array<FileItemInfo>> {
     try {
-      const lsOutput = await this.exec(`ls -la "${path}"`);
+      const lsOutput = await this.exec(`ls -la --time-style="+%Y-%m-%d %H:%M:%S" "${path}"`);
       const lines = lsOutput.trim().split('\n');
       const result: FileItemInfo[] = [];
 
       for (const line of lines) {
         const trimmedLine = line.trim();
         // 跳过total行和 . / ..
-        if (!trimmedLine || trimmedLine.startsWith('total') || trimmedLine.endsWith('.') || trimmedLine.endsWith('..')) {
+        if (!trimmedLine || trimmedLine.startsWith('total')) {
           continue;
         }
+        // 跳过 . 和 .. 目录
         const parts = trimmedLine.split(/\s+/);
-        if (parts.length >= 9) {
+        if (parts.length >= 8) {
+          const name = parts.slice(7).join(' ');
+          if (name === '.' || name === '..') {
+            continue;
+          }
           const isDirectory = parts[0].startsWith('d');
           const size = parseInt(parts[4]) || 0;
-          const name = parts.slice(8).join(' ');
+          // 时间格式: 2024-01-15 10:30:45，在 parts[5] 和 parts[6]
+          const dateStr = parts[5] + ' ' + parts[6];
+          const modifiedTime = this.parseDate(dateStr);
           const fileInfo: FileItemInfo = {
             name,
             size,
             isDirectory,
-            modifiedTime: 0
+            modifiedTime
           };
           result.push(fileInfo);
         }
@@ -167,6 +174,33 @@ export class SFTPHandler implements IFTPHandler {
       hilog.error(DOMAIN, TAG, `Failed to list directory ${path}: ${err.message}`);
       throw new Error(`Failed to list directory ${path}: ${err.message}`);
     }
+  }
+
+  /**
+   * 解析日期字符串为时间戳
+   * 格式: "YYYY-MM-DD HH:MM:SS"
+   */
+  private parseDate(dateStr: string): number {
+    try {
+      const parts = dateStr.split(' ');
+      if (parts.length >= 2) {
+        const datePart = parts[0];
+        const timePart = parts[1];
+        const dateParts = datePart.split('-');
+        const timeParts = timePart.split(':');
+        const year = parseInt(dateParts[0]) || 0;
+        const month = parseInt(dateParts[1]) || 0;
+        const day = parseInt(dateParts[2]) || 0;
+        const hour = parseInt(timeParts[0]) || 0;
+        const minute = parseInt(timeParts[1]) || 0;
+        const second = parseInt(timeParts[2]) || 0;
+        const date = new Date(year, month - 1, day, hour, minute, second, 0);
+        return date.getTime();
+      }
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `Failed to parse date: ${dateStr}`);
+    }
+    return 0;
   }
 
   /**
