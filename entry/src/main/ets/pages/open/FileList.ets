@@ -7,6 +7,7 @@ import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
+import { Constants } from '../../common/constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
@@ -66,7 +67,7 @@ struct FileList {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
-    const params = this.router.getParams() as LocationInfo;
+    const params = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO) as LocationInfo;
     if (params) {
       this.locationInfo = params;
       this.currentPath = this.getLocationPath();
