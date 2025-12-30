@@ -15,9 +15,9 @@ const TAG = 'FTP';
 @Component
 struct FTP {
   @State host: string = '111.230.44.135';
-  @State port: string = '22';
-  @State username: string = 'root';
-  @State password: string = 'zfkm,2017';
+  @State port: string = '21';
+  @State username: string = 'ftpuser';
+  @State password: string = 'ftpuser';
   @State rootPath: string = '/';
   @State secure: boolean = false;
   @State protocol: ProtocolType = ProtocolType.FTP;
