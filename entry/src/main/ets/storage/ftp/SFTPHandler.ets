@@ -4,7 +4,6 @@ import { DisconnectReason, Client as SSHClient, connect as sshConnect } from '@o
 import { FileItemInfo, IFTPHandler } from './IFTPHandler';
 import { util } from '@kit.ArkTS';
 import { ByteUtils } from 'kdbxweb';
-import { CommonUtils } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'SFTPHandler';
