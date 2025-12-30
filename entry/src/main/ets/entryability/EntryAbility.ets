@@ -2,7 +2,7 @@ import { AbilityConstant, contextConstant, UIAbility, Want } from '@kit.AbilityK
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { SettingsService } from '../services/SettingsService';
-import { ThemeManager, ResourceManager, CommonUtils, Sm4Utils, FilenameUtils } from '../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, Sm4Utils, ThemeManager } from '../common/utils';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { FileService } from '../services/FileService';
 import { LocalFileStorageConfig, StorageType } from '../storage';
@@ -135,7 +135,13 @@ export default class EntryAbility extends UIAbility {
     }
     if (this.windowStage) {
       this.windowStage.getMainWindow().then((win) => {
-        CommonUtils.init(this.context, win.getUIContext());
+        try {
+          CommonUtils.init(this.context, win.getUIContext());
+        } catch (error) {
+          hilog.error(DOMAIN, TAG, 'Ability onWindowStageCreate failed, err: %{public}s', error.message);
+        }
+      }).catch((err: BusinessError) => {
+        hilog.error(DOMAIN, TAG, 'Ability onWindowStageCreate failed, err: %{public}s', err.message);
       });
     }
   }
