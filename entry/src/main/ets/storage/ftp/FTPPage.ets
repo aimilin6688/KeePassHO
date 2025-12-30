@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { FTPStorageConfig, ProtocolType } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
@@ -7,7 +7,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
-import { Constants } from '../../common/constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'FTP';
