@@ -1567,6 +1567,18 @@
     {
       "name": "ftp_protocol",
       "value": "Protocol"
+    },
+    {
+      "name": "ftp_secure_type_none",
+      "value": "Unencrypted(FTP)"
+    },
+    {
+      "name": "ftp_secure_type_explicit",
+      "value": "Explicit encryption(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "ftp_secure_type_implicit",
+      "value": "Implicit encryption(FTP over TLS,FTPS)"
     }
   ]
 }
