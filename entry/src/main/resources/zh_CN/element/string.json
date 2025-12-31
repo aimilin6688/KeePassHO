@@ -1567,6 +1567,18 @@
     {
       "name": "ftp_protocol",
       "value": "协议"
+    },
+    {
+      "name": "ftp_secure_type_none",
+      "value": "无加密(FTP)"
+    },
+    {
+      "name": "ftp_secure_type_explicit",
+      "value": "显示加密(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "ftp_secure_type_implicit",
+      "value": "隐式加密(FTP over TLS,FTPS)"
     }
   ]
 }
