@@ -93,7 +93,9 @@ export class FTPHandler implements IFTPHandler {
       throw new Error('FTP client is not connected');
     }
     hilog.info(DOMAIN, TAG, `Uploading ${localPath} to ${remotePath}`);
-    await this.client.uploadFrom(remotePath, localPath);
+    await this.client.uploadFrom(localPath, remotePath).then(result=>{
+      hilog.info(DOMAIN, TAG, `Upload result: ${result}`);
+    });
     hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath}`);
   }
 
