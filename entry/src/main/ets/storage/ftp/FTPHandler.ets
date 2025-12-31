@@ -45,7 +45,10 @@ export class FTPHandler implements IFTPHandler {
         password: this.config.password,
         secure: this.config.secure
       });
-      hilog.info(DOMAIN, TAG, 'FTP connected successfully');
+      // 连接成功后设置为二进制传输模式
+      // TYPE I: 设置数据传输模式为二进制(图片、视频、压缩文件等)
+      await this.client.send("TYPE I");
+      hilog.info(DOMAIN, TAG, 'FTP connected successfully (binary transfer mode, UTF-8 control encoding)');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'FTP connection failed: ' + error.message);
       throw new StorageError(StorageErrorCodes.CONNECT_ERROR, error.message);
