@@ -94,7 +94,7 @@ export class FTPHandler implements IFTPHandler {
     }
     hilog.info(DOMAIN, TAG, `Uploading ${localPath} to ${remotePath}`);
     await this.client.uploadFrom(localPath, remotePath).then(result=>{
-      hilog.info(DOMAIN, TAG, `Upload result: ${result}`);
+      hilog.info(DOMAIN, TAG, `Upload result: ${JSON.stringify(result)}`);
     });
     hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath}`);
   }
