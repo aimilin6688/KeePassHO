@@ -2,7 +2,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Client as FTPClient } from '@ohos/basic-ftp';
 import { CommonUtils } from '../../common/utils';
 import { StorageError, StorageErrorCodes } from '../StorageError';
-import { IFTPHandler, FileItemInfo } from './IFTPHandler';
+import { FileItemInfo, IFTPHandler } from './IFTPHandler';
 
 const DOMAIN = 0x0000;
 const TAG = 'FTPHandler';
@@ -38,7 +38,6 @@ export class FTPHandler implements IFTPHandler {
       if (!this.client) {
         this.client = new FTPClient(CommonUtils.getContext(), this.config.timeout);
       }
-      await this.client.ftp.reset();
       await this.client.access({
         host: this.config.host,
         port: this.config.port,
@@ -49,7 +48,7 @@ export class FTPHandler implements IFTPHandler {
       hilog.info(DOMAIN, TAG, 'FTP connected successfully');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'FTP connection failed: ' + error.message);
-      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
+      throw new StorageError(StorageErrorCodes.CONNECT_ERROR, error.message);
     }
   }
 
