@@ -126,6 +126,11 @@ export class FTPStorage implements IFileStorage {
     }
     const rootPath = config.rootPath.startsWith('/') ? config.rootPath : '/' + config.rootPath;
     const targetPath = path.startsWith('/') ? path : '/' + path;
+
+    // 避免重复的斜杠: 如果rootPath以'/'结尾且path以'/'开头,去掉path的前导'/'
+    if (rootPath.endsWith('/') && targetPath.startsWith('/')) {
+      return rootPath + targetPath.substring(1);
+    }
     return rootPath + targetPath;
   }
 

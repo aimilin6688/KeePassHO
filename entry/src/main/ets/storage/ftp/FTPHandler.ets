@@ -117,6 +117,16 @@ export class FTPHandler implements IFTPHandler {
       throw new Error('FTP client is not connected');
     }
 
+    // 特殊处理根路径
+    if (path === '/' || path === '') {
+      return {
+        name: '/',
+        size: 0,
+        isDirectory: true,
+        modifiedTime: 0
+      };
+    }
+
     // 获取文件所在目录的信息
     const dirPath = path.substring(0, path.lastIndexOf('/'));
     const fileName = path.substring(path.lastIndexOf('/') + 1);
