@@ -1563,6 +1563,10 @@
     {
       "name": "security_privacy_window_tips",
       "value": "启用窗口将禁止截屏和录屏"
+    },
+    {
+      "name": "ftp_protocol",
+      "value": "协议"
     }
   ]
 }
