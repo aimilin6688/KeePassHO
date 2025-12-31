@@ -30,11 +30,11 @@ export class FTPStorage implements IFileStorage {
   }
 
   public init(config: FTPStorageConfig): void {
-    this.config = this.parseConfig(config);
+    this.config = FTPStorage.parseConfig(config);
     this.createHandler();
   }
 
-  private parseConfig(config: FTPStorageConfig): FTPStorageConfig {
+  public static parseConfig(config: FTPStorageConfig): FTPStorageConfig {
     if (config instanceof FTPStorageConfig) {
       return config;
     }
