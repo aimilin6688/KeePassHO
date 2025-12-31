@@ -18,6 +18,9 @@
         "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
       },
       {
+        "name": "ohos.permission.GET_NETWORK_INFO"
+      },
+      {
         "name": "ohos.permission.ACCESS_BIOMETRIC"
       },
       {
