@@ -114,6 +114,16 @@ export class SFTPHandler implements IFTPHandler {
    * 获取文件信息
    */
   public async getFileInfo(path: string): Promise<FileItemInfo> {
+    // 特殊处理根路径
+    if (path === '/' || path === '') {
+      return {
+        name: '/',
+        size: 0,
+        isDirectory: true,
+        modifiedTime: 0
+      };
+    }
+
     try {
       const statOutput = await this.exec(`stat -c "%s %Y" "${path}"`);
       const parts = statOutput.trim().split(' ');
