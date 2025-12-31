@@ -10,6 +10,11 @@ export enum ProtocolType {
 }
 
 /**
+ * 安全类型
+ */
+export type SecureType = boolean | "implicit";
+
+/**
  * FTP存储配置选项类
  */
 export interface FTPStorageConfigOptions {
@@ -51,7 +56,7 @@ export class FTPStorageConfig implements StorageConfig {
   /**
    * 是否使用FTP over TLS (可选)
    */
-  secure?: boolean | "implicit";
+  secure?: SecureType;
   /**
    * 协议类型 (可选)，默认 FTP
    */
