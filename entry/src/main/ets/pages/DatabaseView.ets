@@ -195,7 +195,7 @@ struct DatabaseView {
         motion.off('holdingHandChanged');
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `取消订阅握持手感知失败: ${error?.code}, ${error?.message}`);
+      hilog.info(DOMAIN, TAG, `取消订阅握持手感知失败: ${error?.code}, ${error?.message}`);
     }
   }
 
