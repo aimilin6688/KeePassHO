@@ -1563,6 +1563,10 @@
     {
       "name": "security_privacy_window_tips",
       "value": "Enabling the window will prohibit screenshots and screen recording"
+    },
+    {
+      "name": "ftp_protocol",
+      "value": "Protocol"
     }
   ]
 }
