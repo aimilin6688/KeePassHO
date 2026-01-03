@@ -173,7 +173,7 @@ export class OneDriveStorageConfig implements StorageConfig {
  * OneDrive页面配置类
  */
 export const OneDrivePageConfig: PageConfig = {
-  icon: $r("app.media.C02_Warning"),
+  icon: $r("app.media.ic_onedrive"),
   title: 'OneDrive',
   selectDesc: 'Select a file from OneDrive',
   saveDesc: 'Save the file to OneDrive',
