@@ -51,10 +51,6 @@ struct OneDrive {
     }
     const storageConfig = dbFileParam.storageConfig as OneDriveStorageConfig;
     if (storageConfig) {
-      this.clientId = storageConfig.getClientIdText();
-      this.clientSecret = storageConfig.getClientSecretText();
-      this.tenantId = storageConfig.getTenantIdText();
-      this.redirectUri = storageConfig.getRedirectUriText();
       this.accessToken = storageConfig.getAccessTokenText();
       this.refreshToken = storageConfig.getRefreshTokenText();
     }
@@ -274,10 +270,6 @@ struct OneDrive {
    */
   private getStorageConfig(): StorageConfig {
     return new OneDriveStorageConfig(
-      this.clientId,
-      this.clientSecret,
-      this.tenantId,
-      this.redirectUri,
       this.accessToken,
       this.refreshToken
     );
