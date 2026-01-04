@@ -6,6 +6,7 @@ import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
 import { OAuth2Config } from '../../common/oauth2';
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
 import { ByteUtils } from 'kdbxweb';
+import BuildProfile from 'BuildProfile';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveStorage';
@@ -58,11 +59,11 @@ export class OneDriveStorage implements IFileStorage {
 
     // 创建OAuth2配置
     const authConfig: OneDriveOAuth2Config = {
-      clientId: this.config!.getClientIdText(),
-      clientSecret: this.config!.getClientSecretText(),
-      authorizationEndpoint: `https://login.microsoftonline.com/${this.config!.getTenantIdText()}/oauth2/v2.0/authorize`,
-      tokenEndpoint: `https://login.microsoftonline.com/${this.config!.getTenantIdText()}/oauth2/v2.0/token`,
-      redirectUri: this.config!.getRedirectUriText(),
+      clientId: BuildProfile.ONE_DRIVE_CLIENT_ID,
+      clientSecret: BuildProfile.ONE_DRIVE_CLIENT_SECRET,
+      authorizationEndpoint: `https://login.microsoftonline.com/${BuildProfile.ONE_DRIVE_TENANT_ID}/oauth2/v2.0/authorize`,
+      tokenEndpoint: `https://login.microsoftonline.com/${BuildProfile.ONE_DRIVE_TENANT_ID}/oauth2/v2.0/token`,
+      redirectUri:  BuildProfile.ONE_DRIVE_REDIRECT_URI,
       scope: 'Files.ReadWrite User.Read offline_access'
     };
     this.oauth2Config = authConfig;
@@ -87,13 +88,10 @@ export class OneDriveStorage implements IFileStorage {
     }
     const oneDriveConfig = config as OneDriveStorageConfig;
     return new OneDriveStorageConfig(
-      oneDriveConfig.getClientIdText(),
-      oneDriveConfig.getClientSecretText(),
-      oneDriveConfig.getTenantIdText(),
-      oneDriveConfig.getRedirectUriText(),
       oneDriveConfig.getAccessTokenText(),
       oneDriveConfig.getRefreshTokenText(),
-      { rootPath: oneDriveConfig.rootPath, timeout: oneDriveConfig.timeout }
+      oneDriveConfig.timeout,
+      oneDriveConfig.expiresAt
     );
   }
 

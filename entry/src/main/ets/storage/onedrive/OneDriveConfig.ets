@@ -51,6 +51,30 @@ export class OneDriveStorageConfig implements StorageConfig {
   }
 
   /**
+   * 设置访问令牌
+   * @param accessToken 访问令牌
+   */
+  public setAccessToken(accessToken: string): void {
+    this.accessToken = Sm4Utils.encryptWithPrefix(accessToken);
+  }
+
+  /**
+   * 设置刷新令牌
+   * @param refreshToken 刷新令牌
+   */
+  public setRefreshToken(refreshToken: string): void {
+    this.refreshToken = Sm4Utils.encryptWithPrefix(refreshToken);
+  }
+
+  /**
+   * 设置令牌过期时间
+   * @param expiresAt 过期时间（时间戳）
+   */
+  public setExpiresAt(expiresAt: number): void {
+    this.expiresAt = expiresAt;
+  }
+
+  /**
    * 检查令牌是否过期
    * @returns 是否过期
    */
