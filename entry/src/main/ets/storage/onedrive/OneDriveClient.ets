@@ -2,6 +2,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
+import { StringUtils, UrlUtils } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveClient';
@@ -229,7 +230,6 @@ export class OneDriveClient {
   }
 
 
-
   /**
    * 规范化路径并转换为 OneDrive API 路径
    * @param path 输入路径（支持多种格式：:/path, /path, /drive/root:/path, /drive/root/path, path）
@@ -255,6 +255,9 @@ export class OneDriveClient {
     if (normalizedPath.startsWith(':/')) {
       // :/path 格式，移除 :/
       normalizedPath = normalizedPath.substring(2);
+    } else if (normalizedPath.startsWith('/:/')) {
+      // /:/path 格式，移除 /:/
+      normalizedPath = normalizedPath.substring(3);
     } else if (normalizedPath.startsWith('/drive/root:')) {
       // /drive/root:/path 格式，移除 /drive/root:
       normalizedPath = normalizedPath.substring('/drive/root:'.length);
@@ -265,6 +268,16 @@ export class OneDriveClient {
       // /path 格式，移除开头的 /
       normalizedPath = normalizedPath.substring(1);
     }
+    // 移除结尾的 /
+    if (normalizedPath.endsWith('/')) {
+      normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+    }
+    // 处理根目录或空路径
+    if (!normalizedPath || normalizedPath === '/' || normalizedPath.trim() === '') {
+      return this.normalizePath(normalizedPath, pathType);
+    }
+    // 使用URL编码路径
+    normalizedPath = UrlUtils.encode(normalizedPath);
 
     // 根据 pathType 构建不同的 API 路径
     switch (pathType) {
@@ -279,7 +292,7 @@ export class OneDriveClient {
         return `/me/drive/root:/${normalizedPath}:/content`;
       case OneDrivePathType.INFO:
       default:
-        // 获取资源信息：/me/drive/root:/path
+      // 获取资源信息：/me/drive/root:/path
         return `/me/drive/root:/${normalizedPath}`;
     }
   }
@@ -308,7 +321,7 @@ export class OneDriveClient {
    * @param key 键
    * @returns 字符串值或undefined
    */
-  private extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string  {
+  private extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string {
     const value = obj[key];
     if (value !== undefined && value !== null && typeof value === 'string') {
       return value;
@@ -683,18 +696,6 @@ export class OneDriveClient {
    * @returns 路径
    */
   private extractPath(data: Record<string, Object>): string {
-    const webUrl = data['webUrl'];
-    if (webUrl && typeof webUrl === 'string') {
-      const urlParts = webUrl.split('/');
-      const oneDriveIndex = urlParts.findIndex((part: string): boolean => part.toLowerCase().includes('onedrive'));
-      if (oneDriveIndex !== -1 && oneDriveIndex + 2 < urlParts.length) {
-        const path = urlParts.slice(oneDriveIndex + 2).join('/');
-        hilog.debug(DOMAIN, TAG, `extractPath from webUrl: ${path}`);
-        return path;
-      }
-    }
-    
-    // 尝试从 parentReference 获取路径
     const parentRef = data['parentReference'];
     if (parentRef && typeof parentRef === 'object') {
       const parentData = parentRef as Record<string, Object>;
@@ -706,14 +707,10 @@ export class OneDriveClient {
         const fullPath = `${basePath}/${name}`;
         hilog.debug(DOMAIN, TAG, `extractPath from parentReference: ${fullPath}`);
         // 返回相对于根目录的路径
-        const rootIndex = fullPath.indexOf('/drive/root');
-        if (rootIndex !== -1) {
-          return fullPath.substring(rootIndex + '/drive/root'.length);
-        }
-        return fullPath;
+        return StringUtils.removeStart(StringUtils.removeStart(fullPath, '/drive/root'), ":");
       }
     }
-    
+
     // 最后尝试从 name 获取
     const name = data['name'];
     if (name && typeof name === 'string') {
