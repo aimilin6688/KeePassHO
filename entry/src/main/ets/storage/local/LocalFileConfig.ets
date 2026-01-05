@@ -1,3 +1,4 @@
+import { StorageType } from '..';
 import { PageConfig, StorageConfig } from '../StorageConfig';
 
 /**
@@ -25,4 +26,5 @@ export const LocalFilePageConfig = {
   selectDesc: $r('app.string.location_local_desc_select'),
   saveDesc: $r('app.string.location_local_desc_save'),
   pageUrl: 'storage/local/LocalFilePage',
+  storageType: StorageType.LOCAL
 } as PageConfig;

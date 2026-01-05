@@ -1,5 +1,6 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { StorageType } from '..';
 
 export interface OneDriveStorageConfigOptions {
   /**
@@ -123,4 +124,5 @@ export const OneDrivePageConfig: PageConfig = {
   selectDesc: 'Select a file from OneDrive',
   saveDesc: 'Save the file to OneDrive',
   pageUrl: 'storage/onedrive/OneDrivePage',
+  storageType: StorageType.ONEDRIVE
 };
