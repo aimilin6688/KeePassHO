@@ -20,7 +20,7 @@ struct TotpView {
     this.loadTotpEntries();
   }
 
-  onPageAppear(): void {
+  onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
