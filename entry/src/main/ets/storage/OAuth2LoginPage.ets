@@ -159,7 +159,6 @@ export struct OAuth2LoginPage {
         } as AuthResult);
         
         this.router.back();
-        
         hilog.info(DOMAIN, TAG, `Auth completed, code length: ${code.length}`);
       }
     }

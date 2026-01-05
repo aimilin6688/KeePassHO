@@ -35,9 +35,9 @@ struct OneDrive {
     this.initSaveParam();
   }
 
-  onPageAppear(): void {
+  onPageShow(): void {
+    hilog.debug(DOMAIN, TAG, 'OneDrivePage onPageAppear');
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
-    
     // 检查是否有从OAuth2登录页返回的授权结果
     const authResult = AppStorage.get<AuthResult>('oauth2_auth_result');
     if (authResult && authResult.code) {
@@ -74,7 +74,7 @@ struct OneDrive {
     
     // 跳转到OAuth2登录页面
     this.router.pushUrl({
-      url: 'pages/OAuth2LoginPage',
+      url: 'storage/OAuth2LoginPage',
       params: {
         authUrl: authUrl,
         oauth2Config: this.oauth2Provider!.getConfig()
