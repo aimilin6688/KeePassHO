@@ -198,8 +198,11 @@ struct OneDrive {
     this.isErrorStatus = false;
 
     try {
+      hilog.info(DOMAIN, TAG, `testConnection: accessToken length=${this.accessToken.length}, refreshToken length=${this.refreshToken.length}`);
       this.fileManager.init(this.getStorageConfig());
+      hilog.debug(DOMAIN, TAG, 'testConnection: Calling exists("/")');
       const exists = await this.fileManager.exists('/');
+      hilog.info(DOMAIN, TAG, `testConnection: exists result=${exists}`);
       if (exists) {
         this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
         this.isErrorStatus = false;
@@ -211,7 +214,7 @@ struct OneDrive {
     } catch (error) {
       this.connectionStatus = (error as Error).message;
       this.isErrorStatus = true;
-      hilog.error(DOMAIN, TAG, 'onedrive connection error: %{public}s', this.connectionStatus);
+      hilog.error(DOMAIN, TAG, `onedrive connection error: ${error?.message}, stack: ${(error as Error).stack}`);
     } finally {
       this.isConnecting = false;
     }
