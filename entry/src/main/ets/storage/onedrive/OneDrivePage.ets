@@ -2,12 +2,16 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { OneDriveStorageConfig } from './OneDriveConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, FilenameUtils, WindowUtils } from '../../common/utils';
+import { ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { Constants } from '../../common/constants';
+import { OneDriveOAuth2Provider, createOneDriveOAuth2Config } from './OneDriveOAuth2Provider';
+import { OAuth2AuthRequest } from '../../common/oauth2';
+import BuildProfile from 'BuildProfile';
+import { AuthResult } from '../OAuth2LoginPage';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDrive';
@@ -15,19 +19,17 @@ const TAG = 'OneDrive';
 @Entry
 @Component
 struct OneDrive {
-  @State clientId: string = '';
-  @State clientSecret: string = '';
-  @State tenantId: string = '';
-  @State redirectUri: string = '';
   @State accessToken: string = '';
   @State refreshToken: string = '';
-  @State isLoading: boolean = false;
+  @State expiresAt: number = 0;
+  @State isLoggedIn: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
   @State isErrorStatus: boolean = false;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.ONEDRIVE);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private oauth2Provider?: OneDriveOAuth2Provider;
 
   aboutToAppear(): void {
     this.initSaveParam();
@@ -35,6 +37,102 @@ struct OneDrive {
 
   onPageAppear(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    
+    // 检查是否有从OAuth2登录页返回的授权结果
+    const authResult = AppStorage.get<AuthResult>('oauth2_auth_result');
+    if (authResult && authResult.code) {
+      hilog.info(DOMAIN, TAG, `Received auth result with code length: ${authResult.code.length}`);
+      this.handleAuthCallback(authResult.code, authResult.state);
+      // 清除存储的授权结果
+      AppStorage.delete('oauth2_auth_result');
+    }
+  }
+
+  /**
+   * 初始化OAuth2提供者
+   */
+  private initOAuth2Provider(): void {
+    const oauth2Config = createOneDriveOAuth2Config(
+      BuildProfile.ONE_DRIVE_CLIENT_ID,
+      BuildProfile.ONE_DRIVE_CLIENT_SECRET,
+      BuildProfile.ONE_DRIVE_REDIRECT_URI,
+      'Files.ReadWrite User.Read offline_access',
+      BuildProfile.ONE_DRIVE_TENANT_ID
+    );
+    this.oauth2Provider = new OneDriveOAuth2Provider(oauth2Config);
+  }
+
+  /**
+   * 生成授权URL并跳转到授权页面
+   */
+  private generateAuthUrl(): void {
+    if (!this.oauth2Provider) {
+      this.initOAuth2Provider();
+    }
+    const authUrl = this.oauth2Provider!.getAuthorizationUrl();
+    hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
+    
+    // 跳转到OAuth2登录页面
+    this.router.pushUrl({
+      url: 'pages/OAuth2LoginPage',
+      params: {
+        authUrl: authUrl,
+        oauth2Config: this.oauth2Provider!.getConfig()
+      }
+    });
+  }
+
+  /**
+   * 处理授权回调
+   * @param code 授权码
+   * @param state 状态参数
+   */
+  private async handleAuthCallback(code: string, state: string): Promise<void> {
+    if (!this.oauth2Provider) {
+      this.initOAuth2Provider();
+    }
+
+    this.isConnecting = true;
+    this.connectionStatus = 'Authenticating...';
+    this.isErrorStatus = false;
+
+    try {
+      const authRequest: OAuth2AuthRequest = {
+        code: code,
+        state: state
+      };
+
+      const token = await this.oauth2Provider!.authorize(authRequest);
+      
+      this.accessToken = token.accessToken;
+      this.refreshToken = token.refreshToken || '';
+      this.expiresAt = token.expiresAt || 0;
+      this.isLoggedIn = true;
+      this.connectionStatus = 'Authentication successful';
+      this.isErrorStatus = false;
+      
+      hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${this.expiresAt}`);
+      this.promptAction.showToast({ message: 'Login successful' });
+    } catch (error) {
+      this.connectionStatus = `Authentication failed: ${(error as Error).message}`;
+      this.isErrorStatus = true;
+      hilog.error(DOMAIN, TAG, 'Authentication failed: %{public}s', (error as Error).message);
+      this.promptAction.showToast({ message: 'Authentication failed' });
+    } finally {
+      this.isConnecting = false;
+    }
+  }
+
+  /**
+   * 注销登录
+   */
+  private logout(): void {
+    this.accessToken = '';
+    this.refreshToken = '';
+    this.expiresAt = 0;
+    this.isLoggedIn = false;
+    this.connectionStatus = '';
+    this.oauth2Provider = undefined;
   }
 
   /**
@@ -231,33 +329,18 @@ struct OneDrive {
    * @returns 是否通过校验
    */
   private checkParam(): boolean {
-    if (!this.clientId) {
-      this.connectionStatus = 'Please enter client ID';
-      this.isErrorStatus = true;
-      return false;
-    }
-    if (!this.clientSecret) {
-      this.connectionStatus = 'Please enter client secret';
-      this.isErrorStatus = true;
-      return false;
-    }
-    if (!this.tenantId) {
-      this.connectionStatus = 'Please enter tenant ID';
-      this.isErrorStatus = true;
-      return false;
-    }
-    if (!this.redirectUri) {
-      this.connectionStatus = 'Please enter redirect URI';
+    if (!this.isLoggedIn) {
+      this.connectionStatus = 'Please login to OneDrive first';
       this.isErrorStatus = true;
       return false;
     }
     if (!this.accessToken) {
-      this.connectionStatus = 'Please enter access token';
+      this.connectionStatus = 'Access token is missing';
       this.isErrorStatus = true;
       return false;
     }
     if (!this.refreshToken) {
-      this.connectionStatus = 'Please enter refresh token';
+      this.connectionStatus = 'Refresh token is missing';
       this.isErrorStatus = true;
       return false;
     }
@@ -271,7 +354,9 @@ struct OneDrive {
   private getStorageConfig(): StorageConfig {
     return new OneDriveStorageConfig(
       this.accessToken,
-      this.refreshToken
+      this.refreshToken,
+      undefined,
+      this.expiresAt
     );
   }
 
@@ -300,105 +385,57 @@ struct OneDrive {
       // 主要内容区域
       Scroll() {
         Column() {
-          // 客户端ID输入
-          Text('Client ID')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.clientId, placeholder: 'Enter client ID' })
-            .height(40)
+          // 登录状态提示
+          if (this.isLoggedIn) {
+            Column() {
+              Row() {
+                Text('已登录')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor($r('app.color.success'))
+                Blank()
+                Text('登出')
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_primary'))
+                  .onClick(() => {
+                    this.logout();
+                  })
+              }
+              .width('100%')
+              
+              // 令牌过期时间
+              if (this.expiresAt > 0) {
+                Text(`令牌过期时间: ${new Date(this.expiresAt).toLocaleString()}`)
+                  .fontSize(12)
+                  .fontColor($r('app.color.text_secondary'))
+                  .margin({ top: 8 })
+              }
+            }
+            .width('100%')
+            .padding(16)
+            .backgroundColor($r('app.color.card_bg'))
+            .borderRadius(8)
             .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.clientId = value;
-            })
+          } else {
+            // 未登录状态
+            Column() {
+              Text('请登录OneDrive账号以访问您的文件')
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ top: 20 })
 
-          // 客户端密钥输入
-          Text('Client Secret')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.clientSecret, placeholder: 'Enter client secret' })
-            .height(40)
-            .type(InputType.Password)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.clientSecret = value;
-            })
-
-          // 租户ID输入
-          Text('Tenant ID')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.tenantId, placeholder: 'Enter tenant ID' })
-            .height(40)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.tenantId = value;
-            })
-
-          // 重定向URI输入
-          Text('Redirect URI')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextArea({ text: this.redirectUri, placeholder: 'Enter redirect URI' })
-            .height(40)
-            .type(TextAreaType.URL)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.redirectUri = value;
-            })
-
-          // 访问令牌输入
-          Text('Access Token')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.accessToken, placeholder: 'Enter access token' })
-            .height(40)
-            .type(InputType.Password)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.accessToken = value;
-            })
-
-          // 刷新令牌输入
-          Text('Refresh Token')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.refreshToken, placeholder: 'Enter refresh token' })
-            .height(40)
-            .type(InputType.Password)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.refreshToken = value;
-            })
+              Button('登录OneDrive')
+                .width('100%')
+                .height(44)
+                .margin({ top: 20 })
+                .backgroundColor($r('app.color.button_bg_blue'))
+                .fontColor($r('app.color.button_text_blue'))
+                .onClick(() => {
+                  this.generateAuthUrl();
+                })
+            }
+            .width('100%')
+          }
 
           // 连接状态
           if (this.connectionStatus) {
@@ -424,29 +461,32 @@ struct OneDrive {
             .width('100%')
           }
 
-          Row() {
-            // 测试连接按钮
-            Button($r('app.string.test_connection'))
-              .height(40)
-              .margin({ top: 20 })
-              .backgroundColor(Color.Gray)
-              .fontColor(Color.White)
-              .enabled(!this.isConnecting)
-              .onClick(() => {
-                this.testConnection();
-              })
-            Blank()
-            // 确定按钮
-            Button($r('app.string.confirm_button_text'))
-              .height(40)
-              .margin({ top: 20 })
-              .backgroundColor($r('app.color.button_bg_blue'))
-              .fontColor($r('app.color.button_text_blue'))
-              .onClick(() => {
-                this.handleConfirm();
-              })
+          if (this.isLoggedIn) {
+            Row() {
+              // 测试连接按钮
+              Button($r('app.string.test_connection'))
+                .height(40)
+                .margin({ top: 20 })
+                .backgroundColor(Color.Gray)
+                .fontColor(Color.White)
+                .enabled(!this.isConnecting)
+                .onClick(() => {
+                  this.testConnection();
+                })
+              Blank()
+              // 确定按钮
+              Button($r('app.string.confirm_button_text'))
+                .height(40)
+                .margin({ top: 20 })
+                .backgroundColor($r('app.color.button_bg_blue'))
+                .fontColor($r('app.color.button_text_blue'))
+                .enabled(!this.isConnecting)
+                .onClick(() => {
+                  this.handleConfirm();
+                })
+            }
+            .width("100%")
           }
-          .width("100%")
         }
         .width('90%')
         .alignItems(HorizontalAlign.Start)
