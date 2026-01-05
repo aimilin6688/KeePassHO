@@ -17,7 +17,7 @@ const TAG = 'FTP';
 struct FTP {
   @State url: string = '/';
   @State host: string = '';
-  @State port: string = '';
+  @State port: string = '21';
   @State username: string = '';
   @State password: string = '';
   @State secure: SecureType = false;
@@ -334,6 +334,7 @@ struct FTP {
           .alignItems(VerticalAlign.Center)
 
           Row() {
+            Text("*").fontColor($r('app.color.required'))
             // 服务器地址输入
             Text($r('app.string.ftp_host'))
               .fontSize(16)
@@ -356,6 +357,7 @@ struct FTP {
           .alignItems(VerticalAlign.Center)
 
           Row() {
+            Text("*").fontColor($r('app.color.required'))
             // 端口输入
             Text($r('app.string.ftp_port'))
               .fontSize(16)
@@ -381,6 +383,7 @@ struct FTP {
 
           // 用户名输入
           Row() {
+            Text("*").fontColor($r('app.color.required'))
             Text($r('app.string.username'))
               .fontSize(16)
               .fontWeight(FontWeight.Medium)
@@ -403,6 +406,7 @@ struct FTP {
 
           // 密码输入
           Row() {
+            Text("*").fontColor($r('app.color.required'))
             Text($r('app.string.password'))
               .fontSize(16)
               .fontWeight(FontWeight.Medium)
