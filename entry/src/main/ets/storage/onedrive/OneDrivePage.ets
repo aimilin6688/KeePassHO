@@ -7,7 +7,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
-import { Constants } from '../../common/constants';
 import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
 import { OAuth2AuthRequest, OAuth2Token } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
@@ -43,6 +42,7 @@ struct OneDrive {
   }
 
   onPageShow(): void {
+    this.connectionStatus = '';
     hilog.debug(DOMAIN, TAG, 'OneDrivePage onPageAppear');
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
     // 检查是否有从OAuth2登录页返回的授权结果
@@ -61,7 +61,7 @@ struct OneDrive {
   private async initPreferences(): Promise<void> {
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      this.preferences = preferences.getPreferencesSync(context, {name:'onedrive_settings'});
+      this.preferences = preferences.getPreferencesSync(context, { name: 'onedrive_settings' });
       hilog.info(DOMAIN, TAG, 'Preferences initialized');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to initialize preferences: %{public}s', (error as Error).message);
@@ -442,7 +442,7 @@ struct OneDrive {
    * @returns OneDriveStorageConfig 存储配置
    */
   private getStorageConfig(): StorageConfig {
-    if(!this.oauth2Token){
+    if (!this.oauth2Token) {
       return {};
     }
     return new OneDriveStorageConfig(
