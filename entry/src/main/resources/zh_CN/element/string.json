@@ -1579,6 +1579,38 @@
     {
       "name": "ftp_secure_type_implicit",
       "value": "隐式加密(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "onedrive_authenticating",
+      "value": "身份验证中..."
+    },
+    {
+      "name": "onedrive_authentication_successful",
+      "value": "身份验证成功"
+    },
+    {
+      "name": "onedrive_login_successful",
+      "value": "登录成功"
+    },
+    {
+      "name": "onedrive_authentication_failed",
+      "value": "身份验证失败"
+    },
+    {
+      "name": "onedrive_logged_in",
+      "value": "已登录"
+    },
+    {
+      "name": "onedrive_logout",
+      "value": "登出"
+    },
+    {
+      "name": "onedrive_login_prompt",
+      "value": "请登录OneDrive账号以访问您的文件"
+    },
+    {
+      "name": "onedrive_login_button",
+      "value": "登录OneDrive"
     }
   ]
 }

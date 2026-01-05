@@ -180,7 +180,7 @@ struct OneDrive {
     }
 
     this.isConnecting = true;
-    this.connectionStatus = 'Authenticating...';
+    this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authenticating'));
     this.isErrorStatus = false;
 
     try {
@@ -193,19 +193,19 @@ struct OneDrive {
 
       this.oauth2Token = token;
       this.isLoggedIn = true;
-      this.connectionStatus = 'Authentication successful';
+      this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_successful'));
       this.isErrorStatus = false;
 
       // 保存令牌到首选项（加密）
       await this.saveTokenToPreferences();
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
-      this.promptAction.showToast({ message: 'Login successful' });
+      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.onedrive_login_successful')) });
     } catch (error) {
-      this.connectionStatus = `Authentication failed: ${(error as Error).message}`;
+      this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_failed')) + `: ${(error as Error).message}`;
       this.isErrorStatus = true;
       hilog.error(DOMAIN, TAG, 'Authentication failed: %{public}s', (error as Error).message);
-      this.promptAction.showToast({ message: 'Authentication failed' });
+      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.onedrive_authentication_failed')) });
     } finally {
       this.isConnecting = false;
     }
@@ -485,12 +485,12 @@ struct OneDrive {
           if (this.isLoggedIn) {
             Column() {
               Row() {
-                Text('已登录')
+                Text($r('app.string.onedrive_logged_in'))
                   .fontSize(16)
                   .fontWeight(FontWeight.Medium)
                   .fontColor($r('app.color.success'))
                 Blank()
-                Text('登出')
+                Text($r('app.string.onedrive_logout'))
                   .fontSize(14)
                   .fontColor($r('app.color.text_primary'))
                   .onClick(() => {
@@ -516,12 +516,12 @@ struct OneDrive {
           } else {
             // 未登录状态
             Column() {
-              Text('请登录OneDrive账号以访问您的文件')
+              Text($r('app.string.onedrive_login_prompt'))
                 .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
                 .margin({ top: 20 })
 
-              Button('登录OneDrive')
+              Button($r('app.string.onedrive_login_button'))
                 .width('100%')
                 .height(44)
                 .margin({ top: 20 })
