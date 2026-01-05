@@ -178,8 +178,8 @@ struct RecentFiles {
             ListItem() {
               Row() {
                 Image(this.getStorageTypeIcon(file.storageType))
-                  .width(40)
-                  .height(40)
+                  .width(32)
+                  .height(32)
                   .fillColor($r('app.color.text_primary'))
                   .margin({ right: 16 })
                 Column() {
