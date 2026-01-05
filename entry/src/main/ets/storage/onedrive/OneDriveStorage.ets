@@ -90,8 +90,8 @@ export class OneDriveStorage implements IFileStorage {
     }
     const oneDriveConfig = config as OneDriveStorageConfig;
     return new OneDriveStorageConfig(
-      oneDriveConfig.getAccessTokenText(),
-      oneDriveConfig.getRefreshTokenText(),
+      oneDriveConfig.accessToken,
+      oneDriveConfig.refreshToken,
       oneDriveConfig.expiresAt,
       {
         timeout: oneDriveConfig.timeout,
@@ -259,23 +259,24 @@ export class OneDriveStorage implements IFileStorage {
     if (result.success && result.body) {
       const jsonStr = ByteUtils.bytesToString(result.body);
       const data: Record<string, Object> = JSON.parse(jsonStr);
-      const files: FileInfo[] = [];
 
-      const value = data['value'];
-      if (value && Array.isArray(value)) {
-        for (const item of value as Array<Object>) {
-          const itemData = item as Record<string, Object>;
-          const resource = this.client.parseResource(itemData);
-          files.push({
-            name: resource.name,
-            size: resource.size,
-            modifiedTime: new Date(resource.lastModified).getTime(),
-            path: resource.path,
-            type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
-            childrenCount: resource.childrenCount || 0
-          });
-        }
+      hilog.info(DOMAIN, TAG, `listDir response keys: ${Object.keys(data).join(', ')}`);
+
+      const resources = this.client.parseResourceList(data);
+      hilog.info(DOMAIN, TAG, `Parsed ${resources.length} resources`);
+
+      const files: FileInfo[] = [];
+      for (const resource of resources) {
+        files.push({
+          name: resource.name,
+          size: resource.size,
+          modifiedTime: new Date(resource.lastModified).getTime(),
+          path: resource.path,
+          type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
+          childrenCount: resource.childrenCount || 0
+        });
       }
+
       return files;
     } else {
       throw new Error(result.message);
