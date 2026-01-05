@@ -1,5 +1,6 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { StorageType } from '..';
 
 /**
  * WebDAV存储配置选项类
@@ -60,4 +61,5 @@ export const WebDAVPageConfig = {
   selectDesc: $r('app.string.location_webdav_desc_select'),
   saveDesc: $r('app.string.location_webdav_desc_save'),
   pageUrl: 'storage/webdav/WebDAVPage',
+  storageType: StorageType.WEBDAV
 } as PageConfig;

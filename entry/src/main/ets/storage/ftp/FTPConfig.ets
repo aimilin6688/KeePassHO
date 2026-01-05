@@ -1,5 +1,6 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { StorageType } from '..';
 
 /**
  * 协议类型枚举
@@ -89,4 +90,5 @@ export const FTPPageConfig = {
   selectDesc: $r('app.string.location_ftp_desc_select'),
   saveDesc: $r('app.string.location_ftp_desc_save'),
   pageUrl: 'storage/ftp/FTPPage',
+  storageType: StorageType.FTP
 } as PageConfig;
