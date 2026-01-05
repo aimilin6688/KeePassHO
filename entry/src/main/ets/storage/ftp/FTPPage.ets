@@ -42,6 +42,7 @@ struct FTP {
 
   onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    this.connectionStatus = '';
   }
 
   // 导出数据初始化
