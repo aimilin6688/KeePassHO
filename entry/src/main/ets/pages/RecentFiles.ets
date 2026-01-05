@@ -3,9 +3,9 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageType } from '../storage/StorageType';
 import { common } from '@kit.AbilityKit';
 import { WindowUtils } from '../common/utils';
+import { FileStorage, PageConfig } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
@@ -17,6 +17,7 @@ struct RecentFiles {
   @State isLoading: boolean = true;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private allStorageConfig: Array<PageConfig> = FileStorage.getAllPageConfig();
 
   aboutToAppear() {
     this.loadRecentFiles();
@@ -115,12 +116,11 @@ struct RecentFiles {
     }
   }
 
-  private getStorageTypeIcon(storageType: StorageType): ResourceStr {
-    switch (storageType) {
-      case StorageType.LOCAL:
-        return $r('app.media.ic_file');
-      case StorageType.WEBDAV:
-        return $r('app.media.ic_webdav');
+  private getStorageTypeIcon(storageType: string): ResourceStr {
+    for (let i = 0; i < this.allStorageConfig.length; i++) {
+      if (this.allStorageConfig[i].storageType === storageType) {
+        return this.allStorageConfig[i].icon;
+      }
     }
     return $r('app.media.ic_file');
   }
@@ -189,7 +189,7 @@ struct RecentFiles {
                     .fontWeight(FontWeight.Medium)
                     .maxLines(1)
                     .margin({ bottom: 4 })
-                  Text(file.filePath)
+                  Text(file.storageType + ": " + file.filePath)
                     .fontSize(14)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .maxLines(1)
