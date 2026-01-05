@@ -22,7 +22,7 @@ export class UrlUtils {
       let parsedUrl = url.URL.parseURL(urlString);
       return parsedUrl.protocol + "//" + parsedUrl.host;
     } catch (e) {
-      hilog.error(DOMAIN, TAG, "getHost error: " + e);
+      hilog.warn(DOMAIN, TAG, "getHost error: " + e);
       return "";
     }
   }
