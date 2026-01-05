@@ -265,16 +265,16 @@ struct OneDrive {
     if (!this.checkParam()) {
       return;
     }
-    AppStorage.setOrCreate(Constants.APP_STORAGE_LOCATION_INFO, {
-      mode: LocationParam.getMode(),
-      filePath: '/',
-      fileSuffix: LocationParam.getFileSuffix(),
-      fileName: LocationParam.getFileName(),
-      storageType: StorageType.ONEDRIVE,
-      storageConfig: this.getStorageConfig()
-    });
     this.router.pushUrl({
-      url: 'pages/open/FileList'
+      url: 'pages/open/FileList',
+      params: {
+        mode: LocationParam.getMode(),
+        filePath: '/',
+        fileSuffix: LocationParam.getFileSuffix(),
+        fileName: LocationParam.getFileName(),
+        storageType: StorageType.ONEDRIVE,
+        storageConfig: this.getStorageConfig()
+      }
     });
   }
 
