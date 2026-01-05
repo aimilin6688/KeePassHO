@@ -53,6 +53,7 @@ export class OneDriveStorage implements IFileStorage {
    */
   public init(config: StorageConfig): void {
     this.config = this.parseConfig(config);
+    hilog.debug(DOMAIN, TAG, `OneDriveStorage init: accessToken length=${this.config.getAccessTokenText().length}`);
     if (this.client) {
       this.client.close();
     }
@@ -74,6 +75,7 @@ export class OneDriveStorage implements IFileStorage {
       accessToken: this.config!.getAccessTokenText(),
       timeout: this.config!.timeout
     };
+    hilog.info(DOMAIN, TAG, `Creating OneDriveClient with accessToken length=${clientConfig.accessToken.length}`);
     this.client = new OneDriveClient(clientConfig, this.oauth2Config);
   }
 
