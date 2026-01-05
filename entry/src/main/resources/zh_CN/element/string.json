@@ -766,7 +766,7 @@
     },
     {
       "name": "ftp_secure",
-      "value": "使用 FTPS (FTP over TLS)"
+      "value": "使用 FTPS"
     },
     {
       "name": "ftp_username_empty",
