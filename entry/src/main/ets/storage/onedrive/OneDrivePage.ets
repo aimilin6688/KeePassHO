@@ -2,26 +2,30 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { OneDriveStorageConfig } from './OneDriveConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, WindowUtils } from '../../common/utils';
+import { CryptoUtils, DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { Constants } from '../../common/constants';
-import { OneDriveOAuth2Provider, createOneDriveOAuth2Config } from './OneDriveOAuth2Provider';
-import { OAuth2AuthRequest } from '../../common/oauth2';
+import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
+import { OAuth2AuthRequest, OAuth2Token } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
 import { AuthResult } from '../OAuth2LoginPage';
+import preferences from '@ohos.data.preferences';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDrive';
 
+/**
+ * OneDrive 首选项键名
+ */
+const ONE_DRIVE_TOKEN_KEY = 'onedrive_token';
+
 @Entry
 @Component
 struct OneDrive {
-  @State accessToken: string = '';
-  @State refreshToken: string = '';
-  @State expiresAt: number = 0;
+  @State oauth2Token: OAuth2Token | null = null;
   @State isLoggedIn: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
@@ -30,9 +34,12 @@ struct OneDrive {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private oauth2Provider?: OneDriveOAuth2Provider;
+  private preferences: preferences.Preferences | null = null;
 
   aboutToAppear(): void {
+    this.initPreferences();
     this.initSaveParam();
+    this.loadTokenFromPreferences();
   }
 
   onPageShow(): void {
@@ -45,6 +52,19 @@ struct OneDrive {
       this.handleAuthCallback(authResult.code, authResult.state);
       // 清除存储的授权结果
       AppStorage.delete('oauth2_auth_result');
+    }
+  }
+
+  /**
+   * 初始化首选项
+   */
+  private async initPreferences(): Promise<void> {
+    try {
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      this.preferences = preferences.getPreferencesSync(context, {name:'onedrive_settings'});
+      hilog.info(DOMAIN, TAG, 'Preferences initialized');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to initialize preferences: %{public}s', (error as Error).message);
     }
   }
 
@@ -63,6 +83,73 @@ struct OneDrive {
   }
 
   /**
+   * 从首选项加载令牌
+   */
+  private async loadTokenFromPreferences(): Promise<void> {
+    if (!this.preferences) {
+      hilog.warn(DOMAIN, TAG, 'Preferences not initialized');
+      return;
+    }
+
+    try {
+      // 优先尝试加载加密的令牌
+      const encryptedToken = await this.preferences.get(ONE_DRIVE_TOKEN_KEY, '') as string;
+      if (encryptedToken) {
+        const tokenJson = await CryptoUtils.decryptText(encryptedToken);
+        if (tokenJson) {
+          this.oauth2Token = JSON.parse(tokenJson) as OAuth2Token;
+          this.isLoggedIn = true;
+          hilog.info(DOMAIN, TAG, 'Token loaded from encrypted preferences');
+          return;
+        }
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to load token from preferences: %{public}s', (error as Error).message);
+    }
+  }
+
+  /**
+   * 保存令牌到首选项（加密）
+   */
+  private async saveTokenToPreferences(): Promise<void> {
+    if (!this.preferences || !this.oauth2Token) {
+      return;
+    }
+
+    try {
+      // 将令牌转换为JSON字符串
+      const tokenJson = JSON.stringify(this.oauth2Token);
+
+      // 加密并保存
+      const encryptedToken = await CryptoUtils.encryptText(tokenJson);
+      if (encryptedToken) {
+        await this.preferences.put(ONE_DRIVE_TOKEN_KEY, encryptedToken);
+        await this.preferences.flush();
+        hilog.info(DOMAIN, TAG, 'Token saved to encrypted preferences');
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to save token to preferences: %{public}s', (error as Error).message);
+    }
+  }
+
+  /**
+   * 清除保存的令牌
+   */
+  private async clearTokenFromPreferences(): Promise<void> {
+    if (!this.preferences) {
+      return;
+    }
+
+    try {
+      await this.preferences.delete(ONE_DRIVE_TOKEN_KEY);
+      await this.preferences.flush();
+      hilog.info(DOMAIN, TAG, 'Token cleared from preferences');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to clear token from preferences: %{public}s', (error as Error).message);
+    }
+  }
+
+  /**
    * 生成授权URL并跳转到授权页面
    */
   private generateAuthUrl(): void {
@@ -71,7 +158,7 @@ struct OneDrive {
     }
     const authUrl = this.oauth2Provider!.getAuthorizationUrl();
     hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
-    
+
     // 跳转到OAuth2登录页面
     this.router.pushUrl({
       url: 'storage/OAuth2LoginPage',
@@ -103,15 +190,16 @@ struct OneDrive {
       };
 
       const token = await this.oauth2Provider!.authorize(authRequest);
-      
-      this.accessToken = token.accessToken;
-      this.refreshToken = token.refreshToken || '';
-      this.expiresAt = token.expiresAt || 0;
+
+      this.oauth2Token = token;
       this.isLoggedIn = true;
       this.connectionStatus = 'Authentication successful';
       this.isErrorStatus = false;
-      
-      hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${this.expiresAt}`);
+
+      // 保存令牌到首选项（加密）
+      await this.saveTokenToPreferences();
+
+      hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
       this.promptAction.showToast({ message: 'Login successful' });
     } catch (error) {
       this.connectionStatus = `Authentication failed: ${(error as Error).message}`;
@@ -126,13 +214,12 @@ struct OneDrive {
   /**
    * 注销登录
    */
-  private logout(): void {
-    this.accessToken = '';
-    this.refreshToken = '';
-    this.expiresAt = 0;
+  private async logout(): Promise<void> {
+    this.oauth2Token = null;
     this.isLoggedIn = false;
     this.connectionStatus = '';
     this.oauth2Provider = undefined;
+    await this.clearTokenFromPreferences();
   }
 
   /**
@@ -149,8 +236,13 @@ struct OneDrive {
     }
     const storageConfig = dbFileParam.storageConfig as OneDriveStorageConfig;
     if (storageConfig) {
-      this.accessToken = storageConfig.getAccessTokenText();
-      this.refreshToken = storageConfig.getRefreshTokenText();
+      this.oauth2Token = {
+        tokenType: storageConfig.tokenType,
+        accessToken: storageConfig.getAccessTokenText(),
+        refreshToken: storageConfig.getRefreshTokenText(),
+        expiresAt: storageConfig.expiresAt,
+        scope: storageConfig.scope
+      } as OAuth2Token;
     }
   }
 
@@ -198,7 +290,7 @@ struct OneDrive {
     this.isErrorStatus = false;
 
     try {
-      hilog.info(DOMAIN, TAG, `testConnection: accessToken length=${this.accessToken.length}, refreshToken length=${this.refreshToken.length}`);
+      hilog.info(DOMAIN, TAG, `testConnection: token exists=${!!this.oauth2Token}`);
       this.fileManager.init(this.getStorageConfig());
       hilog.debug(DOMAIN, TAG, 'testConnection: Calling exists("/")');
       const exists = await this.fileManager.exists('/');
@@ -337,13 +429,8 @@ struct OneDrive {
       this.isErrorStatus = true;
       return false;
     }
-    if (!this.accessToken) {
+    if (!this.oauth2Token || !this.oauth2Token.accessToken) {
       this.connectionStatus = 'Access token is missing';
-      this.isErrorStatus = true;
-      return false;
-    }
-    if (!this.refreshToken) {
-      this.connectionStatus = 'Refresh token is missing';
       this.isErrorStatus = true;
       return false;
     }
@@ -355,11 +442,17 @@ struct OneDrive {
    * @returns OneDriveStorageConfig 存储配置
    */
   private getStorageConfig(): StorageConfig {
+    if(!this.oauth2Token){
+      return {};
+    }
     return new OneDriveStorageConfig(
-      this.accessToken,
-      this.refreshToken,
-      undefined,
-      this.expiresAt
+      this.oauth2Token.accessToken,
+      this.oauth2Token.refreshToken || '',
+      this.oauth2Token.expiresAt || 0,
+      {
+        tokenType: this.oauth2Token.tokenType,
+        scope: this.oauth2Token.scope
+      }
     );
   }
 
@@ -405,10 +498,10 @@ struct OneDrive {
                   })
               }
               .width('100%')
-              
+
               // 令牌过期时间
-              if (this.expiresAt > 0) {
-                Text(`令牌过期时间: ${new Date(this.expiresAt).toLocaleString()}`)
+              if (this.oauth2Token && this.oauth2Token.expiresAt && this.oauth2Token.expiresAt > 0) {
+                Text(`令牌过期时间: ${DateUtils.format(new Date(this.oauth2Token.expiresAt))}`)
                   .fontSize(12)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 8 })
@@ -419,6 +512,7 @@ struct OneDrive {
             .backgroundColor($r('app.color.card_bg'))
             .borderRadius(8)
             .margin({ top: 20 })
+            .alignItems(HorizontalAlign.Start)
           } else {
             // 未登录状态
             Column() {
