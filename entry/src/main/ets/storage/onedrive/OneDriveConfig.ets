@@ -1,6 +1,21 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 
+export interface OneDriveStorageConfigOptions {
+  /**
+   * 超时时间（毫秒，可选）
+   */
+  timeout?: number;
+  /**
+   * 令牌类型
+   */
+  tokenType?: string;
+  /**
+   * 作用域
+   */
+  scope?: string;
+}
+
 /**
  * OneDrive存储配置类
  */
@@ -14,24 +29,36 @@ export class OneDriveStorageConfig implements StorageConfig {
    */
   refreshToken: string;
   /**
+   * 令牌过期时间（时间戳）
+   */
+  expiresAt: number;
+
+  /**
    * 超时时间（毫秒，可选）
    */
   timeout?: number;
   /**
-   * 令牌过期时间（时间戳）
+   * 令牌类型
    */
-  expiresAt?: number;
+  tokenType?: string;
+  /**
+   * 作用域
+   */
+  scope?: string;
+
 
   constructor(
     accessToken: string,
     refreshToken: string,
-    timeout?: number,
-    expiresAt?: number
+    expiresAt: number,
+    options?: OneDriveStorageConfigOptions
   ) {
     this.accessToken = Sm4Utils.encryptWithPrefix(accessToken);
     this.refreshToken = Sm4Utils.encryptWithPrefix(refreshToken);
-    this.timeout = timeout;
     this.expiresAt = expiresAt;
+    this.timeout = options?.timeout;
+    this.tokenType = options?.tokenType;
+    this.scope = options?.scope;
   }
 
   /**

@@ -92,8 +92,12 @@ export class OneDriveStorage implements IFileStorage {
     return new OneDriveStorageConfig(
       oneDriveConfig.getAccessTokenText(),
       oneDriveConfig.getRefreshTokenText(),
-      oneDriveConfig.timeout,
-      oneDriveConfig.expiresAt
+      oneDriveConfig.expiresAt,
+      {
+        timeout: oneDriveConfig.timeout,
+        tokenType: oneDriveConfig.tokenType,
+        scope: oneDriveConfig.scope
+      }
     );
   }
 
