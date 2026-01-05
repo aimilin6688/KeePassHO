@@ -176,7 +176,10 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     try {
-      await this.client.upload(path, data);
+      const result = await this.client.upload(path, data);
+      if (!result.success) {
+        return Promise.reject(new Error(result.message));
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'OneDrive writeFile error:%{public}s', (error as Error).message);
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
@@ -200,7 +203,17 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     const result = await this.client.getInfo(path);
-    return result.success;
+    // 如果成功，文件存在
+    if (result.success) {
+      return true;
+    }
+    // 如果失败但状态码是404，文件不存在
+    if (result.statusCode === 404) {
+      return false;
+    }
+    // 其他错误，抛出异常
+    hilog.error(DOMAIN, TAG, 'OneDrive exists error: status=%{public}d, message=%{public}s', result.statusCode, result.message);
+    return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message));
   }
 
   /**
