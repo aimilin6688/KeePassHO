@@ -71,6 +71,17 @@
                 "linkFeature": "FileOpen"
               }
             ]
+          },
+          {
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "keepassho",
+                "host": "aimilin.com"
+              }
+            ]
           }
         ]
       }
