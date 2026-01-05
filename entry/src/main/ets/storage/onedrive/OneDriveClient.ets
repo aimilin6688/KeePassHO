@@ -1,5 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ByteUtils } from 'kdbxweb';
+import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
 
@@ -148,14 +148,18 @@ export class OneDriveClient {
    */
   public updateOptions(options: OneDriveClientOptions): void {
     this.config = options;
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+    if (options.accessToken) {
+      headers['Authorization'] = `Bearer ${options.accessToken}`;
+    }
+    hilog.info(DOMAIN, TAG, `updateOptions: baseURL=${options.apiBaseUrl}, accessToken length=${options.accessToken.length}`);
     this.axiosInstance = axios.create({
       baseURL: options.apiBaseUrl,
       timeout: options.timeout || 30000,
-      headers: {
-        'Authorization': `Bearer ${options.accessToken}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
+      headers: headers
     });
   }
 
@@ -234,12 +238,12 @@ export class OneDriveClient {
    * @param key 键
    * @returns 字符串值或undefined
    */
-  private extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string | undefined {
+  private extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string  {
     const value = obj[key];
     if (value !== undefined && value !== null && typeof value === 'string') {
       return value;
     }
-    return undefined;
+    return '';
   }
 
   /**
@@ -294,6 +298,7 @@ export class OneDriveClient {
    * @returns HttpResponse
    */
   private convertAxiosError(error: AxiosError): HttpResponse {
+    hilog.error(DOMAIN, TAG, `AxiosError: error=${error.message}`);
     const headers: Record<string, string> = {};
     if (error.response?.headers) {
       const headerEntries = Object.entries(error.response.headers) as Array<[string, string]>;
@@ -305,19 +310,66 @@ export class OneDriveClient {
     }
 
     let errorData: ArrayBuffer | undefined = undefined;
+    let errorMessage = error.message || 'Unknown error';
+    let errorCode = error.response?.status || 0;
+
+    // 尝试从响应数据中提取详细错误信息
     if (error.response?.data) {
       if (error.response.data instanceof ArrayBuffer) {
         errorData = error.response.data;
+        try {
+          const errorText = ByteUtils.bytesToString(errorData);
+          hilog.error(DOMAIN, TAG, `Response error data: ${errorText}`);
+          const errorJson = JSON.parse(errorText) as Record<string, Object>;
+          const errorInfo = this.parseMicrosoftGraphError(errorJson);
+          if (errorInfo.message) {
+            errorMessage = errorInfo.message;
+          }
+          if (errorInfo.code) {
+            hilog.error(DOMAIN, TAG, `Microsoft Graph Error Code: ${errorInfo.code}`);
+          }
+        } catch (e) {
+          hilog.error(DOMAIN, TAG, `Failed to parse error response: ${(e as Error).message}`);
+        }
+      } else if (typeof error.response.data === 'object') {
+        const errorObj = error.response.data as Record<string, Object>;
+        const errorInfo = this.parseMicrosoftGraphError(errorObj);
+        if (errorInfo.message) {
+          errorMessage = errorInfo.message;
+        }
+        if (errorInfo.code) {
+          hilog.error(DOMAIN, TAG, `Microsoft Graph Error Code: ${errorInfo.code}`);
+        }
       }
     }
 
     return new HttpResponse(
       false,
-      error.response?.status || 0,
-      error.message || 'Unknown error',
+      errorCode,
+      errorMessage,
       headers,
       errorData
     );
+  }
+
+  /**
+   * 解析 Microsoft Graph API 错误响应
+   * @param errorJson 错误JSON对象
+   * @returns 错误信息（code 和 message）
+   */
+  private parseMicrosoftGraphError(errorJson: Record<string, Object>): KdbxError {
+    let r_code = '';
+    let r_message = '';
+    if (errorJson.error) {
+      const errorObj = errorJson.error as Record<string, Object>;
+      // 提取错误代码
+      const code = this.extractOptionalStringFromObject(errorObj, 'code');
+      if (code) {
+        r_code = code;
+        r_message = errorObj ? this.extractOptionalStringFromObject(errorObj, 'message') : '';
+      }
+    }
+    return new KdbxError(r_code, r_message);
   }
 
   /**
@@ -391,9 +443,14 @@ export class OneDriveClient {
     }
     try {
       let apiPath = path ? this.pathToApiPath(path) : '/me/drive/root';
+      hilog.info(DOMAIN, TAG, `getInfo: path=${path}, apiPath=${apiPath}`);
       const response: AxiosResponse = await this.axiosInstance.get(apiPath);
       return this.convertAxiosResponse(response);
     } catch (error) {
+      hilog.error(DOMAIN, TAG, `getInfo error: path=${path}, error=${(error as Error).message}`);
+      if ((error as AxiosError).response?.data) {
+        hilog.error(DOMAIN, TAG, `Response data: %{public}s`, JSON.stringify((error as AxiosError).response?.data));
+      }
       return this.convertAxiosError(error as AxiosError);
     }
   }
@@ -499,7 +556,7 @@ export class OneDriveClient {
    * @returns API路径
    */
   private pathToApiPath(path: string): string {
-    if (!path) {
+    if (!path || path === '/') {
       return '/me/drive/root';
     }
     path = path.startsWith('/') ? path.substring(1) : path;
