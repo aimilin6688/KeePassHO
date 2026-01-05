@@ -93,7 +93,7 @@ export class KdbxFileManager {
     try {
       return await this.storage.getInfo(path);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to get KDBX file info: %{public}s', error.message)
+      hilog.error(DOMAIN, TAG, `Failed to get KDBX file info: ${error.message}`)
       throw new Error(error.message);
     }
   }
