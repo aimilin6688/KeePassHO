@@ -2,24 +2,18 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { OneDriveStorageConfig } from './OneDriveConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CryptoUtils, DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
-import { OAuth2AuthRequest, OAuth2Token } from '../../common/oauth2';
+import { OAuth2AuthRequest, OAuth2Token, OAuth2Provider, OAuth2TokenStorageService } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
 import { AuthResult } from '../OAuth2LoginPage';
-import preferences from '@ohos.data.preferences';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDrive';
-
-/**
- * OneDrive 首选项键名
- */
-const ONE_DRIVE_TOKEN_KEY = 'onedrive_token';
 
 @Entry
 @Component
@@ -33,12 +27,10 @@ struct OneDrive {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private oauth2Provider?: OneDriveOAuth2Provider;
-  private preferences: preferences.Preferences | null = null;
 
   aboutToAppear(): void {
-    this.initPreferences();
     this.initSaveParam();
-    this.loadTokenFromPreferences();
+    this.loadTokenFromStorage();
   }
 
   onPageShow(): void {
@@ -52,19 +44,6 @@ struct OneDrive {
       this.handleAuthCallback(authResult.code, authResult.state);
       // 清除存储的授权结果
       AppStorage.delete('oauth2_auth_result');
-    }
-  }
-
-  /**
-   * 初始化首选项
-   */
-  private async initPreferences(): Promise<void> {
-    try {
-      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      this.preferences = preferences.getPreferencesSync(context, { name: 'onedrive_settings' });
-      hilog.info(DOMAIN, TAG, 'Preferences initialized');
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to initialize preferences: %{public}s', (error as Error).message);
     }
   }
 
@@ -83,69 +62,61 @@ struct OneDrive {
   }
 
   /**
-   * 从首选项加载令牌
+   * 从存储服务加载令牌
    */
-  private async loadTokenFromPreferences(): Promise<void> {
-    if (!this.preferences) {
-      hilog.warn(DOMAIN, TAG, 'Preferences not initialized');
-      return;
-    }
-
+  private async loadTokenFromStorage(): Promise<void> {
     try {
-      // 优先尝试加载加密的令牌
-      const encryptedToken = await this.preferences.get(ONE_DRIVE_TOKEN_KEY, '') as string;
-      if (encryptedToken) {
-        const tokenJson = await CryptoUtils.decryptText(encryptedToken);
-        if (tokenJson) {
-          this.oauth2Token = JSON.parse(tokenJson) as OAuth2Token;
-          this.isLoggedIn = true;
-          hilog.info(DOMAIN, TAG, 'Token loaded from encrypted preferences');
-          return;
-        }
+      const storageService = OAuth2TokenStorageService.getInstance();
+      const token = await storageService.loadToken({
+        provider: OAuth2Provider.ONEDRIVE,
+        encrypt: true
+      });
+      
+      if (token) {
+        this.oauth2Token = token;
+        this.isLoggedIn = true;
+        hilog.info(DOMAIN, TAG, 'Token loaded from storage service');
+      } else {
+        hilog.debug(DOMAIN, TAG, 'No token found in storage service');
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load token from preferences: %{public}s', (error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Failed to load token from storage service: %{public}s', (error as Error).message);
     }
   }
 
   /**
-   * 保存令牌到首选项（加密）
+   * 保存令牌到存储服务（加密）
    */
-  private async saveTokenToPreferences(): Promise<void> {
-    if (!this.preferences || !this.oauth2Token) {
+  private async saveTokenToStorage(): Promise<void> {
+    if (!this.oauth2Token) {
       return;
     }
 
     try {
-      // 将令牌转换为JSON字符串
-      const tokenJson = JSON.stringify(this.oauth2Token);
-
-      // 加密并保存
-      const encryptedToken = await CryptoUtils.encryptText(tokenJson);
-      if (encryptedToken) {
-        await this.preferences.put(ONE_DRIVE_TOKEN_KEY, encryptedToken);
-        await this.preferences.flush();
-        hilog.info(DOMAIN, TAG, 'Token saved to encrypted preferences');
-      }
+      const storageService = OAuth2TokenStorageService.getInstance();
+      await storageService.saveToken(this.oauth2Token, {
+        provider: OAuth2Provider.ONEDRIVE,
+        encrypt: true
+      });
+      hilog.info(DOMAIN, TAG, 'Token saved to storage service');
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to save token to preferences: %{public}s', (error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Failed to save token to storage service: %{public}s', (error as Error).message);
     }
   }
 
   /**
    * 清除保存的令牌
    */
-  private async clearTokenFromPreferences(): Promise<void> {
-    if (!this.preferences) {
-      return;
-    }
-
+  private async clearTokenFromStorage(): Promise<void> {
     try {
-      await this.preferences.delete(ONE_DRIVE_TOKEN_KEY);
-      await this.preferences.flush();
-      hilog.info(DOMAIN, TAG, 'Token cleared from preferences');
+      const storageService = OAuth2TokenStorageService.getInstance();
+      await storageService.deleteToken({
+        provider: OAuth2Provider.ONEDRIVE,
+        encrypt: true
+      });
+      hilog.info(DOMAIN, TAG, 'Token cleared from storage service');
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to clear token from preferences: %{public}s', (error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Failed to clear token from storage service: %{public}s', (error as Error).message);
     }
   }
 
@@ -196,8 +167,8 @@ struct OneDrive {
       this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_successful'));
       this.isErrorStatus = false;
 
-      // 保存令牌到首选项（加密）
-      await this.saveTokenToPreferences();
+      // 保存令牌到存储服务（加密）
+      await this.saveTokenToStorage();
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
       this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.onedrive_login_successful')) });
@@ -219,7 +190,7 @@ struct OneDrive {
     this.isLoggedIn = false;
     this.connectionStatus = '';
     this.oauth2Provider = undefined;
-    await this.clearTokenFromPreferences();
+    await this.clearTokenFromStorage();
   }
 
   /**
