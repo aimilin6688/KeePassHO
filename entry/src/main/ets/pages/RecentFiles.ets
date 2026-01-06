@@ -54,12 +54,16 @@ struct RecentFiles {
   async openFile(recentFile: RecentFile) {
     LoadingDialog.showLoading($r('app.string.loading_message'));
     let recentFilesService: RecentFilesService = RecentFilesService.getInstance();
+    let errorMessage: string = '';
     // 检查文件是否存在
-    const fileExists = await recentFilesService.checkFileExists(recentFile);
+    const fileExists = await recentFilesService.checkFileExists(recentFile).catch((e: Error) => {
+      hilog.error(DOMAIN, TAG, 'check file exists error: %{public}s', e.message);
+      errorMessage = e.message;
+    });
     LoadingDialog.hideLoading();
     if (!fileExists) {
       CommonUtils.showToast({
-        message: $r('app.string.file_not_exists'),
+        message: errorMessage || $r('app.string.file_not_exists'),
         duration: 2000
       });
       CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_remove_record_tips'), {
