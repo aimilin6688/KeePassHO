@@ -4,7 +4,7 @@
  */
 import { TotpConfig, TotpService } from '../services/TotpService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import ResourceManager from '../common/utils/ResourceManager';
+import { ResourceManager } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'TotpPreviewComponent';

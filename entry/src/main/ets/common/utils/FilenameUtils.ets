@@ -1,5 +1,4 @@
-import DateUtils from './DateUtils';
-import { StringUtils } from './StringUtils';
+import { DateUtils, StringUtils } from '.';
 
 /**
  * 文件名工具类

@@ -1,12 +1,10 @@
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import { LocationInfo, LocationInterface, LocationMode, LocationParam } from '../beans/LocationParam';
 import { ExportType } from '../TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from './KdbxFileManager';
-import { FilenameUtils } from '../../common/utils/FilenameUtils';
 import { ByteUtils, Kdbx, KdbxCredentials, KdbxGroup } from 'kdbxweb';
 import { FileService } from '../FileService';
-import KdbxUtils from '../../common/utils/KdbxUtils';
+import { KdbxUtils, CommonUtils, FilenameUtils } from '../../common/utils';
 import { ErrorCodes, KeePassHoError } from '../error/KeepassHoError';
 import { KdbxCsvService } from './KdbxCsvService';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
@@ -31,7 +29,7 @@ export class KdbxImportService {
           KdbxImportService.handlerImport(locationInfo);
         } catch (e) {
           hilog.error(DOMAIN, TAG, 'Import database error:' + e.message);
-          LoadingDialog.showError(e.message);
+          CommonUtils.showToast(e.message);
         }
       }
     } as LocationInterface);
@@ -46,13 +44,13 @@ export class KdbxImportService {
     const exists = await KdbxFileManager.of(locationInfo).exists(locationInfo.filePath);
     // 文件不存在
     if (!exists) {
-      LoadingDialog.showError($r("app.string.file_not_exists"));
+      CommonUtils.showToast($r("app.string.file_not_exists"));
       return;
     }
     const fileExt = FilenameUtils.getFileExt(locationInfo.filePath);
     // 检查格式
     if (!KdbxImportService.isSupportType(fileExt)) {
-      LoadingDialog.showError($r("app.string.import_not_support_type"));
+      CommonUtils.showToast($r("app.string.import_not_support_type"));
       return;
     }
     // 转换为导入数据库
@@ -111,7 +109,7 @@ export class KdbxImportService {
       return new KdbxGroup();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to import: %{public}s', error.message);
-      LoadingDialog.showError(error.message);
+      CommonUtils.showToast(error.message);
       if (error instanceof KeePassHoError) {
         throw error;
       }

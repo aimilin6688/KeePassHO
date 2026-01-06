@@ -1,10 +1,9 @@
 import { CounterComponent, CounterType, PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../../services/FileService';
-import KdbxUtils from '../../common/utils/KdbxUtils';
+import { KdbxUtils, CommonUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Consts, Kdbx } from 'kdbxweb';
 import { EventBus } from '../../services/EventBus';
-import { CommonUtils } from '../../common/utils/CommonUtils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
@@ -436,6 +435,6 @@ struct SettingDatabaseMeta {
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

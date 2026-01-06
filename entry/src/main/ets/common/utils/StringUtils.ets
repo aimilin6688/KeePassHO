@@ -1,3 +1,8 @@
+
+
+/**
+ * 字符串工具类
+ */
 export class StringUtils {
   /**
    * 移除字符串开头的指定字符串

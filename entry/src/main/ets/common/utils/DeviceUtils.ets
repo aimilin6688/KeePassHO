@@ -3,7 +3,7 @@ import { deviceInfo } from '@kit.BasicServicesKit';
 /**
  * 设备工具类
  */
-export default class DeviceUtils {
+export class DeviceUtils {
 
   /**
    * 是否模拟器

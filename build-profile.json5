@@ -58,21 +58,21 @@
       {
         "name": "default",
         "signingConfig": "win_debug",
-        "targetSdkVersion": "5.0.5(17)",
-        "compatibleSdkVersion": "5.0.5(17)",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
             "caseSensitiveCheck": true,
             "useNormalizedOHMUrl": true
           }
-        },
+        }
       },
       {
         "name": "win_release",
         "signingConfig": "win_release",
-        "targetSdkVersion": "5.0.5(17)",
-        "compatibleSdkVersion": "5.0.5(17)",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
@@ -84,8 +84,8 @@
       {
         "name": "mac_debug",
         "signingConfig": "mac_debug",
-        "targetSdkVersion": "5.0.5(17)",
-        "compatibleSdkVersion": "5.0.5(17)",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
@@ -97,8 +97,8 @@
       {
         "name": "mac_release",
         "signingConfig": "mac_release",
-        "targetSdkVersion": "5.0.5(17)",
-        "compatibleSdkVersion": "5.0.5(17)",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
@@ -111,9 +111,21 @@
     "buildModeSet": [
       {
         "name": "debug",
+        "buildOption": {
+          "arkOptions": {
+            "buildProfileFields": {
+            }
+          }
+        }
       },
       {
-        "name": "release"
+        "name": "release",
+        "buildOption": {
+          "arkOptions": {
+            "buildProfileFields": {
+            }
+          }
+        }
       }
     ]
   },

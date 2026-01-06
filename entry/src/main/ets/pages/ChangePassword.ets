@@ -1,11 +1,11 @@
-import KdbxUtils from '../common/utils/KdbxUtils';
-import ResourceManager from '../common/utils/ResourceManager';
+import { KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
+import { common } from '@kit.AbilityKit';
 
 /**
  * 修改密码
@@ -22,6 +22,10 @@ struct ChangePassword {
   @State notUseKeyFile: boolean = false; // 不适用keyfile
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
+
+  onPageShow(): void {
+      WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+  }
 
   private changePassword() {
     if (!this.validatePassword()) {

@@ -3,9 +3,8 @@ import common from '@ohos.app.ability.common';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { CommonUtils } from './CommonUtils';
+import { CommonUtils,KdbxUtils } from '.';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import KdbxUtils from './KdbxUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'ImagePickerUtils';

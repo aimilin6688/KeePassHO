@@ -4,23 +4,21 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { StorageType } from '../services/kdbx/interfaces';
+import { StorageType, StorageConfig } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { StorageConfig } from '../services/kdbx/interfaces/StorageConfig';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { KdbxUtils, ResourceManager, CryptoUtils, WindowUtils} from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
-import ResourceManager from '../common/utils/ResourceManager';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
-import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 import { Constants } from '../common/constants/Constants';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -84,6 +82,7 @@ struct Password {
   onPageShow(): void {
     this.isFingerprintSupport = AuthService.isFingerprintSupportAndEnabled();
     this.isFaceSupport = AuthService.isFaceSupportAndEnabled();
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   aboutToDisappear() {

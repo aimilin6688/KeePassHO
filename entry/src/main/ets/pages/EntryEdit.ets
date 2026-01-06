@@ -3,18 +3,14 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import IconUtils from '../common/utils/IconUtils';
+import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
-import ResourceManager from '../common/utils/ResourceManager';
-import DateUtils from '../common/utils/DateUtils';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
-import { CommonUtils } from '../common/utils/CommonUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
-import FileUtils from '../common/utils/FIleUtils';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -50,7 +46,8 @@ struct EntryEdit {
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
-  private standardFields: Array<string> =  [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
+  private standardFields: Array<string> =
+    [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器
@@ -213,6 +210,10 @@ struct EntryEdit {
       this.isEditMode = false;
       this.username = this.database.meta.defaultUser || '';
     }
+  }
+
+  onPageShow(): void {
+      WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   onBackPress() {
@@ -408,6 +409,7 @@ struct EntryEdit {
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
       KdbxUtils.saveDatabase({
         onSuccess: () => {
+          CommonUtils.showToast($r('app.string.save_success'));
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           let timeOut = setTimeout(() => {
             this.isLoading = false;
@@ -432,7 +434,7 @@ struct EntryEdit {
    */
   private handleSaveError(error: string) {
     hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-    this.promptAction.showToast({ message: $r('app.string.save_failed_message', error) });
+    CommonUtils.showToast({ message: $r('app.string.save_failed_message', error) });
     this.isLoading = false;
     this.loadingDialogController.close();
   }

@@ -2,7 +2,7 @@ import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager } from '../../common/utils';
 import { DatabaseLoad } from '../../workers/DatabaseLoad';
 import { Constants } from '../../common/constants/Constants';
 
@@ -54,10 +54,14 @@ export default class KdbxLoadService {
     }
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onAllErrors = (err: ErrorEvent) => {
-      hilog.error(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
-      if (err.message.indexOf('NativeCustomSpan') != -1) {
+      // 忽略NativeCustomSpan和ViewV2错误
+      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1){
+        hilog.debug(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
         return;
       }
+
+      // 打印错误日志
+      hilog.error(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
       if (callback?.onAllErrors) {
         callback.onAllErrors(err);
       }
@@ -92,7 +96,8 @@ export default class KdbxLoadService {
    */
   private static handleSuccessMessage(data: WorkerMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
     const successMessage = data as SuccessMessage;
-    hilog.info(DOMAIN, TAG, 'Received success message: modifiedTime:%{public}d, isMerge:%{public}s', successMessage.modifiedTime, successMessage.isMerge);
+    hilog.info(DOMAIN, TAG, 'Received success message: modifiedTime:%{public}d, isMerge:%{public}s', successMessage.modifiedTime,
+      successMessage.isMerge);
     if (onSuccessMessage) {
       onSuccessMessage(successMessage);
     }

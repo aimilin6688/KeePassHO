@@ -1,9 +1,8 @@
 import { Router } from '@kit.ArkUI';
 import { KdbxMemoryProtection } from 'kdbxweb';
-import KdbxUtils from '../../common/utils/KdbxUtils';
+import { KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import ResourceManager from '../../common/utils/ResourceManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseKeyFunction';
@@ -75,7 +74,7 @@ struct SettingDatabaseKeyFunction {
       List() {
         if (this.isDatabaseValid) {
           // 主要内容区域
-          ListItem(){
+          ListItem() {
             Text($r("app.string.Setting_enable_protected_field_tips"))
               .fontSize(16)
           }

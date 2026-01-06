@@ -1,5 +1,5 @@
 import { KdbxCredentials, ProtectedValue } from 'kdbxweb';
-import ResourceManager from '../common/utils/ResourceManager';
+import { ResourceManager } from '../common/utils';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { AuthType, CredentialsParam } from './TypeDefined';
 
