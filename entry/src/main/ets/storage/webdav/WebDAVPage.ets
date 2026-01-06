@@ -30,7 +30,7 @@ struct WebDAV {
     this.initSaveParam();
   }
 
-  onPageAppear(): void {
+  onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 

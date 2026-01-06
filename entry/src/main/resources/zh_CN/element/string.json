@@ -766,7 +766,7 @@
     },
     {
       "name": "ftp_secure",
-      "value": "使用 FTPS (FTP over TLS)"
+      "value": "使用 FTPS"
     },
     {
       "name": "ftp_username_empty",
@@ -1563,6 +1563,62 @@
     {
       "name": "security_privacy_window_tips",
       "value": "启用窗口将禁止截屏和录屏"
+    },
+    {
+      "name": "ftp_protocol",
+      "value": "协议"
+    },
+    {
+      "name": "ftp_secure_type_none",
+      "value": "无加密(FTP)"
+    },
+    {
+      "name": "ftp_secure_type_explicit",
+      "value": "显示加密(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "ftp_secure_type_implicit",
+      "value": "隐式加密(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "onedrive_authenticating",
+      "value": "身份验证中..."
+    },
+    {
+      "name": "onedrive_authentication_successful",
+      "value": "身份验证成功"
+    },
+    {
+      "name": "onedrive_login_successful",
+      "value": "登录成功"
+    },
+    {
+      "name": "onedrive_authentication_failed",
+      "value": "身份验证失败"
+    },
+    {
+      "name": "onedrive_logged_in",
+      "value": "已登录"
+    },
+    {
+      "name": "onedrive_logout",
+      "value": "登出"
+    },
+    {
+      "name": "onedrive_login_prompt",
+      "value": "请登录OneDrive账号以访问您的文件"
+    },
+    {
+      "name": "onedrive_login_button",
+      "value": "登录OneDrive"
+    },
+    {
+      "name": "confirm_remove_record_tips",
+      "value": "是否移除该记录？"
+    },
+    {
+      "name": "confirm_clear_all_records_tips",
+      "value": "确认要清空所有记录吗？"
     }
   ]
 }

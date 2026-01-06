@@ -2,7 +2,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Client as FTPClient } from '@ohos/basic-ftp';
 import { CommonUtils } from '../../common/utils';
 import { StorageError, StorageErrorCodes } from '../StorageError';
-import { IFTPHandler, FileItemInfo } from './IFTPHandler';
+import { FileItemInfo, IFTPHandler } from './IFTPHandler';
 
 const DOMAIN = 0x0000;
 const TAG = 'FTPHandler';
@@ -38,7 +38,6 @@ export class FTPHandler implements IFTPHandler {
       if (!this.client) {
         this.client = new FTPClient(CommonUtils.getContext(), this.config.timeout);
       }
-      await this.client.ftp.reset();
       await this.client.access({
         host: this.config.host,
         port: this.config.port,
@@ -46,10 +45,13 @@ export class FTPHandler implements IFTPHandler {
         password: this.config.password,
         secure: this.config.secure
       });
-      hilog.info(DOMAIN, TAG, 'FTP connected successfully');
+      // 连接成功后设置为二进制传输模式
+      // TYPE I: 设置数据传输模式为二进制(图片、视频、压缩文件等)
+      await this.client.send("TYPE I");
+      hilog.info(DOMAIN, TAG, 'FTP connected successfully (binary transfer mode, UTF-8 control encoding)');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'FTP connection failed: ' + error.message);
-      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
+      throw new StorageError(StorageErrorCodes.CONNECT_ERROR, error.message);
     }
   }
 
@@ -91,7 +93,9 @@ export class FTPHandler implements IFTPHandler {
       throw new Error('FTP client is not connected');
     }
     hilog.info(DOMAIN, TAG, `Uploading ${localPath} to ${remotePath}`);
-    await this.client.uploadFrom(remotePath, localPath);
+    await this.client.uploadFrom(localPath, remotePath).then(result=>{
+      hilog.info(DOMAIN, TAG, `Upload result: ${JSON.stringify(result)}`);
+    });
     hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath}`);
   }
 
@@ -116,6 +120,16 @@ export class FTPHandler implements IFTPHandler {
   public async getFileInfo(path: string): Promise<FileItemInfo> {
     if (!this.client) {
       throw new Error('FTP client is not connected');
+    }
+
+    // 特殊处理根路径
+    if (path === '/' || path === '') {
+      return {
+        name: '/',
+        size: 0,
+        isDirectory: true,
+        modifiedTime: 0
+      };
     }
 
     // 获取文件所在目录的信息

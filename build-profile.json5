@@ -111,9 +111,21 @@
     "buildModeSet": [
       {
         "name": "debug",
+        "buildOption": {
+          "arkOptions": {
+            "buildProfileFields": {
+            }
+          }
+        }
       },
       {
-        "name": "release"
+        "name": "release",
+        "buildOption": {
+          "arkOptions": {
+            "buildProfileFields": {
+            }
+          }
+        }
       }
     ]
   },

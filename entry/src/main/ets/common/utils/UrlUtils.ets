@@ -22,7 +22,7 @@ export class UrlUtils {
       let parsedUrl = url.URL.parseURL(urlString);
       return parsedUrl.protocol + "//" + parsedUrl.host;
     } catch (e) {
-      hilog.error(DOMAIN, TAG, "getHost error: " + e);
+      hilog.warn(DOMAIN, TAG, "getHost error: " + e);
       return "";
     }
   }
@@ -40,5 +40,24 @@ export class UrlUtils {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * 编码URL
+   * @param urlPath URL地址
+   * @returns  编码后的URL
+   */
+  public static encode(urlPath: string): string {
+    return encodeURIComponent(urlPath);
+  }
+
+
+  /**
+   * 编码URL
+   * @param urlPath URL地址
+   * @returns  编码后的URL
+   */
+  public static decode(urlPath: string): string {
+    return decodeURIComponent(urlPath);
   }
 }

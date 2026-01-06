@@ -19,3 +19,8 @@ export * from './OAuth2Error'
  */
 export * from './BaseOAuth2Provider'
 
+/**
+ * OAuth2 令牌存储服务
+ */
+export * from './OAuth2TokenStorageService'
+

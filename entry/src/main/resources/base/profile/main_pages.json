@@ -25,6 +25,7 @@
     "storage/local/LocalFilePage",
     "storage/webdav/WebDAVPage",
     "storage/onedrive/OneDrivePage",
-    "storage/ftp/FTPPage"
+    "storage/ftp/FTPPage",
+    "pages/OAuth2Login"
   ]
 }

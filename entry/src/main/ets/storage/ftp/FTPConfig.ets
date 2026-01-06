@@ -1,5 +1,6 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { StorageType } from '..';
 
 /**
  * 协议类型枚举
@@ -10,10 +11,14 @@ export enum ProtocolType {
 }
 
 /**
+ * 安全类型
+ */
+export type SecureType = boolean | "implicit";
+
+/**
  * FTP存储配置选项类
  */
 export interface FTPStorageConfigOptions {
-  rootPath?: string;
   timeout?: number;
   secure?: boolean | "implicit";
   port?: number;
@@ -41,17 +46,13 @@ export class FTPStorageConfig implements StorageConfig {
    */
   password: string;
   /**
-   * 根路径（可选）
-   */
-  rootPath?: string;
-  /**
    * 超时时间（毫秒，可选）
    */
   timeout?: number;
   /**
    * 是否使用FTP over TLS (可选)
    */
-  secure?: boolean | "implicit";
+  secure?: SecureType;
   /**
    * 协议类型 (可选)，默认 FTP
    */
@@ -62,7 +63,6 @@ export class FTPStorageConfig implements StorageConfig {
     this.port = options?.port || ((options?.protocol === ProtocolType.SFTP) ? 22 : 21);
     this.username = Sm4Utils.encryptWithPrefix(username);
     this.password = Sm4Utils.encryptWithPrefix(password);
-    this.rootPath = options?.rootPath;
     this.timeout = options?.timeout || 30000;
     this.secure = options?.secure;
     this.protocol = options?.protocol || ProtocolType.FTP;
@@ -90,4 +90,5 @@ export const FTPPageConfig = {
   selectDesc: $r('app.string.location_ftp_desc_select'),
   saveDesc: $r('app.string.location_ftp_desc_save'),
   pageUrl: 'storage/ftp/FTPPage',
+  storageType: StorageType.FTP
 } as PageConfig;
