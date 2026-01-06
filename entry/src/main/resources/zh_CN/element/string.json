@@ -1611,6 +1611,14 @@
     {
       "name": "onedrive_login_button",
       "value": "登录OneDrive"
+    },
+    {
+      "name": "confirm_remove_record_tips",
+      "value": "是否移除该记录？"
+    },
+    {
+      "name": "confirm_clear_all_records_tips",
+      "value": "确认要清空所有记录吗？"
     }
   ]
 }

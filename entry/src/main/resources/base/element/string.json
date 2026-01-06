@@ -1611,6 +1611,14 @@
     {
       "name": "onedrive_login_button",
       "value": "Sign in to OneDrive"
+    },
+    {
+      "name": "confirm_remove_record_tips",
+      "value": "Should this record be removed?"
+    },
+    {
+      "name": "confirm_clear_all_records_tips",
+      "value": "Are you sure you want to clear all records?"
     }
   ]
 }
