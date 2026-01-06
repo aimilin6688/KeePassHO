@@ -26,6 +26,6 @@
     "storage/webdav/WebDAVPage",
     "storage/onedrive/OneDrivePage",
     "storage/ftp/FTPPage",
-    "storage/OAuth2LoginPage"
+    "pages/OAuth2Login"
   ]
 }
