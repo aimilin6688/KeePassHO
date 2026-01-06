@@ -1,6 +1,6 @@
 import { i18n, intl } from '@kit.LocalizationKit';
 
-export default class DateUtils {
+export class DateUtils {
   private static dateFormat: intl.DateTimeFormat =
     new intl.DateTimeFormat(i18n.System.getSystemLocale(), { "dateStyle": "long", "timeStyle": "medium" });
 

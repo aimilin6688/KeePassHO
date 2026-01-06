@@ -5,6 +5,8 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
+import { WindowUtils } from '../common/utils';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
@@ -46,6 +48,7 @@ struct UnLockDatabase {
         this.passwordInputFocus();
       }
     });
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   private quickUnlock() {

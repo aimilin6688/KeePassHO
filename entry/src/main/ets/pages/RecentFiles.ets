@@ -3,7 +3,10 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageType } from '../services/kdbx/interfaces/StorageType';
+import { common } from '@kit.AbilityKit';
+import { CommonUtils, WindowUtils } from '../common/utils';
+import { FileStorage, PageConfig } from '../storage';
+import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
@@ -15,9 +18,14 @@ struct RecentFiles {
   @State isLoading: boolean = true;
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private allStorageConfig: Array<PageConfig> = FileStorage.getAllPageConfig();
 
   aboutToAppear() {
     this.loadRecentFiles();
+  }
+
+  onPageShow(): void {
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   /**
@@ -44,27 +52,38 @@ struct RecentFiles {
    * @param fileName 文件名
    */
   async openFile(recentFile: RecentFile) {
+    LoadingDialog.showLoading($r('app.string.loading_message'));
     let recentFilesService: RecentFilesService = RecentFilesService.getInstance();
+    let errorMessage: string = '';
     // 检查文件是否存在
-    const fileExists = await recentFilesService.checkFileExists(recentFile);
+    const fileExists = await recentFilesService.checkFileExists(recentFile).catch((e: Error) => {
+      hilog.error(DOMAIN, TAG, 'check file exists error: %{public}s', e.message);
+      errorMessage = e.message;
+    });
+    LoadingDialog.hideLoading();
     if (!fileExists) {
-      this.promptAction.showToast({
-        message: $r('app.string.file_not_exists'),
+      CommonUtils.showToast({
+        message: errorMessage || $r('app.string.file_not_exists'),
         duration: 2000
       });
-      // 移除不存在的文件记录
-      await recentFilesService.removeRecentFile(recentFile);
-      // 重新加载列表
-      this.loadRecentFiles();
+      CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_remove_record_tips'), {
+        onConfirm: async () => {
+          // 移除不存在的文件记录
+          await recentFilesService.removeRecentFile(recentFile);
+          // 重新加载列表
+          this.loadRecentFiles();
+        }
+      });
       return;
+    } else {
+      // 导航到密码输入页面
+      CommonUtils.pushUrl({
+        url: 'pages/Password',
+        params: {
+          filePath: recentFile.filePath
+        }
+      });
     }
-    // 导航到密码输入页面
-    this.router.pushUrl({
-      url: 'pages/Password',
-      params: {
-        filePath: recentFile.filePath
-      }
-    });
   }
 
   /**
@@ -109,12 +128,11 @@ struct RecentFiles {
     }
   }
 
-  private getStorageTypeIcon(storageType: StorageType): ResourceStr {
-    switch (storageType) {
-      case StorageType.LOCAL:
-        return $r('app.media.ic_file');
-      case StorageType.WEBDAV:
-        return $r('app.media.ic_webdav');
+  private getStorageTypeIcon(storageType: string): ResourceStr {
+    for (let i = 0; i < this.allStorageConfig.length; i++) {
+      if (this.allStorageConfig[i].storageType === storageType) {
+        return this.allStorageConfig[i].icon;
+      }
     }
     return $r('app.media.ic_file');
   }
@@ -140,7 +158,11 @@ struct RecentFiles {
           .fontColor('#E84026')
           .backgroundColor(Color.Transparent)
           .onClick(() => {
-            this.clearAllRecords();
+            CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_clear_all_records_tips'), {
+              onConfirm: () => {
+                this.clearAllRecords();
+              }
+            });
           })
       }
       .width('100%')
@@ -172,8 +194,8 @@ struct RecentFiles {
             ListItem() {
               Row() {
                 Image(this.getStorageTypeIcon(file.storageType))
-                  .width(40)
-                  .height(40)
+                  .width(32)
+                  .height(32)
                   .fillColor($r('app.color.text_primary'))
                   .margin({ right: 16 })
                 Column() {
@@ -183,7 +205,7 @@ struct RecentFiles {
                     .fontWeight(FontWeight.Medium)
                     .maxLines(1)
                     .margin({ bottom: 4 })
-                  Text(file.filePath)
+                  Text(file.storageType + ": " + file.filePath)
                     .fontSize(14)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .maxLines(1)
@@ -199,7 +221,11 @@ struct RecentFiles {
                 }
                 .backgroundColor(Color.Transparent)
                 .onClick(() => {
-                  this.removeRecord(file);
+                  CommonUtils.showDeleteConfirm(this.getUIContext(), {
+                    onConfirm: () => {
+                      this.removeRecord(file);
+                    }
+                  });
                 })
               }
               .width('100%')
@@ -227,6 +253,6 @@ struct RecentFiles {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

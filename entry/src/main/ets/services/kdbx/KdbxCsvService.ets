@@ -1,7 +1,7 @@
 import { ByteUtils, Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import util from '@ohos.util';
-import KdbxUtils from '../../common/utils/KdbxUtils';
-import { FileContentInfo } from './interfaces';
+import { KdbxUtils } from '../../common/utils';
+import { FileContentInfo } from '../../storage';
 import { ErrorCodes, KeePassHoError } from '../error/KeepassHoError';
 import { FileService } from '../FileService';
 

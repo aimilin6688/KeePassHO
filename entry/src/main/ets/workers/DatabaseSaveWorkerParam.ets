@@ -1,6 +1,6 @@
 import { Kdbx } from 'kdbxweb';
 import { LocationInfo } from '../services/beans/LocationParam';
-import { StorageConfig, StorageType } from '../services/kdbx/interfaces';
+import { StorageConfig, StorageType } from '../storage';
 import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
 import { MessageType, WorkerMessage } from './WorkerParam';
 
