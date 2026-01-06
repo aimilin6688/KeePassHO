@@ -124,7 +124,7 @@ struct FileList {
         this.isEnableConfirm = true;
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load WebDAV items: %{public}s', error.message);
+      hilog.error(DOMAIN, TAG, 'Failed to load file items: %{public}s', error.message);
       this.errorMessage = error.message;
       this.isError = true;
     } finally {

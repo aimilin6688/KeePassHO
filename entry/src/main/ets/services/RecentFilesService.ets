@@ -3,7 +3,7 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { DeviceUtils, FileUtils } from '../common/utils';
+import { CommonUtils, DeviceUtils, FileUtils } from '../common/utils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
@@ -178,6 +178,7 @@ export class RecentFilesService {
       return recentFile;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Load most recent file error: ${error}`);
+      CommonUtils.showToast(error?.message);
       return null;
     }
   }

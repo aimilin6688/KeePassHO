@@ -1,12 +1,13 @@
 import { Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
-import { FTPStorageConfig, ProtocolType } from './FTPConfig';
+import { FTPStorageConfig, ProtocolType, SecureType } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
+import { FTPStorage } from './FTPStorage';
 
 const DOMAIN = 0x0000;
 const TAG = 'FTP';
@@ -14,26 +15,34 @@ const TAG = 'FTP';
 @Entry
 @Component
 struct FTP {
-  @State host: string = '111.230.44.135';
+  @State url: string = '/';
+  @State host: string = '';
   @State port: string = '21';
-  @State username: string = 'ftpuser';
-  @State password: string = 'ftpuser';
-  @State rootPath: string = '/';
-  @State secure: boolean = false;
+  @State username: string = '';
+  @State password: string = '';
+  @State secure: SecureType = false;
   @State protocol: ProtocolType = ProtocolType.FTP;
   @State isLoading: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
   @State isErrorStatus: boolean = false;
+  @State secureSelectIndex: number = 0;
+  @State secureSelectText: ResourceStr = $r('app.string.ftp_secure_type_none');
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.FTP);
   private router: Router = this.getUIContext().getRouter();
+  private secureTypeOptions: Array<SecureTypeOptions> = [
+    { value: $r('app.string.ftp_secure_type_none'), type: false },
+    { value: $r('app.string.ftp_secure_type_explicit'), type: true },
+    { value: $r('app.string.ftp_secure_type_implicit'), type: 'implicit' },
+  ];
 
   aboutToAppear(): void {
     this.initSaveParam();
   }
 
-  onPageAppear(): void {
+  onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    this.connectionStatus = '';
   }
 
   // 导出数据初始化
@@ -44,50 +53,16 @@ struct FTP {
     // 初始化导出
     const dbFileParam = FileService.getDbFileParam();
     if (!(dbFileParam.storageType === StorageType.FTP)) {
-      const fileName = LocationParam.getFileName();
-      // 尝试从文件名中提取主机信息
-      if (fileName.includes('://')) {
-        const protocolEnd = fileName.indexOf('://');
-        const protocol = fileName.substring(0, protocolEnd).toLowerCase();
-        const rest = fileName.substring(protocolEnd + 3);
-        const slashPos = rest.indexOf('/');
-        const colonPos = rest.indexOf(':');
-
-        // 根据协议设置类型和默认端口
-        if (protocol === 'sftp') {
-          this.protocol = ProtocolType.SFTP;
-          this.port = '22';
-        } else {
-          this.protocol = ProtocolType.FTP;
-          this.port = '21';
-        }
-
-        if (colonPos > 0) {
-          this.host = rest.substring(0, colonPos);
-          if (slashPos > colonPos) {
-            this.port = rest.substring(colonPos + 1, slashPos);
-            this.rootPath = rest.substring(slashPos) || '/';
-          } else {
-            this.port = rest.substring(colonPos + 1);
-            this.rootPath = '/';
-          }
-        } else if (slashPos > 0) {
-          this.host = rest.substring(0, slashPos);
-          this.rootPath = rest.substring(slashPos) || '/';
-        } else {
-          this.host = rest;
-          this.rootPath = '/';
-        }
-      }
+      this.url = LocationParam.getFileName();
       return;
     }
-    const storageConfig = dbFileParam.storageConfig as FTPStorageConfig;
+    const storageConfig = FTPStorage.parseConfig(dbFileParam.storageConfig as FTPStorageConfig);
     if (storageConfig) {
       this.host = storageConfig.host;
       this.port = storageConfig.port.toString();
       this.username = storageConfig.getUserNameText();
       this.password = storageConfig.getPasswordText();
-      this.rootPath = storageConfig.rootPath || '/';
+      this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
       this.secure = storageConfig.secure === true;
       this.protocol = storageConfig.protocol || ProtocolType.FTP;
     }
@@ -124,7 +99,7 @@ struct FTP {
         url: 'pages/open/FileList',
         params: {
           mode: LocationParam.getMode(),
-          filePath: this.rootPath,
+          filePath: this.url,
           fileSuffix: LocationParam.getFileSuffix(),
           fileName: LocationParam.getFileName(),
           storageType: StorageType.FTP,
@@ -144,17 +119,18 @@ struct FTP {
 
     try {
       // 简单测试连接
-      this.fileManager.init(this.getStorageConfig());
-      const testPath = this.rootPath;
-      const result = await this.fileManager.exists(testPath);
-      if (result !== undefined) {
-        this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
-        this.isErrorStatus = false;
-      } else {
-        this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
-        this.isErrorStatus = true;
-        hilog.error(DOMAIN, TAG, 'FTP connection error: %{public}s', this.connectionStatus);
-      }
+      this.fileManager.init(this.getStorageConfig())
+        .exists(this.url)
+        .then(result => {
+          if (result !== undefined) {
+            this.connectionStatus = ResourceManager.getString($r('app.string.connection_success'));
+            this.isErrorStatus = false;
+          } else {
+            this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
+            this.isErrorStatus = true;
+            hilog.error(DOMAIN, TAG, 'FTP connection error: %{public}s', this.connectionStatus);
+          }
+        })
     } catch (error) {
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
@@ -175,15 +151,15 @@ struct FTP {
     try {
       const storageConfig = this.getStorageConfig();
       // 获取文件信息
-      const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.rootPath);
-      hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      const fileInfo = await this.fileManager.init(storageConfig).getInfo(this.url);
+      hilog.info(DOMAIN, TAG, `Loading file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
       if (fileInfo.type === FileType.DIR) {
         this.toFileList();
       } else {
         // 回调位置信息
         LocationParam.callOnLocation({
           mode: LocationParam.getMode(),
-          filePath: this.rootPath,
+          filePath: this.url,
           fileName: fileInfo.name,
           fileSuffix: LocationParam.getFileSuffix(),
           storageType: StorageType.FTP,
@@ -191,7 +167,7 @@ struct FTP {
         });
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.rootPath, error.message, error.stack);
+      hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
       CommonUtils.showToast({ message: error.message });
@@ -216,25 +192,24 @@ struct FTP {
       this.fileManager.init(storageConfig);
       this.connectionStatus = ResourceManager.getString($r("app.string.check_file_existing"));
       // 获取文件信息
-      const path = this.rootPath + LocationParam.getFileName();
-      const existsFile = await this.fileManager.exists(path);
-      hilog.info(DOMAIN, TAG, `Export file to FTP path: ${path}`);
+      const existsFile = await this.fileManager.exists(this.url);
+      hilog.info(DOMAIN, TAG, `Export file to FTP path: ${this.url}`);
       if (existsFile) {
         // 获取文件类型
         this.connectionStatus = ResourceManager.getString($r('app.string.get_file_info'));
-        const fileInfo = await this.fileManager.getInfo(path);
+        const fileInfo = await this.fileManager.getInfo(this.url);
         hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
         // 如果是文件夹，则跳转到文件列表页面
         if (fileInfo.type === FileType.DIR) {
           this.toFileList();
         } else {
-          this.handleSelectDir(storageConfig, path);
+          this.handleSelectDir(storageConfig);
         }
       } else {
-        this.handleSelectDir(storageConfig, path);
+        this.handleSelectDir(storageConfig);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.rootPath, error.message, error.stack);
+      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
       CommonUtils.showToast({ message: error.message });
@@ -244,19 +219,22 @@ struct FTP {
   }
 
   // 保存文件（导出模式）
-  private async handleSelectDir(storageConfig: StorageConfig, filePath: string) {
+  private async handleSelectDir(storageConfig: StorageConfig) {
     try {
       this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
-      const database = FileService.getDatabase();
-      const buffer = await database.save();
-      await this.fileManager.init(storageConfig).write(filePath, buffer);
-      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.save_success')) });
-      this.router.back();
+      // 回调位置信息
+      LocationParam.callOnLocation({
+        mode: LocationParam.getMode(),
+        filePath: this.url,
+        fileName: FilenameUtils.getFileName(this.url),
+        fileSuffix: LocationParam.getFileSuffix(),
+        storageType: StorageType.FTP,
+        storageConfig: storageConfig
+      });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to export kdbx file: %{public}s', error.message);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      CommonUtils.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }
@@ -293,7 +271,6 @@ struct FTP {
       this.password,
       {
         port: portNum,
-        rootPath: this.rootPath || '/',
         secure: this.secure,
         timeout: 30000,
         protocol: this.protocol
@@ -327,116 +304,155 @@ struct FTP {
       Scroll() {
         Column() {
           // 协议选择
-          Text('协议')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
           Row() {
-            Button('FTP')
-              .height(40)
-              .layoutWeight(1)
-              .margin({ right: 8 })
-              .backgroundColor(this.protocol === ProtocolType.FTP ? $r('app.color.button_bg_blue') : Color.Gray)
-              .fontColor(Color.White)
-              .onClick(() => {
-                this.onProtocolChange(ProtocolType.FTP);
+            Text($r('app.string.ftp_protocol'))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+            Blank()
+            Select([
+              { value: ProtocolType.FTP.toString() },
+              { value: ProtocolType.SFTP.toString() }
+            ])
+              .selected(this.protocol === ProtocolType.SFTP ? 1 : 0)
+              .value(this.protocol.toString())
+              .font({ size: 16, weight: FontWeight.Normal })
+              .fontColor($r('app.color.text_primary'))
+              .selectedOptionFont({ size: 16, weight: FontWeight.Medium })
+              .optionFont({ size: 16, weight: FontWeight.Normal })
+              .onSelect((index: number, value?: string) => {
+                if (value === ProtocolType.SFTP.toString()) {
+                  this.onProtocolChange(ProtocolType.SFTP);
+                } else {
+                  this.onProtocolChange(ProtocolType.FTP);
+                }
               })
-            Button('SFTP')
+              .width('60%')
+          }
+          .width('100%')
+          .height(40)
+          .margin({ top: 20 })
+          .alignItems(VerticalAlign.Center)
+
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            // 服务器地址输入
+            Text($r('app.string.ftp_host'))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .textAlign(TextAlign.Start)
+            Blank()
+            TextInput({ text: this.host, placeholder: ResourceManager.getString($r('app.string.ftp_host_placeholder')) })
               .height(40)
-              .layoutWeight(1)
-              .margin({ left: 8 })
-              .backgroundColor(this.protocol === ProtocolType.SFTP ? $r('app.color.button_bg_blue') : Color.Gray)
-              .fontColor(Color.White)
-              .onClick(() => {
-                this.onProtocolChange(ProtocolType.SFTP);
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .onChange((value: string) => {
+                this.host = value;
+              })
+              .width('60%')
+          }
+          .width('100%')
+          .height(40)
+          .margin({ top: 20 })
+          .alignItems(VerticalAlign.Center)
+
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            // 端口输入
+            Text($r('app.string.ftp_port'))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .textAlign(TextAlign.Start)
+            Blank()
+            TextInput({ text: this.port })
+              .height(40)
+              .type(InputType.Number)
+              .width('60%')
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .onChange((value: string) => {
+                this.port = value;
               })
           }
           .width('100%')
+          .height(40)
           .margin({ top: 20 })
+          .alignItems(VerticalAlign.Center)
 
-          // 服务器地址输入
-          Text($r('app.string.ftp_host'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.host, placeholder: ResourceManager.getString($r('app.string.ftp_host_placeholder')) })
-            .height(40)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.host = value;
-            })
-
-          // 端口输入
-          Text($r('app.string.ftp_port'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.port })
-            .height(40)
-            .margin({ top: 20 })
-            .type(InputType.Number)
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.port = value;
-            })
 
           // 用户名输入
-          Text($r('app.string.username'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.username, placeholder: ResourceManager.getString($r('app.string.username_placeholder')) })
-            .height(40)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.username = value;
-            })
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            Text($r('app.string.username'))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .textAlign(TextAlign.Start)
+            Blank()
+            TextInput({ text: this.username, placeholder: ResourceManager.getString($r('app.string.username_placeholder')) })
+              .height(40)
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .width('60%')
+              .onChange((value: string) => {
+                this.username = value;
+              })
+          }
+          .width('100%')
+          .height(40)
+          .margin({ top: 20 })
+          .alignItems(VerticalAlign.Center)
 
           // 密码输入
-          Text($r('app.string.password'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.password, placeholder: ResourceManager.getString($r('app.string.password_placeholder')) })
-            .height(40)
-            .margin({ top: 20 })
-            .type(InputType.Password)
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.password = value;
-            })
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            Text($r('app.string.password'))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .textAlign(TextAlign.Start)
+            Blank()
+            TextInput({ text: this.password, placeholder: ResourceManager.getString($r('app.string.password_placeholder')) })
+              .height(40)
+              .type(InputType.Password)
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .width('60%')
+              .onChange((value: string) => {
+                this.password = value;
+              })
+          }
+          .width('100%')
+          .height(40)
+          .margin({ top: 20 })
+          .alignItems(VerticalAlign.Center)
 
           // 根路径输入
-          Text($r('app.string.ftp_root_path'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .margin({ top: 20, left: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .textAlign(TextAlign.Start)
-          TextInput({ text: this.rootPath })
-            .height(40)
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .onChange((value: string) => {
-              this.rootPath = value || '/';
-            })
+          Row() {
+            Text($r('app.string.ftp_root_path'))
+              .height(40)
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .textAlign(TextAlign.Start)
+            Blank()
+            TextArea({ text: this.url })
+              .minLines(1)
+              .maxLines(3)
+              .padding({ top: 12, bottom: 12 })
+              .width('60%')
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .onChange((value: string) => {
+                this.url = value || '/';
+              })
+          }
+          .width('100%')
+          .height('auto')
+          .margin({ top: 20 })
+          .alignItems(VerticalAlign.Center)
 
           // 安全连接（仅FTP可用）
           if (this.protocol === ProtocolType.FTP) {
@@ -445,17 +461,28 @@ struct FTP {
                 .fontSize(16)
                 .fontColor($r('app.color.text_primary'))
                 .layoutWeight(1)
-
-              Toggle({ type: ToggleType.Switch, isOn: this.secure })
-                .onChange((isOn: boolean) => {
-                  this.secure = isOn;
+              Blank()
+              Select(this.secureTypeOptions)
+                .value(this.secureSelectText)
+                .selected(this.secureSelectIndex)
+                .font({ size: 16 })
+                .selectedOptionFont({ size: 16 })
+                .optionFont({ size: 16 })
+                .backgroundColor($r("app.color.card_bg"))
+                .onSelect(async (index: number) => {
+                  const secureType = this.secureTypeOptions[index];
+                  this.secure = secureType.type;
+                  this.secureSelectIndex = index;
+                  this.secureSelectText = secureType.value;
                 })
+                .width('60%')
             }
             .width('100%')
             .height(40)
             .margin({ top: 20 })
             .alignItems(VerticalAlign.Center)
           }
+
 
           // 连接状态
           if (this.connectionStatus) {
@@ -505,15 +532,21 @@ struct FTP {
           }
           .width("100%")
         }
-        .width('90%')
+        .width('100%')
+        .padding({ left: 16, right: 16 })
         .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('auto')
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
+}
+
+export interface SecureTypeOptions {
+  value: ResourceStr;
+  type: SecureType;
 }

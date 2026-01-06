@@ -81,7 +81,10 @@ export abstract class BaseOAuth2Provider implements IOAuth2Provider {
     requestBody['code'] = authRequest.code;
     requestBody['redirect_uri'] = this.config.redirectUri;
     requestBody['client_id'] = this.config.clientId;
-    requestBody['client_secret'] = this.config.clientSecret;
+    // 只有非公开客户端才发送client_secret
+    if (!this.config.isPublicClient) {
+      requestBody['client_secret'] = this.config.clientSecret;
+    }
 
     try {
       const response = await this.sendHttpRequest(this.config.tokenEndpoint, http.RequestMethod.POST, requestBody);
@@ -107,7 +110,10 @@ export abstract class BaseOAuth2Provider implements IOAuth2Provider {
     requestBody['grant_type'] = 'refresh_token';
     requestBody['refresh_token'] = refreshRequest.refreshToken;
     requestBody['client_id'] = this.config.clientId;
-    requestBody['client_secret'] = this.config.clientSecret;
+    // 只有非公开客户端才发送client_secret
+    if (!this.config.isPublicClient) {
+      requestBody['client_secret'] = this.config.clientSecret;
+    }
 
     if (refreshRequest.scope) {
       requestBody.scope = refreshRequest.scope;
@@ -278,7 +284,7 @@ export abstract class BaseOAuth2Provider implements IOAuth2Provider {
       token.expiresAt = Date.now() + expiresIn * 1000;
     }
 
-    hilog.info(DOMAIN, TAG, 'Token obtained successfully, expires at: %{public}s', token.expiresAt);
+    hilog.info(DOMAIN, TAG, `Token obtained successfully, expires at: ${token.expiresAt}`);
     return token;
   }
 
