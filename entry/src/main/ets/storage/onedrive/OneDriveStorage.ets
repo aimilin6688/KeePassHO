@@ -3,9 +3,10 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OneDriveClient, OneDriveClientOptions } from './OneDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
-import { OAuth2Config } from '../../common/oauth2';
+import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
 import { ByteUtils } from 'kdbxweb';
+import BuildProfile from 'BuildProfile';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveStorage';
@@ -52,17 +53,18 @@ export class OneDriveStorage implements IFileStorage {
    */
   public init(config: StorageConfig): void {
     this.config = this.parseConfig(config);
+    hilog.debug(DOMAIN, TAG, `OneDriveStorage init: accessToken length=${this.config.getAccessTokenText().length}`);
     if (this.client) {
       this.client.close();
     }
 
     // 创建OAuth2配置
     const authConfig: OneDriveOAuth2Config = {
-      clientId: this.config!.getClientIdText(),
-      clientSecret: this.config!.getClientSecretText(),
-      authorizationEndpoint: `https://login.microsoftonline.com/${this.config!.getTenantIdText()}/oauth2/v2.0/authorize`,
-      tokenEndpoint: `https://login.microsoftonline.com/${this.config!.getTenantIdText()}/oauth2/v2.0/token`,
-      redirectUri: this.config!.getRedirectUriText(),
+      clientId: BuildProfile.ONE_DRIVE_CLIENT_ID,
+      clientSecret: BuildProfile.ONE_DRIVE_CLIENT_SECRET,
+      authorizationEndpoint: `https://login.microsoftonline.com/${BuildProfile.ONE_DRIVE_TENANT_ID}/oauth2/v2.0/authorize`,
+      tokenEndpoint: `https://login.microsoftonline.com/${BuildProfile.ONE_DRIVE_TENANT_ID}/oauth2/v2.0/token`,
+      redirectUri:  BuildProfile.ONE_DRIVE_REDIRECT_URI,
       scope: 'Files.ReadWrite User.Read offline_access'
     };
     this.oauth2Config = authConfig;
@@ -73,6 +75,7 @@ export class OneDriveStorage implements IFileStorage {
       accessToken: this.config!.getAccessTokenText(),
       timeout: this.config!.timeout
     };
+    hilog.info(DOMAIN, TAG, `Creating OneDriveClient with accessToken length=${clientConfig.accessToken.length}`);
     this.client = new OneDriveClient(clientConfig, this.oauth2Config);
   }
 
@@ -87,13 +90,14 @@ export class OneDriveStorage implements IFileStorage {
     }
     const oneDriveConfig = config as OneDriveStorageConfig;
     return new OneDriveStorageConfig(
-      oneDriveConfig.getClientIdText(),
-      oneDriveConfig.getClientSecretText(),
-      oneDriveConfig.getTenantIdText(),
-      oneDriveConfig.getRedirectUriText(),
-      oneDriveConfig.getAccessTokenText(),
-      oneDriveConfig.getRefreshTokenText(),
-      { rootPath: oneDriveConfig.rootPath, timeout: oneDriveConfig.timeout }
+      oneDriveConfig.accessToken,
+      oneDriveConfig.refreshToken,
+      oneDriveConfig.expiresAt,
+      {
+        timeout: oneDriveConfig.timeout,
+        tokenType: oneDriveConfig.tokenType,
+        scope: oneDriveConfig.scope
+      }
     );
   }
 
@@ -117,10 +121,33 @@ export class OneDriveStorage implements IFileStorage {
         this.config.setExpiresAt(token.expiresAt);
       }
       this.client.updateAccessToken(token.accessToken);
+      
+      // 发送令牌更新事件
+      await this.notifyTokenUpdated(token);
+      
       hilog.info(DOMAIN, TAG, 'Access token refreshed successfully');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to refresh access token: %{public}s', (error as Error).message);
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message);
+    }
+  }
+
+  /**
+   * 通知令牌已更新
+   * @param token 更新后的令牌
+   */
+  private async notifyTokenUpdated(token: OAuth2Token): Promise<void> {
+    try {
+      // 保存到首选项
+      const storageService = OAuth2TokenStorageService.getInstance();
+      await storageService.updateToken(token, {
+        provider: OAuth2Provider.ONEDRIVE,
+        encrypt: true
+      });
+      
+      hilog.info(DOMAIN, TAG, 'Token updated in preferences');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to update token in preferences: %{public}s', (error as Error).message);
     }
   }
 
@@ -172,7 +199,10 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     try {
-      await this.client.upload(path, data);
+      const result = await this.client.upload(path, data);
+      if (!result.success) {
+        return Promise.reject(new Error(result.message));
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'OneDrive writeFile error:%{public}s', (error as Error).message);
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
@@ -196,7 +226,17 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     const result = await this.client.getInfo(path);
-    return result.success;
+    // 如果成功，文件存在
+    if (result.success) {
+      return true;
+    }
+    // 如果失败但状态码是404，文件不存在
+    if (result.statusCode === 404) {
+      return false;
+    }
+    // 其他错误，抛出异常
+    hilog.error(DOMAIN, TAG, 'OneDrive exists error: status=%{public}d, message=%{public}s', result.statusCode, result.message);
+    return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message));
   }
 
   /**
@@ -255,23 +295,24 @@ export class OneDriveStorage implements IFileStorage {
     if (result.success && result.body) {
       const jsonStr = ByteUtils.bytesToString(result.body);
       const data: Record<string, Object> = JSON.parse(jsonStr);
-      const files: FileInfo[] = [];
 
-      const value = data['value'];
-      if (value && Array.isArray(value)) {
-        for (const item of value as Array<Object>) {
-          const itemData = item as Record<string, Object>;
-          const resource = this.client.parseResource(itemData);
-          files.push({
-            name: resource.name,
-            size: resource.size,
-            modifiedTime: new Date(resource.lastModified).getTime(),
-            path: resource.path,
-            type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
-            childrenCount: resource.childrenCount || 0
-          });
-        }
+      hilog.info(DOMAIN, TAG, `listDir response keys: ${Object.keys(data).join(', ')}`);
+
+      const resources = this.client.parseResourceList(data);
+      hilog.info(DOMAIN, TAG, `Parsed ${resources.length} resources`);
+
+      const files: FileInfo[] = [];
+      for (const resource of resources) {
+        files.push({
+          name: resource.name,
+          size: resource.size,
+          modifiedTime: new Date(resource.lastModified).getTime(),
+          path: resource.path,
+          type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
+          childrenCount: resource.childrenCount || 0
+        });
       }
+
       return files;
     } else {
       throw new Error(result.message);

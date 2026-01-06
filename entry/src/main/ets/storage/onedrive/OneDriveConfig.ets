@@ -1,41 +1,26 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { StorageType } from '..';
 
-/**
- * OneDrive存储配置选项接口
- */
 export interface OneDriveStorageConfigOptions {
-  /**
-   * 根路径（可选）
-   */
-  rootPath?: string;
-
   /**
    * 超时时间（毫秒，可选）
    */
   timeout?: number;
+  /**
+   * 令牌类型
+   */
+  tokenType?: string;
+  /**
+   * 作用域
+   */
+  scope?: string;
 }
 
 /**
  * OneDrive存储配置类
  */
 export class OneDriveStorageConfig implements StorageConfig {
-  /**
-   * 客户端ID, 加密后的Base64字符串
-   */
-  clientId: string;
-  /**
-   * 客户端密钥, 加密后的Base64字符串
-   */
-  clientSecret: string;
-  /**
-   * 租户ID, 加密后的Base64字符串
-   */
-  tenantId: string;
-  /**
-   * 重定向URI, 加密后的Base64字符串
-   */
-  redirectUri: string;
   /**
    * 访问令牌, 加密后的Base64字符串
    */
@@ -45,67 +30,36 @@ export class OneDriveStorageConfig implements StorageConfig {
    */
   refreshToken: string;
   /**
-   * 根路径（可选）
+   * 令牌过期时间（时间戳）
    */
-  rootPath?: string;
+  expiresAt: number;
+
   /**
    * 超时时间（毫秒，可选）
    */
   timeout?: number;
   /**
-   * 令牌过期时间（时间戳）
+   * 令牌类型
    */
-  expiresAt?: number;
+  tokenType?: string;
+  /**
+   * 作用域
+   */
+  scope?: string;
+
 
   constructor(
-    clientId: string,
-    clientSecret: string,
-    tenantId: string,
-    redirectUri: string,
     accessToken: string,
     refreshToken: string,
+    expiresAt: number,
     options?: OneDriveStorageConfigOptions
   ) {
-    this.clientId = Sm4Utils.encryptWithPrefix(clientId);
-    this.clientSecret = Sm4Utils.encryptWithPrefix(clientSecret);
-    this.tenantId = Sm4Utils.encryptWithPrefix(tenantId);
-    this.redirectUri = Sm4Utils.encryptWithPrefix(redirectUri);
     this.accessToken = Sm4Utils.encryptWithPrefix(accessToken);
     this.refreshToken = Sm4Utils.encryptWithPrefix(refreshToken);
-    this.rootPath = options?.rootPath;
+    this.expiresAt = expiresAt;
     this.timeout = options?.timeout;
-  }
-
-  /**
-   * 获取客户端ID文本
-   * @returns 客户端ID
-   */
-  public getClientIdText(): string {
-    return Sm4Utils.decryptWithPrefix(this.clientId);
-  }
-
-  /**
-   * 获取客户端密钥文本
-   * @returns 客户端密钥
-   */
-  public getClientSecretText(): string {
-    return Sm4Utils.decryptWithPrefix(this.clientSecret);
-  }
-
-  /**
-   * 获取租户ID文本
-   * @returns 租户ID
-   */
-  public getTenantIdText(): string {
-    return Sm4Utils.decryptWithPrefix(this.tenantId);
-  }
-
-  /**
-   * 获取重定向URI文本
-   * @returns 重定向URI
-   */
-  public getRedirectUriText(): string {
-    return Sm4Utils.decryptWithPrefix(this.redirectUri);
+    this.tokenType = options?.tokenType;
+    this.scope = options?.scope;
   }
 
   /**
@@ -149,14 +103,6 @@ export class OneDriveStorageConfig implements StorageConfig {
   }
 
   /**
-   * 获取令牌过期时间
-   * @returns 过期时间
-   */
-  public getExpiresAt(): number | undefined {
-    return this.expiresAt;
-  }
-
-  /**
    * 检查令牌是否过期
    * @returns 是否过期
    */
@@ -173,9 +119,10 @@ export class OneDriveStorageConfig implements StorageConfig {
  * OneDrive页面配置类
  */
 export const OneDrivePageConfig: PageConfig = {
-  icon: $r("app.media.C02_Warning"),
+  icon: $r("app.media.ic_onedrive"),
   title: 'OneDrive',
   selectDesc: 'Select a file from OneDrive',
   saveDesc: 'Save the file to OneDrive',
   pageUrl: 'storage/onedrive/OneDrivePage',
+  storageType: StorageType.ONEDRIVE
 };

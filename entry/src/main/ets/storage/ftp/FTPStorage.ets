@@ -30,11 +30,11 @@ export class FTPStorage implements IFileStorage {
   }
 
   public init(config: FTPStorageConfig): void {
-    this.config = this.parseConfig(config);
+    this.config = FTPStorage.parseConfig(config);
     this.createHandler();
   }
 
-  private parseConfig(config: FTPStorageConfig): FTPStorageConfig {
+  public static parseConfig(config: FTPStorageConfig): FTPStorageConfig {
     if (config instanceof FTPStorageConfig) {
       return config;
     }
@@ -53,7 +53,6 @@ export class FTPStorage implements IFileStorage {
       inputConfig['username'] as string,
       inputConfig['password'] as string,
       {
-        rootPath: inputConfig['rootPath'] as string | undefined,
         timeout: inputConfig['timeout'] as number | undefined,
         secure: inputConfig['secure'] as boolean | undefined,
         port: port,
@@ -120,13 +119,15 @@ export class FTPStorage implements IFileStorage {
   }
 
   private getFullPath(path: string): string {
-    const config = this.config;
-    if (!config?.rootPath) {
+    if(path === '/'){
       return path;
     }
-    const rootPath = config.rootPath.startsWith('/') ? config.rootPath : '/' + config.rootPath;
-    const targetPath = path.startsWith('/') ? path : '/' + path;
-    return rootPath + targetPath;
+    const filePath = path.startsWith('/') ? path : '/' + path;
+    // 避免重复的斜杠: 如果rootPath以'/'结尾且path以'/'开头,去掉path的前导'/'
+    if (filePath.endsWith('/')) {
+      return filePath.substring(0, filePath.length - 1);
+    }
+    return filePath;
   }
 
   /**

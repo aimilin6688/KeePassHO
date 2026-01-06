@@ -207,6 +207,7 @@ export function createOneDriveOAuth2Config(
     redirectUri: redirectUri,
     scope: scope || 'Files.ReadWrite User.Read offline_access',
     apiBaseUrl: 'https://graph.microsoft.com/v1.0',
-    tenantId: tenantId || 'common'
-  };
+    tenantId: tenantId || 'common',
+    isPublicClient: true  // 使用desktop.srf作为回调URI，是公开客户端
+  } as OneDriveOAuth2Config;
 }

@@ -1563,6 +1563,62 @@
     {
       "name": "security_privacy_window_tips",
       "value": "Enabling the window will prohibit screenshots and screen recording"
+    },
+    {
+      "name": "ftp_protocol",
+      "value": "Protocol"
+    },
+    {
+      "name": "ftp_secure_type_none",
+      "value": "Unencrypted(FTP)"
+    },
+    {
+      "name": "ftp_secure_type_explicit",
+      "value": "Explicit encryption(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "ftp_secure_type_implicit",
+      "value": "Implicit encryption(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "onedrive_authenticating",
+      "value": "Authenticating..."
+    },
+    {
+      "name": "onedrive_authentication_successful",
+      "value": "Authentication successful"
+    },
+    {
+      "name": "onedrive_login_successful",
+      "value": "Login successful"
+    },
+    {
+      "name": "onedrive_authentication_failed",
+      "value": "Authentication failed"
+    },
+    {
+      "name": "onedrive_logged_in",
+      "value": "Logged in"
+    },
+    {
+      "name": "onedrive_logout",
+      "value": "Logout"
+    },
+    {
+      "name": "onedrive_login_prompt",
+      "value": "Please sign in to your OneDrive account to access your files"
+    },
+    {
+      "name": "onedrive_login_button",
+      "value": "Sign in to OneDrive"
+    },
+    {
+      "name": "confirm_remove_record_tips",
+      "value": "Should this record be removed?"
+    },
+    {
+      "name": "confirm_clear_all_records_tips",
+      "value": "Are you sure you want to clear all records?"
     }
   ]
 }

@@ -86,6 +86,10 @@ export interface OAuth2Config {
    * 额外授权参数
    */
   authExtraParams?: Record<string, string>;
+  /**
+   * 是否是公开客户端（不使用client_secret）
+   */
+  isPublicClient?: boolean;
 }
 
 /**
