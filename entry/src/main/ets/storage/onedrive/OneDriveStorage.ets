@@ -3,7 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OneDriveClient, OneDriveClientOptions } from './OneDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
-import { OAuth2Config } from '../../common/oauth2';
+import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
 import { ByteUtils } from 'kdbxweb';
 import BuildProfile from 'BuildProfile';
@@ -121,10 +121,33 @@ export class OneDriveStorage implements IFileStorage {
         this.config.setExpiresAt(token.expiresAt);
       }
       this.client.updateAccessToken(token.accessToken);
+      
+      // 发送令牌更新事件
+      await this.notifyTokenUpdated(token);
+      
       hilog.info(DOMAIN, TAG, 'Access token refreshed successfully');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to refresh access token: %{public}s', (error as Error).message);
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message);
+    }
+  }
+
+  /**
+   * 通知令牌已更新
+   * @param token 更新后的令牌
+   */
+  private async notifyTokenUpdated(token: OAuth2Token): Promise<void> {
+    try {
+      // 保存到首选项
+      const storageService = OAuth2TokenStorageService.getInstance();
+      await storageService.updateToken(token, {
+        provider: OAuth2Provider.ONEDRIVE,
+        encrypt: true
+      });
+      
+      hilog.info(DOMAIN, TAG, 'Token updated in preferences');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to update token in preferences: %{public}s', (error as Error).message);
     }
   }
 
