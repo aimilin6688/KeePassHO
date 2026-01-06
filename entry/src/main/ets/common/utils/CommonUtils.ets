@@ -186,9 +186,30 @@ export class CommonUtils {
    * @param confirm 确定回调
    */
   public static showUnSaveConfirm(context: UIContext, callback?: ConfirmCallback): void {
+    CommonUtils.showConfirmDialog(context, $r('app.string.dialog_confirm_title'), $r('app.string.dialog_changes_confirm_message'), callback);
+  }
+
+  /**
+   * 确认删除弹框
+   * @param context 上下文
+   * @param cancel 取消回调
+   * @param confirm 确定回调
+   */
+  public static showDeleteConfirm(context: UIContext, callback?: ConfirmCallback): void {
+    CommonUtils.showConfirmDialog(context, $r('app.string.dialog_confirm_title'), $r('app.string.dialog_delete_confirm_message'), callback);
+  }
+
+  /**
+   * 确认弹框
+   * @param context 上下文
+   * @param title 标题
+   * @param message 消息
+   * @param callback 回调
+   */
+  public static showConfirmDialog(context: UIContext, title: ResourceStr, message: ResourceStr, callback?: ConfirmCallback): void {
     context.showAlertDialog({
-      title: $r('app.string.dialog_confirm_title'),
-      message: $r('app.string.dialog_changes_confirm_message'),
+      title: title,
+      message: message,
       primaryButton: {
         value: $r('app.string.cancel_button_text'),
         action: () => {
@@ -203,6 +224,7 @@ export class CommonUtils {
       }
     });
   }
+
 }
 
 /**
