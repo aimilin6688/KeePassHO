@@ -16,7 +16,7 @@ type ThemeChangeListener = (isDarkMode: boolean) => void;
 /**
  * 主题管理器
  */
-export default class ThemeManager {
+export class ThemeManager {
   private static instance: ThemeManager = new ThemeManager();
   private currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   private systemDarkMode: boolean = false;
@@ -31,14 +31,22 @@ export default class ThemeManager {
    * 初始化主题管理器
    * @param context UIAbilityContext
    */
-  public init(context: common.UIAbilityContext): void {
+  public init(context: common.UIAbilityContext): Promise<void> {
     this.context = context;
     // 监听系统暗色模式变化
-    if (this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK)  {
-      this.systemDarkMode = true;
-      this.applyTheme();
-      this.notifyThemeChangeListeners();
-    }
+    return new Promise((resolve, reject) => {
+      try {
+        if (context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
+          this.systemDarkMode = true;
+          this.applyTheme();
+          this.notifyThemeChangeListeners();
+        }
+        return resolve();
+      } catch (err) {
+        hilog.error(DOMAIN, TAG, `ThemeManager init failed: ${err?.code}, ${err?.message}`);
+        return reject(err);
+      }
+    });
   }
 
   /**
@@ -93,8 +101,9 @@ export default class ThemeManager {
     try {
       const isDark = this.isDarkMode();
 
-      let colorMode : ConfigurationConstant.ColorMode =  this.currentThemeMode === ThemeMode.SYSTEM ?
-      ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET : (isDark ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
+      let colorMode: ConfigurationConstant.ColorMode = this.currentThemeMode === ThemeMode.SYSTEM ?
+        ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET :
+        (isDark ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
       this.context.getApplicationContext().setColorMode(colorMode);
 
       const mainWindow = await window.getLastWindow(this.context);
@@ -118,7 +127,7 @@ export default class ThemeManager {
     }
   }
 
-  public removeThemeChangeListenerAll(): void{
+  public removeThemeChangeListenerAll(): void {
     this.themeChangeListeners.splice(0, this.themeChangeListeners.length);
   }
 

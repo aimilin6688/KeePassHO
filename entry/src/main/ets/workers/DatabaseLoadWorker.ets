@@ -1,7 +1,7 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { Kdbx } from 'kdbxweb';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { KdbxUtils } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { DatabaseLoad } from './DatabaseLoad';

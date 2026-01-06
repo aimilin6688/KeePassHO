@@ -1,9 +1,8 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
-import ResourceManager from '../common/utils/ResourceManager';
+import { ResourceManager, CommonUtils } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { SettingsService } from './SettingsService';
-import { CommonUtils } from '../common/utils/CommonUtils';
 import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
