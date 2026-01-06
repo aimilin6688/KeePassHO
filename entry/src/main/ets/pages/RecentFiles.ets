@@ -4,8 +4,9 @@ import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
-import { WindowUtils } from '../common/utils';
+import { CommonUtils, WindowUtils } from '../common/utils';
 import { FileStorage, PageConfig } from '../storage';
+import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
@@ -51,27 +52,34 @@ struct RecentFiles {
    * @param fileName 文件名
    */
   async openFile(recentFile: RecentFile) {
+    LoadingDialog.showLoading($r('app.string.loading_message'));
     let recentFilesService: RecentFilesService = RecentFilesService.getInstance();
     // 检查文件是否存在
     const fileExists = await recentFilesService.checkFileExists(recentFile);
+    LoadingDialog.hideLoading();
     if (!fileExists) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.file_not_exists'),
         duration: 2000
       });
-      // 移除不存在的文件记录
-      await recentFilesService.removeRecentFile(recentFile);
-      // 重新加载列表
-      this.loadRecentFiles();
+      CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_remove_record_tips'), {
+        onConfirm: async () => {
+          // 移除不存在的文件记录
+          await recentFilesService.removeRecentFile(recentFile);
+          // 重新加载列表
+          this.loadRecentFiles();
+        }
+      });
       return;
+    } else {
+      // 导航到密码输入页面
+      CommonUtils.pushUrl({
+        url: 'pages/Password',
+        params: {
+          filePath: recentFile.filePath
+        }
+      });
     }
-    // 导航到密码输入页面
-    this.router.pushUrl({
-      url: 'pages/Password',
-      params: {
-        filePath: recentFile.filePath
-      }
-    });
   }
 
   /**
@@ -146,7 +154,11 @@ struct RecentFiles {
           .fontColor('#E84026')
           .backgroundColor(Color.Transparent)
           .onClick(() => {
-            this.clearAllRecords();
+            CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_clear_all_records_tips'), {
+              onConfirm: () => {
+                this.clearAllRecords();
+              }
+            });
           })
       }
       .width('100%')
@@ -205,7 +217,11 @@ struct RecentFiles {
                 }
                 .backgroundColor(Color.Transparent)
                 .onClick(() => {
-                  this.removeRecord(file);
+                  CommonUtils.showDeleteConfirm(this.getUIContext(), {
+                    onConfirm: () => {
+                      this.removeRecord(file);
+                    }
+                  });
                 })
               }
               .width('100%')
