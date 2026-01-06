@@ -3,7 +3,7 @@ import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
-const TAG = 'OAuth2LoginPage';
+const TAG = 'OAuth2Login';
 
 /**
  * 授权结果
@@ -41,7 +41,7 @@ interface WebPageEvent {
 
 @Entry
 @Component
-export struct OAuth2LoginPage {
+struct OAuth2Login {
   /**
    * OAuth2配置
    */
@@ -80,7 +80,7 @@ export struct OAuth2LoginPage {
       }
     }
     
-    hilog.info(DOMAIN, TAG, `OAuth2LoginPage initialized with authUrl: ${this.authUrl}`);
+    hilog.info(DOMAIN, TAG, `OAuth2Login initialized with authUrl: ${this.authUrl}`);
   }
 
   build() {

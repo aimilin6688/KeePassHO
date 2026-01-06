@@ -10,7 +10,7 @@ import { common } from '@kit.AbilityKit';
 import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
 import { OAuth2AuthRequest, OAuth2Token, OAuth2Provider, OAuth2TokenStorageService } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
-import { AuthResult } from '../OAuth2LoginPage';
+import { AuthResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDrive';
@@ -132,7 +132,7 @@ struct OneDrive {
 
     // 跳转到OAuth2登录页面
     this.router.pushUrl({
-      url: 'storage/OAuth2LoginPage',
+      url: 'pages/OAuth2Login',
       params: {
         authUrl: authUrl,
         oauth2Config: this.oauth2Provider!.getConfig()
