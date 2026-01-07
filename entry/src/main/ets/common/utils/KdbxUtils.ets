@@ -16,18 +16,17 @@ import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { SortMode } from '../constants/SortConstants';
-import IconUtils from './IconUtils';
+import { IconUtils, ResourceManager } from '.';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
-import ResourceManager from './ResourceManager';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
 
-export default class KdbxUtils {
+export class KdbxUtils {
   public static readonly FIELD_USERNAME = 'UserName';
   public static readonly FIELD_PASSWORD = 'Password';
   public static readonly FIELD_URL = 'URL';

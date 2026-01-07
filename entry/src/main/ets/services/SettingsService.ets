@@ -1,11 +1,12 @@
 import preferences from '@ohos.data.preferences';
 import { BusinessError } from '@ohos.base';
 import { ThemeMode } from '../common/constants/ThemeConstants';
-import ThemeManager from '../common/utils/ThemeManager';
+import { ThemeManager } from '../common/utils';
 import common from '@ohos.app.ability.common';
 import { SortMode } from '../common/constants/SortConstants';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { SyncSettingsService } from './store/SyncSettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingsService';
@@ -35,6 +36,9 @@ export class SettingsService {
   public static readonly KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT = 30;
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH = 'Security_quick_lock_password_length';
   public static readonly KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT = 3;
+  public static readonly KEY_SECURITY_PRIVACY_WINDOW = 'Security_privacy_window';
+  public static readonly KEY_SECURITY_PRIVACY_WINDOW_DEFAULT = true;
+
   // 认证方式
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT = false;
@@ -47,6 +51,8 @@ export class SettingsService {
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = true;
+
+  // --------------- APP 设置信息 ---------------------
   // 支持弹框
   public static readonly KEY_SHOW_SUPPORT_TIME = "show_support_time";
   public static readonly KEY_SHOW_SUPPORT_DIALOG = "show_support_dialog";
@@ -55,6 +61,13 @@ export class SettingsService {
   // 限制数据库后缀
   public static readonly KEY_APP_LIMIT_DB_EXT = "app_limit_db_ext";
   public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = true;
+  // 跨设备同步设置
+  public static readonly KEY_APP_SYNC_SETTING_ENABLE = "app_sync_setting_enable";
+  public static readonly KEY_APP_SYNC_SETTING_ENABLE_DEFAULT = false;
+  // 启用智感握姿
+  public static readonly KEY_APP_HOLDING_HAND_ENABLE = "app_holding_hand_enable";
+  public static readonly KEY_APP_HOLDING_HAND_ENABLE_DEFAULT = false;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
@@ -70,15 +83,20 @@ export class SettingsService {
    * @param context UIAbilityContext
    */
   public async init(context: common.UIAbilityContext): Promise<void> {
-    try {
-      this.preferences = await preferences.getPreferences(context, SettingsService.PREFERENCES_NAME);
-
-      // 初始化主题
-      const themeMode = await this.getThemeMode();
-      await ThemeManager.getInstance().setThemeMode(themeMode);
-    } catch (err) {
-      hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
-    }
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.preferences = await preferences.getPreferences(context, SettingsService.PREFERENCES_NAME);
+        // 初始化主题
+        const themeMode = await this.getThemeMode();
+        await ThemeManager.getInstance().setThemeMode(themeMode);
+        // 初始化同步服务
+        await SyncSettingsService.init();
+        return resolve();
+      } catch (err) {
+        hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+        return reject(err);
+      }
+    });
   }
 
   /**
@@ -90,8 +108,7 @@ export class SettingsService {
       return;
     }
     try {
-      await this.preferences.put(SettingsService.KEY_THEME_MODE, mode);
-      await this.preferences.flush();
+      this.put(SettingsService.KEY_THEME_MODE, mode);
       // 应用新的主题模式
       await ThemeManager.getInstance().setThemeMode(mode);
     } catch (err) {
@@ -166,6 +183,10 @@ export class SettingsService {
     try {
       await this.preferences.put(key, value);
       await this.preferences.flush(); // 重要！确保数据持久化
+
+      // 自动同步到远端设备
+      SyncSettingsService.syncSetting(key, value);
+
       // 通知所有观察者
       this.observers.forEach(observer => observer(key));
       return Promise.resolve();
@@ -273,6 +294,23 @@ export class SettingsService {
    */
   public static delete(key: string): Promise<void> {
     return SettingsService.getInstance().delete(key);
+  }
+
+  /**
+   * 获取所有的数据
+   * @returns
+   */
+  public static getAll(): Object {
+    try {
+      const pref = SettingsService.getInstance().preferences;
+      if (!pref) {
+        return new Object();
+      }
+      return pref.getAllSync();
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to get all. Code: ${error}`);
+    }
+    return new Object();
   }
 
 

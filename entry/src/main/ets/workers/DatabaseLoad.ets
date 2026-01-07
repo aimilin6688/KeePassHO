@@ -6,7 +6,7 @@ import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { LoadMessage, SuccessMessage, toLoadMessage } from './WorkerParam';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { KdbxUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoad';

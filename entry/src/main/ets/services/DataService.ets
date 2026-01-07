@@ -4,10 +4,9 @@ import { RecentFilesService } from './RecentFilesService';
 import { KdbxExportService } from './kdbx/KdbxExportService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../common/utils/CommonUtils';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam';
-import DateUtils from '../common/utils/DateUtils';
+import { DateUtils, CommonUtils } from '../common/utils';
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { SettingsService } from './SettingsService';
@@ -30,7 +29,7 @@ export class DataService {
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to save kdbx file: %{public}s, error: %{public}s', param.locationInfo.filePath, error.message);
       LoadingDialog.hideLoading();
-      LoadingDialog.showError(error.message);
+      CommonUtils.showToast(error.message);
     });
   }
 
@@ -59,8 +58,8 @@ export class DataService {
    * 选择数据库
    */
   public static selectKdbx(router: Router) {
-    const fileSuffix : Array<string> = [];
-    if(SettingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT)){
+    const fileSuffix: Array<string> = [];
+    if (SettingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT)) {
       fileSuffix.push('kdbx');
     }
     LocationParam.of({

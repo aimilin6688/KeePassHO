@@ -1,3 +1,4 @@
+
 /**
  * 存储配置接口
  */
@@ -32,4 +33,9 @@ export interface PageConfig {
    * 跳转页面路径
    */
   pageUrl: string;
+
+  /**
+   * 存储类型
+   */
+  storageType: string;
 }

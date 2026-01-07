@@ -1,5 +1,6 @@
-import { ProtectedValue } from 'kdbxweb';
 import { PageConfig, StorageConfig } from '../StorageConfig';
+import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { StorageType } from '..';
 
 /**
  * WebDAV存储配置选项类
@@ -34,29 +35,20 @@ export class WebDAVStorageConfig implements StorageConfig {
    */
   timeout?: number;
 
-  constructor(url: string, username: string, password: string, options?: WebDAVStorageConfigOptions, isProtected?: boolean) {
+  constructor(url: string, username: string, password: string, options?: WebDAVStorageConfigOptions) {
     this.url = url;
-    if (!isProtected) {
-      this.username = ProtectedValue.fromString(username).toBase64();
-      this.password = ProtectedValue.fromString(password).toBase64();
-    } else {
-      this.username = username;
-      this.password = password;
-    }
+    this.username = Sm4Utils.encryptWithPrefix(username);
+    this.password = Sm4Utils.encryptWithPrefix(password);
     this.rootPath = options?.rootPath;
     this.timeout = options?.timeout;
   }
 
   public getUserNameText(): string {
-    return ProtectedValue.fromBase64(this.username).getText();
+    return Sm4Utils.decryptWithPrefix(this.username);
   }
 
   public getPasswordText(): string {
-    return ProtectedValue.fromBase64(this.password).getText();
-  }
-
-  public static getText(value: string): string {
-    return ProtectedValue.fromBase64(value).getText();
+    return Sm4Utils.decryptWithPrefix(this.password);
   }
 }
 
@@ -69,4 +61,5 @@ export const WebDAVPageConfig = {
   selectDesc: $r('app.string.location_webdav_desc_select'),
   saveDesc: $r('app.string.location_webdav_desc_save'),
   pageUrl: 'storage/webdav/WebDAVPage',
+  storageType: StorageType.WEBDAV
 } as PageConfig;
