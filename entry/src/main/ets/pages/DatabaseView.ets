@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
+import { CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -375,7 +375,7 @@ struct DatabaseView {
         .onClick(() => {
           if (item instanceof KdbxEntry) {
             // 跳转到条目编辑页面
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/EntryEdit',
               params: {
                 groupId: item.parentGroup?.uuid.id,
@@ -644,7 +644,7 @@ struct DatabaseView {
    * 锁定数据库
    */
   private lockDatabase() {
-    this.router.pushUrl({ url: 'pages/UnLockDatabase' })
+    CommonUtils.pushUrl({ url: 'pages/UnLockDatabase' })
   }
 
   /**
@@ -901,7 +901,7 @@ struct DatabaseView {
                   .height(24)
                   .margin({ right: 16 })
                   .onClick(() => {
-                    this.router.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
+                    CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
                       hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
                     });
                   })
@@ -996,7 +996,7 @@ struct DatabaseView {
                       $r("app.color.card_bg"))
                     .padding({ left: 6, right: 6 })
                     .onClick(() => {
-                      this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
+                      CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
                     })
                   }
                   .swipeAction({
@@ -1065,7 +1065,7 @@ struct DatabaseView {
                       bottom: 8
                     })
                     .onClick(() => {
-                      this.router.pushUrl({
+                      CommonUtils.pushUrl({
                         url: 'pages/EntryView',
                         params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id }
                       });
@@ -1168,7 +1168,7 @@ struct DatabaseView {
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
         .onClick(() => {
           this.showAddButtons = false;
-          this.router.pushUrl({
+          CommonUtils.pushUrl({
             url: 'pages/EntryEdit',
             params: {
               groupId: this.currentGroup?.uuid.id
@@ -1192,7 +1192,7 @@ struct DatabaseView {
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
-          this.router.pushUrl({ url: 'pages/TotpView' });
+          CommonUtils.pushUrl({ url: 'pages/TotpView' });
         })
 
         // 主添加按钮

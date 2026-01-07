@@ -1,4 +1,4 @@
-import { KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
@@ -88,7 +88,7 @@ struct ChangePassword {
         this.router.back({ url: 'pages/ChangePassword' });
       }
     });
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   /**
@@ -103,7 +103,7 @@ struct ChangePassword {
     }, (error) => {
       this.router.back();
     });
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   /**
@@ -115,7 +115,7 @@ struct ChangePassword {
       FileService.close();
       this.router.clear();
     })
-    this.router.pushUrl({
+    CommonUtils.pushUrl({
       url: 'pages/Password',
       params: {
         filePath: filePath,

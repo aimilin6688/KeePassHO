@@ -2,7 +2,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { OneDriveStorageConfig } from './OneDriveConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -131,7 +131,7 @@ struct OneDrive {
     hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
 
     // 跳转到OAuth2登录页面
-    this.router.pushUrl({
+    CommonUtils.pushUrl({
       url: 'pages/OAuth2Login',
       params: {
         authUrl: authUrl,
@@ -236,7 +236,7 @@ struct OneDrive {
     if (!this.checkParam()) {
       return;
     }
-    this.router.pushUrl({
+    CommonUtils.pushUrl({
       url: 'pages/open/FileList',
       params: {
         mode: LocationParam.getMode(),

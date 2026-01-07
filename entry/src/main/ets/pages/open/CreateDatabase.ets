@@ -86,7 +86,7 @@ struct CreateDatabase {
           })
         }
       });
-      this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+      CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`);
       this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
@@ -107,7 +107,7 @@ struct CreateDatabase {
         this.router.back({ url: 'pages/open/CreateDatabase' });
       }
     });
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   /**
@@ -122,7 +122,7 @@ struct CreateDatabase {
     }, (error) => {
       this.router.back();
     });
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   build() {
