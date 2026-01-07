@@ -1,3 +1,4 @@
+import { CommonUtils } from "../common/utils";
 import {CustomField} from "../services/TypeDefined";
 
 /**
@@ -34,7 +35,7 @@ export struct EntryEditFieldDialog {
   private confirm() {
     // 验证字段名称
     if (!this.tempKey || this.tempKey.trim() === '') {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r("app.string.field_name_not_empty"),
         duration: 2000
       });

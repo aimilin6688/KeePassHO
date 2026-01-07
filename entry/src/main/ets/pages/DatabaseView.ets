@@ -291,7 +291,7 @@ struct DatabaseView {
 
   private initData(dbShowParam: DatabaseShowParam | undefined) {
     if (!this.database) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.invalid_database'),
         duration: 2000
       });
@@ -317,7 +317,7 @@ struct DatabaseView {
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
         hilog.info(DOMAIN, TAG, '%{public}s', `Invalid group: ${dbShowParam?.groupId}`)
-        this.promptAction.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
+        CommonUtils.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
       KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
@@ -326,7 +326,7 @@ struct DatabaseView {
       hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.groups.length} groups, ${this.entries.length} entries`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
-      this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
+      CommonUtils.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
         this.routerBack();
@@ -348,7 +348,7 @@ struct DatabaseView {
           FileService.resetDbFileParam(database, successMessage.modifiedTime);
           this.refreshText = $r('app.string.refreshing_message');
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
-          this.promptAction.showToast({ message: $r('app.string.refresh_success') });
+          CommonUtils.showToast({ message: $r('app.string.refresh_success') });
           this.isRefreshing = false;
         });
       },
@@ -357,7 +357,7 @@ struct DatabaseView {
       },
       onErrorMessage: (message: LoadMessage) => {
         this.refreshText = ResourceManager.getString(message.message);
-        this.promptAction.showToast({ message: this.refreshText });
+        CommonUtils.showToast({ message: this.refreshText });
         this.isRefreshing = false;
       },
     });
@@ -464,7 +464,7 @@ struct DatabaseView {
       return;
     }
     if (!this.database) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r("app.string.invalid_database")
       });
       return;
@@ -507,7 +507,7 @@ struct DatabaseView {
    */
   private moveItemToCurrentGroup() {
     if (!this.database || !this.currentGroup || !this.moveParam) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.operation_failed'),
         duration: 2000
       });
@@ -526,7 +526,7 @@ struct DatabaseView {
       }
 
       if (!sourceItem) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.entry_not_found'),
           duration: 2000
         });
@@ -539,7 +539,7 @@ struct DatabaseView {
         const sourceGroup = sourceItem as KdbxGroup;
         // 不能移动到自己或子分组
         if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
-          this.promptAction.showToast({
+          CommonUtils.showToast({
             message: $r('app.string.cannot_move_to_child'),
             duration: 2000
           });
@@ -554,7 +554,7 @@ struct DatabaseView {
       this.saveDatabase();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to move item: %{public}s', error.message);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.operation_failed'),
         duration: 2000
       });

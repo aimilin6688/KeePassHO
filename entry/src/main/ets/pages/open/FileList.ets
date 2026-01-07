@@ -1,7 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileInfo, FileType } from '../../storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { DateUtils, FileUtils, ResourceManager } from '../../common/utils';
+import { CommonUtils, DateUtils, FileUtils, ResourceManager } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/LocationParam';
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
@@ -252,7 +252,7 @@ struct FileList {
    * 确认操作
    */
   private handleConfirm() {
-    this.promptAction.showToast({ message: $r('app.string.handling') });
+    CommonUtils.showToast({ message: $r('app.string.handling') });
     let filePath = '';
     if (this.isSaveMode()) {
       filePath = FilenameUtils.getFilePath(UrlUtils.getHost(this.locationInfo?.filePath), this.currentPath, this.saveFileName);
@@ -282,7 +282,7 @@ struct FileList {
   private showError() {
     this.isError = true;
     this.errorMessage = ResourceManager.getString($r('app.string.invalid_data_file'));
-    this.promptAction.showToast({ message: this.errorMessage });
+    CommonUtils.showToast({ message: this.errorMessage });
     this.router.back();
   }
 

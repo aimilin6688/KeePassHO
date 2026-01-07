@@ -3,7 +3,7 @@ import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType, LocalFileStorageConfig } from '..';
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileUtils, FilenameUtils } from '../../common/utils';
+import { FileUtils, FilenameUtils, CommonUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -47,7 +47,7 @@ struct LocalFile {
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to pick file: %{public}s,  stack: %{public}s`, error.message, error.stack);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: error.message,
         duration: 2000
       });
@@ -80,7 +80,7 @@ struct LocalFile {
       })
       .catch((error: Error) => {
         hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error.message, error.stack);
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: error.message,
           duration: 3000
         });
@@ -115,7 +115,7 @@ struct LocalFile {
       }
     }).catch((err: BusinessError) => {
       hilog.error(DOMAIN, TAG, `Failed to show document save dialog: ${err.message}`, err.stack);
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
+      CommonUtils.showToast({ message: $r('app.string.CreateDatabase_location_failed', err.message) });
     }).finally(() => {
       this.isLoading = false;
     });

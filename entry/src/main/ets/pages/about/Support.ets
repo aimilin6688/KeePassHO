@@ -8,7 +8,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { SupportService } from '../../services/SupportService';
 import { SettingsService } from '../../services/SettingsService';
-import { DateUtils, DateUnit } from '../../common/utils';
+import { DateUtils, DateUnit, CommonUtils } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
@@ -64,7 +64,7 @@ struct Support {
         this.queryProductList();
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Failed to query environment status: ' + err.message);
-        this.promptAction.showToast({ message: err.message });
+        CommonUtils.showToast({ message: err.message });
       });
       SupportService.autoFinish();
     } catch (err) {
@@ -113,11 +113,11 @@ struct Support {
         this.paySuccess(result, option);
       }).catch((err: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
-        this.promptAction.showToast({ message: err.message });
+        CommonUtils.showToast({ message: err.message });
       });
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Payment failed: ' + err.message);
-      this.promptAction.showToast({ message: err.message });
+      CommonUtils.showToast({ message: err.message });
     }
   }
 
@@ -133,7 +133,7 @@ struct Support {
       SettingsService.put(SettingsService.KEY_APP_INSTALL_TIME, DateUtils.offset(new Date(), -3, DateUnit.Month).getTime());
       this.showThankYouMessage(option.thanksMessage);
     }, (err: BusinessError) => {
-      this.promptAction.showToast({ message: err.message });
+      CommonUtils.showToast({ message: err.message });
     });
   }
 
@@ -146,20 +146,20 @@ struct Support {
         this.context?.resourceManager.getMediaContent(imgResource, async (err, data) => {
           if (err) {
             hilog.error(DOMAIN, TAG, 'Failed to get resource file content: ' + err.message);
-            this.promptAction.showToast({ message: err.message });
+            CommonUtils.showToast({ message: err.message });
             return;
           }
           let helper = photoAccessHelper.getPhotoAccessHelper(this.context);
           let uri = await helper.createAsset(photoAccessHelper.PhotoType.IMAGE, 'png');
           let destFile: fs.File = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
           await fs.write(destFile.fd, data.buffer).then(() => {
-            this.promptAction.showToast({ message: $r('app.string.save_success') });
+            CommonUtils.showToast({ message: $r('app.string.save_success') });
           });
           await fs.close(destFile.fd);
         })
       } catch (err) {
         hilog.error(DOMAIN, TAG, 'Save file failed with error message: ' + err.message + ', error code: ' + err?.code);
-        this.promptAction.showToast({ message: err.message });
+        CommonUtils.showToast({ message: err.message });
       }
     }
   }
@@ -170,7 +170,7 @@ struct Support {
    */
   private showThankYouMessage(message: ResourceStr) {
     try {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: message,
         duration: 8000
       });
