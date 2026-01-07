@@ -53,7 +53,7 @@ struct About {
       })
       .catch((error: BusinessError) => {
         hilog.error(DOMAIN, TAG, 'Failed to send mail：' + error.message);
-        this.promptAction.showToast({ message: error.message });
+        CommonUtils.showToast({ message: error.message });
       });
   }
 
@@ -69,7 +69,7 @@ struct About {
       hilog.info(DOMAIN, TAG, "Succeeded in starting Ability successfully.")
     }).catch((error: BusinessError) => {
       hilog.error(DOMAIN, TAG, `Failed to startAbility.Code: ${error.code}, message is ${error.message}`);
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     });
   }
 
@@ -90,11 +90,11 @@ struct About {
         })
         .catch((err: BusinessError) => {
           hilog.info(DOMAIN, TAG, 'Failed to open browser. Error code: ' + err.code + ', message: ' + err.message);
-          this.promptAction.showToast({ message: err.message });
+          CommonUtils.showToast({ message: err.message });
         });
     } catch (error) {
       hilog.info(DOMAIN, TAG, 'An unexpected error occurred. Error code: ' + error.code + ', message: ' + error.message);
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     }
   }
 
@@ -118,16 +118,16 @@ struct About {
             hilog.error(DOMAIN, 'TAG', "Failed to show update dialog. Error code: " + error.code + ", message: " + error.message);
           });
         } else {
-          this.promptAction.showToast({ message: $r('app.string.About_app_later_version_not_exist') });
+          CommonUtils.showToast({ message: $r('app.string.About_app_later_version_not_exist') });
         }
       }).catch((error: BusinessError) => {
         hilog.error(DOMAIN, 'TAG', "Failed to check update. Error code: " + error.code + ", message: " + error.message);
-        this.promptAction.showToast({ message: error?.message });
+        CommonUtils.showToast({ message: error?.message });
       });
     } catch (error) {
       hilog.error(DOMAIN, 'TAG', "An unexpected error occurred. Error code: " + error.code + ", message: " + error.message);
       if (error?.message) {
-        this.promptAction.showToast({ message: error?.message });
+        CommonUtils.showToast({ message: error?.message });
       }
     }
   }

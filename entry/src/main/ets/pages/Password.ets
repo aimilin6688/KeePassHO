@@ -123,7 +123,7 @@ struct Password {
    */
   private openRecentFile(filePath: string) {
     if (!filePath) {
-      this.promptAction.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
+      CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
       this.router.back();
     }
     // 获取最近打开记录
@@ -147,7 +147,7 @@ struct Password {
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.open_failed', error.message),
         duration: 2000
       });
@@ -206,7 +206,7 @@ struct Password {
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
-        this.promptAction.showToast({ message: error.message });
+        CommonUtils.showToast({ message: error.message });
       }
     } as AuthServiceCallback;
   }
@@ -260,7 +260,7 @@ struct Password {
   private verifyAndOpenDatabase() {
     // 验证输入
     if (!this.password) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.password_placeholder'),
         duration: 2000
       });
@@ -269,7 +269,7 @@ struct Password {
 
     if ((this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
       this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyLocation) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.select_key_file'),
         duration: 2000
       });
@@ -277,7 +277,7 @@ struct Password {
     }
 
     if (this.storageType === null) {
-      this.promptAction.showToast({ message: $r('app.string.storage_type_empty') });
+      CommonUtils.showToast({ message: $r('app.string.storage_type_empty') });
       return;
     }
 
@@ -294,11 +294,11 @@ struct Password {
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
-        this.promptAction.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
+        CommonUtils.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
         this.closeLoadingDialog();
       },
       onAllErrors: (error: ErrorEvent) => {
-        this.promptAction.showToast({ message: error.message })
+        CommonUtils.showToast({ message: error.message })
         this.closeLoadingDialog();
       },
       onexit: (e: number) => {
@@ -320,7 +320,7 @@ struct Password {
       this.closeLoadingDialog();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
-      this.promptAction.showToast({ message: error.message, duration: 3000 });
+      CommonUtils.showToast({ message: error.message, duration: 3000 });
       this.closeLoadingDialog();
     });
   }

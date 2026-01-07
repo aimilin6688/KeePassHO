@@ -171,12 +171,12 @@ struct OneDrive {
       await this.saveTokenToStorage();
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.onedrive_login_successful')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.onedrive_login_successful')) });
     } catch (error) {
       this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_failed')) + `: ${(error as Error).message}`;
       this.isErrorStatus = true;
       hilog.error(DOMAIN, TAG, 'Authentication failed: %{public}s', (error as Error).message);
-      this.promptAction.showToast({ message: ResourceManager.getString($r('app.string.onedrive_authentication_failed')) });
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.onedrive_authentication_failed')) });
     } finally {
       this.isConnecting = false;
     }
@@ -316,7 +316,7 @@ struct OneDrive {
         '/', (error as Error).message, (error as Error).stack);
       this.connectionStatus = (error as Error).message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: (error as Error).message });
+      CommonUtils.showToast({ message: (error as Error).message });
     } finally {
       this.isConnecting = false;
     }
@@ -359,7 +359,7 @@ struct OneDrive {
         '/', (error as Error).message, (error as Error).stack);
       this.connectionStatus = (error as Error).message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: (error as Error).message });
+      CommonUtils.showToast({ message: (error as Error).message });
     } finally {
       this.isConnecting = false;
     }

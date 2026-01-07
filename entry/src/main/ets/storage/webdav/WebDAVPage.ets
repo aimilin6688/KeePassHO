@@ -144,7 +144,7 @@ struct WebDAV {
       hilog.error(DOMAIN, TAG, 'Failed to load KDBX file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }
@@ -186,7 +186,7 @@ struct WebDAV {
       hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s', this.url, error.message, error.stack);
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
-      this.promptAction.showToast({ message: error.message });
+      CommonUtils.showToast({ message: error.message });
     } finally {
       this.isConnecting = false;
     }

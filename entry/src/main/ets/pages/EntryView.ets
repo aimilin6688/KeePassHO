@@ -60,7 +60,7 @@ struct EntryView {
       this.database = dbFileParam.database ?? null;
 
       if (!this.database || !this.entryId) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.invalid_db_or_entry'),
           duration: 2000
         });
@@ -72,7 +72,7 @@ struct EntryView {
       this.entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId, this.selectedHistoryIndex);
 
       if (!this.entry) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.entry_not_found'),
           duration: 2000
         });
@@ -88,7 +88,7 @@ struct EntryView {
 
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to load entry: ${error}`);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.load_entry_failed') + `: ${error}`,
         duration: 2000
       });
