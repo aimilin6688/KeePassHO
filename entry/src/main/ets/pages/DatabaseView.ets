@@ -350,6 +350,10 @@ struct DatabaseView {
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
           CommonUtils.showToast({ message: $r('app.string.refresh_success') });
           this.isRefreshing = false;
+        }).catch((error: Error) => {
+          this.refreshText = error.message;
+          CommonUtils.showToast({ message: this.refreshText });
+          this.isRefreshing = false;
         });
       },
       onLoadMessage: (message: LoadMessage) => {

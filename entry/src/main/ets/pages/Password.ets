@@ -327,6 +327,9 @@ struct Password {
 
   /**
    * 设置数据库文件信息
+   * @param successMessage successMessage
+   * @returns Promise<void>
+   * @throws Error
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
     let date = new Date().getTime();
