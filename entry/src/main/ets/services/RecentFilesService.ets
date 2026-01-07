@@ -48,6 +48,7 @@ export class RecentFilesService {
    * 当文件拥有持久性授权时，才能添加到最近访问中
    * @param recentFile 最近打开的文件
    * @returns 结果
+   * @throws KeePassHoError
    */
   public async addRecentFile(recentFile: RecentFile): Promise<void> {
     if (recentFile.filePath === undefined || recentFile.filePath === '') {
