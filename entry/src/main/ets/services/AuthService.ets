@@ -1,5 +1,5 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
-import { ResourceManager, CommonUtils } from '../common/utils';
+import { CommonUtils, ResourceManager } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { SettingsService } from './SettingsService';
@@ -150,7 +150,11 @@ export class AuthService {
               callback.onFail(result);
             }
           }
-          authInstance.off('result');
+          try {
+            authInstance.off('result');
+          } catch (error) {
+            hilog.error(DOMAIN, TAG, "Auth fail，error：" + error.message);
+          }
         }
       });
       authInstance.start();
