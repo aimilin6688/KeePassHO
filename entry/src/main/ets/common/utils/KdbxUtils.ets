@@ -302,9 +302,11 @@ export class KdbxUtils {
   /**
    * 将ArrayBuffer转换为对象
    * @param arrayBuffer ArrayBuffer对象
+   * @param credentialsParam 凭据参数
+   * @param credentials 凭据
+   * @throws KdbxError 如果凭据无效，则抛出KdbxError
    */
-  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer | Kdbx, credentialsParam: CredentialsParam,
-    credentials?: KdbxCredentials): Promise<Kdbx> {
+  public static async arrayBufferToKdbx(arrayBuffer: ArrayBuffer | Kdbx, credentialsParam: CredentialsParam, credentials?: KdbxCredentials): Promise<Kdbx> {
     if (arrayBuffer instanceof Kdbx) {
       return arrayBuffer;
     }

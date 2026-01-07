@@ -1,5 +1,5 @@
 import { PromptAction } from '@kit.ArkUI';
-import {KdbxUtils, FileUtils, ResourceManager} from '../common/utils';
+import {KdbxUtils, FileUtils, ResourceManager, CommonUtils} from '../common/utils';
 import { KdbxEntry } from 'kdbxweb';
 
 import { Icons } from '../services/TypeDefined';
@@ -142,7 +142,7 @@ export struct EntryViewFieldItem {
    */
   private downloadFile(fieldView: FieldView) {
     if (!fieldView.binaryFile || fieldView.binaryFile.byteLength <= 0) {
-      this.promptAction.showToast({ message: $r("app.string.invalid_binary_file"), duration: 2000 });
+      CommonUtils.showToast({ message: $r("app.string.invalid_binary_file"), duration: 2000 });
       return;
     }
     FileUtils.saveLocalFile(fieldView.key, () => {

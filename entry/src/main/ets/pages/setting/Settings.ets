@@ -4,6 +4,7 @@ import { ConfigurationConstant } from '@kit.AbilityKit';
 import { router, Router } from '@kit.ArkUI';
 import { SortConstants, SortMode } from '../../common/constants/SortConstants';
 import { DataService } from '../../services/DataService';
+import { CommonUtils } from '../../common/utils';
 
 @Entry
 @Component
@@ -130,7 +131,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/setting/SettingSecurity'
             }, router.RouterMode.Single);
           })
@@ -150,7 +151,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/setting/SettingDatabase'
             }, router.RouterMode.Single);
           })
@@ -170,7 +171,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/setting/SettingApplication'
             }, router.RouterMode.Single);
           })
@@ -200,7 +201,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/open/CreateDatabase'
             }, router.RouterMode.Single);
           })
@@ -221,7 +222,7 @@ struct Settings {
           }
           .onClick(() => {
             DataService.selectKdbx(this.router);
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/open/SelectLocation'
             });
           })
@@ -241,7 +242,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/RecentFiles'
             }, router.RouterMode.Single);
           })
@@ -270,7 +271,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/about/About'
             }, router.RouterMode.Single);
           })

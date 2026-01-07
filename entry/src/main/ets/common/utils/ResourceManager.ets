@@ -42,10 +42,15 @@ export class ResourceManager {
     if (!this.context) {
       return '';
     }
-    if (typeof resource === 'number') {
-      return this.context.resourceManager.getStringSync(resource, ...args);
+    try {
+      if (typeof resource === 'number') {
+        return this.context.resourceManager.getStringSync(resource, ...args);
+      }
+      return this.context.resourceManager.getStringSync(resource.id, ...args);
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `load resource error: ${resource}, ${e.message}`);
+      return e.message;
     }
-    return this.context.resourceManager.getStringSync(resource.id, ...args);
   }
 
   /**

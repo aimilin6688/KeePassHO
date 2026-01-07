@@ -1,6 +1,6 @@
 import { Router } from '@kit.ArkUI';
 import { KdbxMemoryProtection } from 'kdbxweb';
-import { KdbxUtils } from '../../common/utils';
+import { CommonUtils, KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -36,7 +36,7 @@ struct SettingDatabaseKeyFunction {
   // 重新加密算法
   private save() {
     if (!this.isDatabaseValid) {
-      this.promptAction.showToast({ message: $r("app.string.database_not_opened") });
+      CommonUtils.showToast({ message: $r("app.string.database_not_opened") });
       return;
     }
     try {
@@ -48,7 +48,7 @@ struct SettingDatabaseKeyFunction {
     } catch (error) {
       const errorMsg = KdbxUtils.kdbxErrorMessage(error);
       hilog.error(DOMAIN, TAG, 'Failed to save database algo: %{public}s', errorMsg);
-      this.promptAction.showToast({ message: errorMsg, duration: 2000 });
+      CommonUtils.showToast({ message: errorMsg, duration: 2000 });
     }
   }
 

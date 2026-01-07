@@ -48,6 +48,7 @@ export class RecentFilesService {
    * 当文件拥有持久性授权时，才能添加到最近访问中
    * @param recentFile 最近打开的文件
    * @returns 结果
+   * @throws KeePassHoError 路经不存在或者没有持久性授权
    */
   public async addRecentFile(recentFile: RecentFile): Promise<void> {
     if (recentFile.filePath === undefined || recentFile.filePath === '') {
@@ -76,6 +77,7 @@ export class RecentFilesService {
   /**
    * 添加最近打开的文件
    * @param fileParam 文件参数
+   * @throws KeePassHoError 路经不存在或者没有持久性授权
    */
   public static async addRecentFile(recentFile: RecentFile): Promise<void> {
     return RecentFilesService.getInstance().addRecentFile(recentFile);
@@ -209,20 +211,20 @@ export class RecentFilesService {
       // 确保同步服务已初始化
       await SyncSettingsService.init();
       const remoteFiles = await SyncSettingsService.getRemoteRecentFiles();
-      
+
       if (remoteFiles && remoteFiles.length > 0) {
         hilog.info(DOMAIN, TAG, `Found ${remoteFiles.length} remote recent files, merging with local`);
         // 合并本地和远端文件列表
         const mergedFiles = RecentFilesService.mergeRecentFileLists(localFiles, remoteFiles);
-        
+
         // 如果有合并结果，保存到本地
         if (mergedFiles.length > 0) {
           await this.doAddMerged(mergedFiles);
         }
-        
+
         return mergedFiles;
       }
-      
+
       return localFiles;
     } catch (syncError) {
       hilog.warn(DOMAIN, TAG, `Failed to sync with remote: ${syncError}`);
@@ -255,7 +257,7 @@ export class RecentFilesService {
 
     // 转换为数组：先保留本地文件的顺序，然后添加远端独有的文件
     const mergedFiles: RecentFile[] = [];
-    
+
     // 首先添加本地文件，保持原有顺序
     localFiles.forEach(file => {
       if (file.filePath && fileMap.has(file.filePath)) {
@@ -263,7 +265,7 @@ export class RecentFilesService {
         fileMap.delete(file.filePath); // 从map中删除，避免重复添加
       }
     });
-    
+
     // 然后添加远端独有的文件
     remoteFiles.forEach(file => {
       if (file.filePath && fileMap.has(file.filePath)) {
@@ -387,6 +389,9 @@ export class RecentFilesService {
       recentFile.password = undefined;
       return RecentFilesService.addRecentFile(recentFile).then(result => {
         return true;
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `Clear password error: ${error}`);
+        return false;
       });
     });
   }
@@ -409,6 +414,9 @@ export class RecentFilesService {
         recentFile.password = result;
         return RecentFilesService.addRecentFile(recentFile).then(result => {
           return true;
+        }).catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, `Clear password error: ${error}`);
+          return false;
         });
       });
     });
@@ -428,6 +436,9 @@ export class RecentFilesService {
       recentFile.searchHistory = [];
       return RecentFilesService.addRecentFile(recentFile).then(result => {
         return true;
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `Clear password error: ${error}`);
+        return false;
       });
     });
   }
@@ -461,6 +472,9 @@ export class RecentFilesService {
       recentFile.searchHistory = recentFile.searchHistory.slice(-10);
       return RecentFilesService.addRecentFile(recentFile).then(result => {
         return true;
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `Clear password error: ${error}`);
+        return false;
       });
     });
   }

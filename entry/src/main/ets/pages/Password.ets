@@ -4,10 +4,10 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { StorageType, StorageConfig } from '../storage';
+import { StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { KdbxUtils, ResourceManager, CryptoUtils, WindowUtils} from '../common/utils';
+import { CommonUtils, CryptoUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
@@ -123,7 +123,7 @@ struct Password {
    */
   private openRecentFile(filePath: string) {
     if (!filePath) {
-      this.promptAction.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
+      CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
       this.router.back();
     }
     // 获取最近打开记录
@@ -147,7 +147,7 @@ struct Password {
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.open_failed', error.message),
         duration: 2000
       });
@@ -206,7 +206,7 @@ struct Password {
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
-        this.promptAction.showToast({ message: error.message });
+        CommonUtils.showToast({ message: error.message });
       }
     } as AuthServiceCallback;
   }
@@ -224,7 +224,7 @@ struct Password {
         this.router.back({ url: 'pages/Password' });
       }
     });
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   /**
@@ -233,7 +233,7 @@ struct Password {
   changeDatabase() {
     // 返回到文件选择页面
     DataService.selectKdbx(this.router);
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' })
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' })
   }
 
   /**
@@ -260,7 +260,7 @@ struct Password {
   private verifyAndOpenDatabase() {
     // 验证输入
     if (!this.password) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.password_placeholder'),
         duration: 2000
       });
@@ -269,7 +269,7 @@ struct Password {
 
     if ((this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
       this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyLocation) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.select_key_file'),
         duration: 2000
       });
@@ -277,7 +277,7 @@ struct Password {
     }
 
     if (this.storageType === null) {
-      this.promptAction.showToast({ message: $r('app.string.storage_type_empty') });
+      CommonUtils.showToast({ message: $r('app.string.storage_type_empty') });
       return;
     }
 
@@ -294,11 +294,11 @@ struct Password {
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
-        this.promptAction.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
+        CommonUtils.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
         this.closeLoadingDialog();
       },
       onAllErrors: (error: ErrorEvent) => {
-        this.promptAction.showToast({ message: error.message })
+        CommonUtils.showToast({ message: error.message })
         this.closeLoadingDialog();
       },
       onexit: (e: number) => {
@@ -316,17 +316,20 @@ struct Password {
     this.putFileToRecentFile();
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
-      this.router.pushUrl({ url: 'pages/DatabaseView' });
+      CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       this.closeLoadingDialog();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
-      this.promptAction.showToast({ message: error.message, duration: 3000 });
+      CommonUtils.showToast({ message: error.message, duration: 3000 });
       this.closeLoadingDialog();
     });
   }
 
   /**
    * 设置数据库文件信息
+   * @param successMessage successMessage
+   * @returns Promise<void>
+   * @throws Error
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
     let date = new Date().getTime();
@@ -377,10 +380,16 @@ struct Password {
     if (this.isFingerprintSupport || this.isFaceSupport) {
       CryptoUtils.encryptText(this.password).then(result => {
         recentFile.password = result;
-        RecentFilesService.getInstance().addRecentFile(recentFile);
+        RecentFilesService.addRecentFile(recentFile).catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, 'Add database file to recent file list failed: %{public}s', error.message);
+          CommonUtils.showToast({ message: error.message, duration: 3000 });
+        });
       });
     } else {
-      RecentFilesService.getInstance().addRecentFile(recentFile);
+      RecentFilesService.addRecentFile(recentFile).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Add database file to recent file list failed: %{public}s', error.message);
+        CommonUtils.showToast({ message: error.message, duration: 3000 });
+      });
     }
   }
 
@@ -467,7 +476,7 @@ struct Password {
         // 密码输入框
         Row() {
           TextInput({ placeholder: $r('app.string.password_placeholder') })
-            .key("passwordInput")
+            .id("passwordInput")
             .type(this.showPassword ? InputType.Normal : InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })
