@@ -7,7 +7,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { StorageType, StorageConfig } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { KdbxUtils, ResourceManager, CryptoUtils, WindowUtils} from '../common/utils';
+import { KdbxUtils, ResourceManager, CryptoUtils, WindowUtils, CommonUtils} from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
@@ -224,7 +224,7 @@ struct Password {
         this.router.back({ url: 'pages/Password' });
       }
     });
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
 
   /**
@@ -233,7 +233,7 @@ struct Password {
   changeDatabase() {
     // 返回到文件选择页面
     DataService.selectKdbx(this.router);
-    this.router.pushUrl({ url: 'pages/open/SelectLocation' })
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' })
   }
 
   /**
@@ -316,7 +316,7 @@ struct Password {
     this.putFileToRecentFile();
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
-      this.router.pushUrl({ url: 'pages/DatabaseView' });
+      CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       this.closeLoadingDialog();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);

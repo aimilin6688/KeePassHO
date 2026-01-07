@@ -94,7 +94,7 @@ struct FTP {
     if (!this.checkParam()) {
       return;
     }
-    this.router.pushUrl(
+    CommonUtils.pushUrl(
       {
         url: 'pages/open/FileList',
         params: {
