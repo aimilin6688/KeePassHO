@@ -1,5 +1,11 @@
 import HashMap from '@ohos.util.HashMap';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { CommonUtils } from '../common/utils';
+
+const DOMAIN = 0x0000;
+const TAG = 'PasswordGeneratorDialog';
+
 /**
  * 密码生成器对话框组件
  */
@@ -54,66 +60,78 @@ export struct PasswordGeneratorDialog {
 
     // 定义字符集
     const charsets = new HashMap<string, string>();
-    charsets.set("lowercase", 'abcdefghijklmnopqrstuvwxyz');
-    charsets.set("uppercase", 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    charsets.set("numbers", '0123456789');
-    charsets.set("special", '!@#$%^&*=+~`|;?><,.');
-    charsets.set("brackets", '(){}[]');
-    charsets.set("minus", '-');
-    charsets.set("underscore", '_');
-    charsets.set("space", ' ');
+    try {
+      charsets.set("lowercase", 'abcdefghijklmnopqrstuvwxyz');
+      charsets.set("uppercase", 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+      charsets.set("numbers", '0123456789');
+      charsets.set("special", '!@#$%^&*=+~`|;?><,.');
+      charsets.set("brackets", '(){}[]');
+      charsets.set("minus", '-');
+      charsets.set("underscore", '_');
+      charsets.set("space", ' ');
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'charsets map set error', e.message);
+      CommonUtils.showToast(e.message);
+      return;
+    }
 
     // 收集选中的字符集
     const selectedCharsets = new Array<string>();
     let fullCharset = '';
 
-    if (this.useLowercase) {
-      const chats = charsets.get("lowercase");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useUppercase) {
-      const chats = charsets.get("uppercase");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useNumbers) {
-      const chats = charsets.get("numbers");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useSpecial) {
-      const chats = charsets.get("special");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useBrackets) {
-      const chats = charsets.get("brackets");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useMinus) {
-      const chats = charsets.get("minus");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useUnderscore) {
-      const chats = charsets.get("underscore");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useSpace) {
-      const chats = charsets.get("space");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
+    try {
+      if (this.useLowercase) {
+        const chats = charsets.get("lowercase");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useUppercase) {
+        const chats = charsets.get("uppercase");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useNumbers) {
+        const chats = charsets.get("numbers");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useSpecial) {
+        const chats = charsets.get("special");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useBrackets) {
+        const chats = charsets.get("brackets");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useMinus) {
+        const chats = charsets.get("minus");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useUnderscore) {
+        const chats = charsets.get("underscore");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useSpace) {
+        const chats = charsets.get("space");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
 
-    // 确保至少有一种字符类型被选中
-    if (fullCharset.length === 0) {
-      this.useLowercase = true;
-      const chats = charsets.get("lowercase");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
+      // 确保至少有一种字符类型被选中
+      if (fullCharset.length === 0) {
+        this.useLowercase = true;
+        const chats = charsets.get("lowercase");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'charsets map get error', e.message);
+      CommonUtils.showToast(e.message);
+      return;
     }
 
     let password = '';
