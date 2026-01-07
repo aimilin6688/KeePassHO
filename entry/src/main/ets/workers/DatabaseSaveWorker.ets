@@ -4,6 +4,7 @@ import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessa
 import { SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { DatabaseSave } from './DatabaseSave';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
+import { CommonUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseSaveWorker';
@@ -33,7 +34,12 @@ class DatabaseSaveWorker extends DatabaseSave {
    * @param message 消息
    */
   postMessage(message: string | Resource) {
-    workerPort.postMessage(toLoadMessage(message));
+    try {
+      workerPort.postMessage(toLoadMessage(message));
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postMessage error:%{public}s', error.message);
+      this.postErrorMessage(error.message);
+    }
   }
 
   /**
@@ -41,7 +47,12 @@ class DatabaseSaveWorker extends DatabaseSave {
    * @param message 消息
    */
   postErrorMessage(message: string) {
-    workerPort.postMessage(toErrorMessage(message));
+    try {
+      workerPort.postMessage(toErrorMessage(message));
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postErrorMessage error:%{public}s', error.message);
+      CommonUtils.showToast(message);
+    }
   }
 
   /**
@@ -49,7 +60,12 @@ class DatabaseSaveWorker extends DatabaseSave {
    * @param message
    */
   postSuccessMessage(message: SuccessMessage) {
-    workerPort.postMessage(message);
+    try {
+      workerPort.postMessage(message);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postSuccessMessage error:%{public}s', error.message);
+      this.postErrorMessage(error.message);
+    }
   }
 }
 
