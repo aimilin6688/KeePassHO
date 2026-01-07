@@ -746,7 +746,7 @@ struct DatabaseView {
                   .height(40)
                   .layoutWeight(1)
                   .flexShrink(1)
-                  .key("searchKey")
+                  .id("searchKey")
                   .searchIcon({
                     src: $r('sys.media.ohos_ic_public_search_filled')
                   })
