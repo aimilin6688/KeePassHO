@@ -8,7 +8,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { SupportService } from '../../services/SupportService';
 import { SettingsService } from '../../services/SettingsService';
-import { DateUtils, DateUnit, CommonUtils } from '../../common/utils';
+import { CommonUtils, DateUnit, DateUtils } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';
@@ -143,7 +143,7 @@ struct Support {
   private async saveImg(result: SaveButtonOnClickResult, imgResource: Resource): Promise<void> {
     if (result === SaveButtonOnClickResult.SUCCESS) {
       try {
-        this.context?.resourceManager.getMediaContent(imgResource, async (err, data) => {
+        this.context?.resourceManager.getMediaContent(imgResource.id, async (err, data) => {
           if (err) {
             hilog.error(DOMAIN, TAG, 'Failed to get resource file content: ' + err.message);
             CommonUtils.showToast({ message: err.message });
@@ -154,6 +154,9 @@ struct Support {
           let destFile: fs.File = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
           await fs.write(destFile.fd, data.buffer).then(() => {
             CommonUtils.showToast({ message: $r('app.string.save_success') });
+          }).catch((error: BusinessError) => {
+            hilog.error(DOMAIN, TAG, `Failed to write file content error: ${error.message}`);
+            CommonUtils.showToast({ message: error.message });
           });
           await fs.close(destFile.fd);
         })
