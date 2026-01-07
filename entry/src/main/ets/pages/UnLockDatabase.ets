@@ -159,7 +159,7 @@ struct UnLockDatabase {
 
           TextInput({ text: this.quickPassword })
             .width('100%')
-            .key("quickPasswordInput")
+            .id("quickPasswordInput")
             .type(InputType.Password)
             .fontSize(16)
             .enableAutoFill(false)
