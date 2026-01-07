@@ -173,8 +173,9 @@ export struct EntryViewFieldItem {
           .margin({ bottom: 4 })
 
         // 如果是Otp，则显示token码
-        if (this.field.isTotp && this.field.showPlanText) {
+        if (this.field.isTotp) {
           TotpPreviewComponent({
+            isShow: this.field.showPlanText,
             totpUrl: this.field.otpValue, onChange: (value) => {
               this.field.value = value;
             }
