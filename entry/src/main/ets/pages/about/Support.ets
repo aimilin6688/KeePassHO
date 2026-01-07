@@ -8,7 +8,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { SupportService } from '../../services/SupportService';
 import { SettingsService } from '../../services/SettingsService';
-import DateUtils, { DateUnit } from '../../common/utils/DateUtils';
+import { DateUtils, DateUnit } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'Support';

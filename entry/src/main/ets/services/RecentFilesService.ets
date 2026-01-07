@@ -3,13 +3,13 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import FileUtils from '../common/utils/FIleUtils';
+import { CommonUtils, DeviceUtils, FileUtils } from '../common/utils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
-import DeviceUtils from '../common/utils/DeviceUtils';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
+import { SyncSettingsService } from './store/SyncSettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -22,15 +22,19 @@ export class RecentFilesService {
   private static instance: RecentFilesService = new RecentFilesService();
   private static readonly PREFERENCES_NAME = 'recent_files';
   private static readonly RECENT_FILES_KEY = 'recent_files_list';
-  private static readonly MAX_RECENT_FILES = 10; // 最多保存10个最近打开的文件
-  private context: common.UIAbilityContext | null = null;
+  private static readonly MAX_RECENT_FILES = 30; // 最多保存10个最近打开的文件
+  private preferences: preferences.Preferences | null = null;
 
   /**
    * 初始化主题管理器
    * @param context UIAbilityContext
    */
-  public init(context: common.UIAbilityContext): void {
-    this.context = context;
+  public async init(context: common.UIAbilityContext): Promise<void> {
+    try {
+      this.preferences = preferences.getPreferencesSync(context, { name: RecentFilesService.PREFERENCES_NAME } as preferences.Options);
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `Failed to get preferences: ${(err as BusinessError).code}, ${(err as BusinessError).message}`);
+    }
   }
 
   /**
@@ -38,17 +42,6 @@ export class RecentFilesService {
    */
   public static getInstance(): RecentFilesService {
     return RecentFilesService.instance;
-  }
-
-  /**
-   * 获取首选项实例
-   */
-  private async getPreferences(): Promise<preferences.Preferences> {
-    if (this.context === null) {
-      hilog.error(DOMAIN, TAG, 'Context is null');
-      throw new Error('Context is null');
-    }
-    return await preferences.getPreferences(this.context, RecentFilesService.PREFERENCES_NAME);
   }
 
   /**
@@ -95,6 +88,10 @@ export class RecentFilesService {
   private async doAdd(recentFile: RecentFile): Promise<void> {
     try {
       hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s', recentFile.filePath);
+      if (!this.preferences) {
+        return;
+      }
+
       // 获取当前的最近文件列表
       const recentFiles = await this.getRecentFiles();
 
@@ -117,9 +114,11 @@ export class RecentFilesService {
       }
 
       // 保存更新后的列表
-      const prefs = await this.getPreferences();
-      await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles));
-      await prefs.flush();
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles));
+      await this.preferences.flush();
+
+      // 同步到远端设备
+      SyncSettingsService.syncRecentFiles(recentFiles);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Add recent file error: ${error}`);
       throw new Error(error);
@@ -131,9 +130,16 @@ export class RecentFilesService {
    */
   public async getRecentFiles(): Promise<RecentFile[]> {
     try {
-      const prefs = await this.getPreferences();
-      const recentFilesJson = await prefs.get(RecentFilesService.RECENT_FILES_KEY, '[]');
-      return JSON.parse(recentFilesJson.toString());
+      if (!this.preferences) {
+        return [];
+      }
+      const recentFilesJson = await this.preferences.get(RecentFilesService.RECENT_FILES_KEY, '[]');
+      let localFiles: RecentFile[] = JSON.parse(recentFilesJson.toString()) as RecentFile[];
+
+      // 总是尝试与远端数据合并
+      localFiles = await this.syncWithRemote(localFiles);
+
+      return localFiles;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Get all recent files error: ${error}`);
       return [];
@@ -169,10 +175,10 @@ export class RecentFilesService {
         // 递归调用，尝试加载下一个文件
         return await this.loadMostRecentFile();
       }
-
       return recentFile;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Load most recent file error: ${error}`);
+      CommonUtils.showToast(error?.message);
       return null;
     }
   }
@@ -190,11 +196,125 @@ export class RecentFilesService {
   }
 
   /**
+   * 与远端数据同步
+   * @param localFiles 本地文件列表
+   * @returns 同步后的文件列表
+   */
+  private async syncWithRemote(localFiles: RecentFile[]): Promise<RecentFile[]> {
+    try {
+      if (!SyncSettingsService.isSyncEnabled()) {
+        return localFiles;
+      }
+
+      // 确保同步服务已初始化
+      await SyncSettingsService.init();
+      const remoteFiles = await SyncSettingsService.getRemoteRecentFiles();
+      
+      if (remoteFiles && remoteFiles.length > 0) {
+        hilog.info(DOMAIN, TAG, `Found ${remoteFiles.length} remote recent files, merging with local`);
+        // 合并本地和远端文件列表
+        const mergedFiles = RecentFilesService.mergeRecentFileLists(localFiles, remoteFiles);
+        
+        // 如果有合并结果，保存到本地
+        if (mergedFiles.length > 0) {
+          await this.doAddMerged(mergedFiles);
+        }
+        
+        return mergedFiles;
+      }
+      
+      return localFiles;
+    } catch (syncError) {
+      hilog.warn(DOMAIN, TAG, `Failed to sync with remote: ${syncError}`);
+      return localFiles;
+    }
+  }
+
+  /**
+   * 合并最近文件列表
+   * @param localFiles 本地文件列表
+   * @param remoteFiles 远端文件列表
+   * @returns 合并后的文件列表
+   */
+  public static mergeRecentFileLists(localFiles: RecentFile[], remoteFiles: RecentFile[]): RecentFile[] {
+    const fileMap = new Map<string, RecentFile>();
+
+    // 添加本地文件（优先级更高）
+    localFiles.forEach(file => {
+      if (file.filePath) {
+        fileMap.set(file.filePath, file);
+      }
+    });
+
+    // 添加远端文件（如果不存在则添加）
+    remoteFiles.forEach(file => {
+      if (file.filePath && !fileMap.has(file.filePath)) {
+        fileMap.set(file.filePath, file);
+      }
+    });
+
+    // 转换为数组：先保留本地文件的顺序，然后添加远端独有的文件
+    const mergedFiles: RecentFile[] = [];
+    
+    // 首先添加本地文件，保持原有顺序
+    localFiles.forEach(file => {
+      if (file.filePath && fileMap.has(file.filePath)) {
+        mergedFiles.push(fileMap.get(file.filePath)!);
+        fileMap.delete(file.filePath); // 从map中删除，避免重复添加
+      }
+    });
+    
+    // 然后添加远端独有的文件
+    remoteFiles.forEach(file => {
+      if (file.filePath && fileMap.has(file.filePath)) {
+        mergedFiles.push(fileMap.get(file.filePath)!);
+      }
+    });
+
+    // 限制最大数量
+    if (mergedFiles.length > RecentFilesService.MAX_RECENT_FILES) {
+      return mergedFiles.slice(0, RecentFilesService.MAX_RECENT_FILES);
+    }
+
+    return mergedFiles;
+  }
+
+  /**
+   * 合并最近文件列表（用于同步）
+   * @param mergedFiles 合并后的文件列表
+   */
+  public async doAddMerged(mergedFiles: RecentFile[]): Promise<void> {
+    try {
+      if (!this.preferences) {
+        return;
+      }
+
+      // 创建副本并限制最大数量
+      let filesToSave = mergedFiles;
+      if (filesToSave.length > RecentFilesService.MAX_RECENT_FILES) {
+        filesToSave = filesToSave.slice(0, RecentFilesService.MAX_RECENT_FILES);
+      }
+
+      // 保存合并后的列表
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(filesToSave));
+      await this.preferences.flush();
+
+      hilog.info(DOMAIN, TAG, `Merged recent files, count: ${filesToSave.length}`);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Merge recent files error: ${error}`);
+      throw new Error(error);
+    }
+  }
+
+  /**
    * 移除最近打开的文件
    * @param filePath 文件路径
    */
   public async removeRecentFile(recentFile: RecentFile): Promise<void> {
     try {
+      if (!this.preferences) {
+        return;
+      }
       // 获取当前的最近文件列表
       const recentFiles = await this.getRecentFiles();
 
@@ -202,9 +322,13 @@ export class RecentFilesService {
       const updatedFiles = recentFiles.filter(file => file.filePath !== recentFile.filePath);
 
       // 保存更新后的列表
-      const prefs = await this.getPreferences();
-      await prefs.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
-      await prefs.flush();
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(updatedFiles));
+      await this.preferences.flush();
+
+      // 同步到远端设备
+      SyncSettingsService.syncRecentFiles(updatedFiles);
+
+      hilog.debug(DOMAIN, TAG, 'Remove recent file filePath:%{public}s', recentFile.filePath);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Remove recent file error: ${error}`);
       throw new Error(error);
@@ -216,9 +340,11 @@ export class RecentFilesService {
    */
   public async clearRecentFiles(): Promise<void> {
     try {
-      const prefs = await this.getPreferences();
-      await prefs.put(RecentFilesService.RECENT_FILES_KEY, '[]');
-      await prefs.flush();
+      if (!this.preferences) {
+        return;
+      }
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, '[]');
+      await this.preferences.flush();
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Clear Recent file error: ${error}`);
       throw new Error(error);

@@ -1,4 +1,4 @@
-import IconUtils from '../common/utils/IconUtils';
+import { IconUtils } from '../common/utils';
 import { IconResource } from '../services/TypeDefined';
 import { Kdbx } from 'kdbxweb';
 import { ImageAddComponent } from './ImageAddComponent';

@@ -1,4 +1,4 @@
-import ResourceUtils from '../../common/utils/ResourceUtils'
+import { ResourceUtils } from '../../common/utils'
 import { loadingDialogGlobalSettings } from './LoadingDialogGlobalSettings'
 import { LoadingSettings } from './LoadingSettings'
 import { PromptActionBean } from './PromptActionUtils'
@@ -39,16 +39,17 @@ struct LoadingDialogView {
   @Param state: LoadingState = LoadingState.LOADING
   @Param progress: number = 0
   private settings?: LoadingSettings
-  private iconState: LoadingState[] = [LoadingState.LOADING, LoadingState.SUCCESS, LoadingState.ERROR, LoadingState.INFO, LoadingState.WARN, LoadingState.PROGRESS];
+  private iconState: LoadingState[] =
+    [LoadingState.LOADING, LoadingState.SUCCESS, LoadingState.ERROR, LoadingState.INFO, LoadingState.WARN, LoadingState.PROGRESS];
 
   aboutToAppear(): void {
-    if(!ResourceUtils.isResourceStr(this.value)){
+    if (!ResourceUtils.isResourceStr(this.value)) {
       this.settings = this.value as LoadingSettings;
     }
   }
 
   @Computed
-  get msg(): ResourceStr{
+  get msg(): ResourceStr {
     if (ResourceUtils.isResourceStr(this.value)) {
       return this.value as ResourceStr;
     } else {
@@ -108,7 +109,7 @@ struct LoadingDialogView {
         }
 
         if (this.msg != '') {
-          if(this.iconState.includes(this.state)){
+          if (this.iconState.includes(this.state)) {
             Blank().width(10);
           }
           Text(this.msg)
@@ -122,7 +123,7 @@ struct LoadingDialogView {
         top: 10,
         bottom: 10
       })
-      .margin({bottom: '16%'})
+      .margin({ bottom: '16%' })
       .backgroundColor(this.settings?.backgroundColor ?? loadingDialogGlobalSettings.backgroundColor)
       .borderRadius(this.settings?.borderRadius ?? loadingDialogGlobalSettings.borderRadius)
       .shadow(ShadowStyle.OUTER_DEFAULT_MD)

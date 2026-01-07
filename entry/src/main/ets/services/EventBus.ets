@@ -7,9 +7,11 @@ const TAG = 'KdbxUtils';
 
 export class EventBus {
   // 数据库合并事件
-  static readonly DATABASE_RELOAD = "database_reload";
+  public static readonly DATABASE_RELOAD = "database_reload";
   // 数据库更新事件
-  static readonly DATABASE_UPDATE = "database_update";
+  public static readonly DATABASE_UPDATE = "database_update";
+  // KV 数据变更事件
+  public static readonly KV_DATA_CHANGE = "kv_data_change";
 
   // 发送事件
   static emit<T>(event: string, data?: T) {

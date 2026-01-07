@@ -417,6 +417,10 @@
       "value": "WebDAV"
     },
     {
+      "name": "ftp_button_title",
+      "value": "FTP/SFTP"
+    },
+    {
       "name": "dialog_confirm_title",
       "value": "Confirm deletion"
     },
@@ -731,6 +735,50 @@
     {
       "name": "webdav_not_init",
       "value": "WebDAV not initialized"
+    },
+    {
+      "name": "ftp_not_init",
+      "value": "FTP/SFTP not initialized"
+    },
+    {
+      "name": "ftp_host",
+      "value": "Server Address"
+    },
+    {
+      "name": "ftp_host_placeholder",
+      "value": "Please enter server address"
+    },
+    {
+      "name": "ftp_host_empty",
+      "value": "Server address cannot be empty"
+    },
+    {
+      "name": "ftp_port",
+      "value": "Port"
+    },
+    {
+      "name": "ftp_port_invalid",
+      "value": "Invalid port number"
+    },
+    {
+      "name": "ftp_root_path",
+      "value": "Root Path"
+    },
+    {
+      "name": "ftp_secure",
+      "value": "Use FTPS (FTP over TLS)"
+    },
+    {
+      "name": "ftp_username_empty",
+      "value": "Username cannot be empty"
+    },
+    {
+      "name": "ftp_password_empty",
+      "value": "Password cannot be empty"
+    },
+    {
+      "name": "testing",
+      "value": "Testing..."
     },
     {
       "name": "merging_database",
@@ -1245,6 +1293,10 @@
       "value": "Save the file to the WebDAV service"
     },
     {
+      "name": "location_ftp_desc_save",
+      "value": "Save the file to the FTP/SFTP server"
+    },
+    {
       "name": "location_title_select",
       "value": "Please select the file"
     },
@@ -1255,6 +1307,10 @@
     {
       "name": "location_webdav_desc_select",
       "value": "Select a files from WebDAV"
+    },
+    {
+      "name": "location_ftp_desc_select",
+      "value": "Select a file from FTP/SFTP server"
     },
     {
       "name": "Settings_sort_size",
@@ -1451,6 +1507,126 @@
     {
       "name": "Settings_database_not_value",
       "value": "Please enter the required fields"
+    },
+    {
+      "name": "about_check_update",
+      "value": "Check for updates"
+    },
+    {
+      "name": "About_app_later_version_not_exist",
+      "value": "Already the latest version"
+    },
+    {
+      "name": "application_sync_data",
+      "value": "Cross-device synchronous Settings"
+    },
+    {
+      "name": "application_sync_data_tips",
+      "value": "For the same Huawei account, there is no need to synchronize application configuration information between devices"
+    },
+    {
+      "name": "Permission_DISTRIBUTED_DATASYNC_reason",
+      "value": "Synchronize user preferences across devices"
+    },
+    {
+      "name": "application_manual_sync",
+      "value": "Manual sync"
+    },
+    {
+      "name": "application_manual_sync_tips",
+      "value": "Manually trigger a full data synchronization"
+    },
+    {
+      "name": "application_sync_button",
+      "value": "Sync"
+    },
+    {
+      "name": "application_sync_loading",
+      "value": "Syncing data..."
+    },
+    {
+      "name": "application_sync_complete",
+      "value": "Sync completed"
+    },
+    {
+      "name": "application_holding_hand",
+      "value": "Enable the smart grip posture"
+    },
+    {
+      "name": "application_holding_hand_tips",
+      "value": "When enabled, the button on the home page will automatically adjust its position according to the grip posture"
+    },
+    {
+      "name": "security_privacy_window",
+      "value": "Enable the privacy window"
+    },
+    {
+      "name": "security_privacy_window_tips",
+      "value": "Enabling the window will prohibit screenshots and screen recording"
+    },
+    {
+      "name": "ftp_protocol",
+      "value": "Protocol"
+    },
+    {
+      "name": "ftp_secure_type_none",
+      "value": "Unencrypted(FTP)"
+    },
+    {
+      "name": "ftp_secure_type_explicit",
+      "value": "Explicit encryption(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "ftp_secure_type_implicit",
+      "value": "Implicit encryption(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "onedrive_authenticating",
+      "value": "Authenticating..."
+    },
+    {
+      "name": "onedrive_authentication_successful",
+      "value": "Authentication successful"
+    },
+    {
+      "name": "onedrive_login_successful",
+      "value": "Login successful"
+    },
+    {
+      "name": "onedrive_authentication_failed",
+      "value": "Authentication failed"
+    },
+    {
+      "name": "onedrive_logged_in",
+      "value": "Logged in"
+    },
+    {
+      "name": "onedrive_logout",
+      "value": "Logout"
+    },
+    {
+      "name": "onedrive_login_prompt",
+      "value": "Please sign in to your OneDrive account to access your files"
+    },
+    {
+      "name": "onedrive_login_button",
+      "value": "Sign in to OneDrive"
+    },
+    {
+      "name": "confirm_remove_record_tips",
+      "value": "Should this record be removed?"
+    },
+    {
+      "name": "confirm_clear_all_records_tips",
+      "value": "Are you sure you want to clear all records?"
+    },
+    {
+      "name": "onedrive_select_file",
+      "value": "Select a file from OneDrive"
+    },
+    {
+      "name": "onedrive_save_file",
+      "value": "Save the file to OneDrive"
     }
   ]
 }
