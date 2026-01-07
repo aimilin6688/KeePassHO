@@ -98,7 +98,7 @@ struct ChangePassword {
     DataService.saveKey((locationInfo: LocationInfo) => {
       this.keyLocation = locationInfo;
       this.keyFileName = locationInfo.fileName;
-      this.promptAction.showToast({ message: $r("app.string.save_success") });
+      CommonUtils.showToast({ message: $r("app.string.save_success") });
       this.router.back({ url: 'pages/ChangePassword' });
     }, (error) => {
       this.router.back();

@@ -1,6 +1,6 @@
 import { Router } from '@kit.ArkUI';
 import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
-import { KdbxUtils } from '../../common/utils';
+import { CommonUtils, KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -55,12 +55,12 @@ struct SettingDatabaseKeyFunction {
   // 重新加密算法
   private saveAlgoParams() {
     if (!this.isDatabaseValid) {
-      this.promptAction.showToast({ message: $r("app.string.database_not_opened") });
+      CommonUtils.showToast({ message: $r("app.string.database_not_opened") });
       return;
     }
     if (!((this.isArgon2() && this.iteration && this.memory && this.parallelism) || (this.isAes() && this.rounds))) {
       hilog.debug(DOMAIN, TAG, `algoType: ${this.algoType}, iteration: ${this.iteration}, memory: ${this.memory}, parallelism: ${this.parallelism}`);
-      this.promptAction.showToast({ message: $r("app.string.Settings_database_not_value") });
+      CommonUtils.showToast({ message: $r("app.string.Settings_database_not_value") });
       return;
     }
     try {
@@ -83,7 +83,7 @@ struct SettingDatabaseKeyFunction {
     } catch (error) {
       const errorMsg = KdbxUtils.kdbxErrorMessage(error);
       hilog.error(DOMAIN, TAG, 'Failed to save database algo: %{public}s', errorMsg);
-      this.promptAction.showToast({ message: errorMsg, duration: 2000 });
+      CommonUtils.showToast({ message: errorMsg, duration: 2000 });
     }
   }
 

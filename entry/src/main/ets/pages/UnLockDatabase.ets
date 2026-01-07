@@ -53,7 +53,7 @@ struct UnLockDatabase {
 
   private quickUnlock() {
     if (!this.quickPassword) {
-      this.promptAction.showToast({ message: $r('app.string.password_placeholder') });
+      CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
       return
     }
     let password = this.dbFileParam.password;
@@ -62,19 +62,19 @@ struct UnLockDatabase {
       if (password.lastIndexOf(this.quickPassword) != -1) {
         return CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       } else {
-        this.promptAction.showToast({ message: $r('app.string.password_error') });
+        CommonUtils.showToast({ message: $r('app.string.password_error') });
         return;
       }
     }
     // 密码长度 > 快速解锁密码要求长度
     if (this.quickPassword.length < this.quickLockPasswordLength) {
-      this.promptAction.showToast({ message: $r('app.string.password_length_error') });
+      CommonUtils.showToast({ message: $r('app.string.password_length_error') });
       return;
     }
     if (password.lastIndexOf(this.quickPassword) != -1) {
       return CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
     } else {
-      this.promptAction.showToast({ message: $r('app.string.password_error') });
+      CommonUtils.showToast({ message: $r('app.string.password_error') });
       return;
     }
   }

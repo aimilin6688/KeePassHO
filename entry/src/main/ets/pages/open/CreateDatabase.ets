@@ -42,17 +42,17 @@ struct CreateDatabase {
 
   private async createDatabase() {
     if (this.databaseName.length === 0) {
-      this.promptAction.showToast({ message: $r("app.string.database_name_placeholder") });
+      CommonUtils.showToast({ message: $r("app.string.database_name_placeholder") });
       return;
     }
 
     if (this.password.length === 0) {
-      this.promptAction.showToast({ message: $r('app.string.password_placeholder') });
+      CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
       return;
     }
 
     if (this.password !== this.confirmPassword) {
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_password_mismatch') });
+      CommonUtils.showToast({ message: $r('app.string.CreateDatabase_password_mismatch') });
       return;
     }
 
@@ -89,7 +89,7 @@ struct CreateDatabase {
       CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`);
-      this.promptAction.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
+      CommonUtils.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
     } finally {
       this.isCreating = false;
     }

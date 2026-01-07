@@ -134,7 +134,7 @@ struct EntryEdit {
     const routeParams = this.router.getParams() as EntryParam;
 
     if (!this.database) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r("app.string.invalid_database"),
         duration: 2000
       });
@@ -146,7 +146,7 @@ struct EntryEdit {
     if (routeParams.groupId) {
       this.parentGroup = this.database.getGroup(routeParams.groupId);
       if (!this.parentGroup) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r("app.string.invalid_group"),
           duration: 2000
         });
@@ -167,7 +167,7 @@ struct EntryEdit {
       this.entry = KdbxUtils.getEntry(this.database, routeParams.groupId, routeParams.entryId);
 
       if (!this.entry) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.invalid_entry_message'),
           duration: 2000
         });
@@ -276,7 +276,7 @@ struct EntryEdit {
    */
   private saveEntry() {
     if (!this.database || !this.parentGroup) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.EntryEdit_invalid_db_or_group'),
         duration: 2000
       });
@@ -284,7 +284,7 @@ struct EntryEdit {
     }
 
     if (!this.title.trim()) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.title_required_message'),
         duration: 2000
       });
@@ -340,7 +340,7 @@ struct EntryEdit {
       this.saveDatabase();
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save entry: ${error}`);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.save_entry_failed_message', error.message),
         duration: 2000
       });
@@ -498,7 +498,7 @@ struct EntryEdit {
       // 更新字段
       if (this.editingFieldIndex >= 0 && this.editingFieldIndex < this.customFields.length) {
         if (this.checkCustomField(customField.key)) {
-          this.promptAction.showToast({
+          CommonUtils.showToast({
             message: $r("app.string.field_name_exists"),
             duration: 2000
           });
@@ -522,7 +522,7 @@ struct EntryEdit {
       // 检查字段名称是否已存在
       const existingField = this.customFields.find(field => field.key === customField.key);
       if (existingField) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r("app.string.field_name_exists"),
           duration: 2000
         });
@@ -716,7 +716,7 @@ struct EntryEdit {
       }
       this.isModified = true;
     }).catch((error: Error) => {
-      this.promptAction.showToast({ message: error.message })
+      CommonUtils.showToast({ message: error.message })
     });
   }
 
