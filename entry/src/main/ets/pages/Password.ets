@@ -467,7 +467,7 @@ struct Password {
         // 密码输入框
         Row() {
           TextInput({ placeholder: $r('app.string.password_placeholder') })
-            .key("passwordInput")
+            .id("passwordInput")
             .type(this.showPassword ? InputType.Normal : InputType.Password)
             .placeholderColor($r('app.color.text_secondary'))
             .placeholderFont({ size: 16 })

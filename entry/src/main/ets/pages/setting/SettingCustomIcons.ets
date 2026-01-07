@@ -141,7 +141,7 @@ struct SettingCustomIcons {
                   .objectFit(ImageFit.Contain)
 
                 Checkbox({ name: 'check_' + icon.id, group: 'icon_group' })
-                  .key('key_' + icon.id)
+                  .id('key_' + icon.id)
                   .select(this.selectIcons.has(icon.id))
                   .selectedColor($r('app.color.button_bg_blue'))
                   .shape(CheckBoxShape.CIRCLE)
