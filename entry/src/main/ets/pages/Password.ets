@@ -377,10 +377,10 @@ struct Password {
     if (this.isFingerprintSupport || this.isFaceSupport) {
       CryptoUtils.encryptText(this.password).then(result => {
         recentFile.password = result;
-        RecentFilesService.getInstance().addRecentFile(recentFile);
+        RecentFilesService.addRecentFile(recentFile);
       });
     } else {
-      RecentFilesService.getInstance().addRecentFile(recentFile);
+      RecentFilesService.addRecentFile(recentFile);
     }
   }
 
