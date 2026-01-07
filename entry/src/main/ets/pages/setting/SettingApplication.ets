@@ -2,6 +2,8 @@ import { SettingsService } from '../../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import { SupportService } from '../../services/SupportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
+import { SyncSettingsService } from '../../services/store/SyncSettingsService';
+import { CommonUtils } from '../../common/utils';
 
 
 @Entry
@@ -9,6 +11,8 @@ import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
+  @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
+  @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -22,7 +26,12 @@ struct SettingApplication {
     this.settingsService.get(SettingsService.KEY_SHOW_SUPPORT_DIALOG, SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT).then(result => {
       this.isHideSupportDialog = !result;
     });
+    // 是否开启跨设备同步数据
+    this.isSyncSetting = this.settingsService.getSync(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT);
+    // 是否限制打开数据库后缀
     this.isLimitDbExt = this.settingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT);
+    // 智感握姿
+    this.isHoldingHand = this.settingsService.getSync(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT);
   }
 
   // 隐藏支持弹框
@@ -36,7 +45,7 @@ struct SettingApplication {
             this.isHideSupportDialog = true;
             SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
           } else {
-            LoadingDialog.showToast($r('app.string.application_hide_support_tips'));
+            CommonUtils.showToast($r('app.string.application_hide_support_tips'));
             this.isHideSupportDialog = false;
           }
           LoadingDialog.hideLoading();
@@ -98,7 +107,7 @@ struct SettingApplication {
             .padding(16)
           }
 
-          // 隐藏支持对话框
+          // 限制打开数据库后缀
           ListItem() {
             Row() {
               Column() {
@@ -121,6 +130,77 @@ struct SettingApplication {
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_APP_LIMIT_DB_EXT, isOn);
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 跨设备同步数据
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_sync_data"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_sync_data_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+
+              Toggle({ type: ToggleType.Switch, isOn: this.isSyncSetting })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, isOn);
+                  this.isSyncSetting = isOn;
+                  // 开启同步时，触发全量同步
+                  if (this.isSyncSetting) {
+                    LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
+                      SyncSettingsService.triggerFullSync().then(() => {
+                        LoadingDialog.hideLoading();
+                        CommonUtils.showToast($r("app.string.application_sync_complete"));
+                      }).catch((error: Error) => {
+                        LoadingDialog.hideLoading();
+                        CommonUtils.showToast(error.message);
+                      });
+                    });
+                  }
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 启用智感握姿
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_holding_hand"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_holding_hand_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+              Toggle({ type: ToggleType.Switch, isOn: this.isHoldingHand })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.isHoldingHand = isOn;
+                  this.settingsService.put(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, isOn);
                 })
             }
             .width('100%')

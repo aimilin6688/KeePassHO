@@ -18,7 +18,29 @@
         "reason": "$string:Permission_FILE_ACCESS_PERSIST_reason"
       },
       {
+        "name": "ohos.permission.GET_NETWORK_INFO"
+      },
+      {
         "name": "ohos.permission.ACCESS_BIOMETRIC"
+      },
+      {
+        "name": "ohos.permission.STORE_PERSISTENT_DATA"
+      },
+      {
+        "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+        "reason": "$string:Permission_DISTRIBUTED_DATASYNC_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.DETECT_GESTURE"
+      },
+      {
+        "name": "ohos.permission.PRIVACY_WINDOW"
       }
     ],
     "deliveryWithInstall": true,
@@ -47,6 +69,17 @@
                 "scheme": "file",
                 "type": "com.aimilin.keepassho.kdbx",
                 "linkFeature": "FileOpen"
+              }
+            ]
+          },
+          {
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "keepassho",
+                "host": "aimilin.com"
               }
             ]
           }

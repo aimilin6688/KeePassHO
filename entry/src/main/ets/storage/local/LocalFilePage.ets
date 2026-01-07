@@ -3,11 +3,10 @@ import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType, LocalFileStorageConfig } from '..';
 import { PromptAction, Router } from '@kit.ArkUI';
-import FileUtils from '../../common/utils/FIleUtils';
+import { FileUtils, FilenameUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { LocationParam } from '../../services/beans/LocationParam';
-import { FilenameUtils } from '../../common/utils/FilenameUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';

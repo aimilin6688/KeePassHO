@@ -1,7 +1,7 @@
 import { pasteboard } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { SettingsService } from '../../services/SettingsService';
-import { CommonUtils } from './CommonUtils';
+import { CommonUtils } from '.';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';

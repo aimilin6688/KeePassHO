@@ -1,8 +1,7 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Constants } from '../../common/constants/Constants';
-import KdbxUtils from '../../common/utils/KdbxUtils';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
@@ -87,10 +86,14 @@ export default class KdbxSaveService {
 
     // 注册onerror回调，当Worker线程发生异常时被调用，在宿主线程执行
     KdbxSaveService.databaseWorker.onAllErrors = (err: ErrorEvent) => {
-      hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', err.message);
-      if (err.message.indexOf('NativeCustomSpan') != -1) {
+      // 忽略NativeCustomSpan和ViewV2错误
+      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1){
+        hilog.debug(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
         return;
       }
+
+      // 打印错误日志
+      hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', err.message);
       if (callback && callback.onError) {
         callback.onError(err.message);
       }

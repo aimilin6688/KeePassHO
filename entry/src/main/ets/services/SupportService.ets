@@ -1,7 +1,6 @@
-import DateUtils, { DateUnit } from '../common/utils/DateUtils';
+import { DateUnit, DateUtils, CommonUtils } from '../common/utils';
 import { SettingsService } from './SettingsService';
 import { promptAction } from '@kit.ArkUI';
-import { CommonUtils } from '../common/utils/CommonUtils';
 import { iap } from '@kit.IAPKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';

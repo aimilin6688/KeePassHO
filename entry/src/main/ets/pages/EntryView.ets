@@ -1,12 +1,12 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { KdbxUtils, DateUtils, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
-import DateUtils from '../common/utils/DateUtils';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
+import { common } from '@kit.AbilityKit';
 
 
 const DOMAIN = 0xFF00;
@@ -44,6 +44,7 @@ struct EntryView {
   onPageShow(): void {
     // 加载数据库和条目
     this.loadEntry();
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   /**
@@ -133,7 +134,9 @@ struct EntryView {
     // 字段排序
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
-      const commonFields = [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,KdbxUtils.FIELD_OVERRIDE_URL];
+      const commonFields =
+        [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
+          KdbxUtils.FIELD_OVERRIDE_URL];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);
 
