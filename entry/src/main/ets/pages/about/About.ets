@@ -1,9 +1,10 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager } from '../../common/utils';
 import { bundleManager, common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ClipboardUtils } from '../../common/utils/ClipboardUtils';
+import { updateManager } from '@kit.AppGalleryKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'About';
@@ -102,6 +103,33 @@ struct About {
    */
   private contactAuthor() {
     ClipboardUtils.copy(this.authEmail);
+  }
+
+  /**
+   * 检查更新
+   */
+  private checkUpdate() {
+    try {
+      updateManager.checkAppUpdate(this.context).then((checkResult: updateManager.CheckUpdateResult) => {
+        hilog.info(DOMAIN, 'TAG', "Succeeded in checking Result updateAvailable:" + checkResult.updateAvailable);
+        // 检查到新版本
+        if (updateManager.UpdateAvailableCode.LATER_VERSION_EXIST == checkResult.updateAvailable) {
+          updateManager.showUpdateDialog(this.context).catch((error: BusinessError) => {
+            hilog.error(DOMAIN, 'TAG', "Failed to show update dialog. Error code: " + error.code + ", message: " + error.message);
+          });
+        } else {
+          this.promptAction.showToast({ message: $r('app.string.About_app_later_version_not_exist') });
+        }
+      }).catch((error: BusinessError) => {
+        hilog.error(DOMAIN, 'TAG', "Failed to check update. Error code: " + error.code + ", message: " + error.message);
+        this.promptAction.showToast({ message: error?.message });
+      });
+    } catch (error) {
+      hilog.error(DOMAIN, 'TAG', "An unexpected error occurred. Error code: " + error.code + ", message: " + error.message);
+      if (error?.message) {
+        this.promptAction.showToast({ message: error?.message });
+      }
+    }
   }
 
   build() {
@@ -242,6 +270,24 @@ struct About {
                 }
                 .onClick(() => {
                   this.goSourceCode();
+                })
+                .width('100%')
+                .padding(16)
+              }
+
+              // 检查更新
+              ListItem() {
+                Row() {
+                  Text($r("app.string.about_check_update"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .onClick(() => {
+                  this.checkUpdate();
                 })
                 .width('100%')
                 .padding(16)

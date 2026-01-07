@@ -1,8 +1,8 @@
 import { FileInfo, FileType, IFileStorage, PageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
-import ResourceManager from '../../common/utils/ResourceManager';
-import { StorageError, StorageErrorCodes } from '../../services/error/StorageError';
+import { ResourceManager } from '../../common/utils'
+import { StorageError, StorageErrorCodes } from '../StorageError';
 import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;
@@ -42,7 +42,7 @@ export class WebDAVStorage implements IFileStorage {
       return config;
     }
     config = config as WebDAVStorageConfig;
-    return new WebDAVStorageConfig(config.url, config.username, config.password, { rootPath: config.rootPath, timeout: config.timeout }, true);
+    return new WebDAVStorageConfig(config.url, config.username, config.password, { rootPath: config.rootPath, timeout: config.timeout });
   }
 
   /**

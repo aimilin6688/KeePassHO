@@ -17,12 +17,15 @@
     "pages/TotpView",
     "pages/about/About",
     "pages/about/Support",
-    "pages/open/SelectLocation",
-    "storage/local/LocalFilePage",
-    "storage/webdav/WebDAVPage",
-    "pages/open/CreateDatabase",
     "pages/UnLockDatabase",
     "pages/ChangePassword",
-    "pages/open/FileList"
+    "pages/open/SelectLocation",
+    "pages/open/FileList",
+    "pages/open/CreateDatabase",
+    "storage/local/LocalFilePage",
+    "storage/webdav/WebDAVPage",
+    "storage/onedrive/OneDrivePage",
+    "storage/ftp/FTPPage",
+    "pages/OAuth2Login"
   ]
 }

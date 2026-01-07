@@ -1,7 +1,5 @@
-import { ImagePickerUtils } from '../common/utils/ImagePickerUtils';
 import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
-import { CommonUtils } from '../common/utils/CommonUtils';
+import { KdbxUtils, ImagePickerUtils, CommonUtils } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DownloadImageDialog } from './DownloadImageDialog';
 import { common } from '@kit.AbilityKit';

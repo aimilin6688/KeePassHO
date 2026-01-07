@@ -1,5 +1,5 @@
 import { CommonUtils } from '../../common/utils/CommonUtils';
-import DateUtils from '../../common/utils/DateUtils';
+import { DateUtils } from '../../common/utils/DateUtils';
 import { StorageConfig, StorageType } from '../../storage';
 
 /**
@@ -117,7 +117,8 @@ export class LocationParam implements LocationInterface {
    * @return LocationParam
    */
   public static of(locationInterface: LocationInterface): LocationParam {
-    LocationParam.instance = new LocationParam(locationInterface.mode, locationInterface.fileSuffix, locationInterface.fileName, locationInterface.onLocation);
+    LocationParam.instance =
+      new LocationParam(locationInterface.mode, locationInterface.fileSuffix, locationInterface.fileName, locationInterface.onLocation);
     return LocationParam.instance;
   }
 

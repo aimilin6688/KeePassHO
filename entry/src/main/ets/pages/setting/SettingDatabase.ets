@@ -1,8 +1,7 @@
 import { Router } from '@kit.ArkUI';
 import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
-import KdbxUtils from '../../common/utils/KdbxUtils';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { KdbxImportService } from '../../services/kdbx/KdbxImportService';
@@ -22,13 +21,11 @@ struct SettingsDatabase {
     { value: $r('app.string.export_type_xml'), type: ExportType.XML },
     { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
   ];
-
   // 数据库导入类型
   private importTypeOptions: Array<ExportTypeOptions> = [
     { value: $r('app.string.export_type_xml'), type: ExportType.XML },
     { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
   ];
-
   // 加密算法
   private algorithmOptions: Array<AlgorithmOptions> = [
     { value: $r('app.string.Settings_database_algorithm_aes'), type: CipherId.Aes },
@@ -322,7 +319,7 @@ struct SettingsDatabase {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
 
