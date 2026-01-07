@@ -2,25 +2,25 @@ import { AddGroupDialog } from '../components/AddGroupDialog';
 import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
+import { motion } from '@kit.MultimodalAwarenessKit';
 
-import ThemeManager from '../common/utils/ThemeManager';
+import { DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
-import KdbxUtils from '../common/utils/KdbxUtils';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
 import { SupportService } from '../services/SupportService';
-import DateUtils from '../common/utils/DateUtils';
 import { EventBus } from '../services/EventBus';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
-import ResourceManager from '../common/utils/ResourceManager';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { emitter } from '@kit.BasicServicesKit';
+import display from '@ohos.display';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -47,9 +47,23 @@ struct DatabaseView {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State isShowSearchHistory: boolean = SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT;
+  @State isHoldingHandEnable: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
   @State headerHeight: number = 56;
+  // 拖拽组件
+  @StorageLink("containerX") containerX: number = 0; // 容器X坐标
+  @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
+  @State isDragging: boolean = false; // 是否正在拖拽
+  private screenWidth: number = 360; // 屏幕宽度（默认值）
+  private screenHeight: number = 640; // 屏幕高度（默认值）
+  private maxX: number = 0; // 可移动x轴最大值
+  private maxY: number = 0; // 可移动y轴最大值
+  private containerWidth: number = 75; // 容器宽度
+  private containerHeight: number = 135; // 容器高度
+  private oldContainerX: number = 0; // 容器X坐标
+  private oldContainerY: number = 0; // 容器Y坐标
+  // 其他参数
   private database: Kdbx | null = null;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
@@ -75,17 +89,16 @@ struct DatabaseView {
     customStyle: true,
     autoCancel: true
   })
-
   /**
    *  数据库重载事件
    */
-  onDatabaseReload : Callback<emitter.EventData> = (eventData:emitter.EventData)=>{
+  onDatabaseReload: Callback<emitter.EventData> = (eventData: emitter.EventData) => {
     this.reloadDatabase();
   }
   /**
    * 数据库更新事件
    */
-  onDatabaseUpdate : Callback<emitter.EventData> = (eventData:emitter.EventData)=>{
+  onDatabaseUpdate: Callback<emitter.EventData> = (eventData: emitter.EventData) => {
     hilog.debug(DOMAIN, TAG, 'Receive database update event');
     this.updateUI();
   }
@@ -106,6 +119,8 @@ struct DatabaseView {
     this.settingsService.registerObserver(this.onSettingChanged);
     // 显示支持弹框
     SupportService.showSupportDialog(this.getUIContext());
+    // 初始化屏幕大小
+    this.initScreenSize();
   }
 
   aboutToDisappear() {
@@ -115,10 +130,73 @@ struct DatabaseView {
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     // 移除配置监听器
     this.settingsService.unregisterObserver(this.onSettingChanged);
+    this.unBindHoldingHandChange();
   }
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+  }
+
+  /**
+   * 初始化屏幕大小
+   */
+  private initScreenSize() {
+    try {
+      // 获取屏幕尺寸
+      this.screenWidth = this.getUIContext().px2vp(display.getDefaultDisplaySync().width);
+      this.screenHeight = this.getUIContext().px2vp(display.getDefaultDisplaySync().height);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${error?.code}, ${error?.message}`,);
+    }
+    this.maxX = this.screenWidth - this.containerWidth;
+    this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
+
+    // 第一次初始化执行一次
+    if (this.containerX == 0) {
+      this.containerX = this.maxX - 22;
+      this.containerY = this.maxY - 32;
+    }
+    this.onHoldingHandChange();
+  }
+
+  /**
+   * 订阅握持手感知
+   */
+  private onHoldingHandChange() {
+    //订阅握持手感知
+    try {
+      if (!this.isHoldingHandEnable) {
+        return;
+      }
+      if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
+        motion.on('holdingHandChanged', (status: motion.HoldingHandStatus) => {
+          // 检测到左手
+          if (motion.HoldingHandStatus.LEFT_HAND_HELD == status) {
+            this.containerX = 0 + 22;
+          }
+          // 检测到右手
+          else if (motion.HoldingHandStatus.RIGHT_HAND_HELD == status) {
+            this.containerX = this.maxX - 22;
+          }
+        });
+      }
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `订阅握持手感知失败: ${err?.code}, ${err?.message}`);
+    }
+  }
+
+  /**
+   * 取消订阅握持手感知
+   */
+  private unBindHoldingHandChange() {
+    try {
+      if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
+        motion.off('holdingHandChanged');
+      }
+    } catch (error) {
+      hilog.info(DOMAIN, TAG, `取消订阅握持手感知失败: ${error?.code}, ${error?.message}`);
+    }
   }
 
   /**
@@ -143,8 +221,15 @@ struct DatabaseView {
       this.isListShowTotp = result;
     });
     // 搜索历史改变
-    this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT).then(result => {
-      this.isShowSearchHistory = result;
+    this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT)
+      .then(result => {
+        this.isShowSearchHistory = result;
+      });
+    // 智感握姿
+    this.settingsService.get(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT).then(result => {
+      this.isHoldingHandEnable = result;
+      this.unBindHoldingHandChange();
+      this.onHoldingHandChange();
     });
   }
 
@@ -498,7 +583,7 @@ struct DatabaseView {
     // 延迟一帧后重新加载数据，确保UI更新
     setTimeout(() => {
       // 重新更新当前分组
-      if(this.currentGroup){
+      if (this.currentGroup) {
         this.currentGroup = this.database?.getGroup(this.currentGroup.uuid);
       }
       // 获取分组和条目
@@ -604,7 +689,7 @@ struct DatabaseView {
    * 获取搜索历史
    */
   private loadSearchHistory() {
-    if(this.isShowSearchHistory){
+    if (this.isShowSearchHistory) {
       RecentFilesService.getSearchHistory(this.filePath).then(history => {
         this.searchHistory = history;
       });
@@ -1028,70 +1113,69 @@ struct DatabaseView {
         .width('100%')
         .height('100%')
         .onClick(() => {
-          if (this.showAddButtons) {
-            this.showAddButtons = false;
-          }
+          this.showAddButtons = false;
         })
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
 
-      // 添加分组按钮
-      Button() {
-        Row() {
-          Image($r('app.media.ic_folder'))
-            .width(20)
-            .height(20)
-            .fillColor($r('app.color.button_text_blue'))
-          Text($r('app.string.add_group_button'))
-            .fontSize(14)
-            .fontColor($r('app.color.button_text_blue'))
-            .margin({ left: 8 })
-        }
-      }
-      .width(120)
-      .height(40)
-      .borderRadius(20)
-      .backgroundColor($r("app.color.button_bg_blue"))
-      .position({ right: 12, bottom: 72 })
-      .enabled(!this.isLoading)
-      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-      .onClick(() => {
-        this.showAddButtons = false;
-        this.editingGroupIndex = -1;
-        this.newGroupName = "";
-        this.dialogController.open();
-      })
-
-      // 添加条目按钮
-      Button() {
-        Row() {
-          Image($r('app.media.ic_file'))
-            .width(20)
-            .height(20)
-            .fillColor($r("app.color.button_text_blue"))
-          Text($r('app.string.add_entry_button'))
-            .fontSize(14)
-            .fontColor($r("app.color.button_text_blue"))
-            .margin({ left: 8 })
-        }
-      }
-      .width(120)
-      .height(40)
-      .borderRadius(20)
-      .backgroundColor($r("app.color.button_bg_blue"))
-      .position({ right: 12, bottom: 120 })
-      .enabled(!this.isLoading)
-      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-      .onClick(() => {
-        this.showAddButtons = false;
-        this.router.pushUrl({
-          url: 'pages/EntryEdit',
-          params: {
-            groupId: this.currentGroup?.uuid.id
+      // 可以拖拽的控制按钮
+      Column() {
+        // 添加分组按钮
+        Button() {
+          Row() {
+            Image($r('app.media.ic_folder'))
+              .width(20)
+              .height(20)
+              .fillColor($r('app.color.button_text_blue'))
+            Text($r('app.string.add_group_button'))
+              .fontSize(14)
+              .fontColor($r('app.color.button_text_blue'))
+              .margin({ left: 8 })
           }
-        });
-      })
+        }
+        .width(120)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 12 })
+        .enabled(!this.isLoading)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+          this.editingGroupIndex = -1;
+          this.newGroupName = "";
+          this.dialogController.open();
+        })
 
-      if (!(this.showAddButtons || this.moveParam)) {
+        // 添加条目按钮
+        Button() {
+          Row() {
+            Image($r('app.media.ic_file'))
+              .width(20)
+              .height(20)
+              .fillColor($r("app.color.button_text_blue"))
+            Text($r('app.string.add_entry_button'))
+              .fontSize(14)
+              .fontColor($r("app.color.button_text_blue"))
+              .margin({ left: 8 })
+          }
+        }
+        .width(120)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 4 })
+        .enabled(!this.isLoading)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+          this.router.pushUrl({
+            url: 'pages/EntryEdit',
+            params: {
+              groupId: this.currentGroup?.uuid.id
+            }
+          });
+        })
+
         // 显示TOTP
         Button() {
           Image($r('app.media.ic_clock'))
@@ -1103,9 +1187,10 @@ struct DatabaseView {
         .height(56)
         .borderRadius(28)
         .backgroundColor($r("app.color.button_bg_blue"))
-        .position({ right: 12, bottom: 80 })
+        .margin({ bottom: 8, top: 8 })
         .enabled(!this.isLoading)
         .opacity(this.isLoading ? 0.5 : 1)
+        .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
           this.router.pushUrl({ url: 'pages/TotpView' });
         })
@@ -1121,13 +1206,41 @@ struct DatabaseView {
         .height(56)
         .borderRadius(28)
         .backgroundColor($r("app.color.button_bg_blue"))
-        .position({ right: 12, bottom: 12 })
         .enabled(!this.isLoading)
         .opacity(this.isLoading ? 0.5 : 1)
+        .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
           this.showAddButtons = true;
         })
       }
+      .width(this.containerWidth)
+      .height(this.containerHeight)
+      .visibility(this.moveParam ? Visibility.None : Visibility.Visible)
+      .zIndex(999)
+      .gesture(
+        // 拖拽手势
+        PanGesture({ fingers: 1, direction: PanDirection.All })
+          .onActionStart(() => {
+            this.isDragging = true;
+            this.oldContainerX = this.containerX;
+            this.oldContainerY = this.containerY;
+          })
+          .onActionUpdate((event: GestureEvent) => {
+            // 计算新位置
+            if (this.isDragging) {
+              this.containerX = Math.max(0, Math.min(this.oldContainerX + event.offsetX, this.maxX));
+              this.containerY = Math.max(0, Math.min(this.oldContainerY + event.offsetY, this.maxY));
+            }
+          })
+          .onActionEnd(() => {
+            this.isDragging = false;
+          })
+      )
+      .position({ x: this.containerX, y: this.containerY })
+      .animation({
+        duration: 200,
+        curve: Curve.EaseInOut
+      })
 
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {

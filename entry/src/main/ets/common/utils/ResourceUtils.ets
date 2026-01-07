@@ -1,4 +1,4 @@
-export default class ResourceUtils {
+export class ResourceUtils {
   /**
    * 判断是否是ResourceStr
    * @param resource

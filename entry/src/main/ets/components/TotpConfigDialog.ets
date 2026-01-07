@@ -6,7 +6,7 @@ import { TotpAlgorithm, TotpConfig, TotpService, TotpType } from '../services/To
 import { ScanService } from '../services/ScanService';
 import { TotpPreviewComponent, TotpPreviewController } from './TotpPreviewComponent';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import ResourceManager from '../common/utils/ResourceManager';
+import { ResourceManager } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'TotpService';
@@ -22,21 +22,21 @@ export struct TotpConfigDialog {
     name: '',
     issuer: ''
   };
-  @State name:string = '';
-  @State issuer:string = '';
-  @State fieldName:string = 'otp';
-  @State showFieldName:boolean =false;
+  @State name: string = '';
+  @State issuer: string = '';
+  @State fieldName: string = 'otp';
+  @State showFieldName: boolean = false;
   @State private selectedType: string = TotpType.RFC6238;
   @State private selectedAlgorithm: string = TotpAlgorithm.SHA1;
   @State private errorMessage: string = '';
   @State private showMarkOptions: boolean = false;
-
   // 确认前校验字段名称是否存在
-  public checkFieldName: (fieldName: string) => boolean = () => {return false;};
+  public checkFieldName: (fieldName: string) => boolean = () => {
+    return false;
+  };
   // 确认事件回调
   public onConfirm: (fieldName: string, otpUrl: string) => void = () => {
   };
-
   private tokenTypeOptions: Array<TokenTypeOption> = [
     { type: TotpType.RFC6238, value: $r('app.string.totp_type_rfc6238') },
     { type: TotpType.STEAM, value: $r('app.string.totp_type_steam') },
@@ -149,7 +149,7 @@ export struct TotpConfigDialog {
    */
   private handlerConfirm() {
     if (this.validateConfig()) {
-      if(this.checkFieldName(this.fieldName)){
+      if (this.checkFieldName(this.fieldName)) {
         this.errorMessage = ResourceManager.getString($r("app.string.field_name_exists"));
         this.showFieldName = true;
         return;
@@ -188,9 +188,9 @@ export struct TotpConfigDialog {
 
       List() {
         // 字段名称
-        if(this.showFieldName){
-          ListItemGroup(){
-            ListItem(){
+        if (this.showFieldName) {
+          ListItemGroup() {
+            ListItem() {
               Column() {
                 Row() {
                   Text("*").fontColor($r('app.color.required'))
@@ -497,8 +497,8 @@ export struct TotpConfigDialog {
 
         // 错误消息（如果有）
         if (this.errorMessage) {
-          ListItemGroup(){
-            ListItem(){
+          ListItemGroup() {
+            ListItem() {
               Text(this.errorMessage)
                 .fontSize(14)
                 .fontColor(Color.Red)
@@ -508,8 +508,8 @@ export struct TotpConfigDialog {
             }
           }
         }
-        ListItemGroup(){
-          ListItem(){
+        ListItemGroup() {
+          ListItem() {
             // 底部按钮
             Row() {
               Button($r('app.string.cancel_button_text'))
@@ -535,7 +535,7 @@ export struct TotpConfigDialog {
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
           }
-          .padding({ top: 16})
+          .padding({ top: 16 })
         }
       }
       .width('100%')

@@ -2,16 +2,14 @@ import { AbilityConstant, contextConstant, UIAbility, Want } from '@kit.AbilityK
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { SettingsService } from '../services/SettingsService';
-import ThemeManager from '../common/utils/ThemeManager';
-import ResourceManager from '../common/utils/ResourceManager';
+import { CommonUtils, FilenameUtils, ResourceManager, Sm4Utils, ThemeManager } from '../common/utils';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { FileService } from '../services/FileService';
-import { CommonUtils } from '../common/utils/CommonUtils';
-import { FilenameUtils } from '../common/utils/FilenameUtils';
-import { LocalFileStorageConfig, StorageType } from '../services/kdbx/interfaces';
+import { LocalFileStorageConfig, StorageType } from '../storage';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';
+import { DistributedKVService } from '../services/store/DistributedKVService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -47,16 +45,20 @@ export default class EntryAbility extends UIAbility {
     // 最近打开的文件服务
     RecentFilesService.getInstance().init(this.context);
     // 初始化设置服务
-    await SettingsService.getInstance().init(this.context).then(() => {
+    SettingsService.getInstance().init(this.context).then(() => {
       // 设值应用安装时间
       SupportService.initAppInstallTime();
     })
-
+    // 初始化加解密KEY
+    Sm4Utils.init();
+    // 初始化kv数据库
+    DistributedKVService.init(this.context);
   }
 
   onDestroy(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onDestroy');
     FileService.close();
+    DistributedKVService.close();
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -133,7 +135,13 @@ export default class EntryAbility extends UIAbility {
     }
     if (this.windowStage) {
       this.windowStage.getMainWindow().then((win) => {
-        CommonUtils.init(this.context, win.getUIContext());
+        try {
+          CommonUtils.init(this.context, win.getUIContext());
+        } catch (error) {
+          hilog.error(DOMAIN, TAG, 'Ability onWindowStageCreate failed, err: %{public}s', error.message);
+        }
+      }).catch((err: BusinessError) => {
+        hilog.error(DOMAIN, TAG, 'Ability onWindowStageCreate failed, err: %{public}s', err.message);
       });
     }
   }

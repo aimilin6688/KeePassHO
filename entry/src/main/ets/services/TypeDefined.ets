@@ -1,7 +1,6 @@
 import { Kdbx } from 'kdbxweb';
 import { LocationInfo } from './beans/LocationParam';
-import { StorageType } from './kdbx/interfaces';
-import { StorageConfig } from './kdbx/interfaces/StorageConfig';
+import { StorageType, StorageConfig } from '../storage';
 
 /**
  * 凭证参数定义
