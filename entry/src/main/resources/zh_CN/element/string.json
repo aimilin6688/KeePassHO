@@ -1619,6 +1619,14 @@
     {
       "name": "confirm_clear_all_records_tips",
       "value": "确认要清空所有记录吗？"
+    },
+    {
+      "name": "onedrive_select_file",
+      "value": "从OneDrive中选择文件"
+    },
+    {
+      "name": "onedrive_save_file",
+      "value": "保存文件到OneDrive中"
     }
   ]
 }
