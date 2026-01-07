@@ -4,10 +4,10 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { StorageType, StorageConfig } from '../storage';
+import { StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { KdbxUtils, ResourceManager, CryptoUtils, WindowUtils, CommonUtils} from '../common/utils';
+import { CommonUtils, CryptoUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
@@ -377,10 +377,16 @@ struct Password {
     if (this.isFingerprintSupport || this.isFaceSupport) {
       CryptoUtils.encryptText(this.password).then(result => {
         recentFile.password = result;
-        RecentFilesService.addRecentFile(recentFile);
+        RecentFilesService.addRecentFile(recentFile).catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, 'Add database file to recent file list failed: %{public}s', error.message);
+          CommonUtils.showToast({ message: error.message, duration: 3000 });
+        });
       });
     } else {
-      RecentFilesService.addRecentFile(recentFile);
+      RecentFilesService.addRecentFile(recentFile).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Add database file to recent file list failed: %{public}s', error.message);
+        CommonUtils.showToast({ message: error.message, duration: 3000 });
+      });
     }
   }
 

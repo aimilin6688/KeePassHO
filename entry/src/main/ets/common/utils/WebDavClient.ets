@@ -3,7 +3,7 @@ import { util, xml } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError, request } from '@kit.BasicServicesKit';
 import { ByteUtils } from 'kdbxweb';
-import { StringUtils, ResourceManager, CommonUtils } from '.';
+import { CommonUtils, ResourceManager, StringUtils } from '.';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';
@@ -76,24 +76,29 @@ export class WebDavClient {
   public updateOptions(options: WebDavClientOptions) {
     this.config = options;
     this.close();
-    this.session = rcp.createSession({
-      baseAddress: this.config.url,
-      headers: { "Accept": "text/plain,application/xml" },
-      requestConfiguration: {
-        transfer: {
-          timeout: { connectMs: 3000 }
-        },
-        security: {
-          serverAuthentication: {
-            credential: {
-              username: this.config.username,
-              password: this.config.password
-            },
-            authenticationType: "basic"
+    try {
+      this.session = rcp.createSession({
+        baseAddress: this.config.url,
+        headers: { "Accept": "text/plain,application/xml" },
+        requestConfiguration: {
+          transfer: {
+            timeout: { connectMs: 3000 }
+          },
+          security: {
+            serverAuthentication: {
+              credential: {
+                username: this.config.username,
+                password: this.config.password
+              },
+              authenticationType: "basic"
+            }
           }
         }
-      }
-    });
+      });
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, "createSession error: %{public}s", error.message);
+      CommonUtils.showToast(error.message);
+    }
   }
 
   /**

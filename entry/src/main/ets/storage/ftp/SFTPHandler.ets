@@ -2,7 +2,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { DisconnectReason, Client as SSHClient, connect as sshConnect } from '@ohos-rs/ssh';
 import { FileItemInfo, IFTPHandler } from './IFTPHandler';
-import { util } from '@kit.ArkTS';
 import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
@@ -81,9 +80,7 @@ export class SFTPHandler implements IFTPHandler {
     if (result.status !== 0) {
       throw new Error(`Command failed with status ${result.status}: ${command}`);
     }
-    const uint8Array = new Uint8Array(result.output as ArrayBuffer);
-    const decoder = new util.TextDecoder('utf-8');
-    return decoder.decodeWithStream(uint8Array);
+    return ByteUtils.bytesToString(result.output);
   }
 
   /**
@@ -262,6 +259,7 @@ export class SFTPHandler implements IFTPHandler {
 
   /**
    * 分块下载大文件
+   * @throws {Error} 如果下载失败
    */
   private async downloadInChunks(remotePath: string, localPath: string, totalSize: number): Promise<void> {
     const localFile = await fs.open(localPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
@@ -289,7 +287,11 @@ export class SFTPHandler implements IFTPHandler {
         offset += currentChunkSize;
       }
     } finally {
-      await fs.close(localFile.fd);
+      try {
+        await fs.close(localFile.fd);
+      } catch (error) {
+        hilog.warn(DOMAIN, TAG, `Failed to close file: ${error.message}`);
+      }
     }
   }
 
@@ -340,6 +342,7 @@ export class SFTPHandler implements IFTPHandler {
 
   /**
    * 分块上传大文件 - 使用更保守的64KB块大小
+   * @throws {Error} 如果上传失败
    */
   private async uploadInChunks(localPath: string, remotePath: string, totalSize: number): Promise<void> {
     const file = await fs.open(localPath, fs.OpenMode.READ_ONLY);
@@ -400,7 +403,11 @@ export class SFTPHandler implements IFTPHandler {
         hilog.warn(DOMAIN, TAG, `Failed to clean temp file: ${e}`);
       }
     } finally {
-      await fs.close(file.fd);
+      try {
+        await fs.close(file.fd);
+      } catch (e) {
+        hilog.warn(DOMAIN, TAG, `Failed to close file: ${e.message}`);
+      }
     }
   }
 }
