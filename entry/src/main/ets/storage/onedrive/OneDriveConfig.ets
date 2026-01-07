@@ -121,8 +121,8 @@ export class OneDriveStorageConfig implements StorageConfig {
 export const OneDrivePageConfig: PageConfig = {
   icon: $r("app.media.ic_onedrive"),
   title: 'OneDrive',
-  selectDesc: 'Select a file from OneDrive',
-  saveDesc: 'Save the file to OneDrive',
+  selectDesc: $r('app.string.onedrive_select_file'),
+  saveDesc: $r('app.string.onedrive_save_file'),
   pageUrl: 'storage/onedrive/OneDrivePage',
   storageType: StorageType.ONEDRIVE
 };

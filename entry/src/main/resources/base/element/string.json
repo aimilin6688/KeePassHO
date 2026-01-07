@@ -1619,6 +1619,14 @@
     {
       "name": "confirm_clear_all_records_tips",
       "value": "Are you sure you want to clear all records?"
+    },
+    {
+      "name": "onedrive_select_file",
+      "value": "Select a file from OneDrive"
+    },
+    {
+      "name": "onedrive_save_file",
+      "value": "Save the file to OneDrive"
     }
   ]
 }
