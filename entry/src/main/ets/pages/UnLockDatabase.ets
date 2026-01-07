@@ -5,7 +5,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
-import { WindowUtils } from '../common/utils';
+import { CommonUtils, WindowUtils } from '../common/utils';
 import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
@@ -53,35 +53,35 @@ struct UnLockDatabase {
 
   private quickUnlock() {
     if (!this.quickPassword) {
-      this.promptAction.showToast({ message: $r('app.string.password_placeholder') });
+      CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
       return
     }
     let password = this.dbFileParam.password;
     // 密码长度 <= 快速解锁密码要求长度
     if (password.length <= this.quickLockPasswordLength) {
       if (password.lastIndexOf(this.quickPassword) != -1) {
-        return this.router.pushUrl({ url: 'pages/DatabaseView' });
+        return CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       } else {
-        this.promptAction.showToast({ message: $r('app.string.password_error') });
+        CommonUtils.showToast({ message: $r('app.string.password_error') });
         return;
       }
     }
     // 密码长度 > 快速解锁密码要求长度
     if (this.quickPassword.length < this.quickLockPasswordLength) {
-      this.promptAction.showToast({ message: $r('app.string.password_length_error') });
+      CommonUtils.showToast({ message: $r('app.string.password_length_error') });
       return;
     }
     if (password.lastIndexOf(this.quickPassword) != -1) {
-      return this.router.pushUrl({ url: 'pages/DatabaseView' });
+      return CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
     } else {
-      this.promptAction.showToast({ message: $r('app.string.password_error') });
+      CommonUtils.showToast({ message: $r('app.string.password_error') });
       return;
     }
   }
 
   private closeDatabase() {
     FileService.close();
-    this.router.pushUrl({ url: 'pages/Index' });
+    CommonUtils.pushUrl({ url: 'pages/Index' });
   }
 
   /**
@@ -109,7 +109,7 @@ struct UnLockDatabase {
   private authServiceCallback() {
     return {
       onSuccess: (result) => {
-        this.router.pushUrl({ url: 'pages/DatabaseView' });
+        CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
@@ -159,7 +159,7 @@ struct UnLockDatabase {
 
           TextInput({ text: this.quickPassword })
             .width('100%')
-            .key("quickPasswordInput")
+            .id("quickPasswordInput")
             .type(InputType.Password)
             .fontSize(16)
             .enableAutoFill(false)

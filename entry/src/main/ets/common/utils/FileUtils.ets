@@ -15,6 +15,7 @@ export class FileUtils {
    * 激活文件权限
    * @param path 文件路径
    * @returns 结果
+   * @throws BusinessError
    */
   public static activatePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
     if (!canIUse(FileUtils.FolderAuthorization)) {
@@ -32,6 +33,7 @@ export class FileUtils {
    * 激活文件权限
    * @param path 文件路径
    * @returns 结果
+   * @throws BusinessError
    */
   public static persistPermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
     if (!canIUse(FileUtils.FolderAuthorization)) {
@@ -49,6 +51,7 @@ export class FileUtils {
    * 校验文件权限
    * @param path 文件路径
    * @returns 结果
+   * @throws BusinessError
    */
   public static checkPersistPermission(path: string, operationMode: fileShare.OperationMode): Promise<Array<boolean>> {
     if (!canIUse(FileUtils.FolderAuthorization)) {
@@ -66,6 +69,7 @@ export class FileUtils {
    * 取消文件持久化权限
    * @param path 文件路径
    * @returns 结果
+   * @throws BusinessError
    */
   public static revokePermission(path: string, operationMode: fileShare.OperationMode): Promise<void> {
     if (!canIUse(FileUtils.FolderAuthorization)) {

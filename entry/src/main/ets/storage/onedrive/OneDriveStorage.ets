@@ -104,7 +104,7 @@ export class OneDriveStorage implements IFileStorage {
   /**
    * 刷新访问令牌
    * @returns Promise<void>
-   * @throws 如果刷新失败则抛出异常
+   * @throws StorageError
    */
   private async refreshAccessToken(): Promise<void> {
     if (!this.client || !this.config) {
@@ -128,7 +128,7 @@ export class OneDriveStorage implements IFileStorage {
       hilog.info(DOMAIN, TAG, 'Access token refreshed successfully');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to refresh access token: %{public}s', (error as Error).message);
-      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message);
+      throw new StorageError(StorageErrorCodes.CONNECT_ERROR, (error as Error).message);
     }
   }
 
@@ -155,7 +155,7 @@ export class OneDriveStorage implements IFileStorage {
    * 读取文件内容
    * @param path 文件路径
    * @returns Promise<ArrayBuffer> 文件内容
-   * @throws 如果读取失败则抛出异常
+   * @throws StorageError
    */
   public async read(path: string): Promise<ArrayBuffer> {
     if (!this.client) {
@@ -185,7 +185,7 @@ export class OneDriveStorage implements IFileStorage {
    * @param path 文件路径
    * @param data 文件内容
    * @returns Promise<void>
-   * @throws 如果写入失败则抛出异常
+   * @throws StorageError 如果写入失败
    */
   public async write(path: string, data: ArrayBuffer): Promise<void> {
     if (!this.client) {
@@ -213,6 +213,7 @@ export class OneDriveStorage implements IFileStorage {
    * 检查文件是否存在
    * @param path 文件路径
    * @returns Promise<boolean> 文件是否存在
+   * @throws StorageError 如果检查失败则抛出异常
    */
   public async exists(path: string): Promise<boolean> {
     if (!this.client) {
@@ -243,7 +244,7 @@ export class OneDriveStorage implements IFileStorage {
    * 获取文件信息
    * @param path 文件路径
    * @returns Promise<FileInfo> 文件信息
-   * @throws 如果获取失败则抛出异常
+   * @throws StorageError 如果获取失败则抛出异常
    */
   public async getInfo(path: string): Promise<FileInfo> {
     if (!this.client) {
@@ -278,7 +279,7 @@ export class OneDriveStorage implements IFileStorage {
    * 获取目录内容
    * @param path 目录路径
    * @returns Promise<Array<FileInfo>> 目录内容
-   * @throws 如果获取失败则抛出异常
+   * @throws StorageError 如果获取失败则抛出异常
    */
   public async listDir(path: string): Promise<Array<FileInfo>> {
     if (!this.client) {
