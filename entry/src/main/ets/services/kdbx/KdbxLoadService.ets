@@ -2,7 +2,7 @@ import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
-import { ResourceManager } from '../../common/utils';
+import { CommonUtils, ResourceManager } from '../../common/utils';
 import { DatabaseLoad } from '../../workers/DatabaseLoad';
 import { Constants } from '../../common/constants/Constants';
 
@@ -34,7 +34,17 @@ export default class KdbxLoadService {
 
     // 创建 Worker
     KdbxLoadService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseLoadWorker.ets');
-    KdbxLoadService.databaseWorker.postMessage(JSON.stringify(loadParam));
+    try {
+      KdbxLoadService.databaseWorker.postMessage(JSON.stringify(loadParam));
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'Load database error: %{public}s', e.message);
+      if (callback?.onErrorMessage) {
+        callback.onErrorMessage(e.message);
+      } else {
+        CommonUtils.showToast(e.message);
+      }
+      return;
+    }
 
     // 注册onmessage回调，当宿主线程接收到来自其创建的Worker通过workerPort.postMessage接口发送的消息时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onmessage = (e: MessageEvents) => {
@@ -55,7 +65,7 @@ export default class KdbxLoadService {
     // 注册onmessageerror回调，当Worker对象接收到无法序列化的消息时被调用，在宿主线程执行
     KdbxLoadService.databaseWorker.onAllErrors = (err: ErrorEvent) => {
       // 忽略NativeCustomSpan和ViewV2错误
-      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1){
+      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1) {
         hilog.debug(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
         return;
       }

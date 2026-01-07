@@ -1,7 +1,7 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Constants } from '../../common/constants/Constants';
-import { KdbxUtils, ResourceManager } from '../../common/utils';
+import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
@@ -50,7 +50,11 @@ export default class KdbxSaveService {
   static async saveDatabaseAsync(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback) {
     // 释放之前的异步线程
     if (KdbxSaveService.databaseWorker) {
-      KdbxSaveService.databaseWorker.terminate();
+      try {
+        KdbxSaveService.databaseWorker.terminate();
+      } catch (error) {
+        hilog.warn(DOMAIN, TAG, 'Save database worker terminate error: %{public}s', error.message);
+      }
       KdbxSaveService.databaseWorker = null;
       hilog.info(DOMAIN, TAG, 'Database save worker terminated');
     }
@@ -66,7 +70,17 @@ export default class KdbxSaveService {
    */
   private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback): void {
     KdbxSaveService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseSaveWorker.ets');
-    KdbxSaveService.databaseWorker.postMessage(req, [req.data as ArrayBuffer]);
+    try {
+      KdbxSaveService.databaseWorker.postMessage(req, [req.data as ArrayBuffer]);
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, 'Save database worker error: %{public}s', err.message);
+      if (callback && callback.onError) {
+        callback.onError(err.message);
+      } else {
+        CommonUtils.showToast(err.message);
+      }
+      return;
+    }
     // work 现成中执行
     KdbxSaveService.databaseWorker.onmessage = (e: MessageEvents) => {
       let data = e.data as WorkerMessage;
@@ -87,7 +101,7 @@ export default class KdbxSaveService {
     // 注册onerror回调，当Worker线程发生异常时被调用，在宿主线程执行
     KdbxSaveService.databaseWorker.onAllErrors = (err: ErrorEvent) => {
       // 忽略NativeCustomSpan和ViewV2错误
-      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1){
+      if (err.message.indexOf('NativeCustomSpan') != -1 || err.message.indexOf('ViewV2') != -1) {
         hilog.debug(DOMAIN, TAG, 'Load database error: %{public}s', err.message);
         return;
       }
