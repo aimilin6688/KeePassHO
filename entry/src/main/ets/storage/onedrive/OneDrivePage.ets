@@ -8,7 +8,7 @@ import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
-import { OAuth2AuthRequest, OAuth2Token, OAuth2Provider, OAuth2TokenStorageService } from '../../common/oauth2';
+import { OAuth2AuthRequest, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
 import { AuthResult } from '../../pages/OAuth2Login';
 
@@ -71,7 +71,7 @@ struct OneDrive {
         provider: OAuth2Provider.ONEDRIVE,
         encrypt: true
       });
-      
+
       if (token) {
         this.oauth2Token = token;
         this.isLoggedIn = true;
@@ -205,8 +205,13 @@ struct OneDrive {
     if (!(dbFileParam.storageType === StorageType.ONEDRIVE)) {
       return;
     }
-    const storageConfig = dbFileParam.storageConfig as OneDriveStorageConfig;
+    let storageConfig = dbFileParam.storageConfig as OneDriveStorageConfig;
     if (storageConfig) {
+      storageConfig = new OneDriveStorageConfig(storageConfig.accessToken, storageConfig.refreshToken, storageConfig.expiresAt, {
+        timeout: storageConfig.timeout,
+        scope: storageConfig.scope,
+        tokenType: storageConfig.tokenType
+      });
       this.oauth2Token = {
         tokenType: storageConfig.tokenType,
         accessToken: storageConfig.getAccessTokenText(),
