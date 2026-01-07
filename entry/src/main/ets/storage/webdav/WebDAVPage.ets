@@ -2,7 +2,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, FilenameUtils, WindowUtils, CommonUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -45,8 +45,12 @@ struct WebDAV {
       this.url = LocationParam.getFileName();
       return;
     }
-    const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
+    let storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
     if (storageConfig) {
+      storageConfig = new WebDAVStorageConfig(storageConfig.url, storageConfig.username, storageConfig.password, {
+        rootPath: storageConfig.rootPath,
+        timeout: storageConfig.timeout
+      });
       this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
       this.username = storageConfig.getUserNameText();
       this.password = storageConfig.getPasswordText();
