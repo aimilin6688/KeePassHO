@@ -2,7 +2,7 @@ import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { ResourceManager, FilenameUtils, WindowUtils } from '../../common/utils';
+import { ResourceManager, FilenameUtils, WindowUtils, CommonUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -68,7 +68,7 @@ struct WebDAV {
     if (!this.checkParam()) {
       return;
     }
-    this.router.pushUrl({
+    CommonUtils.pushUrl({
       url: 'pages/open/FileList',
       params: {
         mode: LocationParam.getMode(),

@@ -1,6 +1,6 @@
 import { KdbxEntry } from 'kdbxweb';
 import { SortMode } from '../common/constants/SortConstants';
-import { KdbxUtils, DateUtils, ClipboardUtils, WindowUtils } from '../common/utils';
+import { KdbxUtils, DateUtils, ClipboardUtils, WindowUtils, CommonUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
@@ -216,7 +216,7 @@ struct TotpView {
                   bottom: 8
                 })
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
+                  CommonUtils.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
                 })
               }
             }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)

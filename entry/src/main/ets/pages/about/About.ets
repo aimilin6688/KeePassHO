@@ -1,5 +1,5 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { ResourceManager } from '../../common/utils';
+import { CommonUtils, ResourceManager } from '../../common/utils';
 import { bundleManager, common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -223,7 +223,7 @@ struct About {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .onClick(() => {
-                  this.router.pushUrl({ url: 'pages/about/Support' })
+                  CommonUtils.pushUrl({ url: 'pages/about/Support' })
                 })
                 .width('100%')
                 .padding(16)

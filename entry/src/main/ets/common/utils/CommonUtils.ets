@@ -139,14 +139,14 @@ export class CommonUtils {
    * @param options
    * @returns
    */
-  public static pushUrl(options: router.RouterOptions): Promise<void> {
+  public static pushUrl(options: router.RouterOptions, mode?: router.RouterMode,): Promise<void> {
     if (CommonUtils.uiContext) {
-      return CommonUtils.uiContext.getRouter().pushUrl(options).catch((error: Error) => {
+      return CommonUtils.uiContext.getRouter().pushUrl(options, mode).catch((error: Error) => {
         hilog.error(DOMAIN, TAG, `uiContext pushUrl error: ${error?.message}`);
         return Promise.reject(error);
       });
     }
-    return router.pushUrl(options).catch((error: Error) => {
+    return router.pushUrl(options, mode).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, `pushUrl error: ${error?.message}`);
       return Promise.reject(error);
     });
