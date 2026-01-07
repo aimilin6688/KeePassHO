@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
+import { CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -291,7 +291,7 @@ struct DatabaseView {
 
   private initData(dbShowParam: DatabaseShowParam | undefined) {
     if (!this.database) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.invalid_database'),
         duration: 2000
       });
@@ -317,7 +317,7 @@ struct DatabaseView {
       // 判断分组是否有效
       if (this.currentGroup === undefined) {
         hilog.info(DOMAIN, TAG, '%{public}s', `Invalid group: ${dbShowParam?.groupId}`)
-        this.promptAction.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
+        CommonUtils.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
       KdbxUtils.sortBy(this.currentGroup.groups, this.currentGroup.entries, this.sortBy);
@@ -326,7 +326,7 @@ struct DatabaseView {
       hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.groups.length} groups, ${this.entries.length} entries`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
-      this.promptAction.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
+      CommonUtils.showToast({ message: $r("app.string.load_database_failed"), duration: 2000 });
       // 返回到密码输入页面
       setTimeout(() => {
         this.routerBack();
@@ -348,7 +348,11 @@ struct DatabaseView {
           FileService.resetDbFileParam(database, successMessage.modifiedTime);
           this.refreshText = $r('app.string.refreshing_message');
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
-          this.promptAction.showToast({ message: $r('app.string.refresh_success') });
+          CommonUtils.showToast({ message: $r('app.string.refresh_success') });
+          this.isRefreshing = false;
+        }).catch((error: Error) => {
+          this.refreshText = error.message;
+          CommonUtils.showToast({ message: this.refreshText });
           this.isRefreshing = false;
         });
       },
@@ -357,7 +361,7 @@ struct DatabaseView {
       },
       onErrorMessage: (message: LoadMessage) => {
         this.refreshText = ResourceManager.getString(message.message);
-        this.promptAction.showToast({ message: this.refreshText });
+        CommonUtils.showToast({ message: this.refreshText });
         this.isRefreshing = false;
       },
     });
@@ -375,7 +379,7 @@ struct DatabaseView {
         .onClick(() => {
           if (item instanceof KdbxEntry) {
             // 跳转到条目编辑页面
-            this.router.pushUrl({
+            CommonUtils.pushUrl({
               url: 'pages/EntryEdit',
               params: {
                 groupId: item.parentGroup?.uuid.id,
@@ -464,7 +468,7 @@ struct DatabaseView {
       return;
     }
     if (!this.database) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r("app.string.invalid_database")
       });
       return;
@@ -507,7 +511,7 @@ struct DatabaseView {
    */
   private moveItemToCurrentGroup() {
     if (!this.database || !this.currentGroup || !this.moveParam) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.operation_failed'),
         duration: 2000
       });
@@ -526,7 +530,7 @@ struct DatabaseView {
       }
 
       if (!sourceItem) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.entry_not_found'),
           duration: 2000
         });
@@ -539,7 +543,7 @@ struct DatabaseView {
         const sourceGroup = sourceItem as KdbxGroup;
         // 不能移动到自己或子分组
         if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
-          this.promptAction.showToast({
+          CommonUtils.showToast({
             message: $r('app.string.cannot_move_to_child'),
             duration: 2000
           });
@@ -554,7 +558,7 @@ struct DatabaseView {
       this.saveDatabase();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to move item: %{public}s', error.message);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.operation_failed'),
         duration: 2000
       });
@@ -644,7 +648,7 @@ struct DatabaseView {
    * 锁定数据库
    */
   private lockDatabase() {
-    this.router.pushUrl({ url: 'pages/UnLockDatabase' })
+    CommonUtils.pushUrl({ url: 'pages/UnLockDatabase' })
   }
 
   /**
@@ -746,7 +750,7 @@ struct DatabaseView {
                   .height(40)
                   .layoutWeight(1)
                   .flexShrink(1)
-                  .key("searchKey")
+                  .id("searchKey")
                   .searchIcon({
                     src: $r('sys.media.ohos_ic_public_search_filled')
                   })
@@ -901,7 +905,7 @@ struct DatabaseView {
                   .height(24)
                   .margin({ right: 16 })
                   .onClick(() => {
-                    this.router.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
+                    CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
                       hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
                     });
                   })
@@ -996,7 +1000,7 @@ struct DatabaseView {
                       $r("app.color.card_bg"))
                     .padding({ left: 6, right: 6 })
                     .onClick(() => {
-                      this.router.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
+                      CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
                     })
                   }
                   .swipeAction({
@@ -1065,7 +1069,7 @@ struct DatabaseView {
                       bottom: 8
                     })
                     .onClick(() => {
-                      this.router.pushUrl({
+                      CommonUtils.pushUrl({
                         url: 'pages/EntryView',
                         params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id }
                       });
@@ -1168,7 +1172,7 @@ struct DatabaseView {
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
         .onClick(() => {
           this.showAddButtons = false;
-          this.router.pushUrl({
+          CommonUtils.pushUrl({
             url: 'pages/EntryEdit',
             params: {
               groupId: this.currentGroup?.uuid.id
@@ -1192,7 +1196,7 @@ struct DatabaseView {
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
-          this.router.pushUrl({ url: 'pages/TotpView' });
+          CommonUtils.pushUrl({ url: 'pages/TotpView' });
         })
 
         // 主添加按钮

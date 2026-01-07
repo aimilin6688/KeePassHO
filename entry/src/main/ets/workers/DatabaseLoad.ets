@@ -43,6 +43,7 @@ export class DatabaseLoad {
    * 加载文件内容
    * @param request 请求
    * @return Promise<ArrayBuffer> 文件内容
+   * @throws Error 加载失败
    */
   async loadKdbxFileContent(request: LoadDatabase): Promise<FileContentInfo> {
     if (!request.filePath) {
