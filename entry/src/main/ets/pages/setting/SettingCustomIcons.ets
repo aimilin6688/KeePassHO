@@ -1,8 +1,7 @@
 import { Router } from '@kit.ArkUI';
 import { IconResource } from '../../services/TypeDefined';
 import { FileService } from '../../services/FileService';
-import KdbxUtils from '../../common/utils/KdbxUtils';
-import IconUtils from '../../common/utils/IconUtils';
+import { KdbxUtils, IconUtils } from '../../common/utils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 import { ImageAddComponent } from '../../components/ImageAddComponent';
 

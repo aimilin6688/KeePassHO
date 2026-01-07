@@ -1,12 +1,11 @@
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
-import { FileContentInfo } from '../services/kdbx/interfaces';
+import { FileContentInfo } from '../storage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { SuccessMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import ResourceManager from '../common/utils/ResourceManager';
-import KdbxUtils from '../common/utils/KdbxUtils';
+import { ResourceManager, KdbxUtils } from '../common/utils';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 
 const DOMAIN = 0x0000;

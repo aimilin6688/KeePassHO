@@ -1,6 +1,6 @@
 import { FileService } from '../../services/FileService';
 import { IconResource, Icons } from '../../services/TypeDefined';
-import KdbxUtils from './KdbxUtils';
+import { KdbxUtils } from '.';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -10,7 +10,7 @@ const TAG = 'IconUtils';
 /**
  * 图标工具类
  */
-export default class IconUtils {
+export class IconUtils {
   /**
    * 获取图标资源路径
    * @param iconId 图标ID
@@ -251,7 +251,7 @@ export default class IconUtils {
     onlyCustom = onlyCustom || false;
     const icons: Array<IconResource> = [];
     // 遍历所有系统图标ID
-    if(!onlyCustom){
+    if (!onlyCustom) {
       for (let i = 0; i <= 68; i++) {
         icons.push({
           id: i,

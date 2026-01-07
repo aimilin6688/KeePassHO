@@ -1,12 +1,12 @@
 import { PromptAction, Router } from '@kit.ArkUI';
-import { FileType, StorageConfig, StorageType } from '../../services/kdbx/interfaces';
-import { WebDAVStorageConfig } from '../../services/kdbx/interfaces/StorageConfig';
+import { FileType, StorageConfig, StorageType } from '..';
+import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import ResourceManager from '../../common/utils/ResourceManager';
+import { ResourceManager, FilenameUtils, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
-import { FilenameUtils } from '../../common/utils/FilenameUtils';
+import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -30,6 +30,10 @@ struct WebDAV {
     this.initSaveParam();
   }
 
+  onPageShow(): void {
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+  }
+
   // 导出数据初始化
   private initSaveParam() {
     if (!LocationParam.isSaveMode()) {
@@ -44,8 +48,8 @@ struct WebDAV {
     const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
     if (storageConfig) {
       this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
-      this.username = WebDAVStorageConfig.getText(storageConfig.username);
-      this.password = WebDAVStorageConfig.getText(storageConfig.password);
+      this.username = storageConfig.getUserNameText();
+      this.password = storageConfig.getPasswordText();
     }
   }
 
@@ -376,6 +380,6 @@ struct WebDAV {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

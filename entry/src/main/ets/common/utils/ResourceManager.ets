@@ -7,7 +7,7 @@ const TAG = 'ResourceManager';
 /**
  * 资源工具类
  */
-export default class ResourceManager {
+export class ResourceManager {
   private static instance: ResourceManager = new ResourceManager();
   private context: common.UIAbilityContext | null = null;
 
