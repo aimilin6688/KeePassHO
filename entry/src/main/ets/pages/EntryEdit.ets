@@ -213,7 +213,7 @@ struct EntryEdit {
   }
 
   onPageShow(): void {
-      WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   onBackPress() {
@@ -572,6 +572,9 @@ struct EntryEdit {
           // 标记为已修改
           this.checkEntryModified();
         }
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `Failed to delete custom field: ${error?.message}`);
+        CommonUtils.showToast(error?.message);
       });
     }
   }
