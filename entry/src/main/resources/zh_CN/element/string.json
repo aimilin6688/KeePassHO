@@ -1629,6 +1629,18 @@
       "value": "保存文件到OneDrive中"
     },
     {
+      "name": "copy_username",
+      "value": "复制\n用户名"
+    },
+    {
+      "name": "copy_password",
+      "value": "复制\n密码"
+    },
+    {
+      "name": "copy_group_name",
+      "value": "复制\n分组名"
+    },
+    {
       "name": "more_button_text",
       "value": "更多"
     }
