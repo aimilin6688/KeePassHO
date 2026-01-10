@@ -349,30 +349,40 @@ struct DatabaseView {
     Row() {
       // 复制用户名按钮
       if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME) !== '') {
-        Button($r('app.string.copy_username'), { type: ButtonType.Normal })
-          .width(80)
-          .height('100%')
-          .backgroundColor($r("app.color.button_bg_blue"))
-          .fontColor(Color.White)
-          .fontSize(14)
-          .onClick(() => {
-            this.copyUsername(item);
-            this.listScroller.closeAllSwipeActions();
-          })
+        Button() {
+          Text($r('app.string.copy_username'))
+            .fontSize(14)
+            .fontColor(Color.White)
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .width(80)
+        .height('100%')
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .borderRadius(0)
+        .onClick(() => {
+          this.copyUsername(item);
+          this.listScroller.closeAllSwipeActions();
+        })
       }
 
       // 复制密码按钮
       if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_PASSWORD) !== '') {
-        Button($r('app.string.copy_password'), { type: ButtonType.Normal })
-          .width(80)
-          .height('100%')
-          .backgroundColor($r("app.color.button_bg_blue"))
-          .fontColor(Color.White)
-          .fontSize(14)
-          .onClick(() => {
-            this.copyPassword(item);
-            this.listScroller.closeAllSwipeActions();
-          })
+        Button() {
+          Text($r('app.string.copy_password'))
+            .fontSize(14)
+            .fontColor(Color.White)
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .width(80)
+        .height('100%')
+        .backgroundColor($r("app.color.error"))
+        .borderRadius(0)
+        .onClick(() => {
+          this.copyPassword(item);
+          this.listScroller.closeAllSwipeActions();
+        })
       }
 
       // 更多按钮
@@ -380,9 +390,8 @@ struct DatabaseView {
         .width(80)
         .height('100%')
         .backgroundColor($r("app.color.warn"))
-        .fontColor($r('app.color.text_primary'))
         .fontSize(14)
-        .onClick((event:ClickEvent) => {
+        .onClick((event: ClickEvent) => {
           this.listScroller.closeAllSwipeActions();
           this.showMoreActions(item, index, event);
         })
@@ -397,25 +406,29 @@ struct DatabaseView {
   GroupSwipeActionButtons(index: number, item: KdbxGroup) {
     Row() {
       // 复制分组名按钮
-      Button($r('app.string.copy_group_name'), { type: ButtonType.Normal })
-        .width(80)
-        .height('100%')
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .fontColor(Color.White)
-        .fontSize(14)
-        .onClick(() => {
-          this.copyGroupName(item);
-          this.listScroller.closeAllSwipeActions();
-        })
+      Button() {
+        Text($r('app.string.copy_group_name'))
+          .fontSize(14)
+          .fontColor(Color.White)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width(80)
+      .height('100%')
+      .backgroundColor($r("app.color.button_bg_blue"))
+      .borderRadius(0)
+      .onClick(() => {
+        this.copyGroupName(item);
+        this.listScroller.closeAllSwipeActions();
+      })
 
       // 更多按钮
       Button($r('app.string.more_button_text'), { type: ButtonType.Normal })
         .width(80)
         .height('100%')
         .backgroundColor($r("app.color.warn"))
-        .fontColor($r('app.color.text_primary'))
         .fontSize(14)
-        .onClick((event:ClickEvent) => {
+        .onClick((event: ClickEvent) => {
           this.listScroller.closeAllSwipeActions();
           this.showMoreActions(item, index, event);
         })
@@ -427,51 +440,37 @@ struct DatabaseView {
    * 显示更多操作菜单
    * @param item 条目或分组
    * @param index 索引
-   * @param event 点击事件（用于获取位置）
+   * @param event 手势事件或点击事件（用于获取长按时的触摸位置）
    */
-  private showMoreActions(item: KdbxGroup | KdbxEntry, index: number, event?: ClickEvent) {
+  private showMoreActions(item: KdbxGroup | KdbxEntry, index: number, event?: ClickEvent | GestureEvent) {
     this.selectedItem = item;
     this.selectedItemIndex = index;
 
-    // 计算菜单水平位置（水平居中）
-    const menuWidth = 180; // 菜单宽度
-    const menuItemWidth = 60; // 每个菜单项宽度（图标+文字）
-    const menuItemCount = 3; // 编辑、移动、删除
-    const totalMenuWidth = menuItemWidth * menuItemCount;
-
-    // 水平居中，但确保不超出屏幕边界
-    this.moreMenuX = Math.max(12, (this.screenWidth - totalMenuWidth) / 2);
+    // 计算菜单水平位置（右对齐）
+    const menuWidth = 200; // 菜单宽度
+    // 右对齐，确保不超出屏幕边界
+    this.moreMenuX = this.screenWidth - menuWidth - 12;
 
     // 计算菜单垂直位置
-    // 使用事件坐标或基于索引计算
-    let itemY: number;
-    if (event && event.screenY) {
-      // 使用点击事件的Y坐标
-      itemY = event.screenY;
+    let itemTopY: number;
+
+    if (event && (event as GestureEvent).fingerList && (event as GestureEvent).fingerList.length > 0) {
+      itemTopY = (event as GestureEvent).fingerList[0].globalY;
+    } else if (event && (event as ClickEvent).windowY) {
+      itemTopY = (event as ClickEvent).windowY;
     } else {
-      // 基于索引计算（条目高度66-80px，列表padding 12px，header高度可变）
-      const itemHeight = index < this.groups.length ? 66 : 80; // 分组66px，条目80px
+      const itemHeight = index < (this.isSearching ? this.filteredGroups.length : this.groups.length) ? 66 : 80; // 分组66px，条目80px
       const listStartY = this.headerHeight + 12; // 列表起始位置
-      const offsetIndex = index - Math.max(0, index - 2); // 考虑滚动偏移
-      itemY = listStartY + offsetIndex * itemHeight + itemHeight / 2;
+      itemTopY = listStartY + index * (itemHeight + 8); // 8是列表间距
     }
 
     const menuHeight = 100; // 菜单高度（图标+文字）
-    const bottomSpace = this.screenHeight - itemY;
-
-    // 判断显示在上方还是下方
-    if (bottomSpace > menuHeight + 20) {
-      // 下方空间足够，显示在下方，留出20px间距
-      this.moreMenuY = itemY + 20;
-    } else {
-      // 下方空间不足，显示在上方，留出20px间距
-      this.moreMenuY = itemY - menuHeight - 20;
-      // 确保不超出顶部
-      if (this.moreMenuY < this.headerHeight + 10) {
-        this.moreMenuY = this.headerHeight + 10;
-      }
+    // 始终显示在条目正上方，留出10px间距
+    this.moreMenuY = itemTopY - menuHeight - 80;
+    // 确保不超出顶部
+    if (this.moreMenuY < this.headerHeight + 10) {
+      this.moreMenuY = this.headerHeight + 10;
     }
-
     this.showMoreMenu = true;
   }
 
@@ -677,13 +676,63 @@ struct DatabaseView {
             this.deleteItem(this.selectedItem!, this.selectedItemIndex);
           })
         }
+
+        // 删除按钮
+        Column({ space: 8 }) {
+          Button() {
+            Column() {
+              Image($r('app.media.ic_delete'))
+                .width(32)
+                .height(32)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.delete_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width(60)
+          .height(70)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+            this.deleteItem(this.selectedItem!, this.selectedItemIndex);
+          })
+        }
+
+        // 删除按钮
+        Column({ space: 8 }) {
+          Button() {
+            Column() {
+              Image($r('app.media.ic_delete'))
+                .width(32)
+                .height(32)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.delete_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width(60)
+          .height(70)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+            this.deleteItem(this.selectedItem!, this.selectedItemIndex);
+          })
+        }
       }
       .width(200)
-      .height(100)
+      .height('auto')
       .borderRadius(12)
       .backgroundColor($r("app.color.card_bg"))
       .padding(16)
       .justifyContent(FlexAlign.SpaceEvenly)
+      .borderColor($r("app.color.toast_bg"))
+      .shadow(ShadowStyle.OUTER_DEFAULT_MD)
       .position({
         x: this.moreMenuX,
         y: this.moreMenuY
@@ -1285,8 +1334,8 @@ struct DatabaseView {
                     })
                     .gesture(
                       LongPressGesture({ repeat: false })
-                        .onAction(() => {
-                          this.showMoreActions(itemGroup, index);
+                        .onAction((event: GestureEvent) => {
+                          this.showMoreActions(itemGroup, index, event);
                         })
                     )
                   }
@@ -1363,8 +1412,8 @@ struct DatabaseView {
                     })
                     .gesture(
                       LongPressGesture({ repeat: false })
-                        .onAction(() => {
-                          this.showMoreActions(itemEntry, index);
+                        .onAction((event: GestureEvent) => {
+                          this.showMoreActions(itemEntry, index, event);
                         })
                     )
                   }
