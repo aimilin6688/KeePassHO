@@ -354,6 +354,7 @@ struct DatabaseView {
             .fontSize(14)
             .fontColor(Color.White)
             .maxLines(2)
+            .textAlign(TextAlign.Center)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .width(80)
@@ -373,6 +374,7 @@ struct DatabaseView {
             .fontSize(14)
             .fontColor(Color.White)
             .maxLines(2)
+            .textAlign(TextAlign.Center)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .width(80)
@@ -412,6 +414,7 @@ struct DatabaseView {
           .fontColor(Color.White)
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .textAlign(TextAlign.Center)
       }
       .width(80)
       .height('100%')
@@ -605,11 +608,11 @@ struct DatabaseView {
         Column({ space: 8 }) {
           Button() {
             Column() {
-              Image($r('app.media.ic_delete'))
+              Image($r('app.media.ic_favorite'))
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.delete_button_text'))
+              Text('收藏')
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -628,11 +631,11 @@ struct DatabaseView {
         Column({ space: 8 }) {
           Button() {
             Column() {
-              Image($r('app.media.ic_delete'))
+              Image($r('app.media.ic_top'))
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.delete_button_text'))
+              Text('置顶')
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
