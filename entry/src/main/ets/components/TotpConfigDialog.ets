@@ -545,6 +545,7 @@ export struct TotpConfigDialog {
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 16, right: 16, bottom: 16 })
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
   }
 }
 
