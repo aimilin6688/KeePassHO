@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
+import { CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, ClipboardUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -51,6 +51,11 @@ struct DatabaseView {
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
   @State headerHeight: number = 56;
+  @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
+  @State selectedItemIndex: number = -1; // 当前选中项的索引
+  @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
+  @State moreMenuX: number = 0; // 更多菜单X坐标
+  @State moreMenuY: number = 0; // 更多菜单Y坐标
   // 拖拽组件
   @StorageLink("containerX") containerX: number = 0; // 容器X坐标
   @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
@@ -337,6 +342,360 @@ struct DatabaseView {
   }
 
   /**
+   * 条目左滑操作按钮
+   */
+  @Builder
+  EntrySwipeActionButtons(index: number, item: KdbxEntry) {
+    Row() {
+      // 复制用户名按钮
+      if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME) !== '') {
+        Button($r('app.string.copy_username'), { type: ButtonType.Normal })
+          .width(80)
+          .height('100%')
+          .backgroundColor($r("app.color.button_bg_blue"))
+          .fontColor(Color.White)
+          .fontSize(14)
+          .onClick(() => {
+            this.copyUsername(item);
+            this.listScroller.closeAllSwipeActions();
+          })
+      }
+
+      // 复制密码按钮
+      if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_PASSWORD) !== '') {
+        Button($r('app.string.copy_password'), { type: ButtonType.Normal })
+          .width(80)
+          .height('100%')
+          .backgroundColor($r("app.color.button_bg_blue"))
+          .fontColor(Color.White)
+          .fontSize(14)
+          .onClick(() => {
+            this.copyPassword(item);
+            this.listScroller.closeAllSwipeActions();
+          })
+      }
+
+      // 更多按钮
+      Button($r('app.string.more_button_text'), { type: ButtonType.Normal })
+        .width(80)
+        .height('100%')
+        .backgroundColor($r("app.color.warn"))
+        .fontColor($r('app.color.text_primary'))
+        .fontSize(14)
+        .onClick((event:ClickEvent) => {
+          this.listScroller.closeAllSwipeActions();
+          this.showMoreActions(item, index, event);
+        })
+    }
+    .height('100%')
+  }
+
+  /**
+   * 分组左滑操作按钮
+   */
+  @Builder
+  GroupSwipeActionButtons(index: number, item: KdbxGroup) {
+    Row() {
+      // 复制分组名按钮
+      Button($r('app.string.copy_group_name'), { type: ButtonType.Normal })
+        .width(80)
+        .height('100%')
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .fontColor(Color.White)
+        .fontSize(14)
+        .onClick(() => {
+          this.copyGroupName(item);
+          this.listScroller.closeAllSwipeActions();
+        })
+
+      // 更多按钮
+      Button($r('app.string.more_button_text'), { type: ButtonType.Normal })
+        .width(80)
+        .height('100%')
+        .backgroundColor($r("app.color.warn"))
+        .fontColor($r('app.color.text_primary'))
+        .fontSize(14)
+        .onClick((event:ClickEvent) => {
+          this.listScroller.closeAllSwipeActions();
+          this.showMoreActions(item, index, event);
+        })
+    }
+    .height('100%')
+  }
+
+  /**
+   * 显示更多操作菜单
+   * @param item 条目或分组
+   * @param index 索引
+   * @param event 点击事件（用于获取位置）
+   */
+  private showMoreActions(item: KdbxGroup | KdbxEntry, index: number, event?: ClickEvent) {
+    this.selectedItem = item;
+    this.selectedItemIndex = index;
+
+    // 计算菜单水平位置（水平居中）
+    const menuWidth = 180; // 菜单宽度
+    const menuItemWidth = 60; // 每个菜单项宽度（图标+文字）
+    const menuItemCount = 3; // 编辑、移动、删除
+    const totalMenuWidth = menuItemWidth * menuItemCount;
+
+    // 水平居中，但确保不超出屏幕边界
+    this.moreMenuX = Math.max(12, (this.screenWidth - totalMenuWidth) / 2);
+
+    // 计算菜单垂直位置
+    // 使用事件坐标或基于索引计算
+    let itemY: number;
+    if (event && event.screenY) {
+      // 使用点击事件的Y坐标
+      itemY = event.screenY;
+    } else {
+      // 基于索引计算（条目高度66-80px，列表padding 12px，header高度可变）
+      const itemHeight = index < this.groups.length ? 66 : 80; // 分组66px，条目80px
+      const listStartY = this.headerHeight + 12; // 列表起始位置
+      const offsetIndex = index - Math.max(0, index - 2); // 考虑滚动偏移
+      itemY = listStartY + offsetIndex * itemHeight + itemHeight / 2;
+    }
+
+    const menuHeight = 100; // 菜单高度（图标+文字）
+    const bottomSpace = this.screenHeight - itemY;
+
+    // 判断显示在上方还是下方
+    if (bottomSpace > menuHeight + 20) {
+      // 下方空间足够，显示在下方，留出20px间距
+      this.moreMenuY = itemY + 20;
+    } else {
+      // 下方空间不足，显示在上方，留出20px间距
+      this.moreMenuY = itemY - menuHeight - 20;
+      // 确保不超出顶部
+      if (this.moreMenuY < this.headerHeight + 10) {
+        this.moreMenuY = this.headerHeight + 10;
+      }
+    }
+
+    this.showMoreMenu = true;
+  }
+
+  /**
+   * 隐藏更多操作菜单
+   */
+  private hideMoreMenu() {
+    this.showMoreMenu = false;
+    this.selectedItem = null;
+    this.selectedItemIndex = -1;
+  }
+
+  /**
+   * 复制用户名
+   */
+  private copyUsername(entry: KdbxEntry) {
+    const username = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
+    if (username) {
+      ClipboardUtils.copyAutoClear(username);
+    }
+  }
+
+  /**
+   * 复制密码
+   */
+  private copyPassword(entry: KdbxEntry) {
+    const password = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_PASSWORD);
+    if (password) {
+      ClipboardUtils.copyAutoClear(password);
+    }
+  }
+
+  /**
+   * 复制分组名
+   */
+  private copyGroupName(group: KdbxGroup) {
+    const groupName = KdbxUtils.getFieldName(group.name);
+    if (groupName && typeof groupName === 'string') {
+      ClipboardUtils.copyAutoClear(groupName);
+    }
+  }
+
+  /**
+   * 编辑条目
+   */
+  private editEntry(entry: KdbxEntry) {
+    CommonUtils.pushUrl({
+      url: 'pages/EntryEdit',
+      params: {
+        groupId: entry.parentGroup?.uuid.id,
+        entryId: entry.uuid.id
+      }
+    });
+    this.hideMoreMenu();
+  }
+
+  /**
+   * 编辑分组
+   */
+  private editGroup(group: KdbxGroup, index: number) {
+    this.editingGroupIndex = index;
+    this.newGroupName = group.name;
+    this.dialogController.open();
+    this.hideMoreMenu();
+  }
+
+  /**
+   * 移动条目或分组
+   */
+  private moveItem(item: KdbxGroup | KdbxEntry) {
+    if (item instanceof KdbxGroup) {
+      this.moveParam = new MoveParam(item.uuid.id);
+    } else if (item instanceof KdbxEntry) {
+      this.moveParam = new MoveParam(item.parentGroup?.uuid.id || '', item.uuid.id);
+    }
+    this.hideMoreMenu();
+  }
+
+  /**
+   * 删除条目或分组
+   */
+  private deleteItem(item: KdbxGroup | KdbxEntry, index: number) {
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: $r("app.string.dialog_delete_confirm_message"),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r("app.string.delete_button_text"),
+        action: () => {
+          if (this.database === null) {
+            return;
+          }
+          let deleteObj: KdbxGroup | KdbxEntry = null;
+          if (item instanceof KdbxGroup) {
+            deleteObj = this.groups[index];
+            this.groups.splice(index, 1);
+          }
+          if (item instanceof KdbxEntry) {
+            deleteObj = this.entries[index];
+            this.entries.splice(index, 1);
+          }
+          this.database.remove(deleteObj);
+          this.saveDatabase();
+          this.hideMoreMenu();
+        }
+      }
+    });
+  }
+
+  /**
+   * 更多操作菜单弹框（类似微信风格）
+   */
+  @Builder
+  MoreActionsMenu() {
+    Stack() {
+      // 点击背景隐藏菜单
+      Column()
+        .width('100%')
+        .height('100%')
+        // .backgroundColor(Color.Black.opacity(0.3))
+        .onClick(() => {
+          this.hideMoreMenu();
+        })
+
+      // 菜单内容（横向排列）
+      Row({ space: 20 }) {
+        // 编辑按钮
+        Column({ space: 8 }) {
+          Button() {
+            Column() {
+              Image($r('app.media.ic_edit'))
+                .width(32)
+                .height(32)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.edit_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width(60)
+          .height(70)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+            if (this.selectedItem instanceof KdbxEntry) {
+              this.editEntry(this.selectedItem as KdbxEntry);
+            } else if (this.selectedItem instanceof KdbxGroup) {
+              this.editGroup(this.selectedItem as KdbxGroup, this.selectedItemIndex);
+            }
+          })
+        }
+
+        // 移动按钮
+        Column({ space: 8 }) {
+          Button() {
+            Column() {
+              Image($r('app.media.ic_move'))
+                .width(32)
+                .height(32)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.move_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width(60)
+          .height(70)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+            this.moveItem(this.selectedItem!);
+          })
+        }
+
+        // 删除按钮
+        Column({ space: 8 }) {
+          Button() {
+            Column() {
+              Image($r('app.media.ic_delete'))
+                .width(32)
+                .height(32)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.delete_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width(60)
+          .height(70)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+            this.deleteItem(this.selectedItem!, this.selectedItemIndex);
+          })
+        }
+      }
+      .width(200)
+      .height(100)
+      .borderRadius(12)
+      .backgroundColor($r("app.color.card_bg"))
+      .padding(16)
+      .justifyContent(FlexAlign.SpaceEvenly)
+      .position({
+        x: this.moreMenuX,
+        y: this.moreMenuY
+      })
+    }
+    .width('100%')
+    .height('100%')
+    .position({ x: 0, y: 0 })
+    .zIndex(1000)
+  }
+
+  /**
    * 重新加载数据库
    */
   private refreshDatabase() {
@@ -365,89 +724,6 @@ struct DatabaseView {
         this.isRefreshing = false;
       },
     });
-  }
-
-  @Builder
-  SwipeActionButtons(index: number, item: KdbxGroup | KdbxEntry) {
-    Row() {
-      Button($r('app.string.edit_button_text'), { type: ButtonType.Normal })
-        .width(70)
-        .height('100%')
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .fontColor(Color.White)
-        .fontSize(14)
-        .onClick(() => {
-          if (item instanceof KdbxEntry) {
-            // 跳转到条目编辑页面
-            CommonUtils.pushUrl({
-              url: 'pages/EntryEdit',
-              params: {
-                groupId: item.parentGroup?.uuid.id,
-                entryId: item.uuid.id
-              }
-            });
-          }
-          if (item instanceof KdbxGroup) {
-            this.editingGroupIndex = index
-            this.newGroupName = this.groups[index].name;
-            this.dialogController.open()
-          }
-          this.listScroller.closeAllSwipeActions();
-        })
-      Button($r('app.string.move_button_text'), { type: ButtonType.Normal })
-        .width(70)
-        .height('100%')
-        .fontColor($r('app.color.text_primary'))
-        .backgroundColor($r("app.color.warn"))
-        .fontSize(14)
-        .onClick(() => {
-          // 判断是分组还是条目
-          if (item instanceof KdbxGroup) {
-            this.moveParam = new MoveParam(item.uuid.id);
-          } else if (item instanceof KdbxEntry) {
-            this.moveParam = new MoveParam(item.parentGroup?.uuid.id || '', item.uuid.id);
-          }
-          this.listScroller.closeAllSwipeActions();
-        })
-      Button($r('app.string.delete_button_text'), { type: ButtonType.Normal })
-        .width(70)
-        .height('100%')
-        .backgroundColor($r("app.color.error"))
-        .fontColor($r('app.color.text_primary'))
-        .fontSize(14)
-        .onClick(() => {
-          this.listScroller.closeAllSwipeActions();
-          this.getUIContext().showAlertDialog({
-            title: $r("app.string.dialog_confirm_title"),
-            message: $r("app.string.dialog_delete_confirm_message"),
-            primaryButton: {
-              value: $r('app.string.cancel_button_text'),
-              action: () => {
-              }
-            },
-            secondaryButton: {
-              value: $r("app.string.delete_button_text"),
-              action: () => {
-                if (this.database === null) {
-                  return;
-                }
-                let deleteObj: KdbxGroup | KdbxEntry = null;
-                if (item instanceof KdbxGroup) {
-                  deleteObj = this.groups[index];
-                  this.groups.splice(index, 1);
-                }
-                if (item instanceof KdbxEntry) {
-                  deleteObj = this.entries[index];
-                  this.entries.splice(index, 1);
-                }
-                this.database.remove(deleteObj);
-                this.saveDatabase();
-              }
-            }
-          })
-        })
-    }
-    .height('100%')
   }
 
   /**
@@ -738,6 +1014,11 @@ struct DatabaseView {
 
   build() {
     Stack() {
+      // 更多操作菜单
+      if (this.showMoreMenu) {
+        this.MoreActionsMenu()
+      }
+
       Column() {
         // 顶部导航栏
         Row() {
@@ -1002,10 +1283,16 @@ struct DatabaseView {
                     .onClick(() => {
                       CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: itemGroup.uuid.id } });
                     })
+                    .gesture(
+                      LongPressGesture({ repeat: false })
+                        .onAction(() => {
+                          this.showMoreActions(itemGroup, index);
+                        })
+                    )
                   }
                   .swipeAction({
                     end: {
-                      builder: this.SwipeActionButtons(index, itemGroup)
+                      builder: () => this.GroupSwipeActionButtons(index, itemGroup)
                     }
                   })
                 }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
@@ -1074,10 +1361,16 @@ struct DatabaseView {
                         params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id }
                       });
                     })
+                    .gesture(
+                      LongPressGesture({ repeat: false })
+                        .onAction(() => {
+                          this.showMoreActions(itemEntry, index);
+                        })
+                    )
                   }
                   .swipeAction({
                     end: {
-                      builder: this.SwipeActionButtons(index, itemEntry)
+                      builder: () => this.EntrySwipeActionButtons(index, itemEntry)
                     }
                   })
                 }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
