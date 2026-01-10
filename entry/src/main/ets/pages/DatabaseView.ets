@@ -342,6 +342,17 @@ struct DatabaseView {
   }
 
   /**
+   * 关闭所有条目左滑操作按钮
+   */
+  private closeAllSwipeActions() {
+    try {
+      this.listScroller.closeAllSwipeActions();
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, '%{public}s', `Failed to close all swipe actions: ${error}`);
+    }
+  }
+
+  /**
    * 条目左滑操作按钮
    */
   @Builder
@@ -363,7 +374,7 @@ struct DatabaseView {
         .borderRadius(0)
         .onClick(() => {
           this.copyUsername(item);
-          this.listScroller.closeAllSwipeActions();
+          this.closeAllSwipeActions();
         })
       }
 
@@ -383,7 +394,7 @@ struct DatabaseView {
         .borderRadius(0)
         .onClick(() => {
           this.copyPassword(item);
-          this.listScroller.closeAllSwipeActions();
+          this.closeAllSwipeActions();
         })
       }
 
@@ -394,7 +405,7 @@ struct DatabaseView {
         .backgroundColor($r("app.color.warn"))
         .fontSize(14)
         .onClick((event: ClickEvent) => {
-          this.listScroller.closeAllSwipeActions();
+          this.closeAllSwipeActions();
           this.showMoreActions(item, index, event);
         })
     }
@@ -422,7 +433,7 @@ struct DatabaseView {
       .borderRadius(0)
       .onClick(() => {
         this.copyGroupName(item);
-        this.listScroller.closeAllSwipeActions();
+        this.closeAllSwipeActions();
       })
 
       // 更多按钮
@@ -432,7 +443,7 @@ struct DatabaseView {
         .backgroundColor($r("app.color.warn"))
         .fontSize(14)
         .onClick((event: ClickEvent) => {
-          this.listScroller.closeAllSwipeActions();
+          this.closeAllSwipeActions();
           this.showMoreActions(item, index, event);
         })
     }
