@@ -447,7 +447,7 @@ struct DatabaseView {
     this.selectedItemIndex = index;
 
     // 计算菜单水平位置（右对齐）
-    const menuWidth = 200; // 菜单宽度
+    const menuWidth = 280; // 菜单宽度
     // 右对齐，确保不超出屏幕边界
     this.moreMenuX = this.screenWidth - menuWidth - 12;
 
@@ -466,7 +466,7 @@ struct DatabaseView {
 
     const menuHeight = 100; // 菜单高度（图标+文字）
     // 始终显示在条目正上方，留出10px间距
-    this.moreMenuY = itemTopY - menuHeight - 80;
+    this.moreMenuY = itemTopY - menuHeight - 60;
     // 确保不超出顶部
     if (this.moreMenuY < this.headerHeight + 10) {
       this.moreMenuY = this.headerHeight + 10;
@@ -600,14 +600,60 @@ struct DatabaseView {
         })
 
       // 菜单内容（横向排列）
-      Row({ space: 20 }) {
-        // 编辑按钮
+      Row({ space: 12 }) {
+        // 收藏按钮
         Column({ space: 8 }) {
           Button() {
             Column() {
+              Image($r('app.media.ic_delete'))
+                .width(28)
+                .height(28)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.delete_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .height(48)
+          .width(52)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+          })
+        }
+
+        // 置顶按钮
+        Column({ space: 8 }) {
+          Button() {
+            Column() {
+              Image($r('app.media.ic_delete'))
+                .width(28)
+                .height(28)
+                .fillColor($r('app.color.text_primary'))
+              Text($r('app.string.delete_button_text'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .height(48)
+          .width(52)
+          .backgroundColor(Color.Transparent)
+          .borderRadius(8)
+          .onClick(() => {
+          })
+        }
+
+        // 编辑按钮
+        Column() {
+          Button() {
+            Column() {
               Image($r('app.media.ic_edit'))
-                .width(32)
-                .height(32)
+                .width(28)
+                .height(28)
                 .fillColor($r('app.color.text_primary'))
               Text($r('app.string.edit_button_text'))
                 .fontSize(12)
@@ -616,10 +662,10 @@ struct DatabaseView {
             }
             .alignItems(HorizontalAlign.Center)
           }
-          .width(60)
-          .height(70)
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
+          .height(48)
+          .width(52)
           .onClick(() => {
             if (this.selectedItem instanceof KdbxEntry) {
               this.editEntry(this.selectedItem as KdbxEntry);
@@ -634,8 +680,8 @@ struct DatabaseView {
           Button() {
             Column() {
               Image($r('app.media.ic_move'))
-                .width(32)
-                .height(32)
+                .width(28)
+                .height(28)
                 .fillColor($r('app.color.text_primary'))
               Text($r('app.string.move_button_text'))
                 .fontSize(12)
@@ -644,8 +690,8 @@ struct DatabaseView {
             }
             .alignItems(HorizontalAlign.Center)
           }
-          .width(60)
-          .height(70)
+          .height(48)
+          .width(52)
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
@@ -658,8 +704,8 @@ struct DatabaseView {
           Button() {
             Column() {
               Image($r('app.media.ic_delete'))
-                .width(32)
-                .height(32)
+                .width(28)
+                .height(28)
                 .fillColor($r('app.color.text_primary'))
               Text($r('app.string.delete_button_text'))
                 .fontSize(12)
@@ -668,56 +714,8 @@ struct DatabaseView {
             }
             .alignItems(HorizontalAlign.Center)
           }
-          .width(60)
-          .height(70)
-          .backgroundColor(Color.Transparent)
-          .borderRadius(8)
-          .onClick(() => {
-            this.deleteItem(this.selectedItem!, this.selectedItemIndex);
-          })
-        }
-
-        // 删除按钮
-        Column({ space: 8 }) {
-          Button() {
-            Column() {
-              Image($r('app.media.ic_delete'))
-                .width(32)
-                .height(32)
-                .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.delete_button_text'))
-                .fontSize(12)
-                .fontColor($r('app.color.text_primary'))
-                .margin({ top: 4 })
-            }
-            .alignItems(HorizontalAlign.Center)
-          }
-          .width(60)
-          .height(70)
-          .backgroundColor(Color.Transparent)
-          .borderRadius(8)
-          .onClick(() => {
-            this.deleteItem(this.selectedItem!, this.selectedItemIndex);
-          })
-        }
-
-        // 删除按钮
-        Column({ space: 8 }) {
-          Button() {
-            Column() {
-              Image($r('app.media.ic_delete'))
-                .width(32)
-                .height(32)
-                .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.delete_button_text'))
-                .fontSize(12)
-                .fontColor($r('app.color.text_primary'))
-                .margin({ top: 4 })
-            }
-            .alignItems(HorizontalAlign.Center)
-          }
-          .width(60)
-          .height(70)
+          .height(48)
+          .width(52)
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
@@ -725,11 +723,11 @@ struct DatabaseView {
           })
         }
       }
-      .width(200)
+      .width('auto')
       .height('auto')
       .borderRadius(12)
       .backgroundColor($r("app.color.card_bg"))
-      .padding(16)
+      .padding(12)
       .justifyContent(FlexAlign.SpaceEvenly)
       .borderColor($r("app.color.toast_bg"))
       .shadow(ShadowStyle.OUTER_DEFAULT_MD)
