@@ -172,5 +172,6 @@ export struct AddGroupDialog {
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
   }
 }
