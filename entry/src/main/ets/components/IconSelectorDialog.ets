@@ -118,5 +118,6 @@ export struct IconSelectorDialog {
     .height('85%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
   }
 }
