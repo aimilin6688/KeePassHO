@@ -1643,6 +1643,14 @@
     {
       "name": "more_button_text",
       "value": "More"
+    },
+    {
+      "name": "favorite_button_text",
+      "value": "Favorite"
+    },
+    {
+      "name": "pin_button_text",
+      "value": "Pin"
     }
   ]
 }
