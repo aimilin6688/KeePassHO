@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="filter" x="0" y="0" width="40" height="40" filterUnits="userSpaceOnUse">
+      <feColorMatrix type="matrix" values="0 0 0 0 1 0  0 0 0 0 1 0  0 0 0 0 1 0  0 0 0 0 1 0"/>
+    </filter>
+  </defs>
+  <path fill="#666666" d="M30,20 L25,15 L25,5 C25,4.3 24.7,4 24,4 L12,4 C11.3,4 11,4.3 11,5 L11,15 L6,20 L11,25 L11,35 C11,35.7 11.3,36 12,36 L24,36 C24.7,36 25,35.7 25,35 L25,25 L30,20 Z" opacity="1.0" transform="scale(0.8333) translate(2,2)"/>
+</svg>
