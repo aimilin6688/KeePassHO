@@ -860,11 +860,10 @@ struct EntryEdit {
                   .backgroundColor($r("app.color.card_bg"))
                   .padding({
                     left: 12,
-                    right: 12,
-                    top: 4,
-                    bottom: 4
+                    right: 12
                   })
-                  .borderRadius(4)
+                  .height(32)
+                  .borderRadius(16)
                   .onClick(() => {
                     this.passwordGeneratorController.open();
                   })
