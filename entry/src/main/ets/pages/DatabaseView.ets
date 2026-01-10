@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, ClipboardUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -612,7 +612,7 @@ struct DatabaseView {
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
-              Text('收藏')
+              Text($r('app.string.favorite_button_text'))
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -635,7 +635,7 @@ struct DatabaseView {
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
-              Text('置顶')
+              Text($r('app.string.pin_button_text'))
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -1381,7 +1381,13 @@ struct DatabaseView {
                         // TOTP 字段展示
                         if (this.isListShowTotp) {
                           ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string, index: number) => {
-                            TotpPreviewComponent({ totpUrl: totpUrl })
+                            TotpPreviewComponent({
+                              totpUrl: totpUrl,
+                              doClick: (value) => {
+                                ClipboardUtils.copyAutoClear(value);
+                                return false;
+                              }
+                            })
                           });
                         }
                       }

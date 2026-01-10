@@ -1643,6 +1643,14 @@
     {
       "name": "more_button_text",
       "value": "更多"
+    },
+    {
+      "name": "favorite_button_text",
+      "value": "收藏"
+    },
+    {
+      "name": "pin_button_text",
+      "value": "置顶"
     }
   ]
 }
