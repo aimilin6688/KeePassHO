@@ -1627,6 +1627,22 @@
     {
       "name": "onedrive_save_file",
       "value": "Save the file to OneDrive"
+    },
+    {
+      "name": "copy_username",
+      "value": "Copy Username"
+    },
+    {
+      "name": "copy_password",
+      "value": "Copy Password"
+    },
+    {
+      "name": "copy_group_name",
+      "value": "Copy Group Name"
+    },
+    {
+      "name": "more_button_text",
+      "value": "More"
     }
   ]
 }

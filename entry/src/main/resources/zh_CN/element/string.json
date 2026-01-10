@@ -1627,6 +1627,10 @@
     {
       "name": "onedrive_save_file",
       "value": "保存文件到OneDrive中"
+    },
+    {
+      "name": "more_button_text",
+      "value": "更多"
     }
   ]
 }
