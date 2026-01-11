@@ -1649,6 +1649,10 @@
       "value": "收藏"
     },
     {
+      "name": "unfavorite_button_text",
+      "value": "取消收藏"
+    },
+    {
       "name": "pin_button_text",
       "value": "置顶"
     },
