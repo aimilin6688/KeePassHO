@@ -979,7 +979,6 @@ struct DatabaseView {
       this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
       // 对合并后的数组进行排序
       KdbxUtils.sortBy(this.items, this.sortBy);
-
       // 如果在搜索状态，更新搜索结果
       if (this.isSearching && this.searchText.length > 0) {
         this.performSearch();
