@@ -1649,6 +1649,10 @@
       "value": "Favorite"
     },
     {
+      "name": "unfavorite_button_text",
+      "value": "Unfavorite"
+    },
+    {
       "name": "pin_button_text",
       "value": "Pin"
     },

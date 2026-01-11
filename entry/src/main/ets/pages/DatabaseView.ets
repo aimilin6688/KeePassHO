@@ -330,8 +330,10 @@ struct DatabaseView {
         CommonUtils.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
+      // 合并分组和条目到一个数组
       this.items = [...this.currentGroup.groups, ...this.currentGroup.entries];
       KdbxUtils.sortBy(this.items, this.sortBy);
+      this.addFavorite();
       hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.items.length} items`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
@@ -618,8 +620,8 @@ struct DatabaseView {
               Image($r('app.media.ic_favorite'))
                 .width(28)
                 .height(28)
-                .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.favorite_button_text'))
+                .fillColor(this.selectedItem && KdbxUtils.isFavorite(this.selectedItem) ? $r('app.color.warn') : $r('app.color.text_primary'))
+              Text(this.selectedItem && KdbxUtils.isFavorite(this.selectedItem) ? $r('app.string.unfavorite_button_text') : $r('app.string.favorite_button_text'))
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -631,6 +633,7 @@ struct DatabaseView {
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
+            this.toggleFavorite();
           })
         }
 
@@ -814,6 +817,38 @@ struct DatabaseView {
     this.saveDatabase();
   }
 
+  /**
+   * 收藏或取消收藏条目/分组
+   */
+  private toggleFavorite() {
+    if (!this.selectedItem || !this.database) {
+      return;
+    }
+    // 切换收藏状态
+    KdbxUtils.toggleFavorite(this.selectedItem);
+    // 更新时间戳
+    this.selectedItem.times.update();
+    // 隐藏菜单
+    this.hideMoreMenu();
+    // 保存数据库
+    this.saveDatabase();
+  }
+
+  /**
+   * 添加收藏数据
+   */
+  private addFavorite(){
+    // 如果是默认分组，添加收藏的数据到最上方
+    if (this.database && !this.showBack) {
+      const favoriteItems = KdbxUtils.getFavoriteItems(this.database);
+      // 过滤掉当前分组中已有的收藏项，避免重复
+      const currentItemsUuid = new Set(this.items.map(item => item.uuid.id));
+      const uniqueFavoriteItems = favoriteItems.filter(item => !currentItemsUuid.has(item.uuid.id));
+      // 将收藏项添加到列表最前面
+      this.items = [...uniqueFavoriteItems, ...this.items];
+    }
+  }
+
   private handleAddGroup(iconId?: number | string) {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
@@ -950,6 +985,9 @@ struct DatabaseView {
         this.performSearch();
       } else if (this.isSearching) {
         this.filteredItems = [...this.items];
+      } else {
+        // 非搜索状态，添加收藏数据
+        this.addFavorite();
       }
     }, 10);
   }
@@ -1342,6 +1380,7 @@ struct DatabaseView {
                             .margin({ right: 0 })
                             .fillColor($r('app.color.text_primary'))
                         }
+                        .padding({left: 2})
                         .width('100%')
 
                         // 置顶标记
@@ -1352,6 +1391,14 @@ struct DatabaseView {
                             .width(16)
                             .height(16)
                             .position({ x: 0, y: 6 })
+                        }
+                        // 收藏标记
+                        if (KdbxUtils.isFavorite(item)) {
+                          Image($r('app.media.ic_favorite'))
+                            .width(16)
+                            .height(16)
+                            .fillColor($r('app.color.warn'))
+                            .position({ x: -2, y: 24 })
                         }
                       }
                       .height(66)
@@ -1428,6 +1475,7 @@ struct DatabaseView {
                             .margin({ right: 0 })
                             .fillColor($r('app.color.text_primary'))
                         }
+                        .padding({left: 2})
                         .width('100%')
 
                         // 置顶标记
@@ -1438,6 +1486,14 @@ struct DatabaseView {
                             .width(16)
                             .height(16)
                             .position({ x: 0, y: 0 })
+                        }
+                        // 收藏标记
+                        if (KdbxUtils.isFavorite(item)) {
+                          Image($r('app.media.ic_favorite'))
+                            .width(16)
+                            .height(16)
+                            .fillColor($r('app.color.warn'))
+                            .position({ x: -2, y: 18 })
                         }
                       }
                       .borderRadius(8)
