@@ -143,7 +143,7 @@ export struct AddGroupDialog {
           .fontColor(Color.White)
           .width('45%')
           .height(40)
-          .borderRadius(16)
+          .borderRadius(20)
 
         Button($r("app.string.confirm_button_text"))
           .enabled(this.newGroupName.trim().length > 0)
@@ -157,7 +157,7 @@ export struct AddGroupDialog {
           .fontColor($r('app.color.button_text'))
           .width('45%')
           .height(40)
-          .borderRadius(16)
+          .borderRadius(20)
       }
       .width('100%')
       .padding({
