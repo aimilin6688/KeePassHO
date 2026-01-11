@@ -2,6 +2,7 @@ import HashMap from '@ohos.util.HashMap';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../common/utils';
+import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'PasswordGeneratorDialog';
@@ -257,18 +258,32 @@ export struct PasswordGeneratorDialog {
 
       // 密码生成器内容
       Column() {
-        TextArea({ text: this.password })
-          .lineHeight(24)
-          .padding({ top: 12, bottom: 12 })
-          .fontSize(16)
-          .height(52)
-          .fontColor($r('app.color.text_primary'))
-          .borderRadius(8)
-          .width("100%")
-          .onChange((value) => {
-            this.password = value;
-            this.evaluatePasswordStrength();
-          })
+        Row() {
+          TextArea({ text: this.password })
+            .padding({ top: 14, bottom: 14 })
+            .fontSize(16)
+            .minLines(1)
+            .fontColor($r('app.color.text_primary'))
+            .borderRadius(8)
+            .width("100%")
+            .layoutWeight(1)
+            .onChange((value) => {
+              this.password = value;
+              this.evaluatePasswordStrength();
+            })
+
+          Image($r('app.media.ic_copy'))
+            .width(24)
+            .height(24)
+            .fillColor($r('app.color.text_primary'))
+            .margin({ left: 4 })
+            .onClick(() => {
+              if (this.password) {
+                ClipboardUtils.copyAutoClear(this.password);
+              }
+            })
+        }
+        .width('100%')
 
         // 密码强度指示器
         Row() {
