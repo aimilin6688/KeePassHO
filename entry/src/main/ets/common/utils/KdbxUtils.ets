@@ -321,36 +321,26 @@ export class KdbxUtils {
 
   /**
    * 对组和条目进行排序
-   * @param groups 组
-   * @param entries 条目
-   * @param sortMod 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
+   * @param items 条目和分组的合并数组
+   * @param sortMode 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
    */
-  public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
+  public static sortBy(items: Array<KdbxGroup | KdbxEntry>, sortMode: SortMode) {
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
         // 按名称排序（置顶优先，同是置顶的按修改时间排序）
-        groups.sort((a, b) => {
+        items.sort((a, b) => {
           const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
           if (pinnedResult !== 0) return pinnedResult;
-          return (a.name ?? String.fromCharCode(0xffff)).localeCompare((b.name ?? String.fromCharCode(0xffff)));
-        });
-        entries.sort((a, b) => {
-          const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
-          if (pinnedResult !== 0) return pinnedResult;
-          const titleA = KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
-          const titleB = KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
-          return titleA.localeCompare(titleB);
+          // 获取名称
+          const nameA = a instanceof KdbxGroup ? (a.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
+          const nameB = b instanceof KdbxGroup ? (b.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
+          return nameA.localeCompare(nameB);
         });
         break;
       case SortMode.MODIFIED:
         // 按修改日期排序（置顶优先，同是置顶的按修改时间排序）
-        groups.sort((a, b) => {
-          const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
-          if (pinnedResult !== 0) return pinnedResult;
-          return KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime);
-        });
-        entries.sort((a, b) => {
+        items.sort((a, b) => {
           const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
           if (pinnedResult !== 0) return pinnedResult;
           return KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime);
@@ -358,12 +348,7 @@ export class KdbxUtils {
         break;
       case SortMode.CREATED:
         // 按创建日期排序（置顶优先，同是置顶的按修改时间排序）
-        groups.sort((a, b) => {
-          const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
-          if (pinnedResult !== 0) return pinnedResult;
-          return KdbxUtils.compare(b.times.creationTime, a.times.creationTime);
-        });
-        entries.sort((a, b) => {
+        items.sort((a, b) => {
           const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
           if (pinnedResult !== 0) return pinnedResult;
           return KdbxUtils.compare(b.times.creationTime, a.times.creationTime);
@@ -372,8 +357,7 @@ export class KdbxUtils {
       case SortMode.DEFAULT:
       default:
         // 默认排序（置顶优先，同是置顶的按修改时间排序）
-        groups.sort((a, b) => KdbxUtils.comparePinnedAndTime(a, b));
-        entries.sort((a, b) => KdbxUtils.comparePinnedAndTime(a, b));
+        items.sort((a, b) => KdbxUtils.comparePinnedAndTime(a, b));
         break;
     }
   }
@@ -450,7 +434,6 @@ export class KdbxUtils {
     if (aPinned && bPinned) {
       return KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime);
     }
-
     // 如果都没有置顶，按位置（返回0，保持原顺序）
     return 0;
   }
