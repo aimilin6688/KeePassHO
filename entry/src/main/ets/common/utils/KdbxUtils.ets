@@ -45,6 +45,8 @@ export class KdbxUtils {
   public static readonly GROUP_TEMPLATES_NAME = 'Templates';
   /** 置顶标签 */
   public static readonly PINNED_TAG = '__PINNED__';
+  /** 收藏标签 */
+  public static readonly FAVORITE_TAG = '__FAVORITE__';
   private static customIconMap: Map<string, string> = new Map<string, string>();
 
   public static init() {
@@ -409,6 +411,68 @@ export class KdbxUtils {
       item.tags.push(KdbxUtils.PINNED_TAG);
       return true;
     }
+  }
+
+  /**
+   * 检查条目或分组是否收藏
+   * @param item 条目或分组
+   * @returns 是否收藏
+   */
+  public static isFavorite(item: KdbxEntry | KdbxGroup): boolean {
+    return item.tags && item.tags.includes(KdbxUtils.FAVORITE_TAG);
+  }
+
+  /**
+   * 切换条目或分组的收藏状态
+   * @param item 条目或分组
+   * @returns 切换后是否收藏
+   */
+  public static toggleFavorite(item: KdbxEntry | KdbxGroup): boolean {
+    if (!item.tags) {
+      item.tags = [];
+    }
+    const index = item.tags.indexOf(KdbxUtils.FAVORITE_TAG);
+    if (index >= 0) {
+      // 取消收藏
+      item.tags.splice(index, 1);
+      return false;
+    } else {
+      // 收藏
+      item.tags.push(KdbxUtils.FAVORITE_TAG);
+      return true;
+    }
+  }
+
+  /**
+   * 在数据库中获取所有收藏的条目和分组
+   * @param database 数据库
+   * @returns 收藏的条目和分组列表
+   */
+  public static getFavoriteItems(database: Kdbx): Array<KdbxGroup | KdbxEntry> {
+    const favoriteItems: Array<KdbxGroup | KdbxEntry> = [];
+    if (!database) {
+      return favoriteItems;
+    }
+
+    const rootGroup = database.getDefaultGroup();
+    const collectFavorites = (group: KdbxGroup) => {
+      // 收集收藏的分组
+      for (const subGroup of group.groups) {
+        if (KdbxUtils.isFavorite(subGroup)) {
+          favoriteItems.push(subGroup);
+        }
+        collectFavorites(subGroup);
+      }
+      // 收集收藏的条目
+      for (const entry of group.entries) {
+        if (KdbxUtils.isFavorite(entry)) {
+          favoriteItems.push(entry);
+        }
+      }
+    };
+
+    collectFavorites(rootGroup);
+    return favoriteItems;
   }
 
   /**
