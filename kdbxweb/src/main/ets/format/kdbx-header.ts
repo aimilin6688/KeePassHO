@@ -72,7 +72,7 @@ export const HeaderConst = {
 
 const DefaultMinorVersions = {
     3: 1,
-    4: 0
+    4: 1
 } as const;
 
 const LastMinorVersions: { [major: number]: number } = {
