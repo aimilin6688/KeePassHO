@@ -645,8 +645,8 @@ struct DatabaseView {
               Image($r('app.media.ic_top'))
                 .width(28)
                 .height(28)
-                .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.pin_button_text'))
+                .fillColor(this.selectedItem && KdbxUtils.isPinned(this.selectedItem) ? $r('app.color.button_bg_blue') : $r('app.color.text_primary'))
+              Text(this.selectedItem && KdbxUtils.isPinned(this.selectedItem) ? $r('app.string.unpin_button_text') : $r('app.string.pin_button_text'))
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -658,6 +658,7 @@ struct DatabaseView {
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
+            this.togglePin();
           })
         }
 
@@ -798,6 +799,23 @@ struct DatabaseView {
         }
       }));
     }
+  }
+
+  /**
+   * 置顶或取消置顶条目/分组
+   */
+  private togglePin() {
+    if (!this.selectedItem || !this.database) {
+      return;
+    }
+    // 切换置顶状态
+    KdbxUtils.togglePinned(this.selectedItem);
+    // 更新时间戳
+    this.selectedItem.times.update();
+    // 隐藏菜单
+    this.hideMoreMenu();
+    // 保存数据库
+    this.saveDatabase();
   }
 
   private handleAddGroup(iconId?: number | string) {
@@ -1305,11 +1323,12 @@ struct DatabaseView {
                 // 分组信息显示
                 ForEach(this.isSearching ? this.filteredGroups : this.groups, (itemGroup: KdbxGroup, index: number) => {
                   ListItem() {
-                    Row() {
-                      Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
-                        .width(36)
-                        .height(36)
-                        .margin(10)
+                    Stack({ alignContent: Alignment.TopEnd }) {
+                      Row() {
+                        Image(KdbxUtils.getIcon(itemGroup.icon, itemGroup.customIcon, $r('app.media.ic_folder_open')))
+                          .width(36)
+                          .height(36)
+                          .margin(10)
                       Column() {
                         Text(KdbxUtils.getFieldName(itemGroup.name))
                           .fontSize(18)
@@ -1336,6 +1355,17 @@ struct DatabaseView {
                         .fillColor($r('app.color.text_primary'))
                     }
                     .width('100%')
+
+                    // 置顶标记
+                    if (KdbxUtils.isPinned(itemGroup)) {
+                      Polygon()
+                        .points([[0, 0], [16, 0], [0, 16]])
+                        .fill($r('app.color.button_bg_blue'))
+                        .width(16)
+                        .height(16)
+                        .position({ x: 0, y: 6 })
+                    }
+                  }
                     .height(66)
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemGroup.uuid.id)) ? $r("app.color.item_selected") :
@@ -1361,12 +1391,13 @@ struct DatabaseView {
                 // 条目数据展示
                 ForEach(this.isSearching ? this.filteredEntries : this.entries, (itemEntry: KdbxEntry, index: number) => {
                   ListItem() {
-                    Row() {
-                      Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
-                        KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
-                        .width(36)
-                        .height(36)
-                        .margin(10)
+                    Stack({ alignContent: Alignment.TopEnd }) {
+                      Row() {
+                        Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
+                          KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                          .width(36)
+                          .height(36)
+                          .margin(10)
                       Column() {
                         Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
                           .fontSize(18)
@@ -1413,6 +1444,17 @@ struct DatabaseView {
                         .fillColor($r('app.color.text_primary'))
                     }
                     .width('100%')
+
+                    // 置顶标记
+                    if (KdbxUtils.isPinned(itemEntry)) {
+                      Polygon()
+                        .points([[0, 0], [16, 0], [0, 16]])
+                        .fill($r('app.color.button_bg_blue'))
+                        .width(16)
+                        .height(16)
+                        .position({ x: 0, y: 0 })
+                    }
+                  }
                     .borderRadius(8)
                     .backgroundColor((this.moveParam && this.moveParam.isMoveItem(itemEntry.uuid.id)) ? $r("app.color.button_bg_blue") :
                       $r("app.color.card_bg"))
