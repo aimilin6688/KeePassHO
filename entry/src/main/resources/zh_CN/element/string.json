@@ -1651,6 +1651,10 @@
     {
       "name": "pin_button_text",
       "value": "置顶"
+    },
+    {
+      "name": "unpin_button_text",
+      "value": "取消置顶"
     }
   ]
 }
