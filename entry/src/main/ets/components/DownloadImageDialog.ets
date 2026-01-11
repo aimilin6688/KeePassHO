@@ -189,7 +189,7 @@ export struct DownloadImageDialog {
           .fontColor($r('app.color.button_text'))
           .width('45%')
           .height(40)
-          .borderRadius(16)
+          .borderRadius(20)
           .enabled(!this.isDownloading)
 
         Button($r('app.string.download_button_text'))
@@ -201,7 +201,7 @@ export struct DownloadImageDialog {
           .fontColor($r('app.color.button_text'))
           .width('45%')
           .height(40)
-          .borderRadius(16)
+          .borderRadius(20)
       }
       .width('100%')
       .padding({

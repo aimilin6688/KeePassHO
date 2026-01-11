@@ -518,6 +518,7 @@ export struct TotpConfigDialog {
                 .fontSize(16)
                 .backgroundColor(Color.Gray)
                 .fontColor($r('app.color.button_text'))
+                .borderRadius(20)
                 .onClick(() => {
                   this.controller.close();
                 })
@@ -528,6 +529,7 @@ export struct TotpConfigDialog {
                 .fontSize(16)
                 .fontColor($r('app.color.button_text'))
                 .backgroundColor($r("app.color.button_bg_blue"))
+                .borderRadius(20)
                 .onClick(() => {
                   this.handlerConfirm();
                 })

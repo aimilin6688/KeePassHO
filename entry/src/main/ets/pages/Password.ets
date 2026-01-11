@@ -549,6 +549,7 @@ struct Password {
           Button($r("app.string.change_database"))
             .height(48)
             .layoutWeight(1)
+            .borderRadius(24)
             .margin({ left: 16, right: 8 })
             .backgroundColor($r('app.color.card_bg'))  // 浅灰色背景
             .fontColor($r('app.color.text_primary'))        // 深灰色文字
@@ -562,6 +563,7 @@ struct Password {
             .layoutWeight(1)
             .margin({ left: 8, right: 16 })
             .enabled(this.buttonEnabled)
+            .borderRadius(24)
             .backgroundColor(this.buttonEnabled ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
             .onClick(() => {
               this.verifyAndOpenDatabase();

@@ -299,6 +299,7 @@ struct ChangePassword {
           .height(40)
           .fontSize(16)
           .backgroundColor(Color.Gray)
+          .borderRadius(20)
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
             this.router.replaceUrl({ url: 'pages/setting/SettingDatabase' });
@@ -310,6 +311,7 @@ struct ChangePassword {
           .fontSize(16)
           .enabled(this.errorMessage.length == 0)
           .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
           .backgroundColor($r("app.color.button_bg_blue"))
           .onClick(() => {
             this.changePassword();

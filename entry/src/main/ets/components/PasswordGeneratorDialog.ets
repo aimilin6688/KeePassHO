@@ -621,7 +621,7 @@ export struct PasswordGeneratorDialog {
         .fontColor($r('app.color.button_text'))
         .enabled(this.isAcceptable)
         .backgroundColor($r("app.color.button_bg_blue"))
-        .borderRadius(4)
+        .borderRadius(20)
 
         .onClick(() => {
           this.onGenerate(this.password);
@@ -634,7 +634,7 @@ export struct PasswordGeneratorDialog {
           .fontSize(16)
           .fontColor(Color.White)
           .backgroundColor(Color.Gray)
-          .borderRadius(4)
+          .borderRadius(20)
           .onClick(() => {
             this.generatePassword();
           })

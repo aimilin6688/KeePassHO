@@ -1697,7 +1697,7 @@ struct DatabaseView {
               .width('45%')
               .height(40)
               .margin({ right: 8 })
-              .borderRadius(16)
+              .borderRadius(20)
               .fontColor($r("app.color.button_text_blue"))
               .backgroundColor($r("app.color.button_bg_blue"))
               .onClick(() => {
@@ -1708,7 +1708,7 @@ struct DatabaseView {
               .width('45%')
               .height(40)
               .backgroundColor(Color.Gray)
-              .borderRadius(16)
+              .borderRadius(20)
               .fontColor(Color.White)
               .onClick(() => {
                 // 取消移动模式
