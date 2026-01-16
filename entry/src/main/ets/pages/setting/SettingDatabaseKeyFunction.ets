@@ -322,7 +322,7 @@ struct SettingDatabaseKeyFunction {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor(Color.Gray)
         .onClick(() => {
           this.router.back();
@@ -341,7 +341,7 @@ struct SettingDatabaseKeyFunction {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor($r('app.color.button_bg_blue'))
         .onClick(() => {
           this.saveAlgoParams();
