@@ -25,7 +25,9 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 ## 安装
 
 鸿蒙手机扫码安装：  
-<img src="install.png" width="200" alt="微信支持">
+<a href="https://appgallery.huawei.com/app/detail?id=com.aimilin.keepassho&channelId=SHARE&source=appshare">
+    <img src="install.png" width="200" alt="微信支持">
+</a>
 
 
 ## 编译构建
