@@ -1,7 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
-import { KdbxUtils, DateUtils, WindowUtils } from '../common/utils';
+import { KdbxUtils, DateUtils, WindowUtils, CommonUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
@@ -60,7 +60,7 @@ struct EntryView {
       this.database = dbFileParam.database ?? null;
 
       if (!this.database || !this.entryId) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.invalid_db_or_entry'),
           duration: 2000
         });
@@ -72,7 +72,7 @@ struct EntryView {
       this.entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId, this.selectedHistoryIndex);
 
       if (!this.entry) {
-        this.promptAction.showToast({
+        CommonUtils.showToast({
           message: $r('app.string.entry_not_found'),
           duration: 2000
         });
@@ -88,7 +88,7 @@ struct EntryView {
 
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to load entry: ${error}`);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.load_entry_failed') + `: ${error}`,
         duration: 2000
       });
@@ -223,7 +223,7 @@ struct EntryView {
    * 编辑条目
    */
   private editEntry() {
-    this.router.pushUrl({
+    CommonUtils.pushUrl({
       url: 'pages/EntryEdit',
       params: {
         entryId: this.entryId,
@@ -236,7 +236,7 @@ struct EntryView {
    * 查看历史记录详情
    */
   private viewHistoryDetail(index: number) {
-    this.router.pushUrl({
+    CommonUtils.pushUrl({
       url: 'pages/EntryView',
       params: {
         entryId: this.entryId,

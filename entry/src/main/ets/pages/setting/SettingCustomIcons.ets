@@ -141,7 +141,7 @@ struct SettingCustomIcons {
                   .objectFit(ImageFit.Contain)
 
                 Checkbox({ name: 'check_' + icon.id, group: 'icon_group' })
-                  .key('key_' + icon.id)
+                  .id('key_' + icon.id)
                   .select(this.selectIcons.has(icon.id))
                   .selectedColor($r('app.color.button_bg_blue'))
                   .shape(CheckBoxShape.CIRCLE)
@@ -191,7 +191,7 @@ struct SettingCustomIcons {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor(Color.Gray)
         .onClick(() => {
           this.deleteNotUse();
@@ -211,7 +211,7 @@ struct SettingCustomIcons {
         .width('45%')
         .height(40)
         .enabled(this.selectIcons.size > 0)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor($r('app.color.button_bg_blue'))
         .onClick(() => {
           this.deleteIcons();

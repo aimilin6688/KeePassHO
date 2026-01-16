@@ -1,7 +1,7 @@
 import { Router } from '@kit.ArkUI';
 import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
-import { KdbxUtils, ResourceManager } from '../../common/utils';
+import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { KdbxImportService } from '../../services/kdbx/KdbxImportService';
@@ -98,7 +98,7 @@ struct SettingsDatabase {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.router.pushUrl({ url: 'pages/ChangePassword' });
+                CommonUtils.pushUrl({ url: 'pages/ChangePassword' });
               })
             }
 
@@ -146,7 +146,7 @@ struct SettingsDatabase {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.router.pushUrl({
+                CommonUtils.pushUrl({
                   url: 'pages/setting/SettingDatabaseKeyFunction',
                   params: {}
                 });
@@ -176,7 +176,7 @@ struct SettingsDatabase {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.router.pushUrl({
+                CommonUtils.pushUrl({
                   url: 'pages/setting/SettingDatabaseMeta',
                   params: {}
                 });
@@ -197,7 +197,7 @@ struct SettingsDatabase {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.router.pushUrl({
+                CommonUtils.pushUrl({
                   url: 'pages/setting/SettingCustomIcons',
                   params: {}
                 });
@@ -218,7 +218,7 @@ struct SettingsDatabase {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.router.pushUrl({
+                CommonUtils.pushUrl({
                   url: 'pages/setting/SettingDatabaseProtectedFiled',
                   params: {}
                 });

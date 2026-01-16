@@ -1,6 +1,6 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
 import { FileInfo, IFileStorage } from '../IFileStorage';
-import { FileUtils, FilenameUtils } from '../../common/utils';
+import { FilenameUtils, FileUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileType, PageConfig, StorageConfig } from '..';
@@ -43,10 +43,16 @@ export class LocalFileStorage implements IFileStorage {
       if (result[0]) {
         return FileUtils.activatePermission(path, operationMode).then(() => {
           return Promise.resolve(true);
+        }).catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, `Failed to activate permission: ${error.message}`);
+          return Promise.resolve(false);
         });
       } else {
         return Promise.resolve(false);
       }
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, `Failed to check persist permission: ${error.message}`);
+      return Promise.resolve(false);
     });
   }
 
