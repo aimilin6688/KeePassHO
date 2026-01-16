@@ -43,6 +43,10 @@ export class KdbxUtils {
   public static readonly GROUP_NAME = 'GroupName';
   public static readonly GROUP_RECYCLE_BIN = 'Recycle Bin';
   public static readonly GROUP_TEMPLATES_NAME = 'Templates';
+  /** 置顶标签 */
+  public static readonly PINNED_TAG = '__PINNED__';
+  /** 收藏标签 */
+  public static readonly FAVORITE_TAG = '__FAVORITE__';
   private static customIconMap: Map<string, string> = new Map<string, string>();
 
   public static init() {
@@ -319,35 +323,43 @@ export class KdbxUtils {
 
   /**
    * 对组和条目进行排序
-   * @param groups 组
-   * @param entries 条目
-   * @param sortMod 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
+   * @param items 条目和分组的合并数组
+   * @param sortMode 0: 默认排序 1: 按名称排序 2: 按修改时间排序 3: 按创建时间排序
    */
-  public static sortBy(groups: Array<KdbxGroup>, entries: Array<KdbxEntry>, sortMode: SortMode) {
+  public static sortBy(items: Array<KdbxGroup | KdbxEntry>, sortMode: SortMode) {
     // 根据排序方式进行排序
     switch (sortMode) {
       case SortMode.NAME:
-        // 按名称排序
-        groups.sort((a, b) => (a.name ?? String.fromCharCode(0xffff)).localeCompare((b.name ?? String.fromCharCode(0xffff))));
-        entries.sort((a, b) => {
-          const titleA = KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
-          const titleB = KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
-          return titleA.localeCompare(titleB);
+        // 按名称排序（置顶优先，同是置顶的按修改时间排序）
+        items.sort((a, b) => {
+          const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
+          if (pinnedResult !== 0) return pinnedResult;
+          // 获取名称
+          const nameA = a instanceof KdbxGroup ? (a.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
+          const nameB = b instanceof KdbxGroup ? (b.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
+          return nameA.localeCompare(nameB);
         });
         break;
       case SortMode.MODIFIED:
-        // 按修改日期排序（最新的在前面）
-        groups.sort((a, b) => KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime));
-        entries.sort((a, b) => KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime));
+        // 按修改日期排序（置顶优先，同是置顶的按修改时间排序）
+        items.sort((a, b) => {
+          const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
+          if (pinnedResult !== 0) return pinnedResult;
+          return KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime);
+        });
         break;
       case SortMode.CREATED:
-        // 按创建日期排序（最新的在前面）
-        groups.sort((a, b) => KdbxUtils.compare(b.times.creationTime, a.times.creationTime));
-        entries.sort((a, b) => KdbxUtils.compare(b.times.creationTime, a.times.creationTime));
+        // 按创建日期排序（置顶优先，同是置顶的按修改时间排序）
+        items.sort((a, b) => {
+          const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
+          if (pinnedResult !== 0) return pinnedResult;
+          return KdbxUtils.compare(b.times.creationTime, a.times.creationTime);
+        });
         break;
       case SortMode.DEFAULT:
       default:
-      // 默认排序，不做额外处理
+        // 默认排序（置顶优先，同是置顶的按修改时间排序）
+        items.sort((a, b) => KdbxUtils.comparePinnedAndTime(a, b));
         break;
     }
   }
@@ -369,6 +381,125 @@ export class KdbxUtils {
       return 1;
     }
     return a.getTime() - b.getTime();
+  }
+
+  /**
+   * 检查条目或分组是否置顶
+   * @param item 条目或分组
+   * @returns 是否置顶
+   */
+  public static isPinned(item: KdbxEntry | KdbxGroup): boolean {
+    return item.tags && item.tags.includes(KdbxUtils.PINNED_TAG);
+  }
+
+  /**
+   * 切换条目或分组的置顶状态
+   * @param item 条目或分组
+   * @returns 切换后是否置顶
+   */
+  public static togglePinned(item: KdbxEntry | KdbxGroup): boolean {
+    if (!item.tags) {
+      item.tags = [];
+    }
+    const index = item.tags.indexOf(KdbxUtils.PINNED_TAG);
+    if (index >= 0) {
+      // 取消置顶
+      item.tags.splice(index, 1);
+      return false;
+    } else {
+      // 置顶
+      item.tags.push(KdbxUtils.PINNED_TAG);
+      return true;
+    }
+  }
+
+  /**
+   * 检查条目或分组是否收藏
+   * @param item 条目或分组
+   * @returns 是否收藏
+   */
+  public static isFavorite(item: KdbxEntry | KdbxGroup): boolean {
+    return item.tags && item.tags.includes(KdbxUtils.FAVORITE_TAG);
+  }
+
+  /**
+   * 切换条目或分组的收藏状态
+   * @param item 条目或分组
+   * @returns 切换后是否收藏
+   */
+  public static toggleFavorite(item: KdbxEntry | KdbxGroup): boolean {
+    if (!item.tags) {
+      item.tags = [];
+    }
+    const index = item.tags.indexOf(KdbxUtils.FAVORITE_TAG);
+    if (index >= 0) {
+      // 取消收藏
+      item.tags.splice(index, 1);
+      return false;
+    } else {
+      // 收藏
+      item.tags.push(KdbxUtils.FAVORITE_TAG);
+      return true;
+    }
+  }
+
+  /**
+   * 在数据库中获取所有收藏的条目和分组
+   * @param database 数据库
+   * @returns 收藏的条目和分组列表
+   */
+  public static getFavoriteItems(database: Kdbx): Array<KdbxGroup | KdbxEntry> {
+    const favoriteItems: Array<KdbxGroup | KdbxEntry> = [];
+    if (!database) {
+      return favoriteItems;
+    }
+
+    const rootGroup = database.getDefaultGroup();
+    const collectFavorites = (group: KdbxGroup) => {
+      // 收集收藏的分组
+      for (const subGroup of group.groups) {
+        if (KdbxUtils.isFavorite(subGroup)) {
+          favoriteItems.push(subGroup);
+        }
+        collectFavorites(subGroup);
+      }
+      // 收集收藏的条目
+      for (const entry of group.entries) {
+        if (KdbxUtils.isFavorite(entry)) {
+          favoriteItems.push(entry);
+        }
+      }
+    };
+
+    collectFavorites(rootGroup);
+    return favoriteItems;
+  }
+
+  /**
+   * 比较两个条目/分组的置顶状态和时间
+   * 用于排序：置顶的在前，同是置顶的按修改时间排序
+   * @param a 条目A
+   * @param b 条目B
+   * @returns 排序结果
+   */
+  public static comparePinnedAndTime(a: KdbxEntry | KdbxGroup, b: KdbxEntry | KdbxGroup): number {
+    const aPinned = KdbxUtils.isPinned(a);
+    const bPinned = KdbxUtils.isPinned(b);
+
+    // 如果置顶状态不同，置顶的排在前面
+    if (aPinned && !bPinned) {
+      return -1;
+    }
+    if (!aPinned && bPinned) {
+      return 1;
+    }
+
+    // 如果都是置顶的，按修改时间倒序排列（最新的在前）
+    if (aPinned && bPinned) {
+      return KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime);
+    }
+    // 如果都没有置顶，按位置（返回0，保持原顺序）
+    return 0;
   }
 
   /**

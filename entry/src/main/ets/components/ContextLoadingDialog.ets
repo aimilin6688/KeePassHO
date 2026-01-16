@@ -24,5 +24,6 @@ export struct ContextLoadingDialog {
     .width('100%')
     .height('30%')
     .justifyContent(FlexAlign.Center)
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
   }
 }
