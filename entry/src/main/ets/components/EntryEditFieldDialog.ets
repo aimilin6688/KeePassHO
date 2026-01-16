@@ -161,7 +161,7 @@ export struct EntryEditFieldDialog {
           .fontSize(16)
           .backgroundColor(Color.Gray)
           .fontColor(Color.White)
-          .borderRadius(16)
+          .borderRadius(20)
           .onClick(() => {
             this.cancel();
           })
@@ -172,7 +172,7 @@ export struct EntryEditFieldDialog {
           .fontSize(16)
           .fontColor($r('app.color.button_text'))
           .backgroundColor($r("app.color.button_bg_blue"))
-          .borderRadius(16)
+          .borderRadius(20)
           .onClick(() => {
             this.confirm();
           })
@@ -185,5 +185,6 @@ export struct EntryEditFieldDialog {
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 24, right: 24, bottom: 16 })
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
   }
 }

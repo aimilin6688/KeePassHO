@@ -126,7 +126,6 @@ struct LoadingDialogView {
       .margin({ bottom: '16%' })
       .backgroundColor(this.settings?.backgroundColor ?? loadingDialogGlobalSettings.backgroundColor)
       .borderRadius(this.settings?.borderRadius ?? loadingDialogGlobalSettings.borderRadius)
-      .shadow(ShadowStyle.OUTER_DEFAULT_MD)
     }
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)

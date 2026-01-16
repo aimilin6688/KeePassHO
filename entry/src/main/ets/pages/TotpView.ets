@@ -32,7 +32,8 @@ struct TotpView {
     }
     let result = KdbxUtils.searchInGroup(kdbx.getDefaultGroup(), 'otpauth://totp/');
     const sortBy = SettingsService.getInstance().getSync(SettingsService.KEY_SORT_BY, SortMode.DEFAULT);
-    KdbxUtils.sortBy([], result.filteredEntries, sortBy);
+    // 对条目进行排序（传入纯条目数组）
+    KdbxUtils.sortBy(result.filteredEntries, sortBy);
     this.totpEntries.push(...result.filteredEntries);
     this.resultEntries.push(...result.filteredEntries);
   }

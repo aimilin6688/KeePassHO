@@ -551,7 +551,7 @@ struct FileList {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor(Color.Gray)
         .onClick(() => {
           this.handleCancel();
@@ -570,7 +570,7 @@ struct FileList {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor($r('app.color.button_bg_blue'))
         .enabled(this.isEnableConfirm)
         .onClick(() => {
