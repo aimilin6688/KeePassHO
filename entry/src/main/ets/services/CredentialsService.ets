@@ -16,6 +16,7 @@ export class CredentialsService {
    * 创建凭证
    * @param param 请求
    * @return Promise<KdbxCredentials> 凭证
+   * @throws Error 错误
    */
   public static async createKdbxCredentials(param: CredentialsParam): Promise<KdbxCredentials> {
     // 创建凭证

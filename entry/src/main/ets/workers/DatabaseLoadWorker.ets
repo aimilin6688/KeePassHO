@@ -1,7 +1,7 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { Kdbx } from 'kdbxweb';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
-import { KdbxUtils } from '../common/utils';
+import { CommonUtils, KdbxUtils } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { DatabaseLoad } from './DatabaseLoad';
@@ -31,7 +31,12 @@ export class DatabaseLoadWorker extends DatabaseLoad {
    * @param message 消息
    */
   postMessage(message: string | Resource, onLoadMessage?: (message: LoadMessage) => void) {
-    workerPort.postMessage(toLoadMessage(message));
+    try {
+      workerPort.postMessage(toLoadMessage(message));
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postMessage error:%{public}s', error.message);
+      this.postErrorMessage(error.message);
+    }
   }
 
   /**
@@ -39,7 +44,17 @@ export class DatabaseLoadWorker extends DatabaseLoad {
    * @param message 消息
    */
   postErrorMessage(message: string, onErrorMessage?: (message: LoadMessage) => void) {
-    workerPort.postMessage(toErrorMessage(message));
+    try {
+      workerPort.postMessage(toErrorMessage(message));
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postErrorMessage error:%{public}s', error.message);
+      if (onErrorMessage) {
+        onErrorMessage(toErrorMessage(error.message));
+      } else {
+        CommonUtils.showToast(error.message);
+      }
+    }
+
   }
 
   /**
@@ -47,10 +62,15 @@ export class DatabaseLoadWorker extends DatabaseLoad {
    * @param message 消息
    */
   async postSuccessMessage(message: SuccessMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
-    let logTime = Date.now();
-    message.data = await KdbxUtils.kdbxToArrayBuffer(message.data as Kdbx);
-    hilog.debug(DOMAIN, TAG, "Kdbx to array buffer time: %{public}d ms", Date.now() - logTime);
-    workerPort.postMessage(message, [message.data]);
+    try {
+      let logTime = Date.now();
+      message.data = await KdbxUtils.kdbxToArrayBuffer(message.data as Kdbx);
+      hilog.debug(DOMAIN, TAG, "Kdbx to array buffer time: %{public}d ms", Date.now() - logTime);
+      workerPort.postMessage(message, [message.data]);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postSuccessMessage error:%{public}s', error.message);
+      this.postErrorMessage(error.message);
+    }
   }
 }
 

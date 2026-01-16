@@ -5,7 +5,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { SuccessMessage } from './WorkerParam';
 import { SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import { ResourceManager, KdbxUtils } from '../common/utils';
+import { KdbxUtils, ResourceManager } from '../common/utils';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
@@ -53,6 +53,7 @@ export class DatabaseSave {
    * 加载文件内容
    * @param request 请求
    * @return Promise<ArrayBuffer> 文件内容
+   * @throws Error 加载失败
    */
   private async loadKdbxFileContent(request: SaveDatabase): Promise<FileContentInfo> {
     if (!request.filePath) {
@@ -69,6 +70,8 @@ export class DatabaseSave {
    * 合并数据库
    * @param request 请求
    * @param fileContent 新文件内容
+   * @param credentials 凭证
+   * @throws Error 合并失败
    */
   private async mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo, credentials: KdbxCredentials): Promise<FileContentInfo> {
     // 校验文件签名
@@ -88,6 +91,7 @@ export class DatabaseSave {
    * 保存数据库
    * @param request 请求
    * @returns 结果
+   * @throws Error 保存失败
    */
   private async saveDatabase(request: SaveDatabase, credentials: KdbxCredentials, kdbx?: Kdbx): Promise<FileContentInfo> {
     this.postMessage($r('app.string.save_saving'));
@@ -111,9 +115,15 @@ export class DatabaseSave {
       hilog.debug(DOMAIN, TAG, 'Worker save database success, time: %{public}d ms', new Date().getTime() - now);
       await kdbxFileManager.write(request.filePath, savedDb).then(() => {
         this.postMessage($r("app.string.save_success"));
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Worker error save database:%{public}s, stack:%{public}s', error.message, error.stack);
+        throw error;
       });
       return await kdbxFileManager.getInfo(request.filePath).then(fileInfo => {
         return new FileContentInfo(fileInfo, savedDb);
+      }).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Worker error get file info:%{public}s, stack:%{public}s', error.message, error.stack);
+        throw error;
       });
     });
   }

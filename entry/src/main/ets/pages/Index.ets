@@ -1,4 +1,4 @@
-import { ThemeManager } from '../common/utils';
+import { CommonUtils, ThemeManager } from '../common/utils';
 import { Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
@@ -32,7 +32,7 @@ struct Index {
       RecentFilesService.getInstance().loadMostRecentFile().then((recentFile) => {
         if (recentFile) {
           // 导航到密码输入页面
-          this.router.pushUrl({
+          CommonUtils.pushUrl({
             url: 'pages/Password',
             params: {
               filePath: recentFile.filePath
@@ -91,7 +91,7 @@ struct Index {
           .height(24)
           .margin({ right: 16 })
           .onClick(() => {
-            this.router.pushUrl({ url: 'pages/setting/Settings' })
+            CommonUtils.pushUrl({ url: 'pages/setting/Settings' })
           })
       }
       .width('100%')
@@ -121,13 +121,13 @@ struct Index {
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
           DataService.selectKdbx(this.router);
-          this.router.pushUrl({ url: 'pages/open/SelectLocation' })
+          CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' })
         })
 
         // 添加间距
         Column() {
           this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
-            this.router.pushUrl({ url: 'pages/open/CreateDatabase' })
+            CommonUtils.pushUrl({ url: 'pages/open/CreateDatabase' })
           })
         }
         .margin({ top: 24 })
@@ -135,7 +135,7 @@ struct Index {
         // 最近打开的文件按钮
         Column() {
           this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
-            this.router.pushUrl({ url: 'pages/RecentFiles' })
+            CommonUtils.pushUrl({ url: 'pages/RecentFiles' })
           })
         }
         .margin({ top: 24 })

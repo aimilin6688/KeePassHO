@@ -1522,7 +1522,7 @@
     },
     {
       "name": "application_sync_data_tips",
-      "value": "同一个华为账号，不用设备之间同步应用配置信息"
+      "value": "同一个华为账号，不同设备之间同步应用配置信息"
     },
     {
       "name": "Permission_DISTRIBUTED_DATASYNC_reason",
@@ -1627,6 +1627,38 @@
     {
       "name": "onedrive_save_file",
       "value": "保存文件到OneDrive中"
+    },
+    {
+      "name": "copy_username",
+      "value": "复制\n用户名"
+    },
+    {
+      "name": "copy_password",
+      "value": "复制\n密码"
+    },
+    {
+      "name": "copy_group_name",
+      "value": "复制\n分组名"
+    },
+    {
+      "name": "more_button_text",
+      "value": "更多"
+    },
+    {
+      "name": "favorite_button_text",
+      "value": "收藏"
+    },
+    {
+      "name": "unfavorite_button_text",
+      "value": "取消收藏"
+    },
+    {
+      "name": "pin_button_text",
+      "value": "置顶"
+    },
+    {
+      "name": "unpin_button_text",
+      "value": "取消置顶"
     }
   ]
 }
