@@ -37,7 +37,7 @@ struct RecentFiles {
       this.recentFiles = await RecentFilesService.getRecentFiles();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'load recent file error: %{public}s', error.message);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.load_recent_files_failed'),
         duration: 2000
       });
@@ -93,13 +93,13 @@ struct RecentFiles {
     try {
       await RecentFilesService.getInstance().clearRecentFiles();
       this.recentFiles = [];
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.all_records_cleared'),
         duration: 2000
       });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'clear records error: %{public}s', error.message);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.clear_records_failed'),
         duration: 2000
       });
@@ -115,13 +115,13 @@ struct RecentFiles {
       await RecentFilesService.getInstance().removeRecentFile(recentFile);
       // 重新加载列表
       this.loadRecentFiles();
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.record_removed'),
         duration: 2000
       });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'remove records error: %{public}s', error.message);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.remove_record_failed'),
         duration: 2000
       });

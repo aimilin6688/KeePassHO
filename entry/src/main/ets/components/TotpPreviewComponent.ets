@@ -18,6 +18,7 @@ export class TotpPreviewController {
 export struct TotpPreviewComponent {
   @Prop totpConfig: TotpConfig | undefined = undefined;
   @Prop totpUrl: string | undefined = undefined;
+  @Prop isShow: boolean = true;
   @State previewToken: string = '';
   @State remainingSeconds: number = 30;
   @State isGeneratingToken: boolean = false;
@@ -57,7 +58,7 @@ export struct TotpPreviewComponent {
 
   build() {
     Column() {
-      if (this.previewToken) {
+      if (this.isShow && this.previewToken) {
         Row() {
           Text(this.previewToken)
             .fontSize(24)
@@ -69,6 +70,12 @@ export struct TotpPreviewComponent {
             .height(24)
             .margin({ left: 15 })
         }
+      } else{
+        Text('******')
+          .fontSize(16)
+          .fontColor($r('app.color.text_primary'))
+          .width('100%')
+          .textAlign(TextAlign.Start)
       }
       if (this.errorMessage) {
         Text(this.errorMessage)

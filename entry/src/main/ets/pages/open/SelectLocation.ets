@@ -1,4 +1,5 @@
 import { Router } from '@kit.ArkUI';
+import { CommonUtils } from '../../common/utils';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { FileStorage, PageConfig } from '../../storage';
@@ -64,7 +65,7 @@ struct SelectLocation {
                 title: config.title,
                 description: LocationParam.isSaveMode() ? config.saveDesc : config.selectDesc,
                 onClickEvent: () => {
-                  this.router.pushUrl({ url: config.pageUrl })
+                  CommonUtils.pushUrl({ url: config.pageUrl })
                 }
               })
             }, (item: PageConfig) => item.pageUrl)

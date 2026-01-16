@@ -102,6 +102,9 @@ export class CryptoUtils {
       } else {
         return CryptoUtils.generateKeyItem();
       }
+    }).catch((error: BusinessError) => {
+      hilog.error(DOMAIN, TAG, 'has key item failed,message is' + JSON.stringify(error));
+      return CryptoUtils.generateKeyItem();
     });
   }
 

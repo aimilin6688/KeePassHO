@@ -1,5 +1,12 @@
 import HashMap from '@ohos.util.HashMap';
 
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { CommonUtils } from '../common/utils';
+import { ClipboardUtils } from '../common/utils/ClipboardUtils';
+
+const DOMAIN = 0x0000;
+const TAG = 'PasswordGeneratorDialog';
+
 /**
  * 密码生成器对话框组件
  */
@@ -54,66 +61,78 @@ export struct PasswordGeneratorDialog {
 
     // 定义字符集
     const charsets = new HashMap<string, string>();
-    charsets.set("lowercase", 'abcdefghijklmnopqrstuvwxyz');
-    charsets.set("uppercase", 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    charsets.set("numbers", '0123456789');
-    charsets.set("special", '!@#$%^&*=+~`|;?><,.');
-    charsets.set("brackets", '(){}[]');
-    charsets.set("minus", '-');
-    charsets.set("underscore", '_');
-    charsets.set("space", ' ');
+    try {
+      charsets.set("lowercase", 'abcdefghijklmnopqrstuvwxyz');
+      charsets.set("uppercase", 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+      charsets.set("numbers", '0123456789');
+      charsets.set("special", '!@#$%^&*=+~`|;?><,.');
+      charsets.set("brackets", '(){}[]');
+      charsets.set("minus", '-');
+      charsets.set("underscore", '_');
+      charsets.set("space", ' ');
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'charsets map set error', e.message);
+      CommonUtils.showToast(e.message);
+      return;
+    }
 
     // 收集选中的字符集
     const selectedCharsets = new Array<string>();
     let fullCharset = '';
 
-    if (this.useLowercase) {
-      const chats = charsets.get("lowercase");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useUppercase) {
-      const chats = charsets.get("uppercase");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useNumbers) {
-      const chats = charsets.get("numbers");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useSpecial) {
-      const chats = charsets.get("special");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useBrackets) {
-      const chats = charsets.get("brackets");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useMinus) {
-      const chats = charsets.get("minus");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useUnderscore) {
-      const chats = charsets.get("underscore");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
-    if (this.useSpace) {
-      const chats = charsets.get("space");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
-    }
+    try {
+      if (this.useLowercase) {
+        const chats = charsets.get("lowercase");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useUppercase) {
+        const chats = charsets.get("uppercase");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useNumbers) {
+        const chats = charsets.get("numbers");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useSpecial) {
+        const chats = charsets.get("special");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useBrackets) {
+        const chats = charsets.get("brackets");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useMinus) {
+        const chats = charsets.get("minus");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useUnderscore) {
+        const chats = charsets.get("underscore");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+      if (this.useSpace) {
+        const chats = charsets.get("space");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
 
-    // 确保至少有一种字符类型被选中
-    if (fullCharset.length === 0) {
-      this.useLowercase = true;
-      const chats = charsets.get("lowercase");
-      selectedCharsets.push(chats);
-      fullCharset += chats;
+      // 确保至少有一种字符类型被选中
+      if (fullCharset.length === 0) {
+        this.useLowercase = true;
+        const chats = charsets.get("lowercase");
+        selectedCharsets.push(chats);
+        fullCharset += chats;
+      }
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'charsets map get error', e.message);
+      CommonUtils.showToast(e.message);
+      return;
     }
 
     let password = '';
@@ -239,18 +258,32 @@ export struct PasswordGeneratorDialog {
 
       // 密码生成器内容
       Column() {
-        TextArea({ text: this.password })
-          .lineHeight(24)
-          .padding({ top: 12, bottom: 12 })
-          .fontSize(16)
-          .height(52)
-          .fontColor($r('app.color.text_primary'))
-          .borderRadius(8)
-          .width("100%")
-          .onChange((value) => {
-            this.password = value;
-            this.evaluatePasswordStrength();
-          })
+        Row() {
+          TextArea({ text: this.password })
+            .padding({ top: 14, bottom: 14 })
+            .fontSize(16)
+            .minLines(1)
+            .fontColor($r('app.color.text_primary'))
+            .borderRadius(8)
+            .width("100%")
+            .layoutWeight(1)
+            .onChange((value) => {
+              this.password = value;
+              this.evaluatePasswordStrength();
+            })
+
+          Image($r('app.media.ic_copy'))
+            .width(24)
+            .height(24)
+            .fillColor($r('app.color.text_primary'))
+            .margin({ left: 4 })
+            .onClick(() => {
+              if (this.password) {
+                ClipboardUtils.copyAutoClear(this.password);
+              }
+            })
+        }
+        .width('100%')
 
         // 密码强度指示器
         Row() {
@@ -603,7 +636,7 @@ export struct PasswordGeneratorDialog {
         .fontColor($r('app.color.button_text'))
         .enabled(this.isAcceptable)
         .backgroundColor($r("app.color.button_bg_blue"))
-        .borderRadius(4)
+        .borderRadius(20)
 
         .onClick(() => {
           this.onGenerate(this.password);
@@ -616,7 +649,7 @@ export struct PasswordGeneratorDialog {
           .fontSize(16)
           .fontColor(Color.White)
           .backgroundColor(Color.Gray)
-          .borderRadius(4)
+          .borderRadius(20)
           .onClick(() => {
             this.generatePassword();
           })
@@ -629,5 +662,6 @@ export struct PasswordGeneratorDialog {
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 24, right: 24, bottom: 16 })
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
   }
 }

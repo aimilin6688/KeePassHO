@@ -56,7 +56,7 @@ struct SettingDatabaseMeta {
    */
   private saveMetadata() {
     if (!this.database) {
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.invalid_database'),
         duration: 2000
       });
@@ -88,7 +88,7 @@ struct SettingDatabaseMeta {
       }));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to update database metadata: %{public}s', error.message);
-      this.promptAction.showToast({
+      CommonUtils.showToast({
         message: $r('app.string.save_failed_message', error.message),
         duration: 2000
       });
@@ -396,7 +396,7 @@ struct SettingDatabaseMeta {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor(Color.Gray)
         .onClick(() => {
           this.router.back();
@@ -415,7 +415,7 @@ struct SettingDatabaseMeta {
         }
         .width('45%')
         .height(40)
-        .borderRadius(16)
+        .borderRadius(20)
         .backgroundColor($r('app.color.button_bg_blue'))
         .onClick(() => {
           this.saveMetadata();

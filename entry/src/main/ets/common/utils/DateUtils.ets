@@ -1,8 +1,8 @@
 import { i18n, intl } from '@kit.LocalizationKit';
 
 export class DateUtils {
-  private static dateFormat: intl.DateTimeFormat =
-    new intl.DateTimeFormat(i18n.System.getSystemLocale(), { "dateStyle": "long", "timeStyle": "medium" });
+  private static dateFormat: Intl.DateTimeFormat =
+    new Intl.DateTimeFormat(i18n.System.getSystemLocaleInstance().language, { "dateStyle": "long", "timeStyle": "medium" });
 
   /**
    * 获取当前时间：yyyyMMdd
