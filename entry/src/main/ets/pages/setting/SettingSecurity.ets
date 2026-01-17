@@ -126,6 +126,7 @@ struct SettingsSecurity {
     if (this.isFaceSupport) {
       this.authTypeOptions.push({ "type": UnlockAuthType.FACE, "value": ResourceManager.getString($r("app.string.face")) });
     }
+    // 是否启用隐私窗口
     this.settingsService.get(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, this.isPrivacyWindow).then(result => {
       this.isPrivacyWindow = result;
     });
