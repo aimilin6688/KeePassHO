@@ -72,7 +72,7 @@ export interface SaveKdbxParam {
 }
 
 /**
- * 数据库文件定义，只会存储在内容中
+ * 数据库文件定义，只会存储在内存中
  */
 export interface DbFileParam extends CredentialsParam {
   /**
