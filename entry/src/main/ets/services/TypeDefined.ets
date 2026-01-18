@@ -314,6 +314,11 @@ export interface RecentFile {
   password?: string;
 
   /**
+   * 密码保存时间戳(毫秒)
+   */
+  passwordSaveTime?: number;
+
+  /**
    * 搜索历史
    */
   searchHistory?: Array<string>;
