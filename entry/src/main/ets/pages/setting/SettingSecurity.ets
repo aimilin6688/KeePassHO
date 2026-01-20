@@ -22,7 +22,6 @@ struct SettingsSecurity {
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
   @State authTypeOptions: AuthTypeOptions[] = [{ "type": UnlockAuthType.PASSWORD, "value": ResourceManager.getString($r("app.string.password")) }];
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
-  @State isDatabaseValid: boolean = false;
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isFaceSupport: boolean = AuthService.isFaceSupport();
   // 自动清空剪切板时间
@@ -59,15 +58,9 @@ struct SettingsSecurity {
   ];
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
-  private promptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
     this.initSettings();
-  }
-
-  onPageShow(): void {
-    const dbFileParam = FileService.getDbFileParam();
-    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
   }
 
   // 初始化设置信息
@@ -132,75 +125,51 @@ struct SettingsSecurity {
     });
   }
 
-  // 修改指纹登录选项
-  private changeFingerprintLogin() {
-    let isFingerprintLogin = !this.fingerprintLogin;
-    if (isFingerprintLogin && this.isDatabaseValid && this.isFingerprintSupport) {
-      this.checkPassword((result) => {
-        this.fingerprintLogin = result;
-        this.settingsService.put(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, result);
-        if (result) {
-          let dbFileParam = FileService.getDbFileParam();
-          RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
-        }
-      });
-    } else {
-      this.fingerprintLogin = false;
-      this.settingsService.put(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, false);
-    }
-  }
-
-  // 修改人脸登录选项
-  private changeFaceLogin() {
-    let isFaceLogin = !this.faceLogin;
-    if (isFaceLogin && this.isDatabaseValid && this.isFingerprintSupport) {
-      this.checkPassword((result) => {
-        this.faceLogin = result;
-        this.settingsService.put(SettingsService.KEY_SECURITY_FACE_LOGIN, result);
-        if (result) {
-          let dbFileParam = FileService.getDbFileParam();
-          RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
-        }
-      });
-    } else {
-      this.faceLogin = false;
-      this.settingsService.put(SettingsService.KEY_SECURITY_FACE_LOGIN, false);
-    }
-  }
-
-  // 关闭隐私模式
-  private changePrivacyWindow() {
-    // 如果当前是开启状态，则需要认证才能关闭
-    if (this.isPrivacyWindow) {
-      this.checkPassword((result) => {
-        this.isPrivacyWindow = !result;
-        this.settingsService.put(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, !result);
-      });
-    } else {
-      this.isPrivacyWindow = true;
-      this.settingsService.put(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, true);
+  /**
+   * 认证类型改变
+   * @param isOn 是否开启
+   */
+  private onAuthTypeChange(authType: string, isOn: boolean) {
+    this.settingsService.put(authType, isOn);
+    if (isOn && FileService.isDatabaseValid()) {
+      let dbFileParam = FileService.getDbFileParam();
+      RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
     }
   }
 
   /**
-   * 认证
+   * 验证主密码是否正确
    * @returns
    */
-  private checkPassword(onSuccess: (result: boolean) => void) {
+  private checkPassword(authType: string): HitTestMode {
+    // 关闭指纹登录
+    if (authType === SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN && !this.fingerprintLogin == false) {
+      return HitTestMode.Default;
+    }
+    // 关闭面容登录
+    if (authType === SettingsService.KEY_SECURITY_FACE_LOGIN && !this.faceLogin == false) {
+      return HitTestMode.Default;
+    }
+    // 启用隐私窗口
+    if (authType === SettingsService.KEY_SECURITY_PRIVACY_WINDOW && !this.isPrivacyWindow == true) {
+      return HitTestMode.Default;
+    }
+
     // 密码认证
     AuthService.startPasswordAuth({
       onSuccess: (result) => {
-        onSuccess(true);
+        this.fingerprintLogin = authType === SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN ? !this.fingerprintLogin : this.fingerprintLogin;
+        this.faceLogin = authType === SettingsService.KEY_SECURITY_FACE_LOGIN ? !this.faceLogin : this.faceLogin;
+        this.isPrivacyWindow = authType === SettingsService.KEY_SECURITY_PRIVACY_WINDOW ? !this.isPrivacyWindow : this.isPrivacyWindow;
       },
       onFail: (result) => {
         CommonUtils.showToast($r("app.string.password_error"));
-        onSuccess(false);
       },
       onError: (error: BusinessError) => {
         CommonUtils.showToast(error.message);
-        onSuccess(false);
       }
     });
+    return HitTestMode.None;
   }
 
   build() {
@@ -232,12 +201,16 @@ struct SettingsSecurity {
                   Text($r("app.string.auth_by_fingerprint"))
                     .fontSize(16)
                     .flexGrow(1)
-                  Toggle({ type: ToggleType.Switch, isOn: $$this.fingerprintLogin })
+                  Toggle({ type: ToggleType.Switch, isOn: this.fingerprintLogin })
                     .selectedColor('#007DFF')
                     .switchPointColor('#FFFFFF')
-                    .onClick(() => {
-                      this.changeFingerprintLogin();
+                    .onTouchIntercept(() => {
+                      return this.checkPassword(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN);
                     })
+                    .onChange((isOn: boolean) => {
+                      this.fingerprintLogin = isOn;
+                      this.onAuthTypeChange(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, isOn);
+                    });
                 }
                 .width('100%')
                 .padding(16)
@@ -250,12 +223,16 @@ struct SettingsSecurity {
                   Text($r("app.string.auth_by_face"))
                     .fontSize(16)
                     .flexGrow(1)
-                  Toggle({ type: ToggleType.Switch, isOn: $$this.faceLogin })
+                  Toggle({ type: ToggleType.Switch, isOn: this.faceLogin })
                     .selectedColor('#007DFF')
                     .switchPointColor('#FFFFFF')
-                    .onClick(() => {
-                      this.changeFaceLogin()
+                    .onTouchIntercept(() => {
+                      return this.checkPassword(SettingsService.KEY_SECURITY_FACE_LOGIN);
                     })
+                    .onChange((isOn: boolean) => {
+                      this.faceLogin = isOn;
+                      this.onAuthTypeChange(SettingsService.KEY_SECURITY_FACE_LOGIN, isOn);
+                    });
                 }
                 .width('100%')
                 .padding(16)
@@ -358,11 +335,15 @@ struct SettingsSecurity {
               .layoutWeight(1)
 
               Blank()
-              Toggle({ type: ToggleType.Switch, isOn: $$this.isPrivacyWindow })
+              Toggle({ type: ToggleType.Switch, isOn: this.isPrivacyWindow })
                 .selectedColor('#007DFF')
                 .switchPointColor('#FFFFFF')
-                .onClick(() => {
-                  this.changePrivacyWindow();
+                .onTouchIntercept(() => {
+                  return this.checkPassword(SettingsService.KEY_SECURITY_PRIVACY_WINDOW);
+                })
+                .onChange((isOn: boolean) => {
+                  this.isPrivacyWindow = isOn;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, isOn);
                 })
             }
             .width('100%')
