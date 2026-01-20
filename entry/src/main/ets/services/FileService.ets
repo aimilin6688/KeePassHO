@@ -49,12 +49,16 @@ export class FileService {
     return FileService.instance.getDbFileParam();
   }
 
-  public static getFilePath(){
+  public static getFilePath() {
     return FileService.getDbFileParam().filePath;
   }
 
-  public static getDatabase(){
+  public static getDatabase() {
     return FileService.getDbFileParam().database;
+  }
+
+  public static isDatabaseValid() {
+    return FileService.getDbFileParam() && FileService.getDbFileParam().database !== undefined;
   }
 
   /**
