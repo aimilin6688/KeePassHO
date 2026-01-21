@@ -159,11 +159,12 @@ struct LocalFile {
         } else if (this.selectedFile) {
           // 已选择文件状态
           Image($r('app.media.ic_file'))
-            .width(64)
-            .height(64)
-            .margin({ top: 40 })
+            .width(80)
+            .height(80)
+            .margin({ top: 60 })
+            .fillColor($r('app.color.text_secondary'))
 
-          Text(this.selectedFile.split('/').pop() || '')
+          Text(decodeURIComponent(this.selectedFile.split('/').pop()) || '')
             .fontSize(18)
             .fontWeight(FontWeight.Medium)
             .margin({ top: 16 })
