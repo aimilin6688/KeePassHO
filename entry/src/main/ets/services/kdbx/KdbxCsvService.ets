@@ -8,7 +8,7 @@ import { FileService } from '../FileService';
 export enum CsvTitle {
   Group = "Group",
   Title = "Title",
-  Username = "Username",
+  Username = "UserName",
   Password = "Password",
   URL = "URL",
   Notes = "Notes",
@@ -107,11 +107,19 @@ export class KdbxCsvService {
         continue;
       }
       if (fieldName === CsvTitle.Created) {
-        entry.times.creationTime = new Date(fieldValue);
+        try {
+          entry.times.creationTime = new Date(fieldValue);
+        } catch (ignore) {
+          entry.times.creationTime = new Date();
+        }
         continue;
       }
       if (fieldName === CsvTitle.Last_Modified) {
-        entry.times.lastModTime = new Date(fieldValue);
+        try {
+          entry.times.lastModTime = new Date(fieldValue);
+        } catch (ignore) {
+          entry.times.creationTime = new Date();
+        }
         continue;
       }
       entry.setField(fieldName, fieldValue, fieldProtection.get(fieldName));
