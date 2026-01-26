@@ -72,7 +72,7 @@ export interface SaveKdbxParam {
 }
 
 /**
- * 数据库文件定义，只会存储在内容中
+ * 数据库文件定义，只会存储在内存中
  */
 export interface DbFileParam extends CredentialsParam {
   /**
@@ -312,6 +312,11 @@ export interface RecentFile {
    * 加密密码信息
    */
   password?: string;
+
+  /**
+   * 密码保存时间戳(毫秒)
+   */
+  passwordSaveTime?: number;
 
   /**
    * 搜索历史

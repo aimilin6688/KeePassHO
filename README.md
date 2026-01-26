@@ -10,6 +10,7 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 
 
 
+
 ## 功能特点
 
 **核心要点：**
@@ -25,8 +26,8 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 ## 安装
 
 鸿蒙手机扫码安装：  
-<a href="https://appgallery.huawei.com/app/detail?id=com.aimilin.keepassho&channelId=SHARE&source=appshare">
-    <img src="install.png" width="200" alt="微信支持">
+<a href="https://appgallery.huawei.com/app/detail?id=com.aimilin.keepassho&channelId=SHARE&source=appshare" target="_blank">
+    <img src="install.png" width="200" alt="WeChat Support">
 </a>
 
 
@@ -68,10 +69,81 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 
 ## 捐赠
 微信支持  
-<img src="entry/src/main/resources/base/media/pay_wechat.png" width="150" alt="微信支持">
+<img src="entry/src/main/resources/base/media/pay_wechat.png" width="150" alt="WeChat Support">
 
 支付宝支持   
-<img src="entry/src/main/resources/base/media/pay_ali.png" width="150" alt="微信支持">
+<img src="entry/src/main/resources/base/media/pay_ali.png" width="150" alt="Alipay Support">
 ---
 
 **KeePassHO** - 安全管理您的密码，随时随地访问
+
+---
+
+# KeePassHO - Securely manage your passwords, access them anywhere
+
+KeePassHO is a free and open-source password management software. Its core advantage lies in local storage and maximum security. All your passwords are stored in an encrypted database (typically a .kdbx file), which is kept only on your own devices (such as computers, mobile devices), without relying on cloud servers, fundamentally avoiding cloud leakage risks.
+
+The database is protected by powerful encryption algorithms (such as AES-256), and you only need to remember a strong master password (or combine it with a key file) to unlock and access it. KeePassHO supports convenient features such as automatic strong password generation, category management, and search, and has an active community and a rich plugin ecosystem. It can be extended with browser integration (in development), cloud synchronization (requires self-configuration), and other capabilities.
+
+## Features
+
+**Key Points:**
+
+- **Free and Open Source**: Free to use, with transparent and auditable code.
+- **Local Storage**: Password database files (.kdbx) are stored only on the user's local devices, not uploaded to the cloud.
+- **Strong Encryption**: Uses top-tier algorithms like AES-256 to encrypt the database, with the master password as the key.
+- **Security Autonomy**: Users have complete control over their password data and security policies.
+- **Comprehensive Features**: Complete basic functions including password generation, management, filling, and search.
+- **Extensible**: Supports browser integration (in development), cloud synchronization (self-controlled), etc. through plugins.
+- **Target Users**: Users who value privacy and security and want complete autonomous password management.
+
+## Installation
+
+Scan the QR code with your HarmonyOS phone to install:  
+<a href="https://appgallery.huawei.com/app/detail?id=com.aimilin.keepassho&channelId=SHARE&source=appshare" target="_blank">
+    <img src="install.png" width="200" alt="Install">
+</a>
+
+## Build
+```bash
+ hvigorw  clean --mode module -p product=default -p buildMode=debug assembleHap --analyze=normal --parallel --incremental --enable-build-script-type-check --daemon
+```
+
+## Tech Stack
+
+- HarmonyOS ArkTS
+- HarmonyOS UI Components
+
+## Contributing
+
+We welcome all forms of contributions, including but not limited to:
+
+- Reporting issues
+- Submitting feature requests
+- Submitting code fixes
+- Improving documentation
+- Submitting new features
+
+## License
+
+This project is licensed under the MIT License - see the [GPL 3.0](LICENSE) file for details.
+
+## Acknowledgments
+1. [kdbxweb](https://github.com/keeweb/kdbxweb)
+
+2. [Font-Awesome](https://github.com/FortAwesome/Font-Awesome/tree/7.x)
+
+## Contact
+
+- Contact Author: [Aimilin aimilin@yeah.net](mailto:aimilin@yeah.net)
+- Project Homepage: [Gitee](https://gitee.com/milin/kee-pass-ho/)  [Github](https://github.com/aimilin6688/KeePassHO)
+
+## Donate
+WeChat Support  
+<img src="entry/src/main/resources/base/media/pay_wechat.png" width="150" alt="WeChat Support">
+
+Alipay Support   
+<img src="entry/src/main/resources/base/media/pay_ali.png" width="150" alt="Alipay Support">
+---
+
+**KeePassHO** - Securely manage your passwords, access them anywhere

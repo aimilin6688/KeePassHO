@@ -1,6 +1,6 @@
 {
   "name": "entry",
-  "version": "1.7.0",
+  "version": "1.7.3",
   "description": "强大安全的本地密码管理利器",
   "main": "",
   "author": "艾米林",
@@ -10,7 +10,8 @@
     "@hw-agconnect/petal-aegis": "^1.4.11-300",
     "@ohos/basic-ftp": "^1.0.3",
     "@ohos/axios": "^2.2.6",
-    "@ohos-rs/ssh": "^0.0.1"
+    "@ohos-rs/ssh": "^0.0.1",
+    "@pura/harmony-dialog": "^1.1.8"
   },
   "devDependencies": {},
   "dynamicDependencies": {}

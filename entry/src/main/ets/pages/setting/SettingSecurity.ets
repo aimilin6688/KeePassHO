@@ -1,6 +1,6 @@
 import { SettingsService, UnlockAuthType } from '../../services/SettingsService';
 import { Router } from '@kit.ArkUI';
-import { ResourceManager } from '../../common/utils';
+import { CommonUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { AuthService } from '../../services/AuthService';
 import { RecentFilesService } from '../../services/RecentFilesService';
@@ -22,7 +22,6 @@ struct SettingsSecurity {
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
   @State authTypeOptions: AuthTypeOptions[] = [{ "type": UnlockAuthType.PASSWORD, "value": ResourceManager.getString($r("app.string.password")) }];
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
-  @State isDatabaseValid: boolean = false;
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupport();
   private isFaceSupport: boolean = AuthService.isFaceSupport();
   // 自动清空剪切板时间
@@ -59,15 +58,9 @@ struct SettingsSecurity {
   ];
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
-  private promptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
     this.initSettings();
-  }
-
-  onPageShow(): void {
-    const dbFileParam = FileService.getDbFileParam();
-    this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
   }
 
   // 初始化设置信息
@@ -126,27 +119,57 @@ struct SettingsSecurity {
     if (this.isFaceSupport) {
       this.authTypeOptions.push({ "type": UnlockAuthType.FACE, "value": ResourceManager.getString($r("app.string.face")) });
     }
+    // 是否启用隐私窗口
     this.settingsService.get(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, this.isPrivacyWindow).then(result => {
       this.isPrivacyWindow = result;
     });
   }
 
-  // 修改指纹登录选项
-  private changeFingerprintLogin(isOn: boolean) {
-    this.settingsService.put(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, isOn);
-    if (this.isFingerprintSupport && isOn && this.isDatabaseValid) {
+  /**
+   * 认证类型改变
+   * @param isOn 是否开启
+   */
+  private onAuthTypeChange(authType: string, isOn: boolean) {
+    this.settingsService.put(authType, isOn);
+    if (isOn && FileService.isDatabaseValid()) {
       let dbFileParam = FileService.getDbFileParam();
       RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
     }
   }
 
-  // 修改人脸登录选项
-  private changeFaceLogin(isOn: boolean) {
-    this.settingsService.put(SettingsService.KEY_SECURITY_FACE_LOGIN, isOn);
-    if (this.isFaceSupport && isOn && this.isDatabaseValid) {
-      let dbFileParam = FileService.getDbFileParam();
-      RecentFilesService.setPassword(dbFileParam.filePath, dbFileParam.password);
+  /**
+   * 验证主密码是否正确
+   * @returns
+   */
+  private checkPassword(authType: string): HitTestMode {
+    // 关闭指纹登录
+    if (authType === SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN && !this.fingerprintLogin == false) {
+      return HitTestMode.Default;
     }
+    // 关闭面容登录
+    if (authType === SettingsService.KEY_SECURITY_FACE_LOGIN && !this.faceLogin == false) {
+      return HitTestMode.Default;
+    }
+    // 启用隐私窗口
+    if (authType === SettingsService.KEY_SECURITY_PRIVACY_WINDOW && !this.isPrivacyWindow == true) {
+      return HitTestMode.Default;
+    }
+
+    // 密码认证
+    AuthService.startPasswordAuth({
+      onSuccess: (result) => {
+        this.fingerprintLogin = authType === SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN ? !this.fingerprintLogin : this.fingerprintLogin;
+        this.faceLogin = authType === SettingsService.KEY_SECURITY_FACE_LOGIN ? !this.faceLogin : this.faceLogin;
+        this.isPrivacyWindow = authType === SettingsService.KEY_SECURITY_PRIVACY_WINDOW ? !this.isPrivacyWindow : this.isPrivacyWindow;
+      },
+      onFail: (result) => {
+        CommonUtils.showToast($r("app.string.password_error"));
+      },
+      onError: (error: BusinessError) => {
+        CommonUtils.showToast(error.message);
+      }
+    });
+    return HitTestMode.None;
   }
 
   build() {
@@ -181,9 +204,13 @@ struct SettingsSecurity {
                   Toggle({ type: ToggleType.Switch, isOn: this.fingerprintLogin })
                     .selectedColor('#007DFF')
                     .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.changeFingerprintLogin(isOn);
+                    .onTouchIntercept(() => {
+                      return this.checkPassword(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN);
                     })
+                    .onChange((isOn: boolean) => {
+                      this.fingerprintLogin = isOn;
+                      this.onAuthTypeChange(SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN, isOn);
+                    });
                 }
                 .width('100%')
                 .padding(16)
@@ -199,9 +226,13 @@ struct SettingsSecurity {
                   Toggle({ type: ToggleType.Switch, isOn: this.faceLogin })
                     .selectedColor('#007DFF')
                     .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.changeFaceLogin(isOn);
+                    .onTouchIntercept(() => {
+                      return this.checkPassword(SettingsService.KEY_SECURITY_FACE_LOGIN);
                     })
+                    .onChange((isOn: boolean) => {
+                      this.faceLogin = isOn;
+                      this.onAuthTypeChange(SettingsService.KEY_SECURITY_FACE_LOGIN, isOn);
+                    });
                 }
                 .width('100%')
                 .padding(16)
@@ -302,10 +333,14 @@ struct SettingsSecurity {
               .alignItems(HorizontalAlign.Start)
               .flexGrow(1)
               .layoutWeight(1)
+
               Blank()
               Toggle({ type: ToggleType.Switch, isOn: this.isPrivacyWindow })
                 .selectedColor('#007DFF')
                 .switchPointColor('#FFFFFF')
+                .onTouchIntercept(() => {
+                  return this.checkPassword(SettingsService.KEY_SECURITY_PRIVACY_WINDOW);
+                })
                 .onChange((isOn: boolean) => {
                   this.isPrivacyWindow = isOn;
                   this.settingsService.put(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, isOn);
