@@ -19,6 +19,7 @@ struct About {
   private bundleName: string = '';
   private authEmail: string = "aimilin@yeah.net";
   private codeUrl: string = "https://github.com/aimilin6688/KeePassHO";
+  private otherSystemUrl: string = "https://keepass.info/download.html";
 
   aboutToAppear() {
     this.setVersion();
@@ -74,15 +75,14 @@ struct About {
   }
 
   /**
-   * 访问源代码
+   * 访问Url 地址
    */
-  private goSourceCode() {
+  private goUrl(url: string) {
     try {
-      ClipboardUtils.copy(this.codeUrl);
       let want: Want = {
         action: 'ohos.want.action.viewData',
         entities: ['entity.system.browsable'],
-        uri: this.codeUrl,
+        uri: url,
       };
       this.context.startAbility(want)
         .then(() => {
@@ -269,12 +269,39 @@ struct About {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .onClick(() => {
-                  this.goSourceCode();
+                  this.goUrl(this.codeUrl);
                 })
                 .width('100%')
                 .padding(16)
               }
 
+              // 其他系统
+              ListItem() {
+                Row() {
+                  Text($r("app.string.about_other_system"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .onClick(() => {
+                  this.goUrl(this.otherSystemUrl);
+                })
+                .width('100%')
+                .padding(16)
+              }
+            }
+            .margin({ top: 12, bottom: 12 })
+            .backgroundColor($r("app.color.card_bg"))
+            .borderRadius(12)
+            .divider({
+              strokeWidth: 1,
+              color: $r('app.color.divider'),
+            })
+
+            ListItemGroup() {
               // 检查更新
               ListItem() {
                 Row() {
@@ -300,6 +327,7 @@ struct About {
               strokeWidth: 1,
               color: $r('app.color.divider'),
             })
+
           }
           .width('100%')
           .height('auto')
