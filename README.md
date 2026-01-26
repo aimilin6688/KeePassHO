@@ -30,6 +30,9 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
     <img src="install.png" width="200" alt="WeChat Support">
 </a>
 
+[鸿蒙应用市场](https://appgallery.huawei.com/app/detail?id=com.aimilin.keepassho&channelId=SHARE&source=appshare)
+
+其他平台支持：[Windows、Mac、Linux、Android、Iphone](https://keepass.info/download.html)
 
 ## 编译构建
 ```bash
@@ -60,6 +63,8 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 1. [kdbxweb](https://github.com/keeweb/kdbxweb)
 
 2. [Font-Awesome](https://github.com/FortAwesome/Font-Awesome/tree/7.x)
+
+3. [keepass](https://keepass.info/index.html)
 
 
 ## 联系方式
@@ -104,6 +109,8 @@ Scan the QR code with your HarmonyOS phone to install:
     <img src="install.png" width="200" alt="Install">
 </a>
 
+Other Platform：[Windows、Mac、Linux、Android、Iphone](https://keepass.info/download.html)
+
 ## Build
 ```bash
  hvigorw  clean --mode module -p product=default -p buildMode=debug assembleHap --analyze=normal --parallel --incremental --enable-build-script-type-check --daemon
@@ -132,6 +139,8 @@ This project is licensed under the MIT License - see the [GPL 3.0](LICENSE) file
 1. [kdbxweb](https://github.com/keeweb/kdbxweb)
 
 2. [Font-Awesome](https://github.com/FortAwesome/Font-Awesome/tree/7.x)
+
+3. [keepass](https://keepass.info/index.html)
 
 ## Contact
 
