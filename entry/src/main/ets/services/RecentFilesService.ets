@@ -23,6 +23,7 @@ export class RecentFilesService {
   private static readonly PREFERENCES_NAME = 'recent_files';
   private static readonly RECENT_FILES_KEY = 'recent_files_list';
   private static readonly MAX_RECENT_FILES = 30; // 最多保存10个最近打开的文件
+  private static readonly PASSWORD_VALIDITY_DAYS = 90; // 密码有效期为90天
   private preferences: preferences.Preferences | null = null;
 
   /**
@@ -100,11 +101,22 @@ export class RecentFilesService {
       // 检查文件是否已经在列表中
       const existingIndex = recentFiles.findIndex(file => file.filePath === recentFile.filePath);
       if (existingIndex !== -1) {
-        // 如果文件已经在列表中，则将其移除
+        // 如果未提供新的搜索历史,保留原有的搜索历史
         if (recentFile.searchHistory === undefined) {
           recentFile.searchHistory = recentFiles[existingIndex].searchHistory;
         }
+        // 如果未提供新的密码保存时间,保留原有的时间
+        if (recentFile.password && !recentFile.passwordSaveTime) {
+          recentFile.passwordSaveTime = recentFiles[existingIndex].passwordSaveTime;
+        }
+        // 如果文件已经在列表中，则将其移除
         recentFiles.splice(existingIndex, 1);
+      }
+
+      // 如果保存了密码但没有记录时间,则记录当前时间
+      if (recentFile.password && !recentFile.passwordSaveTime) {
+        recentFile.passwordSaveTime = new Date().getTime();
+        hilog.info(DOMAIN, TAG, 'Password save time set for file: %{public}s, time: %{public}d', recentFile.filePath, recentFile.passwordSaveTime);
       }
 
       // 将新文件添加到列表顶部
@@ -137,15 +149,51 @@ export class RecentFilesService {
       }
       const recentFilesJson = await this.preferences.get(RecentFilesService.RECENT_FILES_KEY, '[]');
       let localFiles: RecentFile[] = JSON.parse(recentFilesJson.toString()) as RecentFile[];
-
       // 总是尝试与远端数据合并
       localFiles = await this.syncWithRemote(localFiles);
+      // 检查并清除过期密码
+      localFiles = this.checkAndClearExpiredPasswords(localFiles);
 
       return localFiles;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Get all recent files error: ${error}`);
       return [];
     }
+  }
+
+  /**
+   * 检查并清除过期的密码
+   * @param recentFiles 最近文件列表
+   * @returns 清理后的最近文件列表
+   */
+  private checkAndClearExpiredPasswords(recentFiles: RecentFile[]): RecentFile[] {
+    let needUpdate = false;
+    const now = new Date().getTime();
+    const maxAge = RecentFilesService.PASSWORD_VALIDITY_DAYS * 24 * 60 * 60 * 1000; // 90天的毫秒数
+
+    recentFiles.forEach(file => {
+      if (file.password && file.passwordSaveTime) {
+        const age = now - file.passwordSaveTime;
+        if (age > maxAge) {
+          hilog.info(DOMAIN, TAG, 'Password expired for file: %{public}s, age: %{public}d ms', file.filePath, age);
+          file.password = undefined;
+          file.passwordSaveTime = undefined;
+          needUpdate = true;
+        }
+      }
+    });
+
+    // 如果有密码被清除,更新存储
+    if (needUpdate && this.preferences) {
+      this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(recentFiles))
+        .then(() => {
+          return this.preferences!.flush();
+        })
+        .catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, `Update expired passwords error: ${error}`);
+        });
+    }
+    return recentFiles;
   }
 
   /**
