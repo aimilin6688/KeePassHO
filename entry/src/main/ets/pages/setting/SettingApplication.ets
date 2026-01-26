@@ -35,26 +35,24 @@ struct SettingApplication {
   }
 
   // 隐藏支持弹框
-  private hideSupportDialog(isOn: boolean) {
-    // 开启隐藏时处理
-    if (isOn) {
-      LoadingDialog.showLoading($r('app.string.loading_message')).then(() => {
-        SupportService.isCanHideSupport().then(result => {
-          // 已经使用过一段时间了,隐藏捐赠弹框
-          if (result) {
-            this.isHideSupportDialog = true;
-            SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
-          } else {
-            CommonUtils.showToast($r('app.string.application_hide_support_tips'));
-            this.isHideSupportDialog = false;
-          }
-          LoadingDialog.hideLoading();
-        })
-      });
-    } else {
-      this.isHideSupportDialog = false;
-      SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, true);
+  private checkHideSupportDialog(): HitTestMode {
+    if (!this.isHideSupportDialog == false) {
+      return HitTestMode.Default;
     }
+    // 开启隐藏时处理
+    LoadingDialog.showLoading($r('app.string.loading_message')).then(() => {
+      SupportService.isCanHideSupport().then(result => {
+        // 已经使用过一段时间了,隐藏捐赠弹框
+        if (result) {
+          this.isHideSupportDialog = true;
+          SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, false);
+        } else {
+          CommonUtils.showToast($r('app.string.application_hide_support_tips'));
+        }
+        LoadingDialog.hideLoading();
+      })
+    });
+    return HitTestMode.None;
   }
 
   build() {
@@ -96,11 +94,15 @@ struct SettingApplication {
 
               Blank()
 
-              Toggle({ type: ToggleType.Switch, isOn: $$this.isHideSupportDialog })
+              Toggle({ type: ToggleType.Switch, isOn: this.isHideSupportDialog })
                 .selectedColor('#007DFF')
                 .switchPointColor('#FFFFFF')
+                .onTouchIntercept(() => {
+                  return this.checkHideSupportDialog();
+                })
                 .onChange((isOn: boolean) => {
-                  this.hideSupportDialog(isOn);
+                  this.isHideSupportDialog = isOn;
+                  SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, isOn);
                 })
             }
             .width('100%')
