@@ -837,7 +837,7 @@ struct DatabaseView {
   /**
    * 添加收藏数据
    */
-  private addFavorite(){
+  private addFavorite() {
     // 如果是默认分组，添加收藏的数据到最上方
     if (this.database && !this.showBack) {
       const favoriteItems = KdbxUtils.getFavoriteItems(this.database);
@@ -967,6 +967,8 @@ struct DatabaseView {
    */
   private updateUI() {
     hilog.debug(DOMAIN, TAG, 'Execute updateUI');
+    // 保存当前滚动位置
+    let savedScrollOffset = this.listScroller.currentOffset()?.yOffset || 0;
     // 强制刷新UI - 先清空数组，再重新加载
     this.items = [];
     // 延迟一帧后重新加载数据，确保UI更新
@@ -988,6 +990,10 @@ struct DatabaseView {
         // 非搜索状态，添加收藏数据
         this.addFavorite();
       }
+      // 恢复滚动位置
+      setTimeout(() => {
+        this.listScroller.scrollTo({ xOffset: 0, yOffset: savedScrollOffset, animation: { duration: 0 } });
+      }, 50);
     }, 10);
   }
 
@@ -1346,7 +1352,7 @@ struct DatabaseView {
               } else {
                 // 分组信息显示
                 ForEach(this.isSearching ? this.filteredItems : this.items, (item: KdbxGroup | KdbxEntry, index: number) => {
-                  if(item instanceof KdbxGroup){
+                  if (item instanceof KdbxGroup) {
                     ListItem() {
                       Stack({ alignContent: Alignment.TopEnd }) {
                         Row() {
@@ -1379,7 +1385,7 @@ struct DatabaseView {
                             .margin({ right: 0 })
                             .fillColor($r('app.color.text_primary'))
                         }
-                        .padding({left: 2})
+                        .padding({ left: 2 })
                         .width('100%')
 
                         // 置顶标记
@@ -1474,7 +1480,7 @@ struct DatabaseView {
                             .margin({ right: 0 })
                             .fillColor($r('app.color.text_primary'))
                         }
-                        .padding({left: 2})
+                        .padding({ left: 2 })
                         .width('100%')
 
                         // 置顶标记
