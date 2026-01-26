@@ -32,7 +32,8 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 
 [鸿蒙应用市场](https://appgallery.huawei.com/app/detail?id=com.aimilin.keepassho&channelId=SHARE&source=appshare)
 
-其他平台支持：[Windows、Mac、Linux、Android、Iphone](https://keepass.info/download.html)
+其他平台支持：
+<a href="https://keepass.info/download.html" target="_blank">Windows、Mac、Linux、Android、Iphone</a>
 
 ## 编译构建
 ```bash
@@ -109,7 +110,7 @@ Scan the QR code with your HarmonyOS phone to install:
     <img src="install.png" width="200" alt="Install">
 </a>
 
-Other Platform：[Windows、Mac、Linux、Android、Iphone](https://keepass.info/download.html)
+Other Platform：<a href="https://keepass.info/download.html" target="_blank">Windows、Mac、Linux、Android、Iphone</a>
 
 ## Build
 ```bash
