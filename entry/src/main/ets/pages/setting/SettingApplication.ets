@@ -102,7 +102,7 @@ struct SettingApplication {
                 })
                 .onChange((isOn: boolean) => {
                   this.isHideSupportDialog = isOn;
-                  SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, isOn);
+                  SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_DIALOG, !isOn);
                 })
             }
             .width('100%')

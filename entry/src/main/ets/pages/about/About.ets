@@ -5,6 +5,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ClipboardUtils } from '../../common/utils/ClipboardUtils';
 import { updateManager } from '@kit.AppGalleryKit';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'About';
@@ -110,8 +111,10 @@ struct About {
    */
   private checkUpdate() {
     try {
+      LoadingDialog.showLoading($r('app.string.loading_message'));
       updateManager.checkAppUpdate(this.context).then((checkResult: updateManager.CheckUpdateResult) => {
         hilog.info(DOMAIN, 'TAG', "Succeeded in checking Result updateAvailable:" + checkResult.updateAvailable);
+        LoadingDialog.hideLoading();
         // 检查到新版本
         if (updateManager.UpdateAvailableCode.LATER_VERSION_EXIST == checkResult.updateAvailable) {
           updateManager.showUpdateDialog(this.context).catch((error: BusinessError) => {
@@ -122,10 +125,12 @@ struct About {
         }
       }).catch((error: BusinessError) => {
         hilog.error(DOMAIN, 'TAG', "Failed to check update. Error code: " + error.code + ", message: " + error.message);
+        LoadingDialog.hideLoading();
         CommonUtils.showToast({ message: error?.message });
       });
     } catch (error) {
       hilog.error(DOMAIN, 'TAG', "An unexpected error occurred. Error code: " + error.code + ", message: " + error.message);
+      LoadingDialog.hideLoading();
       if (error?.message) {
         CommonUtils.showToast({ message: error?.message });
       }
