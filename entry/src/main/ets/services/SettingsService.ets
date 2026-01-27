@@ -60,7 +60,7 @@ export class SettingsService {
   public static readonly KEY_APP_INSTALL_TIME = "app_install_time";
   // 限制数据库后缀
   public static readonly KEY_APP_LIMIT_DB_EXT = "app_limit_db_ext";
-  public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = false;
+  public static readonly KEY_APP_LIMIT_DB_EXT_DEFAULT = true;
   // 跨设备同步设置
   public static readonly KEY_APP_SYNC_SETTING_ENABLE = "app_sync_setting_enable";
   public static readonly KEY_APP_SYNC_SETTING_ENABLE_DEFAULT = false;
