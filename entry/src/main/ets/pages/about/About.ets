@@ -5,6 +5,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ClipboardUtils } from '../../common/utils/ClipboardUtils';
 import { updateManager } from '@kit.AppGalleryKit';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'About';
@@ -19,6 +20,7 @@ struct About {
   private bundleName: string = '';
   private authEmail: string = "aimilin@yeah.net";
   private codeUrl: string = "https://github.com/aimilin6688/KeePassHO";
+  private otherSystemUrl: string = "https://keepass.info/download.html";
 
   aboutToAppear() {
     this.setVersion();
@@ -74,15 +76,14 @@ struct About {
   }
 
   /**
-   * 访问源代码
+   * 访问Url 地址
    */
-  private goSourceCode() {
+  private goUrl(url: string) {
     try {
-      ClipboardUtils.copy(this.codeUrl);
       let want: Want = {
         action: 'ohos.want.action.viewData',
         entities: ['entity.system.browsable'],
-        uri: this.codeUrl,
+        uri: url,
       };
       this.context.startAbility(want)
         .then(() => {
@@ -110,8 +111,10 @@ struct About {
    */
   private checkUpdate() {
     try {
+      LoadingDialog.showLoading($r('app.string.loading_message'));
       updateManager.checkAppUpdate(this.context).then((checkResult: updateManager.CheckUpdateResult) => {
         hilog.info(DOMAIN, 'TAG', "Succeeded in checking Result updateAvailable:" + checkResult.updateAvailable);
+        LoadingDialog.hideLoading();
         // 检查到新版本
         if (updateManager.UpdateAvailableCode.LATER_VERSION_EXIST == checkResult.updateAvailable) {
           updateManager.showUpdateDialog(this.context).catch((error: BusinessError) => {
@@ -122,10 +125,12 @@ struct About {
         }
       }).catch((error: BusinessError) => {
         hilog.error(DOMAIN, 'TAG', "Failed to check update. Error code: " + error.code + ", message: " + error.message);
+        LoadingDialog.hideLoading();
         CommonUtils.showToast({ message: error?.message });
       });
     } catch (error) {
       hilog.error(DOMAIN, 'TAG', "An unexpected error occurred. Error code: " + error.code + ", message: " + error.message);
+      LoadingDialog.hideLoading();
       if (error?.message) {
         CommonUtils.showToast({ message: error?.message });
       }
@@ -269,12 +274,39 @@ struct About {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .onClick(() => {
-                  this.goSourceCode();
+                  this.goUrl(this.codeUrl);
                 })
                 .width('100%')
                 .padding(16)
               }
 
+              // 其他系统
+              ListItem() {
+                Row() {
+                  Text($r("app.string.about_other_system"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(24)
+                    .height(24)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .onClick(() => {
+                  this.goUrl(this.otherSystemUrl);
+                })
+                .width('100%')
+                .padding(16)
+              }
+            }
+            .margin({ top: 12, bottom: 12 })
+            .backgroundColor($r("app.color.card_bg"))
+            .borderRadius(12)
+            .divider({
+              strokeWidth: 1,
+              color: $r('app.color.divider'),
+            })
+
+            ListItemGroup() {
               // 检查更新
               ListItem() {
                 Row() {
@@ -300,6 +332,7 @@ struct About {
               strokeWidth: 1,
               color: $r('app.color.divider'),
             })
+
           }
           .width('100%')
           .height('auto')
