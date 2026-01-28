@@ -66,7 +66,7 @@ export class SettingsService {
   public static readonly KEY_APP_SYNC_SETTING_ENABLE_DEFAULT = false;
   // 启用智感握姿
   public static readonly KEY_APP_HOLDING_HAND_ENABLE = "app_holding_hand_enable";
-  public static readonly KEY_APP_HOLDING_HAND_ENABLE_DEFAULT = false;
+  public static readonly KEY_APP_HOLDING_HAND_ENABLE_DEFAULT = true;
 
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
