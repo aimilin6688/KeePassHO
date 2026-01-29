@@ -19,6 +19,7 @@ import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 import { Constants } from '../common/constants/Constants';
 import { common } from '@kit.AbilityKit';
+import { CacheConstants } from '../storage/cache/CacheConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -38,6 +39,8 @@ struct Password {
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
+  @State showCacheCheckbox: boolean = false; // 是否显示缓存复选框
+  @State onlyUseCache: boolean = false; // 是否仅使用本地缓存
   private filePath: string = '';
   private storageType: StorageType | undefined = undefined;
   private storageConfig: StorageConfig | undefined = undefined;
@@ -77,6 +80,8 @@ struct Password {
     }
     // 初始化按钮状态
     this.updateButtonState();
+    // 初始化缓存复选框状态
+    this.initCacheCheckbox();
   }
 
   onPageShow(): void {
@@ -163,6 +168,22 @@ struct Password {
     this.authTypeInfo = type;
     this.authTypeIndex = AuthType.getIndexByType(type.type);
     this.authTypeText = ResourceManager.getString(type.value);
+  }
+
+  /**
+   * 初始化缓存复选框状态
+   */
+  private async initCacheCheckbox(): Promise<void> {
+    // 仅对远程存储类型显示缓存复选框
+    if (this.storageType !== StorageType.LOCAL && this.filePath) {
+      const cachePath: string = CacheConstants.getCacheFilePath(this.filePath);
+      this.showCacheCheckbox = await CacheConstants.cacheExists(cachePath);
+      // 读取AppStorage中的缓存设置
+      this.onlyUseCache = CacheConstants.getOnlyCache();
+    } else {
+      this.showCacheCheckbox = false;
+      this.onlyUseCache = false;
+    }
   }
 
   /**
@@ -505,6 +526,29 @@ struct Password {
         if (this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
           this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
           this.KeyFileSelector()
+        }
+
+        // 仅使用本地缓存复选框（仅在远程存储且有缓存时显示）
+        if (this.showCacheCheckbox) {
+          Row() {
+            Checkbox({ name: 'onlyUseCache' })
+              .select(this.onlyUseCache)
+              .onChange((isSelected: boolean) => {
+                this.onlyUseCache = isSelected;
+                CacheConstants.setOnlyCache(isSelected);
+              })
+            Text($r('app.string.only_use_local_cache'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.onlyUseCache = !this.onlyUseCache;
+                CacheConstants.setOnlyCache(this.onlyUseCache);
+              })
+          }
+          .width('90%')
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .alignItems(VerticalAlign.Center)
         }
 
         if (this.encryptPassword) {
