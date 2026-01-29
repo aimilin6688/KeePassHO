@@ -21,6 +21,7 @@ import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabase
 import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
+import { CacheConstants } from '../storage/cache/CacheConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -757,10 +758,13 @@ struct DatabaseView {
   }
 
   /**
-   * 重新加载数据库
+   * 重新加载数据库（强制与远端合并）
    */
   private refreshDatabase() {
     this.isRefreshing = true;
+    // 设置强制从远端刷新标志，忽略仅使用本地缓存的设置
+    CacheConstants.setForceRefresh(true);
+    
     let loadParam = LoadDatabase.byDbFileParam(FileService.getDbFileParam());
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (successMessage: SuccessMessage) => {

@@ -3,6 +3,7 @@ import { LocalFileStorage } from './local/LocalFileStorage';
 import { WebDAVStorage } from './webdav/WebDAVStorage';
 import { OneDriveStorage } from './onedrive/OneDriveStorage';
 import { FTPStorage } from './ftp/FTPStorage';
+import { CacheStorage } from './cache/CacheStorage';
 
 /**
  * 文件存储工厂类
@@ -51,7 +52,7 @@ export class FileStorageFactory {
   }
 
   /**
-   * 获取存储实现
+   * 获取存储实现（带缓存装饰器）
    * @param type 存储类型
    * @return IFileStorage 存储实现
    * @throws 如果指定类型的存储未注册则抛出异常
@@ -60,6 +61,10 @@ export class FileStorageFactory {
     const storage = this.storageMap.get(type);
     if (!storage) {
       throw new Error(`Storage type ${type} is not registered`);
+    }
+    // 非 LOCAL 类型的存储使用缓存装饰器
+    if (type !== StorageType.LOCAL) {
+      return new CacheStorage(storage, type);
     }
     return storage;
   }
