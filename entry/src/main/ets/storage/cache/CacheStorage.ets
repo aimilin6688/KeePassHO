@@ -295,9 +295,10 @@ export class CacheStorage implements IFileStorage {
   /**
    * 确保缓存目录存在
    * @param cacheDir 缓存目录路径
-   * @throws BusinessError - 13900001 - Operation not permitted
    */
   private async ensureCacheDir(cacheDir: string): Promise<void> {
-    return fs.mkdir(cacheDir, true);
+    return fs.mkdir(cacheDir, true).catch((error: Error) => {
+      hilog.debug(DOMAIN, TAG, 'Ensure cache dir failed: %{public}s, error: %{public}s', cacheDir, error?.message);
+    });
   }
 }

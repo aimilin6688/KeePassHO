@@ -202,10 +202,7 @@ struct Password {
     // 加密密钥
     this.encryptPassword = password;
     // 默认认证方式
-    authType =
-      authType ?? await SettingsService.getInstance()
-        .get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
-
+    authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
     // 指纹或者人脸验证
     if (authType === UnlockAuthType.FINGERPRINT) {
       AuthService.startFingerprintAuth(this.authCallback(password));
@@ -305,8 +302,7 @@ struct Password {
     // 打开加载进度弹框
     this.openLoadingDialog();
     // 打开数据库
-    let loadDatabase =
-      new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
+    let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
         this.loadingMessage = ResourceManager.getString(message.message);
@@ -315,10 +311,12 @@ struct Password {
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
+        this.password = "";
         CommonUtils.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
         this.closeLoadingDialog();
       },
       onAllErrors: (error: ErrorEvent) => {
+        this.password = "";
         CommonUtils.showToast({ message: error.message })
         this.closeLoadingDialog();
       },
