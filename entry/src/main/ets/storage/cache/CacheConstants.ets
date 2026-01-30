@@ -1,6 +1,5 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { common } from '@kit.AbilityKit';
 import { CommonUtils } from '../../common/utils/CommonUtils';
 
 const DOMAIN = 0x0000;
@@ -15,27 +14,22 @@ export class CacheConstants {
    * 缓存目录名称
    */
   static readonly CACHE_DIR_NAME: string = 'cache';
-
   /**
    * 缓存文件后缀
    */
   static readonly CACHE_FILE_SUFFIX: string = '.cache';
-
   /**
    * 是否仅使用本地缓存的AppStorage键
    */
   static readonly ONLY_CACHE_KEY: string = 'only_use_cache';
-
   /**
    * 缓存路径的AppStorage键
    */
   static readonly CACHE_PATH_KEY: string = 'cache_path';
-
   /**
    * 强制刷新标志的AppStorage键
    */
   static readonly FORCE_REFRESH_KEY: string = 'force_refresh';
-
   /**
    * 本地编辑状态的AppStorage键前缀
    */
@@ -105,9 +99,10 @@ export class CacheConstants {
 
   /**
    * 删除缓存文件
-   * @param cachePath 缓存文件路径
+   * @param originalPath 原始文件路径
    */
-  static async deleteCache(cachePath: string): Promise<void> {
+  static async deleteCache(originalPath: string): Promise<void> {
+    const cachePath: string = CacheConstants.getCacheFilePath(originalPath);
     try {
       await fs.unlink(cachePath);
       hilog.info(DOMAIN, TAG, `Cache deleted: ${cachePath}`);

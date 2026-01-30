@@ -10,6 +10,7 @@ import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { SyncSettingsService } from './store/SyncSettingsService';
+import { CacheConstants } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -378,6 +379,9 @@ export class RecentFilesService {
       // 同步到远端设备
       SyncSettingsService.syncRecentFiles(updatedFiles);
 
+      // 删除本地缓存
+      CacheConstants.deleteCache(recentFile.filePath);
+
       hilog.debug(DOMAIN, TAG, 'Remove recent file filePath:%{public}s', recentFile.filePath);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Remove recent file error: ${error}`);
@@ -395,6 +399,7 @@ export class RecentFilesService {
       }
       await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, '[]');
       await this.preferences.flush();
+      CacheConstants.deleteAllCache();
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Clear Recent file error: ${error}`);
       throw new Error(error);
