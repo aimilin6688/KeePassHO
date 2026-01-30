@@ -105,7 +105,6 @@ export class CacheStorage implements IFileStorage {
    * @returns 文件是否存在
    */
   public async exists(path: string): Promise<boolean> {
-    const cachePath: string = CacheConstants.getCacheFilePath(path);
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
     const forceRefresh: boolean = CacheConstants.getForceRefresh();
 
@@ -117,11 +116,11 @@ export class CacheStorage implements IFileStorage {
 
     // 仅使用本地缓存模式：只检查本地缓存
     if (onlyUseCache) {
-      return await CacheConstants.cacheExists(cachePath);
+      return await CacheConstants.cacheExists(path);
     }
 
     // 正常模式：优先检查本地缓存
-    const cacheExists: boolean = await CacheConstants.cacheExists(cachePath);
+    const cacheExists: boolean = await CacheConstants.cacheExists(path);
     if (cacheExists) {
       return true;
     }
