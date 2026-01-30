@@ -119,13 +119,7 @@ export class CacheStorage implements IFileStorage {
       return await CacheConstants.cacheExists(path);
     }
 
-    // 正常模式：优先检查本地缓存
-    const cacheExists: boolean = await CacheConstants.cacheExists(path);
-    if (cacheExists) {
-      return true;
-    }
-
-    // 本地缓存不存在，检查远端
+    // 正常走远端
     return await this.decoratedStorage.exists(path);
   }
 
@@ -152,13 +146,8 @@ export class CacheStorage implements IFileStorage {
       return await this.getCacheInfo(cachePath);
     }
 
-    // 正常模式：优先从本地缓存获取
-    try {
-      return await this.getCacheInfo(cachePath);
-    } catch (error) {
-      // 本地缓存不存在，从远端获取
-      return await this.decoratedStorage.getInfo(path);
-    }
+    // 正常走远端
+    return await this.decoratedStorage.getInfo(path);
   }
 
   /**
