@@ -177,8 +177,7 @@ struct Password {
   private async initCacheCheckbox(): Promise<void> {
     // 仅对远程存储类型显示缓存复选框
     if (this.storageType !== StorageType.LOCAL && this.filePath) {
-      const cachePath: string = CacheConstants.getCacheFilePath(this.filePath);
-      this.showCacheCheckbox = await CacheConstants.cacheExists(cachePath);
+      this.showCacheCheckbox = await CacheConstants.cacheExists(this.filePath);
       this.onlyUseCache = CacheConstants.getOnlyCache();
     } else {
       this.showCacheCheckbox = false;
