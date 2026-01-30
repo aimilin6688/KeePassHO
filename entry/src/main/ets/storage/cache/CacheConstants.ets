@@ -1,6 +1,7 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../../common/utils/CommonUtils';
+import { SettingsService } from '../../services/SettingsService';
 
 const DOMAIN = 0x0000;
 const TAG = 'CacheConstants';
@@ -157,5 +158,13 @@ export class CacheConstants {
   static clearForceRefresh(): void {
     AppStorage.setOrCreate(CacheConstants.FORCE_REFRESH_KEY, false);
     hilog.debug(DOMAIN, TAG, 'Clear force refresh');
+  }
+
+  /**
+   * 是否开启本地缓存
+   * @returns
+   */
+  static isEnableLocalCache(): boolean {
+    return SettingsService.getSync(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT);
   }
 }

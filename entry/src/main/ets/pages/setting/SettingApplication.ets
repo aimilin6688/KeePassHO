@@ -12,7 +12,8 @@ struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
   @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
-  @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT
+  @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
+  @State isEnableLocalCache: boolean = SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT;
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -32,6 +33,8 @@ struct SettingApplication {
     this.isLimitDbExt = this.settingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT);
     // 智感握姿
     this.isHoldingHand = this.settingsService.getSync(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT);
+    // 启用本地缓存
+    this.isEnableLocalCache = this.settingsService.getSync(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT);
   }
 
   // 隐藏支持弹框
@@ -203,6 +206,35 @@ struct SettingApplication {
                 .onChange((isOn: boolean) => {
                   this.isHoldingHand = isOn;
                   this.settingsService.put(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, isOn);
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 禁用本地缓存
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_enable_local_cache"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_enable_local_cache_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+              Toggle({ type: ToggleType.Switch, isOn: this.isEnableLocalCache })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.isEnableLocalCache = isOn;
+                  this.settingsService.put(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, isOn);
                 })
             }
             .width('100%')
