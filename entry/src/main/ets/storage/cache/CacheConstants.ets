@@ -47,7 +47,7 @@ export class CacheConstants {
    */
   static getCacheDir(): string {
     const context = CommonUtils.getContext();
-    return context.filesDir + '/' + CacheConstants.CACHE_DIR_NAME;
+    return context.getApplicationContext().cacheDir + '/' + CacheConstants.CACHE_DIR_NAME;
   }
 
   /**
@@ -94,9 +94,9 @@ export class CacheConstants {
    */
   static async cacheExists(cachePath: string): Promise<boolean> {
     try {
-      const result: number = fs.accessSync(cachePath, fs.AccessModeType.EXIST);
+      const result: boolean = fs.accessSync(cachePath, fs.AccessModeType.EXIST);
       hilog.info(DOMAIN, TAG, `Cache exists: ${result}, path: ${cachePath}`);
-      return true;
+      return result;
     } catch (error) {
       hilog.info(DOMAIN, TAG, `Cache not exist: ${cachePath}`);
       return false;

@@ -178,7 +178,6 @@ struct Password {
     if (this.storageType !== StorageType.LOCAL && this.filePath) {
       const cachePath: string = CacheConstants.getCacheFilePath(this.filePath);
       this.showCacheCheckbox = await CacheConstants.cacheExists(cachePath);
-      // 读取AppStorage中的缓存设置
       this.onlyUseCache = CacheConstants.getOnlyCache();
     } else {
       this.showCacheCheckbox = false;

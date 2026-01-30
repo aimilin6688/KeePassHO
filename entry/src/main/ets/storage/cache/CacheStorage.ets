@@ -1,7 +1,6 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { common } from '@kit.AbilityKit';
-import { IFileStorage, FileInfo, StorageType, FileType } from '../index';
+import { FileInfo, FileType, IFileStorage, StorageConfig } from '../index';
 import { CacheConstants } from './CacheConstants';
 import { DialogHelper } from '@pura/harmony-dialog';
 import { ResourceManager } from '../../common/utils/ResourceManager';
@@ -15,11 +14,9 @@ const TAG = 'CacheStorage';
  */
 export class CacheStorage implements IFileStorage {
   private readonly decoratedStorage: IFileStorage;
-  private readonly storageType: StorageType;
 
-  constructor(decoratedStorage: IFileStorage, storageType: StorageType) {
+  constructor(decoratedStorage: IFileStorage) {
     this.decoratedStorage = decoratedStorage;
-    this.storageType = storageType;
   }
 
   /**
@@ -34,7 +31,7 @@ export class CacheStorage implements IFileStorage {
    * 初始化
    * @param config 存储配置
    */
-  public init(config): void {
+  public init(config: StorageConfig): void {
     this.decoratedStorage.init(config);
   }
 
@@ -63,13 +60,13 @@ export class CacheStorage implements IFileStorage {
     // 正常模式：优先从远端加载
     hilog.debug(DOMAIN, TAG, 'Read from remote: %{public}s', path);
     const content: ArrayBuffer = await this.decoratedStorage.read(path);
-    
+
     // 异步保存到本地缓存
     this.saveToCacheAsync(cachePath, content);
-    
+
     // 设置缓存路径
     CacheConstants.setCachePath(cachePath);
-    
+
     return content;
   }
 
@@ -100,10 +97,10 @@ export class CacheStorage implements IFileStorage {
     // 正常模式：优先写入本地缓存，然后异步推送到远端
     hilog.debug(DOMAIN, TAG, 'Write to cache first: %{public}s', cachePath);
     await this.writeToCache(cachePath, content);
-    
+
     // 异步推送到远端
     this.pushToRemoteAsync(path, content);
-    
+
     // 清除本地编辑状态
     CacheConstants.removeLocalEditState(path);
   }
@@ -145,6 +142,7 @@ export class CacheStorage implements IFileStorage {
    * 优先从本地缓存获取
    * @param path 文件路径
    * @returns 文件信息
+   * @throws 如果获取失败则抛出异常
    */
   public async getInfo(path: string): Promise<FileInfo> {
     const cachePath: string = CacheConstants.getCacheFilePath(path);
@@ -175,6 +173,7 @@ export class CacheStorage implements IFileStorage {
    * 获取目录内容
    * @param path 路径
    * @returns 文件信息列表
+   * @throws 如果获取失败则抛出异常
    */
   public listDir(path: string): Promise<FileInfo[]> {
     return this.decoratedStorage.listDir(path);
@@ -195,8 +194,7 @@ export class CacheStorage implements IFileStorage {
       hilog.debug(DOMAIN, TAG, 'Read from cache success: %{public}s', cachePath);
       return buffer;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Read from cache failed: %{public}s, error: %{public}s', 
-        cachePath, (error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Read from cache failed: %{public}s, error: %{public}s', cachePath, error?.message);
       throw new Error(ResourceManager.getString($r('app.string.cache_file_not_found')));
     }
   }
@@ -210,16 +208,14 @@ export class CacheStorage implements IFileStorage {
     try {
       const cacheDir: string = CacheConstants.getCacheDir();
       await this.ensureCacheDir(cacheDir);
-      
+
       const file = await fs.open(cachePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
       await fs.write(file.fd, content);
       await fs.close(file.fd);
       hilog.debug(DOMAIN, TAG, 'Write to cache success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', 
-        cachePath, (error as Error).message);
-      const errorMsg: string = 'Write to cache failed: ' + (error as Error).message;
-      throw new Error(errorMsg);
+      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      throw new Error('Write to cache failed: ' + error?.message);
     }
   }
 
@@ -233,9 +229,8 @@ export class CacheStorage implements IFileStorage {
       await this.writeToCache(cachePath, content);
       hilog.debug(DOMAIN, TAG, 'Save to cache async success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', 
-        cachePath, (error as Error).message);
-      // 忽略缓存写入错误，不影响主流程
+      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      this.showErrorDialog(error?.message);
     }
   }
 
@@ -250,10 +245,8 @@ export class CacheStorage implements IFileStorage {
       await this.decoratedStorage.write(path, content);
       hilog.debug(DOMAIN, TAG, 'Push to remote async success: %{public}s', path);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', 
-        path, (error as Error).message);
-      // 显示错误提示
-      this.showErrorDialog((error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', path, error?.message);
+      this.showErrorDialog(error?.message);
     }
   }
 
@@ -263,24 +256,13 @@ export class CacheStorage implements IFileStorage {
    */
   private showErrorDialog(errorMessage: string): void {
     try {
-      const errorTitle: string = ResourceManager.getString($r('app.string.dialog_error_title'));
-      const errorMsg: string = ResourceManager.getString($r('app.string.push_to_remote_failed'));
-      const message: string = errorMsg.replace('%s', errorMessage);
-      
-      DialogHelper.showTipsDialog({
-        imageRes: $r('app.media.ic_error'),
-        imageSize: { width: 48, height: 48 },
-        title: $r('app.string.dialog_error_title'),
-        primaryButton: {
-          value: $r('app.string.confirm'),
-          action: () => {
-            // 用户点击确认
-          }
-        },
-        content: message
-      });
+      DialogHelper.showToast(errorMessage, {
+        duration: 3000,
+        fontColor: $r('app.color.button_text_blue'),
+        backgroundColor: $r('app.color.error')
+      })
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', (error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', error?.message);
     }
   }
 
@@ -305,32 +287,17 @@ export class CacheStorage implements IFileStorage {
       } as FileInfo;
       return fileInfo;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', 
-        cachePath, (error as Error).message);
-      const errorMsg: string = 'Get cache info failed: ' + (error as Error).message;
-      throw new Error(errorMsg);
+      hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      throw new Error('Get cache info failed: ' + error?.message);
     }
   }
 
   /**
    * 确保缓存目录存在
    * @param cacheDir 缓存目录路径
+   * @throws BusinessError - 13900001 - Operation not permitted
    */
   private async ensureCacheDir(cacheDir: string): Promise<void> {
-    try {
-      const result: number = fs.accessSync(cacheDir, fs.AccessModeType.EXIST);
-      hilog.debug(DOMAIN, TAG, 'Cache dir exists: %{public}s', cacheDir);
-    } catch (error) {
-      // 目录不存在，创建目录
-      hilog.debug(DOMAIN, TAG, 'Create cache dir: %{public}s', cacheDir);
-      // 注意：这里简化处理，实际可能需要递归创建父目录
-      try {
-        const file = await fs.open(cacheDir, fs.OpenMode.CREATE | fs.OpenMode.READ_ONLY);
-        await fs.close(file.fd);
-      } catch (createError) {
-        hilog.error(DOMAIN, TAG, 'Create cache dir failed: %{public}s, error: %{public}s', 
-          cacheDir, (createError as Error).message);
-      }
-    }
+    return fs.mkdir(cacheDir, true);
   }
 }
