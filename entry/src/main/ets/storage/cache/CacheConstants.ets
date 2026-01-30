@@ -23,17 +23,9 @@ export class CacheConstants {
    */
   static readonly ONLY_CACHE_KEY: string = 'only_use_cache';
   /**
-   * 缓存路径的AppStorage键
-   */
-  static readonly CACHE_PATH_KEY: string = 'cache_path';
-  /**
    * 强制刷新标志的AppStorage键
    */
   static readonly FORCE_REFRESH_KEY: string = 'force_refresh';
-  /**
-   * 本地编辑状态的AppStorage键前缀
-   */
-  static readonly LOCAL_EDIT_STATE_PREFIX: string = 'local_edit_state_';
 
   /**
    * 获取应用缓存目录
@@ -142,23 +134,6 @@ export class CacheConstants {
   }
 
   /**
-   * 设置缓存路径
-   * @param cachePath 缓存路径
-   */
-  static setCachePath(cachePath: string): void {
-    AppStorage.setOrCreate(CacheConstants.CACHE_PATH_KEY, cachePath);
-    hilog.debug(DOMAIN, TAG, `Set cache path: ${cachePath}`);
-  }
-
-  /**
-   * 获取缓存路径
-   * @returns 缓存路径
-   */
-  static getCachePath(): string {
-    return AppStorage.get<string>(CacheConstants.CACHE_PATH_KEY) ?? '';
-  }
-
-  /**
    * 设置强制刷新标志
    * @param forceRefresh 是否强制刷新
    */
@@ -181,36 +156,5 @@ export class CacheConstants {
   static clearForceRefresh(): void {
     AppStorage.setOrCreate(CacheConstants.FORCE_REFRESH_KEY, false);
     hilog.debug(DOMAIN, TAG, 'Clear force refresh');
-  }
-
-  /**
-   * 设置本地编辑状态
-   * @param path 文件路径
-   * @param hasEdit 是否有本地编辑
-   */
-  static setLocalEditState(path: string, hasEdit: boolean): void {
-    const key: string = CacheConstants.LOCAL_EDIT_STATE_PREFIX + CacheConstants.hashString(path).toString(16);
-    AppStorage.setOrCreate(key, hasEdit);
-    hilog.debug(DOMAIN, TAG, `Set local edit state: ${path}, ${hasEdit}`);
-  }
-
-  /**
-   * 获取本地编辑状态
-   * @param path 文件路径
-   * @returns 是否有本地编辑
-   */
-  static getLocalEditState(path: string): boolean {
-    const key: string = CacheConstants.LOCAL_EDIT_STATE_PREFIX + CacheConstants.hashString(path).toString(16);
-    return AppStorage.get<boolean>(key) ?? false;
-  }
-
-  /**
-   * 移除本地编辑状态
-   * @param path 文件路径
-   */
-  static removeLocalEditState(path: string): void {
-    const key: string = CacheConstants.LOCAL_EDIT_STATE_PREFIX + CacheConstants.hashString(path).toString(16);
-    AppStorage.setOrCreate(key, false);
-    hilog.debug(DOMAIN, TAG, `Remove local edit state: ${path}`);
   }
 }
