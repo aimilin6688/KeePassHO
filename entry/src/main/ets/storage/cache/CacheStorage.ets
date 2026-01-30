@@ -156,7 +156,7 @@ export class CacheStorage implements IFileStorage {
       return await this.decoratedStorage.getInfo(path);
     } catch (error) {
       this.showErrorDialog(error?.message);
-      return await this.getCacheInfo(path);
+      return await this.getCacheInfo(cachePath);
     }
   }
 
