@@ -310,16 +310,10 @@ struct Password {
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
-        if(this.encryptPassword && this.password){
-          this.password = "";
-        }
         CommonUtils.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
         this.closeLoadingDialog();
       },
       onAllErrors: (error: ErrorEvent) => {
-        if(this.encryptPassword && this.password){
-          this.password = "";
-        }
         CommonUtils.showToast({ message: error.message })
         this.closeLoadingDialog();
       },

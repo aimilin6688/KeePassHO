@@ -120,7 +120,12 @@ export class CacheStorage implements IFileStorage {
     }
 
     // 正常走远端
-    return await this.decoratedStorage.exists(path);
+    try {
+      return await this.decoratedStorage.exists(path);
+    } catch (error) {
+      this.showErrorDialog(error?.message);
+      return await CacheConstants.cacheExists(path);
+    }
   }
 
   /**
@@ -146,8 +151,13 @@ export class CacheStorage implements IFileStorage {
       return await this.getCacheInfo(cachePath);
     }
 
-    // 正常走远端
-    return await this.decoratedStorage.getInfo(path);
+    try {
+      // 正常走远端
+      return await this.decoratedStorage.getInfo(path);
+    } catch (error) {
+      this.showErrorDialog(error?.message);
+      return await this.getCacheInfo(path);
+    }
   }
 
   /**
