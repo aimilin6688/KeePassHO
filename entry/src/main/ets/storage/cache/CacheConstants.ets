@@ -78,7 +78,8 @@ export class CacheConstants {
    * @param cachePath 缓存文件路径
    * @returns 是否存在
    */
-  static async cacheExists(cachePath: string): Promise<boolean> {
+  static async cacheExists(originalPath: string): Promise<boolean> {
+    const cachePath: string = CacheConstants.getCacheFilePath(originalPath);
     try {
       const result: boolean = fs.accessSync(cachePath, fs.AccessModeType.EXIST);
       hilog.info(DOMAIN, TAG, `Cache exists: ${result}, path: ${cachePath}`);
