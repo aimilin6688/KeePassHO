@@ -80,8 +80,6 @@ struct Password {
     }
     // 初始化按钮状态
     this.updateButtonState();
-    // 初始化缓存复选框状态
-    this.initCacheCheckbox();
   }
 
   onPageShow(): void {
@@ -107,6 +105,7 @@ struct Password {
     this.storageType = locationInfo.storageType;
     this.storageConfig = locationInfo.storageConfig;
     AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
+    this.initCacheCheckbox();
   }
 
   // 更新按钮状态
@@ -147,6 +146,8 @@ struct Password {
           this.keyLocation = recentFile.keyLocation;
           this.keyFileName = this.keyLocation.fileName;
         }
+        // 是否使用缓存复选框
+        this.initCacheCheckbox();
         // 生物认证
         this.startAuth(recentFile.password);
       }
@@ -532,6 +533,7 @@ struct Password {
           Row() {
             Checkbox({ name: 'onlyUseCache' })
               .select(this.onlyUseCache)
+              .shape(CheckBoxShape.ROUNDED_SQUARE)
               .onChange((isSelected: boolean) => {
                 this.onlyUseCache = isSelected;
                 CacheConstants.setOnlyCache(isSelected);
