@@ -43,6 +43,11 @@ export class CacheStorage implements IFileStorage {
    * @throws 如果读取失败则抛出异常
    */
   public async read(path: string): Promise<ArrayBuffer> {
+    // 如果禁用本地缓存
+    if(!CacheConstants.isEnableLocalCache()){
+      return this.decoratedStorage.read(path);
+    }
+
     const cachePath: string = CacheConstants.getCacheFilePath(path);
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
     const forceRefresh: boolean = CacheConstants.getForceRefresh();
@@ -72,8 +77,14 @@ export class CacheStorage implements IFileStorage {
    * 优先写入本地缓存，完成后异步推送到远端
    * @param path 文件路径
    * @param content 文件内容
+   * @throws 如果读取失败则抛出异常
    */
   public async write(path: string, content: ArrayBuffer): Promise<void> {
+    // 如果禁用本地缓存
+    if(!CacheConstants.isEnableLocalCache()){
+      return this.decoratedStorage.write(path, content);
+    }
+
     const cachePath: string = CacheConstants.getCacheFilePath(path);
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
     const forceRefresh: boolean = CacheConstants.getForceRefresh();
@@ -105,6 +116,11 @@ export class CacheStorage implements IFileStorage {
    * @returns 文件是否存在
    */
   public async exists(path: string): Promise<boolean> {
+    // 如果禁用本地缓存
+    if(!CacheConstants.isEnableLocalCache()){
+      return this.decoratedStorage.exists(path);
+    }
+
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
     const forceRefresh: boolean = CacheConstants.getForceRefresh();
 
@@ -136,6 +152,11 @@ export class CacheStorage implements IFileStorage {
    * @throws 如果获取失败则抛出异常
    */
   public async getInfo(path: string): Promise<FileInfo> {
+    // 如果禁用本地缓存
+    if(!CacheConstants.isEnableLocalCache()){
+      return this.decoratedStorage.getInfo(path);
+    }
+
     const cachePath: string = CacheConstants.getCacheFilePath(path);
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
     const forceRefresh: boolean = CacheConstants.getForceRefresh();

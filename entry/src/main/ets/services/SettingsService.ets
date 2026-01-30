@@ -68,6 +68,10 @@ export class SettingsService {
   public static readonly KEY_APP_HOLDING_HAND_ENABLE = "app_holding_hand_enable";
   public static readonly KEY_APP_HOLDING_HAND_ENABLE_DEFAULT = true;
 
+  // 启用本地缓存
+  public static readonly KEY_APP_ENABLE_LOCAL_CACHE = "app_enable_local_cache";
+  public static readonly KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT = true;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
