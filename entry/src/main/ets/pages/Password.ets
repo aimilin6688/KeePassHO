@@ -311,12 +311,16 @@ struct Password {
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
-        this.password = "";
+        if(this.encryptPassword && this.password){
+          this.password = "";
+        }
         CommonUtils.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
         this.closeLoadingDialog();
       },
       onAllErrors: (error: ErrorEvent) => {
-        this.password = "";
+        if(this.encryptPassword && this.password){
+          this.password = "";
+        }
         CommonUtils.showToast({ message: error.message })
         this.closeLoadingDialog();
       },
