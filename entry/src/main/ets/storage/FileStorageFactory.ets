@@ -64,7 +64,7 @@ export class FileStorageFactory {
     }
     // 非 LOCAL 类型的存储使用缓存装饰器
     if (type !== StorageType.LOCAL) {
-      return new CacheStorage(storage, type);
+      return new CacheStorage(storage);
     }
     return storage;
   }
