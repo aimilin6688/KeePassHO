@@ -40,6 +40,7 @@ export class CacheStorage implements IFileStorage {
    * 优先从远端加载，完成后异步保存到本地缓存
    * @param path 文件路径
    * @returns 文件内容
+   * @throws 如果读取失败则抛出异常
    */
   public async read(path: string): Promise<ArrayBuffer> {
     const cachePath: string = CacheConstants.getCacheFilePath(path);
@@ -63,10 +64,6 @@ export class CacheStorage implements IFileStorage {
 
     // 异步保存到本地缓存
     this.saveToCacheAsync(cachePath, content);
-
-    // 设置缓存路径
-    CacheConstants.setCachePath(cachePath);
-
     return content;
   }
 
@@ -90,7 +87,6 @@ export class CacheStorage implements IFileStorage {
     if (onlyUseCache && !forceRefresh) {
       hilog.debug(DOMAIN, TAG, 'Write to cache only: %{public}s', cachePath);
       await this.writeToCache(cachePath, content);
-      CacheConstants.setLocalEditState(path, true);
       return;
     }
 
@@ -100,9 +96,6 @@ export class CacheStorage implements IFileStorage {
 
     // 异步推送到远端
     this.pushToRemoteAsync(path, content);
-
-    // 清除本地编辑状态
-    CacheConstants.removeLocalEditState(path);
   }
 
   /**
