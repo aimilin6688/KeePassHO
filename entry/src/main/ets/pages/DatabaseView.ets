@@ -1377,7 +1377,7 @@ struct DatabaseView {
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .flexGrow(1)
                               .margin({ top: 4 })
-                              .maxLines(2)
+                              .maxLines(1)
                           }
                           .flexGrow(1)
                           .alignItems(HorizontalAlign.Start)
@@ -1410,11 +1410,10 @@ struct DatabaseView {
                             .position({ x: -2, y: 24 })
                         }
                       }
-                      .height(66)
                       .borderRadius(8)
                       .backgroundColor((this.moveParam && this.moveParam.isMoveItem(item.uuid.id)) ? $r("app.color.item_selected") :
                         $r("app.color.card_bg"))
-                      .padding({ left: 6, right: 6 })
+                      .padding({ left: 6, right: 6, top: 6, bottom: 6})
                       .onClick(() => {
                         CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
                       })
@@ -1511,8 +1510,8 @@ struct DatabaseView {
                       .padding({
                         left: 6,
                         right: 6,
-                        top: 8,
-                        bottom: 8
+                        top: 6,
+                        bottom: 6
                       })
                       .onClick(() => {
                         CommonUtils.pushUrl({
