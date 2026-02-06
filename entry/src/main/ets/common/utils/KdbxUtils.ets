@@ -214,9 +214,17 @@ export class KdbxUtils {
     ];
 
     for (const field of standardFields) {
-      const value = KdbxUtils.getFieldValueString(entry.fields, field);
-      if (value.toLowerCase().includes(searchText)) {
-        return true;
+      if(KdbxUtils.FIELD_TAGS === field){
+        for (const tag of entry.tags) {
+          if (tag.toLowerCase().includes(searchText)) {
+            return true;
+          }
+        }
+      } else{
+        const value = KdbxUtils.getFieldValueString(entry.fields, field);
+        if (value.toLowerCase().includes(searchText)) {
+          return true;
+        }
       }
     }
 
