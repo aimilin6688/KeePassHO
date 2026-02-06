@@ -317,7 +317,13 @@ export class KdbxUtils {
     if (credentials == undefined) {
       credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
     }
-    return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
+    // 尝试用 Kdbx.load() 加载加密的二进制格式
+    try {
+      return await Kdbx.load(arrayBuffer, credentials);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `arrayBufferToKdbx error: ${error?.message}, stack: ${error?.stack}`);
+      return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
+    }
   }
 
 
@@ -333,7 +339,9 @@ export class KdbxUtils {
         // 按名称排序（置顶优先，同是置顶的按修改时间排序）
         items.sort((a, b) => {
           const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
-          if (pinnedResult !== 0) return pinnedResult;
+          if (pinnedResult !== 0) {
+            return pinnedResult;
+          }
           // 获取名称
           const nameA = a instanceof KdbxGroup ? (a.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
           const nameB = b instanceof KdbxGroup ? (b.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
@@ -344,7 +352,9 @@ export class KdbxUtils {
         // 按修改日期排序（置顶优先，同是置顶的按修改时间排序）
         items.sort((a, b) => {
           const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
-          if (pinnedResult !== 0) return pinnedResult;
+          if (pinnedResult !== 0) {
+            return pinnedResult;
+          }
           return KdbxUtils.compare(b.times.lastModTime, a.times.lastModTime);
         });
         break;
@@ -352,13 +362,15 @@ export class KdbxUtils {
         // 按创建日期排序（置顶优先，同是置顶的按修改时间排序）
         items.sort((a, b) => {
           const pinnedResult = KdbxUtils.comparePinnedAndTime(a, b);
-          if (pinnedResult !== 0) return pinnedResult;
+          if (pinnedResult !== 0) {
+            return pinnedResult;
+          }
           return KdbxUtils.compare(b.times.creationTime, a.times.creationTime);
         });
         break;
       case SortMode.DEFAULT:
       default:
-        // 默认排序（置顶优先，同是置顶的按修改时间排序）
+      // 默认排序（置顶优先，同是置顶的按修改时间排序）
         items.sort((a, b) => KdbxUtils.comparePinnedAndTime(a, b));
         break;
     }
