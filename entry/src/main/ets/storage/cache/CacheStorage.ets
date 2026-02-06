@@ -3,7 +3,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileInfo, FileType, IFileStorage, StorageConfig } from '../index';
 import { CacheConstants } from './CacheConstants';
 import { DialogHelper } from '@pura/harmony-dialog';
-import { ResourceManager } from '../../common/utils/ResourceManager';
+import { ResourceManager } from '../../common/utils';
+import { KdbxError } from 'kdbxweb';
+import { ErrorCodes } from '../../services/error/KeepassHoError';
 
 const DOMAIN = 0x0000;
 const TAG = 'CacheStorage';
@@ -97,8 +99,9 @@ export class CacheStorage implements IFileStorage {
     // 仅使用本地缓存模式
     if (onlyUseCache && !forceRefresh) {
       hilog.debug(DOMAIN, TAG, 'Write to cache only: %{public}s', cachePath);
-      await this.writeToCache(cachePath, content);
-      return;
+      // TODO: 写入本地缓存，需要联网后恢复记录
+      //  await this.writeToCache(cachePath, content);
+      throw new KdbxError(ErrorCodes.READ_ONLY, ResourceManager.getString($r('app.string.cache_read_only')));
     }
 
     // 正常模式：优先写入本地缓存，然后异步推送到远端
