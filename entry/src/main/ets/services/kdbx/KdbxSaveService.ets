@@ -135,7 +135,7 @@ export default class KdbxSaveService {
           callback.onSuccess(message);
         }
       }).catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', error.message);
+        hilog.error(DOMAIN, TAG, 'Save database error: %{public}s, %{public}s', error?.message, error?.stack);
         if (callback && callback.onError) {
           callback.onError(error.message);
         } else {
