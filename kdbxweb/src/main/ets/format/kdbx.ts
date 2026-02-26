@@ -248,6 +248,26 @@ export class Kdbx {
     }
 
     /**
+     * Check if an entry or group is in the recycle bin
+     * @param object - entry or group to check
+     * @returns true if the object is in the recycle bin, false otherwise
+     */
+    isInRecycleBin(object: KdbxEntry | KdbxGroup): boolean {
+        const recycleBinUuid = this.meta.recycleBinUuid;
+        if (!recycleBinUuid) {
+            return false;
+        }
+        let parentGroup: KdbxGroup | undefined = object.parentGroup;
+        while (parentGroup) {
+            if (parentGroup.uuid.equals(recycleBinUuid)) {
+                return true;
+            }
+            parentGroup = parentGroup.parentGroup;
+        }
+        return false;
+    }
+
+    /**
      * Delete an entry or a group
      * Depending on settings, removes either to trash, or completely
      */
@@ -256,6 +276,9 @@ export class Kdbx {
         if (this.meta.recycleBinEnabled && this.meta.recycleBinUuid) {
             this.createRecycleBin();
             toGroup = this.getGroup(this.meta.recycleBinUuid);
+        }
+        if (this.isInRecycleBin(object)) {
+            toGroup = undefined;
         }
         this.move(object, toGroup);
     }
