@@ -376,7 +376,7 @@ export class WebDavClient {
         }
       }
     };
-    hilog.info(DOMAIN, TAG, `File upload url：${remoteUri}, size: ${fileBuffer.byteLength}`)
+    hilog.debug(DOMAIN, TAG, `File upload url：${remoteUri}, size: ${fileBuffer.byteLength}`)
     const req = new rcp.Request(remoteUri, "PUT", {}, fileBuffer, {}, {},
       { tracing: { httpEventsHandler: customHttpEventsHandler } });
     const rr = await this.request(req);
