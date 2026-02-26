@@ -21,6 +21,7 @@ import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabase
 import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
+import { CacheConstants } from '../storage/cache/CacheConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -569,9 +570,23 @@ struct DatabaseView {
    * 删除条目或分组
    */
   private deleteItem(index: number) {
+    if (this.database === null) {
+      return;
+    }
+    let deleteObj: KdbxGroup | KdbxEntry | null = null;
+    if (index >= 0 && index < this.items.length) {
+      deleteObj = this.items[index];
+    }
+    if (!deleteObj) {
+      CommonUtils.showToast($r("app.string.please_refresh_data_first"));
+      return;
+    }
+
+    const msg = this.database.isInRecycleBin(deleteObj) ? $r("app.string.dialog_delete_confirm_message_in_recycle_bin") : $r("app.string.dialog_delete_confirm_message");
+
     this.getUIContext().showAlertDialog({
       title: $r("app.string.dialog_confirm_title"),
-      message: $r("app.string.dialog_delete_confirm_message"),
+      message: msg,
       primaryButton: {
         value: $r('app.string.cancel_button_text'),
         action: () => {
@@ -580,17 +595,14 @@ struct DatabaseView {
       secondaryButton: {
         value: $r("app.string.delete_button_text"),
         action: () => {
-          if (this.database === null) {
-            return;
-          }
-          let deleteObj: KdbxGroup | KdbxEntry = null;
-          if (index >= 0 && index < this.items.length) {
-            deleteObj = this.items[index];
+          if (deleteObj && this.database) {
             this.items.splice(index, 1);
+            this.database.remove(deleteObj);
+            this.saveDatabase();
+            this.hideMoreMenu();
+          } else {
+            CommonUtils.showToast($r("app.string.please_refresh_data_first"));
           }
-          this.database.remove(deleteObj);
-          this.saveDatabase();
-          this.hideMoreMenu();
         }
       }
     });
@@ -757,10 +769,13 @@ struct DatabaseView {
   }
 
   /**
-   * 重新加载数据库
+   * 重新加载数据库（强制与远端合并）
    */
   private refreshDatabase() {
     this.isRefreshing = true;
+    // 设置强制从远端刷新标志，忽略仅使用本地缓存的设置
+    CacheConstants.setForceRefresh(true);
+
     let loadParam = LoadDatabase.byDbFileParam(FileService.getDbFileParam());
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (successMessage: SuccessMessage) => {
@@ -1373,7 +1388,7 @@ struct DatabaseView {
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .flexGrow(1)
                               .margin({ top: 4 })
-                              .maxLines(2)
+                              .maxLines(1)
                           }
                           .flexGrow(1)
                           .alignItems(HorizontalAlign.Start)
@@ -1406,11 +1421,15 @@ struct DatabaseView {
                             .position({ x: -2, y: 24 })
                         }
                       }
-                      .height(66)
                       .borderRadius(8)
                       .backgroundColor((this.moveParam && this.moveParam.isMoveItem(item.uuid.id)) ? $r("app.color.item_selected") :
                         $r("app.color.card_bg"))
-                      .padding({ left: 6, right: 6 })
+                      .padding({
+                        left: 6,
+                        right: 6,
+                        top: 6,
+                        bottom: 6
+                      })
                       .onClick(() => {
                         CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
                       })
@@ -1507,8 +1526,8 @@ struct DatabaseView {
                       .padding({
                         left: 6,
                         right: 6,
-                        top: 8,
-                        bottom: 8
+                        top: 6,
+                        bottom: 6
                       })
                       .onClick(() => {
                         CommonUtils.pushUrl({

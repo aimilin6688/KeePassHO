@@ -58,7 +58,7 @@ KeePassHO是一款免费、开源的密码管理软件。它的核心优势在�
 
 ## 许可证
 
-本项目采用MIT许可证 - 详情请参见[GLP 3.0](LICENSE)文件。
+本项目采用GPL-3.0许可证 - 详情请参见[GPL-3.0](LICENSE)文件。
 
 ## 致谢
 1. [kdbxweb](https://github.com/keeweb/kdbxweb)
@@ -134,7 +134,7 @@ We welcome all forms of contributions, including but not limited to:
 
 ## License
 
-This project is licensed under the MIT License - see the [GPL 3.0](LICENSE) file for details.
+This project is licensed under GPL-3.0 license - see the [GPL-3.0](LICENSE) file for details.
 
 ## Acknowledgments
 1. [kdbxweb](https://github.com/keeweb/kdbxweb)

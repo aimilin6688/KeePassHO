@@ -19,6 +19,7 @@ import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
 import { Constants } from '../common/constants/Constants';
 import { common } from '@kit.AbilityKit';
+import { CacheConstants } from '../storage/cache/CacheConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -38,6 +39,8 @@ struct Password {
   @State showPassword: boolean = false;
   @State buttonEnabled: boolean = false; // 添加状态变量控制按钮状态
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
+  @State showCacheCheckbox: boolean = false; // 是否显示缓存复选框
+  @State onlyUseCache: boolean = false; // 是否仅使用本地缓存
   private filePath: string = '';
   private storageType: StorageType | undefined = undefined;
   private storageConfig: StorageConfig | undefined = undefined;
@@ -102,6 +105,7 @@ struct Password {
     this.storageType = locationInfo.storageType;
     this.storageConfig = locationInfo.storageConfig;
     AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
+    this.initCacheCheckbox();
   }
 
   // 更新按钮状态
@@ -142,6 +146,8 @@ struct Password {
           this.keyLocation = recentFile.keyLocation;
           this.keyFileName = this.keyLocation.fileName;
         }
+        // 是否使用缓存复选框
+        this.initCacheCheckbox();
         // 生物认证
         this.startAuth(recentFile.password);
       }
@@ -166,6 +172,20 @@ struct Password {
   }
 
   /**
+   * 初始化缓存复选框状态
+   */
+  private async initCacheCheckbox(): Promise<void> {
+    // 仅对远程存储类型显示缓存复选框
+    if (this.storageType !== StorageType.LOCAL && this.filePath) {
+      this.showCacheCheckbox = await CacheConstants.cacheExists(this.filePath);
+      this.onlyUseCache = CacheConstants.getOnlyCache();
+    } else {
+      this.showCacheCheckbox = false;
+      this.onlyUseCache = false;
+    }
+  }
+
+  /**
    * 通过指纹认证
    */
   private async startAuth(password: string | undefined, authType?: UnlockAuthType) {
@@ -181,10 +201,7 @@ struct Password {
     // 加密密钥
     this.encryptPassword = password;
     // 默认认证方式
-    authType =
-      authType ?? await SettingsService.getInstance()
-        .get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
-
+    authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
     // 指纹或者人脸验证
     if (authType === UnlockAuthType.FINGERPRINT) {
       AuthService.startFingerprintAuth(this.authCallback(password));
@@ -284,8 +301,7 @@ struct Password {
     // 打开加载进度弹框
     this.openLoadingDialog();
     // 打开数据库
-    let loadDatabase =
-      new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
+    let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
         this.loadingMessage = ResourceManager.getString(message.message);
@@ -505,6 +521,30 @@ struct Password {
         if (this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
           this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
           this.KeyFileSelector()
+        }
+
+        // 仅使用本地缓存复选框（仅在远程存储且有缓存时显示）
+        if (this.showCacheCheckbox) {
+          Row() {
+            Checkbox({ name: 'onlyUseCache' })
+              .select(this.onlyUseCache)
+              .shape(CheckBoxShape.ROUNDED_SQUARE)
+              .onChange((isSelected: boolean) => {
+                this.onlyUseCache = isSelected;
+                CacheConstants.setOnlyCache(isSelected);
+              })
+            Text($r('app.string.only_use_local_cache'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.onlyUseCache = !this.onlyUseCache;
+                CacheConstants.setOnlyCache(this.onlyUseCache);
+              })
+          }
+          .width('90%')
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .alignItems(VerticalAlign.Center)
         }
 
         if (this.encryptPassword) {
