@@ -229,7 +229,7 @@ export class CacheStorage implements IFileStorage {
       await fs.close(file.fd);
       hilog.debug(DOMAIN, TAG, 'Write to cache success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       throw new Error('Write to cache failed: ' + error?.message);
     }
   }
@@ -244,7 +244,7 @@ export class CacheStorage implements IFileStorage {
       await this.writeToCache(cachePath, content);
       hilog.debug(DOMAIN, TAG, 'Save to cache async success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       this.showErrorDialog(error?.message);
     }
   }
@@ -260,7 +260,7 @@ export class CacheStorage implements IFileStorage {
       await this.decoratedStorage.write(path, content);
       hilog.debug(DOMAIN, TAG, 'Push to remote async success: %{public}s', path);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', path, error?.message);
+      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', path, error?.stack);
       this.showErrorDialog(error?.message);
     }
   }
@@ -277,7 +277,7 @@ export class CacheStorage implements IFileStorage {
         backgroundColor: $r('app.color.error')
       })
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', error?.message);
+      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', error?.stack);
     }
   }
 
@@ -302,7 +302,7 @@ export class CacheStorage implements IFileStorage {
       } as FileInfo;
       return fileInfo;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       throw new Error('Get cache info failed: ' + error?.message);
     }
   }
