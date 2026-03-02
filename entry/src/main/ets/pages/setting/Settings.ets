@@ -4,7 +4,13 @@ import { ConfigurationConstant } from '@kit.AbilityKit';
 import { router, Router } from '@kit.ArkUI';
 import { SortConstants, SortMode } from '../../common/constants/SortConstants';
 import { DataService } from '../../services/DataService';
-import { CommonUtils } from '../../common/utils';
+import { CommonUtils, ShareUtils } from '../../common/utils';
+import { CrashLogService } from '../../services/CrashLogService';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'Settings';
 
 @Entry
 @Component
@@ -13,6 +19,7 @@ struct Settings {
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
     ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+  @State hasCrashLog: boolean = false;
   private settingsService: SettingsService = SettingsService.getInstance();
   private router: Router = this.getUIContext().getRouter();
 
@@ -37,6 +44,38 @@ struct Settings {
   async aboutToAppear() {
     this.currentThemeMode = await this.settingsService.getThemeMode();
     this.sortBy = await this.settingsService.getSortBy();
+    // 检查是否有崩溃日志
+    this.hasCrashLog = await CrashLogService.getInstance().hasCrashLog();
+  }
+
+  /**
+   * 分享崩溃日志
+   * 只有用户真正完成分享后才删除日志文件
+   */
+  private async shareCrashLog() {
+    try {
+      const logPath = await CrashLogService.getInstance().getLatestCrashLogPath();
+      if (logPath) {
+        const success = await ShareUtils.shareFileWithCallback(
+          CommonUtils.getContext(),
+          logPath,
+          // 分享完成回调 - 用户真正完成分享后才触发
+          async () => {
+            hilog.info(DOMAIN, TAG, 'Crash log shared successfully, clearing logs');
+            // 分享成功后清除崩溃日志
+            await CrashLogService.getInstance().clearCrashLog();
+            this.hasCrashLog = false;
+          },
+          'KeePassHO Crash Log'
+        );
+        if (!success) {
+          hilog.error(DOMAIN, TAG, 'Failed to show share panel');
+        }
+      }
+    } catch (error) {
+      const err = error as BusinessError;
+      hilog.error(DOMAIN, TAG, 'Failed to share crash log: %{public}s', err.message);
+    }
   }
 
   build() {
@@ -256,6 +295,26 @@ struct Settings {
         })
 
         ListItemGroup() {
+          // 崩溃日志
+          if (this.hasCrashLog) {
+            ListItem() {
+              Row() {
+                Text($r('app.string.crash_log_title'))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
+            }
+            .onClick(() => {
+              this.shareCrashLog();
+            })
+          }
+
           // 关于
           ListItem() {
             Row() {
