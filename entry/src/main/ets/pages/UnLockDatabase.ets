@@ -38,38 +38,19 @@ struct UnLockDatabase {
     // 默认认证方式
     SettingsService.get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType, (value) => {
       this.defaultAuthType = value;
-      // 是否支持指纹验证
-      if (this.defaultAuthType === UnlockAuthType.FINGERPRINT) {
-        this.startFingerprintAuth();
-      }
-      // 是否支持人脸验证
-      if (this.defaultAuthType === UnlockAuthType.FACE) {
-        this.startFaceAuth();
-      }
-      // 默认密码解锁
-      if (this.defaultAuthType === UnlockAuthType.PASSWORD) {
-        this.startPasswordAuth();
-      }
+      this.startAuth();
     });
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
-  private startPasswordAuth() {
-    // 非仅密钥文件
-    if (!this.isKeyfileOnlyMode) {
-      this.passwordInputFocus();
-    } else {
-      // 导航到密码输入页面
-      CommonUtils.pushUrl({
-        url: 'pages/Password',
-        params: {
-          filePath: this.dbFileParam.filePath
-        }
-      });
-    }
-  }
-
+  /**
+   * 快速解锁
+   */
   private quickUnlock() {
+    if (this.isKeyfileOnlyMode) {
+      this.startAuth();
+      return;
+    }
     if (!this.quickPassword) {
       CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
       return
@@ -103,6 +84,24 @@ struct UnLockDatabase {
   }
 
   /**
+   * 开始认证
+   */
+  private startAuth() {
+    // 是否支持指纹验证
+    if (this.defaultAuthType === UnlockAuthType.FINGERPRINT) {
+      this.startFingerprintAuth();
+    }
+    // 是否支持人脸验证
+    if (this.defaultAuthType === UnlockAuthType.FACE) {
+      this.startFaceAuth();
+    }
+    // 默认密码解锁
+    if (this.defaultAuthType === UnlockAuthType.PASSWORD) {
+      this.startPasswordAuth();
+    }
+  }
+
+  /**
    * 开始指纹验证
    */
   private startFingerprintAuth() {
@@ -119,6 +118,23 @@ struct UnLockDatabase {
   private startFaceAuth() {
     if (SettingsService.isFaceAuthEnable()) {
       AuthService.startFaceAuth(this.authServiceCallback());
+    } else {
+      this.passwordInputFocus();
+    }
+  }
+
+  /**
+   * 开始密码认证
+   */
+  private startPasswordAuth() {
+    // 仅密钥文件模式，直接跳转到密码页面
+    if (this.isKeyfileOnlyMode) {
+      CommonUtils.pushUrl({
+        url: 'pages/Password',
+        params: {
+          filePath: this.dbFileParam.filePath
+        }
+      });
     } else {
       this.passwordInputFocus();
     }
