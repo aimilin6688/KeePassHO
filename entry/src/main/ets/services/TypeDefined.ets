@@ -170,6 +170,13 @@ export class AuthType {
     value: $r('app.string.auth_type_password_keyfile')
   };
   /**
+   * 仅密钥文件
+   */
+  public static readonly KEYFILE: AuthTypeInfo = {
+    type: 'keyfile',
+    value: $r('app.string.auth_type_keyfile')
+  };
+  /**
    * 密码 + 一次性密码
    */
   public static readonly PASSWORD_OTP: AuthTypeInfo = {
@@ -219,6 +226,7 @@ export class AuthType {
     return [
       AuthType.PASSWORD,
       AuthType.PASSWORD_KEYFILE,
+      AuthType.KEYFILE,
       // AuthType.PASSWORD_OTP,
       // AuthType.PASSWORD_OTP_RECOVERY,
       // AuthType.PASSWORD_CHALLENGE_RESPONSE,
@@ -270,7 +278,43 @@ export class AuthType {
    * @returns 是否使用密钥文件
    */
   public static useKeyAuth(authType: AuthTypeInfo): boolean {
-    return authType && (authType.type === AuthType.PASSWORD_KEYFILE.type || authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type);
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD_KEYFILE.type ||
+           authType.type === AuthType.KEYFILE.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
+  }
+
+  /**
+   * 判断认证方式是否为仅密钥文件模式
+   * @param authType 认证方式
+   * @returns 是否为仅密钥文件模式
+   */
+  public static isKeyfileOnly(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.KEYFILE.type;
+  }
+
+  /**
+   * 判断认证方式是否需要密码
+   * @param authType 认证方式
+   * @returns 是否需要密码
+   */
+  public static needPassword(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE.type ||
+           authType.type === AuthType.PASSWORD_OTP.type ||
+           authType.type === AuthType.PASSWORD_OTP_RECOVERY.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_XC.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
   }
 }
 

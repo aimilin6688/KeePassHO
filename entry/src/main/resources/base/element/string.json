@@ -81,6 +81,14 @@
       "value": "Password + Key file"
     },
     {
+      "name": "auth_type_keyfile",
+      "value": "Key file only"
+    },
+    {
+      "name": "tap_to_biometric_auth",
+      "value": "Tap to use biometric authentication"
+    },
+    {
       "name": "auth_type_password_otp",
       "value": "Password + OTP"
     },
@@ -1703,6 +1711,10 @@
     {
       "name": "cache_read_only",
       "value": "Read-only mode"
+    },
+    {
+      "name": "key_file_required",
+      "value": "Key file is required"
     },
     {
       "name": "crash_log_title",

@@ -1,7 +1,7 @@
 import { FileService } from '../services/FileService';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
-import { DbFileParam } from '../services/TypeDefined';
-import { PromptAction, Router } from '@kit.ArkUI';
+import { AuthType, DbFileParam } from '../services/TypeDefined';
+import { Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
@@ -17,8 +17,8 @@ struct UnLockDatabase {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';
+  @State isKeyfileOnlyMode: boolean = false; // 是否为仅密钥文件模式
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupportAndEnabled();
   private isFaceSupport: boolean = AuthService.isFaceSupportAndEnabled();
@@ -29,6 +29,9 @@ struct UnLockDatabase {
   }
 
   onPageShow(): void {
+    // 判断是否为仅密钥文件模式
+    this.isKeyfileOnlyMode = AuthType.isKeyfileOnly(this.dbFileParam.authType);
+    // 原有密码模式逻辑
     SettingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength, (value) => {
       this.quickLockPasswordLength = value;
     });
@@ -45,10 +48,25 @@ struct UnLockDatabase {
       }
       // 默认密码解锁
       if (this.defaultAuthType === UnlockAuthType.PASSWORD) {
-        this.passwordInputFocus();
+        this.startPasswordAuth();
       }
     });
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+  }
+
+  private startPasswordAuth() {
+    // 非仅密钥文件
+    if (!this.isKeyfileOnlyMode) {
+      this.passwordInputFocus();
+    } else {
+      // 导航到密码输入页面
+      CommonUtils.pushUrl({
+        url: 'pages/Password',
+        params: {
+          filePath: this.dbFileParam.filePath
+        }
+      });
+    }
   }
 
   private quickUnlock() {
@@ -149,32 +167,33 @@ struct UnLockDatabase {
           .width('100%')
           .margin({ top: 8 })
 
-        // 用户名
-        Column() {
-          Text($r('app.string.input_quick_unlock_password', this.quickLockPasswordLength))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ bottom: 8 })
-            .alignSelf(ItemAlign.Start)
+        // 非仅密钥文件模式，显示快速解锁密码输入框
+        if (!this.isKeyfileOnlyMode) {
+          Column() {
+            Text($r('app.string.input_quick_unlock_password', this.quickLockPasswordLength))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ bottom: 8 })
+              .alignSelf(ItemAlign.Start)
 
-          TextInput({ text: this.quickPassword })
-            .width('100%')
-            .id("quickPasswordInput")
-            .type(InputType.Password)
-            .fontSize(16)
-            .enableAutoFill(false)
-            .fontColor($r('app.color.text_primary'))
-            .borderRadius(8)
-            .onChange((value) => {
-              this.quickPassword = value;
-            })
-            .onSubmit(() => {
-              this.quickUnlock();
-            })
+            TextInput({ text: this.quickPassword })
+              .width('100%')
+              .id("quickPasswordInput")
+              .type(InputType.Password)
+              .fontSize(16)
+              .enableAutoFill(false)
+              .fontColor($r('app.color.text_primary'))
+              .borderRadius(8)
+              .onChange((value) => {
+                this.quickPassword = value;
+              })
+              .onSubmit(() => {
+                this.quickUnlock();
+              })
+          }
+          .width('100%')
+          .margin({ top: 16 })
         }
-        .width('100%')
-        .margin({ top: 16 })
-
       }
       .width('100%')
       .justifyContent(FlexAlign.Start)

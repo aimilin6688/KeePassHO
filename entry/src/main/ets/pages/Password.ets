@@ -28,7 +28,7 @@ const TAG = 'Password';
 @Component
 struct Password {
   @State password: string = '';
-  @State encryptPassword: string | undefined = undefined;
+  @State isShowBiometric: boolean = false; // 是否显示生物认证
   @State isLoading: boolean = false;
   @State fileName: string = '';
   @State authTypeInfo: AuthTypeInfo = AuthType.PASSWORD;
@@ -50,6 +50,7 @@ struct Password {
   private isFingerprintSupport: boolean = false;
   private isFaceSupport: boolean = false;
   private allAuthType: AuthTypeInfo[] = AuthType.getAllTypes();
+  private recentFile: RecentFile | undefined = undefined;
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -110,12 +111,24 @@ struct Password {
 
   // 更新按钮状态
   private updateButtonState(): void {
+    // 仅密钥文件模式：不需要密码，但需要密钥文件
+    if (AuthType.isKeyfileOnly(this.authTypeInfo)) {
+      if (this.isLoading || !this.keyLocation) {
+        this.buttonEnabled = false;
+        return;
+      }
+      this.buttonEnabled = true;
+      return;
+    }
+
+    // 其他模式：需要密码
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
       return;
     }
-    if ((this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
-      this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyLocation) {
+
+    // 密码+密钥文件模式：需要密钥文件
+    if (AuthType.useKeyAuth(this.authTypeInfo) && !AuthType.isKeyfileOnly(this.authTypeInfo) && !this.keyLocation) {
       this.buttonEnabled = false;
       return;
     }
@@ -133,6 +146,7 @@ struct Password {
     // 获取最近打开记录
     RecentFilesService.getRecentFile(filePath).then(recentFile => {
       if (recentFile) {
+        this.recentFile = recentFile;
         this.fileName = recentFile.fileName;
         this.filePath = recentFile.filePath;
         this.storageType = recentFile.storageType;
@@ -141,15 +155,10 @@ struct Password {
         if (recentFile.authType) {
           this.setAuthType(recentFile.authType);
         }
-        // 获取密钥文件路径
-        if (recentFile.keyLocation) {
-          this.keyLocation = recentFile.keyLocation;
-          this.keyFileName = this.keyLocation.fileName;
-        }
         // 是否使用缓存复选框
         this.initCacheCheckbox();
         // 生物认证
-        this.startAuth(recentFile.password);
+        this.startAuth();
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);
@@ -188,38 +197,54 @@ struct Password {
   /**
    * 通过指纹认证
    */
-  private async startAuth(password: string | undefined, authType?: UnlockAuthType) {
-    if (!password || password == '') {
-      this.passwordInputFocus();
-      return;
+  private async startAuth(authType?: UnlockAuthType) {
+    // 仅密钥文件模式：不需要密码，但需要密钥文件
+    if (!AuthType.isKeyfileOnly(this.authTypeInfo)) {
+      // 获取密钥文件路径
+      if (this.recentFile?.keyLocation) {
+        this.keyLocation = this.recentFile.keyLocation;
+        this.keyFileName = this.keyLocation.fileName;
+      }
+      // 未保存密钥信息
+      if (!this.recentFile?.password || this.recentFile?.password == '') {
+        this.passwordInputFocus();
+        return;
+      }
     }
+
     if (!this.isFingerprintSupport && !this.isFaceSupport) {
       hilog.debug(DOMAIN, TAG, `auth is not supported. isFingerprintSupport: ${this.isFingerprintSupport}, isFaceSupport: ${this.isFaceSupport}`);
       this.passwordInputFocus();
       return;
     }
-    // 加密密钥
-    this.encryptPassword = password;
+    this.isShowBiometric = true;
     // 默认认证方式
     authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
     // 指纹或者人脸验证
     if (authType === UnlockAuthType.FINGERPRINT) {
-      AuthService.startFingerprintAuth(this.authCallback(password));
+      AuthService.startFingerprintAuth(this.authCallback());
     } else if (authType === UnlockAuthType.FACE) {
-      AuthService.startFaceAuth(this.authCallback(password));
+      AuthService.startFaceAuth(this.authCallback());
     } else {
       this.passwordInputFocus();
     }
   }
 
   // 认证结果回调
-  private authCallback(password: string) {
+  private authCallback() {
     return {
       onSuccess: (result) => {
-        CryptoUtils.decryptText(password).then(result => {
-          this.password = result;
+        // 仅密钥模式
+        if (AuthType.isKeyfileOnly(this.authTypeInfo)) {
+          this.keyLocation = this.recentFile?.keyLocation;
+          this.keyFileName = this.keyLocation?.fileName || '';
           this.verifyAndOpenDatabase();
-        });
+        } else {
+          CryptoUtils.decryptText(this.recentFile?.password || '').then(result => {
+            this.password = result;
+            this.verifyAndOpenDatabase();
+          });
+        }
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
@@ -275,22 +300,33 @@ struct Password {
    * 验证密码并打开数据库
    */
   private verifyAndOpenDatabase() {
-    // 验证输入
-    if (!this.password) {
-      CommonUtils.showToast({
-        message: $r('app.string.password_placeholder'),
-        duration: 2000
-      });
-      return;
-    }
+    // 仅密钥文件模式验证
+    if (AuthType.isKeyfileOnly(this.authTypeInfo)) {
+      if (!this.keyLocation) {
+        CommonUtils.showToast({
+          message: $r('app.string.select_key_file'),
+          duration: 2000
+        });
+        return;
+      }
+    } else {
+      // 其他模式：验证密码输入
+      if (!this.password) {
+        CommonUtils.showToast({
+          message: $r('app.string.password_placeholder'),
+          duration: 2000
+        });
+        return;
+      }
 
-    if ((this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
-      this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) && !this.keyLocation) {
-      CommonUtils.showToast({
-        message: $r('app.string.select_key_file'),
-        duration: 2000
-      });
-      return;
+      // 密码+密钥文件模式验证
+      if (AuthType.useKeyAuth(this.authTypeInfo) && !this.keyLocation) {
+        CommonUtils.showToast({
+          message: $r('app.string.select_key_file'),
+          duration: 2000
+        });
+        return;
+      }
     }
 
     if (this.storageType === null) {
@@ -478,8 +514,7 @@ struct Password {
             .onSelect((index: number, value: string) => {
               this.setAuthType(AuthType.getByIndex(index));
               // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-              if (this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE.type &&
-                this.authTypeInfo.type !== AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+              if (!AuthType.useKeyAuth(this.authTypeInfo)) {
                 this.keyLocation = undefined;
                 this.keyFileName = '';
               }
@@ -489,37 +524,38 @@ struct Password {
         .width('90%')
         .padding({ left: 16, right: 16, bottom: 24 })
 
-        // 密码输入框
-        Row() {
-          TextInput({ placeholder: $r('app.string.password_placeholder') })
-            .id("passwordInput")
-            .type(this.showPassword ? InputType.Normal : InputType.Password)
-            .placeholderColor($r('app.color.text_secondary'))
-            .placeholderFont({ size: 16 })
-            .fontSize(16)
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor(Color.Transparent)
-            .width('100%')
-            .height(48)
-            .onChange((value) => {
-              this.password = value;
-              this.updateButtonState(); // 更新按钮状态
-            })
-            .onSubmit(() => {
-              this.verifyAndOpenDatabase();
-            })
+        // 密码输入框（仅密钥文件模式下隐藏）
+        if (!AuthType.isKeyfileOnly(this.authTypeInfo)) {
+          Row() {
+            TextInput({ placeholder: $r('app.string.password_placeholder') })
+              .id("passwordInput")
+              .type(this.showPassword ? InputType.Normal : InputType.Password)
+              .placeholderColor($r('app.color.text_secondary'))
+              .placeholderFont({ size: 16 })
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor(Color.Transparent)
+              .width('100%')
+              .height(48)
+              .onChange((value) => {
+                this.password = value;
+                this.updateButtonState(); // 更新按钮状态
+              })
+              .onSubmit(() => {
+                this.verifyAndOpenDatabase();
+              })
+          }
+          .width('90%')
+          .padding({ left: 16, right: 16 })
+          .border({
+            width: { bottom: 1 },
+            color: $r('app.color.divider')
+          })
+          .margin({ bottom: 16 })
         }
-        .width('90%')
-        .padding({ left: 16, right: 16 })
-        .border({
-          width: { bottom: 1 },
-          color: $r('app.color.divider')
-        })
-        .margin({ bottom: 16 })
 
         // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
-        if (this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE.type ||
-          this.authTypeInfo.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type) {
+        if (AuthType.useKeyAuth(this.authTypeInfo)) {
           this.KeyFileSelector()
         }
 
@@ -543,11 +579,16 @@ struct Password {
               })
           }
           .width('90%')
-          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .padding({
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: 8
+          })
           .alignItems(VerticalAlign.Center)
         }
 
-        if (this.encryptPassword) {
+        if (this.isShowBiometric) {
           Row() {
             if (this.isFingerprintSupport) {
               Text($r('app.string.auth_by_fingerprint'))
@@ -559,7 +600,7 @@ struct Password {
                   color: $r('app.color.button_bg_blue')
                 })
                 .onClick(() => {
-                  this.startAuth(this.encryptPassword, UnlockAuthType.FINGERPRINT);
+                  this.startAuth(UnlockAuthType.FINGERPRINT);
                 })
             }
 
@@ -573,7 +614,7 @@ struct Password {
                   color: $r('app.color.button_bg_blue')
                 })
                 .onClick(() => {
-                  this.startAuth(this.encryptPassword, UnlockAuthType.FACE);
+                  this.startAuth(UnlockAuthType.FACE);
                 })
             }
           }
