@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { Router } from '@kit.ArkUI';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
@@ -25,14 +25,23 @@ struct CreateDatabase {
   @State errorMsg: string = '';
   @State keyLocation: LocationInfo | undefined = undefined;
   @State keyFileName: ResourceStr = $r('app.string.select_key_file_placeholder');
+  @State useKeyfileOnly: boolean = false; // 是否使用仅密钥文件模式
   private router: Router = this.getUIContext().getRouter();
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   private validatePasswords() {
+    // 仅密钥文件模式下不需要密码验证
+    if (this.useKeyfileOnly) {
+      if (!this.keyLocation) {
+        this.errorMsg = ResourceManager.getString($r('app.string.key_file_required'));
+      } else {
+        this.errorMsg = '';
+      }
+      return;
+    }
     if (this.password.length > 0 && this.confirmPassword.length > 0 && this.password !== this.confirmPassword) {
       this.errorMsg = ResourceManager.getString($r('app.string.CreateDatabase_password_mismatch'));
     } else {
@@ -46,14 +55,23 @@ struct CreateDatabase {
       return;
     }
 
-    if (this.password.length === 0) {
-      CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
-      return;
-    }
+    // 仅密钥文件模式下必须选择密钥文件
+    if (this.useKeyfileOnly) {
+      if (!this.keyLocation) {
+        CommonUtils.showToast({ message: $r('app.string.key_file_required') });
+        return;
+      }
+    } else {
+      // 非仅密钥文件模式，需要密码
+      if (this.password.length === 0) {
+        CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
+        return;
+      }
 
-    if (this.password !== this.confirmPassword) {
-      CommonUtils.showToast({ message: $r('app.string.CreateDatabase_password_mismatch') });
-      return;
+      if (this.password !== this.confirmPassword) {
+        CommonUtils.showToast({ message: $r('app.string.CreateDatabase_password_mismatch') });
+        return;
+      }
     }
 
     this.isCreating = true;
@@ -71,7 +89,14 @@ struct CreateDatabase {
           keyFileContent = fileContent.content;
         })
       }
-      let credentials = new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(this.password), keyFileContent);
+      // 仅密钥文件模式使用空密码
+      let passwordValue: kdbxweb.ProtectedValue | null = null;
+      if (this.useKeyfileOnly) {
+        passwordValue = null;
+      } else {
+        passwordValue = kdbxweb.ProtectedValue.fromString(this.password);
+      }
+      let credentials = new kdbxweb.Credentials(passwordValue, keyFileContent);
       // 将kdbx对象转换为ArrayBuffer
       let newDb = kdbxweb.Kdbx.create(credentials, this.databaseName);
       // 写入导出参数
@@ -123,6 +148,22 @@ struct CreateDatabase {
       this.router.back();
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+  /**
+   * 判断创建按钮是否可用
+   */
+  private isCreateButtonEnabled(): boolean {
+    if (this.isCreating || this.databaseName.length === 0) {
+      return false;
+    }
+    if (this.useKeyfileOnly) {
+      // 仅密钥文件模式：必须选择密钥文件
+      return this.keyLocation !== undefined;
+    } else {
+      // 密码模式：必须输入密码且两次密码一致
+      return this.password.length > 0 && this.password === this.confirmPassword;
+    }
   }
 
   build() {
@@ -179,85 +220,94 @@ struct CreateDatabase {
             this.databaseName = value;
           })
 
-        // 密码输入
-        Row() {
-          Text("*")
-            .fontColor($r('app.color.required'))
-          Text($r('app.string.password'))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('app.color.text_primary'))
-            .width('100%')
-            .textAlign(TextAlign.Start)
-        }.width('100%')
-        .margin({ top: 20, left: 16 })
+        // 密码输入 - 仅密钥文件模式下不显示
+        if (!this.useKeyfileOnly) {
+          Row() {
+            Text("*")
+              .fontColor($r('app.color.required'))
+            Text($r('app.string.password'))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .width('100%')
+              .textAlign(TextAlign.Start)
+          }.width('100%')
+          .margin({ top: 20, left: 16 })
 
-        Row() {
-          TextInput({ placeholder: $r('app.string.password_placeholder'), text: this.password })
-            .type(InputType.Password)
-            .placeholderColor($r('app.color.text_secondary'))
-            .placeholderFont({ size: 16 })
-            .fontSize(16)
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .padding({ left: 12 })
-            .layoutWeight(1)
-            .height(48)
-            .borderRadius(8)
-            .onChange((value) => {
-              this.password = value;
-              this.validatePasswords();
-            })
+          Row() {
+            TextInput({ placeholder: $r('app.string.password_placeholder'), text: this.password })
+              .type(InputType.Password)
+              .placeholderColor($r('app.color.text_secondary'))
+              .placeholderFont({ size: 16 })
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .padding({ left: 12 })
+              .layoutWeight(1)
+              .height(48)
+              .borderRadius(8)
+              .onChange((value) => {
+                this.password = value;
+                this.validatePasswords();
+              })
+          }
+          .margin({ top: 8, left: 16, right: 16 })
+          .width('100%')
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(8)
+
+          // 确认密码输入
+          Row() {
+            Text("*")
+              .fontColor($r('app.color.required'))
+            Text($r("app.string.confirm_password_label"))
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('app.color.text_primary'))
+              .width('100%')
+              .textAlign(TextAlign.Start)
+          }.width('100%')
+          .margin({ top: 20, left: 16 })
+
+
+          Row() {
+            TextInput({ placeholder: $r("app.string.confirm_password_placeholder"), text: this.confirmPassword })
+              .type(InputType.Password)
+              .placeholderColor($r('app.color.text_secondary'))
+              .placeholderFont({ size: 16 })
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
+              .backgroundColor($r("app.color.card_bg"))
+              .padding({ left: 12 })
+              .layoutWeight(1)
+              .height(48)
+              .borderRadius(8)
+              .onChange((value) => {
+                this.confirmPassword = value;
+                this.validatePasswords();
+              })
+          }
+          .margin({ top: 8, left: 16, right: 16 })
+          .width('100%')
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(8)
         }
-        .margin({ top: 8, left: 16, right: 16 })
-        .width('100%')
-        .backgroundColor($r("app.color.card_bg"))
-        .borderRadius(8)
-
-        // 确认密码输入
-        Row() {
-          Text("*")
-            .fontColor($r('app.color.required'))
-          Text($r("app.string.confirm_password_label"))
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('app.color.text_primary'))
-            .width('100%')
-            .textAlign(TextAlign.Start)
-        }.width('100%')
-        .margin({ top: 20, left: 16 })
-
-
-        Row() {
-          TextInput({ placeholder: $r("app.string.confirm_password_placeholder"), text: this.confirmPassword })
-            .type(InputType.Password)
-            .placeholderColor($r('app.color.text_secondary'))
-            .placeholderFont({ size: 16 })
-            .fontSize(16)
-            .fontColor($r('app.color.text_primary'))
-            .backgroundColor($r("app.color.card_bg"))
-            .padding({ left: 12 })
-            .layoutWeight(1)
-            .height(48)
-            .borderRadius(8)
-            .onChange((value) => {
-              this.confirmPassword = value;
-              this.validatePasswords();
-            })
-        }
-        .margin({ top: 8, left: 16, right: 16 })
-        .width('100%')
-        .backgroundColor($r("app.color.card_bg"))
-        .borderRadius(8)
 
         // 密钥文件
-        Text($r("app.string.key_file"))
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .margin({ top: 20, left: 16 })
-          .fontColor($r('app.color.text_primary'))
-          .width('100%')
-          .textAlign(TextAlign.Start)
+        Row() {
+          if (this.useKeyfileOnly) {
+            Text("*")
+              .fontColor($r('app.color.required'))
+          }
+          Text($r("app.string.key_file"))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_primary'))
+            .width('100%')
+            .textAlign(TextAlign.Start)
+        }
+        .width('100%')
+        .margin({ top: 20, left: 16 })
         Row() {
           // 密钥文件选择
           Text(this.keyFileName)
@@ -301,6 +351,27 @@ struct CreateDatabase {
           .width('100%')
           .textAlign(TextAlign.Start)
 
+        // 仅使用密钥文件选项
+        Row() {
+          Checkbox({ name: 'useKeyfileOnly' })
+            .select(this.useKeyfileOnly)
+            .shape(CheckBoxShape.CIRCLE)
+            .onChange((value: boolean) => {
+              this.useKeyfileOnly = value;
+              this.validatePasswords();
+            })
+          Text($r('app.string.auth_type_keyfile'))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.useKeyfileOnly = !this.useKeyfileOnly;
+              this.validatePasswords();
+            })
+        }
+        .width("100%")
+        .margin({ top: 16, left: 16 })
+
         // 错误信息
         if (this.errorMsg.length > 0) {
           Text(this.errorMsg)
@@ -317,7 +388,7 @@ struct CreateDatabase {
           .borderRadius(24)
           .fontSize(14)
           .fontWeight(FontWeight.Medium)
-          .enabled(!this.isCreating && this.databaseName.length > 0 && this.password.length > 0 && this.password === this.confirmPassword)
+          .enabled(this.isCreateButtonEnabled())
           .onClick(() => {
             this.createDatabase();
           })
