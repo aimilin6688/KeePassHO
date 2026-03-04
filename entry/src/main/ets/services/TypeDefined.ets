@@ -225,8 +225,8 @@ export class AuthType {
   public static getAllTypes(): AuthTypeInfo[] {
     return [
       AuthType.PASSWORD,
-      AuthType.PASSWORD_KEYFILE,
       AuthType.KEYFILE,
+      AuthType.PASSWORD_KEYFILE,
       // AuthType.PASSWORD_OTP,
       // AuthType.PASSWORD_OTP_RECOVERY,
       // AuthType.PASSWORD_CHALLENGE_RESPONSE,
