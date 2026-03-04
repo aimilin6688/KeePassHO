@@ -393,12 +393,27 @@ export class MoveParam {
   groupId: string;
   entryId?: string;
   isMoving: boolean;
+  // 批量移动支持
+  entryIds: string[] = [];
+  groupIds: string[] = [];
+  sourceGroupId: string = '';
 
   constructor(groupId: string, entryId?: string) {
     this.groupId = groupId;
     this.entryId = entryId;
     this.isMoving = true;
     MoveParam.instance = this;
+  }
+
+  /**
+   * 创建批量移动参数
+   */
+  public static createBatch(entryIds: string[], groupIds: string[], sourceGroupId: string): MoveParam {
+    const param = new MoveParam(sourceGroupId);
+    param.entryIds = entryIds;
+    param.groupIds = groupIds;
+    param.sourceGroupId = sourceGroupId;
+    return param;
   }
 
   public static getInstance(): MoveParam | undefined {
@@ -415,18 +430,28 @@ export class MoveParam {
    * @returns
    */
   public isMoveItem(itemId: string): boolean {
-    if (this.isMoveEntry) {
-      return this.entryId === itemId;
-    }
-    return this.groupId === itemId;
+    // 单个移动
+    if (this.entryId === itemId) return true;
+    if (this.entryId === undefined && this.groupId === itemId) return true;
+    // 批量移动
+    if (this.entryIds.includes(itemId)) return true;
+    if (this.groupIds.includes(itemId)) return true;
+    return false;
+  }
+
+  /**
+   * 是否是批量移动模式
+   */
+  get isBatchMode(): boolean {
+    return this.entryIds.length > 0 || this.groupIds.length > 0;
   }
 
   get isMoveGroup(): boolean {
-    return this.entryId === undefined;
+    return this.entryId === undefined && this.groupIds.length === 0;
   }
 
   get isMoveEntry(): boolean {
-    return this.entryId !== undefined;
+    return this.entryId !== undefined || this.entryIds.length > 0;
   }
 }
 

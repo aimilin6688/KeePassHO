@@ -55,6 +55,10 @@ struct DatabaseView {
   @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
   @State moreMenuX: number = 0; // 更多菜单X坐标
   @State moreMenuY: number = 0; // 更多菜单Y坐标
+  // 批量操作相关状态
+  @State isSelectionMode: boolean = false; // 是否处于选择模式
+  @State selectedItems: Map<string, KdbxGroup | KdbxEntry> = new Map(); // 选中的条目或分组
+  @State moveSourceGroupId: string = ''; // 移动操作的源分组ID
   // 拖拽组件
   @StorageLink("containerX") containerX: number = 0; // 容器X坐标
   @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
@@ -554,20 +558,191 @@ struct DatabaseView {
     this.hideMoreMenu();
   }
 
+  // ==================== 批量操作相关方法 ====================
+
   /**
-   * 移动条目或分组
+   * 进入选择模式
+   * @param item 可选的初始选中项
    */
-  private moveItem(item: KdbxGroup | KdbxEntry) {
-    if (item instanceof KdbxGroup) {
-      this.moveParam = new MoveParam(item.uuid.id);
-    } else if (item instanceof KdbxEntry) {
-      this.moveParam = new MoveParam(item.parentGroup?.uuid.id || '', item.uuid.id);
+  private enterSelectionMode(item?: KdbxGroup | KdbxEntry): void {
+    const newMap = new Map<string, KdbxGroup | KdbxEntry>();
+    if (item) {
+      newMap.set(item.uuid.id, item);
     }
+    this.selectedItems = newMap;
+    this.isSelectionMode = true;
     this.hideMoreMenu();
   }
 
   /**
-   * 删除条目或分组
+   * 退出选择模式
+   */
+  private exitSelectionMode(): void {
+    this.selectedItems = new Map();
+    this.isSelectionMode = false;
+    this.moveSourceGroupId = '';
+  }
+
+  /**
+   * 切换选中状态
+   */
+  private toggleSelection(item: KdbxGroup | KdbxEntry): void {
+    const uuid = item.uuid.id;
+    const newMap = new Map(this.selectedItems);
+    if (newMap.has(uuid)) {
+      newMap.delete(uuid);
+    } else {
+      newMap.set(uuid, item);
+    }
+    this.selectedItems = newMap;
+  }
+
+  /**
+   * 全选当前列表
+   */
+  private selectAll(): void {
+    const newMap = new Map<string, KdbxGroup | KdbxEntry>();
+    this.items.forEach((item: KdbxGroup | KdbxEntry) => {
+      newMap.set(item.uuid.id, item);
+    });
+    this.selectedItems = newMap;
+  }
+
+  /**
+   * 取消全选
+   */
+  private deselectAll(): void {
+    this.selectedItems = new Map();
+  }
+
+  /**
+   * 是否全选
+   */
+  private isAllSelected(): boolean {
+    return this.items.length > 0 && this.selectedItems.size === this.items.length;
+  }
+
+  /**
+   * 获取选中的条目列表
+   */
+  private getSelectedEntries(): KdbxEntry[] {
+    const entries: KdbxEntry[] = [];
+    this.selectedItems.forEach((item: KdbxGroup | KdbxEntry, key: string) => {
+      if (item instanceof KdbxEntry) {
+        entries.push(item);
+      }
+    });
+    return entries;
+  }
+
+  /**
+   * 获取选中的分组列表
+   */
+  private getSelectedGroups(): KdbxGroup[] {
+    const groups: KdbxGroup[] = [];
+    this.selectedItems.forEach((item: KdbxGroup | KdbxEntry, key: string) => {
+      if (item instanceof KdbxGroup) {
+        groups.push(item);
+      }
+    });
+    return groups;
+  }
+
+  /**
+   * 开始批量移动
+   * 保存源分组ID，导航到目标分组选择页面
+   */
+  private startBatchMove(): void {
+    if (this.selectedItems.size === 0) {
+      return;
+    }
+    // 保存源分组ID
+    this.moveSourceGroupId = this.currentGroup?.uuid.id || '';
+    // 创建批量移动参数
+    const entries = this.getSelectedEntries();
+    const groups = this.getSelectedGroups();
+
+    if (entries.length > 0 || groups.length > 0) {
+      this.moveParam = MoveParam.createBatch(
+        entries.map(e => e.uuid.id),
+        groups.map(g => g.uuid.id),
+        this.moveSourceGroupId
+      );
+    }
+
+    // 清除选择状态并退出选择模式
+    this.selectedItems = new Map();
+    this.isSelectionMode = false;
+
+    // 导航到根分组让用户选择目标
+    if (this.database) {
+      const rootGroup = this.database.getDefaultGroup();
+      CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: rootGroup.uuid.id } });
+    }
+  }
+
+  /**
+   * 确认批量删除
+   * 显示确认对话框
+   */
+  private confirmBatchDelete(): void {
+    if (this.selectedItems.size === 0) {
+      return;
+    }
+
+    const count = this.selectedItems.size;
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: `确定要删除 ${count} 个项目吗？`,
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {}
+      },
+      secondaryButton: {
+        value: $r("app.string.delete_button_text"),
+        action: () => {
+          this.executeBatchDelete();
+        }
+      }
+    });
+  }
+
+  /**
+   * 执行批量删除
+   */
+  private executeBatchDelete(): void {
+    if (this.database === null) {
+      return;
+    }
+    
+    const entries = this.getSelectedEntries();
+    const groups = this.getSelectedGroups();
+    
+    // 删除所有选中的条目
+    entries.forEach(entry => {
+      this.database!.remove(entry);
+    });
+    
+    // 删除所有选中的分组
+    groups.forEach(group => {
+      this.database!.remove(group);
+    });
+    
+    // 保存数据库
+    this.saveDatabase();
+    
+    // 刷新列表数据
+    if (this.currentGroup) {
+      this.currentGroup = this.database?.getGroup(this.currentGroup.uuid);
+      this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
+    }
+    
+    // 退出选择模式
+    this.exitSelectionMode();
+  }
+
+  /**
+   * 删除条目或分组 - 直接删除
    */
   private deleteItem(index: number) {
     if (this.database === null) {
@@ -701,15 +876,15 @@ struct DatabaseView {
           })
         }
 
-        // 移动按钮
+        // 选择按钮
         Column({ space: 8 }) {
           Button() {
             Column() {
-              Image($r('app.media.ic_move'))
+              Image($r('app.media.ic_copy'))
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.move_button_text'))
+              Text('选择')
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -721,7 +896,11 @@ struct DatabaseView {
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
-            this.moveItem(this.selectedItem!);
+            // 使用 items 数组获取原始对象，避免使用 @State 代理对象
+            const item = this.items[this.selectedItemIndex];
+            if (item) {
+              this.enterSelectionMode(item);
+            }
           })
         }
 
@@ -921,42 +1100,66 @@ struct DatabaseView {
     }
 
     try {
-      // 获取要移动的条目/分组
-      let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined;
-
-      if (this.moveParam.isMoveGroup) {
-        sourceItem = this.database.getGroup(this.moveParam.groupId);
-      } else {
-        sourceItem = KdbxUtils.getEntry(this.database, this.moveParam.groupId, this.moveParam.entryId || "");
-      }
-
-      if (!sourceItem) {
-        CommonUtils.showToast({
-          message: $r('app.string.entry_not_found'),
-          duration: 2000
+      // 批量移动模式
+      if (this.moveParam.isBatchMode) {
+        // 批量移动条目
+        this.moveParam.entryIds.forEach((entryId: string) => {
+          const entry = KdbxUtils.getEntry(this.database!, this.moveParam!.sourceGroupId, entryId);
+          if (entry) {
+            this.database!.move(entry, this.currentGroup!);
+          }
         });
-        this.cancelMoving();
-        return;
-      }
+        // 批量移动分组
+        this.moveParam.groupIds.forEach((groupId: string) => {
+          const group = this.database!.getGroup(groupId);
+          if (group) {
+            // 检查是否移动到自己或子分组
+            if (this.currentGroup!.uuid.id !== group.uuid.id && !KdbxUtils.isChildGroup(group, this.currentGroup!)) {
+              this.database!.move(group, this.currentGroup!);
+            }
+          }
+        });
+        // 保存数据库
+        this.saveDatabase();
+      } else {
+        // 单个移动模式
+        // 获取要移动的条目/分组
+        let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined;
 
-      // 检查是否移动到自己或子分组
-      if (this.moveParam.isMoveGroup) {
-        const sourceGroup = sourceItem as KdbxGroup;
-        // 不能移动到自己或子分组
-        if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
+        if (this.moveParam.isMoveGroup) {
+          sourceItem = this.database.getGroup(this.moveParam.groupId);
+        } else {
+          sourceItem = KdbxUtils.getEntry(this.database, this.moveParam.groupId, this.moveParam.entryId || "");
+        }
+
+        if (!sourceItem) {
           CommonUtils.showToast({
-            message: $r('app.string.cannot_move_to_child'),
+            message: $r('app.string.entry_not_found'),
             duration: 2000
           });
           this.cancelMoving();
           return;
         }
-      }
 
-      // 移动条目/分组
-      this.database.move(sourceItem, this.currentGroup);
-      // 保存数据库
-      this.saveDatabase();
+        // 检查是否移动到自己或子分组
+        if (this.moveParam.isMoveGroup) {
+          const sourceGroup = sourceItem as KdbxGroup;
+          // 不能移动到自己或子分组
+          if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
+            CommonUtils.showToast({
+              message: $r('app.string.cannot_move_to_child'),
+              duration: 2000
+            });
+            this.cancelMoving();
+            return;
+          }
+        }
+
+        // 移动条目/分组
+        this.database.move(sourceItem, this.currentGroup);
+        // 保存数据库
+        this.saveDatabase();
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to move item: %{public}s', error.message);
       CommonUtils.showToast({
@@ -1275,7 +1478,8 @@ struct DatabaseView {
                       this.router.back();
                     })
                 }
-                Text(this.titleName)
+                // 选择模式下显示已选数量
+                Text(this.isSelectionMode ? `${this.titleName}(${this.selectedItems.size})` : this.titleName)
                   .fontSize(20)
                   .fontWeight(FontWeight.Medium)
                   .margin({ left: 16 })
@@ -1287,36 +1491,53 @@ struct DatabaseView {
               .layoutWeight(1)
               .flexShrink(1)
 
-              Row() {
-                // 搜索按钮
-                Image($r('app.media.ic_search'))
-                  .width(24)
-                  .height(24)
-                  .margin({ right: 12 })
-                  .onClick(() => {
-                    this.showSearch();
-                  })
-                // 锁定数据库
-                Image($r('app.media.ic_lock'))
-                  .width(24)
-                  .height(24)
-                  .margin({ right: 12 })
-                  .fillColor($r('app.color.text_primary'))
-                  .onClick(() => {
-                    this.lockDatabase();
-                  })
-                Image($r('app.media.ic_settings'))
-                  .width(24)
-                  .height(24)
+              // 选择模式下显示全选/取消全选按钮，否则显示常规按钮
+              if (this.isSelectionMode) {
+                Button(this.isAllSelected() ? $r('app.string.deselect_all_button') : $r('app.string.select_all_button'))
+                  .height(32)
+                  .fontSize(14)
+                  .backgroundColor($r('app.color.card_bg'))
+                  .fontColor($r('app.color.text_primary'))
                   .margin({ right: 16 })
                   .onClick(() => {
-                    CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
-                      hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
-                    });
+                    if (this.isAllSelected()) {
+                      this.deselectAll();
+                    } else {
+                      this.selectAll();
+                    }
                   })
+              } else {
+                Row() {
+                  // 搜索按钮
+                  Image($r('app.media.ic_search'))
+                    .width(24)
+                    .height(24)
+                    .margin({ right: 12 })
+                    .onClick(() => {
+                      this.showSearch();
+                    })
+                  // 锁定数据库
+                  Image($r('app.media.ic_lock'))
+                    .width(24)
+                    .height(24)
+                    .margin({ right: 12 })
+                    .fillColor($r('app.color.text_primary'))
+                    .onClick(() => {
+                      this.lockDatabase();
+                    })
+                  Image($r('app.media.ic_settings'))
+                    .width(24)
+                    .height(24)
+                    .margin({ right: 16 })
+                    .onClick(() => {
+                      CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
+                        hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
+                      });
+                    })
+                }
+                .flexShrink(0)
+                .width(112)
               }
-              .flexShrink(0)
-              .width(112)
             }
             .alignItems(VerticalAlign.Center)
             .width('100%')
@@ -1422,7 +1643,7 @@ struct DatabaseView {
                         }
                       }
                       .borderRadius(8)
-                      .backgroundColor((this.moveParam && this.moveParam.isMoveItem(item.uuid.id)) ? $r("app.color.item_selected") :
+                      .backgroundColor(this.selectedItems.has(item.uuid.id) ? $r("app.color.button_bg_blue") :
                         $r("app.color.card_bg"))
                       .padding({
                         left: 6,
@@ -1431,7 +1652,11 @@ struct DatabaseView {
                         bottom: 6
                       })
                       .onClick(() => {
-                        CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
+                        if (this.isSelectionMode) {
+                          this.toggleSelection(item);
+                        } else {
+                          CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
+                        }
                       })
                       .gesture(
                         LongPressGesture({ repeat: false })
@@ -1521,7 +1746,7 @@ struct DatabaseView {
                         }
                       }
                       .borderRadius(8)
-                      .backgroundColor((this.moveParam && this.moveParam.isMoveItem(item.uuid.id)) ? $r("app.color.button_bg_blue") :
+                      .backgroundColor(this.selectedItems.has(item.uuid.id) ? $r("app.color.button_bg_blue") :
                         $r("app.color.card_bg"))
                       .padding({
                         left: 6,
@@ -1530,10 +1755,14 @@ struct DatabaseView {
                         bottom: 6
                       })
                       .onClick(() => {
-                        CommonUtils.pushUrl({
-                          url: 'pages/EntryView',
-                          params: { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id }
-                        });
+                        if (this.isSelectionMode) {
+                          this.toggleSelection(item);
+                        } else {
+                          CommonUtils.pushUrl({
+                            url: 'pages/EntryView',
+                            params: { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id }
+                          });
+                        }
                       })
                       .gesture(
                         LongPressGesture({ repeat: false })
@@ -1549,7 +1778,7 @@ struct DatabaseView {
                     })
                   }
 
-                }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
+                }, (item: KdbxGroup | KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
               }
               ListItem() {
                 Row()
@@ -1687,7 +1916,7 @@ struct DatabaseView {
       }
       .width(this.containerWidth)
       .height(this.containerHeight)
-      .visibility(this.moveParam ? Visibility.None : Visibility.Visible)
+      .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
       .zIndex(999)
       .gesture(
         // 拖拽手势
@@ -1754,6 +1983,66 @@ struct DatabaseView {
         .position({ x: 0, y: '100%' })
         .translate({ y: -45 })
         .justifyContent(FlexAlign.Center)
+      }
+
+      // 批量选择模式下的底部操作栏
+      if (this.isSelectionMode) {
+        Column() {
+          Row() {
+            // 移动按钮
+            Button($r('app.string.move_button_text'))
+              .layoutWeight(1)
+              .height(40)
+              .margin({ right: 8 })
+              .borderRadius(20)
+              .backgroundColor($r("app.color.button_bg_blue"))
+              .fontColor($r("app.color.button_text_blue"))
+              .enabled(this.selectedItems.size > 0)
+              .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
+              .onClick(() => {
+                this.startBatchMove();
+              })
+
+            // 删除按钮
+            Button($r('app.string.delete_button_text'))
+              .layoutWeight(1)
+              .height(40)
+              .margin({ right: 8 })
+              .borderRadius(20)
+              .backgroundColor($r("app.color.error"))
+              .fontColor(Color.White)
+              .enabled(this.selectedItems.size > 0)
+              .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
+              .onClick(() => {
+                this.confirmBatchDelete();
+              })
+
+            // 取消按钮
+            Button($r('app.string.cancel_button_text'))
+              .layoutWeight(1)
+              .height(40)
+              .borderRadius(20)
+              .backgroundColor(Color.Gray)
+              .fontColor(Color.White)
+              .onClick(() => {
+                this.exitSelectionMode();
+              })
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+        }
+        .width('100%')
+        .height(60)
+        .padding({
+          top: 8,
+          bottom: 8,
+          left: 16,
+          right: 16
+        })
+        .position({ x: 0, y: '100%' })
+        .translate({ y: -60 })
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor($r("app.color.bg_primary"))
       }
     }
     .width('100%')

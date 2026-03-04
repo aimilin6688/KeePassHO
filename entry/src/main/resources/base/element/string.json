@@ -157,6 +157,26 @@
       "value": "Cancel"
     },
     {
+      "name": "select_button",
+      "value": "Select"
+    },
+    {
+      "name": "select_all_button",
+      "value": "Select All"
+    },
+    {
+      "name": "deselect_all_button",
+      "value": "Deselect All"
+    },
+    {
+      "name": "batch_delete_confirm_message",
+      "value": "Are you sure to delete %d items?"
+    },
+    {
+      "name": "batch_manage_button",
+      "value": "Batch Manage"
+    },
+    {
       "name": "add_group_button",
       "value": "Add group"
     },
