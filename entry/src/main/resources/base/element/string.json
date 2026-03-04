@@ -2617,6 +2617,10 @@
       "value": "Black"
     },
     {
+      "name": "color_preset",
+      "value": "Preset Colors"
+    },
+    {
       "name": "color_custom",
       "value": "Custom Color"
     }
