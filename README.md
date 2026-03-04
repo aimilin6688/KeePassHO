@@ -118,8 +118,15 @@ Scan the QR code with your HarmonyOS phone to install:
 Other Platform：<a href="https://keepass.info/download.html" target="_blank">Windows、Mac、Linux、Android、Iphone</a>
 
 ## Build
+
+- windows build
 ```bash
  hvigorw  clean --mode module -p product=default -p buildMode=debug assembleHap --analyze=normal --parallel --incremental --enable-build-script-type-check --daemon
+```
+
+- mac build
+```bash
+hvigorw  clean --mode module -p product=mac_debug -p buildMode=debug assembleHap --analyze=normal --parallel --incremental --enable-build-script-type-check --daemon
 ```
 
 ## Tech Stack
