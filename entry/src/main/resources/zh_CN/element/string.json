@@ -1,1 +1,2544 @@
-{  "string": [    {      "name": "module_desc",      "value": "KeePassHO安全管理您的密码，随时随地访问"    },    {      "name": "EntryAbility_label",      "value": "KeePassHO"    },    {      "name": "Permission_FILE_ACCESS_PERSIST_reason",      "value": "访问与存储kdbx数据文件"    },    {      "name": "SortConstants_default",      "value": "默认排序"    },    {      "name": "SortConstants_name",      "value": "按名称排序"    },    {      "name": "SortConstants_modified",      "value": "按修改日期排序"    },    {      "name": "SortConstants_created",      "value": "按创建日期排序"    },    {      "name": "ThemeConstants_system",      "value": "跟随系统"    },    {      "name": "ThemeConstants_light",      "value": "浅色"    },    {      "name": "ThemeConstants_dark",      "value": "深色"    },    {      "name": "Settings_title",      "value": "设置"    },    {      "name": "Settings_theme",      "value": "主题"    },    {      "name": "Settings_sort_method",      "value": "排序方式"    },    {      "name": "create_database",      "value": "创建数据库"    },    {      "name": "change_database",      "value": "更换数据库"    },    {      "name": "recent_files",      "value": "最近打开"    },    {      "name": "open_database",      "value": "打开数据库"    },    {      "name": "Settings_about",      "value": "关于"    },    {      "name": "auth_type_password",      "value": "仅密码"    },    {      "name": "auth_type_password_keyfile",      "value": "密码 + 密钥文件"    },    {      "name": "auth_type_keyfile",      "value": "仅密钥文件"    },    {      "name": "tap_to_biometric_auth",      "value": "点击使用生物认证"    },    {      "name": "auth_type_password_otp",      "value": "密码 + 一次性密码"    },    {      "name": "auth_type_password_otp_recovery",      "value": "密码 + 一次性密码（恢复模式）"    },    {      "name": "auth_type_password_challenge_response",      "value": "密码 + 挑战-响应"    },    {      "name": "auth_type_password_challenge_response_recovery",      "value": "密码 + 挑战-响应（恢复模式）"    },    {      "name": "auth_type_password_challenge_response_xc",      "value": "密码 + 挑战-应答（Keepass XC）"    },    {      "name": "auth_type_password_keyfile_challenge_response_xc",      "value": "密码 + 密钥文件 + 挑战应答（Keepass XC）"    },    {      "name": "About_version",      "value": "版本: "    },    {      "name": "About_description",      "value": "KeePassHO 是一款支持Keepass 2.x数据库读写的密码管理器应用。"    },    {      "name": "Index_welcome",      "value": "欢迎使用 KeePassHO"    },    {      "name": "Index_subtitle",      "value": "安全管理您的密码"    },    {      "name": "Error_check_recent_files",      "value": "检查最近文件失败"    },    {      "name": "load_database_failed",      "value": "加载数据库失败"    },    {      "name": "load_entry_failed",      "value": "加载条目失败"    },    {      "name": "edit_button_text",      "value": "编辑"    },    {      "name": "delete_button_text",      "value": "删除"    },    {      "name": "confirm_button_text",      "value": "确定"    },    {      "name": "cancel_button_text",      "value": "取消"    },    {      "name": "select_button",      "value": "选择"    },    {      "name": "select_all_button",      "value": "全选"    },    {      "name": "deselect_all_button",      "value": "取消全选"    },    {      "name": "batch_delete_confirm_message",      "value": "确定要删除 %d 个项目吗？"    },    {      "name": "batch_manage_button",      "value": "批量管理"    },    {      "name": "add_group_button",      "value": "添加分组"    },    {      "name": "add_entry_button",      "value": "添加条目"    },    {      "name": "group_items_message",      "value": "组群 %d 个条目"    },    {      "name": "username",      "value": "用户名"    },    {      "name": "username_placeholder",      "value": "请输入用户名"    },    {      "name": "password",      "value": "密码"    },    {      "name": "password_placeholder",      "value": "请输入密码"    },    {      "name": "url",      "value": "链接地址"    },    {      "name": "webdav_url_placeholder",      "value": "请输入文件夹或者文件URL地址"    },    {      "name": "notes",      "value": "备注"    },    {      "name": "notes_placeholder",      "value": "请输入备注"    },    {      "name": "title",      "value": "标题"    },    {      "name": "title_placeholder",      "value": "请输入标题"    },    {      "name": "title_required_message",      "value": "标题不能为空"    },    {      "name": "tags",      "value": "标签"    },    {      "name": "tags_placeholder",      "value": "请输入标签（用逗号分隔）"    },    {      "name": "confirm_password_label",      "value": "确认密码"    },    {      "name": "confirm_password_placeholder",      "value": "请再次输入密码"    },    {      "name": "group_name",      "value": "分组名称"    },    {      "name": "custom_field",      "value": "自定义字段"    },    {      "name": "created_time",      "value": "创建时间"    },    {      "name": "updated_time",      "value": "更新时间"    },    {      "name": "edit_group",      "value": "编辑分组"    },    {      "name": "edit_entry",      "value": "编辑条目"    },    {      "name": "icon",      "value": "图标"    },    {      "name": "enter_group_name",      "value": "请输入分组名称"    },    {      "name": "edit_custom_field",      "value": "编辑自定义字段"    },    {      "name": "add_custom_field",      "value": "添加自定义字段"    },    {      "name": "custom_field_name",      "value": "字段名称"    },    {      "name": "enter_custom_field_name",      "value": "请输入字段名称"    },    {      "name": "field_name_not_empty",      "value": "字段名称不能为空"    },    {      "name": "custom_field_value",      "value": "字段值"    },    {      "name": "enter_custom_field_value",      "value": "请输入字段值"    },    {      "name": "is_protect_field",      "value": "保护字段值"    },    {      "name": "copy_failed",      "value": "复制失败"    },    {      "name": "copied",      "value": "已复制"    },    {      "name": "select_icon",      "value": "选择图标"    },    {      "name": "click_select_icon",      "value": "点击选择图标"    },    {      "name": "PasswordGenerator_title",      "value": "密码生成器"    },    {      "name": "PasswordGenerator_strength",      "value": "密码强度："    },    {      "name": "PasswordGenerator_weak",      "value": "弱"    },    {      "name": "PasswordGenerator_medium",      "value": "中"    },    {      "name": "PasswordGenerator_strong",      "value": "强"    },    {      "name": "PasswordGenerator_length",      "value": "密码长度:"    },    {      "name": "PasswordGenerator_uppercase",      "value": "大写字母 (A-Z)"    },    {      "name": "PasswordGenerator_lowercase",      "value": "小写字母 (a-z)"    },    {      "name": "PasswordGenerator_numbers",      "value": "数字 (0-9)"    },    {      "name": "PasswordGenerator_special",      "value": "特殊字符 (!@#$%^&*=+~`|;?><,.)"    },    {      "name": "PasswordGenerator_brackets",      "value": "括号 ((){}[])"    },    {      "name": "PasswordGenerator_minus",      "value": "减号 (-)"    },    {      "name": "PasswordGenerator_underscore",      "value": "下划线 (_)"    },    {      "name": "PasswordGenerator_space",      "value": "空格 ( )"    },    {      "name": "PasswordGenerator_accept",      "value": "接受"    },    {      "name": "PasswordGenerator_generate",      "value": "生成密码"    },    {      "name": "PasswordGenerator_ensureEachType",      "value": "每种符号至少一种"    },    {      "name": "database_name",      "value": "数据库名称"    },    {      "name": "database_name_placeholder",      "value": "请输入数据库名称"    },    {      "name": "CreateDatabase_password_mismatch",      "value": "两次输入的密码不一致"    },    {      "name": "CreateDatabase_create_success",      "value": "数据库创建成功"    },    {      "name": "CreateDatabase_create_failed",      "value": "数据库创建失败"    },    {      "name": "CreateDatabase_location_failed",      "value": "保存失败: %s"    },    {      "name": "CreateDatabase_error_message",      "value": "创建失败: %s"    },    {      "name": "select_open_method_prompt",      "value": "请选择位置"    },    {      "name": "local_file_button_title",      "value": "本地文件"    },    {      "name": "webdav_button_title",      "value": "WebDAV"    },    {      "name": "ftp_button_title",      "value": "FTP/SFTP"    },    {      "name": "dialog_confirm_title",      "value": "确认"    },    {      "name": "dialog_delete_confirm_message",      "value": "您确定要删除吗？"    },    {      "name": "save_success",      "value": "保存成功"    },    {      "name": "save_failed_message",      "value": "保存失败:%s"    },    {      "name": "invalid_database",      "value": "无效的数据库"    },    {      "name": "loading_message",      "value": "正在加载..."    },    {      "name": "search_placeholder",      "value": "查找内容"    },    {      "name": "invalid_group",      "value": "无效的分组"    },    {      "name": "invalid_entry_message",      "value": "无效的条目信息"    },    {      "name": "field_name_exists",      "value": "字段名称已存在"    },    {      "name": "save_entry_failed_message",      "value": "保存条目失败:%s"    },    {      "name": "generate_button_text",      "value": "生成"    },    {      "name": "no_custom_fields_message",      "value": "暂无自定义字段"    },    {      "name": "invalid_db_or_entry",      "value": "无效的数据库或条目ID"    },    {      "name": "entry_not_found",      "value": "找不到指定的条目"    },    {      "name": "no_history",      "value": "没有历史记录"    },    {      "name": "invalid_data_file",      "value": "无效的数据文件"    },    {      "name": "open_failed",      "value": "打开失败:%s"    },    {      "name": "select_key_file",      "value": "请选择密钥文件"    },    {      "name": "storage_type_empty",      "value": "存储类型为空"    },    {      "name": "select_key_file_button",      "value": "选择密钥文件"    },    {      "name": "reselect_key_file",      "value": "重新选择密钥文件"    },    {      "name": "key_file",      "value": "密钥文件"    },    {      "name": "load_recent_files_failed",      "value": "加载最近文件失败"    },    {      "name": "file_not_exists",      "value": "文件不存在"    },    {      "name": "all_records_cleared",      "value": "已清除所有记录"    },    {      "name": "clear_records_failed",      "value": "清除记录失败"    },    {      "name": "record_removed",      "value": "已移除记录"    },    {      "name": "remove_record_failed",      "value": "移除记录失败"    },    {      "name": "recent_files_title",      "value": "最近打开的数据库"    },    {      "name": "clear_all_button",      "value": "清除全部"    },    {      "name": "no_recent_files",      "value": "暂无记录"    },    {      "name": "creating_key",      "value": "创建密钥..."    },    {      "name": "loading_key",      "value": "加载密钥..."    },    {      "name": "validating",      "value": "处理中..."    },    {      "name": "loading_complete",      "value": "加载完成..."    },    {      "name": "select_database_file",      "value": "请选择数据库文件"    },    {      "name": "load_file_success",      "value": "加载内容..."    },    {      "name": "EntryEdit_invalid_db_or_group",      "value": "无效的数据库或分组信息"    },    {      "name": "Password_unlock_title",      "value": "解锁数据库"    },    {      "name": "select_local_file",      "value": "选择本地文件"    },    {      "name": "reselect_file",      "value": "重新选择文件"    },    {      "name": "LocalFile_click_to_select",      "value": " 点击选择文件"    },    {      "name": "recycle_bin",      "value": "回收站"    },    {      "name": "open_success",      "value": "打开成功"    },    {      "name": "auth_type",      "value": "认证方式"    },    {      "name": "error_keyfile_not_found",      "value": "未找到密钥文件"    },    {      "name": "history_version",      "value": "历史版本 #%d"    },    {      "name": "back_to_current_version",      "value": "返回当前版本"    },    {      "name": "field_name",      "value": "条目"    },    {      "name": "history_record",      "value": "历史记录"    },    {      "name": "rollback_button_text",      "value": "还原"    },    {      "name": "dialog_rollback_confirm_message",      "value": "您确认要还原吗？"    },    {      "name": "override_url",      "value": "覆盖URL"    },    {      "name": "override_url_placeholder",      "value": "请输入覆盖URL"    },    {      "name": "templates",      "value": "模版"    },    {      "name": "expiry_time",      "value": "过期时间"    },    {      "name": "load_save_history",      "value": "保存历史..."    },    {      "name": "load_save_database",      "value": "保存数据库..."    },    {      "name": "move_button_text",      "value": "移动"    },    {      "name": "operation_failed",      "value": "操作失败"    },    {      "name": "operation_success",      "value": "操作成功"    },    {      "name": "cannot_move_to_child",      "value": "不能移动到自己或子群组"    },    {      "name": "move_here",      "value": "移动到此处"    },    {      "name": "test_connection",      "value": "测试连接"    },    {      "name": "fill_all_info",      "value": "请输入全部信息"    },    {      "name": "connecting",      "value": "连接中..."    },    {      "name": "connection_success",      "value": "连接成功"    },    {      "name": "connection_failed",      "value": "连接失败"    },    {      "name": "file_is_folder",      "value": "请选择文件URL"    },    {      "name": "webdav_request_error",      "value": "请求失败"    },    {      "name": "webdav_auth_failed",      "value": "用户名或密码错误"    },    {      "name": "webdav_not_found",      "value": "资源不存在"    },    {      "name": "webdav_file_exists",      "value": "已存在"    },    {      "name": "webdav_dir_not_exists",      "value": "目录不存在"    },    {      "name": "webdav_no_permission",      "value": "无权限"    },    {      "name": "webdav_server_error",      "value": "服务器异常"    },    {      "name": "webdav_server_full",      "value": "空间已满"    },    {      "name": "webdav_request_timeout",      "value": "请求超时"    },    {      "name": "webdav_not_file",      "value": "请输入文件URL地址(非文件夹)"    },    {      "name": "webdav_not_init",      "value": "WebDAV 未初始化"    },    {      "name": "ftp_not_init",      "value": "FTP/SFTP 未初始化"    },    {      "name": "ftp_host",      "value": "服务器地址"    },    {      "name": "ftp_host_placeholder",      "value": "请输入服务器地址"    },    {      "name": "ftp_host_empty",      "value": "服务器地址不能为空"    },    {      "name": "ftp_port",      "value": "端口"    },    {      "name": "ftp_port_invalid",      "value": "无效的端口号"    },    {      "name": "ftp_root_path",      "value": "根路径"    },    {      "name": "ftp_secure",      "value": "使用 FTPS"    },    {      "name": "ftp_username_empty",      "value": "用户名不能为空"    },    {      "name": "ftp_password_empty",      "value": "密码不能为空"    },    {      "name": "testing",      "value": "测试中..."    },    {      "name": "merging_database",      "value": "合并中..."    },    {      "name": "refreshing_message",      "value": "下拉刷新"    },    {      "name": "save_saving",      "value": "保存中..."    },    {      "name": "refresh_success",      "value": "刷新完成"    },    {      "name": "Settings_security",      "value": "安全设置"    },    {      "name": "refreshing_disable",      "value": "已禁用下拉刷新"    },    {      "name": "security_is_pull_to_refresh",      "value": "启用下拉刷新数据库"    },    {      "name": "security_auto_clear_pasteboard_time",      "value": "自动清理粘贴板时间"    },    {      "name": "second",      "value": "秒"    },    {      "name": "minute",      "value": "分钟"    },    {      "name": "never",      "value": "从不"    },    {      "name": "close_button_text",      "value": "关闭"    },    {      "name": "unlock",      "value": "解锁"    },    {      "name": "quick_unlock",      "value": "快速解锁"    },    {      "name": "security_auto_lock_time",      "value": "后台自动锁定时长"    },    {      "name": "security_quick_lock_password_length",      "value": "快速解锁密码长度"    },    {      "name": "input_quick_unlock_password",      "value": "输入你密码的最后 %d 个字符"    },    {      "name": "password_error",      "value": "无效的密码"    },    {      "name": "password_length_error",      "value": "密码长度有误"    },    {      "name": "hour",      "value": "小时"    },    {      "name": "widget_auth_title",      "value": "解锁数据库"    },    {      "name": "auth_by_fingerprint",      "value": "指纹登录"    },    {      "name": "change_password",      "value": "修改主密码"    },    {      "name": "change_password_old_password",      "value": "旧密码"    },    {      "name": "change_password_old_password_placeholder",      "value": "请输入旧密码"    },    {      "name": "change_password_new_password",      "value": "新密码"    },    {      "name": "change_password_new_password_placeholder",      "value": "请输入新密码"    },    {      "name": "change_password_confirm_password",      "value": "确认密码"    },    {      "name": "change_password_confirm_password_placeholder",      "value": "请输入确认密码"    },    {      "name": "change_password_confirm_password_not_match",      "value": "新密码与确认密码不匹配"    },    {      "name": "change_password_old_password_not_match",      "value": "旧密码错误"    },    {      "name": "select_key_file_placeholder",      "value": "请选择密钥文件"    },    {      "name": "create_new",      "value": "新建"    },    {      "name": "not_select_file_path",      "value": "未选择文件路径"    },    {      "name": "change_password_key_file_tip",      "value": "未选择密钥文件将使用旧密钥文件"    },    {      "name": "key_file_not_use_key_file",      "value": "不使用密钥文件"    },    {      "name": "Settings_database",      "value": "数据库设置"    },    {      "name": "database_not_opened",      "value": "请先打开数据库"    },    {      "name": "feedback",      "value": "意见反馈"    },    {      "name": "rate_for_us",      "value": "给个好评"    },    {      "name": "save_button_text",      "value": "保存"    },    {      "name": "database_description",      "value": "数据库描述"    },    {      "name": "database_description_placeholder",      "value": "请输入数据库描述"    },    {      "name": "default_username",      "value": "默认用户名"    },    {      "name": "default_username_placeholder",      "value": "请输入默认用户名"    },    {      "name": "Settings_database_metadata",      "value": "设置数据库元数据"    },    {      "name": "recycle_bin_enabled",      "value": "启用回收站"    },    {      "name": "history_max_items",      "value": "每个条目最大历史记录数"    },    {      "name": "history_max_size",      "value": "每个条目历史记录总大小(MB)"    },    {      "name": "dialog_changes_confirm_message",      "value": "您确定要放弃更改吗？"    },    {      "name": "compression_enabled",      "value": "启用压缩"    },    {      "name": "key_file_tip",      "value": "注意：密钥文件丢失后，将无法打开数据库，请您妥善保存密钥文件！"    },    {      "name": "Settings_custom_icons",      "value": "管理自定义图标"    },    {      "name": "delete_not_use",      "value": "删除未使用"    },    {      "name": "invalid_binary_file",      "value": "无效的附件"    },    {      "name": "totp_config_title",      "value": "TOTP 令牌配置"    },    {      "name": "totp_type",      "value": "令牌类型"    },    {      "name": "totp_type_rfc6238",      "value": "RFC6238标准令牌"    },    {      "name": "totp_type_steam",      "value": "Steam令牌"    },    {      "name": "totp_type_custom",      "value": "自定义令牌"    },    {      "name": "totp_secret",      "value": "密钥"    },    {      "name": "scan_qr_code",      "value": "扫码"    },    {      "name": "totp_algorithm",      "value": "Hash算法"    },    {      "name": "totp_token_digits",      "value": "令牌位数"    },    {      "name": "totp_token_period",      "value": "更新周期(秒)"    },    {      "name": "totp_mark",      "value": "标识信息"    },    {      "name": "totp_preview",      "value": "令牌预览"    },    {      "name": "totp_config_error_empty_secret",      "value": "密钥不能为空"    },    {      "name": "totp_config_error_invalid_qr_code",      "value": "无法解析TOTP二维码"    },    {      "name": "error_scan_qr_code",      "value": "扫码失败"    },    {      "name": "error_generate_token",      "value": "生成令牌失败，请检查密钥格式"    },    {      "name": "totp_config_error_generating_token",      "value": "正在验证配置，请稍候"    },    {      "name": "totp_config_error_generate_token_failed",      "value": "无法生成有效令牌，请检查配置"    },    {      "name": "totp_invalid_uri",      "value": "无效的TOTP URI格式"    },    {      "name": "qrcode_is_not_totp_uri",      "value": "扫码内容不是有效的TOTP URI"    },    {      "name": "totp_name",      "value": "名称"    },    {      "name": "issuer",      "value": "发行者"    },    {      "name": "security_list_show_totp",      "value": "列表显示TOTP字段"    },    {      "name": "security_item_show_totp",      "value": "条目显示TOTP字段"    },    {      "name": "compression_enabled_tips",      "value": "启用压缩会延长加载和保存的速度"    },    {      "name": "auth_by_face",      "value": "面容登录"    },    {      "name": "auth_type_default",      "value": "默认认证方式"    },    {      "name": "fingerprint",      "value": "指纹"    },    {      "name": "face",      "value": "面容"    },    {      "name": "fingerprint_not_support",      "value": "当前设备不支持指纹认证"    },    {      "name": "fingerprint_not_enabled",      "value": "未启用指纹认证"    },    {      "name": "face_not_support",      "value": "当前设备不支持面容认证"    },    {      "name": "face_not_enabled",      "value": "未启用面容认证"    },    {      "name": "kdbx_error_InvalidKey",      "value": "输入的凭证无效，请检查"    },    {      "name": "kdbx_error_MergeError",      "value": "合并异常"    },    {      "name": "kdbx_error_BadSignature",      "value": "签名错误"    },    {      "name": "kdbx_error_InvalidArg",      "value": "参数错误"    },    {      "name": "kdbx_error_InvalidState",      "value": "状态错误"    },    {      "name": "kdbx_error_NotImplemented",      "value": "未实现"    },    {      "name": "kdbx_error_Unsupported",      "value": "不支持的算法"    },    {      "name": "kdbx_error_FileCorrupt",      "value": "文件埙坏"    },    {      "name": "kdbx_error_InvalidVersion",      "value": "无效版本"    },    {      "name": "attachment",      "value": "附件"    },    {      "name": "Settings_database_import",      "value": "导入数据库"    },    {      "name": "Settings_database_export",      "value": "导出数据库"    },    {      "name": "please_select",      "value": "请选择"    },    {      "name": "export_select_way",      "value": "请选择导出方式"    },    {      "name": "export_to_local_desc",      "value": "导出数据库到本地文件"    },    {      "name": "export_to_webdav_desc",      "value": "导出数据库到webDAV"    },    {      "name": "export_database",      "value": "导出数据库"    },    {      "name": "export_type_not_selected",      "value": "请选择数据库导出类型"    },    {      "name": "dialog_prompt_title",      "value": "提示"    },    {      "name": "dialog_exists_file_message",      "value": "已存在同名文件，是否替换？"    },    {      "name": "replace_button_text",      "value": "替换"    },    {      "name": "history_max_items_tips",      "value": "设置为0，则不限制条目最大历史记录数"    },    {      "name": "history_max_size_tips",      "value": "设置为0，则不限制条目历史记录总大小"    },    {      "name": "security_search_history_enabled",      "value": "启用搜索历史"    },    {      "name": "Settings_database_algorithm",      "value": "算法"    },    {      "name": "Settings_database_algorithm_aes",      "value": "AES/Rijndael (256-bit key,FIPS 197)"    },    {      "name": "Settings_database_algorithm_chacha20",      "value": "ChaCha20 (256-bit key,RFC 7539)"    },    {      "name": "Settings_database_encryption_key",      "value": "密钥派生函数"    },    {      "name": "export_type_kdbx",      "value": "KDBX"    },    {      "name": "export_type_xml",      "value": "XML 明文"    },    {      "name": "export_type_csv",      "value": "CSV 明文"    },    {      "name": "Settings_database_encryption_iterations",      "value": "迭代次数"    },    {      "name": "Settings_database_encryption_memory",      "value": "内存(Mb)"    },    {      "name": "Settings_database_encryption_parallel",      "value": "并行处理"    },    {      "name": "Settings_database_encryption_rounds",      "value": "加密次数"    },    {      "name": "location_save",      "value": "保存"    },    {      "name": "location_select",      "value": "选择"    },    {      "name": "location_title_save",      "value": "请选择保存位置"    },    {      "name": "location_local_desc_save",      "value": "保存文件到本地存储中"    },    {      "name": "location_webdav_desc_save",      "value": "保存文件到WebDAV服务中"    },    {      "name": "location_ftp_desc_save",      "value": "保存文件到FTP/SFTP服务器中"    },    {      "name": "location_title_select",      "value": "请选择文件"    },    {      "name": "location_local_desc_select",      "value": "从本地存储中选择文件"    },    {      "name": "location_webdav_desc_select",      "value": "从WebDAV中选择文件"    },    {      "name": "location_ftp_desc_select",      "value": "从FTP/SFTP服务器中选择文件"    },    {      "name": "Settings_sort_size",      "value": "按文件大小排序"    },    {      "name": "retry_button_text",      "value": "重试"    },    {      "name": "file_name_placeholder",      "value": "请输入文件名称"    },    {      "name": "export_saving",      "value": "导出中..."    },    {      "name": "export_success",      "value": "导出成功"    },    {      "name": "import_not_support_type",      "value": "不支持的文件类型"    },    {      "name": "import_success",      "value": "导入成功"    },    {      "name": "handling",      "value": "处理中..."    },    {      "name": "location_not_set_callback",      "value": "请先设置回调"    },    {      "name": "check_file_existing",      "value": "检测中..."    },    {      "name": "get_file_info",      "value": "获取中..."    },    {      "name": "Settings_default_protected_field",      "value": "默认保护字段"    },    {      "name": "Setting_enable_protected_field_tips",      "value": "启用保护，只影响新增条目"    },    {      "name": "totp_title",      "value": "时间令牌"    },    {      "name": "about_support",      "value": "支持作者"    },    {      "name": "support_thanks",      "value": "非常感谢您的支持!"    },    {      "name": "support_description",      "value": "您的支持是我们持续优化的动力。如果您喜欢这款应用，请考虑打赏开发者，非常感谢！"    },    {      "name": "support_wechat_pay",      "value": "微信"    },    {      "name": "support_alipay",      "value": "支付宝"    },    {      "name": "support_milk_tea_title",      "value": "赏一杯奶茶，助我代码丝滑 ~ \uD83E\uDD64"    },    {      "name": "support_milk_tea_thanks",      "value": "哇哦！奶茶已收到 \uD83E\uDD64✨ 感谢你的甜蜜投喂！这杯奶茶会让我接下来的代码写得更加丝滑～"    },    {      "name": "support_lunch_title",      "value": "赞助一顿午餐，给我满满能量！🍜"    },    {      "name": "support_lunch_thanks",      "value": "午餐券解锁成功！\uD83C\uDF5C 感谢你的丰盛款待！这顿午餐给了我满满的能量，下午又能火力全开地敲代码啦！"    },    {      "name": "support_partner_title",      "value": "成为助力伙伴，我们一起前行！ 🚀"    },    {      "name": "support_partner_thanks",      "value": "叮！你已成为【超级助力伙伴】！\uD83D\uDE80 感谢你的强力支持！这不仅是鼓励，更是我们并肩前行的动力。接下来的新功能，有你一份功劳！"    },    {      "name": "support_pm_title",      "value": "坐上产品经理席，发布你的需求！ 👑"    },    {      "name": "support_pm_thanks",      "value": "热烈欢迎【超级产品经理】闪亮登场！\uD83D\uDC51 感谢你的鼎力支持！你获得了我们的终极敬意！你的支持将直接影响产品的发展优先级，敬请期待！"    },    {      "name": "support_support",      "value": "支持"    },    {      "name": "support_other_pay",      "value": "其他"    },    {      "name": "support_dialog_title",      "value": "支持我们"    },    {      "name": "support_dialog_message",      "value": "如果你也喜欢这款软件，就请作者喝杯奶茶吧！"    },    {      "name": "Settings_application",      "value": "应用设置"    },    {      "name": "application_hide_support",      "value": "隐藏支持弹框"    },    {      "name": "application_hide_support_tips",      "value": "捐赠或者使用一段时间后才可隐藏"    },    {      "name": "about_contact_author",      "value": "联系作者"    },    {      "name": "about_source_code",      "value": "源代码"    },    {      "name": "download_image_title",      "value": "下载图片"    },    {      "name": "download_image_url_placeholder",      "value": "请输入图片URL地址"    },    {      "name": "download_image_tips",      "value": "仅支持 jpg、png、gif、webp、bmp、icon格式图片"    },    {      "name": "download_button_text",      "value": "下载"    },    {      "name": "download_image_url_empty_message",      "value": "图片URL地址不能为空"    },    {      "name": "download_image_url_invalid_message",      "value": "无效的图片URL地址"    },    {      "name": "download_image_success_message",      "value": "下载成功"    },    {      "name": "download_image_failed_message",      "value": "下载失败"    },    {      "name": "add_from_local",      "value": "本地上传"    },    {      "name": "add_from_web",      "value": "网络下载"    },    {      "name": "application_limit_db_ext",      "value": "限制打开数据库后缀"    },    {      "name": "application_limit_db_ext_tips",      "value": "仅能选择.kdbx结尾的数据库,取消不限制"    },    {      "name": "Settings_database_not_value",      "value": "请输入必填项"    },    {      "name": "about_check_update",      "value": "检查更新"    },    {      "name": "About_app_later_version_not_exist",      "value": "已是最新版本"    },    {      "name": "application_sync_data",      "value": "跨设备同步设置"    },    {      "name": "application_sync_data_tips",      "value": "同一个华为账号，不同设备之间同步应用配置信息"    },    {      "name": "Permission_DISTRIBUTED_DATASYNC_reason",      "value": "跨设备同步用户首选项"    },    {      "name": "application_manual_sync",      "value": "手动同步"    },    {      "name": "application_manual_sync_tips",      "value": "手动触发一次全量数据同步"    },    {      "name": "application_sync_button",      "value": "同步"    },    {      "name": "application_sync_loading",      "value": "正在同步数据..."    },    {      "name": "application_sync_complete",      "value": "同步完成"    },    {      "name": "application_holding_hand",      "value": "启用智感握姿"    },    {      "name": "application_holding_hand_tips",      "value": "启用时首页面按钮会跟随握姿自动调整位置"    },    {      "name": "security_privacy_window",      "value": "启用隐私窗口"    },    {      "name": "security_privacy_window_tips",      "value": "启用窗口将禁止截屏和录屏"    },    {      "name": "ftp_protocol",      "value": "协议"    },    {      "name": "ftp_secure_type_none",      "value": "无加密(FTP)"    },    {      "name": "ftp_secure_type_explicit",      "value": "显示加密(FTP over TLS,FTPS)"    },    {      "name": "ftp_secure_type_implicit",      "value": "隐式加密(FTP over TLS,FTPS)"    },    {      "name": "onedrive_authenticating",      "value": "身份验证中..."    },    {      "name": "onedrive_authentication_successful",      "value": "身份验证成功"    },    {      "name": "onedrive_login_successful",      "value": "登录成功"    },    {      "name": "onedrive_authentication_failed",      "value": "身份验证失败"    },    {      "name": "onedrive_logged_in",      "value": "已登录"    },    {      "name": "onedrive_logout",      "value": "登出"    },    {      "name": "onedrive_login_prompt",      "value": "请登录OneDrive账号以访问您的文件"    },    {      "name": "onedrive_login_button",      "value": "登录OneDrive"    },    {      "name": "confirm_remove_record_tips",      "value": "是否移除该记录？"    },    {      "name": "confirm_clear_all_records_tips",      "value": "确认要清空所有记录吗？"    },    {      "name": "onedrive_select_file",      "value": "从OneDrive中选择文件"    },    {      "name": "onedrive_save_file",      "value": "保存文件到OneDrive中"    },    {      "name": "copy_username",      "value": "复制\n用户名"    },    {      "name": "copy_password",      "value": "复制\n密码"    },    {      "name": "copy_group_name",      "value": "复制\n分组名"    },    {      "name": "more_button_text",      "value": "更多"    },    {      "name": "favorite_button_text",      "value": "收藏"    },    {      "name": "unfavorite_button_text",      "value": "取消收藏"    },    {      "name": "pin_button_text",      "value": "置顶"    },    {      "name": "unpin_button_text",      "value": "取消置顶"    },    {      "name": "password_not_set",      "value": "数据库未设置主密码"    },    {      "name": "auth_canceled",      "value": "用户取消"    },    {      "name": "about_other_system",      "value": "其他系统"    },    {      "name": "only_use_local_cache",      "value": "仅使用本地缓存"    },    {      "name": "cache_file_not_found",      "value": "缓存文件不存在"    },    {      "name": "push_to_remote_failed",      "value": "推送到远端失败：%s"    },    {      "name": "application_enable_local_cache",      "value": "启用本地缓存"    },    {      "name": "application_enable_local_cache_tips",      "value": "禁用将仅使用远端数据库，不在本地缓存"    },    {      "name": "please_refresh_data_first",      "value": "请先刷新"    },    {      "name": "dialog_delete_confirm_message_in_recycle_bin",      "value": "您确定彻底删除吗？"    },    {      "name": "cache_read_only",      "value": "请勿修改"    },    {      "name": "key_file_required",      "value": "密钥文件不能为空"    },    {      "name": "crash_log_title",      "value": "崩溃日志"    }  ]}
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "KeePassHO安全管理您的密码，随时随地访问"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "KeePassHO"
+    },
+    {
+      "name": "Permission_FILE_ACCESS_PERSIST_reason",
+      "value": "访问与存储kdbx数据文件"
+    },
+    {
+      "name": "SortConstants_default",
+      "value": "默认排序"
+    },
+    {
+      "name": "SortConstants_name",
+      "value": "按名称排序"
+    },
+    {
+      "name": "SortConstants_modified",
+      "value": "按修改日期排序"
+    },
+    {
+      "name": "SortConstants_created",
+      "value": "按创建日期排序"
+    },
+    {
+      "name": "ThemeConstants_system",
+      "value": "跟随系统"
+    },
+    {
+      "name": "ThemeConstants_light",
+      "value": "浅色"
+    },
+    {
+      "name": "ThemeConstants_dark",
+      "value": "深色"
+    },
+    {
+      "name": "Settings_title",
+      "value": "设置"
+    },
+    {
+      "name": "Settings_theme",
+      "value": "主题"
+    },
+    {
+      "name": "Settings_sort_method",
+      "value": "排序方式"
+    },
+    {
+      "name": "create_database",
+      "value": "创建数据库"
+    },
+    {
+      "name": "change_database",
+      "value": "更换数据库"
+    },
+    {
+      "name": "recent_files",
+      "value": "最近打开"
+    },
+    {
+      "name": "open_database",
+      "value": "打开数据库"
+    },
+    {
+      "name": "Settings_about",
+      "value": "关于"
+    },
+    {
+      "name": "auth_type_password",
+      "value": "仅密码"
+    },
+    {
+      "name": "auth_type_password_keyfile",
+      "value": "密码 + 密钥文件"
+    },
+    {
+      "name": "auth_type_keyfile",
+      "value": "仅密钥文件"
+    },
+    {
+      "name": "tap_to_biometric_auth",
+      "value": "点击使用生物认证"
+    },
+    {
+      "name": "auth_type_password_otp",
+      "value": "密码 + 一次性密码"
+    },
+    {
+      "name": "auth_type_password_otp_recovery",
+      "value": "密码 + 一次性密码（恢复模式）"
+    },
+    {
+      "name": "auth_type_password_challenge_response",
+      "value": "密码 + 挑战-响应"
+    },
+    {
+      "name": "auth_type_password_challenge_response_recovery",
+      "value": "密码 + 挑战-响应（恢复模式）"
+    },
+    {
+      "name": "auth_type_password_challenge_response_xc",
+      "value": "密码 + 挑战-应答（Keepass XC）"
+    },
+    {
+      "name": "auth_type_password_keyfile_challenge_response_xc",
+      "value": "密码 + 密钥文件 + 挑战应答（Keepass XC）"
+    },
+    {
+      "name": "About_version",
+      "value": "版本: "
+    },
+    {
+      "name": "About_description",
+      "value": "KeePassHO 是一款支持Keepass 2.x数据库读写的密码管理器应用。"
+    },
+    {
+      "name": "Index_welcome",
+      "value": "欢迎使用 KeePassHO"
+    },
+    {
+      "name": "Index_subtitle",
+      "value": "安全管理您的密码"
+    },
+    {
+      "name": "Error_check_recent_files",
+      "value": "检查最近文件失败"
+    },
+    {
+      "name": "load_database_failed",
+      "value": "加载数据库失败"
+    },
+    {
+      "name": "load_entry_failed",
+      "value": "加载条目失败"
+    },
+    {
+      "name": "edit_button_text",
+      "value": "编辑"
+    },
+    {
+      "name": "delete_button_text",
+      "value": "删除"
+    },
+    {
+      "name": "confirm_button_text",
+      "value": "确定"
+    },
+    {
+      "name": "cancel_button_text",
+      "value": "取消"
+    },
+    {
+      "name": "select_button",
+      "value": "选择"
+    },
+    {
+      "name": "select_all_button",
+      "value": "全选"
+    },
+    {
+      "name": "deselect_all_button",
+      "value": "取消全选"
+    },
+    {
+      "name": "batch_delete_confirm_message",
+      "value": "确定要删除 %d 个项目吗？"
+    },
+    {
+      "name": "batch_manage_button",
+      "value": "批量管理"
+    },
+    {
+      "name": "add_group_button",
+      "value": "添加分组"
+    },
+    {
+      "name": "add_entry_button",
+      "value": "添加条目"
+    },
+    {
+      "name": "group_items_message",
+      "value": "组群 %d 个条目"
+    },
+    {
+      "name": "username",
+      "value": "用户名"
+    },
+    {
+      "name": "username_placeholder",
+      "value": "请输入用户名"
+    },
+    {
+      "name": "password",
+      "value": "密码"
+    },
+    {
+      "name": "password_placeholder",
+      "value": "请输入密码"
+    },
+    {
+      "name": "url",
+      "value": "链接地址"
+    },
+    {
+      "name": "webdav_url_placeholder",
+      "value": "请输入文件夹或者文件URL地址"
+    },
+    {
+      "name": "notes",
+      "value": "备注"
+    },
+    {
+      "name": "notes_placeholder",
+      "value": "请输入备注"
+    },
+    {
+      "name": "title",
+      "value": "标题"
+    },
+    {
+      "name": "title_placeholder",
+      "value": "请输入标题"
+    },
+    {
+      "name": "title_required_message",
+      "value": "标题不能为空"
+    },
+    {
+      "name": "tags",
+      "value": "标签"
+    },
+    {
+      "name": "tags_placeholder",
+      "value": "请输入标签（用逗号分隔）"
+    },
+    {
+      "name": "confirm_password_label",
+      "value": "确认密码"
+    },
+    {
+      "name": "confirm_password_placeholder",
+      "value": "请再次输入密码"
+    },
+    {
+      "name": "group_name",
+      "value": "分组名称"
+    },
+    {
+      "name": "custom_field",
+      "value": "自定义字段"
+    },
+    {
+      "name": "created_time",
+      "value": "创建时间"
+    },
+    {
+      "name": "updated_time",
+      "value": "更新时间"
+    },
+    {
+      "name": "edit_group",
+      "value": "编辑分组"
+    },
+    {
+      "name": "edit_entry",
+      "value": "编辑条目"
+    },
+    {
+      "name": "icon",
+      "value": "图标"
+    },
+    {
+      "name": "enter_group_name",
+      "value": "请输入分组名称"
+    },
+    {
+      "name": "edit_custom_field",
+      "value": "编辑自定义字段"
+    },
+    {
+      "name": "add_custom_field",
+      "value": "添加自定义字段"
+    },
+    {
+      "name": "custom_field_name",
+      "value": "字段名称"
+    },
+    {
+      "name": "enter_custom_field_name",
+      "value": "请输入字段名称"
+    },
+    {
+      "name": "field_name_not_empty",
+      "value": "字段名称不能为空"
+    },
+    {
+      "name": "custom_field_value",
+      "value": "字段值"
+    },
+    {
+      "name": "enter_custom_field_value",
+      "value": "请输入字段值"
+    },
+    {
+      "name": "is_protect_field",
+      "value": "保护字段值"
+    },
+    {
+      "name": "copy_failed",
+      "value": "复制失败"
+    },
+    {
+      "name": "copied",
+      "value": "已复制"
+    },
+    {
+      "name": "select_icon",
+      "value": "选择图标"
+    },
+    {
+      "name": "click_select_icon",
+      "value": "点击选择图标"
+    },
+    {
+      "name": "PasswordGenerator_title",
+      "value": "密码生成器"
+    },
+    {
+      "name": "PasswordGenerator_strength",
+      "value": "密码强度："
+    },
+    {
+      "name": "PasswordGenerator_weak",
+      "value": "弱"
+    },
+    {
+      "name": "PasswordGenerator_medium",
+      "value": "中"
+    },
+    {
+      "name": "PasswordGenerator_strong",
+      "value": "强"
+    },
+    {
+      "name": "PasswordGenerator_length",
+      "value": "密码长度:"
+    },
+    {
+      "name": "PasswordGenerator_uppercase",
+      "value": "大写字母 (A-Z)"
+    },
+    {
+      "name": "PasswordGenerator_lowercase",
+      "value": "小写字母 (a-z)"
+    },
+    {
+      "name": "PasswordGenerator_numbers",
+      "value": "数字 (0-9)"
+    },
+    {
+      "name": "PasswordGenerator_special",
+      "value": "特殊字符 (!@#$%^&*=+~`|;?><,.)"
+    },
+    {
+      "name": "PasswordGenerator_brackets",
+      "value": "括号 ((){}[])"
+    },
+    {
+      "name": "PasswordGenerator_minus",
+      "value": "减号 (-)"
+    },
+    {
+      "name": "PasswordGenerator_underscore",
+      "value": "下划线 (_)"
+    },
+    {
+      "name": "PasswordGenerator_space",
+      "value": "空格 ( )"
+    },
+    {
+      "name": "PasswordGenerator_accept",
+      "value": "接受"
+    },
+    {
+      "name": "PasswordGenerator_generate",
+      "value": "生成密码"
+    },
+    {
+      "name": "PasswordGenerator_ensureEachType",
+      "value": "每种符号至少一种"
+    },
+    {
+      "name": "database_name",
+      "value": "数据库名称"
+    },
+    {
+      "name": "database_name_placeholder",
+      "value": "请输入数据库名称"
+    },
+    {
+      "name": "CreateDatabase_password_mismatch",
+      "value": "两次输入的密码不一致"
+    },
+    {
+      "name": "CreateDatabase_create_success",
+      "value": "数据库创建成功"
+    },
+    {
+      "name": "CreateDatabase_create_failed",
+      "value": "数据库创建失败"
+    },
+    {
+      "name": "CreateDatabase_location_failed",
+      "value": "保存失败: %s"
+    },
+    {
+      "name": "CreateDatabase_error_message",
+      "value": "创建失败: %s"
+    },
+    {
+      "name": "select_open_method_prompt",
+      "value": "请选择位置"
+    },
+    {
+      "name": "local_file_button_title",
+      "value": "本地文件"
+    },
+    {
+      "name": "webdav_button_title",
+      "value": "WebDAV"
+    },
+    {
+      "name": "ftp_button_title",
+      "value": "FTP/SFTP"
+    },
+    {
+      "name": "dialog_confirm_title",
+      "value": "确认"
+    },
+    {
+      "name": "dialog_delete_confirm_message",
+      "value": "您确定要删除吗？"
+    },
+    {
+      "name": "save_success",
+      "value": "保存成功"
+    },
+    {
+      "name": "save_failed_message",
+      "value": "保存失败:%s"
+    },
+    {
+      "name": "invalid_database",
+      "value": "无效的数据库"
+    },
+    {
+      "name": "loading_message",
+      "value": "正在加载..."
+    },
+    {
+      "name": "search_placeholder",
+      "value": "查找内容"
+    },
+    {
+      "name": "invalid_group",
+      "value": "无效的分组"
+    },
+    {
+      "name": "invalid_entry_message",
+      "value": "无效的条目信息"
+    },
+    {
+      "name": "field_name_exists",
+      "value": "字段名称已存在"
+    },
+    {
+      "name": "save_entry_failed_message",
+      "value": "保存条目失败:%s"
+    },
+    {
+      "name": "generate_button_text",
+      "value": "生成"
+    },
+    {
+      "name": "no_custom_fields_message",
+      "value": "暂无自定义字段"
+    },
+    {
+      "name": "invalid_db_or_entry",
+      "value": "无效的数据库或条目ID"
+    },
+    {
+      "name": "entry_not_found",
+      "value": "找不到指定的条目"
+    },
+    {
+      "name": "no_history",
+      "value": "没有历史记录"
+    },
+    {
+      "name": "invalid_data_file",
+      "value": "无效的数据文件"
+    },
+    {
+      "name": "open_failed",
+      "value": "打开失败:%s"
+    },
+    {
+      "name": "select_key_file",
+      "value": "请选择密钥文件"
+    },
+    {
+      "name": "storage_type_empty",
+      "value": "存储类型为空"
+    },
+    {
+      "name": "select_key_file_button",
+      "value": "选择密钥文件"
+    },
+    {
+      "name": "reselect_key_file",
+      "value": "重新选择密钥文件"
+    },
+    {
+      "name": "key_file",
+      "value": "密钥文件"
+    },
+    {
+      "name": "load_recent_files_failed",
+      "value": "加载最近文件失败"
+    },
+    {
+      "name": "file_not_exists",
+      "value": "文件不存在"
+    },
+    {
+      "name": "all_records_cleared",
+      "value": "已清除所有记录"
+    },
+    {
+      "name": "clear_records_failed",
+      "value": "清除记录失败"
+    },
+    {
+      "name": "record_removed",
+      "value": "已移除记录"
+    },
+    {
+      "name": "remove_record_failed",
+      "value": "移除记录失败"
+    },
+    {
+      "name": "recent_files_title",
+      "value": "最近打开的数据库"
+    },
+    {
+      "name": "clear_all_button",
+      "value": "清除全部"
+    },
+    {
+      "name": "no_recent_files",
+      "value": "暂无记录"
+    },
+    {
+      "name": "creating_key",
+      "value": "创建密钥..."
+    },
+    {
+      "name": "loading_key",
+      "value": "加载密钥..."
+    },
+    {
+      "name": "validating",
+      "value": "处理中..."
+    },
+    {
+      "name": "loading_complete",
+      "value": "加载完成..."
+    },
+    {
+      "name": "select_database_file",
+      "value": "请选择数据库文件"
+    },
+    {
+      "name": "load_file_success",
+      "value": "加载内容..."
+    },
+    {
+      "name": "EntryEdit_invalid_db_or_group",
+      "value": "无效的数据库或分组信息"
+    },
+    {
+      "name": "Password_unlock_title",
+      "value": "解锁数据库"
+    },
+    {
+      "name": "select_local_file",
+      "value": "选择本地文件"
+    },
+    {
+      "name": "reselect_file",
+      "value": "重新选择文件"
+    },
+    {
+      "name": "LocalFile_click_to_select",
+      "value": " 点击选择文件"
+    },
+    {
+      "name": "recycle_bin",
+      "value": "回收站"
+    },
+    {
+      "name": "open_success",
+      "value": "打开成功"
+    },
+    {
+      "name": "auth_type",
+      "value": "认证方式"
+    },
+    {
+      "name": "error_keyfile_not_found",
+      "value": "未找到密钥文件"
+    },
+    {
+      "name": "history_version",
+      "value": "历史版本 #%d"
+    },
+    {
+      "name": "back_to_current_version",
+      "value": "返回当前版本"
+    },
+    {
+      "name": "field_name",
+      "value": "条目"
+    },
+    {
+      "name": "history_record",
+      "value": "历史记录"
+    },
+    {
+      "name": "rollback_button_text",
+      "value": "还原"
+    },
+    {
+      "name": "dialog_rollback_confirm_message",
+      "value": "您确认要还原吗？"
+    },
+    {
+      "name": "override_url",
+      "value": "覆盖URL"
+    },
+    {
+      "name": "override_url_placeholder",
+      "value": "请输入覆盖URL"
+    },
+    {
+      "name": "templates",
+      "value": "模版"
+    },
+    {
+      "name": "expiry_time",
+      "value": "过期时间"
+    },
+    {
+      "name": "load_save_history",
+      "value": "保存历史..."
+    },
+    {
+      "name": "load_save_database",
+      "value": "保存数据库..."
+    },
+    {
+      "name": "move_button_text",
+      "value": "移动"
+    },
+    {
+      "name": "operation_failed",
+      "value": "操作失败"
+    },
+    {
+      "name": "operation_success",
+      "value": "操作成功"
+    },
+    {
+      "name": "cannot_move_to_child",
+      "value": "不能移动到自己或子群组"
+    },
+    {
+      "name": "move_here",
+      "value": "移动到此处"
+    },
+    {
+      "name": "test_connection",
+      "value": "测试连接"
+    },
+    {
+      "name": "fill_all_info",
+      "value": "请输入全部信息"
+    },
+    {
+      "name": "connecting",
+      "value": "连接中..."
+    },
+    {
+      "name": "connection_success",
+      "value": "连接成功"
+    },
+    {
+      "name": "connection_failed",
+      "value": "连接失败"
+    },
+    {
+      "name": "file_is_folder",
+      "value": "请选择文件URL"
+    },
+    {
+      "name": "webdav_request_error",
+      "value": "请求失败"
+    },
+    {
+      "name": "webdav_auth_failed",
+      "value": "用户名或密码错误"
+    },
+    {
+      "name": "webdav_not_found",
+      "value": "资源不存在"
+    },
+    {
+      "name": "webdav_file_exists",
+      "value": "已存在"
+    },
+    {
+      "name": "webdav_dir_not_exists",
+      "value": "目录不存在"
+    },
+    {
+      "name": "webdav_no_permission",
+      "value": "无权限"
+    },
+    {
+      "name": "webdav_server_error",
+      "value": "服务器异常"
+    },
+    {
+      "name": "webdav_server_full",
+      "value": "空间已满"
+    },
+    {
+      "name": "webdav_request_timeout",
+      "value": "请求超时"
+    },
+    {
+      "name": "webdav_not_file",
+      "value": "请输入文件URL地址(非文件夹)"
+    },
+    {
+      "name": "webdav_not_init",
+      "value": "WebDAV 未初始化"
+    },
+    {
+      "name": "ftp_not_init",
+      "value": "FTP/SFTP 未初始化"
+    },
+    {
+      "name": "ftp_host",
+      "value": "服务器地址"
+    },
+    {
+      "name": "ftp_host_placeholder",
+      "value": "请输入服务器地址"
+    },
+    {
+      "name": "ftp_host_empty",
+      "value": "服务器地址不能为空"
+    },
+    {
+      "name": "ftp_port",
+      "value": "端口"
+    },
+    {
+      "name": "ftp_port_invalid",
+      "value": "无效的端口号"
+    },
+    {
+      "name": "ftp_root_path",
+      "value": "根路径"
+    },
+    {
+      "name": "ftp_secure",
+      "value": "使用 FTPS"
+    },
+    {
+      "name": "ftp_username_empty",
+      "value": "用户名不能为空"
+    },
+    {
+      "name": "ftp_password_empty",
+      "value": "密码不能为空"
+    },
+    {
+      "name": "testing",
+      "value": "测试中..."
+    },
+    {
+      "name": "merging_database",
+      "value": "合并中..."
+    },
+    {
+      "name": "refreshing_message",
+      "value": "下拉刷新"
+    },
+    {
+      "name": "save_saving",
+      "value": "保存中..."
+    },
+    {
+      "name": "refresh_success",
+      "value": "刷新完成"
+    },
+    {
+      "name": "Settings_security",
+      "value": "安全设置"
+    },
+    {
+      "name": "refreshing_disable",
+      "value": "已禁用下拉刷新"
+    },
+    {
+      "name": "security_is_pull_to_refresh",
+      "value": "启用下拉刷新数据库"
+    },
+    {
+      "name": "security_auto_clear_pasteboard_time",
+      "value": "自动清理粘贴板时间"
+    },
+    {
+      "name": "second",
+      "value": "秒"
+    },
+    {
+      "name": "minute",
+      "value": "分钟"
+    },
+    {
+      "name": "never",
+      "value": "从不"
+    },
+    {
+      "name": "close_button_text",
+      "value": "关闭"
+    },
+    {
+      "name": "unlock",
+      "value": "解锁"
+    },
+    {
+      "name": "quick_unlock",
+      "value": "快速解锁"
+    },
+    {
+      "name": "security_auto_lock_time",
+      "value": "后台自动锁定时长"
+    },
+    {
+      "name": "security_quick_lock_password_length",
+      "value": "快速解锁密码长度"
+    },
+    {
+      "name": "input_quick_unlock_password",
+      "value": "输入你密码的最后 %d 个字符"
+    },
+    {
+      "name": "password_error",
+      "value": "无效的密码"
+    },
+    {
+      "name": "password_length_error",
+      "value": "密码长度有误"
+    },
+    {
+      "name": "hour",
+      "value": "小时"
+    },
+    {
+      "name": "widget_auth_title",
+      "value": "解锁数据库"
+    },
+    {
+      "name": "auth_by_fingerprint",
+      "value": "指纹登录"
+    },
+    {
+      "name": "change_password",
+      "value": "修改主密码"
+    },
+    {
+      "name": "change_password_old_password",
+      "value": "旧密码"
+    },
+    {
+      "name": "change_password_old_password_placeholder",
+      "value": "请输入旧密码"
+    },
+    {
+      "name": "change_password_new_password",
+      "value": "新密码"
+    },
+    {
+      "name": "change_password_new_password_placeholder",
+      "value": "请输入新密码"
+    },
+    {
+      "name": "change_password_confirm_password",
+      "value": "确认密码"
+    },
+    {
+      "name": "change_password_confirm_password_placeholder",
+      "value": "请输入确认密码"
+    },
+    {
+      "name": "change_password_confirm_password_not_match",
+      "value": "新密码与确认密码不匹配"
+    },
+    {
+      "name": "change_password_old_password_not_match",
+      "value": "旧密码错误"
+    },
+    {
+      "name": "select_key_file_placeholder",
+      "value": "请选择密钥文件"
+    },
+    {
+      "name": "create_new",
+      "value": "新建"
+    },
+    {
+      "name": "not_select_file_path",
+      "value": "未选择文件路径"
+    },
+    {
+      "name": "change_password_key_file_tip",
+      "value": "未选择密钥文件将使用旧密钥文件"
+    },
+    {
+      "name": "key_file_not_use_key_file",
+      "value": "不使用密钥文件"
+    },
+    {
+      "name": "Settings_database",
+      "value": "数据库设置"
+    },
+    {
+      "name": "database_not_opened",
+      "value": "请先打开数据库"
+    },
+    {
+      "name": "feedback",
+      "value": "意见反馈"
+    },
+    {
+      "name": "rate_for_us",
+      "value": "给个好评"
+    },
+    {
+      "name": "save_button_text",
+      "value": "保存"
+    },
+    {
+      "name": "database_description",
+      "value": "数据库描述"
+    },
+    {
+      "name": "database_description_placeholder",
+      "value": "请输入数据库描述"
+    },
+    {
+      "name": "default_username",
+      "value": "默认用户名"
+    },
+    {
+      "name": "default_username_placeholder",
+      "value": "请输入默认用户名"
+    },
+    {
+      "name": "Settings_database_metadata",
+      "value": "设置数据库元数据"
+    },
+    {
+      "name": "recycle_bin_enabled",
+      "value": "启用回收站"
+    },
+    {
+      "name": "history_max_items",
+      "value": "每个条目最大历史记录数"
+    },
+    {
+      "name": "history_max_size",
+      "value": "每个条目历史记录总大小(MB)"
+    },
+    {
+      "name": "dialog_changes_confirm_message",
+      "value": "您确定要放弃更改吗？"
+    },
+    {
+      "name": "compression_enabled",
+      "value": "启用压缩"
+    },
+    {
+      "name": "key_file_tip",
+      "value": "注意：密钥文件丢失后，将无法打开数据库，请您妥善保存密钥文件！"
+    },
+    {
+      "name": "Settings_custom_icons",
+      "value": "管理自定义图标"
+    },
+    {
+      "name": "delete_not_use",
+      "value": "删除未使用"
+    },
+    {
+      "name": "invalid_binary_file",
+      "value": "无效的附件"
+    },
+    {
+      "name": "totp_config_title",
+      "value": "TOTP 令牌配置"
+    },
+    {
+      "name": "totp_type",
+      "value": "令牌类型"
+    },
+    {
+      "name": "totp_type_rfc6238",
+      "value": "RFC6238标准令牌"
+    },
+    {
+      "name": "totp_type_steam",
+      "value": "Steam令牌"
+    },
+    {
+      "name": "totp_type_custom",
+      "value": "自定义令牌"
+    },
+    {
+      "name": "totp_secret",
+      "value": "密钥"
+    },
+    {
+      "name": "scan_qr_code",
+      "value": "扫码"
+    },
+    {
+      "name": "totp_algorithm",
+      "value": "Hash算法"
+    },
+    {
+      "name": "totp_token_digits",
+      "value": "令牌位数"
+    },
+    {
+      "name": "totp_token_period",
+      "value": "更新周期(秒)"
+    },
+    {
+      "name": "totp_mark",
+      "value": "标识信息"
+    },
+    {
+      "name": "totp_preview",
+      "value": "令牌预览"
+    },
+    {
+      "name": "totp_config_error_empty_secret",
+      "value": "密钥不能为空"
+    },
+    {
+      "name": "totp_config_error_invalid_qr_code",
+      "value": "无法解析TOTP二维码"
+    },
+    {
+      "name": "error_scan_qr_code",
+      "value": "扫码失败"
+    },
+    {
+      "name": "error_generate_token",
+      "value": "生成令牌失败，请检查密钥格式"
+    },
+    {
+      "name": "totp_config_error_generating_token",
+      "value": "正在验证配置，请稍候"
+    },
+    {
+      "name": "totp_config_error_generate_token_failed",
+      "value": "无法生成有效令牌，请检查配置"
+    },
+    {
+      "name": "totp_invalid_uri",
+      "value": "无效的TOTP URI格式"
+    },
+    {
+      "name": "qrcode_is_not_totp_uri",
+      "value": "扫码内容不是有效的TOTP URI"
+    },
+    {
+      "name": "totp_name",
+      "value": "名称"
+    },
+    {
+      "name": "issuer",
+      "value": "发行者"
+    },
+    {
+      "name": "security_list_show_totp",
+      "value": "列表显示TOTP字段"
+    },
+    {
+      "name": "security_item_show_totp",
+      "value": "条目显示TOTP字段"
+    },
+    {
+      "name": "compression_enabled_tips",
+      "value": "启用压缩会延长加载和保存的速度"
+    },
+    {
+      "name": "auth_by_face",
+      "value": "面容登录"
+    },
+    {
+      "name": "auth_type_default",
+      "value": "默认认证方式"
+    },
+    {
+      "name": "fingerprint",
+      "value": "指纹"
+    },
+    {
+      "name": "face",
+      "value": "面容"
+    },
+    {
+      "name": "fingerprint_not_support",
+      "value": "当前设备不支持指纹认证"
+    },
+    {
+      "name": "fingerprint_not_enabled",
+      "value": "未启用指纹认证"
+    },
+    {
+      "name": "face_not_support",
+      "value": "当前设备不支持面容认证"
+    },
+    {
+      "name": "face_not_enabled",
+      "value": "未启用面容认证"
+    },
+    {
+      "name": "kdbx_error_InvalidKey",
+      "value": "输入的凭证无效，请检查"
+    },
+    {
+      "name": "kdbx_error_MergeError",
+      "value": "合并异常"
+    },
+    {
+      "name": "kdbx_error_BadSignature",
+      "value": "签名错误"
+    },
+    {
+      "name": "kdbx_error_InvalidArg",
+      "value": "参数错误"
+    },
+    {
+      "name": "kdbx_error_InvalidState",
+      "value": "状态错误"
+    },
+    {
+      "name": "kdbx_error_NotImplemented",
+      "value": "未实现"
+    },
+    {
+      "name": "kdbx_error_Unsupported",
+      "value": "不支持的算法"
+    },
+    {
+      "name": "kdbx_error_FileCorrupt",
+      "value": "文件埙坏"
+    },
+    {
+      "name": "kdbx_error_InvalidVersion",
+      "value": "无效版本"
+    },
+    {
+      "name": "attachment",
+      "value": "附件"
+    },
+    {
+      "name": "Settings_database_import",
+      "value": "导入数据库"
+    },
+    {
+      "name": "Settings_database_export",
+      "value": "导出数据库"
+    },
+    {
+      "name": "please_select",
+      "value": "请选择"
+    },
+    {
+      "name": "export_select_way",
+      "value": "请选择导出方式"
+    },
+    {
+      "name": "export_to_local_desc",
+      "value": "导出数据库到本地文件"
+    },
+    {
+      "name": "export_to_webdav_desc",
+      "value": "导出数据库到webDAV"
+    },
+    {
+      "name": "export_database",
+      "value": "导出数据库"
+    },
+    {
+      "name": "export_type_not_selected",
+      "value": "请选择数据库导出类型"
+    },
+    {
+      "name": "dialog_prompt_title",
+      "value": "提示"
+    },
+    {
+      "name": "dialog_exists_file_message",
+      "value": "已存在同名文件，是否替换？"
+    },
+    {
+      "name": "replace_button_text",
+      "value": "替换"
+    },
+    {
+      "name": "history_max_items_tips",
+      "value": "设置为0，则不限制条目最大历史记录数"
+    },
+    {
+      "name": "history_max_size_tips",
+      "value": "设置为0，则不限制条目历史记录总大小"
+    },
+    {
+      "name": "security_search_history_enabled",
+      "value": "启用搜索历史"
+    },
+    {
+      "name": "Settings_database_algorithm",
+      "value": "算法"
+    },
+    {
+      "name": "Settings_database_algorithm_aes",
+      "value": "AES/Rijndael (256-bit key,FIPS 197)"
+    },
+    {
+      "name": "Settings_database_algorithm_chacha20",
+      "value": "ChaCha20 (256-bit key,RFC 7539)"
+    },
+    {
+      "name": "Settings_database_encryption_key",
+      "value": "密钥派生函数"
+    },
+    {
+      "name": "export_type_kdbx",
+      "value": "KDBX"
+    },
+    {
+      "name": "export_type_xml",
+      "value": "XML 明文"
+    },
+    {
+      "name": "export_type_csv",
+      "value": "CSV 明文"
+    },
+    {
+      "name": "Settings_database_encryption_iterations",
+      "value": "迭代次数"
+    },
+    {
+      "name": "Settings_database_encryption_memory",
+      "value": "内存(Mb)"
+    },
+    {
+      "name": "Settings_database_encryption_parallel",
+      "value": "并行处理"
+    },
+    {
+      "name": "Settings_database_encryption_rounds",
+      "value": "加密次数"
+    },
+    {
+      "name": "location_save",
+      "value": "保存"
+    },
+    {
+      "name": "location_select",
+      "value": "选择"
+    },
+    {
+      "name": "location_title_save",
+      "value": "请选择保存位置"
+    },
+    {
+      "name": "location_local_desc_save",
+      "value": "保存文件到本地存储中"
+    },
+    {
+      "name": "location_webdav_desc_save",
+      "value": "保存文件到WebDAV服务中"
+    },
+    {
+      "name": "location_ftp_desc_save",
+      "value": "保存文件到FTP/SFTP服务器中"
+    },
+    {
+      "name": "location_title_select",
+      "value": "请选择文件"
+    },
+    {
+      "name": "location_local_desc_select",
+      "value": "从本地存储中选择文件"
+    },
+    {
+      "name": "location_webdav_desc_select",
+      "value": "从WebDAV中选择文件"
+    },
+    {
+      "name": "location_ftp_desc_select",
+      "value": "从FTP/SFTP服务器中选择文件"
+    },
+    {
+      "name": "Settings_sort_size",
+      "value": "按文件大小排序"
+    },
+    {
+      "name": "retry_button_text",
+      "value": "重试"
+    },
+    {
+      "name": "file_name_placeholder",
+      "value": "请输入文件名称"
+    },
+    {
+      "name": "export_saving",
+      "value": "导出中..."
+    },
+    {
+      "name": "export_success",
+      "value": "导出成功"
+    },
+    {
+      "name": "import_not_support_type",
+      "value": "不支持的文件类型"
+    },
+    {
+      "name": "import_success",
+      "value": "导入成功"
+    },
+    {
+      "name": "handling",
+      "value": "处理中..."
+    },
+    {
+      "name": "location_not_set_callback",
+      "value": "请先设置回调"
+    },
+    {
+      "name": "check_file_existing",
+      "value": "检测中..."
+    },
+    {
+      "name": "get_file_info",
+      "value": "获取中..."
+    },
+    {
+      "name": "Settings_default_protected_field",
+      "value": "默认保护字段"
+    },
+    {
+      "name": "Setting_enable_protected_field_tips",
+      "value": "启用保护，只影响新增条目"
+    },
+    {
+      "name": "totp_title",
+      "value": "时间令牌"
+    },
+    {
+      "name": "about_support",
+      "value": "支持作者"
+    },
+    {
+      "name": "support_thanks",
+      "value": "非常感谢您的支持!"
+    },
+    {
+      "name": "support_description",
+      "value": "您的支持是我们持续优化的动力。如果您喜欢这款应用，请考虑打赏开发者，非常感谢！"
+    },
+    {
+      "name": "support_wechat_pay",
+      "value": "微信"
+    },
+    {
+      "name": "support_alipay",
+      "value": "支付宝"
+    },
+    {
+      "name": "support_milk_tea_title",
+      "value": "赏一杯奶茶，助我代码丝滑 ~ 🥤"
+    },
+    {
+      "name": "support_milk_tea_thanks",
+      "value": "哇哦！奶茶已收到 🥤✨ 感谢你的甜蜜投喂！这杯奶茶会让我接下来的代码写得更加丝滑～"
+    },
+    {
+      "name": "support_lunch_title",
+      "value": "赞助一顿午餐，给我满满能量！🍜"
+    },
+    {
+      "name": "support_lunch_thanks",
+      "value": "午餐券解锁成功！🍜 感谢你的丰盛款待！这顿午餐给了我满满的能量，下午又能火力全开地敲代码啦！"
+    },
+    {
+      "name": "support_partner_title",
+      "value": "成为助力伙伴，我们一起前行！ 🚀"
+    },
+    {
+      "name": "support_partner_thanks",
+      "value": "叮！你已成为【超级助力伙伴】！🚀 感谢你的强力支持！这不仅是鼓励，更是我们并肩前行的动力。接下来的新功能，有你一份功劳！"
+    },
+    {
+      "name": "support_pm_title",
+      "value": "坐上产品经理席，发布你的需求！ 👑"
+    },
+    {
+      "name": "support_pm_thanks",
+      "value": "热烈欢迎【超级产品经理】闪亮登场！👑 感谢你的鼎力支持！你获得了我们的终极敬意！你的支持将直接影响产品的发展优先级，敬请期待！"
+    },
+    {
+      "name": "support_support",
+      "value": "支持"
+    },
+    {
+      "name": "support_other_pay",
+      "value": "其他"
+    },
+    {
+      "name": "support_dialog_title",
+      "value": "支持我们"
+    },
+    {
+      "name": "support_dialog_message",
+      "value": "如果你也喜欢这款软件，就请作者喝杯奶茶吧！"
+    },
+    {
+      "name": "Settings_application",
+      "value": "应用设置"
+    },
+    {
+      "name": "application_hide_support",
+      "value": "隐藏支持弹框"
+    },
+    {
+      "name": "application_hide_support_tips",
+      "value": "捐赠或者使用一段时间后才可隐藏"
+    },
+    {
+      "name": "about_contact_author",
+      "value": "联系作者"
+    },
+    {
+      "name": "about_source_code",
+      "value": "源代码"
+    },
+    {
+      "name": "download_image_title",
+      "value": "下载图片"
+    },
+    {
+      "name": "download_image_url_placeholder",
+      "value": "请输入图片URL地址"
+    },
+    {
+      "name": "download_image_tips",
+      "value": "仅支持 jpg、png、gif、webp、bmp、icon格式图片"
+    },
+    {
+      "name": "download_button_text",
+      "value": "下载"
+    },
+    {
+      "name": "download_image_url_empty_message",
+      "value": "图片URL地址不能为空"
+    },
+    {
+      "name": "download_image_url_invalid_message",
+      "value": "无效的图片URL地址"
+    },
+    {
+      "name": "download_image_success_message",
+      "value": "下载成功"
+    },
+    {
+      "name": "download_image_failed_message",
+      "value": "下载失败"
+    },
+    {
+      "name": "add_from_local",
+      "value": "本地上传"
+    },
+    {
+      "name": "add_from_web",
+      "value": "网络下载"
+    },
+    {
+      "name": "application_limit_db_ext",
+      "value": "限制打开数据库后缀"
+    },
+    {
+      "name": "application_limit_db_ext_tips",
+      "value": "仅能选择.kdbx结尾的数据库,取消不限制"
+    },
+    {
+      "name": "Settings_database_not_value",
+      "value": "请输入必填项"
+    },
+    {
+      "name": "about_check_update",
+      "value": "检查更新"
+    },
+    {
+      "name": "About_app_later_version_not_exist",
+      "value": "已是最新版本"
+    },
+    {
+      "name": "application_sync_data",
+      "value": "跨设备同步设置"
+    },
+    {
+      "name": "application_sync_data_tips",
+      "value": "同一个华为账号，不同设备之间同步应用配置信息"
+    },
+    {
+      "name": "Permission_DISTRIBUTED_DATASYNC_reason",
+      "value": "跨设备同步用户首选项"
+    },
+    {
+      "name": "application_manual_sync",
+      "value": "手动同步"
+    },
+    {
+      "name": "application_manual_sync_tips",
+      "value": "手动触发一次全量数据同步"
+    },
+    {
+      "name": "application_sync_button",
+      "value": "同步"
+    },
+    {
+      "name": "application_sync_loading",
+      "value": "正在同步数据..."
+    },
+    {
+      "name": "application_sync_complete",
+      "value": "同步完成"
+    },
+    {
+      "name": "application_holding_hand",
+      "value": "启用智感握姿"
+    },
+    {
+      "name": "application_holding_hand_tips",
+      "value": "启用时首页面按钮会跟随握姿自动调整位置"
+    },
+    {
+      "name": "security_privacy_window",
+      "value": "启用隐私窗口"
+    },
+    {
+      "name": "security_privacy_window_tips",
+      "value": "启用窗口将禁止截屏和录屏"
+    },
+    {
+      "name": "ftp_protocol",
+      "value": "协议"
+    },
+    {
+      "name": "ftp_secure_type_none",
+      "value": "无加密(FTP)"
+    },
+    {
+      "name": "ftp_secure_type_explicit",
+      "value": "显示加密(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "ftp_secure_type_implicit",
+      "value": "隐式加密(FTP over TLS,FTPS)"
+    },
+    {
+      "name": "onedrive_authenticating",
+      "value": "身份验证中..."
+    },
+    {
+      "name": "onedrive_authentication_successful",
+      "value": "身份验证成功"
+    },
+    {
+      "name": "onedrive_login_successful",
+      "value": "登录成功"
+    },
+    {
+      "name": "onedrive_authentication_failed",
+      "value": "身份验证失败"
+    },
+    {
+      "name": "onedrive_logged_in",
+      "value": "已登录"
+    },
+    {
+      "name": "onedrive_logout",
+      "value": "登出"
+    },
+    {
+      "name": "onedrive_login_prompt",
+      "value": "请登录OneDrive账号以访问您的文件"
+    },
+    {
+      "name": "onedrive_login_button",
+      "value": "登录OneDrive"
+    },
+    {
+      "name": "confirm_remove_record_tips",
+      "value": "是否移除该记录？"
+    },
+    {
+      "name": "confirm_clear_all_records_tips",
+      "value": "确认要清空所有记录吗？"
+    },
+    {
+      "name": "onedrive_select_file",
+      "value": "从OneDrive中选择文件"
+    },
+    {
+      "name": "onedrive_save_file",
+      "value": "保存文件到OneDrive中"
+    },
+    {
+      "name": "copy_username",
+      "value": "复制\n用户名"
+    },
+    {
+      "name": "copy_password",
+      "value": "复制\n密码"
+    },
+    {
+      "name": "copy_group_name",
+      "value": "复制\n分组名"
+    },
+    {
+      "name": "more_button_text",
+      "value": "更多"
+    },
+    {
+      "name": "favorite_button_text",
+      "value": "收藏"
+    },
+    {
+      "name": "unfavorite_button_text",
+      "value": "取消收藏"
+    },
+    {
+      "name": "pin_button_text",
+      "value": "置顶"
+    },
+    {
+      "name": "unpin_button_text",
+      "value": "取消置顶"
+    },
+    {
+      "name": "password_not_set",
+      "value": "数据库未设置主密码"
+    },
+    {
+      "name": "auth_canceled",
+      "value": "用户取消"
+    },
+    {
+      "name": "about_other_system",
+      "value": "其他系统"
+    },
+    {
+      "name": "only_use_local_cache",
+      "value": "仅使用本地缓存"
+    },
+    {
+      "name": "cache_file_not_found",
+      "value": "缓存文件不存在"
+    },
+    {
+      "name": "push_to_remote_failed",
+      "value": "推送到远端失败：%s"
+    },
+    {
+      "name": "application_enable_local_cache",
+      "value": "启用本地缓存"
+    },
+    {
+      "name": "application_enable_local_cache_tips",
+      "value": "禁用将仅使用远端数据库，不在本地缓存"
+    },
+    {
+      "name": "please_refresh_data_first",
+      "value": "请先刷新"
+    },
+    {
+      "name": "dialog_delete_confirm_message_in_recycle_bin",
+      "value": "您确定彻底删除吗？"
+    },
+    {
+      "name": "cache_read_only",
+      "value": "请勿修改"
+    },
+    {
+      "name": "key_file_required",
+      "value": "密钥文件不能为空"
+    },
+    {
+      "name": "crash_log_title",
+      "value": "崩溃日志"
+    },
+    {
+      "name": "template_selector_title",
+      "value": "选择模板"
+    },
+    {
+      "name": "template_search_placeholder",
+      "value": "搜索模板"
+    },
+    {
+      "name": "template_preset",
+      "value": "预置模板"
+    },
+    {
+      "name": "template_user",
+      "value": "用户模板"
+    },
+    {
+      "name": "template_empty",
+      "value": "暂无模板"
+    },
+    {
+      "name": "template_from_template",
+      "value": "从模板创建"
+    },
+    {
+      "name": "template_applied",
+      "value": "模板已应用"
+    },
+    {
+      "name": "template_save_as",
+      "value": "存模板"
+    },
+    {
+      "name": "template_save_as_title",
+      "value": "保存为模板"
+    },
+    {
+      "name": "template_save_as_message",
+      "value": "确定将\"%s\"保存为模板吗？"
+    },
+    {
+      "name": "template_save_success",
+      "value": "模板保存成功"
+    },
+    {
+      "name": "template_save_failed",
+      "value": "模板保存失败"
+    },
+    {
+      "name": "template_only_entry",
+      "value": "只有条目可以保存为模板"
+    },
+    {
+      "name": "template_user_badge",
+      "value": "用户"
+    },
+    {
+      "name": "template_general",
+      "value": "通用账户"
+    },
+    {
+      "name": "template_website",
+      "value": "网站登录"
+    },
+    {
+      "name": "template_email",
+      "value": "邮箱账户"
+    },
+    {
+      "name": "template_id_card",
+      "value": "身份证"
+    },
+    {
+      "name": "template_passport",
+      "value": "护照"
+    },
+    {
+      "name": "template_driver_license",
+      "value": "驾驶证"
+    },
+    {
+      "name": "template_social_security",
+      "value": "社保卡"
+    },
+    {
+      "name": "template_bank_card",
+      "value": "银行卡"
+    },
+    {
+      "name": "template_credit_card",
+      "value": "信用卡"
+    },
+    {
+      "name": "template_membership",
+      "value": "会员卡"
+    },
+    {
+      "name": "template_crypto_wallet",
+      "value": "加密货币钱包"
+    },
+    {
+      "name": "template_wifi",
+      "value": "WiFi网络"
+    },
+    {
+      "name": "template_vpn",
+      "value": "VPN连接"
+    },
+    {
+      "name": "template_ftp",
+      "value": "FTP账户"
+    },
+    {
+      "name": "template_remote_desktop",
+      "value": "远程桌面"
+    },
+    {
+      "name": "template_router",
+      "value": "路由器"
+    },
+    {
+      "name": "template_ssh_key",
+      "value": "SSH密钥"
+    },
+    {
+      "name": "template_database",
+      "value": "数据库"
+    },
+    {
+      "name": "template_server",
+      "value": "服务器"
+    },
+    {
+      "name": "template_api_key",
+      "value": "API密钥"
+    },
+    {
+      "name": "template_software_license",
+      "value": "软件许可证"
+    },
+    {
+      "name": "template_digital_signature",
+      "value": "电子签名"
+    },
+    {
+      "name": "template_git_repository",
+      "value": "Git仓库"
+    },
+    {
+      "name": "template_security_question",
+      "value": "安全问题"
+    },
+    {
+      "name": "template_access_card",
+      "value": "门禁卡"
+    },
+    {
+      "name": "template_desc_general",
+      "value": "标准的用户名/密码账户"
+    },
+    {
+      "name": "template_desc_website",
+      "value": "网站账户登录信息"
+    },
+    {
+      "name": "template_desc_email",
+      "value": "电子邮件账户信息"
+    },
+    {
+      "name": "template_desc_id_card",
+      "value": "中国居民身份证信息"
+    },
+    {
+      "name": "template_desc_passport",
+      "value": "护照信息"
+    },
+    {
+      "name": "template_desc_driver_license",
+      "value": "机动车驾驶证信息"
+    },
+    {
+      "name": "template_desc_social_security",
+      "value": "社会保障卡信息"
+    },
+    {
+      "name": "template_desc_bank_card",
+      "value": "银行借记卡信息"
+    },
+    {
+      "name": "template_desc_credit_card",
+      "value": "信用卡信息"
+    },
+    {
+      "name": "template_desc_membership",
+      "value": "会员卡/积分卡信息"
+    },
+    {
+      "name": "template_desc_crypto_wallet",
+      "value": "加密货币钱包信息"
+    },
+    {
+      "name": "template_desc_wifi",
+      "value": "WiFi网络信息"
+    },
+    {
+      "name": "template_desc_vpn",
+      "value": "VPN连接信息"
+    },
+    {
+      "name": "template_desc_ftp",
+      "value": "FTP/SFTP连接信息"
+    },
+    {
+      "name": "template_desc_remote_desktop",
+      "value": "远程桌面连接信息"
+    },
+    {
+      "name": "template_desc_router",
+      "value": "路由器管理信息"
+    },
+    {
+      "name": "template_desc_ssh_key",
+      "value": "SSH密钥登录信息"
+    },
+    {
+      "name": "template_desc_database",
+      "value": "数据库连接信息"
+    },
+    {
+      "name": "template_desc_server",
+      "value": "服务器登录信息"
+    },
+    {
+      "name": "template_desc_api_key",
+      "value": "API访问密钥信息"
+    },
+    {
+      "name": "template_desc_software_license",
+      "value": "软件许可证密钥"
+    },
+    {
+      "name": "template_desc_digital_signature",
+      "value": "数字证书和签名信息"
+    },
+    {
+      "name": "template_desc_git_repository",
+      "value": "Git仓库访问信息"
+    },
+    {
+      "name": "template_desc_security_question",
+      "value": "安全问题及答案"
+    },
+    {
+      "name": "template_desc_access_card",
+      "value": "门禁卡信息"
+    },
+    {
+      "name": "template_field_name",
+      "value": "姓名"
+    },
+    {
+      "name": "template_field_gender",
+      "value": "性别"
+    },
+    {
+      "name": "template_field_birth_date",
+      "value": "出生日期"
+    },
+    {
+      "name": "template_field_address",
+      "value": "住址"
+    },
+    {
+      "name": "template_field_expiry_date",
+      "value": "有效期至"
+    },
+    {
+      "name": "template_field_port",
+      "value": "端口"
+    },
+    {
+      "name": "template_field_protocol",
+      "value": "协议"
+    },
+    {
+      "name": "template_field_private_key",
+      "value": "私钥"
+    },
+    {
+      "name": "template_field_host",
+      "value": "主机"
+    },
+    {
+      "name": "template_field_smtp_server",
+      "value": "SMTP服务器"
+    },
+    {
+      "name": "template_field_smtp_port",
+      "value": "SMTP端口"
+    },
+    {
+      "name": "template_field_imap_server",
+      "value": "IMAP服务器"
+    },
+    {
+      "name": "template_field_imap_port",
+      "value": "IMAP端口"
+    },
+    {
+      "name": "template_field_id_number",
+      "value": "身份证号"
+    },
+    {
+      "name": "template_field_ethnicity",
+      "value": "民族"
+    },
+    {
+      "name": "template_field_passport_number",
+      "value": "护照号码"
+    },
+    {
+      "name": "template_field_nationality",
+      "value": "国籍"
+    },
+    {
+      "name": "template_field_issue_place",
+      "value": "签发地"
+    },
+    {
+      "name": "template_field_issue_date",
+      "value": "签发日期"
+    },
+    {
+      "name": "template_field_driver_license_number",
+      "value": "驾驶证号"
+    },
+    {
+      "name": "template_field_vehicle_class",
+      "value": "准驾车型"
+    },
+    {
+      "name": "template_field_first_issue_date",
+      "value": "初次领证日期"
+    },
+    {
+      "name": "template_field_valid_from",
+      "value": "有效期起始"
+    },
+    {
+      "name": "template_field_social_security_number",
+      "value": "社保卡号"
+    },
+    {
+      "name": "template_field_social_security_password",
+      "value": "社保密码"
+    },
+    {
+      "name": "template_field_issue_location",
+      "value": "发卡地"
+    },
+    {
+      "name": "template_field_bank_card_number",
+      "value": "银行卡号"
+    },
+    {
+      "name": "template_field_card_holder",
+      "value": "持卡人"
+    },
+    {
+      "name": "template_field_bank_name",
+      "value": "银行名称"
+    },
+    {
+      "name": "template_field_card_type",
+      "value": "卡类型"
+    },
+    {
+      "name": "template_field_valid_thru",
+      "value": "有效期"
+    },
+    {
+      "name": "template_field_cvv",
+      "value": "CVV"
+    },
+    {
+      "name": "template_field_withdrawal_password",
+      "value": "取款密码"
+    },
+    {
+      "name": "template_field_opening_bank",
+      "value": "开户行"
+    },
+    {
+      "name": "template_field_credit_card_number",
+      "value": "信用卡号"
+    },
+    {
+      "name": "template_field_issuing_bank",
+      "value": "发卡银行"
+    },
+    {
+      "name": "template_field_card_network",
+      "value": "卡组织"
+    },
+    {
+      "name": "template_field_query_password",
+      "value": "查询密码"
+    },
+    {
+      "name": "template_field_transaction_password",
+      "value": "交易密码"
+    },
+    {
+      "name": "template_field_credit_limit",
+      "value": "信用额度"
+    },
+    {
+      "name": "template_field_billing_day",
+      "value": "账单日"
+    },
+    {
+      "name": "template_field_payment_day",
+      "value": "还款日"
+    },
+    {
+      "name": "template_field_membership_number",
+      "value": "会员号"
+    },
+    {
+      "name": "template_field_membership_name",
+      "value": "会员名称"
+    },
+    {
+      "name": "template_field_membership_level",
+      "value": "会员等级"
+    },
+    {
+      "name": "template_field_points",
+      "value": "积分"
+    },
+    {
+      "name": "template_field_membership_password",
+      "value": "会员密码"
+    },
+    {
+      "name": "template_field_wallet_name",
+      "value": "钱包名称"
+    },
+    {
+      "name": "template_field_chain_type",
+      "value": "链类型"
+    },
+    {
+      "name": "template_field_wallet_address",
+      "value": "钱包地址"
+    },
+    {
+      "name": "template_field_mnemonic",
+      "value": "助记词"
+    },
+    {
+      "name": "template_field_keystore_password",
+      "value": "Keystore密码"
+    },
+    {
+      "name": "template_field_ssid",
+      "value": "SSID"
+    },
+    {
+      "name": "template_field_security_type",
+      "value": "安全类型"
+    },
+    {
+      "name": "template_field_frequency",
+      "value": "频段"
+    },
+    {
+      "name": "template_field_hidden_network",
+      "value": "隐藏网络"
+    },
+    {
+      "name": "template_field_server_address",
+      "value": "服务器地址"
+    },
+    {
+      "name": "template_field_encryption",
+      "value": "加密方式"
+    },
+    {
+      "name": "template_field_ca_certificate",
+      "value": "CA证书"
+    },
+    {
+      "name": "template_field_client_certificate",
+      "value": "客户端证书"
+    },
+    {
+      "name": "template_field_encoding",
+      "value": "编码"
+    },
+    {
+      "name": "template_field_host_address",
+      "value": "主机地址"
+    },
+    {
+      "name": "template_field_domain",
+      "value": "域名"
+    },
+    {
+      "name": "template_field_admin_address",
+      "value": "管理地址"
+    },
+    {
+      "name": "template_field_wifi_password",
+      "value": "WiFi密码"
+    },
+    {
+      "name": "template_field_admin_password",
+      "value": "管理员密码"
+    },
+    {
+      "name": "template_field_public_key",
+      "value": "公钥"
+    },
+    {
+      "name": "template_field_key_passphrase",
+      "value": "密钥密码"
+    },
+    {
+      "name": "template_field_db_type",
+      "value": "数据库类型"
+    },
+    {
+      "name": "template_field_db_name",
+      "value": "数据库名"
+    },
+    {
+      "name": "template_field_charset",
+      "value": "字符集"
+    },
+    {
+      "name": "template_field_connection_string",
+      "value": "连接字符串"
+    },
+    {
+      "name": "template_field_ip_address",
+      "value": "IP地址"
+    },
+    {
+      "name": "template_field_ssh_port",
+      "value": "SSH端口"
+    },
+    {
+      "name": "template_field_os",
+      "value": "操作系统"
+    },
+    {
+      "name": "template_field_provider",
+      "value": "服务商"
+    },
+    {
+      "name": "template_field_api_key",
+      "value": "API Key"
+    },
+    {
+      "name": "template_field_api_secret",
+      "value": "API Secret"
+    },
+    {
+      "name": "template_field_endpoint_url",
+      "value": "端点URL"
+    },
+    {
+      "name": "template_field_platform",
+      "value": "所属平台"
+    },
+    {
+      "name": "template_field_scope",
+      "value": "权限范围"
+    },
+    {
+      "name": "template_field_license_key",
+      "value": "许可证密钥"
+    },
+    {
+      "name": "template_field_software_name",
+      "value": "软件名称"
+    },
+    {
+      "name": "template_field_purchase_email",
+      "value": "购买邮箱"
+    },
+    {
+      "name": "template_field_purchase_date",
+      "value": "购买日期"
+    },
+    {
+      "name": "template_field_license_type",
+      "value": "授权类型"
+    },
+    {
+      "name": "template_field_device_count",
+      "value": "授权设备数"
+    },
+    {
+      "name": "template_field_certificate_name",
+      "value": "证书名称"
+    },
+    {
+      "name": "template_field_certificate_content",
+      "value": "证书内容"
+    },
+    {
+      "name": "template_field_private_key_password",
+      "value": "私钥密码"
+    },
+    {
+      "name": "template_field_issuer",
+      "value": "颁发机构"
+    },
+    {
+      "name": "template_field_access_token",
+      "value": "访问令牌"
+    },
+    {
+      "name": "template_field_ssh_private_key",
+      "value": "SSH私钥"
+    },
+    {
+      "name": "template_field_git_platform",
+      "value": "平台"
+    },
+    {
+      "name": "template_field_default_branch",
+      "value": "默认分支"
+    },
+    {
+      "name": "template_field_question1",
+      "value": "问题1"
+    },
+    {
+      "name": "template_field_answer1",
+      "value": "答案1"
+    },
+    {
+      "name": "template_field_question2",
+      "value": "问题2"
+    },
+    {
+      "name": "template_field_answer2",
+      "value": "答案2"
+    },
+    {
+      "name": "template_field_question3",
+      "value": "问题3"
+    },
+    {
+      "name": "template_field_answer3",
+      "value": "答案3"
+    },
+    {
+      "name": "template_field_card_number",
+      "value": "卡号"
+    },
+    {
+      "name": "template_field_community_company",
+      "value": "所属小区/公司"
+    },
+    {
+      "name": "template_field_holder",
+      "value": "持有人"
+    },
+    {
+      "name": "template_placeholder_id_card",
+      "value": "18位身份证号码"
+    },
+    {
+      "name": "template_placeholder_gender",
+      "value": "男/女"
+    },
+    {
+      "name": "template_placeholder_ethnicity",
+      "value": "汉族"
+    },
+    {
+      "name": "template_placeholder_date",
+      "value": "YYYY-MM-DD"
+    },
+    {
+      "name": "template_placeholder_vehicle_class",
+      "value": "C1/C2/B2等"
+    },
+    {
+      "name": "template_placeholder_bank_card_number",
+      "value": "16-19位卡号"
+    },
+    {
+      "name": "template_placeholder_credit_card_number",
+      "value": "16位卡号"
+    },
+    {
+      "name": "template_placeholder_card_type",
+      "value": "借记卡/储蓄卡"
+    },
+    {
+      "name": "template_placeholder_card_network",
+      "value": "Visa/Mastercard/银联等"
+    },
+    {
+      "name": "template_placeholder_expiry",
+      "value": "MM/YY"
+    },
+    {
+      "name": "template_placeholder_cvv",
+      "value": "卡背面3位数字"
+    },
+    {
+      "name": "template_placeholder_billing_day",
+      "value": "每月几号"
+    },
+    {
+      "name": "template_placeholder_payment_day",
+      "value": "每月几号"
+    },
+    {
+      "name": "template_placeholder_chain_type",
+      "value": "BTC/ETH/TRON等"
+    },
+    {
+      "name": "template_placeholder_keep_safe",
+      "value": "请妥善保管"
+    },
+    {
+      "name": "template_placeholder_ssid",
+      "value": "WiFi名称"
+    },
+    {
+      "name": "template_placeholder_security_type",
+      "value": "WPA/WPA2/WPA3/WEP"
+    },
+    {
+      "name": "template_placeholder_frequency",
+      "value": "2.4GHz/5GHz"
+    },
+    {
+      "name": "template_placeholder_hidden_network",
+      "value": "是/否"
+    },
+    {
+      "name": "template_placeholder_vpn_protocol",
+      "value": "OpenVPN/WireGuard/L2TP等"
+    },
+    {
+      "name": "template_placeholder_ftp_protocol",
+      "value": "FTP/SFTP"
+    },
+    {
+      "name": "template_placeholder_rdp_protocol",
+      "value": "RDP/VNC/SSH"
+    },
+    {
+      "name": "template_placeholder_pem_key",
+      "value": "PEM格式私钥"
+    },
+    {
+      "name": "template_placeholder_pem_format",
+      "value": "PEM格式"
+    },
+    {
+      "name": "template_placeholder_public_key",
+      "value": "可选，用于参考"
+    },
+    {
+      "name": "template_placeholder_key_passphrase",
+      "value": "如有"
+    },
+    {
+      "name": "template_placeholder_db_type",
+      "value": "MySQL/PostgreSQL/Oracle/SQL Server/MongoDB等"
+    },
+    {
+      "name": "template_placeholder_os",
+      "value": "CentOS/Ubuntu/Windows等"
+    },
+    {
+      "name": "template_placeholder_provider",
+      "value": "阿里云/腾讯云/AWS等"
+    },
+    {
+      "name": "template_placeholder_license_type",
+      "value": "永久/订阅/教育版等"
+    },
+    {
+      "name": "template_placeholder_git_platform",
+      "value": "GitHub/GitLab/Gitee等"
+    },
+    {
+      "name": "template_user_description",
+      "value": "用户自定义模板"
+    }
+  ]
+}

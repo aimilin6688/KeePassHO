@@ -1739,6 +1739,806 @@
     {
       "name": "crash_log_title",
       "value": "Crash Logs"
+    },
+    {
+      "name": "template_selector_title",
+      "value": "Select Template"
+    },
+    {
+      "name": "template_search_placeholder",
+      "value": "Search templates"
+    },
+    {
+      "name": "template_preset",
+      "value": "Preset Templates"
+    },
+    {
+      "name": "template_user",
+      "value": "User Templates"
+    },
+    {
+      "name": "template_empty",
+      "value": "No templates"
+    },
+    {
+      "name": "template_from_template",
+      "value": "Create from Template"
+    },
+    {
+      "name": "template_applied",
+      "value": "Template applied"
+    },
+    {
+      "name": "template_save_as",
+      "value": "Save as Template"
+    },
+    {
+      "name": "template_save_as_title",
+      "value": "Save as Template"
+    },
+    {
+      "name": "template_save_as_message",
+      "value": "Save \"%s\" as template?"
+    },
+    {
+      "name": "template_save_success",
+      "value": "Template saved"
+    },
+    {
+      "name": "template_save_failed",
+      "value": "Failed to save template"
+    },
+    {
+      "name": "template_only_entry",
+      "value": "Only entries can be saved as template"
+    },
+    {
+      "name": "template_user_badge",
+      "value": "User"
+    },
+    {
+      "name": "template_general",
+      "value": "General Account"
+    },
+    {
+      "name": "template_website",
+      "value": "Website Login"
+    },
+    {
+      "name": "template_email",
+      "value": "Email Account"
+    },
+    {
+      "name": "template_id_card",
+      "value": "ID Card"
+    },
+    {
+      "name": "template_passport",
+      "value": "Passport"
+    },
+    {
+      "name": "template_driver_license",
+      "value": "Driver License"
+    },
+    {
+      "name": "template_social_security",
+      "value": "Social Security Card"
+    },
+    {
+      "name": "template_bank_card",
+      "value": "Bank Card"
+    },
+    {
+      "name": "template_credit_card",
+      "value": "Credit Card"
+    },
+    {
+      "name": "template_membership",
+      "value": "Membership Card"
+    },
+    {
+      "name": "template_crypto_wallet",
+      "value": "Crypto Wallet"
+    },
+    {
+      "name": "template_wifi",
+      "value": "WiFi Network"
+    },
+    {
+      "name": "template_vpn",
+      "value": "VPN Connection"
+    },
+    {
+      "name": "template_ftp",
+      "value": "FTP Account"
+    },
+    {
+      "name": "template_remote_desktop",
+      "value": "Remote Desktop"
+    },
+    {
+      "name": "template_router",
+      "value": "Router"
+    },
+    {
+      "name": "template_ssh_key",
+      "value": "SSH Key"
+    },
+    {
+      "name": "template_database",
+      "value": "Database"
+    },
+    {
+      "name": "template_server",
+      "value": "Server"
+    },
+    {
+      "name": "template_api_key",
+      "value": "API Key"
+    },
+    {
+      "name": "template_software_license",
+      "value": "Software License"
+    },
+    {
+      "name": "template_digital_signature",
+      "value": "Digital Signature"
+    },
+    {
+      "name": "template_git_repository",
+      "value": "Git Repository"
+    },
+    {
+      "name": "template_security_question",
+      "value": "Security Question"
+    },
+    {
+      "name": "template_access_card",
+      "value": "Access Card"
+    },
+    {
+      "name": "template_desc_general",
+      "value": "Standard username/password account"
+    },
+    {
+      "name": "template_desc_website",
+      "value": "Website account login information"
+    },
+    {
+      "name": "template_desc_email",
+      "value": "Email account information"
+    },
+    {
+      "name": "template_desc_id_card",
+      "value": "Chinese resident ID card information"
+    },
+    {
+      "name": "template_desc_passport",
+      "value": "Passport information"
+    },
+    {
+      "name": "template_desc_driver_license",
+      "value": "Driver license information"
+    },
+    {
+      "name": "template_desc_social_security",
+      "value": "Social security card information"
+    },
+    {
+      "name": "template_desc_bank_card",
+      "value": "Bank debit card information"
+    },
+    {
+      "name": "template_desc_credit_card",
+      "value": "Credit card information"
+    },
+    {
+      "name": "template_desc_membership",
+      "value": "Membership/loyalty card information"
+    },
+    {
+      "name": "template_desc_crypto_wallet",
+      "value": "Cryptocurrency wallet information"
+    },
+    {
+      "name": "template_desc_wifi",
+      "value": "WiFi network information"
+    },
+    {
+      "name": "template_desc_vpn",
+      "value": "VPN connection information"
+    },
+    {
+      "name": "template_desc_ftp",
+      "value": "FTP/SFTP connection information"
+    },
+    {
+      "name": "template_desc_remote_desktop",
+      "value": "Remote desktop connection information"
+    },
+    {
+      "name": "template_desc_router",
+      "value": "Router management information"
+    },
+    {
+      "name": "template_desc_ssh_key",
+      "value": "SSH key login information"
+    },
+    {
+      "name": "template_desc_database",
+      "value": "Database connection information"
+    },
+    {
+      "name": "template_desc_server",
+      "value": "Server login information"
+    },
+    {
+      "name": "template_desc_api_key",
+      "value": "API access key information"
+    },
+    {
+      "name": "template_desc_software_license",
+      "value": "Software license key"
+    },
+    {
+      "name": "template_desc_digital_signature",
+      "value": "Digital certificate and signature information"
+    },
+    {
+      "name": "template_desc_git_repository",
+      "value": "Git repository access information"
+    },
+    {
+      "name": "template_desc_security_question",
+      "value": "Security questions and answers"
+    },
+    {
+      "name": "template_desc_access_card",
+      "value": "Access card information"
+    },
+    {
+      "name": "template_field_name",
+      "value": "Name"
+    },
+    {
+      "name": "template_field_gender",
+      "value": "Gender"
+    },
+    {
+      "name": "template_field_birth_date",
+      "value": "Birth Date"
+    },
+    {
+      "name": "template_field_address",
+      "value": "Address"
+    },
+    {
+      "name": "template_field_expiry_date",
+      "value": "Valid Until"
+    },
+    {
+      "name": "template_field_port",
+      "value": "Port"
+    },
+    {
+      "name": "template_field_protocol",
+      "value": "Protocol"
+    },
+    {
+      "name": "template_field_private_key",
+      "value": "Private Key"
+    },
+    {
+      "name": "template_field_host",
+      "value": "Host"
+    },
+    {
+      "name": "template_field_smtp_server",
+      "value": "SMTP Server"
+    },
+    {
+      "name": "template_field_smtp_port",
+      "value": "SMTP Port"
+    },
+    {
+      "name": "template_field_imap_server",
+      "value": "IMAP Server"
+    },
+    {
+      "name": "template_field_imap_port",
+      "value": "IMAP Port"
+    },
+    {
+      "name": "template_field_id_number",
+      "value": "ID Number"
+    },
+    {
+      "name": "template_field_ethnicity",
+      "value": "Ethnicity"
+    },
+    {
+      "name": "template_field_passport_number",
+      "value": "Passport Number"
+    },
+    {
+      "name": "template_field_nationality",
+      "value": "Nationality"
+    },
+    {
+      "name": "template_field_issue_place",
+      "value": "Issue Place"
+    },
+    {
+      "name": "template_field_issue_date",
+      "value": "Issue Date"
+    },
+    {
+      "name": "template_field_driver_license_number",
+      "value": "Driver License Number"
+    },
+    {
+      "name": "template_field_vehicle_class",
+      "value": "Vehicle Class"
+    },
+    {
+      "name": "template_field_first_issue_date",
+      "value": "First Issue Date"
+    },
+    {
+      "name": "template_field_valid_from",
+      "value": "Valid From"
+    },
+    {
+      "name": "template_field_social_security_number",
+      "value": "Social Security Number"
+    },
+    {
+      "name": "template_field_social_security_password",
+      "value": "Social Security Password"
+    },
+    {
+      "name": "template_field_issue_location",
+      "value": "Issue Location"
+    },
+    {
+      "name": "template_field_bank_card_number",
+      "value": "Bank Card Number"
+    },
+    {
+      "name": "template_field_card_holder",
+      "value": "Card Holder"
+    },
+    {
+      "name": "template_field_bank_name",
+      "value": "Bank Name"
+    },
+    {
+      "name": "template_field_card_type",
+      "value": "Card Type"
+    },
+    {
+      "name": "template_field_valid_thru",
+      "value": "Valid Thru"
+    },
+    {
+      "name": "template_field_cvv",
+      "value": "CVV"
+    },
+    {
+      "name": "template_field_withdrawal_password",
+      "value": "Withdrawal Password"
+    },
+    {
+      "name": "template_field_opening_bank",
+      "value": "Opening Bank"
+    },
+    {
+      "name": "template_field_credit_card_number",
+      "value": "Credit Card Number"
+    },
+    {
+      "name": "template_field_issuing_bank",
+      "value": "Issuing Bank"
+    },
+    {
+      "name": "template_field_card_network",
+      "value": "Card Network"
+    },
+    {
+      "name": "template_field_query_password",
+      "value": "Query Password"
+    },
+    {
+      "name": "template_field_transaction_password",
+      "value": "Transaction Password"
+    },
+    {
+      "name": "template_field_credit_limit",
+      "value": "Credit Limit"
+    },
+    {
+      "name": "template_field_billing_day",
+      "value": "Billing Day"
+    },
+    {
+      "name": "template_field_payment_day",
+      "value": "Payment Day"
+    },
+    {
+      "name": "template_field_membership_number",
+      "value": "Membership Number"
+    },
+    {
+      "name": "template_field_membership_name",
+      "value": "Membership Name"
+    },
+    {
+      "name": "template_field_membership_level",
+      "value": "Membership Level"
+    },
+    {
+      "name": "template_field_points",
+      "value": "Points"
+    },
+    {
+      "name": "template_field_membership_password",
+      "value": "Membership Password"
+    },
+    {
+      "name": "template_field_wallet_name",
+      "value": "Wallet Name"
+    },
+    {
+      "name": "template_field_chain_type",
+      "value": "Chain Type"
+    },
+    {
+      "name": "template_field_wallet_address",
+      "value": "Wallet Address"
+    },
+    {
+      "name": "template_field_mnemonic",
+      "value": "Mnemonic"
+    },
+    {
+      "name": "template_field_keystore_password",
+      "value": "Keystore Password"
+    },
+    {
+      "name": "template_field_ssid",
+      "value": "SSID"
+    },
+    {
+      "name": "template_field_security_type",
+      "value": "Security Type"
+    },
+    {
+      "name": "template_field_frequency",
+      "value": "Frequency"
+    },
+    {
+      "name": "template_field_hidden_network",
+      "value": "Hidden Network"
+    },
+    {
+      "name": "template_field_server_address",
+      "value": "Server Address"
+    },
+    {
+      "name": "template_field_encryption",
+      "value": "Encryption"
+    },
+    {
+      "name": "template_field_ca_certificate",
+      "value": "CA Certificate"
+    },
+    {
+      "name": "template_field_client_certificate",
+      "value": "Client Certificate"
+    },
+    {
+      "name": "template_field_encoding",
+      "value": "Encoding"
+    },
+    {
+      "name": "template_field_host_address",
+      "value": "Host Address"
+    },
+    {
+      "name": "template_field_domain",
+      "value": "Domain"
+    },
+    {
+      "name": "template_field_admin_address",
+      "value": "Admin Address"
+    },
+    {
+      "name": "template_field_wifi_password",
+      "value": "WiFi Password"
+    },
+    {
+      "name": "template_field_admin_password",
+      "value": "Admin Password"
+    },
+    {
+      "name": "template_field_public_key",
+      "value": "Public Key"
+    },
+    {
+      "name": "template_field_key_passphrase",
+      "value": "Key Passphrase"
+    },
+    {
+      "name": "template_field_db_type",
+      "value": "Database Type"
+    },
+    {
+      "name": "template_field_db_name",
+      "value": "Database Name"
+    },
+    {
+      "name": "template_field_charset",
+      "value": "Charset"
+    },
+    {
+      "name": "template_field_connection_string",
+      "value": "Connection String"
+    },
+    {
+      "name": "template_field_ip_address",
+      "value": "IP Address"
+    },
+    {
+      "name": "template_field_ssh_port",
+      "value": "SSH Port"
+    },
+    {
+      "name": "template_field_os",
+      "value": "Operating System"
+    },
+    {
+      "name": "template_field_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "template_field_api_key",
+      "value": "API Key"
+    },
+    {
+      "name": "template_field_api_secret",
+      "value": "API Secret"
+    },
+    {
+      "name": "template_field_endpoint_url",
+      "value": "Endpoint URL"
+    },
+    {
+      "name": "template_field_platform",
+      "value": "Platform"
+    },
+    {
+      "name": "template_field_scope",
+      "value": "Scope"
+    },
+    {
+      "name": "template_field_license_key",
+      "value": "License Key"
+    },
+    {
+      "name": "template_field_software_name",
+      "value": "Software Name"
+    },
+    {
+      "name": "template_field_purchase_email",
+      "value": "Purchase Email"
+    },
+    {
+      "name": "template_field_purchase_date",
+      "value": "Purchase Date"
+    },
+    {
+      "name": "template_field_license_type",
+      "value": "License Type"
+    },
+    {
+      "name": "template_field_device_count",
+      "value": "Device Count"
+    },
+    {
+      "name": "template_field_certificate_name",
+      "value": "Certificate Name"
+    },
+    {
+      "name": "template_field_certificate_content",
+      "value": "Certificate Content"
+    },
+    {
+      "name": "template_field_private_key_password",
+      "value": "Private Key Password"
+    },
+    {
+      "name": "template_field_issuer",
+      "value": "Issuer"
+    },
+    {
+      "name": "template_field_access_token",
+      "value": "Access Token"
+    },
+    {
+      "name": "template_field_ssh_private_key",
+      "value": "SSH Private Key"
+    },
+    {
+      "name": "template_field_git_platform",
+      "value": "Platform"
+    },
+    {
+      "name": "template_field_default_branch",
+      "value": "Default Branch"
+    },
+    {
+      "name": "template_field_question1",
+      "value": "Question 1"
+    },
+    {
+      "name": "template_field_answer1",
+      "value": "Answer 1"
+    },
+    {
+      "name": "template_field_question2",
+      "value": "Question 2"
+    },
+    {
+      "name": "template_field_answer2",
+      "value": "Answer 2"
+    },
+    {
+      "name": "template_field_question3",
+      "value": "Question 3"
+    },
+    {
+      "name": "template_field_answer3",
+      "value": "Answer 3"
+    },
+    {
+      "name": "template_field_card_number",
+      "value": "Card Number"
+    },
+    {
+      "name": "template_field_community_company",
+      "value": "Community/Company"
+    },
+    {
+      "name": "template_field_holder",
+      "value": "Holder"
+    },
+    {
+      "name": "template_placeholder_id_card",
+      "value": "18-digit ID number"
+    },
+    {
+      "name": "template_placeholder_gender",
+      "value": "Male/Female"
+    },
+    {
+      "name": "template_placeholder_ethnicity",
+      "value": "Han"
+    },
+    {
+      "name": "template_placeholder_date",
+      "value": "YYYY-MM-DD"
+    },
+    {
+      "name": "template_placeholder_vehicle_class",
+      "value": "C1/C2/B2 etc"
+    },
+    {
+      "name": "template_placeholder_bank_card_number",
+      "value": "16-19 digit card number"
+    },
+    {
+      "name": "template_placeholder_credit_card_number",
+      "value": "16-digit card number"
+    },
+    {
+      "name": "template_placeholder_card_type",
+      "value": "Debit/Savings"
+    },
+    {
+      "name": "template_placeholder_card_network",
+      "value": "Visa/Mastercard/UnionPay etc"
+    },
+    {
+      "name": "template_placeholder_expiry",
+      "value": "MM/YY"
+    },
+    {
+      "name": "template_placeholder_cvv",
+      "value": "3 digits on back of card"
+    },
+    {
+      "name": "template_placeholder_billing_day",
+      "value": "Day of month"
+    },
+    {
+      "name": "template_placeholder_payment_day",
+      "value": "Day of month"
+    },
+    {
+      "name": "template_placeholder_chain_type",
+      "value": "BTC/ETH/TRON etc"
+    },
+    {
+      "name": "template_placeholder_keep_safe",
+      "value": "Please keep safe"
+    },
+    {
+      "name": "template_placeholder_ssid",
+      "value": "WiFi Name"
+    },
+    {
+      "name": "template_placeholder_security_type",
+      "value": "WPA/WPA2/WPA3/WEP"
+    },
+    {
+      "name": "template_placeholder_frequency",
+      "value": "2.4GHz/5GHz"
+    },
+    {
+      "name": "template_placeholder_hidden_network",
+      "value": "Yes/No"
+    },
+    {
+      "name": "template_placeholder_vpn_protocol",
+      "value": "OpenVPN/WireGuard/L2TP etc"
+    },
+    {
+      "name": "template_placeholder_ftp_protocol",
+      "value": "FTP/SFTP"
+    },
+    {
+      "name": "template_placeholder_rdp_protocol",
+      "value": "RDP/VNC/SSH"
+    },
+    {
+      "name": "template_placeholder_pem_key",
+      "value": "PEM format private key"
+    },
+    {
+      "name": "template_placeholder_pem_format",
+      "value": "PEM format"
+    },
+    {
+      "name": "template_placeholder_public_key",
+      "value": "Optional, for reference"
+    },
+    {
+      "name": "template_placeholder_key_passphrase",
+      "value": "If any"
+    },
+    {
+      "name": "template_placeholder_db_type",
+      "value": "MySQL/PostgreSQL/Oracle/SQL Server/MongoDB etc"
+    },
+    {
+      "name": "template_placeholder_os",
+      "value": "CentOS/Ubuntu/Windows etc"
+    },
+    {
+      "name": "template_placeholder_provider",
+      "value": "Alibaba/Tencent/AWS etc"
+    },
+    {
+      "name": "template_placeholder_license_type",
+      "value": "Perpetual/Subscription/Education etc"
+    },
+    {
+      "name": "template_placeholder_git_platform",
+      "value": "GitHub/GitLab/Gitee etc"
+    },
+    {
+      "name": "template_user_description",
+      "value": "User defined template"
     }
   ]
 }

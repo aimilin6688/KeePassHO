@@ -10,6 +10,9 @@ import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
+import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
+import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
+import { TemplateService } from '../services/template/TemplateService';
 import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
@@ -124,6 +127,20 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
+  // 模板选择对话框
+  private templateSelectorController: CustomDialogController = new CustomDialogController({
+    builder: TemplateSelectorDialog({
+      database: this.database,
+      showUserTemplates: true,
+      onTemplateSelected: (template: ITemplate) => {
+        this.applyTemplate(template);
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
+  private templateService: TemplateService = TemplateService.getInstance();
 
   aboutToAppear() {
     // 获取数据库信息
@@ -580,6 +597,77 @@ struct EntryEdit {
   }
 
   /**
+   * 打开模板选择器
+   */
+  private openTemplateSelector() {
+    this.templateSelectorController.open();
+  }
+
+  /**
+   * 应用模板到当前表单
+   * @param template 模板对象
+   */
+  private applyTemplate(template: ITemplate) {
+    // 获取模板的标准字段
+    const standardFields = template.standardFields;
+
+    // 应用标准字段（不覆盖已有内容）
+    if (standardFields) {
+      if (standardFields.title && !this.title) {
+        this.title = standardFields.title;
+      }
+      if (standardFields.username && !this.username) {
+        this.username = standardFields.username;
+      }
+      if (standardFields.password && !this.password) {
+        this.password = standardFields.password;
+      }
+      if (standardFields.url && !this.url) {
+        this.url = standardFields.url;
+      }
+      if (standardFields.notes && !this.notes) {
+        this.notes = standardFields.notes;
+      }
+    }
+
+    // 应用自定义字段
+    if (template.customFields && template.customFields.length > 0) {
+      for (const field of template.customFields) {
+        // 检查字段是否已存在
+        const existingField = this.customFields.find(f => f.key === field.key);
+        if (!existingField) {
+          this.customFields.push({
+            key: field.key,
+            value: field.value,
+            isProtected: field.isProtected
+          });
+          this.customFieldsVisibility.set(field.key, false);
+        }
+      }
+    }
+
+    // 应用图标
+    if (this.iconId === Icons.Key) {
+      const iconId = isPresetTemplate(template) ?
+        (template as IPresetTemplate).iconId :
+        (template as IUserTemplate).iconId;
+      if (typeof iconId === 'number') {
+        this.iconId = iconId;
+      }
+    }
+
+    // 应用标签
+    if (template.tags && template.tags.length > 0 && !this.tags) {
+      this.tags = template.tags.join(', ');
+    }
+
+    // 标记为已修改
+    this.checkEntryModified();
+
+    CommonUtils.showToast($r('app.string.template_applied'));
+  }
+
+  /**
    * 切换自定义字段的可见性状态
    * @param index 字段索引
    */
@@ -775,6 +863,30 @@ struct EntryEdit {
         // 表单内容
         Scroll() {
           Column() {
+
+            // 从模板创建按钮（仅新建模式显示）
+            if (!this.isEditMode) {
+              Button() {
+                Row() {
+                  Image($r('app.media.ic_add'))
+                    .width(18)
+                    .height(18)
+                    .fillColor($r('app.color.button_text'))
+                  Text($r('app.string.template_from_template'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.button_text'))
+                    .margin({ left: 6 })
+                }
+              }
+              .width('100%')
+              .height(44)
+              .borderRadius(8)
+              .backgroundColor($r('app.color.button_bg_blue'))
+              .margin({ top: 8, bottom: 8 })
+              .onClick(() => {
+                this.openTemplateSelector();
+              })
+            }
 
             // 标题
             Column() {
