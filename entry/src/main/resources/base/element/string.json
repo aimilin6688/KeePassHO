@@ -2623,6 +2623,34 @@
     {
       "name": "color_custom",
       "value": "Custom Color"
+    },
+    {
+      "name": "template_category_all",
+      "value": "All"
+    },
+    {
+      "name": "template_category_general",
+      "value": "General"
+    },
+    {
+      "name": "template_category_identity",
+      "value": "Identity"
+    },
+    {
+      "name": "template_category_finance",
+      "value": "Finance"
+    },
+    {
+      "name": "template_category_network",
+      "value": "Network"
+    },
+    {
+      "name": "template_category_development",
+      "value": "Development"
+    },
+    {
+      "name": "template_category_other",
+      "value": "Other"
     }
   ]
 }

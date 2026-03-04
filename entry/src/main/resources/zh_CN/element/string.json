@@ -2623,6 +2623,34 @@
     {
       "name": "color_custom",
       "value": "自定义颜色"
+    },
+    {
+      "name": "template_category_all",
+      "value": "全部"
+    },
+    {
+      "name": "template_category_general",
+      "value": "通用"
+    },
+    {
+      "name": "template_category_identity",
+      "value": "身份"
+    },
+    {
+      "name": "template_category_finance",
+      "value": "金融"
+    },
+    {
+      "name": "template_category_network",
+      "value": "网络"
+    },
+    {
+      "name": "template_category_development",
+      "value": "开发"
+    },
+    {
+      "name": "template_category_other",
+      "value": "其他"
     }
   ]
 }

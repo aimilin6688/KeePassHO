@@ -99,15 +99,15 @@ export struct TemplateSelectorDialog {
   /**
    * 获取分类名称
    */
-  private getCategoryName(category: TemplateCategory | 'all'): string {
-    const categoryNames: Record<string, string> = {
-      'all': '全部',
-      [TemplateCategory.GENERAL]: '通用',
-      [TemplateCategory.IDENTITY]: '身份',
-      [TemplateCategory.FINANCE]: '金融',
-      [TemplateCategory.NETWORK]: '网络',
-      [TemplateCategory.DEVELOPMENT]: '开发',
-      [TemplateCategory.OTHER]: '其他'
+  private getCategoryName(category: TemplateCategory | 'all'): ResourceStr {
+    const categoryNames: Record<string, ResourceStr> = {
+      'all': $r('app.string.template_category_all'),
+      [TemplateCategory.GENERAL]: $r('app.string.template_category_general'),
+      [TemplateCategory.IDENTITY]: $r('app.string.template_category_identity'),
+      [TemplateCategory.FINANCE]: $r('app.string.template_category_finance'),
+      [TemplateCategory.NETWORK]: $r('app.string.template_category_network'),
+      [TemplateCategory.DEVELOPMENT]: $r('app.string.template_category_development'),
+      [TemplateCategory.OTHER]: $r('app.string.template_category_other')
     };
     return categoryNames[category] || category;
   }
