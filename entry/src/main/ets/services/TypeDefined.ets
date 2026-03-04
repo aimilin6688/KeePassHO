@@ -390,26 +390,25 @@ export interface EntryParam {
  */
 export class MoveParam {
   private static instance: MoveParam | undefined = undefined;
-  groupId: string;
-  entryId?: string;
-  isMoving: boolean;
-  // 批量移动支持
+  // 要移动的条目ID列表
   entryIds: string[] = [];
+  // 要移动的分组ID列表
   groupIds: string[] = [];
+  // 源分组ID
   sourceGroupId: string = '';
 
-  constructor(groupId: string, entryId?: string) {
-    this.groupId = groupId;
-    this.entryId = entryId;
-    this.isMoving = true;
+  private constructor() {
     MoveParam.instance = this;
   }
 
   /**
-   * 创建批量移动参数
+   * 创建移动参数
+   * @param entryIds 要移动的条目ID列表
+   * @param groupIds 要移动的分组ID列表
+   * @param sourceGroupId 源分组ID
    */
-  public static createBatch(entryIds: string[], groupIds: string[], sourceGroupId: string): MoveParam {
-    const param = new MoveParam(sourceGroupId);
+  public static create(entryIds: string[], groupIds: string[], sourceGroupId: string): MoveParam {
+    const param = new MoveParam();
     param.entryIds = entryIds;
     param.groupIds = groupIds;
     param.sourceGroupId = sourceGroupId;
@@ -426,32 +425,27 @@ export class MoveParam {
 
   /**
    * 判断是否是需要移动的条目
-   * @param itemId
-   * @returns
+   * @param itemId 条目或分组ID
+   * @returns 是否需要移动
    */
   public isMoveItem(itemId: string): boolean {
-    // 单个移动
-    if (this.entryId === itemId) return true;
-    if (this.entryId === undefined && this.groupId === itemId) return true;
-    // 批量移动
     if (this.entryIds.includes(itemId)) return true;
     if (this.groupIds.includes(itemId)) return true;
     return false;
   }
 
   /**
-   * 是否是批量移动模式
+   * 是否包含分组移动
    */
-  get isBatchMode(): boolean {
-    return this.entryIds.length > 0 || this.groupIds.length > 0;
+  get hasGroupMove(): boolean {
+    return this.groupIds.length > 0;
   }
 
-  get isMoveGroup(): boolean {
-    return this.entryId === undefined && this.groupIds.length === 0;
-  }
-
-  get isMoveEntry(): boolean {
-    return this.entryId !== undefined || this.entryIds.length > 0;
+  /**
+   * 是否包含条目移动
+   */
+  get hasEntryMove(): boolean {
+    return this.entryIds.length > 0;
   }
 }
 
