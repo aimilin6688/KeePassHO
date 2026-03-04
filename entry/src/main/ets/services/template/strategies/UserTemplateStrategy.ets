@@ -119,7 +119,7 @@ export class UserTemplateStrategy implements ITemplateStrategy {
   /**
    * 将条目转换为用户模板对象
    */
-  private entryToTemplate(entry: KdbxEntry): IUserTemplate | null {
+  entryToTemplate(entry: KdbxEntry): IUserTemplate | null {
     try {
       const title = KdbxUtils.getValueString(entry.fields.get('Title')) || '未命名模板';
       const customFields: ITemplateField[] = [];
@@ -333,11 +333,19 @@ export class UserTemplateStrategy implements ITemplateStrategy {
   /**
    * 将普通条目转换为模板条目
    */
-  createTemplateFromEntry(entry: KdbxEntry, templateGroup: KdbxGroup): KdbxEntry {
-    // 创建新条目
-    const meta = FileService.getInstance().getDbFileParam().database.meta;
-    const templateEntry = KdbxEntry.create(meta, templateGroup);
-    
+  createTemplateFromEntry(entry: KdbxEntry, templateGroup: KdbxGroup, meta?: KdbxMeta): KdbxEntry {
+    // 创建新条目 - 优先使用传入的meta，否则从FileService获取
+    let entryMeta = meta;
+    if (!entryMeta) {
+      const dbParam = FileService.getInstance().getDbFileParam();
+      entryMeta = dbParam?.database?.meta;
+    }
+
+    const templateEntry = KdbxEntry.create(entryMeta, templateGroup);
+
+    // 将条目添加到分组的entries数组中
+    templateGroup.entries.push(templateEntry);
+
     // 复制所有字段
     const self = this;
     entry.fields.forEach((value, key) => {

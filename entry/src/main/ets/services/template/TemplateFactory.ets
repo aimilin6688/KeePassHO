@@ -2,7 +2,7 @@
  * 模板工厂
  * 使用工厂模式创建模板条目
  */
-import { KdbxEntry, KdbxGroup, Kdbx } from 'kdbxweb';
+import { KdbxEntry, KdbxGroup, Kdbx, KdbxMeta } from 'kdbxweb';
 import { ITemplate, IPresetTemplate, IUserTemplate, TemplateApplyOptions, DEFAULT_APPLY_OPTIONS } from './TemplateTypes';
 import { TemplateBuilder } from './TemplateBuilder';
 import { ITemplateStrategy } from './strategies/ITemplateStrategy';
@@ -187,10 +187,11 @@ export class TemplateFactory {
    * 从现有条目创建模板条目
    * @param sourceEntry 源条目
    * @param templateGroup 模板分组
+   * @param meta 数据库元数据
    * @returns 模板条目
    */
-  createTemplateFromEntry(sourceEntry: KdbxEntry, templateGroup: KdbxGroup): KdbxEntry {
-    return this.userStrategy.createTemplateFromEntry(sourceEntry, templateGroup);
+  createTemplateFromEntry(sourceEntry: KdbxEntry, templateGroup: KdbxGroup, meta?: KdbxMeta): KdbxEntry {
+    return this.userStrategy.createTemplateFromEntry(sourceEntry, templateGroup, meta);
   }
 
   /**

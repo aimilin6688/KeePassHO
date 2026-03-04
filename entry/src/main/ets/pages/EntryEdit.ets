@@ -10,9 +10,8 @@ import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
-import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
-import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { TemplateService } from '../services/template/TemplateService';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
@@ -121,19 +120,6 @@ struct EntryEdit {
           value: otpUrl,
           isProtected: true
         } as CustomField);
-      }
-    }),
-    alignment: DialogAlignment.Bottom,
-    customStyle: true,
-    autoCancel: false
-  });
-  // 模板选择对话框
-  private templateSelectorController: CustomDialogController = new CustomDialogController({
-    builder: TemplateSelectorDialog({
-      database: this.database,
-      showUserTemplates: true,
-      onTemplateSelected: (template: ITemplate) => {
-        this.applyTemplate(template);
       }
     }),
     alignment: DialogAlignment.Bottom,
@@ -597,77 +583,6 @@ struct EntryEdit {
   }
 
   /**
-   * 打开模板选择器
-   */
-  private openTemplateSelector() {
-    this.templateSelectorController.open();
-  }
-
-  /**
-   * 应用模板到当前表单
-   * @param template 模板对象
-   */
-  private applyTemplate(template: ITemplate) {
-    // 获取模板的标准字段
-    const standardFields = template.standardFields;
-
-    // 应用标准字段（不覆盖已有内容）
-    if (standardFields) {
-      if (standardFields.title && !this.title) {
-        this.title = standardFields.title;
-      }
-      if (standardFields.username && !this.username) {
-        this.username = standardFields.username;
-      }
-      if (standardFields.password && !this.password) {
-        this.password = standardFields.password;
-      }
-      if (standardFields.url && !this.url) {
-        this.url = standardFields.url;
-      }
-      if (standardFields.notes && !this.notes) {
-        this.notes = standardFields.notes;
-      }
-    }
-
-    // 应用自定义字段
-    if (template.customFields && template.customFields.length > 0) {
-      for (const field of template.customFields) {
-        // 检查字段是否已存在
-        const existingField = this.customFields.find(f => f.key === field.key);
-        if (!existingField) {
-          this.customFields.push({
-            key: field.key,
-            value: field.value,
-            isProtected: field.isProtected
-          });
-          this.customFieldsVisibility.set(field.key, false);
-        }
-      }
-    }
-
-    // 应用图标
-    if (this.iconId === Icons.Key) {
-      const iconId = isPresetTemplate(template) ?
-        (template as IPresetTemplate).iconId :
-        (template as IUserTemplate).iconId;
-      if (typeof iconId === 'number') {
-        this.iconId = iconId;
-      }
-    }
-
-    // 应用标签
-    if (template.tags && template.tags.length > 0 && !this.tags) {
-      this.tags = template.tags.join(', ');
-    }
-
-    // 标记为已修改
-    this.checkEntryModified();
-
-    CommonUtils.showToast($r('app.string.template_applied'));
-  }
-
-  /**
    * 切换自定义字段的可见性状态
    * @param index 字段索引
    */
@@ -682,6 +597,87 @@ struct EntryEdit {
    */
   private openIconSelector() {
     this.iconSelectorController.open();
+  }
+
+  /**
+   * 将当前条目保存为模板
+   */
+  private saveAsTemplate() {
+    if (!this.database || !this.entry) {
+      CommonUtils.showToast($r('app.string.template_only_entry'));
+      return;
+    }
+
+    if (!this.title.trim()) {
+      CommonUtils.showToast({
+        message: $r('app.string.title_required_message'),
+        duration: 2000
+      });
+      return;
+    }
+
+    const templateName = this.title;
+
+    // 弹出确认对话框
+    this.promptAction.showDialog({
+      title: $r('app.string.template_save_as_title'),
+      message: $r('app.string.template_save_as_message', templateName),
+      buttons: [
+        {
+          text: $r('app.string.cancel_button_text'),
+          color: $r('app.color.text_secondary')
+        },
+        {
+          text: $r('app.string.confirm_button_text'),
+          color: $r('app.color.button_bg_blue')
+        }
+      ]
+    }).then((result) => {
+      if (result.index === 1) {
+        // 先更新条目字段（使用当前编辑的值）
+        const memoryProtection = this.database!.meta.memoryProtection ?? {};
+        this.entry!.setField(KdbxUtils.FIELD_TITLE, this.title, memoryProtection.title);
+        this.entry!.setField(KdbxUtils.FIELD_USERNAME, this.username, memoryProtection.userName);
+        this.entry!.setField(KdbxUtils.FIELD_PASSWORD, this.password, memoryProtection.password ?? true);
+        this.entry!.setField(KdbxUtils.FIELD_URL, this.url, memoryProtection.url);
+        this.entry!.setField(KdbxUtils.FIELD_NOTES, this.notes, memoryProtection.notes);
+
+        // 清除旧的自定义字段并添加新的
+        this.entry!.fields.forEach((value, key) => {
+          if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD,
+            KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
+            this.entry!.fields.delete(key);
+          }
+        });
+        // 添加自定义字段
+        for (const field of this.customFields) {
+          if (field.isProtected) {
+            this.entry!.fields.set(field.key, ProtectedValue.fromString(field.value));
+          } else {
+            this.entry!.fields.set(field.key, field.value);
+          }
+        }
+
+        // 保存为模板
+        const template = this.templateService.saveAsTemplate(this.entry!, this.database!);
+        if (template) {
+          // 保存数据库
+          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+            onSuccess: () => {
+              CommonUtils.showToast($r('app.string.template_save_success'));
+            },
+            onError: (error: string) => {
+              hilog.error(DOMAIN, TAG, 'Failed to save database: %{public}s', error);
+              CommonUtils.showToast($r('app.string.template_save_failed'));
+            }
+          }));
+        } else {
+          CommonUtils.showToast($r('app.string.template_save_failed'));
+        }
+      }
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, `Failed to save as template: ${error?.message}`);
+    });
   }
 
   /**
@@ -841,6 +837,25 @@ struct EntryEdit {
 
           Blank()
 
+          // 编辑模式下显示保存为模板按钮
+          if (this.isEditMode) {
+            Button() {
+              Image($r('app.media.ic_copy'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width(48)
+            .height(48)
+            .margin({ right: 8 })
+            .borderRadius(20)
+            .backgroundColor(Color.Transparent)
+            .enabled(!this.isLoading)
+            .onClick(() => {
+              this.saveAsTemplate();
+            })
+          }
+
           Button() {
             Image($r('app.media.ic_save'))
               .width(26)
@@ -863,31 +878,6 @@ struct EntryEdit {
         // 表单内容
         Scroll() {
           Column() {
-
-            // 从模板创建按钮（仅新建模式显示）
-            if (!this.isEditMode) {
-              Button() {
-                Row() {
-                  Image($r('app.media.ic_add'))
-                    .width(18)
-                    .height(18)
-                    .fillColor($r('app.color.button_text'))
-                  Text($r('app.string.template_from_template'))
-                    .fontSize(14)
-                    .fontColor($r('app.color.button_text'))
-                    .margin({ left: 6 })
-                }
-              }
-              .width('100%')
-              .height(44)
-              .borderRadius(8)
-              .backgroundColor($r('app.color.button_bg_blue'))
-              .margin({ top: 8, bottom: 8 })
-              .onClick(() => {
-                this.openTemplateSelector();
-              })
-            }
-
             // 标题
             Column() {
               Row() {

@@ -239,12 +239,12 @@ export struct TemplateSelectorDialog {
 
       // 模板列表
       List() {
-        // 预置模板分组
-        if (this.filteredTemplates.filter(t => isPresetTemplate(t)).length > 0) {
+        // 用户模板分组（优先显示）
+        if (this.filteredTemplates.filter(t => !isPresetTemplate(t)).length > 0) {
           ListItemGroup({
-            header: this.ListGroupHeader($r('app.string.template_preset'))
+            header: this.ListGroupHeader($r('app.string.template_user'))
           }) {
-            ForEach(this.filteredTemplates.filter(t => isPresetTemplate(t)), (template: ITemplate) => {
+            ForEach(this.filteredTemplates.filter(t => !isPresetTemplate(t)), (template: ITemplate) => {
               ListItem() {
                 this.TemplateItem(template)
               }
@@ -252,12 +252,12 @@ export struct TemplateSelectorDialog {
           }
         }
 
-        // 用户模板分组
-        if (this.filteredTemplates.filter(t => !isPresetTemplate(t)).length > 0) {
+        // 预置模板分组
+        if (this.filteredTemplates.filter(t => isPresetTemplate(t)).length > 0) {
           ListItemGroup({
-            header: this.ListGroupHeader($r('app.string.template_user'))
+            header: this.ListGroupHeader($r('app.string.template_preset'))
           }) {
-            ForEach(this.filteredTemplates.filter(t => !isPresetTemplate(t)), (template: ITemplate) => {
+            ForEach(this.filteredTemplates.filter(t => isPresetTemplate(t)), (template: ITemplate) => {
               ListItem() {
                 this.TemplateItem(template)
               }

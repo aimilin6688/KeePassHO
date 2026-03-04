@@ -118,6 +118,19 @@ export class TemplateService {
     return this.userStrategy.getTemplates(kdbx);
   }
 
+  /**
+   * 根据ID获取用户模板
+   */
+  getUserTemplateById(kdbx: Kdbx, templateId: string): IUserTemplate | null {
+    const userTemplates = this.getUserTemplates(kdbx);
+    for (let i = 0; i < userTemplates.length; i++) {
+      if (userTemplates[i].uuid.id === templateId) {
+        return userTemplates[i];
+      }
+    }
+    return null;
+  }
+
   // ==================== 条目创建 ====================
 
   /**
@@ -174,7 +187,7 @@ export class TemplateService {
       const templateGroup = this.getOrCreateTemplatesGroup(kdbx);
 
       // 创建模板条目
-      const templateEntry = this.factory.createTemplateFromEntry(entry, templateGroup);
+      const templateEntry = this.factory.createTemplateFromEntry(entry, templateGroup, kdbx.meta);
 
       // 设置模板名称
       if (templateName) {
@@ -188,14 +201,8 @@ export class TemplateService {
 
       hilog.info(DOMAIN, TAG, `Saved entry as template: ${templateEntry.fields.get('Title')}`);
 
-      // 返回用户模板对象
-      const userTemplates = this.userStrategy.getTemplates(kdbx);
-      for (let i = 0; i < userTemplates.length; i++) {
-        if (userTemplates[i].uuid.equals(templateEntry.uuid)) {
-          return userTemplates[i];
-        }
-      }
-      return null;
+      // 直接从创建的模板条目构建用户模板对象
+      return this.userStrategy.entryToTemplate(templateEntry);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to save as template: ${error}`);
       return null;
@@ -299,8 +306,12 @@ export class TemplateService {
 
     if (!templateGroup) {
       // 创建新的模板分组
-      templateGroup = KdbxGroup.create(TemplateService.TEMPLATES_GROUP_NAME, kdbx.getDefaultGroup());
+      const defaultGroup = kdbx.getDefaultGroup();
+      templateGroup = KdbxGroup.create(TemplateService.TEMPLATES_GROUP_NAME, defaultGroup);
       templateGroup.icon = 48; // Folder图标
+
+      // 将新分组添加到父分组的groups数组中
+      defaultGroup.groups.push(templateGroup);
 
       // 更新数据库元数据
       kdbx.meta.entryTemplatesGroup = templateGroup.uuid;
