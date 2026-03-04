@@ -663,7 +663,7 @@ struct DatabaseView {
     const groups = this.getSelectedGroups();
 
     if (entries.length > 0 || groups.length > 0) {
-      this.moveParam = MoveParam.createBatch(
+      this.moveParam = MoveParam.create(
         entries.map(e => e.uuid.id),
         groups.map(g => g.uuid.id),
         this.moveSourceGroupId
@@ -1100,66 +1100,25 @@ struct DatabaseView {
     }
 
     try {
-      // 批量移动模式
-      if (this.moveParam.isBatchMode) {
-        // 批量移动条目
-        this.moveParam.entryIds.forEach((entryId: string) => {
-          const entry = KdbxUtils.getEntry(this.database!, this.moveParam!.sourceGroupId, entryId);
-          if (entry) {
-            this.database!.move(entry, this.currentGroup!);
-          }
-        });
-        // 批量移动分组
-        this.moveParam.groupIds.forEach((groupId: string) => {
-          const group = this.database!.getGroup(groupId);
-          if (group) {
-            // 检查是否移动到自己或子分组
-            if (this.currentGroup!.uuid.id !== group.uuid.id && !KdbxUtils.isChildGroup(group, this.currentGroup!)) {
-              this.database!.move(group, this.currentGroup!);
-            }
-          }
-        });
-        // 保存数据库
-        this.saveDatabase();
-      } else {
-        // 单个移动模式
-        // 获取要移动的条目/分组
-        let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined;
-
-        if (this.moveParam.isMoveGroup) {
-          sourceItem = this.database.getGroup(this.moveParam.groupId);
-        } else {
-          sourceItem = KdbxUtils.getEntry(this.database, this.moveParam.groupId, this.moveParam.entryId || "");
+      // 移动条目
+      this.moveParam.entryIds.forEach((entryId: string) => {
+        const entry = KdbxUtils.getEntry(this.database!, this.moveParam!.sourceGroupId, entryId);
+        if (entry) {
+          this.database!.move(entry, this.currentGroup!);
         }
-
-        if (!sourceItem) {
-          CommonUtils.showToast({
-            message: $r('app.string.entry_not_found'),
-            duration: 2000
-          });
-          this.cancelMoving();
-          return;
-        }
-
-        // 检查是否移动到自己或子分组
-        if (this.moveParam.isMoveGroup) {
-          const sourceGroup = sourceItem as KdbxGroup;
-          // 不能移动到自己或子分组
-          if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
-            CommonUtils.showToast({
-              message: $r('app.string.cannot_move_to_child'),
-              duration: 2000
-            });
-            this.cancelMoving();
-            return;
+      });
+      // 移动分组
+      this.moveParam.groupIds.forEach((groupId: string) => {
+        const group = this.database!.getGroup(groupId);
+        if (group) {
+          // 检查是否移动到自己或子分组
+          if (this.currentGroup!.uuid.id !== group.uuid.id && !KdbxUtils.isChildGroup(group, this.currentGroup!)) {
+            this.database!.move(group, this.currentGroup!);
           }
         }
-
-        // 移动条目/分组
-        this.database.move(sourceItem, this.currentGroup);
-        // 保存数据库
-        this.saveDatabase();
-      }
+      });
+      // 保存数据库
+      this.saveDatabase();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to move item: %{public}s', error.message);
       CommonUtils.showToast({
