@@ -27,6 +27,9 @@ export class KdbxGroup {
     parentGroup: KdbxGroup | undefined;
     previousParentGroup: KdbxUuid | undefined;
     customData: KdbxCustomDataMap | undefined;
+    // 前景色和背景色（存储在 customData 中）
+    fgColor: string | undefined;
+    bgColor: string | undefined;
 
     get lastModTime(): number {
         return this.times.lastModTime?.getTime() ?? 0;
@@ -82,6 +85,11 @@ export class KdbxGroup {
                 break;
             case XmlNames.Elem.CustomData:
                 this.customData = KdbxCustomData.read(node);
+                // 从 customData 中读取颜色
+                if (this.customData) {
+                    this.fgColor = this.customData.get('fgColor')?.value;
+                    this.bgColor = this.customData.get('bgColor')?.value;
+                }
                 break;
             case XmlNames.Elem.PreviousParentGroup:
                 this.previousParentGroup = XmlUtils.getUuid(node);
@@ -109,6 +117,26 @@ export class KdbxGroup {
                 XmlUtils.addChildNode(node, XmlNames.Elem.PreviousParentGroup),
                 this.previousParentGroup
             );
+        }
+        // 将颜色保存到 customData
+        if (this.fgColor || this.bgColor) {
+            if (!this.customData) {
+                this.customData = new Map();
+            }
+            if (this.fgColor) {
+                const fgColorData = this.customData.get('fgColor') || { key: 'fgColor', value: this.fgColor };
+                fgColorData.value = this.fgColor;
+                this.customData.set('fgColor', fgColorData);
+            } else {
+                this.customData.delete('fgColor');
+            }
+            if (this.bgColor) {
+                const bgColorData = this.customData.get('bgColor') || { key: 'bgColor', value: this.bgColor };
+                bgColorData.value = this.bgColor;
+                this.customData.set('bgColor', bgColorData);
+            } else {
+                this.customData.delete('bgColor');
+            }
         }
         if (this.customData) {
             KdbxCustomData.write(node, ctx, this.customData);
@@ -300,6 +328,8 @@ export class KdbxGroup {
         this.enableAutoType = group.enableAutoType;
         this.enableSearching = group.enableSearching;
         this.lastTopVisibleEntry = group.lastTopVisibleEntry;
+        this.fgColor = group.fgColor;
+        this.bgColor = group.bgColor;
     }
 
     static create(name: string, parentGroup?: KdbxGroup): KdbxGroup {

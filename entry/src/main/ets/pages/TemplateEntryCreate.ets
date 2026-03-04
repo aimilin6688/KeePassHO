@@ -11,6 +11,7 @@ import { Icons } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
+import { ColorEditDialog, ColorPickerResult } from '../components/ColorPickerDialog';
 import { ITemplate, IPresetTemplate, IUserTemplate, ITemplateField, isPresetTemplate } from '../services/template/TemplateTypes';
 import { TemplateService } from '../services/template/TemplateService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
@@ -43,6 +44,8 @@ struct TemplateEntryCreate {
   @State isModified: boolean = false;
   @State fieldDataList: TemplateFieldData[] = [];
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
+  @State fgColor: string | undefined = undefined; // 前景色
+  @State bgColor: string | undefined = undefined; // 背景色
 
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
@@ -98,6 +101,22 @@ struct TemplateEntryCreate {
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
       loadingMessage: this.loadingMessage,
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
+  
+  // 颜色选择器弹框
+  colorPickerController: CustomDialogController = new CustomDialogController({
+    builder: ColorEditDialog({
+      initialFgColor: this.fgColor,
+      initialBgColor: this.bgColor,
+      onConfirm: (result: ColorPickerResult) => {
+        this.fgColor = result.foregroundColor;
+        this.bgColor = result.backgroundColor;
+        this.isModified = true;
+      }
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
@@ -439,6 +458,10 @@ struct TemplateEntryCreate {
         entry.tags = [];
       }
 
+      // 设置颜色
+      entry.fgColor = this.fgColor;
+      entry.bgColor = this.bgColor;
+
       // 更新时间戳
       entry.times.update();
 
@@ -562,6 +585,37 @@ struct TemplateEntryCreate {
                 .backgroundColor($r("app.color.card_bg"))
                 .onClick(() => {
                   this.openIconSelector();
+                })
+
+                // 颜色选择按钮
+                Button() {
+                  Image($r('app.media.ic_color_tag'))
+                    .width(32)
+                    .height(32)
+                    .fillColor(this.fgColor || $r('app.color.text_primary'))
+                }
+                .width(48)
+                .height(48)
+                .margin({ left: 8 })
+                .borderRadius(8)
+                .backgroundColor(this.bgColor || $r("app.color.card_bg"))
+                .onClick(() => {
+                  // 每次打开时重新创建对话框控制器以获取最新的颜色值
+                  this.colorPickerController = new CustomDialogController({
+                    builder: ColorEditDialog({
+                      initialFgColor: this.fgColor,
+                      initialBgColor: this.bgColor,
+                      onConfirm: (result: ColorPickerResult) => {
+                        this.fgColor = result.foregroundColor;
+                        this.bgColor = result.backgroundColor;
+                        this.isModified = true;
+                      }
+                    }),
+                    alignment: DialogAlignment.Bottom,
+                    customStyle: true,
+                    autoCancel: false
+                  });
+                  this.colorPickerController.open();
                 })
               }
               .width('100%')
