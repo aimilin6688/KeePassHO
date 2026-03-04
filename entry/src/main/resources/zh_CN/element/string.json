@@ -2539,6 +2539,86 @@
     {
       "name": "template_user_description",
       "value": "用户自定义模板"
+    },
+    {
+      "name": "color_picker_title",
+      "value": "颜色设置"
+    },
+    {
+      "name": "color_foreground",
+      "value": "前景色"
+    },
+    {
+      "name": "color_background",
+      "value": "背景色"
+    },
+    {
+      "name": "color_none",
+      "value": "无"
+    },
+    {
+      "name": "color_clear",
+      "value": "清除"
+    },
+    {
+      "name": "color_preview",
+      "value": "预览"
+    },
+    {
+      "name": "color_preview_title",
+      "value": "示例标题"
+    },
+    {
+      "name": "color_preview_subtitle",
+      "value": "示例副标题"
+    },
+    {
+      "name": "color_red",
+      "value": "红色"
+    },
+    {
+      "name": "color_orange",
+      "value": "橙色"
+    },
+    {
+      "name": "color_yellow",
+      "value": "黄色"
+    },
+    {
+      "name": "color_green",
+      "value": "绿色"
+    },
+    {
+      "name": "color_blue",
+      "value": "蓝色"
+    },
+    {
+      "name": "color_purple",
+      "value": "紫色"
+    },
+    {
+      "name": "color_pink",
+      "value": "粉色"
+    },
+    {
+      "name": "color_gray",
+      "value": "灰色"
+    },
+    {
+      "name": "color_cyan",
+      "value": "青色"
+    },
+    {
+      "name": "color_brown",
+      "value": "棕色"
+    },
+    {
+      "name": "color_black",
+      "value": "黑色"
+    },
+    {
+      "name": "color_custom",
+      "value": "自定义颜色"
     }
   ]
 }

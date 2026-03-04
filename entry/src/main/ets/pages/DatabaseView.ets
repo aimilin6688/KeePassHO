@@ -103,7 +103,9 @@ struct DatabaseView {
       newGroupName: this.newGroupName,
       editingGroupIndex: this.editingGroupIndex,
       selectedIconId: this.getSelectedGroupIcon(),
-      onConfirm: (iconId: number | string): void => this.handleAddGroup(iconId),
+      initialFgColor: this.getSelectedGroupFgColor(),
+      initialBgColor: this.getSelectedGroupBgColor(),
+      onConfirm: (iconId: number | string, fgColor: string | undefined, bgColor: string | undefined): void => this.handleAddGroup(iconId, fgColor, bgColor),
       onCancel: (): void => {
         this.newGroupName = "";
         this.editingGroupIndex = -1;
@@ -168,6 +170,20 @@ struct DatabaseView {
       this.items[this.editingGroupIndex] instanceof KdbxGroup
       ? (this.items[this.editingGroupIndex] as KdbxGroup).customIcon?.toString() ||
       (this.items[this.editingGroupIndex] as KdbxGroup).icon || Icons.Folder : Icons.Folder;
+  }
+
+  // 获取选中的分组前景色
+  private getSelectedGroupFgColor(): string | undefined {
+    return this.editingGroupIndex >= 0 && this.editingGroupIndex < this.items.length &&
+      this.items[this.editingGroupIndex] instanceof KdbxGroup
+      ? (this.items[this.editingGroupIndex] as KdbxGroup).fgColor : undefined;
+  }
+
+  // 获取选中的分组背景色
+  private getSelectedGroupBgColor(): string | undefined {
+    return this.editingGroupIndex >= 0 && this.editingGroupIndex < this.items.length &&
+      this.items[this.editingGroupIndex] instanceof KdbxGroup
+      ? (this.items[this.editingGroupIndex] as KdbxGroup).bgColor : undefined;
   }
 
   /**
@@ -1089,7 +1105,7 @@ struct DatabaseView {
     }
   }
 
-  private handleAddGroup(iconId?: number | string) {
+  private handleAddGroup(iconId?: number | string, fgColor?: string, bgColor?: string) {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
     }
@@ -1119,6 +1135,11 @@ struct DatabaseView {
       group.icon = iconId as number;
       group.customIcon = undefined;
     }
+
+    // 设置分组颜色
+    group.fgColor = fgColor;
+    group.bgColor = bgColor;
+
     // 保存数据库
     this.saveDatabase();
     this.updateUI();
@@ -1601,6 +1622,7 @@ struct DatabaseView {
                             .width(36)
                             .height(36)
                             .margin(10)
+                            // .fillColor(item.fgColor ? item.fgColor : undefined)
                           Column() {
                             Text(KdbxUtils.getFieldName(item.name))
                               .fontSize(18)
@@ -1608,6 +1630,7 @@ struct DatabaseView {
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .flexGrow(1)
                               .maxLines(1)
+                              .fontColor(item.fgColor || $r('app.color.text_primary'))
                             Text($r("app.string.group_items_message", this.groupItemCount(item)))
                               .fontSize(12)
                               .textAlign(TextAlign.Start)
@@ -1615,6 +1638,7 @@ struct DatabaseView {
                               .flexGrow(1)
                               .margin({ top: 4 })
                               .maxLines(1)
+                              .fontColor(item.fgColor || $r('app.color.text_secondary'))
                           }
                           .flexGrow(1)
                           .alignItems(HorizontalAlign.Start)
@@ -1624,7 +1648,7 @@ struct DatabaseView {
                             .width(28)
                             .height(28)
                             .margin({ right: 0 })
-                            .fillColor($r('app.color.text_primary'))
+                            .fillColor(item.fgColor || $r('app.color.text_primary'))
                         }
                         .padding({ left: 2 })
                         .width('100%')
@@ -1649,7 +1673,7 @@ struct DatabaseView {
                       }
                       .borderRadius(8)
                       .backgroundColor(this.selectedItems.has(item.uuid.id) ? $r("app.color.button_bg_blue") :
-                        $r("app.color.card_bg"))
+                        (item.bgColor || $r("app.color.card_bg")))
                       .padding({
                         left: 6,
                         right: 6,
@@ -1684,6 +1708,7 @@ struct DatabaseView {
                             .width(36)
                             .height(36)
                             .margin(10)
+                            // .fillColor(item.fgColor ? item.fgColor : undefined)
                           Column() {
                             Text(KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE))
                               .fontSize(18)
@@ -1691,6 +1716,7 @@ struct DatabaseView {
                               .flexGrow(1)
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .maxLines(1)
+                              .fontColor(item.fgColor || $r('app.color.text_primary'))
                               .decoration({
                                 type: (DateUtils.isExpired(item.times.expires, item.times.expiryTime) ? TextDecorationType.LineThrough :
                                   TextDecorationType.None)
@@ -1702,6 +1728,7 @@ struct DatabaseView {
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .maxLines(1)
                               .margin({ top: 4 })
+                              .fontColor(item.fgColor || $r('app.color.text_secondary'))
                               .decoration({
                                 type: (DateUtils.isExpired(item.times.expires, item.times.expiryTime) ? TextDecorationType.LineThrough :
                                   TextDecorationType.None)
@@ -1727,7 +1754,7 @@ struct DatabaseView {
                             .width(28)
                             .height(28)
                             .margin({ right: 0 })
-                            .fillColor($r('app.color.text_primary'))
+                            .fillColor(item.fgColor || $r('app.color.text_primary'))
                         }
                         .padding({ left: 2 })
                         .width('100%')
@@ -1752,7 +1779,7 @@ struct DatabaseView {
                       }
                       .borderRadius(8)
                       .backgroundColor(this.selectedItems.has(item.uuid.id) ? $r("app.color.button_bg_blue") :
-                        $r("app.color.card_bg"))
+                        (item.bgColor || $r("app.color.card_bg")))
                       .padding({
                         left: 6,
                         right: 6,

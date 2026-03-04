@@ -2539,6 +2539,86 @@
     {
       "name": "template_user_description",
       "value": "User defined template"
+    },
+    {
+      "name": "color_picker_title",
+      "value": "Color Settings"
+    },
+    {
+      "name": "color_foreground",
+      "value": "Foreground Color"
+    },
+    {
+      "name": "color_background",
+      "value": "Background Color"
+    },
+    {
+      "name": "color_none",
+      "value": "None"
+    },
+    {
+      "name": "color_clear",
+      "value": "Clear"
+    },
+    {
+      "name": "color_preview",
+      "value": "Preview"
+    },
+    {
+      "name": "color_preview_title",
+      "value": "Sample Title"
+    },
+    {
+      "name": "color_preview_subtitle",
+      "value": "Sample subtitle"
+    },
+    {
+      "name": "color_red",
+      "value": "Red"
+    },
+    {
+      "name": "color_orange",
+      "value": "Orange"
+    },
+    {
+      "name": "color_yellow",
+      "value": "Yellow"
+    },
+    {
+      "name": "color_green",
+      "value": "Green"
+    },
+    {
+      "name": "color_blue",
+      "value": "Blue"
+    },
+    {
+      "name": "color_purple",
+      "value": "Purple"
+    },
+    {
+      "name": "color_pink",
+      "value": "Pink"
+    },
+    {
+      "name": "color_gray",
+      "value": "Gray"
+    },
+    {
+      "name": "color_cyan",
+      "value": "Cyan"
+    },
+    {
+      "name": "color_brown",
+      "value": "Brown"
+    },
+    {
+      "name": "color_black",
+      "value": "Black"
+    },
+    {
+      "name": "color_custom",
+      "value": "Custom Color"
     }
   ]
 }
