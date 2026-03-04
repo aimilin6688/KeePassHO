@@ -2617,6 +2617,10 @@
       "value": "黑色"
     },
     {
+      "name": "color_preset",
+      "value": "预设颜色"
+    },
+    {
       "name": "color_custom",
       "value": "自定义颜色"
     }
