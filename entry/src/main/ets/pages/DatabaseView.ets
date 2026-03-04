@@ -23,6 +23,8 @@ import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { TemplateService } from '../services/template/TemplateService';
+import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
+import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -80,6 +82,19 @@ struct DatabaseView {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private settingsService: SettingsService = SettingsService.getInstance();
   private templateService: TemplateService = TemplateService.getInstance();
+  // 模板选择对话框控制器
+  private templateSelectorController: CustomDialogController = new CustomDialogController({
+    builder: TemplateSelectorDialog({
+      database: this.database,
+      showUserTemplates: true,
+      onTemplateSelected: (template: ITemplate) => {
+        this.handleTemplateSelected(template);
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
   private clearHistoryUrlPage: Array<string> = ["Password", "UnLockDatabase"];
@@ -878,37 +893,11 @@ struct DatabaseView {
           })
         }
 
-        // 保存为模板按钮（仅条目显示）
-        if (this.selectedItem instanceof KdbxEntry) {
-          Column({ space: 8 }) {
-            Button() {
-              Column() {
-                Image($r('sys.media.ohos_ic_public_copy'))
-                  .width(28)
-                  .height(28)
-                  .fillColor($r('app.color.text_primary'))
-                Text($r('app.string.template_save_as'))
-                  .fontSize(12)
-                  .fontColor($r('app.color.text_primary'))
-                  .margin({ top: 4 })
-              }
-              .alignItems(HorizontalAlign.Center)
-            }
-            .height(48)
-            .width(52)
-            .backgroundColor(Color.Transparent)
-            .borderRadius(8)
-            .onClick(() => {
-              this.saveAsTemplate();
-            })
-          }
-        }
-
         // 选择按钮
         Column({ space: 8 }) {
           Button() {
             Column() {
-              Image($r('app.media.ic_copy'))
+              Image($r('app.media.ic_check'))
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
@@ -1056,53 +1045,33 @@ struct DatabaseView {
     this.saveDatabase();
   }
 
+
   /**
-   * 将条目保存为模板
+   * 打开模板选择器
    */
-  private saveAsTemplate() {
-    if (!this.selectedItem || !this.database) {
+  private openTemplateSelector() {
+    this.templateSelectorController.open();
+  }
+
+  /**
+   * 处理模板选择
+   */
+  private handleTemplateSelected(template: ITemplate) {
+    if (!this.currentGroup) {
       return;
     }
-    // 只有条目可以保存为模板
-    if (!(this.selectedItem instanceof KdbxEntry)) {
-      CommonUtils.showToast($r('app.string.template_only_entry'));
-      return;
-    }
-
-    const entry = this.selectedItem as KdbxEntry;
-    const templateName = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE);
-
-    // 弹出确认对话框
-    this.promptAction.showDialog({
-      title: $r('app.string.template_save_as_title'),
-      message: $r('app.string.template_save_as_message', templateName),
-      buttons: [
-        {
-          text: $r('app.string.cancel_button_text'),
-          color: $r('app.color.text_secondary')
-        },
-        {
-          text: $r('app.string.confirm_button_text'),
-          color: $r('app.color.button_bg_blue')
-        }
-      ]
-    }).then((result) => {
-      if (result.index === 1) {
-        // 保存为模板
-        const template = this.templateService.saveAsTemplate(entry, this.database!);
-        if (template) {
-          this.saveDatabase();
-          CommonUtils.showToast($r('app.string.template_save_success'));
-        } else {
-          CommonUtils.showToast($r('app.string.template_save_failed'));
-        }
+    // 跳转到模板创建页面
+    const templateId = isPresetTemplate(template) ? (template as IPresetTemplate).id : (template as IUserTemplate).uuid.id;
+    const isPreset = isPresetTemplate(template);
+    
+    CommonUtils.pushUrl({
+      url: 'pages/TemplateEntryCreate',
+      params: {
+        groupId: this.currentGroup.uuid.id,
+        templateId: templateId,
+        isPreset: isPreset
       }
-    }).catch((error: Error) => {
-      hilog.error(DOMAIN, TAG, `Failed to save as template: ${error?.message}`);
     });
-
-    // 隐藏菜单
-    this.hideMoreMenu();
   }
 
   /**
@@ -1913,6 +1882,31 @@ struct DatabaseView {
           });
         })
 
+        // 从模板创建按钮
+        Button() {
+          Row() {
+            Image($r('app.media.ic_copy'))
+              .width(20)
+              .height(20)
+              .fillColor($r("app.color.button_text_blue"))
+            Text($r('app.string.template_from_template'))
+              .fontSize(14)
+              .fontColor($r("app.color.button_text_blue"))
+              .margin({ left: 8 })
+          }
+        }
+        .width(120)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 4 })
+        .enabled(!this.isLoading)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+          this.openTemplateSelector();
+        })
+
         // 显示TOTP
         Button() {
           Image($r('app.media.ic_clock'))
@@ -1934,7 +1928,7 @@ struct DatabaseView {
 
         // 主添加按钮
         Button() {
-          Image($r('app.media.ic_add'))
+          Image(this.showAddButtons ? $r('app.media.ic_clear') : $r('app.media.ic_add'))
             .width(28)
             .height(28)
             .fillColor(Color.White)
@@ -1942,25 +1936,45 @@ struct DatabaseView {
         .width(56)
         .height(56)
         .borderRadius(28)
-        .backgroundColor($r("app.color.button_bg_blue"))
+        .backgroundColor(this.showAddButtons ? $r("app.color.error") : $r("app.color.button_bg_blue"))
         .enabled(!this.isLoading)
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
           this.showAddButtons = true;
         })
+
+        // 展开菜单时的关闭按钮
+        Button() {
+          Image($r('app.media.ic_clear'))
+            .width(28)
+            .height(28)
+            .fillColor(Color.White)
+        }
+        .width(56)
+        .height(56)
+        .borderRadius(28)
+        .backgroundColor($r("app.color.error"))
+        .enabled(!this.isLoading)
+        .opacity(this.isLoading ? 0.5 : 1)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+        })
       }
       .width(this.containerWidth)
-      .height(this.containerHeight)
+      .height(this.showAddButtons ? 200 : this.containerHeight)
       .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
       .zIndex(999)
       .gesture(
-        // 拖拽手势
+        // 拖拽手势（展开状态下禁用）
         PanGesture({ fingers: 1, direction: PanDirection.All })
           .onActionStart(() => {
-            this.isDragging = true;
-            this.oldContainerX = this.containerX;
-            this.oldContainerY = this.containerY;
+            if (!this.showAddButtons) {
+              this.isDragging = true;
+              this.oldContainerX = this.containerX;
+              this.oldContainerY = this.containerY;
+            }
           })
           .onActionUpdate((event: GestureEvent) => {
             // 计算新位置
@@ -2078,7 +2092,6 @@ struct DatabaseView {
         .position({ x: 0, y: '100%' })
         .translate({ y: -60 })
         .justifyContent(FlexAlign.Center)
-        .backgroundColor($r("app.color.bg_primary"))
       }
     }
     .width('100%')

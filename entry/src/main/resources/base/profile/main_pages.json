@@ -15,6 +15,7 @@
     "pages/EntryEdit",
     "pages/EntryView",
     "pages/TotpView",
+    "pages/TemplateEntryCreate",
     "pages/about/About",
     "pages/about/Support",
     "pages/UnLockDatabase",
