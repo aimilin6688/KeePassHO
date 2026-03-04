@@ -12,6 +12,7 @@ import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
 import { TemplateService } from '../services/template/TemplateService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
+import { ColorEditDialog, ColorPickerResult } from '../components/ColorPickerDialog';
 import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
@@ -45,6 +46,8 @@ struct EntryEdit {
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   @State attachments: Map<string, KdbxBinary | KdbxBinaryWithHash> = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
+  @State fgColor: string | undefined = undefined; // 前景色
+  @State bgColor: string | undefined = undefined; // 背景色
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
@@ -126,6 +129,21 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
+  // 颜色选择器弹框
+  colorPickerController: CustomDialogController = new CustomDialogController({
+    builder: ColorEditDialog({
+      initialFgColor: this.fgColor,
+      initialBgColor: this.bgColor,
+      onConfirm: (result: ColorPickerResult) => {
+        this.fgColor = result.foregroundColor;
+        this.bgColor = result.backgroundColor;
+        this.checkEntryModified();
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
   private templateService: TemplateService = TemplateService.getInstance();
 
   aboutToAppear() {
@@ -196,6 +214,10 @@ struct EntryEdit {
 
       // 加载图标ID
       this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
+
+      // 加载颜色
+      this.fgColor = this.entry.fgColor;
+      this.bgColor = this.entry.bgColor;
 
       // 过期时间
       this.expiryTime = this.entry.times.expiryTime;
@@ -335,6 +357,8 @@ struct EntryEdit {
 
       // 保存图标
       this.setEntryIcon();
+      // 保存颜色
+      this.setEntryColor();
       // 保存标签
       this.setTags();
       // 保存条目时间戳
@@ -402,6 +426,17 @@ struct EntryEdit {
       this.entry.icon = undefined;
       this.entry.customIcon = new KdbxUuid(this.iconId);
     }
+  }
+
+  /**
+   * 设置条目颜色
+   */
+  private setEntryColor() {
+    if (!this.entry) {
+      return;
+    }
+    this.entry.fgColor = this.fgColor;
+    this.entry.bgColor = this.bgColor;
   }
 
   /**
@@ -793,6 +828,15 @@ struct EntryEdit {
       this.isModified = true;
       return;
     }
+    // 颜色修改检测
+    if (this.entry.fgColor != this.fgColor) {
+      this.isModified = true;
+      return;
+    }
+    if (this.entry.bgColor != this.bgColor) {
+      this.isModified = true;
+      return;
+    }
   }
 
   // 添加附件
@@ -917,6 +961,37 @@ struct EntryEdit {
                 .backgroundColor($r("app.color.card_bg"))
                 .onClick(() => {
                   this.openIconSelector();
+                })
+
+                // 颜色选择按钮
+                Button() {
+                  Image($r('app.media.ic_color_tag'))
+                    .width(32)
+                    .height(32)
+                    .fillColor(this.fgColor || $r('app.color.text_primary'))
+                }
+                .width(48)
+                .height(48)
+                .margin({ left: 8 })
+                .borderRadius(8)
+                .backgroundColor(this.bgColor || $r("app.color.card_bg"))
+                .onClick(() => {
+                  // 每次打开时重新创建对话框控制器以获取最新的颜色值
+                  this.colorPickerController = new CustomDialogController({
+                    builder: ColorEditDialog({
+                      initialFgColor: this.fgColor,
+                      initialBgColor: this.bgColor,
+                      onConfirm: (result: ColorPickerResult) => {
+                        this.fgColor = result.foregroundColor;
+                        this.bgColor = result.backgroundColor;
+                        this.checkEntryModified();
+                      }
+                    }),
+                    alignment: DialogAlignment.Bottom,
+                    customStyle: true,
+                    autoCancel: false
+                  });
+                  this.colorPickerController.open();
                 })
               }
               .width('100%')
