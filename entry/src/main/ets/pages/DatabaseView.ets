@@ -22,6 +22,7 @@ import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
+import { TemplateService } from '../services/template/TemplateService';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -78,6 +79,7 @@ struct DatabaseView {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private settingsService: SettingsService = SettingsService.getInstance();
+  private templateService: TemplateService = TemplateService.getInstance();
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
   private clearHistoryUrlPage: Array<string> = ["Password", "UnLockDatabase"];
@@ -876,6 +878,32 @@ struct DatabaseView {
           })
         }
 
+        // 保存为模板按钮（仅条目显示）
+        if (this.selectedItem instanceof KdbxEntry) {
+          Column({ space: 8 }) {
+            Button() {
+              Column() {
+                Image($r('sys.media.ohos_ic_public_copy'))
+                  .width(28)
+                  .height(28)
+                  .fillColor($r('app.color.text_primary'))
+                Text($r('app.string.template_save_as'))
+                  .fontSize(12)
+                  .fontColor($r('app.color.text_primary'))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Center)
+            }
+            .height(48)
+            .width(52)
+            .backgroundColor(Color.Transparent)
+            .borderRadius(8)
+            .onClick(() => {
+              this.saveAsTemplate();
+            })
+          }
+        }
+
         // 选择按钮
         Column({ space: 8 }) {
           Button() {
@@ -1026,6 +1054,55 @@ struct DatabaseView {
     this.hideMoreMenu();
     // 保存数据库
     this.saveDatabase();
+  }
+
+  /**
+   * 将条目保存为模板
+   */
+  private saveAsTemplate() {
+    if (!this.selectedItem || !this.database) {
+      return;
+    }
+    // 只有条目可以保存为模板
+    if (!(this.selectedItem instanceof KdbxEntry)) {
+      CommonUtils.showToast($r('app.string.template_only_entry'));
+      return;
+    }
+
+    const entry = this.selectedItem as KdbxEntry;
+    const templateName = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE);
+
+    // 弹出确认对话框
+    this.promptAction.showDialog({
+      title: $r('app.string.template_save_as_title'),
+      message: $r('app.string.template_save_as_message', templateName),
+      buttons: [
+        {
+          text: $r('app.string.cancel_button_text'),
+          color: $r('app.color.text_secondary')
+        },
+        {
+          text: $r('app.string.confirm_button_text'),
+          color: $r('app.color.button_bg_blue')
+        }
+      ]
+    }).then((result) => {
+      if (result.index === 1) {
+        // 保存为模板
+        const template = this.templateService.saveAsTemplate(entry, this.database!);
+        if (template) {
+          this.saveDatabase();
+          CommonUtils.showToast($r('app.string.template_save_success'));
+        } else {
+          CommonUtils.showToast($r('app.string.template_save_failed'));
+        }
+      }
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, `Failed to save as template: ${error?.message}`);
+    });
+
+    // 隐藏菜单
+    this.hideMoreMenu();
   }
 
   /**
