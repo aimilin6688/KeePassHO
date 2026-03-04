@@ -693,7 +693,7 @@ struct DatabaseView {
     const count = this.selectedItems.size;
     this.getUIContext().showAlertDialog({
       title: $r("app.string.dialog_confirm_title"),
-      message: `确定要删除 ${count} 个项目吗？`,
+      message: $r('app.string.batch_delete_confirm_message', count),
       primaryButton: {
         value: $r('app.string.cancel_button_text'),
         action: () => {}
