@@ -841,8 +841,21 @@ struct EntryEdit {
 
   // 添加附件
   private addAttachment() {
+    // 附件大小限制：5MB
+    const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+
     FileUtils.selectFiles(1).then(result => {
       for (let file of result) {
+        // 检查文件大小
+        const fileSize = file.content.byteLength;
+        if (fileSize > MAX_ATTACHMENT_SIZE) {
+          const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+          CommonUtils.showToast({
+            message: $r('app.string.attachment_size_exceed_limit', file.name, fileSizeMB, '5'),
+            duration: 3000
+          });
+          continue;
+        }
         this.attachments.set(file.name, file.content);
       }
       this.isModified = true;
