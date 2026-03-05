@@ -208,7 +208,7 @@ struct TemplateEntryCreate {
     // 获取模板名称
     if (isPresetTemplate(this.template)) {
       const preset = this.template as IPresetTemplate;
-      this.templateName = preset.nameRes ? preset.nameRes : preset.name;
+      this.templateName = preset.name;
       this.iconId = preset.iconId;
     } else {
       const userTemplate = this.template as IUserTemplate;
