@@ -4,9 +4,8 @@
  */
 import { Kdbx } from 'kdbxweb';
 import { ITemplate, IPresetTemplate, IUserTemplate, TemplateCategory, isPresetTemplate } from '../services/template/TemplateTypes';
-import { TemplateConstants } from '../services/template/TemplateConstants';
 import { TemplateService } from '../services/template/TemplateService';
-import { IconUtils } from '../common/utils';
+import { IconUtils, ResourceManager } from '../common/utils';
 
 @CustomDialog
 export struct TemplateSelectorDialog {
@@ -54,12 +53,17 @@ export struct TemplateSelectorDialog {
       ];
     }
 
-    // 按搜索文本筛选
+    // 按搜索文本筛选（使用 searchName 或 name）
     if (this.searchText.trim()) {
       const keyword = this.searchText.toLowerCase();
       templates = templates.filter(t => {
-        const name = isPresetTemplate(t) ? t.name : (t as IUserTemplate).name;
-        return name.toLowerCase().includes(keyword);
+        if (isPresetTemplate(t)) {
+          const preset = t as IPresetTemplate;
+          return preset.id.toLowerCase().includes(keyword)
+            || ResourceManager.getString(preset.name).toLowerCase().includes(keyword)
+            || (preset.description && ResourceManager.getString(preset.description).toLowerCase().includes(keyword));
+        }
+        return (t as IUserTemplate).name.toLowerCase().includes(keyword);
       });
     }
 
@@ -71,12 +75,7 @@ export struct TemplateSelectorDialog {
    */
   private getTemplateName(template: ITemplate): ResourceStr {
     if (isPresetTemplate(template)) {
-      const preset = template as IPresetTemplate;
-      // 优先使用国际化资源
-      if (preset.nameRes) {
-        return preset.nameRes;
-      }
-      return preset.name;
+      return (template as IPresetTemplate).name;
     }
     return (template as IUserTemplate).name;
   }
@@ -118,11 +117,7 @@ export struct TemplateSelectorDialog {
   private getTemplateDescription(template: ITemplate): ResourceStr {
     if (isPresetTemplate(template)) {
       const preset = template as IPresetTemplate;
-      // 优先使用国际化资源
-      if (preset.descriptionRes) {
-        return preset.descriptionRes;
-      }
-      return preset.description || '';
+      return preset.description ?? '';
     }
     return $r('app.string.template_user_description');
   }
@@ -133,7 +128,7 @@ export struct TemplateSelectorDialog {
   private hasTemplateDescription(template: ITemplate): boolean {
     if (isPresetTemplate(template)) {
       const preset = template as IPresetTemplate;
-      return !!(preset.descriptionRes || preset.description);
+      return preset.description !== undefined;
     }
     return true;
   }
