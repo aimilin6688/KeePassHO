@@ -1281,7 +1281,7 @@ struct DatabaseView {
   }
 
   /**
-   * 构建索引数据（仅对非置顶、非收藏的条目）
+   * 构建索引数据，快速定位条目开始索引
    */
   private buildIndexerData(startIndex?:number): void {
     this.indexerValues = [];
