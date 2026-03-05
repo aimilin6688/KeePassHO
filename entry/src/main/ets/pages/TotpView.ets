@@ -184,57 +184,71 @@ struct TotpView {
               // 条目数据展示
               ForEach(this.resultEntries, (itemEntry: KdbxEntry) => {
                 ListItem() {
-                  Row() {
-                    Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
-                      KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
-                      .width(36)
-                      .height(36)
-                      .margin({
-                        left: 6,
-                        right: 16,
-                        top: 10,
-                        bottom: 10
-                      })
-                      .borderRadius(4)
-                    Column() {
-                      Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
-                        .fontSize(18)
-                        .textAlign(TextAlign.Start)
-                        .flexGrow(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .maxLines(1)
-                        .decoration({
-                          type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
-                            TextDecorationType.None)
+                  Stack({ alignContent: Alignment.TopEnd }) {
+                    Row() {
+                      Image(DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? $r('app.media.C45_Expired') :
+                        KdbxUtils.getIcon(itemEntry.icon, itemEntry.customIcon, $r('app.media.ic_file')))
+                        .width(36)
+                        .height(36)
+                        .margin({
+                          left: 6,
+                          right: 16,
+                          top: 10,
+                          bottom: 10
                         })
-                      // TOTP 字段展示
-                      ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string) => {
-                        TotpPreviewComponent({
-                          totpUrl: totpUrl, doClick: (value) => {
-                            ClipboardUtils.copyAutoClear(value);
-                            return false;
-                          }
-                        }).margin({ top: 6 })
-                      });
-                    }
-                    .flexGrow(1)
-                    .alignItems(HorizontalAlign.Start)
-                    .layoutWeight(1)
+                        .borderRadius(4)
+                      Column() {
+                        Text(KdbxUtils.getFieldValueString(itemEntry.fields, KdbxUtils.FIELD_TITLE))
+                          .fontSize(18)
+                          .textAlign(TextAlign.Start)
+                          .flexGrow(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .maxLines(1)
+                          .fontColor(itemEntry.fgColor || $r('app.color.text_primary'))
+                          .decoration({
+                            type: (DateUtils.isExpired(itemEntry.times.expires, itemEntry.times.expiryTime) ? TextDecorationType.LineThrough :
+                              TextDecorationType.None)
+                          })
+                        // TOTP 字段展示
+                        ForEach(KdbxUtils.getTotpUrl(itemEntry), (totpUrl: string) => {
+                          TotpPreviewComponent({
+                            totpUrl: totpUrl, doClick: (value) => {
+                              ClipboardUtils.copyAutoClear(value);
+                              return false;
+                            }
+                          }).margin({ top: 6 })
+                        });
+                      }
+                      .flexGrow(1)
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
 
-                    Image($r('app.media.ic_arrow_right'))
-                      .width(28)
-                      .height(28)
-                      .margin({ right: 0 })
-                      .fillColor($r('app.color.text_primary'))
+                      Image($r('app.media.ic_arrow_right'))
+                        .width(28)
+                        .height(28)
+                        .margin({ right: 0 })
+                        .fillColor(itemEntry.fgColor || $r('app.color.text_primary'))
+                    }
+                    .padding({ left: 2 })
+                    .width('100%')
+
+                    // 置顶标记
+                    if (KdbxUtils.isPinned(itemEntry)) {
+                      Polygon()
+                        .points([[0, 0], [16, 0], [0, 16]])
+                        .fill($r('app.color.button_bg_blue'))
+                        .width(16)
+                        .height(16)
+                        .position({ x: 0, y: 0 })
+                    }
                   }
-                  .width('100%')
                   .borderRadius(8)
-                  .backgroundColor($r("app.color.card_bg"))
+                  .backgroundColor(itemEntry.bgColor || $r("app.color.card_bg"))
                   .padding({
                     left: 6,
                     right: 6,
-                    top: 8,
-                    bottom: 8
+                    top: 6,
+                    bottom: 6
                   })
                   .onClick(() => {
                     CommonUtils.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
