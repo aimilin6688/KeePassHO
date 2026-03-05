@@ -227,7 +227,7 @@ export class TemplateService {
         if (index > -1) {
           templateGroup.entries.splice(index, 1);
         }
-        hilog.info(DOMAIN, TAG, `Deleted template: ${template.name}`);
+        hilog.info(DOMAIN, TAG, `Deleted template: ${this.getTemplateName(template)}`);
         return true;
       }
       return false;
@@ -266,7 +266,7 @@ export class TemplateService {
       // 更新时间
       existingEntry.times.lastModTime = new Date();
 
-      hilog.info(DOMAIN, TAG, `Updated template: ${template.name}`);
+      hilog.info(DOMAIN, TAG, `Updated template: ${this.getTemplateName(template)}`);
       const userTemplates = this.userStrategy.getTemplates(kdbx);
       for (let i = 0; i < userTemplates.length; i++) {
         if (userTemplates[i].uuid.equals(template.uuid)) {
