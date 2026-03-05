@@ -6,7 +6,7 @@ import { KdbxEntry, ProtectedValue } from 'kdbxweb';
 import { ITemplateStrategy } from './ITemplateStrategy';
 import { IPresetTemplate, ITemplate, DEFAULT_APPLY_OPTIONS, TemplateApplyOptions, isPresetTemplate } from '../TemplateTypes';
 import { TemplateConstants } from '../TemplateConstants';
-import { KdbxUtils } from '../../../common/utils/KdbxUtils';
+import { ResourceManager } from '../../../common/utils';
 
 /**
  * 预置模板策略实现
@@ -130,7 +130,7 @@ export class PresetTemplateStrategy implements ITemplateStrategy {
    */
   getTemplateName(template: ITemplate): string {
     if (this.supports(template)) {
-      return (template as IPresetTemplate).name;
+      return ResourceManager.getString((template as IPresetTemplate).name);
     }
     return '';
   }
