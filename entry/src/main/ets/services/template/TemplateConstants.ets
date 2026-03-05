@@ -39,7 +39,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
       notes: ''
     },
     customFields: []
@@ -71,8 +70,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
-      notes: ''
     },
     customFields: [
       field('smtp_server', '', false, 'smtp.example.com', undefined, false, $r('app.string.template_field_smtp_server')),
@@ -92,7 +89,6 @@ export class TemplateConstants {
     category: TemplateCategory.IDENTITY,
     description: $r('app.string.template_desc_id_card'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       protectedField('id_number', '', '', $r('app.string.template_placeholder_id_card'), false, $r('app.string.template_field_id_number')),
@@ -112,7 +108,6 @@ export class TemplateConstants {
     category: TemplateCategory.IDENTITY,
     description: $r('app.string.template_desc_passport'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       protectedField('passport_number', '', undefined, undefined, false, $r('app.string.template_field_passport_number')),
@@ -134,7 +129,6 @@ export class TemplateConstants {
     category: TemplateCategory.IDENTITY,
     description: $r('app.string.template_desc_driver_license'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       protectedField('driver_license_number', '', undefined, undefined, false, $r('app.string.template_field_driver_license_number')),
@@ -158,7 +152,6 @@ export class TemplateConstants {
     category: TemplateCategory.IDENTITY,
     description: $r('app.string.template_desc_social_security'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       protectedField('social_security_number', '', undefined, undefined, false, $r('app.string.template_field_social_security_number')),
@@ -179,7 +172,6 @@ export class TemplateConstants {
     category: TemplateCategory.FINANCE,
     description: $r('app.string.template_desc_bank_card'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       protectedField('bank_card_number', '', '', $r('app.string.template_placeholder_bank_card_number'), false, $r('app.string.template_field_bank_card_number')),
@@ -201,7 +193,6 @@ export class TemplateConstants {
     category: TemplateCategory.FINANCE,
     description: $r('app.string.template_desc_credit_card'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       protectedField('credit_card_number', '', '', $r('app.string.template_placeholder_credit_card_number'), false, $r('app.string.template_field_credit_card_number')),
@@ -226,9 +217,6 @@ export class TemplateConstants {
     category: TemplateCategory.FINANCE,
     description: $r('app.string.template_desc_membership'),
     standardFields: {
-      username: '',
-      password: '',
-      url: '',
       notes: ''
     },
     customFields: [
@@ -295,8 +283,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
-      notes: ''
     },
     customFields: [
       field('server_address', '', false, '', undefined, true, $r('app.string.template_field_server_address')),
@@ -318,8 +304,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
-      notes: ''
     },
     customFields: [
       field('server_address', '', false, '', undefined, true, $r('app.string.template_field_server_address')),
@@ -339,8 +323,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
-      notes: ''
     },
     customFields: [
       field('host_address', '', false, '', undefined, true, $r('app.string.template_field_host_address')),
@@ -358,9 +340,7 @@ export class TemplateConstants {
     category: TemplateCategory.NETWORK,
     description: $r('app.string.template_desc_router'),
     standardFields: {
-      username: '',
       password: '',
-      url: '',
       notes: ''
     },
     customFields: [
@@ -383,8 +363,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
-      notes: ''
     },
     customFields: [
       field('host', '', false, '', undefined, true, $r('app.string.template_field_host')),
@@ -405,8 +383,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
-      notes: ''
     },
     customFields: [
       field('db_type', 'MySQL', false, 'MySQL/PostgreSQL/Oracle/SQL Server/MongoDB等', $r('app.string.template_placeholder_db_type'), true, $r('app.string.template_field_db_type')),
@@ -428,7 +404,6 @@ export class TemplateConstants {
     standardFields: {
       username: '',
       password: '',
-      url: '',
       notes: ''
     },
     customFields: [
@@ -451,7 +426,6 @@ export class TemplateConstants {
       username: '',
       password: '',
       url: '',
-      notes: ''
     },
     customFields: [
       field('api_key', '', false, '', undefined, true, $r('app.string.template_field_api_key')),
@@ -535,7 +509,6 @@ export class TemplateConstants {
     category: TemplateCategory.OTHER,
     description: $r('app.string.template_desc_security_question'),
     standardFields: {
-      notes: ''
     },
     customFields: [
       field('question1', '', false, '', undefined, true, $r('app.string.template_field_question1')),
