@@ -6,7 +6,7 @@ import { motion } from '@kit.MultimodalAwarenessKit';
 
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
-import { PromptAction, Router } from '@kit.ArkUI';
+import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
@@ -22,7 +22,6 @@ import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
-import { TemplateService } from '../services/template/TemplateService';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 
@@ -79,9 +78,7 @@ struct DatabaseView {
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
   private router: Router = this.getUIContext().getRouter();
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private settingsService: SettingsService = SettingsService.getInstance();
-  private templateService: TemplateService = TemplateService.getInstance();
   // 模板选择对话框控制器
   private templateSelectorController: CustomDialogController = new CustomDialogController({
     builder: TemplateSelectorDialog({

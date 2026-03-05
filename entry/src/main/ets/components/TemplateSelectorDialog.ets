@@ -291,7 +291,7 @@ export struct TemplateSelectorDialog {
       })
     }
     .width('100%')
-    .height('85%')
+    .height('80%')
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(16)
     .shadow(ShadowStyle.OUTER_DEFAULT_MD)
