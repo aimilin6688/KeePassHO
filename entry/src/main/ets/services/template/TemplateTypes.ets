@@ -46,10 +46,8 @@ export interface ITemplateField {
 export interface IPresetTemplate {
   /** 模板唯一标识 */
   readonly id: string;
-  /** 显示名称 */
-  readonly name: string;
-  /** 国际化名称资源 */
-  readonly nameRes?: Resource;
+  /** 显示名称（资源引用） */
+  readonly name: ResourceStr;
   /** 图标ID */
   readonly iconId: number;
   /** 标准字段默认值 */
@@ -58,10 +56,8 @@ export interface IPresetTemplate {
   readonly customFields: ITemplateField[];
   /** 默认标签 */
   readonly tags?: string[];
-  /** 模板描述 */
-  readonly description?: string;
-  /** 模板描述国际化资源 */
-  readonly descriptionRes?: Resource;
+  /** 模板描述（资源引用） */
+  readonly description?: ResourceStr;
   /** 分类 */
   readonly category?: TemplateCategory;
 }
