@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
@@ -24,6 +24,7 @@ import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
+import { UIUtils } from '@kit.ArkUI';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -61,6 +62,10 @@ struct DatabaseView {
   @State isSelectionMode: boolean = false; // 是否处于选择模式
   @State selectedItems: Map<string, KdbxGroup | KdbxEntry> = new Map(); // 选中的条目或分组
   @State moveSourceGroupId: string = ''; // 移动操作的源分组ID
+  // AlphabetIndexer 相关状态
+  @State indexerSelected: number = 0; // AlphabetIndexer 选中索引
+  @State indexerValues: string[] = []; // 索引字母数组
+  @State indexerMap: Map<string, number> = new Map(); // 字母到列表索引的映射
   // 拖拽组件
   @StorageLink("containerX") containerX: number = 0; // 容器X坐标
   @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
@@ -1092,6 +1097,7 @@ struct DatabaseView {
    * 添加收藏数据
    */
   private addFavorite() {
+    let startIndex = 0;
     // 如果是默认分组，添加收藏的数据到最上方
     if (this.database && !this.showBack) {
       const favoriteItems = KdbxUtils.getFavoriteItems(this.database);
@@ -1100,7 +1106,9 @@ struct DatabaseView {
       const uniqueFavoriteItems = favoriteItems.filter(item => !currentItemsUuid.has(item.uuid.id));
       // 将收藏项添加到列表最前面
       this.items = [...uniqueFavoriteItems, ...this.items];
+      startIndex = uniqueFavoriteItems.length;
     }
+    this.buildIndexerData(startIndex);
   }
 
   private handleAddGroup(iconId?: number | string, fgColor?: string, bgColor?: string) {
@@ -1221,7 +1229,6 @@ struct DatabaseView {
       }
       // 合并分组和条目到一个数组
       this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
-      // 对合并后的数组进行排序
       KdbxUtils.sortBy(this.items, this.sortBy);
       // 如果在搜索状态，更新搜索结果
       if (this.isSearching && this.searchText.length > 0) {
@@ -1271,6 +1278,22 @@ struct DatabaseView {
       return 0;
     }
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
+  }
+
+  /**
+   * 构建索引数据（仅对非置顶、非收藏的条目）
+   */
+  private buildIndexerData(startIndex?:number): void {
+    this.indexerValues = [];
+    this.indexerMap.clear();
+
+    if (this.items.length === 0 || this.sortBy !== SortMode.NAME || this.isSearching) {
+      return;
+    }
+    // 构建索引数据
+    const indexer = KdbxUtils.buildIndexerData(UIUtils.getTarget(this.items), startIndex);
+    this.indexerValues = indexer.indexerValues;
+    this.indexerMap = indexer.indexerMap;
   }
 
   /**
@@ -1589,9 +1612,11 @@ struct DatabaseView {
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
         } else {
-          Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
-            // 数据库内容
-            List({ space: 8, scroller: this.listScroller }) {
+          // 使用 Stack 包裹以支持 AlphabetIndexer 悬浮
+          Stack({ alignContent: Alignment.End }) {
+            Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
+              // 数据库内容
+              List({ space: 8, scroller: this.listScroller }) {
               // 没有数据
               if (this.items.length === 0) {
                 ListItem() {
@@ -1834,6 +1859,31 @@ struct DatabaseView {
           .onRefreshing(() => {
             this.refreshDatabase();
           })
+
+            // 索引条 - 悬浮在列表上方（仅名称排序且非搜索状态时显示）
+            if (this.indexerValues.length > 0) {
+              AlphabetIndexer({ arrayValue: this.indexerValues, selected: this.indexerSelected })
+                .selectedColor($r('app.color.button_bg_blue'))
+                .color($r('app.color.text_secondary'))
+                .selectedBackgroundColor($r('app.color.bg_secondary'))
+                .itemSize(20)
+                .usingPopup(true)
+                .popupColor($r('app.color.text_primary'))
+                .popupBackground($r('app.color.card_bg'))
+                .alignStyle(IndexerAlign.END, 12)
+                .onSelect((index: number) => {
+                  this.indexerSelected = index;
+                  const listIndex = this.indexerMap.get(this.indexerValues[index]);
+                  if (listIndex !== undefined) {
+                    this.listScroller.scrollToIndex(listIndex);
+                  }
+                })
+                .margin({ right: 8 })
+                .height('70%')
+            }
+          }
+          .width('100%')
+          .layoutWeight(1)
         }
       }
       .width('100%')

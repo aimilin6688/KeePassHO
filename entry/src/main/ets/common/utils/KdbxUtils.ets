@@ -16,7 +16,7 @@ import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { SortMode } from '../constants/SortConstants';
-import { IconUtils, ResourceManager } from '.';
+import { IconUtils, ResourceManager, StringUtils } from '.';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
@@ -214,13 +214,13 @@ export class KdbxUtils {
     ];
 
     for (const field of standardFields) {
-      if(KdbxUtils.FIELD_TAGS === field){
+      if (KdbxUtils.FIELD_TAGS === field) {
         for (const tag of entry.tags) {
           if (tag.toLowerCase().includes(searchText)) {
             return true;
           }
         }
-      } else{
+      } else {
         const value = KdbxUtils.getFieldValueString(entry.fields, field);
         if (value.toLowerCase().includes(searchText)) {
           return true;
@@ -351,9 +351,9 @@ export class KdbxUtils {
             return pinnedResult;
           }
           // 获取名称
-          const nameA = a instanceof KdbxGroup ? (a.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
-          const nameB = b instanceof KdbxGroup ? (b.name ?? String.fromCharCode(0xffff)) : KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
-          return nameA.localeCompare(nameB);
+          const nameA = a instanceof KdbxGroup ? (a.name ?? '') : KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE);
+          const nameB = b instanceof KdbxGroup ? (b.name ?? '') : KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE);
+          return StringUtils.getPinyin(nameA).localeCompare(StringUtils.getPinyin(nameB));
         });
         break;
       case SortMode.MODIFIED:
@@ -685,6 +685,52 @@ export class KdbxUtils {
     }
     return path.join(splitChar);
   }
+
+  /**
+   * 构建索引器数据
+   * @param items 条目或分组列表
+   * @returns  索引器数据
+   */
+  public static buildIndexerData(items: Array<KdbxGroup | KdbxEntry>, startIndex?: number): KdbxIndexer {
+    let indexerValues = new Array<string>();
+    let indexerMap = new Map<string, number>();
+
+    if (!items || items.length === 0) {
+      return { indexerValues, indexerMap };
+    }
+
+    // 收集所有首字母（从非置顶/收藏的条目开始）
+    const letterSet = new Set<string>();
+    for (let i = (startIndex ?? 0); i < items.length; i++) {
+      const item = items[i];
+      if(!item){
+        continue;
+      }
+      const name = item instanceof KdbxGroup ? (item.name ?? '') : KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE);
+      const letter = StringUtils.getFirstLetter(name ?? '');
+
+      // 字母表增加 字母
+      letterSet.add(letter);
+      // 字母索引增加索引
+      if (!indexerMap.has(letter)) {
+        indexerMap.set(letter, i);
+      }
+    }
+
+    // 排序字母（# 放在最前面）
+    const letters = Array.from(letterSet).sort((a, b) => {
+      if (a === '#') {
+        return -1;
+      }
+      if (b === '#') {
+        return 1;
+      }
+      return a.localeCompare(b);
+    });
+
+    indexerValues.push(...letters);
+    return { indexerValues, indexerMap };
+  }
 }
 
 /**
@@ -693,4 +739,16 @@ export class KdbxUtils {
 export interface KdbxSearchResult {
   filteredGroups: Array<KdbxGroup>; // 过滤后的分组列表
   filteredEntries: Array<KdbxEntry>; // 过滤后的条目列表
+}
+
+export interface KdbxIndexer {
+  /**
+   * 索引器值
+   */
+  indexerValues: Array<string>;
+
+  /**
+   * 索引器映射
+   */
+  indexerMap: Map<string, number>;
 }

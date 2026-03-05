@@ -1,10 +1,11 @@
 import { KdbxEntry } from 'kdbxweb';
-import { KdbxUtils, DateUtils, ClipboardUtils, WindowUtils, CommonUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, StringUtils, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { Router } from '@kit.ArkUI';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { common } from '@kit.AbilityKit';
-import { pinyin4js, ChineseHelper } from '@ohos/pinyin4js';
+import { SortMode } from '../common/constants';
+import { UIUtils } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -14,8 +15,7 @@ struct TotpView {
   @State isSearching: boolean = false; // 是否处于搜索状态
   @State indexerSelected: number = 0; // AlphabetIndexer 选中索引
   @State indexerValues: string[] = []; // 索引字母数组
-  @State entryIndexMap: Map<string, number> = new Map(); // 字母到列表索引的映射
-
+  @State indexerMap: Map<string, number> = new Map(); // 字母到列表索引的映射
   private router: Router = this.getUIContext().getRouter();
   private totpEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   private listScroller: Scroller = new Scroller(); // List 滚动控制器
@@ -36,8 +36,8 @@ struct TotpView {
     }
     let result = KdbxUtils.searchInGroup(kdbx.getDefaultGroup(), 'otpauth://totp/');
 
-    // 按字母/拼音排序
-    this.sortEntriesByName(result.filteredEntries);
+    // 按名称排序
+    KdbxUtils.sortBy(result.filteredEntries, SortMode.NAME);
 
     this.totpEntries.push(...result.filteredEntries);
     this.resultEntries.push(...result.filteredEntries);
@@ -47,76 +47,12 @@ struct TotpView {
   }
 
   /**
-   * 按名称排序（支持中文拼音）
-   */
-  private sortEntriesByName(entries: KdbxEntry[]): void {
-    entries.sort((a, b) => {
-      const nameA = KdbxUtils.getFieldValueString(a.fields, KdbxUtils.FIELD_TITLE) ?? '';
-      const nameB = KdbxUtils.getFieldValueString(b.fields, KdbxUtils.FIELD_TITLE) ?? '';
-      // 使用 zh-CN locale 进行中文拼音排序
-      return this.getFirstLetter(nameA).toUpperCase().localeCompare(this.getFirstLetter(nameB).toUpperCase(), 'zh-CN');
-    });
-  }
-
-  /**
-   * 获取字符串的首字母（支持中文拼音）
-   */
-  private getFirstLetter(str: string): string {
-    if (!str || str.length === 0) {
-      return '#';
-    }
-    const firstChar = str.charAt(0);
-    // 检查是否是字母
-    if (/[a-zA-Z]/.test(firstChar)) {
-      return firstChar.toUpperCase();
-    }
-    // 检查是否是中文，使用 pinyin4js 获取拼音首字母
-    if (ChineseHelper.isChinese(firstChar)) {
-      const pinyin: string = pinyin4js.getShortPinyin(firstChar);
-      if (pinyin && pinyin.length > 0) {
-        return pinyin.charAt(0).toUpperCase();
-      }
-    }
-    // 数字或其他字符归类到 #
-    return '#';
-  }
-
-  /**
    * 构建索引数据
    */
   private buildIndexerData(): void {
-    this.indexerValues = [];
-    this.entryIndexMap.clear();
-
-    if (this.resultEntries.length === 0) {
-      return;
-    }
-
-    // 收集所有首字母
-    const letterSet = new Set<string>();
-    for (const entry of this.resultEntries) {
-      const title = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE) ?? '';
-      const letter = this.getFirstLetter(title);
-      letterSet.add(letter);
-    }
-
-    // 排序字母（# 放在最前面）
-    const letters = Array.from(letterSet).sort((a, b) => {
-      if (a === '#') return -1;
-      if (b === '#') return 1;
-      return a.localeCompare(b);
-    });
-
-    this.indexerValues = letters;
-
-    // 构建字母到列表索引的映射
-    for (let i = 0; i < this.resultEntries.length; i++) {
-      const title = KdbxUtils.getFieldValueString(this.resultEntries[i].fields, KdbxUtils.FIELD_TITLE) ?? '';
-      const letter = this.getFirstLetter(title);
-      if (!this.entryIndexMap.has(letter)) {
-        this.entryIndexMap.set(letter, i);
-      }
-    }
+    const indexer = KdbxUtils.buildIndexerData(UIUtils.getTarget(this.resultEntries));
+    this.indexerValues = indexer.indexerValues;
+    this.indexerMap = indexer.indexerMap;
   }
 
   /**
@@ -339,7 +275,7 @@ struct TotpView {
               .onSelect((index: number) => {
                 this.indexerSelected = index;
                 const letter = this.indexerValues[index];
-                const listIndex = this.entryIndexMap.get(letter);
+                const listIndex = this.indexerMap.get(letter);
                 if (listIndex !== undefined) {
                   this.listScroller.scrollToIndex(listIndex);
                 }
