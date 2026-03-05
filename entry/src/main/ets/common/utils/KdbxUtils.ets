@@ -689,6 +689,7 @@ export class KdbxUtils {
   /**
    * 构建索引器数据
    * @param items 条目或分组列表
+   * @param startIndex 开始索引, 默认从0开始
    * @returns  索引器数据
    */
   public static buildIndexerData(items: Array<KdbxGroup | KdbxEntry>, startIndex?: number): KdbxIndexer {
@@ -703,12 +704,12 @@ export class KdbxUtils {
     const letterSet = new Set<string>();
     for (let i = (startIndex ?? 0); i < items.length; i++) {
       const item = items[i];
-      if(!item){
+      // 不存在条目，或者置顶条目
+      if (!item || KdbxUtils.isPinned(item)) {
         continue;
       }
       const name = item instanceof KdbxGroup ? (item.name ?? '') : KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE);
       const letter = StringUtils.getFirstLetter(name ?? '');
-
       // 字母表增加 字母
       letterSet.add(letter);
       // 字母索引增加索引
