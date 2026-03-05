@@ -1201,6 +1201,10 @@
       "value": "附件"
     },
     {
+      "name": "attachment_size_exceed_limit",
+      "value": "附件\"%s\"大小(%s MB)超过限制%s MB，无法添加"
+    },
+    {
       "name": "Settings_database_import",
       "value": "导入数据库"
     },
