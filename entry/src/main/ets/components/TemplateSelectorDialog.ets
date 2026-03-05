@@ -281,6 +281,7 @@ export struct TemplateSelectorDialog {
       }
       .layoutWeight(1)
       .width('100%')
+      .height('auto')
       .padding({ left: 16, right: 16, bottom: 16 })
       .divider({
         strokeWidth: 1,
