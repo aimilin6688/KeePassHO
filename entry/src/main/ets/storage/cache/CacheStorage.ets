@@ -222,7 +222,7 @@ export class CacheStorage implements IFileStorage {
   private async writeToCache(cachePath: string, content: ArrayBuffer): Promise<void> {
     try {
       const cacheDir: string = CacheConstants.getCacheDir();
-      await this.ensureCacheDir(cacheDir);
+      this.ensureCacheDir(cacheDir);
 
       const file = await fs.open(cachePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
       await fs.write(file.fd, content);
@@ -311,9 +311,13 @@ export class CacheStorage implements IFileStorage {
    * 确保缓存目录存在
    * @param cacheDir 缓存目录路径
    */
-  private async ensureCacheDir(cacheDir: string): Promise<void> {
-    return fs.mkdir(cacheDir, true).catch((error: Error) => {
-      hilog.debug(DOMAIN, TAG, 'Ensure cache dir failed: %{public}s, error: %{public}s', cacheDir, error?.message);
-    });
+  private ensureCacheDir(cacheDir: string): void {
+    try {
+      fs.mkdirSync(cacheDir, true);
+      hilog.debug(DOMAIN, TAG, 'Cache dir created: %{public}s', cacheDir);
+    } catch (error) {
+      // 目录已存在会报错，可忽略；其他错误记录日志但不阻断流程
+      hilog.error(DOMAIN, TAG, 'Ensure cache dir: %{public}s, error: %{public}s', cacheDir, error?.message);
+    }
   }
 }
