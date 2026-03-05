@@ -90,7 +90,8 @@ struct DatabaseView {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
-    autoCancel: false
+    autoCancel: false,
+    keyboardAvoidMode: KeyboardAvoidMode.NONE
   });
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
