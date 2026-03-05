@@ -589,7 +589,7 @@ struct TemplateEntryCreate {
 
                 // 颜色选择按钮
                 Button() {
-                  Image($r('app.media.ic_color_tag'))
+                  Image($r('app.media.ic_color'))
                     .width(32)
                     .height(32)
                     .fillColor(this.fgColor || $r('app.color.text_primary'))
