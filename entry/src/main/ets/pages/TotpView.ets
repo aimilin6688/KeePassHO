@@ -1,8 +1,6 @@
 import { KdbxEntry } from 'kdbxweb';
-import { SortMode } from '../common/constants/SortConstants';
 import { KdbxUtils, DateUtils, ClipboardUtils, WindowUtils, CommonUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
-import { SettingsService } from '../services/SettingsService';
 import { Router } from '@kit.ArkUI';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { common } from '@kit.AbilityKit';
@@ -37,7 +35,6 @@ struct TotpView {
       return;
     }
     let result = KdbxUtils.searchInGroup(kdbx.getDefaultGroup(), 'otpauth://totp/');
-    const sortBy = SettingsService.getInstance().getSync(SettingsService.KEY_SORT_BY, SortMode.DEFAULT);
 
     // 按字母/拼音排序
     this.sortEntriesByName(result.filteredEntries);
@@ -228,8 +225,8 @@ struct TotpView {
         .width('100%')
         .height(56)
 
-        // 数据库内容
-        Row() {
+        // 数据库内容 - 使用 Stack 实现索引条悬浮
+        Stack({ alignContent: Alignment.End }) {
           List({ space: 8, scroller: this.listScroller }) {
             if (!this.resultEntries || this.resultEntries.length == 0) {
               ListItem() {
@@ -318,7 +315,7 @@ struct TotpView {
             }
           }
           .width('100%')
-          .layoutWeight(1)
+          .height('100%')
           .backgroundColor($r("app.color.bg_primary"))
           .padding({
             left: 12,
@@ -328,7 +325,7 @@ struct TotpView {
           })
           .scrollBar(BarState.Auto)
 
-          // 索引条
+          // 索引条 - 悬浮在列表上方
           if (this.indexerValues.length > 0) {
             AlphabetIndexer({ arrayValue: this.indexerValues, selected: this.indexerSelected })
               .selectedColor($r('app.color.button_bg_blue'))
@@ -338,18 +335,17 @@ struct TotpView {
               .usingPopup(true)
               .popupColor($r('app.color.text_primary'))
               .popupBackground($r('app.color.card_bg'))
-              .alignStyle(IndexerAlign.END, 8)
+              .alignStyle(IndexerAlign.END, 12)
               .onSelect((index: number) => {
                 this.indexerSelected = index;
                 const letter = this.indexerValues[index];
                 const listIndex = this.entryIndexMap.get(letter);
                 if (listIndex !== undefined) {
-                  // 滚动到对应位置
                   this.listScroller.scrollToIndex(listIndex);
                 }
               })
-              .margin({ right: 4 })
-              .height('80%')
+              .margin({ right: 8 })
+              .height('70%')
           }
         }
         .width('100%')
