@@ -222,14 +222,14 @@ export class CacheStorage implements IFileStorage {
   private async writeToCache(cachePath: string, content: ArrayBuffer): Promise<void> {
     try {
       const cacheDir: string = CacheConstants.getCacheDir();
-      await this.ensureCacheDir(cacheDir);
+      this.ensureCacheDir(cacheDir);
 
       const file = await fs.open(cachePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
       await fs.write(file.fd, content);
       await fs.close(file.fd);
       hilog.debug(DOMAIN, TAG, 'Write to cache success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       throw new Error('Write to cache failed: ' + error?.message);
     }
   }
@@ -244,7 +244,7 @@ export class CacheStorage implements IFileStorage {
       await this.writeToCache(cachePath, content);
       hilog.debug(DOMAIN, TAG, 'Save to cache async success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       this.showErrorDialog(error?.message);
     }
   }
@@ -260,7 +260,7 @@ export class CacheStorage implements IFileStorage {
       await this.decoratedStorage.write(path, content);
       hilog.debug(DOMAIN, TAG, 'Push to remote async success: %{public}s', path);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', path, error?.message);
+      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', path, error?.stack);
       this.showErrorDialog(error?.message);
     }
   }
@@ -277,7 +277,7 @@ export class CacheStorage implements IFileStorage {
         backgroundColor: $r('app.color.error')
       })
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', error?.message);
+      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', error?.stack);
     }
   }
 
@@ -302,7 +302,7 @@ export class CacheStorage implements IFileStorage {
       } as FileInfo;
       return fileInfo;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', cachePath, error?.message);
+      hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       throw new Error('Get cache info failed: ' + error?.message);
     }
   }
@@ -311,9 +311,13 @@ export class CacheStorage implements IFileStorage {
    * 确保缓存目录存在
    * @param cacheDir 缓存目录路径
    */
-  private async ensureCacheDir(cacheDir: string): Promise<void> {
-    return fs.mkdir(cacheDir, true).catch((error: Error) => {
-      hilog.debug(DOMAIN, TAG, 'Ensure cache dir failed: %{public}s, error: %{public}s', cacheDir, error?.message);
-    });
+  private ensureCacheDir(cacheDir: string): void {
+    try {
+      fs.mkdirSync(cacheDir, true);
+      hilog.debug(DOMAIN, TAG, 'Cache dir created: %{public}s', cacheDir);
+    } catch (error) {
+      // 目录已存在会报错，可忽略；其他错误记录日志但不阻断流程
+      hilog.error(DOMAIN, TAG, 'Ensure cache dir: %{public}s, error: %{public}s', cacheDir, error?.message);
+    }
   }
 }

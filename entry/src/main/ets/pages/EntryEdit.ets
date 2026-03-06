@@ -10,6 +10,9 @@ import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
+import { TemplateService } from '../services/template/TemplateService';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
+import { ColorEditDialog, ColorPickerResult } from '../components/ColorPickerDialog';
 import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
@@ -43,6 +46,8 @@ struct EntryEdit {
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   @State attachments: Map<string, KdbxBinary | KdbxBinaryWithHash> = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
+  @State fgColor: string | undefined = undefined; // 前景色
+  @State bgColor: string | undefined = undefined; // 背景色
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
@@ -124,6 +129,22 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
+  // 颜色选择器弹框
+  colorPickerController: CustomDialogController = new CustomDialogController({
+    builder: ColorEditDialog({
+      initialFgColor: this.fgColor,
+      initialBgColor: this.bgColor,
+      onConfirm: (result: ColorPickerResult) => {
+        this.fgColor = result.foregroundColor;
+        this.bgColor = result.backgroundColor;
+        this.checkEntryModified();
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
+  private templateService: TemplateService = TemplateService.getInstance();
 
   aboutToAppear() {
     // 获取数据库信息
@@ -193,6 +214,10 @@ struct EntryEdit {
 
       // 加载图标ID
       this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
+
+      // 加载颜色
+      this.fgColor = this.entry.fgColor;
+      this.bgColor = this.entry.bgColor;
 
       // 过期时间
       this.expiryTime = this.entry.times.expiryTime;
@@ -332,6 +357,8 @@ struct EntryEdit {
 
       // 保存图标
       this.setEntryIcon();
+      // 保存颜色
+      this.setEntryColor();
       // 保存标签
       this.setTags();
       // 保存条目时间戳
@@ -399,6 +426,17 @@ struct EntryEdit {
       this.entry.icon = undefined;
       this.entry.customIcon = new KdbxUuid(this.iconId);
     }
+  }
+
+  /**
+   * 设置条目颜色
+   */
+  private setEntryColor() {
+    if (!this.entry) {
+      return;
+    }
+    this.entry.fgColor = this.fgColor;
+    this.entry.bgColor = this.bgColor;
   }
 
   /**
@@ -597,6 +635,87 @@ struct EntryEdit {
   }
 
   /**
+   * 将当前条目保存为模板
+   */
+  private saveAsTemplate() {
+    if (!this.database || !this.entry) {
+      CommonUtils.showToast($r('app.string.template_only_entry'));
+      return;
+    }
+
+    if (!this.title.trim()) {
+      CommonUtils.showToast({
+        message: $r('app.string.title_required_message'),
+        duration: 2000
+      });
+      return;
+    }
+
+    const templateName = this.title;
+
+    // 弹出确认对话框
+    this.promptAction.showDialog({
+      title: $r('app.string.template_save_as_title'),
+      message: $r('app.string.template_save_as_message', templateName),
+      buttons: [
+        {
+          text: $r('app.string.cancel_button_text'),
+          color: $r('app.color.text_secondary')
+        },
+        {
+          text: $r('app.string.confirm_button_text'),
+          color: $r('app.color.button_bg_blue')
+        }
+      ]
+    }).then((result) => {
+      if (result.index === 1) {
+        // 先更新条目字段（使用当前编辑的值）
+        const memoryProtection = this.database!.meta.memoryProtection ?? {};
+        this.entry!.setField(KdbxUtils.FIELD_TITLE, this.title, memoryProtection.title);
+        this.entry!.setField(KdbxUtils.FIELD_USERNAME, this.username, memoryProtection.userName);
+        this.entry!.setField(KdbxUtils.FIELD_PASSWORD, this.password, memoryProtection.password ?? true);
+        this.entry!.setField(KdbxUtils.FIELD_URL, this.url, memoryProtection.url);
+        this.entry!.setField(KdbxUtils.FIELD_NOTES, this.notes, memoryProtection.notes);
+
+        // 清除旧的自定义字段并添加新的
+        this.entry!.fields.forEach((value, key) => {
+          if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD,
+            KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES].includes(key)) {
+            this.entry!.fields.delete(key);
+          }
+        });
+        // 添加自定义字段
+        for (const field of this.customFields) {
+          if (field.isProtected) {
+            this.entry!.fields.set(field.key, ProtectedValue.fromString(field.value));
+          } else {
+            this.entry!.fields.set(field.key, field.value);
+          }
+        }
+
+        // 保存为模板
+        const template = this.templateService.saveAsTemplate(this.entry!, this.database!);
+        if (template) {
+          // 保存数据库
+          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+            onSuccess: () => {
+              CommonUtils.showToast($r('app.string.template_save_success'));
+            },
+            onError: (error: string) => {
+              hilog.error(DOMAIN, TAG, 'Failed to save database: %{public}s', error);
+              CommonUtils.showToast($r('app.string.template_save_failed'));
+            }
+          }));
+        } else {
+          CommonUtils.showToast($r('app.string.template_save_failed'));
+        }
+      }
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, `Failed to save as template: ${error?.message}`);
+    });
+  }
+
+  /**
    * 日期时间选择
    */
   private openExpiryTimePicker() {
@@ -709,12 +828,34 @@ struct EntryEdit {
       this.isModified = true;
       return;
     }
+    // 颜色修改检测
+    if (this.entry.fgColor != this.fgColor) {
+      this.isModified = true;
+      return;
+    }
+    if (this.entry.bgColor != this.bgColor) {
+      this.isModified = true;
+      return;
+    }
   }
 
   // 添加附件
   private addAttachment() {
+    // 附件大小限制：5MB
+    const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+
     FileUtils.selectFiles(1).then(result => {
       for (let file of result) {
+        // 检查文件大小
+        const fileSize = file.content.byteLength;
+        if (fileSize > MAX_ATTACHMENT_SIZE) {
+          const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+          CommonUtils.showToast({
+            message: $r('app.string.attachment_size_exceed_limit', file.name, fileSizeMB, '5'),
+            duration: 3000
+          });
+          continue;
+        }
         this.attachments.set(file.name, file.content);
       }
       this.isModified = true;
@@ -753,6 +894,25 @@ struct EntryEdit {
 
           Blank()
 
+          // 编辑模式下显示保存为模板按钮
+          if (this.isEditMode) {
+            Button() {
+              Image($r('app.media.ic_copy'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width(48)
+            .height(48)
+            .margin({ right: 8 })
+            .borderRadius(20)
+            .backgroundColor(Color.Transparent)
+            .enabled(!this.isLoading)
+            .onClick(() => {
+              this.saveAsTemplate();
+            })
+          }
+
           Button() {
             Image($r('app.media.ic_save'))
               .width(26)
@@ -775,7 +935,6 @@ struct EntryEdit {
         // 表单内容
         Scroll() {
           Column() {
-
             // 标题
             Column() {
               Row() {
@@ -815,6 +974,37 @@ struct EntryEdit {
                 .backgroundColor($r("app.color.card_bg"))
                 .onClick(() => {
                   this.openIconSelector();
+                })
+
+                // 颜色选择按钮
+                Button() {
+                  Image($r('app.media.ic_color'))
+                    .width(32)
+                    .height(32)
+                    .fillColor(this.fgColor || $r('app.color.text_primary'))
+                }
+                .width(48)
+                .height(48)
+                .margin({ left: 8 })
+                .borderRadius(8)
+                .backgroundColor(this.bgColor || $r("app.color.card_bg"))
+                .onClick(() => {
+                  // 每次打开时重新创建对话框控制器以获取最新的颜色值
+                  this.colorPickerController = new CustomDialogController({
+                    builder: ColorEditDialog({
+                      initialFgColor: this.fgColor,
+                      initialBgColor: this.bgColor,
+                      onConfirm: (result: ColorPickerResult) => {
+                        this.fgColor = result.foregroundColor;
+                        this.bgColor = result.backgroundColor;
+                        this.checkEntryModified();
+                      }
+                    }),
+                    alignment: DialogAlignment.Bottom,
+                    customStyle: true,
+                    autoCancel: false
+                  });
+                  this.colorPickerController.open();
                 })
               }
               .width('100%')

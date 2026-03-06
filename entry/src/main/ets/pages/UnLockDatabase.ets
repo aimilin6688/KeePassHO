@@ -1,7 +1,7 @@
 import { FileService } from '../services/FileService';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
-import { DbFileParam } from '../services/TypeDefined';
-import { PromptAction, Router } from '@kit.ArkUI';
+import { AuthType, DbFileParam } from '../services/TypeDefined';
+import { Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
@@ -17,8 +17,8 @@ struct UnLockDatabase {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';
+  @State isKeyfileOnlyMode: boolean = false; // 是否为仅密钥文件模式
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private router: Router = this.getUIContext().getRouter();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupportAndEnabled();
   private isFaceSupport: boolean = AuthService.isFaceSupportAndEnabled();
@@ -29,29 +29,28 @@ struct UnLockDatabase {
   }
 
   onPageShow(): void {
+    // 判断是否为仅密钥文件模式
+    this.isKeyfileOnlyMode = AuthType.isKeyfileOnly(this.dbFileParam.authType);
+    // 原有密码模式逻辑
     SettingsService.get(SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH, this.quickLockPasswordLength, (value) => {
       this.quickLockPasswordLength = value;
     });
     // 默认认证方式
     SettingsService.get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType, (value) => {
       this.defaultAuthType = value;
-      // 是否支持指纹验证
-      if (this.defaultAuthType === UnlockAuthType.FINGERPRINT) {
-        this.startFingerprintAuth();
-      }
-      // 是否支持人脸验证
-      if (this.defaultAuthType === UnlockAuthType.FACE) {
-        this.startFaceAuth();
-      }
-      // 默认密码解锁
-      if (this.defaultAuthType === UnlockAuthType.PASSWORD) {
-        this.passwordInputFocus();
-      }
+      this.startAuth();
     });
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
+  /**
+   * 快速解锁
+   */
   private quickUnlock() {
+    if (this.isKeyfileOnlyMode) {
+      this.startAuth();
+      return;
+    }
     if (!this.quickPassword) {
       CommonUtils.showToast({ message: $r('app.string.password_placeholder') });
       return
@@ -85,6 +84,24 @@ struct UnLockDatabase {
   }
 
   /**
+   * 开始认证
+   */
+  private startAuth() {
+    // 是否支持指纹验证
+    if (this.defaultAuthType === UnlockAuthType.FINGERPRINT) {
+      this.startFingerprintAuth();
+    }
+    // 是否支持人脸验证
+    if (this.defaultAuthType === UnlockAuthType.FACE) {
+      this.startFaceAuth();
+    }
+    // 默认密码解锁
+    if (this.defaultAuthType === UnlockAuthType.PASSWORD) {
+      this.startPasswordAuth();
+    }
+  }
+
+  /**
    * 开始指纹验证
    */
   private startFingerprintAuth() {
@@ -101,6 +118,23 @@ struct UnLockDatabase {
   private startFaceAuth() {
     if (SettingsService.isFaceAuthEnable()) {
       AuthService.startFaceAuth(this.authServiceCallback());
+    } else {
+      this.passwordInputFocus();
+    }
+  }
+
+  /**
+   * 开始密码认证
+   */
+  private startPasswordAuth() {
+    // 仅密钥文件模式，直接跳转到密码页面
+    if (this.isKeyfileOnlyMode) {
+      CommonUtils.pushUrl({
+        url: 'pages/Password',
+        params: {
+          filePath: this.dbFileParam.filePath
+        }
+      });
     } else {
       this.passwordInputFocus();
     }
@@ -149,32 +183,33 @@ struct UnLockDatabase {
           .width('100%')
           .margin({ top: 8 })
 
-        // 用户名
-        Column() {
-          Text($r('app.string.input_quick_unlock_password', this.quickLockPasswordLength))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ bottom: 8 })
-            .alignSelf(ItemAlign.Start)
+        // 非仅密钥文件模式，显示快速解锁密码输入框
+        if (!this.isKeyfileOnlyMode) {
+          Column() {
+            Text($r('app.string.input_quick_unlock_password', this.quickLockPasswordLength))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ bottom: 8 })
+              .alignSelf(ItemAlign.Start)
 
-          TextInput({ text: this.quickPassword })
-            .width('100%')
-            .id("quickPasswordInput")
-            .type(InputType.Password)
-            .fontSize(16)
-            .enableAutoFill(false)
-            .fontColor($r('app.color.text_primary'))
-            .borderRadius(8)
-            .onChange((value) => {
-              this.quickPassword = value;
-            })
-            .onSubmit(() => {
-              this.quickUnlock();
-            })
+            TextInput({ text: this.quickPassword })
+              .width('100%')
+              .id("quickPasswordInput")
+              .type(InputType.Password)
+              .fontSize(16)
+              .enableAutoFill(false)
+              .fontColor($r('app.color.text_primary'))
+              .borderRadius(8)
+              .onChange((value) => {
+                this.quickPassword = value;
+              })
+              .onSubmit(() => {
+                this.quickUnlock();
+              })
+          }
+          .width('100%')
+          .margin({ top: 16 })
         }
-        .width('100%')
-        .margin({ top: 16 })
-
       }
       .width('100%')
       .justifyContent(FlexAlign.Start)
