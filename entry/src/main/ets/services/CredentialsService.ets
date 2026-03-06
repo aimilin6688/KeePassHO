@@ -21,11 +21,21 @@ export class CredentialsService {
   public static async createKdbxCredentials(param: CredentialsParam): Promise<KdbxCredentials> {
     // 创建凭证
     let credentials: KdbxCredentials;
-    if (AuthType.useKeyAuth(param.authType)) {
+
+    if (AuthType.isKeyfileOnly(param.authType)) {
+      // 仅密钥文件模式
       if (param.keyLocation === undefined) {
         throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
       }
-      // 使用密码和密钥文件
+      let keyFileContent = await KdbxFileManager.of(param.keyLocation).read(param.keyLocation.filePath);
+      hilog.info(DOMAIN, TAG, 'Load key file content success (keyfile only), keyFilePath: %{public}s', param.keyLocation.filePath);
+      // 密码为 null，仅使用密钥文件
+      credentials = new KdbxCredentials(null, keyFileContent.content);
+    } else if (AuthType.useKeyAuth(param.authType)) {
+      // 密码 + 密钥文件模式
+      if (param.keyLocation === undefined) {
+        throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
+      }
       let keyFileContent = await KdbxFileManager.of(param.keyLocation).read(param.keyLocation.filePath);
       hilog.info(DOMAIN, TAG, 'Load key file content success, keyFilePath: %{public}s', param.keyLocation.filePath);
       credentials = new KdbxCredentials(ProtectedValue.fromString(param.password), keyFileContent.content);
@@ -33,6 +43,7 @@ export class CredentialsService {
       // 仅使用密码
       credentials = new KdbxCredentials(ProtectedValue.fromString(param.password));
     }
+
     return Promise.resolve(credentials);
   }
 }

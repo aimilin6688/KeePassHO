@@ -4,9 +4,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
-import { PromptAction, Router } from '@kit.ArkUI';
+import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
@@ -22,6 +22,9 @@ import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
+import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
+import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
+import { UIUtils } from '@kit.ArkUI';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -55,6 +58,14 @@ struct DatabaseView {
   @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
   @State moreMenuX: number = 0; // 更多菜单X坐标
   @State moreMenuY: number = 0; // 更多菜单Y坐标
+  // 批量操作相关状态
+  @State isSelectionMode: boolean = false; // 是否处于选择模式
+  @State selectedItems: Map<string, KdbxGroup | KdbxEntry> = new Map(); // 选中的条目或分组
+  @State moveSourceGroupId: string = ''; // 移动操作的源分组ID
+  // AlphabetIndexer 相关状态
+  @State indexerSelected: number = 0; // AlphabetIndexer 选中索引
+  @State indexerValues: string[] = []; // 索引字母数组
+  @State indexerMap: Map<string, number> = new Map(); // 字母到列表索引的映射
   // 拖拽组件
   @StorageLink("containerX") containerX: number = 0; // 容器X坐标
   @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
@@ -72,8 +83,21 @@ struct DatabaseView {
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
   private router: Router = this.getUIContext().getRouter();
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private settingsService: SettingsService = SettingsService.getInstance();
+  // 模板选择对话框控制器
+  private templateSelectorController: CustomDialogController = new CustomDialogController({
+    builder: TemplateSelectorDialog({
+      database: this.database,
+      showUserTemplates: true,
+      onTemplateSelected: (template: ITemplate) => {
+        this.handleTemplateSelected(template);
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false,
+    keyboardAvoidMode: KeyboardAvoidMode.NONE
+  });
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
   private clearHistoryUrlPage: Array<string> = ["Password", "UnLockDatabase"];
@@ -82,7 +106,9 @@ struct DatabaseView {
       newGroupName: this.newGroupName,
       editingGroupIndex: this.editingGroupIndex,
       selectedIconId: this.getSelectedGroupIcon(),
-      onConfirm: (iconId: number | string): void => this.handleAddGroup(iconId),
+      initialFgColor: this.getSelectedGroupFgColor(),
+      initialBgColor: this.getSelectedGroupBgColor(),
+      onConfirm: (iconId: number | string, fgColor: string | undefined, bgColor: string | undefined): void => this.handleAddGroup(iconId, fgColor, bgColor),
       onCancel: (): void => {
         this.newGroupName = "";
         this.editingGroupIndex = -1;
@@ -147,6 +173,20 @@ struct DatabaseView {
       this.items[this.editingGroupIndex] instanceof KdbxGroup
       ? (this.items[this.editingGroupIndex] as KdbxGroup).customIcon?.toString() ||
       (this.items[this.editingGroupIndex] as KdbxGroup).icon || Icons.Folder : Icons.Folder;
+  }
+
+  // 获取选中的分组前景色
+  private getSelectedGroupFgColor(): string | undefined {
+    return this.editingGroupIndex >= 0 && this.editingGroupIndex < this.items.length &&
+      this.items[this.editingGroupIndex] instanceof KdbxGroup
+      ? (this.items[this.editingGroupIndex] as KdbxGroup).fgColor : undefined;
+  }
+
+  // 获取选中的分组背景色
+  private getSelectedGroupBgColor(): string | undefined {
+    return this.editingGroupIndex >= 0 && this.editingGroupIndex < this.items.length &&
+      this.items[this.editingGroupIndex] instanceof KdbxGroup
+      ? (this.items[this.editingGroupIndex] as KdbxGroup).bgColor : undefined;
   }
 
   /**
@@ -554,20 +594,191 @@ struct DatabaseView {
     this.hideMoreMenu();
   }
 
+  // ==================== 批量操作相关方法 ====================
+
   /**
-   * 移动条目或分组
+   * 进入选择模式
+   * @param item 可选的初始选中项
    */
-  private moveItem(item: KdbxGroup | KdbxEntry) {
-    if (item instanceof KdbxGroup) {
-      this.moveParam = new MoveParam(item.uuid.id);
-    } else if (item instanceof KdbxEntry) {
-      this.moveParam = new MoveParam(item.parentGroup?.uuid.id || '', item.uuid.id);
+  private enterSelectionMode(item?: KdbxGroup | KdbxEntry): void {
+    const newMap = new Map<string, KdbxGroup | KdbxEntry>();
+    if (item) {
+      newMap.set(item.uuid.id, item);
     }
+    this.selectedItems = newMap;
+    this.isSelectionMode = true;
     this.hideMoreMenu();
   }
 
   /**
-   * 删除条目或分组
+   * 退出选择模式
+   */
+  private exitSelectionMode(): void {
+    this.selectedItems = new Map();
+    this.isSelectionMode = false;
+    this.moveSourceGroupId = '';
+  }
+
+  /**
+   * 切换选中状态
+   */
+  private toggleSelection(item: KdbxGroup | KdbxEntry): void {
+    const uuid = item.uuid.id;
+    const newMap = new Map(this.selectedItems);
+    if (newMap.has(uuid)) {
+      newMap.delete(uuid);
+    } else {
+      newMap.set(uuid, item);
+    }
+    this.selectedItems = newMap;
+  }
+
+  /**
+   * 全选当前列表
+   */
+  private selectAll(): void {
+    const newMap = new Map<string, KdbxGroup | KdbxEntry>();
+    this.items.forEach((item: KdbxGroup | KdbxEntry) => {
+      newMap.set(item.uuid.id, item);
+    });
+    this.selectedItems = newMap;
+  }
+
+  /**
+   * 取消全选
+   */
+  private deselectAll(): void {
+    this.selectedItems = new Map();
+  }
+
+  /**
+   * 是否全选
+   */
+  private isAllSelected(): boolean {
+    return this.items.length > 0 && this.selectedItems.size === this.items.length;
+  }
+
+  /**
+   * 获取选中的条目列表
+   */
+  private getSelectedEntries(): KdbxEntry[] {
+    const entries: KdbxEntry[] = [];
+    this.selectedItems.forEach((item: KdbxGroup | KdbxEntry, key: string) => {
+      if (item instanceof KdbxEntry) {
+        entries.push(item);
+      }
+    });
+    return entries;
+  }
+
+  /**
+   * 获取选中的分组列表
+   */
+  private getSelectedGroups(): KdbxGroup[] {
+    const groups: KdbxGroup[] = [];
+    this.selectedItems.forEach((item: KdbxGroup | KdbxEntry, key: string) => {
+      if (item instanceof KdbxGroup) {
+        groups.push(item);
+      }
+    });
+    return groups;
+  }
+
+  /**
+   * 开始批量移动
+   * 保存源分组ID，导航到目标分组选择页面
+   */
+  private startBatchMove(): void {
+    if (this.selectedItems.size === 0) {
+      return;
+    }
+    // 保存源分组ID
+    this.moveSourceGroupId = this.currentGroup?.uuid.id || '';
+    // 创建批量移动参数
+    const entries = this.getSelectedEntries();
+    const groups = this.getSelectedGroups();
+
+    if (entries.length > 0 || groups.length > 0) {
+      this.moveParam = MoveParam.create(
+        entries.map(e => e.uuid.id),
+        groups.map(g => g.uuid.id),
+        this.moveSourceGroupId
+      );
+    }
+
+    // 清除选择状态并退出选择模式
+    this.selectedItems = new Map();
+    this.isSelectionMode = false;
+
+    // 导航到根分组让用户选择目标
+    if (this.database) {
+      const rootGroup = this.database.getDefaultGroup();
+      CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: rootGroup.uuid.id } });
+    }
+  }
+
+  /**
+   * 确认批量删除
+   * 显示确认对话框
+   */
+  private confirmBatchDelete(): void {
+    if (this.selectedItems.size === 0) {
+      return;
+    }
+
+    const count = this.selectedItems.size;
+    this.getUIContext().showAlertDialog({
+      title: $r("app.string.dialog_confirm_title"),
+      message: $r('app.string.batch_delete_confirm_message', count),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {}
+      },
+      secondaryButton: {
+        value: $r("app.string.delete_button_text"),
+        action: () => {
+          this.executeBatchDelete();
+        }
+      }
+    });
+  }
+
+  /**
+   * 执行批量删除
+   */
+  private executeBatchDelete(): void {
+    if (this.database === null) {
+      return;
+    }
+    
+    const entries = this.getSelectedEntries();
+    const groups = this.getSelectedGroups();
+    
+    // 删除所有选中的条目
+    entries.forEach(entry => {
+      this.database!.remove(entry);
+    });
+    
+    // 删除所有选中的分组
+    groups.forEach(group => {
+      this.database!.remove(group);
+    });
+    
+    // 保存数据库
+    this.saveDatabase();
+    
+    // 刷新列表数据
+    if (this.currentGroup) {
+      this.currentGroup = this.database?.getGroup(this.currentGroup.uuid);
+      this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
+    }
+    
+    // 退出选择模式
+    this.exitSelectionMode();
+  }
+
+  /**
+   * 删除条目或分组 - 直接删除
    */
   private deleteItem(index: number) {
     if (this.database === null) {
@@ -701,15 +912,15 @@ struct DatabaseView {
           })
         }
 
-        // 移动按钮
+        // 选择按钮
         Column({ space: 8 }) {
           Button() {
             Column() {
-              Image($r('app.media.ic_move'))
+              Image($r('app.media.ic_check'))
                 .width(28)
                 .height(28)
                 .fillColor($r('app.color.text_primary'))
-              Text($r('app.string.move_button_text'))
+              Text('选择')
                 .fontSize(12)
                 .fontColor($r('app.color.text_primary'))
                 .margin({ top: 4 })
@@ -721,7 +932,11 @@ struct DatabaseView {
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
-            this.moveItem(this.selectedItem!);
+            // 使用 items 数组获取原始对象，避免使用 @State 代理对象
+            const item = this.items[this.selectedItemIndex];
+            if (item) {
+              this.enterSelectionMode(item);
+            }
           })
         }
 
@@ -849,10 +1064,40 @@ struct DatabaseView {
     this.saveDatabase();
   }
 
+
+  /**
+   * 打开模板选择器
+   */
+  private openTemplateSelector() {
+    this.templateSelectorController.open();
+  }
+
+  /**
+   * 处理模板选择
+   */
+  private handleTemplateSelected(template: ITemplate) {
+    if (!this.currentGroup) {
+      return;
+    }
+    // 跳转到模板创建页面
+    const templateId = isPresetTemplate(template) ? (template as IPresetTemplate).id : (template as IUserTemplate).uuid.id;
+    const isPreset = isPresetTemplate(template);
+    
+    CommonUtils.pushUrl({
+      url: 'pages/TemplateEntryCreate',
+      params: {
+        groupId: this.currentGroup.uuid.id,
+        templateId: templateId,
+        isPreset: isPreset
+      }
+    });
+  }
+
   /**
    * 添加收藏数据
    */
   private addFavorite() {
+    let startIndex = 0;
     // 如果是默认分组，添加收藏的数据到最上方
     if (this.database && !this.showBack) {
       const favoriteItems = KdbxUtils.getFavoriteItems(this.database);
@@ -861,10 +1106,12 @@ struct DatabaseView {
       const uniqueFavoriteItems = favoriteItems.filter(item => !currentItemsUuid.has(item.uuid.id));
       // 将收藏项添加到列表最前面
       this.items = [...uniqueFavoriteItems, ...this.items];
+      startIndex = uniqueFavoriteItems.length;
     }
+    this.buildIndexerData(startIndex);
   }
 
-  private handleAddGroup(iconId?: number | string) {
+  private handleAddGroup(iconId?: number | string, fgColor?: string, bgColor?: string) {
     if (this.newGroupName === undefined || !this.newGroupName.trim()) {
       return;
     }
@@ -894,6 +1141,11 @@ struct DatabaseView {
       group.icon = iconId as number;
       group.customIcon = undefined;
     }
+
+    // 设置分组颜色
+    group.fgColor = fgColor;
+    group.bgColor = bgColor;
+
     // 保存数据库
     this.saveDatabase();
     this.updateUI();
@@ -921,40 +1173,23 @@ struct DatabaseView {
     }
 
     try {
-      // 获取要移动的条目/分组
-      let sourceItem: KdbxGroup | KdbxEntry | undefined | null = undefined;
-
-      if (this.moveParam.isMoveGroup) {
-        sourceItem = this.database.getGroup(this.moveParam.groupId);
-      } else {
-        sourceItem = KdbxUtils.getEntry(this.database, this.moveParam.groupId, this.moveParam.entryId || "");
-      }
-
-      if (!sourceItem) {
-        CommonUtils.showToast({
-          message: $r('app.string.entry_not_found'),
-          duration: 2000
-        });
-        this.cancelMoving();
-        return;
-      }
-
-      // 检查是否移动到自己或子分组
-      if (this.moveParam.isMoveGroup) {
-        const sourceGroup = sourceItem as KdbxGroup;
-        // 不能移动到自己或子分组
-        if (this.currentGroup.uuid.id === sourceGroup.uuid.id || KdbxUtils.isChildGroup(sourceGroup, this.currentGroup)) {
-          CommonUtils.showToast({
-            message: $r('app.string.cannot_move_to_child'),
-            duration: 2000
-          });
-          this.cancelMoving();
-          return;
+      // 移动条目
+      this.moveParam.entryIds.forEach((entryId: string) => {
+        const entry = KdbxUtils.getEntry(this.database!, this.moveParam!.sourceGroupId, entryId);
+        if (entry) {
+          this.database!.move(entry, this.currentGroup!);
         }
-      }
-
-      // 移动条目/分组
-      this.database.move(sourceItem, this.currentGroup);
+      });
+      // 移动分组
+      this.moveParam.groupIds.forEach((groupId: string) => {
+        const group = this.database!.getGroup(groupId);
+        if (group) {
+          // 检查是否移动到自己或子分组
+          if (this.currentGroup!.uuid.id !== group.uuid.id && !KdbxUtils.isChildGroup(group, this.currentGroup!)) {
+            this.database!.move(group, this.currentGroup!);
+          }
+        }
+      });
       // 保存数据库
       this.saveDatabase();
     } catch (error) {
@@ -994,7 +1229,6 @@ struct DatabaseView {
       }
       // 合并分组和条目到一个数组
       this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
-      // 对合并后的数组进行排序
       KdbxUtils.sortBy(this.items, this.sortBy);
       // 如果在搜索状态，更新搜索结果
       if (this.isSearching && this.searchText.length > 0) {
@@ -1044,6 +1278,22 @@ struct DatabaseView {
       return 0;
     }
     return kdbxGroup.groups.length + kdbxGroup.entries.length;
+  }
+
+  /**
+   * 构建索引数据，快速定位条目开始索引
+   */
+  private buildIndexerData(startIndex?:number): void {
+    this.indexerValues = [];
+    this.indexerMap.clear();
+
+    if (this.items.length === 0 || this.sortBy !== SortMode.NAME || this.isSearching) {
+      return;
+    }
+    // 构建索引数据
+    const indexer = KdbxUtils.buildIndexerData(UIUtils.getTarget(this.items), startIndex);
+    this.indexerValues = indexer.indexerValues;
+    this.indexerMap = indexer.indexerMap;
   }
 
   /**
@@ -1275,7 +1525,8 @@ struct DatabaseView {
                       this.router.back();
                     })
                 }
-                Text(this.titleName)
+                // 选择模式下显示已选数量
+                Text(this.isSelectionMode ? `${this.titleName}(${this.selectedItems.size})` : this.titleName)
                   .fontSize(20)
                   .fontWeight(FontWeight.Medium)
                   .margin({ left: 16 })
@@ -1287,36 +1538,53 @@ struct DatabaseView {
               .layoutWeight(1)
               .flexShrink(1)
 
-              Row() {
-                // 搜索按钮
-                Image($r('app.media.ic_search'))
-                  .width(24)
-                  .height(24)
-                  .margin({ right: 12 })
-                  .onClick(() => {
-                    this.showSearch();
-                  })
-                // 锁定数据库
-                Image($r('app.media.ic_lock'))
-                  .width(24)
-                  .height(24)
-                  .margin({ right: 12 })
-                  .fillColor($r('app.color.text_primary'))
-                  .onClick(() => {
-                    this.lockDatabase();
-                  })
-                Image($r('app.media.ic_settings'))
-                  .width(24)
-                  .height(24)
+              // 选择模式下显示全选/取消全选按钮，否则显示常规按钮
+              if (this.isSelectionMode) {
+                Button(this.isAllSelected() ? $r('app.string.deselect_all_button') : $r('app.string.select_all_button'))
+                  .height(32)
+                  .fontSize(14)
+                  .backgroundColor($r('app.color.card_bg'))
+                  .fontColor($r('app.color.text_primary'))
                   .margin({ right: 16 })
                   .onClick(() => {
-                    CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
-                      hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
-                    });
+                    if (this.isAllSelected()) {
+                      this.deselectAll();
+                    } else {
+                      this.selectAll();
+                    }
                   })
+              } else {
+                Row() {
+                  // 搜索按钮
+                  Image($r('app.media.ic_search'))
+                    .width(24)
+                    .height(24)
+                    .margin({ right: 12 })
+                    .onClick(() => {
+                      this.showSearch();
+                    })
+                  // 锁定数据库
+                  Image($r('app.media.ic_lock'))
+                    .width(24)
+                    .height(24)
+                    .margin({ right: 12 })
+                    .fillColor($r('app.color.text_primary'))
+                    .onClick(() => {
+                      this.lockDatabase();
+                    })
+                  Image($r('app.media.ic_settings'))
+                    .width(24)
+                    .height(24)
+                    .margin({ right: 16 })
+                    .onClick(() => {
+                      CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
+                        hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
+                      });
+                    })
+                }
+                .flexShrink(0)
+                .width(112)
               }
-              .flexShrink(0)
-              .width(112)
             }
             .alignItems(VerticalAlign.Center)
             .width('100%')
@@ -1344,9 +1612,11 @@ struct DatabaseView {
           .justifyContent(FlexAlign.Center)
           .backgroundColor($r("app.color.bg_primary"))
         } else {
-          Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
-            // 数据库内容
-            List({ space: 8, scroller: this.listScroller }) {
+          // 使用 Stack 包裹以支持 AlphabetIndexer 悬浮
+          Stack({ alignContent: Alignment.End }) {
+            Refresh({ refreshing: $$this.isRefreshing, promptText: this.refreshText }) {
+              // 数据库内容
+              List({ space: 8, scroller: this.listScroller }) {
               // 没有数据
               if (this.items.length === 0) {
                 ListItem() {
@@ -1375,6 +1645,7 @@ struct DatabaseView {
                             .width(36)
                             .height(36)
                             .margin(10)
+                            // .fillColor(item.fgColor ? item.fgColor : undefined)
                           Column() {
                             Text(KdbxUtils.getFieldName(item.name))
                               .fontSize(18)
@@ -1382,6 +1653,7 @@ struct DatabaseView {
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .flexGrow(1)
                               .maxLines(1)
+                              .fontColor(item.fgColor || $r('app.color.text_primary'))
                             Text($r("app.string.group_items_message", this.groupItemCount(item)))
                               .fontSize(12)
                               .textAlign(TextAlign.Start)
@@ -1389,6 +1661,7 @@ struct DatabaseView {
                               .flexGrow(1)
                               .margin({ top: 4 })
                               .maxLines(1)
+                              .fontColor(item.fgColor || $r('app.color.text_secondary'))
                           }
                           .flexGrow(1)
                           .alignItems(HorizontalAlign.Start)
@@ -1398,7 +1671,7 @@ struct DatabaseView {
                             .width(28)
                             .height(28)
                             .margin({ right: 0 })
-                            .fillColor($r('app.color.text_primary'))
+                            .fillColor(item.fgColor || $r('app.color.text_primary'))
                         }
                         .padding({ left: 2 })
                         .width('100%')
@@ -1422,8 +1695,8 @@ struct DatabaseView {
                         }
                       }
                       .borderRadius(8)
-                      .backgroundColor((this.moveParam && this.moveParam.isMoveItem(item.uuid.id)) ? $r("app.color.item_selected") :
-                        $r("app.color.card_bg"))
+                      .backgroundColor(this.selectedItems.has(item.uuid.id) ? $r("app.color.button_bg_blue") :
+                        (item.bgColor || $r("app.color.card_bg")))
                       .padding({
                         left: 6,
                         right: 6,
@@ -1431,7 +1704,11 @@ struct DatabaseView {
                         bottom: 6
                       })
                       .onClick(() => {
-                        CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
+                        if (this.isSelectionMode) {
+                          this.toggleSelection(item);
+                        } else {
+                          CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
+                        }
                       })
                       .gesture(
                         LongPressGesture({ repeat: false })
@@ -1454,6 +1731,7 @@ struct DatabaseView {
                             .width(36)
                             .height(36)
                             .margin(10)
+                            // .fillColor(item.fgColor ? item.fgColor : undefined)
                           Column() {
                             Text(KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE))
                               .fontSize(18)
@@ -1461,6 +1739,7 @@ struct DatabaseView {
                               .flexGrow(1)
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .maxLines(1)
+                              .fontColor(item.fgColor || $r('app.color.text_primary'))
                               .decoration({
                                 type: (DateUtils.isExpired(item.times.expires, item.times.expiryTime) ? TextDecorationType.LineThrough :
                                   TextDecorationType.None)
@@ -1472,6 +1751,7 @@ struct DatabaseView {
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                               .maxLines(1)
                               .margin({ top: 4 })
+                              .fontColor(item.fgColor || $r('app.color.text_secondary'))
                               .decoration({
                                 type: (DateUtils.isExpired(item.times.expires, item.times.expiryTime) ? TextDecorationType.LineThrough :
                                   TextDecorationType.None)
@@ -1497,7 +1777,7 @@ struct DatabaseView {
                             .width(28)
                             .height(28)
                             .margin({ right: 0 })
-                            .fillColor($r('app.color.text_primary'))
+                            .fillColor(item.fgColor || $r('app.color.text_primary'))
                         }
                         .padding({ left: 2 })
                         .width('100%')
@@ -1521,8 +1801,8 @@ struct DatabaseView {
                         }
                       }
                       .borderRadius(8)
-                      .backgroundColor((this.moveParam && this.moveParam.isMoveItem(item.uuid.id)) ? $r("app.color.button_bg_blue") :
-                        $r("app.color.card_bg"))
+                      .backgroundColor(this.selectedItems.has(item.uuid.id) ? $r("app.color.button_bg_blue") :
+                        (item.bgColor || $r("app.color.card_bg")))
                       .padding({
                         left: 6,
                         right: 6,
@@ -1530,10 +1810,14 @@ struct DatabaseView {
                         bottom: 6
                       })
                       .onClick(() => {
-                        CommonUtils.pushUrl({
-                          url: 'pages/EntryView',
-                          params: { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id }
-                        });
+                        if (this.isSelectionMode) {
+                          this.toggleSelection(item);
+                        } else {
+                          CommonUtils.pushUrl({
+                            url: 'pages/EntryView',
+                            params: { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id }
+                          });
+                        }
                       })
                       .gesture(
                         LongPressGesture({ repeat: false })
@@ -1549,7 +1833,7 @@ struct DatabaseView {
                     })
                   }
 
-                }, (item: KdbxGroup, index: number) => `${index}-${item.uuid.id}`)
+                }, (item: KdbxGroup | KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
               }
               ListItem() {
                 Row()
@@ -1575,6 +1859,31 @@ struct DatabaseView {
           .onRefreshing(() => {
             this.refreshDatabase();
           })
+
+            // 索引条 - 悬浮在列表上方（仅名称排序且非搜索状态时显示）
+            if (this.indexerValues.length > 0) {
+              AlphabetIndexer({ arrayValue: this.indexerValues, selected: this.indexerSelected })
+                .selectedColor($r('app.color.button_bg_blue'))
+                .color($r('app.color.text_secondary'))
+                .selectedBackgroundColor($r('app.color.bg_secondary'))
+                .itemSize(20)
+                .usingPopup(true)
+                .popupColor($r('app.color.text_primary'))
+                .popupBackground($r('app.color.card_bg'))
+                .alignStyle(IndexerAlign.END, 12)
+                .onSelect((index: number) => {
+                  this.indexerSelected = index;
+                  const listIndex = this.indexerMap.get(this.indexerValues[index]);
+                  if (listIndex !== undefined) {
+                    this.listScroller.scrollToIndex(listIndex);
+                  }
+                })
+                .margin({ right: 8 })
+                .height('70%')
+            }
+          }
+          .width('100%')
+          .layoutWeight(1)
         }
       }
       .width('100%')
@@ -1648,6 +1957,31 @@ struct DatabaseView {
           });
         })
 
+        // 从模板创建按钮
+        Button() {
+          Row() {
+            Image($r('app.media.ic_copy'))
+              .width(20)
+              .height(20)
+              .fillColor($r("app.color.button_text_blue"))
+            Text($r('app.string.template_from_template'))
+              .fontSize(14)
+              .fontColor($r("app.color.button_text_blue"))
+              .margin({ left: 8 })
+          }
+        }
+        .width(120)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor($r("app.color.button_bg_blue"))
+        .margin({ bottom: 8, top: 4 })
+        .enabled(!this.isLoading)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+          this.openTemplateSelector();
+        })
+
         // 显示TOTP
         Button() {
           Image($r('app.media.ic_clock'))
@@ -1669,7 +2003,7 @@ struct DatabaseView {
 
         // 主添加按钮
         Button() {
-          Image($r('app.media.ic_add'))
+          Image(this.showAddButtons ? $r('app.media.ic_clear') : $r('app.media.ic_add'))
             .width(28)
             .height(28)
             .fillColor(Color.White)
@@ -1677,25 +2011,45 @@ struct DatabaseView {
         .width(56)
         .height(56)
         .borderRadius(28)
-        .backgroundColor($r("app.color.button_bg_blue"))
+        .backgroundColor(this.showAddButtons ? $r("app.color.error") : $r("app.color.button_bg_blue"))
         .enabled(!this.isLoading)
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
           this.showAddButtons = true;
         })
+
+        // 展开菜单时的关闭按钮
+        Button() {
+          Image($r('app.media.ic_clear'))
+            .width(28)
+            .height(28)
+            .fillColor(Color.White)
+        }
+        .width(56)
+        .height(56)
+        .borderRadius(28)
+        .backgroundColor($r("app.color.error"))
+        .enabled(!this.isLoading)
+        .opacity(this.isLoading ? 0.5 : 1)
+        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .onClick(() => {
+          this.showAddButtons = false;
+        })
       }
       .width(this.containerWidth)
-      .height(this.containerHeight)
-      .visibility(this.moveParam ? Visibility.None : Visibility.Visible)
+      .height(this.showAddButtons ? 200 : this.containerHeight)
+      .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
       .zIndex(999)
       .gesture(
-        // 拖拽手势
+        // 拖拽手势（展开状态下禁用）
         PanGesture({ fingers: 1, direction: PanDirection.All })
           .onActionStart(() => {
-            this.isDragging = true;
-            this.oldContainerX = this.containerX;
-            this.oldContainerY = this.containerY;
+            if (!this.showAddButtons) {
+              this.isDragging = true;
+              this.oldContainerX = this.containerX;
+              this.oldContainerY = this.containerY;
+            }
           })
           .onActionUpdate((event: GestureEvent) => {
             // 计算新位置
@@ -1753,6 +2107,65 @@ struct DatabaseView {
         })
         .position({ x: 0, y: '100%' })
         .translate({ y: -45 })
+        .justifyContent(FlexAlign.Center)
+      }
+
+      // 批量选择模式下的底部操作栏
+      if (this.isSelectionMode) {
+        Column() {
+          Row() {
+            // 移动按钮
+            Button($r('app.string.move_button_text'))
+              .layoutWeight(1)
+              .height(40)
+              .margin({ right: 8 })
+              .borderRadius(20)
+              .backgroundColor($r("app.color.button_bg_blue"))
+              .fontColor($r("app.color.button_text_blue"))
+              .enabled(this.selectedItems.size > 0)
+              .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
+              .onClick(() => {
+                this.startBatchMove();
+              })
+
+            // 删除按钮
+            Button($r('app.string.delete_button_text'))
+              .layoutWeight(1)
+              .height(40)
+              .margin({ right: 8 })
+              .borderRadius(20)
+              .backgroundColor($r("app.color.error"))
+              .fontColor(Color.White)
+              .enabled(this.selectedItems.size > 0)
+              .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
+              .onClick(() => {
+                this.confirmBatchDelete();
+              })
+
+            // 取消按钮
+            Button($r('app.string.cancel_button_text'))
+              .layoutWeight(1)
+              .height(40)
+              .borderRadius(20)
+              .backgroundColor(Color.Gray)
+              .fontColor(Color.White)
+              .onClick(() => {
+                this.exitSelectionMode();
+              })
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+        }
+        .width('100%')
+        .height(60)
+        .padding({
+          top: 8,
+          bottom: 8,
+          left: 16,
+          right: 16
+        })
+        .position({ x: 0, y: '100%' })
+        .translate({ y: -60 })
         .justifyContent(FlexAlign.Center)
       }
     }

@@ -1,12 +1,20 @@
 import { IconUtils } from '../common/utils';
 import { Icons } from '../services/TypeDefined';
 import { IconSelectorDialog } from './IconSelectorDialog';
+import { ColorEditDialog, ColorPickerResult } from './ColorPickerDialog';
 
 @CustomDialog
 export struct AddGroupDialog {
   @Link newGroupName: string
   @Link editingGroupIndex: number
   @State selectedIconId: number | string = Icons.Folder;
+  @State fgColor: string | undefined = undefined;
+  @State bgColor: string | undefined = undefined;
+  
+  // 初始颜色值
+  public initialFgColor: string | undefined = undefined;
+  public initialBgColor: string | undefined = undefined;
+  
   private iconSelectorDialogController: CustomDialogController = new CustomDialogController({
     builder: IconSelectorDialog({
       selectedIconId: this.selectedIconId,
@@ -18,10 +26,30 @@ export struct AddGroupDialog {
     customStyle: true,
     autoCancel: false
   });
+  
+  colorPickerController: CustomDialogController = new CustomDialogController({
+    builder: ColorEditDialog({
+      initialFgColor: this.fgColor,
+      initialBgColor: this.bgColor,
+      onConfirm: (result: ColorPickerResult) => {
+        this.fgColor = result.foregroundColor;
+        this.bgColor = result.backgroundColor;
+      }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: false
+  });
+  
   controller: CustomDialogController
-  onConfirm: (iconId: number | string) => void = () => {
+  onConfirm: (iconId: number | string, fgColor: string | undefined, bgColor: string | undefined) => void = () => {
   }
   onCancel: () => void = () => {
+  }
+
+  aboutToAppear(): void {
+    this.fgColor = this.initialFgColor;
+    this.bgColor = this.initialBgColor;
   }
 
   build() {
@@ -59,48 +87,72 @@ export struct AddGroupDialog {
 
       // 分组信息输入区域
       Column() {
-        // 图标选择
+        // 图标和颜色选择
         Row() {
-          Image(IconUtils.getIconResourcePath(this.selectedIconId))
-            .width(40)
-            .height(40)
-            .objectFit(ImageFit.Contain)
-            .margin({ right: 16 })
-
-          Column() {
-            Text($r("app.string.icon"))
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-
-            Text($r("app.string.click_select_icon"))
-              .fontSize(14)
-              .fontColor('#999999')
-              .margin({ top: 4 })
+          // 图标选择按钮
+          Button() {
+            Image(IconUtils.getIconResourcePath(this.selectedIconId))
+              .width(32)
+              .height(32)
+              .objectFit(ImageFit.Contain)
           }
-          .alignItems(HorizontalAlign.Start)
+          .width(56)
+          .height(56)
+          .margin({ right: 12 })
+          .borderRadius(12)
+          .backgroundColor($r("app.color.card_bg"))
+          .onClick(() => {
+            // 打开独立的图标选择弹框
+            this.iconSelectorDialogController = new CustomDialogController({
+              builder: IconSelectorDialog({
+                selectedIconId: this.selectedIconId,
+                onIconSelected: (iconId: number | string) => {
+                  this.selectedIconId = iconId;
+                }
+              }),
+              alignment: DialogAlignment.Bottom,
+              customStyle: true,
+              autoCancel: false
+            });
+            this.iconSelectorDialogController.open();
+          })
+
+          // 颜色选择按钮
+          Button() {
+            Image($r('app.media.ic_color'))
+              .width(32)
+              .height(32)
+              .fillColor(this.fgColor || $r('app.color.text_primary'))
+          }
+          .width(56)
+          .height(56)
+          .borderRadius(12)
+          .backgroundColor(this.bgColor || $r("app.color.card_bg"))
+          .onClick(() => {
+            // 每次打开时重新创建对话框控制器以获取最新的颜色值
+            this.colorPickerController = new CustomDialogController({
+              builder: ColorEditDialog({
+                initialFgColor: this.fgColor,
+                initialBgColor: this.bgColor,
+                onConfirm: (result: ColorPickerResult) => {
+                  this.fgColor = result.foregroundColor;
+                  this.bgColor = result.backgroundColor;
+                }
+              }),
+              alignment: DialogAlignment.Bottom,
+              customStyle: true,
+              autoCancel: false
+            });
+            this.colorPickerController.open();
+          })
 
           Blank()
         }
         .width('100%')
-        .height(72)
+        .height(80)
         .padding({ left: 24, right: 24 })
         .alignItems(VerticalAlign.Center)
         .backgroundColor($r("app.color.bg_primary"))
-        .onClick(() => {
-          // 打开独立的图标选择弹框
-          this.iconSelectorDialogController = new CustomDialogController({
-            builder: IconSelectorDialog({
-              selectedIconId: this.selectedIconId,
-              onIconSelected: (iconId: number | string) => {
-                this.selectedIconId = iconId;
-              }
-            }),
-            alignment: DialogAlignment.Bottom,
-            customStyle: true,
-            autoCancel: false
-          });
-          this.iconSelectorDialogController.open();
-        })
 
         Divider()
           .strokeWidth(1)
@@ -120,11 +172,6 @@ export struct AddGroupDialog {
           .onChange((value: string) => {
             this.newGroupName = value.trim()
           })
-
-        Divider()
-          .strokeWidth(1)
-          .color('#EEEEEE')
-          .margin({ left: 24, right: 24 })
       }
       .width('100%')
       .backgroundColor($r("app.color.bg_primary"))
@@ -150,7 +197,7 @@ export struct AddGroupDialog {
           .onClick(() => {
             this.controller.close()
             if (this.onConfirm) {
-              this.onConfirm(this.selectedIconId)
+              this.onConfirm(this.selectedIconId, this.fgColor, this.bgColor)
             }
           })
           .backgroundColor(this.newGroupName.trim().length > 0 ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
