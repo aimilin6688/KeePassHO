@@ -153,6 +153,25 @@ export class CommonUtils {
   }
 
   /**
+   * 替换页面
+   * @param options
+   * @param mode
+   * @returns
+   */
+  public static replaceUrl(options: router.RouterOptions, mode?: router.RouterMode,): Promise<void> {
+    if (CommonUtils.uiContext) {
+      return CommonUtils.uiContext.getRouter().replaceUrl(options, mode).catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, `uiContext replaceUrl error: ${error?.message}`);
+        return Promise.reject(error);
+      });
+    }
+    return router.replaceUrl(options, mode).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, `replaceUrl error: ${error?.message}`);
+      return Promise.reject(error);
+    });
+  }
+
+  /**
    * 返回
    * @param options
    */

@@ -1,6 +1,6 @@
 {
   "name": "entry",
-  "version": "1.7.5",
+  "version": "1.8.0",
   "description": "强大安全的本地密码管理利器",
   "main": "",
   "author": "艾米林",
@@ -11,7 +11,8 @@
     "@ohos/basic-ftp": "^1.0.3",
     "@ohos/axios": "^2.2.6",
     "@ohos-rs/ssh": "^0.0.1",
-    "@pura/harmony-dialog": "^1.1.8"
+    "@pura/harmony-dialog": "^1.1.8",
+    "@ohos/pinyin4js": "^2.0.2"
   },
   "devDependencies": {},
   "dynamicDependencies": {}

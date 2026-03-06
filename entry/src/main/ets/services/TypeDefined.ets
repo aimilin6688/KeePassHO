@@ -170,6 +170,13 @@ export class AuthType {
     value: $r('app.string.auth_type_password_keyfile')
   };
   /**
+   * 仅密钥文件
+   */
+  public static readonly KEYFILE: AuthTypeInfo = {
+    type: 'keyfile',
+    value: $r('app.string.auth_type_keyfile')
+  };
+  /**
    * 密码 + 一次性密码
    */
   public static readonly PASSWORD_OTP: AuthTypeInfo = {
@@ -218,6 +225,7 @@ export class AuthType {
   public static getAllTypes(): AuthTypeInfo[] {
     return [
       AuthType.PASSWORD,
+      AuthType.KEYFILE,
       AuthType.PASSWORD_KEYFILE,
       // AuthType.PASSWORD_OTP,
       // AuthType.PASSWORD_OTP_RECOVERY,
@@ -270,7 +278,43 @@ export class AuthType {
    * @returns 是否使用密钥文件
    */
   public static useKeyAuth(authType: AuthTypeInfo): boolean {
-    return authType && (authType.type === AuthType.PASSWORD_KEYFILE.type || authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type);
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD_KEYFILE.type ||
+           authType.type === AuthType.KEYFILE.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
+  }
+
+  /**
+   * 判断认证方式是否为仅密钥文件模式
+   * @param authType 认证方式
+   * @returns 是否为仅密钥文件模式
+   */
+  public static isKeyfileOnly(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.KEYFILE.type;
+  }
+
+  /**
+   * 判断认证方式是否需要密码
+   * @param authType 认证方式
+   * @returns 是否需要密码
+   */
+  public static needPassword(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE.type ||
+           authType.type === AuthType.PASSWORD_OTP.type ||
+           authType.type === AuthType.PASSWORD_OTP_RECOVERY.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_XC.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
   }
 }
 
@@ -346,15 +390,29 @@ export interface EntryParam {
  */
 export class MoveParam {
   private static instance: MoveParam | undefined = undefined;
-  groupId: string;
-  entryId?: string;
-  isMoving: boolean;
+  // 要移动的条目ID列表
+  entryIds: string[] = [];
+  // 要移动的分组ID列表
+  groupIds: string[] = [];
+  // 源分组ID
+  sourceGroupId: string = '';
 
-  constructor(groupId: string, entryId?: string) {
-    this.groupId = groupId;
-    this.entryId = entryId;
-    this.isMoving = true;
+  private constructor() {
     MoveParam.instance = this;
+  }
+
+  /**
+   * 创建移动参数
+   * @param entryIds 要移动的条目ID列表
+   * @param groupIds 要移动的分组ID列表
+   * @param sourceGroupId 源分组ID
+   */
+  public static create(entryIds: string[], groupIds: string[], sourceGroupId: string): MoveParam {
+    const param = new MoveParam();
+    param.entryIds = entryIds;
+    param.groupIds = groupIds;
+    param.sourceGroupId = sourceGroupId;
+    return param;
   }
 
   public static getInstance(): MoveParam | undefined {
@@ -367,22 +425,27 @@ export class MoveParam {
 
   /**
    * 判断是否是需要移动的条目
-   * @param itemId
-   * @returns
+   * @param itemId 条目或分组ID
+   * @returns 是否需要移动
    */
   public isMoveItem(itemId: string): boolean {
-    if (this.isMoveEntry) {
-      return this.entryId === itemId;
-    }
-    return this.groupId === itemId;
+    if (this.entryIds.includes(itemId)) return true;
+    if (this.groupIds.includes(itemId)) return true;
+    return false;
   }
 
-  get isMoveGroup(): boolean {
-    return this.entryId === undefined;
+  /**
+   * 是否包含分组移动
+   */
+  get hasGroupMove(): boolean {
+    return this.groupIds.length > 0;
   }
 
-  get isMoveEntry(): boolean {
-    return this.entryId !== undefined;
+  /**
+   * 是否包含条目移动
+   */
+  get hasEntryMove(): boolean {
+    return this.entryIds.length > 0;
   }
 }
 

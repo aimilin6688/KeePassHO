@@ -3,9 +3,10 @@ import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
-import { PromptAction, Router } from '@kit.ArkUI';
+import { Router } from '@kit.ArkUI';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { common } from '@kit.AbilityKit';
+import { AuthType } from '../services/TypeDefined';
 
 /**
  * 修改密码
@@ -19,12 +20,21 @@ struct ChangePassword {
   @State keyLocation: LocationInfo | undefined = undefined; // 密钥文件路径
   @State keyFileName: string = ResourceManager.getString($r('app.string.select_key_file_placeholder')); // 密钥文件名称
   @State errorMessage: string = ''; // 错误信息
-  @State notUseKeyFile: boolean = false; // 不适用keyfile
-  private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  @State notUseKeyFile: boolean = false; // 不使用keyfile
+  @State isKeyfileOnlyMode: boolean = false; // 当前是否为仅密钥文件模式
+  @State useKeyfileOnly: boolean = false; // 是否切换到仅密钥文件模式
   private router: Router = this.getUIContext().getRouter();
 
   onPageShow(): void {
-      WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    // 初始化当前认证模式
+    const dbFileParam = FileService.getDbFileParam();
+    this.isKeyfileOnlyMode = AuthType.isKeyfileOnly(dbFileParam.authType);
+    // 如果当前是仅密钥文件模式，初始化密钥文件信息
+    if (this.isKeyfileOnlyMode && dbFileParam.keyLocation) {
+      this.keyLocation = dbFileParam.keyLocation;
+      this.keyFileName = dbFileParam.keyLocation.fileName;
+    }
   }
 
   private changePassword() {
@@ -32,12 +42,13 @@ struct ChangePassword {
       return;
     }
     const dbFileParam = FileService.getDbFileParam();
-    if (this.oldPassword !== dbFileParam.password) {
+    // 仅密钥文件模式下不需要验证旧密码
+    if (!this.isKeyfileOnlyMode && this.oldPassword !== dbFileParam.password) {
       this.errorMessage = ResourceManager.getString($r('app.string.change_password_old_password_not_match'));
       return;
     }
     // 设置新的数据库密码和密钥文件
-    dbFileParam.newPassword = this.newPassword;
+    dbFileParam.newPassword = this.useKeyfileOnly ? '' : this.newPassword;
     dbFileParam.newKeyLocation = this.keyLocation;
     dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
@@ -56,21 +67,31 @@ struct ChangePassword {
    * 验证密码是否匹配
    */
   private validatePassword(): boolean {
-    if (this.oldPassword.trim().length === 0) {
+    // 仅密钥文件模式下不需要旧密码验证
+    if (!this.isKeyfileOnlyMode && this.oldPassword.trim().length === 0) {
       this.errorMessage = ResourceManager.getString($r('app.string.change_password_old_password_placeholder'));
       return false;
     }
-    if (this.newPassword.trim().length === 0) {
-      this.errorMessage = ResourceManager.getString($r('app.string.change_password_new_password_placeholder'));
-      return false;
-    }
-    if (this.confirmPassword.trim().length === 0) {
-      this.errorMessage = ResourceManager.getString($r('app.string.change_password_confirm_password_placeholder'));
-      return false;
-    }
-    if (this.newPassword !== this.confirmPassword) {
-      this.errorMessage = ResourceManager.getString($r('app.string.change_password_confirm_password_not_match'));
-      return false;
+    // 如果切换到仅密钥文件模式，不需要新密码验证
+    if (!this.useKeyfileOnly) {
+      if (this.newPassword.trim().length === 0) {
+        this.errorMessage = ResourceManager.getString($r('app.string.change_password_new_password_placeholder'));
+        return false;
+      }
+      if (this.confirmPassword.trim().length === 0) {
+        this.errorMessage = ResourceManager.getString($r('app.string.change_password_confirm_password_placeholder'));
+        return false;
+      }
+      if (this.newPassword !== this.confirmPassword) {
+        this.errorMessage = ResourceManager.getString($r('app.string.change_password_confirm_password_not_match'));
+        return false;
+      }
+    } else {
+      // 仅密钥文件模式必须选择密钥文件
+      if (!this.keyLocation) {
+        this.errorMessage = ResourceManager.getString($r('app.string.key_file_required'));
+        return false;
+      }
     }
     this.errorMessage = '';
     return true;
@@ -147,69 +168,100 @@ struct ChangePassword {
 
       // 对话框内容
       Column() {
-        // 旧密码输入
-        Row() {
-          Text("*").fontColor($r('app.color.required'))
-          Text($r('app.string.change_password_old_password'))
-            .fontSize(14)
+        // 旧密码输入 - 仅密钥文件模式下不显示
+        if (!this.isKeyfileOnlyMode) {
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            Text($r('app.string.change_password_old_password'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+          }.width('100%')
+          .margin({ top: 8, bottom: 4 })
+
+          TextInput({ placeholder: $r('app.string.change_password_old_password_placeholder'), text: this.oldPassword })
+            .type(InputType.Password)
+            .height(48)
+            .fontSize(16)
             .fontColor($r('app.color.text_primary'))
-        }.width('100%')
-        .margin({ top: 8, bottom: 4 })
+            .borderRadius(8)
+            .width("100%")
+            .enableAutoFill(false)
+            .onChange((value) => {
+              this.oldPassword = value;
+              this.validatePassword();
+            })
+        }
 
-        TextInput({ placeholder: $r('app.string.change_password_old_password_placeholder'), text: this.oldPassword })
-          .type(InputType.Password)
-          .height(48)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .borderRadius(8)
+        // 仅使用密钥文件模式选项 - 当前不是仅密钥文件模式时显示
+        if (!this.isKeyfileOnlyMode) {
+          Row() {
+            Checkbox({ name: 'useKeyfileOnly' })
+              .select(this.useKeyfileOnly)
+              .shape(CheckBoxShape.CIRCLE)
+              .onChange((value: boolean) => {
+                this.useKeyfileOnly = value;
+                if (value) {
+                  this.notUseKeyFile = false;
+                }
+              })
+            Text($r('app.string.auth_type_keyfile'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useKeyfileOnly = !this.useKeyfileOnly;
+                if (this.useKeyfileOnly) {
+                  this.notUseKeyFile = false;
+                }
+              })
+          }
           .width("100%")
-          .enableAutoFill(false)
-          .onChange((value) => {
-            this.oldPassword = value;
-            this.validatePassword();
-          })
+          .margin({ top: 16, bottom: 4 })
+        }
 
-        // 新密码输入
-        Row() {
-          Text("*").fontColor($r('app.color.required'))
-          Text($r('app.string.change_password_new_password'))
-            .fontSize(14)
+        // 新密码输入 - 仅密钥文件模式下不显示
+        if (!this.useKeyfileOnly) {
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            Text($r('app.string.change_password_new_password'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+          }.width('100%').margin({ top: 16, bottom: 4 })
+
+          TextInput({ placeholder: $r('app.string.change_password_new_password_placeholder'), text: this.newPassword })
+            .type(InputType.Password)
+            .height(48)
+            .fontSize(16)
             .fontColor($r('app.color.text_primary'))
-        }.width('100%').margin({ top: 16, bottom: 4 })
+            .borderRadius(8)
+            .width("100%")
+            .enableAutoFill(false)
+            .onChange((value) => {
+              this.newPassword = value;
+              this.validatePassword();
+            })
 
-        TextInput({ placeholder: $r('app.string.change_password_new_password_placeholder'), text: this.newPassword })
-          .type(InputType.Password)
-          .height(48)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .borderRadius(8)
-          .width("100%")
-          .enableAutoFill(false)
-          .onChange((value) => {
-            this.newPassword = value;
-            this.validatePassword();
-          })
+          // 确认新密码输入
+          Row() {
+            Text("*").fontColor($r('app.color.required'))
+            Text($r('app.string.change_password_confirm_password'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+          }.width('100%').margin({ top: 16, bottom: 4 })
 
-        // 确认新密码输入
-        Row() {
-          Text("*").fontColor($r('app.color.required'))
-          Text($r('app.string.change_password_confirm_password'))
-            .fontSize(14)
+          TextInput({ placeholder: $r('app.string.change_password_confirm_password_placeholder'), text: this.confirmPassword })
+            .type(InputType.Password)
+            .height(48)
+            .fontSize(16)
             .fontColor($r('app.color.text_primary'))
-        }.width('100%').margin({ top: 16, bottom: 4 })
-
-        TextInput({ placeholder: $r('app.string.change_password_confirm_password_placeholder'), text: this.confirmPassword })
-          .type(InputType.Password)
-          .height(48)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .borderRadius(8)
-          .width("100%")
-          .enableAutoFill(false)
-          .onChange((value) => {
-            this.confirmPassword = value;
-            this.validatePassword();
-          })
+            .borderRadius(8)
+            .width("100%")
+            .enableAutoFill(false)
+            .onChange((value) => {
+              this.confirmPassword = value;
+              this.validatePassword();
+            })
+        }
 
         // 密钥文件选择
         Text($r("app.string.key_file"))

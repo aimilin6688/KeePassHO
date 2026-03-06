@@ -4,6 +4,8 @@ import { CommonUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { AuthService } from '../../services/AuthService';
 import { RecentFilesService } from '../../services/RecentFilesService';
+import { AuthType } from '../../services/TypeDefined';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 
 @Entry
@@ -155,17 +157,28 @@ struct SettingsSecurity {
       return HitTestMode.Default;
     }
 
+    // 构建认证成功回调
+    const authSuccessCallback = (): void => {
+      this.fingerprintLogin = authType === SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN ? !this.fingerprintLogin : this.fingerprintLogin;
+      this.faceLogin = authType === SettingsService.KEY_SECURITY_FACE_LOGIN ? !this.faceLogin : this.faceLogin;
+      this.isPrivacyWindow = authType === SettingsService.KEY_SECURITY_PRIVACY_WINDOW ? !this.isPrivacyWindow : this.isPrivacyWindow;
+    };
+
+    // 检查是否为仅密钥文件模式
+    if (AuthType.isKeyfileOnly(FileService.getDbFileParam().authType)) {
+      authSuccessCallback();
+      return HitTestMode.None;
+    }
+
     // 密码认证
     AuthService.startPasswordAuth({
-      onSuccess: (result) => {
-        this.fingerprintLogin = authType === SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN ? !this.fingerprintLogin : this.fingerprintLogin;
-        this.faceLogin = authType === SettingsService.KEY_SECURITY_FACE_LOGIN ? !this.faceLogin : this.faceLogin;
-        this.isPrivacyWindow = authType === SettingsService.KEY_SECURITY_PRIVACY_WINDOW ? !this.isPrivacyWindow : this.isPrivacyWindow;
+      onSuccess: (result): void => {
+        authSuccessCallback();
       },
-      onFail: (result) => {
+      onFail: (result): void => {
         CommonUtils.showToast($r("app.string.password_error"));
       },
-      onError: (error: BusinessError) => {
+      onError: (error: BusinessError): void => {
         CommonUtils.showToast(error.message);
       }
     });
