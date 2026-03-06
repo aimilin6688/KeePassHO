@@ -1,17 +1,19 @@
 {
   "apiType": "stageMode",
   "buildOption": {
+    "arkOptions": {
+      "buildProfileFields": {
+        "ONE_DRIVE_CLIENT_ID": "cd955115-e0b1-4064-9e21-312e70693702",
+        "ONE_DRIVE_CLIENT_SECRET": "",
+        "ONE_DRIVE_TENANT_ID": "common",
+        "ONE_DRIVE_REDIRECT_URI": "keepassho://aimilin.com/onedrive/redirect",
+      }
+    }
   },
   "buildOptionSet": [
     {
       "name": "debug",
       "arkOptions": {
-        "buildProfileFields": {
-          "ONE_DRIVE_CLIENT_ID": "cd955115-e0b1-4064-9e21-312e70693702",
-          "ONE_DRIVE_CLIENT_SECRET": "",
-          "ONE_DRIVE_TENANT_ID": "common",
-          "ONE_DRIVE_REDIRECT_URI": "keepassho://aimilin.com/onedrive/redirect",
-        }
       }
     },
     {
@@ -25,12 +27,6 @@
             ]
           }
         },
-        "buildProfileFields": {
-          "ONE_DRIVE_CLIENT_ID": "cd955115-e0b1-4064-9e21-312e70693702",
-          "ONE_DRIVE_CLIENT_SECRET": "",
-          "ONE_DRIVE_TENANT_ID": "common",
-          "ONE_DRIVE_REDIRECT_URI": "keepassho://aimilin.com/onedrive/redirect",
-        }
       }
     },
   ],
