@@ -747,6 +747,7 @@ struct TemplateEntryCreate {
         .layoutWeight(1)
         .align(Alignment.Top)
         .backgroundColor($r("app.color.bg_primary"))
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
       }
       .width('100%')
       .height('100%')

@@ -380,6 +380,7 @@ struct SettingDatabaseMeta {
         .padding({ left: 12, right: 12 })
       }.width('100%')
       .height('auto')
+      .clipContent(ContentClipMode.SAFE_AREA)
 
 
       // 操作按钮

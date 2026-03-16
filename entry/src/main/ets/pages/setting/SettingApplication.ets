@@ -253,6 +253,7 @@ struct SettingApplication {
       .height('auto')
       .layoutWeight(1)
       .padding({ left: 12, right: 12 })
+      .clipContent(ContentClipMode.SAFE_AREA)
     }
     .width('100%')
     .height('100%')
