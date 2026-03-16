@@ -103,7 +103,7 @@ struct OAuth2Login {
           .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
-      .height(56)
+      .height(40)
       .backgroundColor($r('app.color.card_bg'))
 
       // Web组件

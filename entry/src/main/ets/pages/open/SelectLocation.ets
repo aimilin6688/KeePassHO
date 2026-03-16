@@ -45,7 +45,7 @@ struct SelectLocation {
           .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 打开方式列表
       Scroll() {
@@ -71,7 +71,7 @@ struct SelectLocation {
             }, (item: PageConfig) => item.pageUrl)
           }
           .backgroundColor($r("app.color.card_bg"))
-          .margin({ top: 12 })
+          .margin({ top: 4 })
         }
         .width('100%')
       }

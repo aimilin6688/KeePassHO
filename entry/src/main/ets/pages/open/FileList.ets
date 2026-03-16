@@ -379,7 +379,7 @@ struct FileList {
           .bindMenu(this.SortMenu)
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 路径导航栏
       Column() {

@@ -213,7 +213,7 @@ struct Support {
         Blank()
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 内容
       List() {
@@ -318,8 +318,9 @@ struct Support {
         }
       }
       .width('100%')
-      .height('100%')
-      .padding(16)
+      .height('auto')
+      .padding({left: 16, right: 16, top: 4})
+      .clipContent(ContentClipMode.SAFE_AREA)
     }
     .backgroundColor($r('app.color.bg_primary'))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
