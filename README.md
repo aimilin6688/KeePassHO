@@ -3,25 +3,18 @@
 
 KeePassHO：安全管理您的密码，随时随地访问
 
-KeePassHO是一款免费、开源的密码管理软件。它的核心优势在于本地存储和极致安全。您的所有密码都存储在一个加密的数据库中（通常为.kdbx文件），该文件仅保存在您自己的设备上（如电脑、移动设备），不依赖云端服务器，从根本上规避了云端泄露风险。
+KeePassHO是一款免费、开源的密码管理软件，完全兼容KeePass数据库格式（.kdbx），支持与KeePass各平台客户端无缝协作。
 
-数据库采用强大的加密算法（如AES-256）保护，只需记住一个高强度主密码（或结合密钥文件）即可解锁访问。KeePassHO支持自动生成强密码、分类管理、搜索等便捷功能，并拥有活跃社区和丰富插件生态，可扩展浏览器集成（开发中）、云同步（需自行配置）等能力。
+**核心特性：**
 
+- 🔐 **本地存储** - 密码数据库仅保存在用户本地设备，不依赖云端服务器，从根本上规避云端泄露风险
+- 🛡️ **强加密保护** - 采用AES-256等顶级加密算法，主密码+密钥文件双重保护
+- 🔄 **KeePass兼容** - 完全兼容KeePass数据库格式，可与其他KeePass客户端共享同一数据库
+- 🔑 **密码生成** - 内置强密码生成器，支持自定义密码规则
+- 📁 **分类管理** - 支持文件夹分组、标签分类，快速组织密码条目
+- 🔍 **智能搜索** - 快速检索密码条目，支持多条件筛选
+- 🌐 **可扩展** - 支持浏览器集成（开发中）、云同步（需自行配置）等能力
 
-
-
-
-## 功能特点
-
-**核心要点：**
-
-- 免费开源： 免费使用，代码透明可审计。
-- 本地存储： 密码数据库文件（.kdbx）仅保存在用户本地设备，不上云。
-- 强加密： 使用AES-256等顶级算法加密数据库，主密码是钥匙。
-- 安全自主： 用户完全掌控自己的密码数据和安全策略。
-- 功能完备： 密码生成、管理、填充、搜索等基础功能齐全。
-- 可扩展： 通过插件支持浏览器集成（开发中）、云同步（自控）等。
-- 目标用户： 重视隐私、安全，希望完全自主管理密码的用户。
 
 ## 安装
 
@@ -92,21 +85,18 @@ hvigorw  --mode module -p product=mac_debug -p buildMode=debug assembleHap --ana
 
 # KeePassHO - Securely manage your passwords, access them anywhere
 
-KeePassHO is a free and open-source password management software. Its core advantage lies in local storage and maximum security. All your passwords are stored in an encrypted database (typically a .kdbx file), which is kept only on your own devices (such as computers, mobile devices), without relying on cloud servers, fundamentally avoiding cloud leakage risks.
+KeePassHO is a free, open-source password manager that is fully compatible with the KeePass database format (.kdbx), enabling seamless collaboration with KeePass clients across various platforms.
 
-The database is protected by powerful encryption algorithms (such as AES-256), and you only need to remember a strong master password (or combine it with a key file) to unlock and access it. KeePassHO supports convenient features such as automatic strong password generation, category management, and search, and has an active community and a rich plugin ecosystem. It can be extended with browser integration (in development), cloud synchronization (requires self-configuration), and other capabilities.
+**Core Features:**
 
-## Features
+- 🔐 **Local Storage** - Password databases are stored only on your local devices without relying on cloud servers, fundamentally eliminating cloud leakage risks
+- 🛡️ **Strong Encryption** - Protected by top-tier encryption algorithms like AES-256, with dual protection from master password and key file
+- 🔄 **KeePass Compatible** - Fully compatible with KeePass database format, allowing you to share the same database with other KeePass clients
+- 🔑 **Password Generation** - Built-in strong password generator with customizable password rules
+- 📁 **Category Management** - Supports folder grouping and tag classification for quick organization of password entries
+- 🔍 **Smart Search** - Quickly search password entries with multi-condition filtering
+- 🌐 **Extensible** - Supports browser integration (in development), cloud sync (self-configured), and more capabilities
 
-**Key Points:**
-
-- **Free and Open Source**: Free to use, with transparent and auditable code.
-- **Local Storage**: Password database files (.kdbx) are stored only on the user's local devices, not uploaded to the cloud.
-- **Strong Encryption**: Uses top-tier algorithms like AES-256 to encrypt the database, with the master password as the key.
-- **Security Autonomy**: Users have complete control over their password data and security policies.
-- **Comprehensive Features**: Complete basic functions including password generation, management, filling, and search.
-- **Extensible**: Supports browser integration (in development), cloud synchronization (self-controlled), etc. through plugins.
-- **Target Users**: Users who value privacy and security and want complete autonomous password management.
 
 ## Installation
 
