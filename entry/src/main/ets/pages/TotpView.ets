@@ -274,7 +274,7 @@ struct TotpView {
             bottom: 0
           })
           .scrollBar(BarState.Auto)
-
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
           // 索引条 - 悬浮在列表上方
           if (this.indexerValues.length > 0) {
             AlphabetIndexer({ arrayValue: this.indexerValues, selected: this.indexerSelected })

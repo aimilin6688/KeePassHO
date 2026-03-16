@@ -126,6 +126,7 @@ struct OAuth2Login {
         })
         .layoutWeight(1)
         .width('100%')
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     }
     .width('100%')
     .height('100%')

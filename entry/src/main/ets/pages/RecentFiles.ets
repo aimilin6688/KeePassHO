@@ -248,6 +248,7 @@ struct RecentFiles {
           right: 12,
           top: 12
         })
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
       }
     }
     .width('100%')
