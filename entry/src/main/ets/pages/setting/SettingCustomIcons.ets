@@ -176,6 +176,7 @@ struct SettingCustomIcons {
       .align(Alignment.TopStart)
       .width('100%')
       .height('100%')
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
       // 操作按钮
       Row() {
@@ -231,7 +232,6 @@ struct SettingCustomIcons {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .borderRadius(16)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

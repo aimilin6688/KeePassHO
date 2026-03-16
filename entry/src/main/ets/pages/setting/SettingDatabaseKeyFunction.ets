@@ -307,6 +307,7 @@ struct SettingDatabaseKeyFunction {
       .width('100%')
       .layoutWeight(1)
       .padding({ left: 12, right: 12 })
+      .clipContent(ContentClipMode.SAFE_AREA)
 
       // 操作按钮
       Row() {

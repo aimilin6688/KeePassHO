@@ -1852,6 +1852,7 @@ struct DatabaseView {
               bottom: 0
             })
             .scrollBar(BarState.Auto)
+            .clipContent(ContentClipMode.SAFE_AREA)
           }
           .backgroundColor($r("app.color.bg_primary"))
           .refreshOffset(90)
@@ -1859,6 +1860,7 @@ struct DatabaseView {
           .onRefreshing(() => {
             this.refreshDatabase();
           })
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
             // 索引条 - 悬浮在列表上方（仅名称排序且非搜索状态时显示）
             if (this.indexerValues.length > 0) {

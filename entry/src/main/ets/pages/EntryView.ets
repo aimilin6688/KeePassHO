@@ -459,6 +459,7 @@ struct EntryView {
             bottom: 0
           })
           .layoutWeight(1)
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
           // 操作按钮
           Row() {
@@ -531,17 +532,18 @@ struct EntryView {
                     EntryViewFieldItem({ field: field, entry: this.entry })
                   }
                 })
+                ListItem(){}
+                .height(40)
               }
               .height('100%')
               .width('100%')
               .padding({
                 left: 16,
-                right: 16,
-                top: 12,
-                bottom: 40
+                right: 16
               })
               .layoutWeight(1)
               .backgroundColor($r("app.color.bg_primary"))
+              .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
             }
             .tabBar($r('app.string.field_name'))
 
@@ -553,17 +555,18 @@ struct EntryView {
                       this.HistoryItem(item)
                     }
                   })
+                  ListItem(){}
+                  .height(40)
                 }
                 .height('100%')
                 .width('100%')
                 .padding({
                   left: 16,
                   right: 16,
-                  top: 12,
-                  bottom: 40
                 })
                 .layoutWeight(1)
                 .backgroundColor($r("app.color.bg_primary"))
+                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
               } else {
                 Column() {
                   Image($r("app.media.ic_clock"))
@@ -584,6 +587,7 @@ struct EntryView {
               }
             }
             .tabBar($r('app.string.history_record'))
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
           }
           .width('100%')
           .height('100%')
