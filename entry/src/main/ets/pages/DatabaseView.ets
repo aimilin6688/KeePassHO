@@ -52,7 +52,7 @@ struct DatabaseView {
   @State isHoldingHandEnable: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
-  @State headerHeight: number = 56;
+  @State headerHeight: number = 40;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
   @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
@@ -1321,9 +1321,9 @@ struct DatabaseView {
   private showSearchAnimate() {
     this.getUIContext().animateTo({ curve: Curve.Ease, duration: 200 }, () => {
       if (this.isShowHistory()) {
-        this.headerHeight = 114;
+        this.headerHeight = 100;
       } else {
-        this.headerHeight = 56;
+        this.headerHeight = 40;
       }
     });
   }
@@ -1403,7 +1403,7 @@ struct DatabaseView {
                 // 搜索框
                 Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
                   .margin({ left: 16 })
-                  .height(40)
+                  .height(36)
                   .layoutWeight(1)
                   .flexShrink(1)
                   .id("searchKey")
@@ -1439,7 +1439,7 @@ struct DatabaseView {
                   })
                 Button($r('app.string.cancel_button_text'))
                   .width(70)
-                  .height(40)
+                  .height(36)
                   .fontSize(16)
                   .flexShrink(0)
                   .fontColor($r('app.color.text_primary'))
@@ -1510,7 +1510,7 @@ struct DatabaseView {
                 .padding({ left: 12, right: 12 })
               }
             }
-            .margin({ top: 12 })
+            .margin({ top: 4 })
             .width('100%')
           } else {
             Row() {
@@ -1848,7 +1848,7 @@ struct DatabaseView {
             .padding({
               left: 12,
               right: 12,
-              top: 12,
+              top: 4,
               bottom: 0
             })
             .scrollBar(BarState.Auto)

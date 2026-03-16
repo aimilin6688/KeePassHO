@@ -130,7 +130,7 @@ struct SettingDatabaseMeta {
           .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       Scroll() {
         // 主要内容区域
@@ -376,7 +376,7 @@ struct SettingDatabaseMeta {
         .width('100%')
         .height('auto')
         .layoutWeight(1)
-        .margin({ top: 12 })
+        .margin({ top: 4 })
         .padding({ left: 12, right: 12 })
       }.width('100%')
       .height('auto')

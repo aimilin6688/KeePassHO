@@ -417,7 +417,7 @@ struct EntryView {
 
         }
         .width('100%')
-        .height(56)
+        .height(40)
 
         if (this.isLoading) {
           // 加载中状态
@@ -593,7 +593,7 @@ struct EntryView {
           .height('100%')
           .barMode(BarMode.Fixed)
           .barWidth('100%')
-          .barHeight(40) // 减少tab标签页的高度
+          .barHeight(35) // 减少tab标签页的高度
         }
       }
       .width('100%')

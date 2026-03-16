@@ -539,7 +539,7 @@ struct TemplateEntryCreate {
           })
         }
         .width('100%')
-        .height(56)
+        .height(40)
 
         // 表单内容
         Scroll() {

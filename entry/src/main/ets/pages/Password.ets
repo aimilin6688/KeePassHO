@@ -476,7 +476,7 @@ struct Password {
           .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 主要内容区域
       Column() {
@@ -657,7 +657,7 @@ struct Password {
       }
       .width('100%')
       .layoutWeight(1)
-      .padding({ top: 16 })
+      .padding({ top: 4 })
     }
     .width('100%')
     .height('100%')

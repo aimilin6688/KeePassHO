@@ -930,7 +930,7 @@ struct EntryEdit {
           })
         }
         .width('100%')
-        .height(56)
+        .height(40)
 
         // 表单内容
         Scroll() {
@@ -1418,7 +1418,7 @@ struct EntryEdit {
             .margin({ top: 16, bottom: 24 })
           }
           .width('100%')
-          .padding({ left: 16, right: 16 })
+          .padding({ left: 16, right: 16})
         }
         .width('100%')
         .height('100%')

@@ -92,7 +92,7 @@ struct TotpView {
                 // 搜索框
                 Search({ placeholder: $r('app.string.search_placeholder'), value: this.searchText })
                   .margin({ left: 16 })
-                  .height(40)
+                  .height(36)
                   .layoutWeight(1)
                   .flexShrink(1)
                   .searchIcon({
@@ -114,7 +114,7 @@ struct TotpView {
                   })
                 Button($r('app.string.cancel_button_text'))
                   .width(70)
-                  .height(40)
+                  .height(36)
                   .fontSize(16)
                   .flexShrink(0)
                   .fontColor($r('app.color.text_primary'))
@@ -128,7 +128,7 @@ struct TotpView {
               }
               .width('100%')
             }
-            .margin({ top: 12 })
+            .margin({ top: 4 })
             .width('100%')
           } else {
             Image($r("app.media.ic_angle_left"))
@@ -159,7 +159,7 @@ struct TotpView {
           }
         }
         .width('100%')
-        .height(56)
+        .height(40)
 
         // 数据库内容 - 使用 Stack 实现索引条悬浮
         Stack({ alignContent: Alignment.End }) {
@@ -270,7 +270,7 @@ struct TotpView {
           .padding({
             left: 12,
             right: 12,
-            top: 12,
+            top: 4,
             bottom: 0
           })
           .scrollBar(BarState.Auto)

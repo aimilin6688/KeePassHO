@@ -166,7 +166,7 @@ struct RecentFiles {
           })
       }
       .width('100%')
-      .height(56)
+      .height(40)
       .padding({ left: 16, right: 16 })
 
       // 文件列表
@@ -246,7 +246,7 @@ struct RecentFiles {
         .padding({
           left: 12,
           right: 12,
-          top: 12
+          top: 4
         })
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
       }

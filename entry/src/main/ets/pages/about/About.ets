@@ -159,7 +159,7 @@ struct About {
           Blank()
         }
         .width('100%')
-        .height(56)
+        .height(40)
 
         // 内容
         Column() {
@@ -341,7 +341,7 @@ struct About {
         }
         .width('100%')
         .height('100%')
-        .padding(16)
+        .padding({left: 16, right: 16, top: 4, bottom: 16})
       }
     }
     .backgroundColor($r('app.color.bg_primary'))
