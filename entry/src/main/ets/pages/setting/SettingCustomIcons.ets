@@ -127,7 +127,7 @@ struct SettingCustomIcons {
 
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 图标网格
       Scroll() {

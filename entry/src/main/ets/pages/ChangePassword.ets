@@ -164,7 +164,7 @@ struct ChangePassword {
           .fontColor($r('app.color.text_primary'))
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 对话框内容
       Column() {
@@ -340,7 +340,7 @@ struct ChangePassword {
       .padding({
         left: 24,
         right: 24,
-        top: 16,
+        top: 4,
         bottom: 16
       })
 

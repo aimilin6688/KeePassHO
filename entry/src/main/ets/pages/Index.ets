@@ -95,7 +95,7 @@ struct Index {
           })
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
       // 主要内容区域
       Column() {

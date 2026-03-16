@@ -201,7 +201,7 @@ struct SettingsSecurity {
           .margin({ left: 12 })
       }
       .width('100%')
-      .height(56)
+      .height(40)
 
 
       List() {
@@ -514,7 +514,7 @@ struct SettingsSecurity {
       .width('100%')
       .height('auto')
       .layoutWeight(1)
-      .padding({ left: 12, right: 12 })
+      .padding({ left: 12, right: 12, top: 4 })
       .clipContent(ContentClipMode.SAFE_AREA)
     }
     .width('100%')
