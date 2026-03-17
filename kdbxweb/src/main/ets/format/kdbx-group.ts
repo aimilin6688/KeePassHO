@@ -118,24 +118,37 @@ export class KdbxGroup {
                 this.previousParentGroup
             );
         }
-        // 将颜色保存到 customData
-        if (this.fgColor || this.bgColor) {
+        // 将颜色保存到 customData（支持清除颜色）
+        const hasFgColor = this.fgColor !== undefined;
+        const hasBgColor = this.bgColor !== undefined;
+        const hadCustomData = this.customData !== undefined;
+        const hadFgColor = this.customData?.has('fgColor') ?? false;
+        const hadBgColor = this.customData?.has('bgColor') ?? false;
+
+        // 需要更新 customData 的情况：
+        // 1. 有新颜色需要保存
+        // 2. 之前有颜色现在需要清除
+        if (hasFgColor || hasBgColor || hadFgColor || hadBgColor) {
             if (!this.customData) {
                 this.customData = new Map();
             }
-            if (this.fgColor) {
+            if (hasFgColor) {
                 const fgColorData = this.customData.get('fgColor') || { key: 'fgColor', value: this.fgColor };
                 fgColorData.value = this.fgColor;
                 this.customData.set('fgColor', fgColorData);
             } else {
                 this.customData.delete('fgColor');
             }
-            if (this.bgColor) {
+            if (hasBgColor) {
                 const bgColorData = this.customData.get('bgColor') || { key: 'bgColor', value: this.bgColor };
                 bgColorData.value = this.bgColor;
                 this.customData.set('bgColor', bgColorData);
             } else {
                 this.customData.delete('bgColor');
+            }
+            // 如果 customData 为空且是新创建的，则删除它
+            if (this.customData.size === 0 && !hadCustomData) {
+                this.customData = undefined;
             }
         }
         if (this.customData) {
