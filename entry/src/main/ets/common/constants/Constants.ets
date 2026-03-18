@@ -12,4 +12,14 @@ export class Constants {
    * 应用存储位置信息
    */
   public static readonly APP_STORAGE_LOCATION_INFO: string = "locationInfo";
+
+  /**
+   * 预加载的最近文件信息（用于冷启动优化）
+   */
+  public static readonly APP_STORAGE_PRELOAD_RECENT_FILE: string = "preloadRecentFile";
+
+  /**
+   * 预加载是否完成（用于冷启动优化）
+   */
+  public static readonly APP_STORAGE_PRELOAD_READY: string = "preloadReady";
 }
