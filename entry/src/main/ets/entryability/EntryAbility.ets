@@ -29,28 +29,74 @@ export default class EntryAbility extends UIAbility {
 
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     hilog.info(DOMAIN, TAG, 'Ability onCreate %{public}s', want.uri);
-    this.init();
     this.createUrl = want.uri;
+    // 初始化核心服务 + 并行预加载
+    this.init();
   }
 
   /**
    * 初始化应用
+   * 优化策略：
+   * 1. 核心服务同步初始化（冷启动必需）
+   * 2. 非核心服务延迟初始化
+   * 3. 预加载最近文件信息，加速生物认证调用
    */
   private async init() {
     this.context.area = contextConstant.AreaMode.EL4;
-    // 初始化通用工具类
+
+    // 核心服务同步初始化（UI渲染必需）
     CommonUtils.init(this.context);
-    // 初始化主题管理器
     ThemeManager.getInstance().init(this.context);
-    // 初始化资源管理器
     ResourceManager.getInstance().init(this.context);
-    // 最近打开的文件服务
-    RecentFilesService.getInstance().init(this.context);
-    // 初始化设置服务
-    SettingsService.getInstance().init(this.context).then(() => {
-      // 设值应用安装时间
+
+    // 启动关键服务预加载（并行执行，不阻塞主线程）
+    this.preloadEssentialServices();
+  }
+
+  /**
+   * 预加载关键服务
+   * 这些服务是 Password 页面启动生物认证所必需的
+   */
+  private async preloadEssentialServices(): Promise<void> {
+    const startTime = Date.now();
+
+    try {
+      // 1. 初始化最近文件服务
+      RecentFilesService.getInstance().init(this.context);
+
+      // 2. 初始化设置服务（生物认证需要）
+      await SettingsService.getInstance().init(this.context);
       SupportService.initAppInstallTime();
-    })
+
+      // 3. 预加载最近文件信息（并行执行）
+      const recentFile = await RecentFilesService.getInstance().loadMostRecentFile();
+
+      // 4. 存储预加载结果到 AppStorage
+      if (recentFile) {
+        AppStorage.setOrCreate(Constants.APP_STORAGE_PRELOAD_RECENT_FILE, recentFile);
+        hilog.info(DOMAIN, TAG, 'Preload recent file success: %{public}s', recentFile.filePath);
+      }
+
+      // 5. 标记预加载完成
+      AppStorage.setOrCreate(Constants.APP_STORAGE_PRELOAD_READY, true);
+
+      hilog.info(DOMAIN, TAG, 'Preload completed in %{public}d ms', Date.now() - startTime);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Preload failed: %{public}s', error.message);
+      // 即使预加载失败也标记完成，避免阻塞
+      AppStorage.setOrCreate(Constants.APP_STORAGE_PRELOAD_READY, true);
+    }
+
+    // 非核心服务延迟初始化
+    setTimeout(() => {
+      this.initNonEssentialServices();
+    }, 100);
+  }
+
+  /**
+   * 非核心服务延迟初始化
+   */
+  private initNonEssentialServices(): void {
     // 初始化加解密KEY
     Sm4Utils.init();
     // 初始化kv数据库
@@ -60,7 +106,7 @@ export default class EntryAbility extends UIAbility {
     // 初始化弹框
     DialogHelper.setDefaultConfig((config) => {
       config.uiAbilityContext = this.context;
-    })
+    });
   }
 
   onDestroy(): void {
