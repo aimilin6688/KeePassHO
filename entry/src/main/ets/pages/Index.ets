@@ -3,6 +3,8 @@ import { Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
+import { RecentFile } from '../services/TypeDefined';
+import { Constants } from '../common/constants/Constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Index';
@@ -19,25 +21,86 @@ struct Index {
     });
     const params = this.router.getParams() as Record<string, string>;
     if (!params?.notRedirect) {
-      this.checkRecentFiles();
+      // 优化：使用预加载的最近文件信息
+      this.checkRecentFilesOptimized();
     }
   }
 
   /**
-   * 检查是否有最近打开的文件
+   * 检查是否有最近打开的文件（优化版）
+   * 优先使用预加载数据，避免重复读取 preferences
+   */
+  private checkRecentFilesOptimized(): void {
+    // 1. 优先使用预加载的最近文件
+    const preloadedRecentFile = AppStorage.get<RecentFile>(Constants.APP_STORAGE_PRELOAD_RECENT_FILE);
+    if (preloadedRecentFile) {
+      hilog.info(DOMAIN, TAG, 'Using preloaded recent file: %{public}s', preloadedRecentFile.filePath);
+      this.navigateToPassword(preloadedRecentFile.filePath);
+      return;
+    }
+
+    // 2. 等待预加载完成（最多等待500ms）
+    this.waitForPreloadAndNavigate();
+  }
+
+  /**
+   * 等待预加载完成
+   */
+  private waitForPreloadAndNavigate(): void {
+    const maxWaitTime = 500; // 最大等待时间
+    const checkInterval = 50; // 检查间隔
+    let waitedTime = 0;
+
+    const checkAndNavigate = (): void => {
+      const preloadedRecentFile = AppStorage.get<RecentFile>(Constants.APP_STORAGE_PRELOAD_RECENT_FILE);
+      const preloadReady = AppStorage.get<boolean>(Constants.APP_STORAGE_PRELOAD_READY);
+
+      if (preloadedRecentFile) {
+        this.navigateToPassword(preloadedRecentFile.filePath);
+        return;
+      }
+
+      if (preloadReady) {
+        // 预加载完成但没有最近文件，显示首页
+        hilog.info(DOMAIN, TAG, 'No recent file, showing home page');
+        return;
+      }
+
+      waitedTime += checkInterval;
+      if (waitedTime < maxWaitTime) {
+        // 继续等待
+        setTimeout(checkAndNavigate, checkInterval);
+      } else {
+        // 超时，回退到原始方式
+        hilog.info(DOMAIN, TAG, 'Preload timeout, fallback to loadMostRecentFile');
+        this.checkRecentFiles();
+      }
+    };
+
+    setTimeout(checkAndNavigate, checkInterval);
+  }
+
+  /**
+   * 导航到密码页面
+   */
+  private navigateToPassword(filePath: string): void {
+    CommonUtils.pushUrl({
+      url: 'pages/Password',
+      params: {
+        filePath: filePath
+      }
+    });
+  }
+
+  /**
+   * 检查是否有最近打开的文件（原始方法，作为回退）
    */
   async checkRecentFiles() {
     try {
       // 加载最近打开的文件
       RecentFilesService.getInstance().loadMostRecentFile().then((recentFile) => {
         if (recentFile) {
-          // 导航到密码输入页面
-          CommonUtils.pushUrl({
-            url: 'pages/Password',
-            params: {
-              filePath: recentFile.filePath
-            }
-          });
+          this.navigateToPassword(recentFile.filePath);
         }
       });
     } catch (error) {
