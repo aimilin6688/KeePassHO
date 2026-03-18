@@ -291,6 +291,7 @@ struct Password {
     this.isShowBiometric = true;
     // 默认认证方式
     authType = authType ?? await SettingsService.getInstance().get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT);
+    hilog.info(DOMAIN, TAG, `call authType: ${authType}`);
     // 指纹或者人脸验证
     if (authType === UnlockAuthType.FINGERPRINT) {
       AuthService.startFingerprintAuth(this.authCallback());
