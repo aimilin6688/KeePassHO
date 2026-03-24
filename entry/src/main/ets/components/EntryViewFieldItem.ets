@@ -1,6 +1,6 @@
 import { PromptAction } from '@kit.ArkUI';
-import {KdbxUtils, FileUtils, ResourceManager, CommonUtils} from '../common/utils';
-import { KdbxEntry } from 'kdbxweb';
+import { CommonUtils, FileUtils, KdbxUtils, ResourceManager } from '../common/utils';
+import { FieldReferenceValue, Kdbx, KdbxEntry, KdbxEntryField } from 'kdbxweb';
 
 import { Icons } from '../services/TypeDefined';
 import { SettingsService } from '../services/SettingsService';
@@ -25,6 +25,8 @@ export class FieldView {
   binaryFile?: ArrayBuffer | undefined;
   isTotp: boolean = false;
   otpValue: string = '';
+  isFieldReference: boolean = false;
+  referenceInfo?: FieldReferenceValue;
 
   constructor(key: string, value: string, isProtected: boolean, isCopy: boolean, binaryFile?: ArrayBuffer) {
     this.key = key;
@@ -45,6 +47,40 @@ export class FieldView {
         }
       });
     }
+  }
+
+  /**
+   * 从条目字段创建 FieldView，处理字段引用逻辑
+   * @param entry 条目
+   * @param key 字段key
+   * @param rawValue 原始字段值
+   * @param database 数据库
+   * @param isCopy 是否可复制
+   * @returns FieldView 或 null（当值为空时）
+   */
+  static fromEntryField(entry: KdbxEntry | null, key: string, rawValue: KdbxEntryField, database: Kdbx | null, isCopy: boolean): FieldView | null {
+    if (!entry || !database) {
+      return null;
+    }
+
+    // 处理字段引用
+    if (KdbxUtils.isFieldReferenceValue(rawValue)) {
+      const refValue = rawValue as FieldReferenceValue;
+      const resolvedValue = KdbxUtils.getFieldValueWithContext(entry, key, database);
+      if (resolvedValue === '') {
+        return null;
+      }
+      const fieldView = new FieldView(key, resolvedValue, KdbxUtils.isProtectedValue(rawValue), isCopy);
+      fieldView.isFieldReference = true;
+      fieldView.referenceInfo = refValue;
+      return fieldView;
+    }
+
+    const strValue = KdbxUtils.getValueString(rawValue);
+    if (strValue === '') {
+      return null;
+    }
+    return new FieldView(key, strValue, KdbxUtils.isProtectedValue(rawValue), isCopy);
   }
 }
 

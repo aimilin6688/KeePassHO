@@ -10,7 +10,10 @@ import {
   KdbxGroup,
   KdbxMeta,
   KdbxUuid,
-  ProtectedValue
+  ProtectedValue,
+  FieldReferenceValue,
+  isFieldReferenceValue,
+  KdbxContext
 } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
@@ -82,7 +85,20 @@ export class KdbxUtils {
     if (value instanceof ProtectedValue) {
       return value.getText();
     }
+    // 处理字段引用类型
+    if (isFieldReferenceValue(value)) {
+      return '{REF}';
+    }
     return value.toString();
+  }
+
+  /**
+   * 判断值是否是字段引用
+   * @param value 字段值
+   * @returns 是否是字段引用
+   */
+  public static isFieldReferenceValue(value: KdbxEntryField | undefined): boolean {
+    return isFieldReferenceValue(value);
   }
 
   /**
@@ -92,6 +108,27 @@ export class KdbxUtils {
    */
   public static isProtectedValue(value: KdbxEntryField | undefined): boolean {
     return value instanceof ProtectedValue;
+  }
+
+  /**
+   * 使用上下文解析字段值（支持字段引用）
+   * @param entry 条目
+   * @param fieldName 字段名
+   * @param kdbx 数据库
+   * @returns 解析后的字段值
+   */
+  public static getFieldValueWithContext(entry: KdbxEntry, fieldName: string, kdbx: Kdbx): string {
+    if (!entry || !kdbx) {
+      return '';
+    }
+    try {
+      const ctx = new KdbxContext({ kdbx: kdbx });
+      ctx.buildEntryMap();
+      return entry.getFieldValue(fieldName, ctx);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'getFieldValueWithContext error: %{public}s', error);
+      return '';
+    }
   }
 
   /**

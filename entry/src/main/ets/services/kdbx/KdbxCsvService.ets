@@ -1,4 +1,4 @@
-import { ByteUtils, Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxEntry, KdbxGroup, ProtectedValue } from 'kdbxweb';
 import util from '@ohos.util';
 import { KdbxUtils } from '../../common/utils';
 import { FileContentInfo } from '../../storage';
@@ -258,9 +258,14 @@ export class KdbxCsvService {
 
     if (typeof field === 'string') {
       return field;
-    } else {
+    } else if (field instanceof ProtectedValue) {
       // ProtectedValue类型
       return field.getText();
+    } else if (KdbxUtils.isFieldReferenceValue(field)) {
+      // FieldReferenceValue类型，导出为空字符串
+      return '[Field Reference]';
+    } else {
+      return field?.toString() || '';
     }
   }
 

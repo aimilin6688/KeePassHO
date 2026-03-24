@@ -1,4 +1,4 @@
-import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue, FieldReferenceValue, FieldReference } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { Router } from '@kit.ArkUI';
@@ -6,6 +6,7 @@ import { FileService } from '../services/FileService';
 import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
+import { FieldReferenceDialog } from '../components/FieldReferenceDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
@@ -68,6 +69,10 @@ struct EntryEdit {
       },
       onCancel: () => {
         this.initCustomField();
+      },
+      onOpenFieldReference: (fieldName: string) => {
+        this.initCustomField();
+        this.showFieldReferenceDialog(fieldName);
       }
     }),
     alignment: DialogAlignment.Bottom,
@@ -144,6 +149,9 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
+  // 字段引用对话框
+  @State fieldReferenceDialogFieldName: string = '';
+  private fieldReferenceController: CustomDialogController | null = null;
   private templateService: TemplateService = TemplateService.getInstance();
 
   aboutToAppear() {
@@ -259,7 +267,7 @@ struct EntryEdit {
   private loadCustomFields() {
     this.customFields = [];
     this.customFieldsVisibility = new Map();
-    if (this.entry) {
+    if (this.entry && this.database) {
       // 获取所有字段
       const fields = this.entry.fields;
 
@@ -274,9 +282,19 @@ struct EntryEdit {
 
         let fieldValue = '';
         let isProtected = false;
+        let isReference = false;
+        let referenceInfo: FieldReferenceValue | undefined = undefined;
 
-        // 检查是否是受保护的值
-        if (value instanceof ProtectedValue) {
+        // 检查是否是字段引用
+        if (KdbxUtils.isFieldReferenceValue(value)) {
+          isReference = true;
+          referenceInfo = value as FieldReferenceValue;
+          // 获取解析后的值用于显示
+          if (this.database && this.entry) {
+            fieldValue = KdbxUtils.getFieldValueWithContext(this.entry, key, this.database);
+          }
+          isProtected = false;
+        } else if (value instanceof ProtectedValue) {
           fieldValue = value.getText();
           isProtected = true;
         } else {
@@ -287,7 +305,9 @@ struct EntryEdit {
         this.customFields.push({
           key: key,
           value: fieldValue,
-          isProtected: isProtected
+          isProtected: isProtected,
+          isReference: isReference,
+          referenceInfo: referenceInfo
         });
 
         // 初始化可见性状态为false（隐藏）
@@ -348,7 +368,10 @@ struct EntryEdit {
 
       // 保存自定义字段
       this.customFields.forEach(field => {
-        if (field.isProtected) {
+        if (field.isReference && field.referenceInfo) {
+          // 保留字段引用
+          this.entry?.fields.set(field.key, field.referenceInfo);
+        } else if (field.isProtected) {
           this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
         } else {
           this.entry?.fields.set(field.key, field.value);
@@ -389,8 +412,6 @@ struct EntryEdit {
       const deleteCount = this.entry.history.length - historyMaxItems + 1;
       this.entry.removeHistory(0, deleteCount);
     }
-    // TODO 限制历史条目总大小
-
     // 添加到历史记录中
     this.entry.pushHistory();
   }
@@ -580,6 +601,50 @@ struct EntryEdit {
       this.checkEntryModified();
       this.fieldDialogController.close();
     }
+  }
+
+  /**
+   * 设置字段引用
+   */
+  private setFieldReference(fieldName: string, ref: FieldReference) {
+    if (!this.entry) {
+      return;
+    }
+    this.entry.setFieldReference(fieldName, ref.field, ref.entryUuid);
+    this.checkEntryModified();
+  }
+
+  /**
+   * 显示字段引用对话框
+   */
+  private showFieldReferenceDialog(fieldName: string) {
+    if (!this.database) {
+      return;
+    }
+    this.fieldReferenceDialogFieldName = fieldName;
+
+    this.fieldReferenceController = new CustomDialogController({
+      builder: FieldReferenceDialog({
+        database: this.database,
+        fieldName: fieldName,
+        onConfirm: (ref: FieldReference) => {
+          this.handleFieldReferenceConfirm(ref);
+        }
+      }),
+      alignment: DialogAlignment.Bottom,
+      customStyle: true,
+      autoCancel: false
+    });
+    this.fieldReferenceController.open();
+  }
+
+  /**
+   * 处理字段引用对话框确认
+   */
+  private handleFieldReferenceConfirm(ref: FieldReference) {
+    this.setFieldReference(this.fieldReferenceDialogFieldName, ref);
+    this.loadCustomFields();
+    this.fieldReferenceController?.close();
   }
 
   /**
@@ -1241,7 +1306,11 @@ struct EntryEdit {
                             .borderRadius(16)
                             .backgroundColor($r("app.color.bg_secondary"))
                             .onClick(() => {
-                              this.openEditFieldDialog(index);
+                              if (field.isReference) {
+                                this.showFieldReferenceDialog(field.key);
+                              } else {
+                                this.openEditFieldDialog(index);
+                              }
                             })
 
                             Button() {
@@ -1273,7 +1342,11 @@ struct EntryEdit {
                               .layoutWeight(1)
                               .backgroundColor($r("app.color.bg_secondary"))
                               .onClick(() => {
-                                this.openEditFieldDialog(index);
+                                if (field.isReference) {
+                                  this.showFieldReferenceDialog(field.key);
+                                } else {
+                                  this.openEditFieldDialog(index);
+                                }
                               })
 
                             if (field.isProtected) {
