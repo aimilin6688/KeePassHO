@@ -60,6 +60,23 @@ export struct EntryEditFieldDialog {
     this.controller.close();
   }
 
+  /**
+   * 打开字段引用对话框
+   */
+private openFieldReferenceDialog() {
+  // 验证字段名称
+  if (!this.tempKey || this.tempKey.trim() === '') {
+    CommonUtils.showToast({
+      message: $r("app.string.field_name_not_empty"),
+      duration: 2000
+    });
+    return;
+  }
+  this.fieldKey = this.tempKey.trim();
+  this.controller.close();
+  this.onOpenFieldReference(this.fieldKey);
+}
+
   build() {
     Column() {
       // 顶部标题栏
@@ -162,17 +179,7 @@ export struct EntryEditFieldDialog {
             .select(false)
             .onChange((value) => {
               if (value) {
-                // 验证字段名称
-                if (!this.tempKey || this.tempKey.trim() === '') {
-                  CommonUtils.showToast({
-                    message: $r("app.string.field_name_not_empty"),
-                    duration: 2000
-                  });
-                  return;
-                }
-                // 保存字段名到外部变量
-                this.fieldKey = this.tempKey.trim();
-                this.onOpenFieldReference(this.fieldKey);
+                this.openFieldReferenceDialog();
               }
             })
 
@@ -181,17 +188,7 @@ export struct EntryEditFieldDialog {
             .fontColor($r('app.color.text_primary'))
             .margin({ left: 8 })
             .onClick(() => {
-              // 验证字段名称
-              if (!this.tempKey || this.tempKey.trim() === '') {
-                CommonUtils.showToast({
-                  message: $r("app.string.field_name_not_empty"),
-                  duration: 2000
-                });
-                return;
-              }
-              this.fieldKey = this.tempKey.trim();
-              this.controller.close();
-              this.onOpenFieldReference(this.fieldKey);
+              this.openFieldReferenceDialog();
             })
         }
       }

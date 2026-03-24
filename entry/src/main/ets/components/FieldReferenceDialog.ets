@@ -1,6 +1,5 @@
-import { Kdbx, KdbxEntry, KdbxGroup, KdbxEntryField, FieldReference } from 'kdbxweb';
-import { KdbxUtils, CommonUtils, ResourceManager } from '../common/utils';
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FieldReference, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup } from 'kdbxweb';
+import { CommonUtils, KdbxUtils, ResourceManager } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'FieldReferenceDialog';
@@ -20,7 +19,6 @@ export struct FieldReferenceDialog {
   @Prop fieldName: string = '';
   onConfirm?: (ref: FieldReference) => void;
   private controller: CustomDialogController;
-
   @State selectedEntry: KdbxEntry | null = null;
   @State selectedField: string = '';
   @State entries: Array<KdbxEntry> = [];
@@ -54,7 +52,7 @@ export struct FieldReferenceDialog {
       const title = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE);
       const username = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
       return title.toLowerCase().includes(searchTextLower) ||
-        username.toLowerCase().includes(searchTextLower);
+      username.toLowerCase().includes(searchTextLower);
     });
   }
 
@@ -97,7 +95,7 @@ export struct FieldReferenceDialog {
     Column() {
       // 顶部标题栏
       Row() {
-        Text($r('app.string.field_reference'))
+        Text(this.fieldName || $r('app.string.field_reference'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('app.color.text_primary'))
@@ -115,34 +113,18 @@ export struct FieldReferenceDialog {
         })
       }
       .width('100%')
-      .height(56)
+      .height(40)
+      .margin({ top: 6 })
       .alignItems(VerticalAlign.Center)
       .borderRadius({ topLeft: 16, topRight: 16 })
 
       // 对话框内容
       Column() {
-        // 当前字段名
-        Row() {
-          Text($r('app.string.current_field'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-          Text(this.fieldName)
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .fontWeight(FontWeight.Medium)
-            .margin({ left: 4 })
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-            .layoutWeight(1)
-        }
-        .width('100%')
-        .margin({ bottom: 12 })
-
         // 搜索框
         TextInput({ placeholder: $r('app.string.search_entry') })
           .width('100%')
           .height(40)
-          .margin({ bottom: 12 })
+          .margin({ bottom: 8 })
           .onChange((value: string) => {
             this.searchText = value;
           })
@@ -162,11 +144,25 @@ export struct FieldReferenceDialog {
         // 字段选择
         if (this.selectedEntry) {
           Column() {
-            Text($r('app.string.select_field'))
-              .fontSize(14)
-              .fontColor($r('app.color.text_secondary'))
-              .width('100%')
-              .margin({ bottom: 8 })
+            Row() {
+              Text($r('app.string.select_field'))
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+              Blank()
+              Button() {
+                Image($r('sys.media.ohos_ic_public_cancel_filled'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .type(ButtonType.Circle)
+              .backgroundColor(Color.Transparent)
+              .onClick(() => {
+                this.selectedEntry = null;
+              })
+            }
+            .width('100%')
+            .margin({ bottom: 8 })
 
             List({ space: 8 }) {
               ForEach(this.getAvailableFields(this.selectedEntry), (field: string) => {
@@ -174,8 +170,7 @@ export struct FieldReferenceDialog {
                   Row() {
                     Text(KdbxUtils.getFieldName(field))
                       .fontSize(16)
-                      .fontColor(this.selectedField === field ?
-                        $r('app.color.button_text') : $r('app.color.text_primary'))
+                      .fontColor(this.selectedField === field ? $r('app.color.button_text') : $r('app.color.text_primary'))
                       .layoutWeight(1)
                       .maxLines(1)
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -190,14 +185,16 @@ export struct FieldReferenceDialog {
                   }
                   .width('100%')
                   .padding(12)
-                  .backgroundColor(this.selectedField === field ?
-                    $r('app.color.button_bg_blue') : $r('app.color.card_bg'))
+                  .backgroundColor(this.selectedField === field ? $r('app.color.button_bg_blue') : $r('app.color.card_bg'))
                   .borderRadius(8)
+                  .onClick(() => {
+                    this.selectedField = field;
+                  })
                 }
               }, (field: string) => field)
             }
             .width('100%')
-            .constraintSize({ maxHeight: 150 })
+            .constraintSize({ maxHeight: 180 })
             .margin({ bottom: 12 })
           }
           .width('100%')
@@ -205,7 +202,7 @@ export struct FieldReferenceDialog {
       }
       .width('100%')
       .layoutWeight(1)
-      .margin({ top: 16, bottom: 16 })
+      .margin({ top: 4, bottom: 8 })
 
       // 底部按钮
       Row() {
@@ -248,7 +245,6 @@ export struct FieldReferenceDialog {
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceBetween)
-      .padding({ bottom: 16 })
     }
     .width('100%')
     .height('80%')
@@ -270,16 +266,14 @@ export struct FieldReferenceDialog {
       Column() {
         Text(KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE))
           .fontSize(16)
-          .fontColor(this.selectedEntry?.uuid.id === entry.uuid.id ?
-            $r('app.color.button_text') : $r('app.color.text_primary'))
+          .fontColor(this.selectedEntry?.uuid.id === entry.uuid.id ? $r('app.color.button_text') : $r('app.color.text_primary'))
           .width('100%')
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
         Text(KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME))
           .fontSize(14)
-          .fontColor(this.selectedEntry?.uuid.id === entry.uuid.id ?
-            $r('app.color.button_text') : $r('app.color.text_secondary'))
+          .fontColor(this.selectedEntry?.uuid.id === entry.uuid.id ? $r('app.color.button_text') : $r('app.color.text_secondary'))
           .width('100%')
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -298,8 +292,7 @@ export struct FieldReferenceDialog {
     }
     .width('100%')
     .padding(12)
-    .backgroundColor(this.selectedEntry?.uuid.id === entry.uuid.id ?
-      $r('app.color.button_bg_blue') : $r('app.color.card_bg'))
+    .backgroundColor(this.selectedEntry?.uuid.id === entry.uuid.id ? $r('app.color.button_bg_blue') : $r('app.color.card_bg'))
     .borderRadius(8)
     .onClick(() => {
       this.selectedEntry = entry;
