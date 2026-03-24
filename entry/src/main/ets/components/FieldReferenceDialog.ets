@@ -11,7 +11,7 @@ export interface FieldReferenceDialogParams {
   database: Kdbx;
   fieldName: string;
   existingReference?: FieldReferenceValue | null;
-  onConfirm?: (fieldName: string, ref: FieldReference) => void;
+  onConfirm?: (fieldName: string, ref: FieldReferenceValue) => void;
 }
 
 @CustomDialog
