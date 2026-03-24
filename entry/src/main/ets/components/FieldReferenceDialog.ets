@@ -1,4 +1,4 @@
-import { FieldReference, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup } from 'kdbxweb';
+import { FieldReference, FieldReferenceValue, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup } from 'kdbxweb';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../common/utils';
 
 const DOMAIN = 0x0000;
@@ -10,14 +10,16 @@ const TAG = 'FieldReferenceDialog';
 export interface FieldReferenceDialogParams {
   database: Kdbx;
   fieldName: string;
-  onConfirm?: (ref: FieldReference) => void;
+  existingReference?: FieldReferenceValue | null;
+  onConfirm?: (fieldName: string, ref: FieldReference) => void;
 }
 
 @CustomDialog
 export struct FieldReferenceDialog {
   @Prop database: Kdbx;
   @Prop fieldName: string = '';
-  onConfirm?: (ref: FieldReference) => void;
+  @Prop existingReference: FieldReferenceValue | null = null;
+  onConfirm?: (fieldName: string, ref: FieldReferenceValue) => void;
   private controller: CustomDialogController;
   @State selectedEntry: KdbxEntry | null = null;
   @State selectedField: string = '';
@@ -32,6 +34,27 @@ export struct FieldReferenceDialog {
     this.entries = [];
     const rootGroup = this.database.getDefaultGroup();
     this.collectEntries(rootGroup);
+    // 如果存在已有引用，自动选中对应的条目和字段
+    if (this.existingReference && this.existingReference.ref) {
+      this.preSelectExistingReference();
+    }
+  }
+
+  private preSelectExistingReference() {
+    if (!this.existingReference || !this.existingReference.ref) {
+      return;
+    }
+    const ref = this.existingReference.ref;
+    const refEntryUuid = ref.entryUuid;
+    const refField = ref.field;
+    // 查找匹配的条目
+    for (let i = 0; i < this.entries.length; i++) {
+      if (this.entries[i].uuid.id === refEntryUuid) {
+        this.selectedEntry = this.entries[i];
+        this.selectedField = refField;
+        break;
+      }
+    }
   }
 
   private collectEntries(group: KdbxGroup) {
@@ -83,11 +106,15 @@ export struct FieldReferenceDialog {
       return;
     }
 
-    const ref: FieldReference = {
-      entryUuid: this.selectedEntry.uuid.id,
-      field: this.selectedField
+    const ref: FieldReferenceValue = {
+      ref: {
+        entryUuid: this.selectedEntry.uuid.id,
+        field: this.selectedField
+      } as FieldReference,
+      resolvedValue: KdbxUtils.getFieldValueString(this.selectedEntry.fields, this.selectedField)
     };
-    this.onConfirm?.(ref);
+
+    this.onConfirm?.(this.fieldName, ref);
     this.close();
   }
 

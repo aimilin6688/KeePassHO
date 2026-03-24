@@ -149,8 +149,7 @@ struct EntryEdit {
     customStyle: true,
     autoCancel: false
   });
-  // 字段引用对话框
-  @State fieldReferenceDialogFieldName: string = '';
+  // 字段引用对话框控制器
   private fieldReferenceController: CustomDialogController | null = null;
   private templateService: TemplateService = TemplateService.getInstance();
 
@@ -510,7 +509,8 @@ struct EntryEdit {
   }
 
   /**
-   * 打开编辑自定义字段对话框
+   * 打开编辑自定义字段对话框或字段引用对话框
+   * 引用字段打开引用编辑弹框，普通字段打开字段编辑弹框
    * @param index 字段索引
    */
   private openEditFieldDialog(index: number) {
@@ -520,7 +520,13 @@ struct EntryEdit {
     this.currentFieldKey = field.key;
     this.currentFieldValue = field.value;
     this.currentFieldProtected = field.isProtected;
-    this.fieldDialogController.open();
+
+    // 引用字段
+    if (field.isReference) {
+      this.showFieldReferenceDialog(field.key, field.referenceInfo);
+    } else {
+      this.fieldDialogController.open();
+    }
   }
 
   /**
@@ -547,10 +553,9 @@ struct EntryEdit {
   }
 
   /**
-   * 确认自定义字段（添加或更新）
-   * @param key 字段名称
-   * @param value 字段值
-   * @param isProtected 是否受保护
+   * 确认自定义字段（添加或更新），支持普通字段和引用字段
+   * 根据 isEditingField 自动判断新增或编辑
+   * @param customField 自定义字段
    */
   private confirmCustomField(customField: CustomField) {
     if (this.isEditingField) {
@@ -567,7 +572,9 @@ struct EntryEdit {
         this.customFields[this.editingFieldIndex] = {
           key: customField.key,
           value: customField.value,
-          isProtected: customField.isProtected
+          isProtected: customField.isProtected,
+          isReference: customField.isReference,
+          referenceInfo: customField.referenceInfo
         };
 
         // 重置该字段的可见性状态为隐藏
@@ -592,7 +599,9 @@ struct EntryEdit {
       this.customFields.push({
         key: customField.key,
         value: customField.value,
-        isProtected: customField.isProtected
+        isProtected: customField.isProtected,
+        isReference: customField.isReference,
+        referenceInfo: customField.referenceInfo
       });
 
       // 添加新字段的可见性状态，默认为隐藏
@@ -604,31 +613,22 @@ struct EntryEdit {
   }
 
   /**
-   * 设置字段引用
-   */
-  private setFieldReference(fieldName: string, ref: FieldReference) {
-    if (!this.entry) {
-      return;
-    }
-    this.entry.setFieldReference(fieldName, ref.field, ref.entryUuid);
-    this.checkEntryModified();
-  }
-
-  /**
    * 显示字段引用对话框
+   * @param fieldName 字段名称
+   * @param existingReference 已有的引用信息（编辑场景传入）
    */
-  private showFieldReferenceDialog(fieldName: string) {
+  private showFieldReferenceDialog(fieldName: string, existingReference?: FieldReferenceValue | null) {
     if (!this.database) {
       return;
     }
-    this.fieldReferenceDialogFieldName = fieldName;
 
     this.fieldReferenceController = new CustomDialogController({
       builder: FieldReferenceDialog({
         database: this.database,
         fieldName: fieldName,
-        onConfirm: (ref: FieldReference) => {
-          this.handleFieldReferenceConfirm(ref);
+        existingReference: existingReference,
+        onConfirm: (confirmedFieldName: string, ref: FieldReferenceValue) => {
+          this.handleFieldReferenceConfirm(confirmedFieldName, ref);
         }
       }),
       alignment: DialogAlignment.Bottom,
@@ -640,10 +640,18 @@ struct EntryEdit {
 
   /**
    * 处理字段引用对话框确认
+   * 根据 isEditingField 状态自动判断是新增还是编辑引用字段
+   * @param fieldName 自定义字段名称
+   * @param ref 引用信息
    */
-  private handleFieldReferenceConfirm(ref: FieldReference) {
-    this.setFieldReference(this.fieldReferenceDialogFieldName, ref);
-    this.loadCustomFields();
+  private handleFieldReferenceConfirm(fieldName: string, ref: FieldReferenceValue) {
+    this.confirmCustomField({
+      key: fieldName,
+      value: ref.resolvedValue || '',
+      isProtected: false,
+      isReference: true,
+      referenceInfo: ref
+    });
     this.fieldReferenceController?.close();
   }
 
@@ -1306,11 +1314,7 @@ struct EntryEdit {
                             .borderRadius(16)
                             .backgroundColor($r("app.color.bg_secondary"))
                             .onClick(() => {
-                              if (field.isReference) {
-                                this.showFieldReferenceDialog(field.key);
-                              } else {
-                                this.openEditFieldDialog(index);
-                              }
+                              this.openEditFieldDialog(index);
                             })
 
                             Button() {
@@ -1342,11 +1346,7 @@ struct EntryEdit {
                               .layoutWeight(1)
                               .backgroundColor($r("app.color.bg_secondary"))
                               .onClick(() => {
-                                if (field.isReference) {
-                                  this.showFieldReferenceDialog(field.key);
-                                } else {
-                                  this.openEditFieldDialog(index);
-                                }
+                                this.openEditFieldDialog(index);
                               })
 
                             if (field.isProtected) {
@@ -1491,7 +1491,7 @@ struct EntryEdit {
             .margin({ top: 16, bottom: 24 })
           }
           .width('100%')
-          .padding({ left: 16, right: 16})
+          .padding({ left: 16, right: 16 })
         }
         .width('100%')
         .height('100%')
