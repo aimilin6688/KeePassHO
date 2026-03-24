@@ -97,10 +97,7 @@ struct Password {
     // 如果标记需要启动生物认证，则延迟启动
     if (this.shouldStartAuth) {
       hilog.info(DOMAIN, TAG, 'onPageShow: starting auth due to shouldStartAuth=true');
-      // 少量延时确保 UI 稳定
-      setTimeout(() => {
-        this.startAuth();
-      }, 50);
+      this.startAuth();
     }
   }
 
@@ -232,7 +229,7 @@ struct Password {
       // 少量延时确保 UI 稳定
       setTimeout(() => {
         this.startAuth();
-      }, 50);
+      }, 0);
     } else {
       // 标记需要启动，等待 onPageShow 执行
       hilog.info(DOMAIN, TAG, 'tryStartAuth: setting shouldStartAuth=true');
