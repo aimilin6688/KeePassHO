@@ -45,12 +45,21 @@ import {
 } from './format/kdbx-meta';
 import { KdbxTimes } from './format/kdbx-times';
 import { KdbxUuid } from './format/kdbx-uuid';
+import {
+    FieldReference,
+    FieldReferenceValue,
+    isFieldReferenceValue,
+    isFieldReference,
+    createFieldReferenceValue,
+    createFieldReferenceValueFromUuid
+} from './format/kdbx-field-reference';
 
 import { BinaryStream } from './utils/binary-stream';
 import * as ByteUtils from './utils/byte-utils';
 import { Int64 } from './utils/int64';
 import { VarDictionary } from './utils/var-dictionary';
 import * as XmlUtils from './utils/xml-utils';
+import { FieldReferenceParser } from './utils/field-reference-parser';
 
 export {
     ChaCha20,
@@ -96,10 +105,17 @@ export {
     KdbxMemoryProtection,
     KdbxTimes,
     KdbxUuid,
+    FieldReference,
+    FieldReferenceValue,
+    isFieldReferenceValue,
+    isFieldReference,
+    createFieldReferenceValue,
+    createFieldReferenceValueFromUuid,
     BinaryStream,
     ByteUtils,
     Int64,
     VarDictionary,
     XmlUtils,
-    HeaderConst
+    HeaderConst,
+    FieldReferenceParser
 };

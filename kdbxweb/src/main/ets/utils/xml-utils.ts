@@ -9,6 +9,7 @@ import { ProtectedValue } from '../crypto/protected-value';
 import { ProtectSaltGenerator } from '../crypto/protect-salt-generator';
 import { KdbxBinaries, KdbxBinaryOrRef } from '../format/kdbx-binaries';
 import { Document, DOMParser, DOMParserOptions, Element, Node, XMLSerializer } from '@xmldom/xmldom';
+import { FieldReferenceValue } from '..';
 
 
 const DateRegex = /\.\d\d\d/;
@@ -253,7 +254,7 @@ export function setUuid(
   setBytes(node, uuidBytes);
 }
 
-export function getProtectedText(node: Node): ProtectedValue | string | undefined {
+export function getProtectedText(node: Node): ProtectedValue | string | undefined | FieldReferenceValue{
   return ((node as any).protectedValue || node.textContent) ?? undefined;
 }
 

@@ -11,8 +11,10 @@ import { KdbxMeta } from './kdbx-meta';
 import { KdbxGroup } from './kdbx-group';
 import { MergeObjectMap } from './kdbx';
 import { Element, Node } from '@xmldom/xmldom';
+import { FieldReference, FieldReferenceValue, isFieldReferenceValue } from './kdbx-field-reference';
+import { FieldReferenceParser } from '../utils/field-reference-parser';
 
-export type KdbxEntryField = string | ProtectedValue;
+export type KdbxEntryField = string | ProtectedValue | FieldReferenceValue;
 
 export interface KdbxAutoTypeItem {
     window: string;
@@ -116,9 +118,17 @@ export class KdbxEntry {
         const keyNode = XmlUtils.getChildNode(node, XmlNames.Elem.Key),
             valueNode = XmlUtils.getChildNode(node, XmlNames.Elem.Value);
         if (keyNode && valueNode) {
-            const key = XmlUtils.getText(keyNode),
-                value = XmlUtils.getProtectedText(valueNode);
+            const key = XmlUtils.getText(keyNode);
+            let value = XmlUtils.getProtectedText(valueNode);
             if (key) {
+                // 检测并解析字段引用
+                if (typeof value === 'string' && FieldReferenceParser.isFieldReference(value)) {
+                    const ref = FieldReferenceParser.parseFieldRef(value);
+                    if (ref) {
+                        // 保留引用格式，不立即解析（延迟解析）
+                        value = { ref } as FieldReferenceValue;
+                    }
+                }
                 this.fields.set(key, value || '');
             }
         }
@@ -129,7 +139,17 @@ export class KdbxEntry {
             if (value !== undefined && value !== null) {
                 const node = XmlUtils.addChildNode(parentNode, XmlNames.Elem.String);
                 XmlUtils.setText(XmlUtils.addChildNode(node, XmlNames.Elem.Key), field);
-                XmlUtils.setProtectedText(XmlUtils.addChildNode(node, XmlNames.Elem.Value), value);
+
+                // 处理字段引用
+                let writeValue: ProtectedValue | string;
+                if (isFieldReferenceValue(value)) {
+                    const ref = (value as FieldReferenceValue).ref;
+                    writeValue = FieldReferenceParser.formatFieldRef(ref);
+                } else {
+                    writeValue = value as ProtectedValue | string;
+                }
+
+                XmlUtils.setProtectedText(XmlUtils.addChildNode(node, XmlNames.Elem.Value), writeValue);
             }
         }
     }
@@ -270,6 +290,78 @@ export class KdbxEntry {
         this.fields.set(name, secure ? ProtectedValue.fromString(str) : str);
     }
 
+    /**
+     * 获取字段的实际值（解析字段引用）
+     * @param fieldName 字段名
+     * @param ctx Kdbx上下文
+     * @returns 解析后的字段值
+     */
+    public getFieldValue(fieldName: string, ctx: KdbxContext): string {
+        const value = this.fields.get(fieldName);
+
+        if (value === undefined || value === null) {
+            return '';
+        }
+
+        // 处理ProtectedValue
+        if (value instanceof ProtectedValue) {
+            return value.getText();
+        }
+
+        // 处理字段引用
+        if (isFieldReferenceValue(value)) {
+            const ref = (value as FieldReferenceValue).ref;
+            return FieldReferenceParser.resolveFieldRef(ref, ctx, this);
+        }
+
+        // 普通字符串
+        return value;
+    }
+
+    /**
+     * 获取字段的原始值（不解析字段引用）
+     * @param fieldName 字段名
+     * @returns 原始字段值
+     */
+    public getRawFieldValue(fieldName: string): KdbxEntryField | undefined {
+        return this.fields.get(fieldName);
+    }
+
+    /**
+     * 设置字段引用
+     * @param fieldName 字段名
+     * @param field 引用字段名
+     * @param entryUuid 被引用的Entry UUID
+     */
+    public setFieldReference(fieldName: string, field: string, entryUuid: string): void {
+        this.fields.set(fieldName, {
+            ref: { field, entryUuid }
+        } as FieldReferenceValue);
+    }
+
+    /**
+     * 设置字段引用（使用KdbxUuid）
+     * @param fieldName 字段名
+     * @param field 引用字段名
+     * @param uuid 被引用的Entry UUID
+     */
+    public setFieldReferenceFromUuid(fieldName: string, field: string, uuid: KdbxUuid): void {
+        this.setFieldReference(fieldName, field, uuid.id);
+    }
+
+    /**
+     * 检测字段是否包含引用
+     * @param fieldName 字段名
+     * @returns 是否包含引用
+     */
+    public hasFieldReference(fieldName: string): boolean {
+        const value = this.fields.get(fieldName);
+        if (!value) {
+            return false;
+        }
+        return isFieldReferenceValue(value);
+    }
+
     private addHistoryTombstone(isAdded: boolean, dt: Date) {
         if (!this._editState) {
             this._editState = { added: [], deleted: [] };
@@ -348,6 +440,11 @@ export class KdbxEntry {
         for (const [name, value] of entry.fields) {
             if (value instanceof ProtectedValue) {
                 this.fields.set(name, value.clone());
+            } else if (isFieldReferenceValue(value)) {
+                // 深拷贝字段引用
+                this.fields.set(name, {
+                    ref: { ...((value as FieldReferenceValue).ref) }
+                } as FieldReferenceValue);
             } else {
                 this.fields.set(name, value);
             }

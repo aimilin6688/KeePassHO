@@ -19,6 +19,7 @@ import KdbxCredentialsTest from './format/kdbx-credentials.test';
 import KdbxCustomDataTest from './format/kdbx-custom-data.test';
 import KdbxHeaderTest from './format/kdbx-header.test';
 import KdbxUuidTest from './format/kdbx-uuid.test';
+import KdbxFieldReferenceTest from './format/kdbx-field-reference.test';
 
 
 import BinaryStreamTest from './utils/binary-stream.test';
@@ -27,6 +28,7 @@ import Int64Test from './utils/int64.test';
 import VarDictionaryTest from './utils/var-dictionary.test';
 import XmlUtilsTest from './utils/xml-utils.test';
 import FileUtilsTest from './utils/file-utils.test';
+
 
 
 export default function testsuite() {
@@ -53,6 +55,7 @@ export default function testsuite() {
   KdbxCustomDataTest();
   KdbxHeaderTest();
   KdbxUuidTest();
+  KdbxFieldReferenceTest();
 
   // ------- utils tests ----------------
   BinaryStreamTest();
