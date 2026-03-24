@@ -259,14 +259,9 @@ export class KdbxCsvService {
     if (typeof field === 'string') {
       return field;
     } else if (field instanceof ProtectedValue) {
-      // ProtectedValue类型
       return field.getText();
-    } else if (KdbxUtils.isFieldReferenceValue(field)) {
-      // FieldReferenceValue类型，导出为空字符串
-      return '[Field Reference]';
-    } else {
-      return field?.toString() || '';
     }
+    return field?.toString() || '';
   }
 
   /**

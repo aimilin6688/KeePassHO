@@ -71,7 +71,6 @@ struct EntryEdit {
         this.initCustomField();
       },
       onOpenFieldReference: (fieldName: string) => {
-        this.initCustomField();
         this.showFieldReferenceDialog(fieldName);
       }
     }),
@@ -287,12 +286,12 @@ struct EntryEdit {
         // 检查是否是字段引用
         if (KdbxUtils.isFieldReferenceValue(value)) {
           isReference = true;
+          isProtected = false;
           referenceInfo = value as FieldReferenceValue;
           // 获取解析后的值用于显示
           if (this.database && this.entry) {
             fieldValue = KdbxUtils.getFieldValueWithContext(this.entry, key, this.database);
           }
-          isProtected = false;
         } else if (value instanceof ProtectedValue) {
           fieldValue = value.getText();
           isProtected = true;
@@ -368,7 +367,6 @@ struct EntryEdit {
       // 保存自定义字段
       this.customFields.forEach(field => {
         if (field.isReference && field.referenceInfo) {
-          // 保留字段引用
           this.entry?.fields.set(field.key, field.referenceInfo);
         } else if (field.isProtected) {
           this.entry?.fields.set(field.key, ProtectedValue.fromString(field.value));
@@ -569,13 +567,13 @@ struct EntryEdit {
           return;
         }
 
-        this.customFields[this.editingFieldIndex] = {
+        this.customFields.splice(this.editingFieldIndex, 1,  {
           key: customField.key,
           value: customField.value,
           isProtected: customField.isProtected,
           isReference: customField.isReference,
           referenceInfo: customField.referenceInfo
-        };
+        });
 
         // 重置该字段的可见性状态为隐藏
         this.customFieldsVisibility.set(customField.key, false);
@@ -1371,7 +1369,7 @@ struct EntryEdit {
                         .borderRadius(8)
                         .margin({ bottom: 8 })
                       }
-                    }, (field: CustomField) => field.key)
+                    }, (field: CustomField) => (field.key||"") + Date.now())
                       .onMove((fromIndex: number, toIndex: number) => {
                         let tmp = this.customFields.splice(fromIndex, 1);
                         this.customFields.splice(toIndex, 0, tmp[0]);
