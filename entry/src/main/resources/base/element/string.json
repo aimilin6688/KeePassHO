@@ -505,16 +505,8 @@
       "value": "Field Reference"
     },
     {
-      "name": "current_field",
-      "value": "Current field"
-    },
-    {
       "name": "search_entry",
       "value": "Search entry"
-    },
-    {
-      "name": "select_entry_to_reference",
-      "value": "Select Entry to Reference"
     },
     {
       "name": "select_field",
@@ -527,18 +519,6 @@
     {
       "name": "please_select_field",
       "value": "Please select a field"
-    },
-    {
-      "name": "clear_reference",
-      "value": "Clear Reference"
-    },
-    {
-      "name": "navigate_to_entry",
-      "value": "Go To Entry"
-    },
-    {
-      "name": "referenced_entry_not_found",
-      "value": "Referenced entry not found"
     },
     {
       "name": "invalid_db_or_entry",
@@ -1255,26 +1235,6 @@
     {
       "name": "please_select",
       "value": "Please select"
-    },
-    {
-      "name": "export_select_way",
-      "value": "Please select  export select way"
-    },
-    {
-      "name": "export_to_local_desc",
-      "value": "Export database to local"
-    },
-    {
-      "name": "export_to_webdav_desc",
-      "value": "Export database to webdav"
-    },
-    {
-      "name": "export_database",
-      "value": "Export database"
-    },
-    {
-      "name": "export_type_not_selected",
-      "value": "Please select database export type"
     },
     {
       "name": "dialog_prompt_title",
