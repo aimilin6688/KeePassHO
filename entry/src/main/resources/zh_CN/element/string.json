@@ -1221,16 +1221,8 @@
       "value": "字段引用"
     },
     {
-      "name": "current_field",
-      "value": "当前字段"
-    },
-    {
       "name": "search_entry",
       "value": "搜索条目"
-    },
-    {
-      "name": "select_entry_to_reference",
-      "value": "选择引用条目"
     },
     {
       "name": "select_field",
@@ -1243,38 +1235,6 @@
     {
       "name": "please_select_field",
       "value": "请选择字段"
-    },
-    {
-      "name": "clear_reference",
-      "value": "清除引用"
-    },
-    {
-      "name": "navigate_to_entry",
-      "value": "跳转到条目"
-    },
-    {
-      "name": "referenced_entry_not_found",
-      "value": "未找到被引用的条目"
-    },
-    {
-      "name": "export_select_way",
-      "value": "请选择导出方式"
-    },
-    {
-      "name": "export_to_local_desc",
-      "value": "导出数据库到本地文件"
-    },
-    {
-      "name": "export_to_webdav_desc",
-      "value": "导出数据库到webDAV"
-    },
-    {
-      "name": "export_database",
-      "value": "导出数据库"
-    },
-    {
-      "name": "export_type_not_selected",
-      "value": "请选择数据库导出类型"
     },
     {
       "name": "dialog_prompt_title",
