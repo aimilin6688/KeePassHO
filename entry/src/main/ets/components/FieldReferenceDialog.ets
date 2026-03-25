@@ -1,24 +1,12 @@
-import { FieldReference, FieldReferenceValue, Kdbx, KdbxEntry, KdbxEntryField, KdbxGroup } from 'kdbxweb';
+import { FieldReferenceValue, KdbxEntry, KdbxEntryField, KdbxGroup } from 'kdbxweb';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../common/utils';
+import { FileService } from '../services/FileService';
 
-const DOMAIN = 0x0000;
-const TAG = 'FieldReferenceDialog';
-
-/**
- * 字段引用对话框参数
- */
-export interface FieldReferenceDialogParams {
-  database: Kdbx;
-  fieldName: string;
-  existingReference?: FieldReferenceValue | null;
-  onConfirm?: (fieldName: string, ref: FieldReferenceValue) => void;
-}
 
 @CustomDialog
 export struct FieldReferenceDialog {
-  @Prop database: Kdbx;
-  @Prop fieldName: string = '';
-  @Prop existingReference: FieldReferenceValue | null = null;
+  fieldName: string = '';
+  existingReference: FieldReferenceValue | null = null;
   onConfirm?: (fieldName: string, ref: FieldReferenceValue) => void;
   private controller: CustomDialogController;
   @State selectedEntry: KdbxEntry | null = null;
@@ -32,7 +20,7 @@ export struct FieldReferenceDialog {
 
   private loadEntries() {
     this.entries = [];
-    const rootGroup = this.database.getDefaultGroup();
+    const rootGroup = FileService.getDatabase().getDefaultGroup();
     this.collectEntries(rootGroup);
     // 如果存在已有引用，自动选中对应的条目和字段
     if (this.existingReference && this.existingReference.ref) {
@@ -70,13 +58,7 @@ export struct FieldReferenceDialog {
     if (!this.searchText) {
       return this.entries;
     }
-    const searchTextLower = this.searchText.toLowerCase();
-    return this.entries.filter(entry => {
-      const title = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE);
-      const username = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
-      return title.toLowerCase().includes(searchTextLower) ||
-      username.toLowerCase().includes(searchTextLower);
-    });
+    return KdbxUtils.searchInEntries(this.entries, this.searchText);
   }
 
   private getAvailableFields(entry: KdbxEntry): Array<string> {
@@ -110,7 +92,7 @@ export struct FieldReferenceDialog {
       ref: {
         entryUuid: this.selectedEntry.uuid.id,
         field: this.selectedField
-      } as FieldReference,
+      },
       resolvedValue: KdbxUtils.getFieldValueString(this.selectedEntry.fields, this.selectedField)
     };
 
@@ -165,6 +147,7 @@ export struct FieldReferenceDialog {
           }, (entry: KdbxEntry) => entry.uuid.id)
         }
         .width('100%')
+        .height('auto')
         .layoutWeight(1)
         .margin({ bottom: 12 })
 
@@ -218,9 +201,10 @@ export struct FieldReferenceDialog {
                     this.selectedField = field;
                   })
                 }
-              }, (field: string) => field)
+              }, (field: string) => field + "_" + this.selectedEntry?.uuid.id)
             }
             .width('100%')
+            .height('auto')
             .constraintSize({ maxHeight: 180 })
             .margin({ bottom: 12 })
           }
@@ -285,7 +269,7 @@ export struct FieldReferenceDialog {
   EntryItemBuilder(entry: KdbxEntry) {
     Row() {
       // 条目图标
-      Image(KdbxUtils.getIcon(entry.icon, entry.customIcon, $r('app.media.C00_Key'), this.database.meta))
+      Image(KdbxUtils.getIcon(entry.icon, entry.customIcon, $r('app.media.C00_Key'), FileService.getDatabase().meta))
         .width(36)
         .height(36)
         .margin({ right: 12 })

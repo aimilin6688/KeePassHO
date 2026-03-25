@@ -622,7 +622,6 @@ struct EntryEdit {
 
     this.fieldReferenceController = new CustomDialogController({
       builder: FieldReferenceDialog({
-        database: this.database,
         fieldName: fieldName,
         existingReference: existingReference,
         onConfirm: (confirmedFieldName: string, ref: FieldReferenceValue) => {
