@@ -1,4 +1,4 @@
-import { Kdbx } from 'kdbxweb';
+import { Kdbx, FieldReferenceValue } from 'kdbxweb';
 import { LocationInfo } from './beans/LocationParam';
 import { StorageType, StorageConfig } from '../storage';
 
@@ -537,4 +537,6 @@ export interface CustomField {
   key: string;
   value: string;
   isProtected: boolean;
+  isReference?: boolean;
+  referenceInfo?: FieldReferenceValue;
 }

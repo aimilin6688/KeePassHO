@@ -501,6 +501,46 @@
       "value": "No custom fields"
     },
     {
+      "name": "field_reference",
+      "value": "Field Reference"
+    },
+    {
+      "name": "current_field",
+      "value": "Current field"
+    },
+    {
+      "name": "search_entry",
+      "value": "Search entry"
+    },
+    {
+      "name": "select_entry_to_reference",
+      "value": "Select Entry to Reference"
+    },
+    {
+      "name": "select_field",
+      "value": "Select Field"
+    },
+    {
+      "name": "please_select_entry",
+      "value": "Please select an entry"
+    },
+    {
+      "name": "please_select_field",
+      "value": "Please select a field"
+    },
+    {
+      "name": "clear_reference",
+      "value": "Clear Reference"
+    },
+    {
+      "name": "navigate_to_entry",
+      "value": "Go To Entry"
+    },
+    {
+      "name": "referenced_entry_not_found",
+      "value": "Referenced entry not found"
+    },
+    {
       "name": "invalid_db_or_entry",
       "value": "Invalid database or entry ID"
     },

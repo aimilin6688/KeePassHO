@@ -47,10 +47,13 @@ struct Password {
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private focusController: FocusController = new FocusController();
+  // 生物认证支持状态（在 onPageShow 中初始化，依赖 SettingsService）
   private isFingerprintSupport: boolean = false;
   private isFaceSupport: boolean = false;
   private allAuthType: AuthTypeInfo[] = AuthType.getAllTypes();
   private recentFile: RecentFile | undefined = undefined;
+  // 标记是否需要启动生物认证（用于 onPageShow 判断）
+  private shouldStartAuth: boolean = false;
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -73,7 +76,8 @@ struct Password {
     }
     // 通过最近文件打开
     else if (params && params.filePath) {
-      this.openRecentFile(params.filePath);
+      // 使用预加载的最近文件信息
+      this.openRecentFileOptimized(params.filePath);
     }
     // 其他方式打开
     else {
@@ -84,9 +88,17 @@ struct Password {
   }
 
   onPageShow(): void {
+    // 因为 SettingsService 可能还在异步初始化中
     this.isFingerprintSupport = AuthService.isFingerprintSupportAndEnabled();
     this.isFaceSupport = AuthService.isFaceSupportAndEnabled();
+    hilog.info(DOMAIN, TAG, `onPageShow: isFingerprintSupport=${this.isFingerprintSupport}, isFaceSupport=${this.isFaceSupport}, shouldStartAuth=${this.shouldStartAuth}`);
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+
+    // 如果标记需要启动生物认证，则延迟启动
+    if (this.shouldStartAuth) {
+      hilog.info(DOMAIN, TAG, 'onPageShow: starting auth due to shouldStartAuth=true');
+      this.startAuth();
+    }
   }
 
   aboutToDisappear() {
@@ -107,6 +119,50 @@ struct Password {
     this.storageConfig = locationInfo.storageConfig;
     AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
     this.initCacheCheckbox();
+  }
+
+  /**
+   * 通过最近文件打开（优化版）
+   * 优先使用预加载数据，加速生物认证调用
+   */
+  private openRecentFileOptimized(filePath: string): void {
+    if (!filePath) {
+      CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
+      this.router.back();
+      return;
+    }
+
+    // 优先使用预加载的最近文件信息
+    const preloadedRecentFile = AppStorage.get<RecentFile>(Constants.APP_STORAGE_PRELOAD_RECENT_FILE);
+    if (preloadedRecentFile && preloadedRecentFile.filePath === filePath) {
+      hilog.info(DOMAIN, TAG, 'Using preloaded recent file for password page');
+      this.applyRecentFile(preloadedRecentFile);
+      // 尝试启动生物认证
+      this.tryStartAuth();
+      return;
+    }
+
+    // 回退到原始方式
+    hilog.info(DOMAIN, TAG, 'Fallback to getRecentFile for: %{public}s', filePath);
+    this.openRecentFile(filePath);
+  }
+
+  /**
+   * 应用最近文件信息
+   */
+  private applyRecentFile(recentFile: RecentFile): void {
+    this.recentFile = recentFile;
+    this.fileName = recentFile.fileName;
+    this.filePath = recentFile.filePath;
+    this.storageType = recentFile.storageType;
+    this.storageConfig = recentFile.storageConfig;
+    // 设置认证类型
+    if (recentFile.authType) {
+      this.setAuthType(recentFile.authType);
+    }
+    // 是否使用缓存复选框
+    this.initCacheCheckbox();
+    this.updateButtonState();
   }
 
   // 更新按钮状态
@@ -146,19 +202,9 @@ struct Password {
     // 获取最近打开记录
     RecentFilesService.getRecentFile(filePath).then(recentFile => {
       if (recentFile) {
-        this.recentFile = recentFile;
-        this.fileName = recentFile.fileName;
-        this.filePath = recentFile.filePath;
-        this.storageType = recentFile.storageType;
-        this.storageConfig = recentFile.storageConfig;
-        // 设置认证类型
-        if (recentFile.authType) {
-          this.setAuthType(recentFile.authType);
-        }
-        // 是否使用缓存复选框
-        this.initCacheCheckbox();
-        // 生物认证
-        this.startAuth();
+        this.applyRecentFile(recentFile);
+        // 尝试启动生物认证
+        this.tryStartAuth();
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);
@@ -168,6 +214,24 @@ struct Password {
       });
       this.router.back();
     });
+  }
+
+  /**
+   * 尝试启动生物认证
+   * - 如果生物认证支持状态已初始化，直接启动
+   * - 否则标记需要在 onPageShow 中启动
+   */
+  private tryStartAuth(): void {
+    hilog.info(DOMAIN, TAG, `tryStartAuth: isFingerprintSupport=${this.isFingerprintSupport}, isFaceSupport=${this.isFaceSupport}`);
+    // 如果生物认证支持状态已初始化（onPageShow 已执行）
+    if (this.isFingerprintSupport || this.isFaceSupport) {
+      hilog.info(DOMAIN, TAG, 'tryStartAuth: starting auth immediately');
+      this.startAuth();
+    } else {
+      // 标记需要启动，等待 onPageShow 执行
+      hilog.info(DOMAIN, TAG, 'tryStartAuth: setting shouldStartAuth=true');
+      this.shouldStartAuth = true;
+    }
   }
 
   /**
@@ -198,6 +262,7 @@ struct Password {
    * 通过指纹认证
    */
   private async startAuth(authType?: UnlockAuthType) {
+    hilog.info(DOMAIN, TAG, `startAuth called: authType=${authType}, isKeyfileOnly=${AuthType.isKeyfileOnly(this.authTypeInfo)}, hasPassword=${!!this.recentFile?.password}`);
     // 仅密钥文件模式：不需要密码，但需要密钥文件
     if (!AuthType.isKeyfileOnly(this.authTypeInfo)) {
       // 获取密钥文件路径

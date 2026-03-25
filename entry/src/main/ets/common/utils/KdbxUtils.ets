@@ -1,7 +1,10 @@
 import {
   ByteUtils,
   Consts,
+  FieldReferenceValue,
+  isFieldReferenceValue,
   Kdbx,
+  KdbxContext,
   KdbxCredentials,
   KdbxCustomIcon,
   KdbxEntry,
@@ -66,23 +69,73 @@ export class KdbxUtils {
   }
 
   /**
-   * 获取属性的值
-   * @param key key
-   * @param value value
-   * @returns 结果字符串
+   * 获取字段值字符串
+   * @param value 字段值
+   * @param kdbx 数据库（可选，提供时解析字段引用，默认从 FileService 获取）
+   * @param ctx 上下文（可选，批量处理时复用避免重复构建 EntryMap）
+   * @returns 字段值字符串
    */
-  public static getValueString(value: KdbxEntryField | undefined): string {
+  public static getValueString(
+    value: KdbxEntryField | undefined,
+    kdbx?: Kdbx | null,
+    ctx?: KdbxContext | null
+  ): string {
     if (!value) {
       return '';
     }
-    if (value instanceof String) {
+    // 字符串类型
+    if (typeof value === 'string' || value instanceof String) {
       return value as string;
     }
-
+    // ProtectedValue 类型
     if (value instanceof ProtectedValue) {
       return value.getText();
     }
-    return value.toString();
+    // 字段引用类型
+    if (isFieldReferenceValue(value)) {
+      const database = kdbx ?? FileService.getDatabase();
+      if (database) {
+        try {
+          const context = ctx ?? new KdbxContext({ kdbx: database });
+          if (!ctx) {
+            context.buildEntryMap();
+          }
+          const ref = (value as FieldReferenceValue).ref;
+          const targetEntry = context.getEntryByUuidString(ref.entryUuid);
+          if (targetEntry) {
+            return targetEntry.getFieldValue(ref.field, context);
+          }
+        } catch (error) {
+          hilog.error(DOMAIN, TAG, 'getValueString resolve ref error: %{public}s', error);
+        }
+      }
+      return '{REF}';
+    }
+    return value + '';
+  }
+
+  /**
+   * 创建上下文（用于批量处理字段引用时复用，避免重复构建 EntryMap）
+   * @param kdbx 数据库（可选，默认从 FileService 获取）
+   * @returns KdbxContext 或 null
+   */
+  public static createContext(kdbx?: Kdbx | null): KdbxContext | null {
+    const database = kdbx ?? FileService.getDatabase();
+    if (!database) {
+      return null;
+    }
+    const context = new KdbxContext({ kdbx: database });
+    context.buildEntryMap();
+    return context;
+  }
+
+  /**
+   * 判断值是否是字段引用
+   * @param value 字段值
+   * @returns 是否是字段引用
+   */
+  public static isFieldReferenceValue(value: KdbxEntryField | undefined): boolean {
+    return isFieldReferenceValue(value);
   }
 
   /**
@@ -690,7 +743,7 @@ export class KdbxUtils {
    * 构建索引器数据
    * @param items 条目或分组列表
    * @param startIndex 开始索引, 默认从0开始
-   * @returns  索引器数据
+   * @returns 索引器数据
    */
   public static buildIndexerData(items: Array<KdbxGroup | KdbxEntry>, startIndex?: number): KdbxIndexer {
     let indexerValues = new Array<string>();

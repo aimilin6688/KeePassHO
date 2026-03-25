@@ -102,7 +102,7 @@ struct EntryView {
    * 加载条目字段
    */
   private loadFields() {
-    if (!this.entry) {
+    if (!this.entry || !this.database) {
       return;
     }
 
@@ -115,9 +115,11 @@ struct EntryView {
         continue;
       }
       const value = field[1];
-      const strValue = KdbxUtils.getValueString(value);
-      if (strValue !== '') {
-        this.fields.push(new FieldView(key, strValue, KdbxUtils.isProtectedValue(value), true));
+
+      // 处理字段值（含字段引用）
+      const fieldView = FieldView.fromEntryField(this.entry, key, value, this.database, true);
+      if (fieldView) {
+        this.fields.push(fieldView);
       }
     }
 
