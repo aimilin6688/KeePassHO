@@ -13,6 +13,7 @@ export struct EntryEditFieldDialog {
 
   public onConfirm: (customField: CustomField) => void = ()=>{};
   public onCancel: () => void = ()=>{};
+  public onOpenFieldReference: (fieldName: string) => void = ()=>{};
   private controller: CustomDialogController;
 
   @State tempKey: string = '';
@@ -58,6 +59,23 @@ export struct EntryEditFieldDialog {
     this.onCancel();
     this.controller.close();
   }
+
+  /**
+   * 打开字段引用对话框
+   */
+private openFieldReferenceDialog() {
+  // 验证字段名称
+  if (!this.tempKey || this.tempKey.trim() === '') {
+    CommonUtils.showToast({
+      message: $r("app.string.field_name_not_empty"),
+      duration: 2000
+    });
+    return;
+  }
+  this.fieldKey = this.tempKey.trim();
+  this.controller.close();
+  this.onOpenFieldReference(this.fieldKey);
+}
 
   build() {
     Column() {
@@ -134,21 +152,45 @@ export struct EntryEditFieldDialog {
       }
       .width('100%')
 
-      // 保护字段选项
+      // 保护字段 / 引用字段选项（互斥）
       Row() {
-        Checkbox({ name: 'protectField', group: 'fieldOptions' })
-          .select(this.tempProtected)
-          .onChange((value) => {
-            this.tempProtected = value;
-          })
+        // 保护字段
+        Row() {
+          Checkbox({ name: 'protectField', group: 'fieldOptions' })
+            .select(this.tempProtected)
+            .onChange((value) => {
+              this.tempProtected = value;
+            })
 
-        Text($r("app.string.is_protect_field"))
-          .fontSize(14)
-          .fontColor($r('app.color.text_primary'))
-          .margin({ left: 8 })
-          .onClick(() => {
-            this.tempProtected = !this.tempProtected;
-          })
+          Text($r("app.string.is_protect_field"))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.tempProtected = !this.tempProtected;
+            })
+        }
+
+        Blank()
+
+        // 引用字段
+        Row() {
+          Checkbox({ name: 'referenceField', group: 'fieldOptions' })
+            .select(false)
+            .onChange((value) => {
+              if (value) {
+                this.openFieldReferenceDialog();
+              }
+            })
+
+          Text($r("app.string.field_reference"))
+            .fontSize(14)
+            .fontColor($r('app.color.text_primary'))
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.openFieldReferenceDialog();
+            })
+        }
       }
       .width('100%')
       .margin({ bottom: 24 })

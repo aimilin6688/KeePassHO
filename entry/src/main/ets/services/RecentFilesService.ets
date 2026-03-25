@@ -66,12 +66,22 @@ export class RecentFilesService {
         if (result[0]) {
           return this.doAdd(recentFile);
         } else {
-          hilog.info(DOMAIN, TAG, 'Add recent file filePath:%{public}s no permission', recentFile.filePath);
-          if (DeviceUtils.isEmulator()) {
-            return this.doAdd(recentFile);
-          } else {
-            throw new KeePassHoError(ErrorCodes.FILE_NOT_PERMISSION);
-          }
+          // 没有持久化权限，尝试请求持久化权限
+          hilog.info(DOMAIN, TAG, 'No persist permission, trying to request persist permission for: %{public}s', recentFile.filePath);
+          return FileUtils.persistPermission(recentFile.filePath, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE)
+            .then(() => {
+              hilog.info(DOMAIN, TAG, 'Persist permission granted for: %{public}s', recentFile.filePath);
+              return this.doAdd(recentFile);
+            })
+            .catch((persistError: Error) => {
+              hilog.warn(DOMAIN, TAG, 'Failed to request persist permission: %{public}s', persistError.message);
+              // 如果请求持久化权限失败，在模拟器上仍然添加
+              if (DeviceUtils.isEmulator()) {
+                return this.doAdd(recentFile);
+              } else {
+                throw new KeePassHoError(ErrorCodes.FILE_NOT_PERMISSION);
+              }
+            });
         }
       });
   }

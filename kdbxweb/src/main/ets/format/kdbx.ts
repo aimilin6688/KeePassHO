@@ -572,6 +572,8 @@ export class Kdbx {
         this.parseMeta(ctx);
         return this.binaries.computeHashes().then(() => {
             this.parseRoot(ctx);
+            // 构建Entry索引，支持字段引用解析
+            ctx.buildEntryMap();
             return this;
         });
     }
@@ -625,6 +627,49 @@ export class Kdbx {
 
     private readGroup(node: Node, ctx: KdbxContext): void {
         this.groups.push(KdbxGroup.read(node, ctx));
+    }
+
+    /**
+     * 通过UUID查找Entry
+     * @param uuid Entry UUID
+     * @returns Entry对象或undefined
+     */
+    getEntryByUuid(uuid: import('./kdbx-uuid').KdbxUuid): import('./kdbx-entry').KdbxEntry | undefined {
+        // 优先使用Context中的索引
+        if (this.xml) {
+            for (const group of this.groups) {
+                const entry = this.findEntryInGroup(group, uuid);
+                if (entry) {
+                    return entry;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * 在Group中查找Entry
+     * @param group Group对象
+     * @param uuid Entry UUID
+     * @returns Entry对象或undefined
+     */
+    private findEntryInGroup(group: import('./kdbx-group').KdbxGroup, uuid: import('./kdbx-uuid').KdbxUuid): import('./kdbx-entry').KdbxEntry | undefined {
+        // 检查当前Group的Entry
+        for (const entry of group.entries) {
+            if (entry.uuid.equals(uuid)) {
+                return entry;
+            }
+        }
+
+        // 递归检查子Group
+        for (const subgroup of group.groups) {
+            const entry = this.findEntryInGroup(subgroup, uuid);
+            if (entry) {
+                return entry;
+            }
+        }
+
+        return undefined;
     }
 
     buildXml(ctx: KdbxContext): void {
