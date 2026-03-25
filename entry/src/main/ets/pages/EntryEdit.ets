@@ -268,6 +268,8 @@ struct EntryEdit {
     if (this.entry && this.database) {
       // 获取所有字段
       const fields = this.entry.fields;
+      // 创建上下文用于批量处理字段引用
+      const ctx = KdbxUtils.createContext(this.database);
 
       // 遍历字段，排除标准字段
       fields.forEach((value, key) => {
@@ -288,10 +290,7 @@ struct EntryEdit {
           isReference = true;
           isProtected = false;
           referenceInfo = value as FieldReferenceValue;
-          // 获取解析后的值用于显示
-          if (this.database && this.entry) {
-            fieldValue = KdbxUtils.getFieldValueWithContext(this.entry, key, this.database);
-          }
+          fieldValue = KdbxUtils.getValueString(value, this.database, ctx);
         } else if (value instanceof ProtectedValue) {
           fieldValue = value.getText();
           isProtected = true;
