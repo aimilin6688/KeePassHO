@@ -1473,7 +1473,7 @@ struct DatabaseView {
                               this.performSearch();
                             })
                         }
-                      })
+                      }, (index: number) => `${index}_${Date.now()}`)
                     }
                     .padding({
                       left: 10,
@@ -1833,7 +1833,7 @@ struct DatabaseView {
                     })
                   }
 
-                }, (item: KdbxGroup | KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+                }, (item: KdbxGroup | KdbxEntry, index: number) => `${index}-${Date.now()}`)
               }
               ListItem() {
                 Row()
