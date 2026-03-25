@@ -1,6 +1,7 @@
 import {
   ByteUtils,
   Consts,
+  FieldReferenceValue,
   isFieldReferenceValue,
   Kdbx,
   KdbxContext,
@@ -68,27 +69,64 @@ export class KdbxUtils {
   }
 
   /**
-   * 获取属性的值
-   * @param key key
-   * @param value value
-   * @returns 结果字符串
+   * 获取字段值字符串
+   * @param value 字段值
+   * @param kdbx 数据库（可选，提供时解析字段引用，默认从 FileService 获取）
+   * @param ctx 上下文（可选，批量处理时复用避免重复构建 EntryMap）
+   * @returns 字段值字符串
    */
-  public static getValueString(value: KdbxEntryField | undefined): string {
+  public static getValueString(
+    value: KdbxEntryField | undefined,
+    kdbx?: Kdbx | null,
+    ctx?: KdbxContext | null
+  ): string {
     if (!value) {
       return '';
     }
+    // 字符串类型
     if (typeof value === 'string' || value instanceof String) {
       return value as string;
     }
-
+    // ProtectedValue 类型
     if (value instanceof ProtectedValue) {
       return value.getText();
     }
-    // 处理字段引用类型
+    // 字段引用类型
     if (isFieldReferenceValue(value)) {
+      const database = kdbx ?? FileService.getDatabase();
+      if (database) {
+        try {
+          const context = ctx ?? new KdbxContext({ kdbx: database });
+          if (!ctx) {
+            context.buildEntryMap();
+          }
+          const ref = (value as FieldReferenceValue).ref;
+          const targetEntry = context.getEntryByUuidString(ref.entryUuid);
+          if (targetEntry) {
+            return targetEntry.getFieldValue(ref.field, context);
+          }
+        } catch (error) {
+          hilog.error(DOMAIN, TAG, 'getValueString resolve ref error: %{public}s', error);
+        }
+      }
       return '{REF}';
     }
-    return value+"";
+    return value + '';
+  }
+
+  /**
+   * 创建上下文（用于批量处理字段引用时复用，避免重复构建 EntryMap）
+   * @param kdbx 数据库（可选，默认从 FileService 获取）
+   * @returns KdbxContext 或 null
+   */
+  public static createContext(kdbx?: Kdbx | null): KdbxContext | null {
+    const database = kdbx ?? FileService.getDatabase();
+    if (!database) {
+      return null;
+    }
+    const context = new KdbxContext({ kdbx: database });
+    context.buildEntryMap();
+    return context;
   }
 
   /**
@@ -107,27 +145,6 @@ export class KdbxUtils {
    */
   public static isProtectedValue(value: KdbxEntryField | undefined): boolean {
     return value instanceof ProtectedValue;
-  }
-
-  /**
-   * 使用上下文解析字段值（支持字段引用）
-   * @param entry 条目
-   * @param fieldName 字段名
-   * @param kdbx 数据库
-   * @returns 解析后的字段值
-   */
-  public static getFieldValueWithContext(entry: KdbxEntry, fieldName: string, kdbx: Kdbx): string {
-    if (!entry || !kdbx) {
-      return '';
-    }
-    try {
-      const ctx = new KdbxContext({ kdbx: kdbx });
-      ctx.buildEntryMap();
-      return entry.getFieldValue(fieldName, ctx);
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'getFieldValueWithContext error: %{public}s', error);
-      return '';
-    }
   }
 
   /**

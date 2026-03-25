@@ -1,6 +1,6 @@
 import { PromptAction } from '@kit.ArkUI';
 import { CommonUtils, FileUtils, KdbxUtils, ResourceManager } from '../common/utils';
-import { FieldReferenceValue, Kdbx, KdbxEntry, KdbxEntryField } from 'kdbxweb';
+import { FieldReferenceValue, Kdbx, KdbxContext, KdbxEntry, KdbxEntryField } from 'kdbxweb';
 
 import { Icons } from '../services/TypeDefined';
 import { SettingsService } from '../services/SettingsService';
@@ -56,31 +56,33 @@ export class FieldView {
    * @param rawValue 原始字段值
    * @param database 数据库
    * @param isCopy 是否可复制
+   * @param ctx 上下文（可选，批量处理时复用）
    * @returns FieldView 或 null（当值为空时）
    */
-  static fromEntryField(entry: KdbxEntry | null, key: string, rawValue: KdbxEntryField, database: Kdbx | null, isCopy: boolean): FieldView | null {
+  static fromEntryField(
+    entry: KdbxEntry | null,
+    key: string,
+    rawValue: KdbxEntryField,
+    database: Kdbx | null,
+    isCopy: boolean,
+    ctx?: KdbxContext
+  ): FieldView | null {
     if (!entry || !database) {
       return null;
     }
-
-    // 处理字段引用
-    if (KdbxUtils.isFieldReferenceValue(rawValue)) {
-      const refValue = rawValue as FieldReferenceValue;
-      const resolvedValue = KdbxUtils.getFieldValueWithContext(entry, key, database);
-      if (resolvedValue === '') {
-        return null;
-      }
-      const fieldView = new FieldView(key, resolvedValue, KdbxUtils.isProtectedValue(rawValue), isCopy);
-      fieldView.isFieldReference = true;
-      fieldView.referenceInfo = refValue;
-      return fieldView;
-    }
-
-    const strValue = KdbxUtils.getValueString(rawValue);
+    // 使用 getValueString 统一处理字段值（包括字段引用）
+    const strValue = KdbxUtils.getValueString(rawValue, database, ctx);
     if (strValue === '') {
       return null;
     }
-    return new FieldView(key, strValue, KdbxUtils.isProtectedValue(rawValue), isCopy);
+
+    const fieldView = new FieldView(key, strValue, KdbxUtils.isProtectedValue(rawValue), isCopy);
+    // 标记字段引用信息
+    if (KdbxUtils.isFieldReferenceValue(rawValue)) {
+      fieldView.isFieldReference = true;
+      fieldView.referenceInfo = rawValue as FieldReferenceValue;
+    }
+    return fieldView;
   }
 }
 
