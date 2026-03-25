@@ -1,7 +1,9 @@
 import {
   ByteUtils,
   Consts,
+  isFieldReferenceValue,
   Kdbx,
+  KdbxContext,
   KdbxCredentials,
   KdbxCustomIcon,
   KdbxEntry,
@@ -10,10 +12,7 @@ import {
   KdbxGroup,
   KdbxMeta,
   KdbxUuid,
-  ProtectedValue,
-  FieldReferenceValue,
-  isFieldReferenceValue,
-  KdbxContext
+  ProtectedValue
 } from 'kdbxweb';
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
@@ -78,7 +77,7 @@ export class KdbxUtils {
     if (!value) {
       return '';
     }
-    if (value instanceof String) {
+    if (typeof value === 'string' || value instanceof String) {
       return value as string;
     }
 
@@ -89,7 +88,7 @@ export class KdbxUtils {
     if (isFieldReferenceValue(value)) {
       return '{REF}';
     }
-    return value.toString();
+    return value+"";
   }
 
   /**
@@ -727,7 +726,7 @@ export class KdbxUtils {
    * 构建索引器数据
    * @param items 条目或分组列表
    * @param startIndex 开始索引, 默认从0开始
-   * @returns  索引器数据
+   * @returns 索引器数据
    */
   public static buildIndexerData(items: Array<KdbxGroup | KdbxEntry>, startIndex?: number): KdbxIndexer {
     let indexerValues = new Array<string>();
