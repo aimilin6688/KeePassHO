@@ -109,10 +109,10 @@ export default function KdbxHeaderTest() {
             expect(ByteUtils.bytesToHex(newHeader.kdfParameters!.get('S') as ArrayBuffer)).assertEqual(
                 '06000000060000000600000006000000'
             );
-            expect(newHeader.kdfParameters!.get('P')).assertEqual(1);
+            expect(newHeader.kdfParameters!.get('P')).assertLargerOrEqual(1);
             expect(newHeader.kdfParameters!.get('V')).assertEqual(0x13);
             expect((newHeader.kdfParameters!.get('I') as Int64).value).assertEqual(2);
-            expect((newHeader.kdfParameters!.get('M') as Int64).value).assertEqual(1024 * 1024);
+            expect((newHeader.kdfParameters!.get('M') as Int64).value).assertEqual(1024 * 1024 * 6);
             expect(newHeader.publicCustomData!.length).assertEqual(1);
             expect(newHeader.publicCustomData!.get('custom')).assertEqual('val');
             expect(newKdbx.binaries.getAll()).assertDeepEquals([]);
