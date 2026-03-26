@@ -8,6 +8,7 @@ import { common } from '@kit.AbilityKit';
 import { TotpPreviewComponent } from './TotpPreviewComponent';
 import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 import { FileService } from '../services/FileService';
+import { UIUtils } from '@kit.ArkUI';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -84,7 +85,7 @@ export struct EntryViewFieldItem {
    * 复制文本到剪贴板
    */
   private copyToClipboard(text: string) {
-    ClipboardUtils.copy(KdbxFieldReference.resolveFieldRefsInText(text, FileService.getDatabase(), this.entry), this.autoClearClipboardTime);
+    ClipboardUtils.copy(KdbxFieldReference.resolveFieldRefsInText(text, FileService.getDatabase(), UIUtils.getTarget(this.entry) as KdbxEntry), this.autoClearClipboardTime);
   }
 
   /**
