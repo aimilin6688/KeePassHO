@@ -5,7 +5,7 @@ import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
-import { Kdbx, KdbxEntry, KdbxGroup, KdbxUuid } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { SortMode } from '../common/constants/SortConstants';
@@ -546,7 +546,7 @@ struct DatabaseView {
   private copyUsername(entry: KdbxEntry) {
     const username = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
     if (username) {
-      ClipboardUtils.copyAutoClear(username);
+      ClipboardUtils.copyAutoClear(KdbxFieldReference.resolveFieldRefsInText(username, FileService.getDatabase(), entry));
     }
   }
 
@@ -556,7 +556,7 @@ struct DatabaseView {
   private copyPassword(entry: KdbxEntry) {
     const password = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_PASSWORD);
     if (password) {
-      ClipboardUtils.copyAutoClear(password);
+      ClipboardUtils.copyAutoClear(KdbxFieldReference.resolveFieldRefsInText(password, FileService.getDatabase(), entry));
     }
   }
 
