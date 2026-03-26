@@ -226,10 +226,7 @@ struct Password {
     // 如果生物认证支持状态已初始化（onPageShow 已执行）
     if (this.isFingerprintSupport || this.isFaceSupport) {
       hilog.info(DOMAIN, TAG, 'tryStartAuth: starting auth immediately');
-      // 少量延时确保 UI 稳定
-      setTimeout(() => {
-        this.startAuth();
-      }, 0);
+      this.startAuth();
     } else {
       // 标记需要启动，等待 onPageShow 执行
       hilog.info(DOMAIN, TAG, 'tryStartAuth: setting shouldStartAuth=true');
