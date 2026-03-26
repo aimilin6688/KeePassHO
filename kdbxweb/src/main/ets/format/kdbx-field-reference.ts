@@ -124,7 +124,7 @@ export class KdbxFieldReference {
       return resolved !== null ? resolved : match;
     });
 
-    return result;
+    return result || text;
   }
 
 
@@ -199,7 +199,7 @@ export class KdbxFieldReference {
     // 循环引用检测
     const currentUuid = currentEntry ? currentEntry.uuid.id : '';
     if (visitedStack.has(currentUuid)) {
-      return '';
+      return null;
     }
 
     const newVisitedStack = new Set(visitedStack);
@@ -209,13 +209,12 @@ export class KdbxFieldReference {
       // 查找目标Entry
       const targetEntry = this.findTargetEntry(ref, kdbx);
       if (!targetEntry) {
-        return '';
+        return null;
       }
-
       // 获取字段值
       return this.getFieldValue(targetEntry, ref.wantedField, kdbx, newVisitedStack);
     } catch (e) {
-      return '';
+      return null;
     }
   }
 
