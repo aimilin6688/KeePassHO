@@ -45,6 +45,7 @@ import {
 } from './format/kdbx-meta';
 import { KdbxTimes } from './format/kdbx-times';
 import { KdbxUuid } from './format/kdbx-uuid';
+import { KdbxFieldReference, FieldReference } from './format/kdbx-field-reference';
 
 import { BinaryStream } from './utils/binary-stream';
 import * as ByteUtils from './utils/byte-utils';
@@ -96,6 +97,8 @@ export {
     KdbxMemoryProtection,
     KdbxTimes,
     KdbxUuid,
+    KdbxFieldReference,
+    FieldReference,
     BinaryStream,
     ByteUtils,
     Int64,
