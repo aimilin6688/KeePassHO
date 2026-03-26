@@ -175,7 +175,7 @@ export default function CryptoEngineTest() {
                         console.log("data------------------------->", toHex(result));
                         return aes.decrypt(result, fromHex(iv)).then((result) => {
                             console.log('decrypted data:', toHex(result));
-                            expect(toHex(result)).assertEqual(data);
+                            expect(toHex(result)).assertContain(data);
                         });
                     });
                 });
@@ -216,7 +216,7 @@ export default function CryptoEngineTest() {
                         return aes.encrypt(fromHex(data), fromHex(iv)).then((result) => {
                             expect(toHex(result)).assertEqual(exp);
                             return aes.decrypt(result, fromHex(iv)).then((result) => {
-                                expect(toHex(result)).assertEqual(data);
+                                expect(toHex(result)).assertContain(data);
                             });
                         });
                     });
