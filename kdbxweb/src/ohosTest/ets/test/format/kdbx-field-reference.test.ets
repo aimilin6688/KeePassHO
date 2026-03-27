@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll } from "@ohos/hypium";
-import { Kdbx, Credentials, KdbxFieldReference, ProtectedValue } from "../../../../main/ets/index";
+import { ByteUtils, Kdbx, Credentials, KdbxFieldReference, ProtectedValue } from "../../../../main/ets/index";
 import { TestResources } from "../test-support/test-resources";
 
 export default function KdbxFieldReferenceTest() {
@@ -257,6 +257,59 @@ export default function KdbxFieldReferenceTest() {
         const entry = db.groups[0].entries[0];
         const result = KdbxFieldReference.resolveFieldRefsInText('{REF:X@T:Test}', db, entry);
         expect(result).assertEqual('{REF:X@T:Test}');
+      });
+    });
+
+    describe('hex.uuid.support', () => {
+      it('searches by UUID with hex format', 0, () => {
+        const entry = db.groups[0].entries[0];
+        const targetEntry = db.groups[0].entries[0];
+        const uuidBase64 = targetEntry.uuid.id;
+        // Base64 转十六进制：先转字节数组，再转十六进制字符串
+        const uuidBytes = ByteUtils.base64ToBytes(uuidBase64);
+        const hexUuid = ByteUtils.bytesToHex(uuidBytes).toUpperCase();
+        const result = KdbxFieldReference.resolveFieldRefsInText(`{REF:U@I:${hexUuid}}`, db, entry);
+        expect(result).assertEqual('User Name');
+      });
+
+      it('searches by UUID with lowercase hex format', 0, () => {
+        const entry = db.groups[0].entries[0];
+        const targetEntry = db.groups[0].entries[0];
+        const uuidBase64 = targetEntry.uuid.id;
+        const uuidBytes = ByteUtils.base64ToBytes(uuidBase64);
+        const hexUuid = ByteUtils.bytesToHex(uuidBytes).toLowerCase();
+        const result = KdbxFieldReference.resolveFieldRefsInText(`{REF:T@I:${hexUuid}}`, db, entry);
+        expect(result).assertEqual('Sample Entry');
+      });
+
+      it('searches by UUID with mixed case hex format', 0, () => {
+        const entry = db.groups[0].entries[0];
+        const targetEntry = db.groups[0].entries[0];
+        const uuidBase64 = targetEntry.uuid.id;
+        const uuidBytes = ByteUtils.base64ToBytes(uuidBase64);
+        let hexUuid = ByteUtils.bytesToHex(uuidBytes);
+        // 混合大小写
+        hexUuid = hexUuid.slice(0, 16).toUpperCase() + hexUuid.slice(16).toLowerCase();
+        const result = KdbxFieldReference.resolveFieldRefsInText(`{REF:T@I:${hexUuid}}`, db, entry);
+        expect(result).assertEqual('Sample Entry');
+      });
+
+      it('returns original text for invalid hex UUID', 0, () => {
+        const entry = db.groups[0].entries[0];
+        // 无效的十六进制字符串（奇数长度）
+        const result = KdbxFieldReference.resolveFieldRefsInText('{REF:T@I:ABCDEF}', db, entry);
+        expect(result).assertEqual('{REF:T@I:ABCDEF}');
+      });
+
+      it('returns original text for non-matching hex UUID', 0, () => {
+        const entry = db.groups[0].entries[0];
+        // 有效的十六进制格式，但UUID不存在
+        const result = KdbxFieldReference.resolveFieldRefsInText(
+          '{REF:T@I:AABBCCDD11223344556677889900AABB}',
+          db,
+          entry
+        );
+        expect(result).assertEqual('{REF:T@I:AABBCCDD11223344556677889900AABB}');
       });
     });
   });
