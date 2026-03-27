@@ -1,4 +1,4 @@
-import { Kdbx, KdbxEntry, KdbxGroup, ProtectedValue } from '..';
+import { ByteUtils, Kdbx, KdbxEntry, KdbxGroup, ProtectedValue } from '..';
 
 
 export interface FieldReference {
@@ -66,7 +66,7 @@ export class KdbxFieldReference {
   /**
    * 字符串是否是-引用字符串
    * @param text 引用字符串
-   * @returns  boolean
+   * @returns boolean
    */
   private static isFieldReferenceText(text: string): boolean {
     if (!text) {
@@ -256,8 +256,8 @@ export class KdbxFieldReference {
    * @param ctx Kdbx上下文
    * @param query 查询参数 {searchIn, searchText}
    * @returns 匹配的Entry或undefined
-   *
-   * 支持的searchIn代码：
+  *
+  * 支持的searchIn代码：
    * - T: 通过Title搜索
    * - U: 通过UserName搜索
    * - P: 通过Password搜索
@@ -319,7 +319,7 @@ export class KdbxFieldReference {
   /**
    * 通过标准字段值搜索Entry
    */
-  private static findEntryByStandardField(kdbx: Kdbx,fieldName: string, searchText: string): KdbxEntry | undefined {
+  private static findEntryByStandardField(kdbx: Kdbx, fieldName: string, searchText: string): KdbxEntry | undefined {
     for (const group of kdbx.groups) {
       const entry = KdbxFieldReference.searchInGroupByField(group, fieldName, searchText, 'StandardField');
       if (entry) {
@@ -367,7 +367,19 @@ export class KdbxFieldReference {
    * 匹配UUID
    */
   private static matchUuid(entry: KdbxEntry, uuid: string): boolean {
-    return entry.uuid.id === uuid;
+    // 直接比较 Base64 编码的 UUID
+    if (entry.uuid.id === uuid) {
+      return true;
+    }
+    // 尝试将十六进制字符串转换为 Base64 后比较
+    try {
+      if (entry.uuid.id === ByteUtils.bytesToBase64(ByteUtils.hexToBytes(uuid))) {
+        return true;
+      }
+    } catch (e) {
+      // 转换失败，忽略
+    }
+    return false;
   }
 
   /**
