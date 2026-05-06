@@ -1,5 +1,5 @@
 import { PromptAction } from '@kit.ArkUI';
-import { KdbxUtils, FileUtils, ResourceManager, CommonUtils, FilenameUtils } from '../common/utils';
+import { KdbxUtils, FileUtils, ResourceManager, CommonUtils, FilenameUtils, StringUtils } from '../common/utils';
 import { KdbxEntry, KdbxFieldReference } from 'kdbxweb';
 
 import { Icons } from '../services/TypeDefined';
@@ -37,6 +37,9 @@ export class FieldView {
     this.isDownload = binaryFile !== undefined;
     this.binaryFile = binaryFile;
     this.isImageFile = this.isDownload && FilenameUtils.isImage(key);
+    if(binaryFile){
+      this.fileSizeStr = StringUtils.formatFileSize(binaryFile.byteLength);
+    }
     // TOTP类型
     if (KdbxUtils.isTotpUrl(value)) {
       this.isTotp = true;
