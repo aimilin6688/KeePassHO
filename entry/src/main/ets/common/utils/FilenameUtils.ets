@@ -117,6 +117,21 @@ export class FilenameUtils {
   }
 
   /**
+   * 图片文件扩展名列表
+   */
+  private static IMAGE_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico'];
+
+  /**
+   * 判断文件是否为图片格式
+   * @param fileName 文件名
+   * @returns 是否为图片
+   */
+  public static isImage(fileName: string): boolean {
+    const ext = FilenameUtils.getFileExt(fileName).toLowerCase();
+    return FilenameUtils.IMAGE_EXTENSIONS.includes(ext);
+  }
+
+  /**
    * 获取文件路径，将给定的多个字符串组合成路径
    */
   public static getFilePath(...paths: string[]): string {
