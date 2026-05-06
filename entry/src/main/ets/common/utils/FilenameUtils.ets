@@ -5,6 +5,11 @@ import { DateUtils, StringUtils } from '.';
  */
 export class FilenameUtils {
   /**
+   * 图片文件扩展名列表
+   */
+  private static IMAGE_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico'];
+
+  /**
    * 获取文件名
    * @param filePath 文件路径
    */
@@ -115,11 +120,6 @@ export class FilenameUtils {
     }
     return fileName.substring(lastDotIndex + 1);
   }
-
-  /**
-   * 图片文件扩展名列表
-   */
-  private static IMAGE_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico'];
 
   /**
    * 判断文件是否为图片格式
