@@ -1,7 +1,7 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
-import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, StringUtils } from '../common/utils';
+import { KdbxUtils, DateUtils, WindowUtils, CommonUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
@@ -180,16 +180,11 @@ struct EntryView {
   // 添加单个附件属性
   private addBinary(key: string, binary: KdbxBinary | KdbxBinaryWithHash) {
     if (binary instanceof ProtectedValue) {
-      const buffer = ByteUtils.stringToBuffer(binary.getText());
-      const fieldView = new FieldView(key, "", false, false, buffer);
-      fieldView.fileSizeStr = StringUtils.formatFileSize(buffer.byteLength);
-      this.fields.push(fieldView);
+      this.fields.push(new FieldView(key, "", false, false, ByteUtils.stringToBuffer(binary.getText())));
     }
     // 二进制文件
     else if (binary instanceof ArrayBuffer) {
-      const fieldView = new FieldView(key, "", false, false, binary);
-      fieldView.fileSizeStr = StringUtils.formatFileSize(binary.byteLength);
-      this.fields.push(fieldView);
+      this.fields.push(new FieldView(key, "", false, false, binary));
     }
     // hash 值
     else if (KdbxBinaries.isKdbxBinaryWithHash(binary)) {
