@@ -11,9 +11,6 @@ import { FileService } from '../services/FileService';
 import { UIUtils } from '@kit.ArkUI';
 import { ImageViewerDialog } from './ImageViewerDialog';
 
-const DOMAIN = 0x0000;
-const TAG = 'EntryViewFieldItem';
-
 /**
  * 构建字段项
  */
