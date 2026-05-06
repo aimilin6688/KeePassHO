@@ -64,7 +64,8 @@ export struct EntryViewFieldItem {
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private imageViewerDialogController: CustomDialogController = new CustomDialogController({
     builder: ImageViewerDialog({
-      binaryFile: this.field.binaryFile ?? null,
+      binaryFile: this.field?.binaryFile ?? null,
+      binaryFileName: this.field?.key ?? '',
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
