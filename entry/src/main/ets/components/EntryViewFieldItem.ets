@@ -27,6 +27,7 @@ export class FieldView {
   binaryFile?: ArrayBuffer | undefined;
   isTotp: boolean = false;
   otpValue: string = '';
+  fileSizeStr: string = '';
 
   constructor(key: string, value: string, isProtected: boolean, isCopy: boolean, binaryFile?: ArrayBuffer) {
     this.key = key;
@@ -166,10 +167,10 @@ export struct EntryViewFieldItem {
         .margin({ right: 12 })
       // 中间内容区域
       Column() {
-        // 左上角小标题显示标签提示信息
+        // 左上角小标题显示标签提示信息（附件类型突出文件名）
         Text(KdbxUtils.getFieldName(this.field.key))
-          .fontSize(14)
-          .fontColor($r('app.color.text_secondary'))
+          .fontSize(this.field.isDownload ? 16 : 14)
+          .fontColor(this.field.isDownload ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
           .width('100%')
           .textAlign(TextAlign.Start)
           .margin({ bottom: 4 })
@@ -184,10 +185,11 @@ export struct EntryViewFieldItem {
           })
             .width('100%')
         } else {
-          // 左下角显示具体的值
-          Text(this.field.showPlanText ? this.field.value : '******')
-            .fontSize(16)
-            .fontColor($r('app.color.text_primary'))
+          // 左下角显示具体的值（附件类型优先显示文件大小，样式弱化）
+          Text(this.field.isDownload && this.field.fileSizeStr ? this.field.fileSizeStr :
+            (this.field.showPlanText ? this.field.value : '******'))
+            .fontSize(this.field.isDownload ? 14 : 16)
+            .fontColor(this.field.isDownload ? $r('app.color.text_secondary') : $r('app.color.text_primary'))
             .width('100%')
             .copyOption(this.field.showPlanText ? CopyOptions.LocalDevice : CopyOptions.None)
             .textAlign(TextAlign.Start)
