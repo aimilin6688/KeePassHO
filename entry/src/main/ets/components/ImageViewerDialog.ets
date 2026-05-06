@@ -27,9 +27,6 @@ export struct ImageViewerDialog {
     this.convertToDataUri();
   }
 
-  aboutToDisappear() {
-  }
-
   /**
    * ArrayBuffer → Base64 Data URI
    */
