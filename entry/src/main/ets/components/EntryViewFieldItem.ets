@@ -1,5 +1,5 @@
 import { PromptAction } from '@kit.ArkUI';
-import { KdbxUtils, FileUtils, ResourceManager, CommonUtils } from '../common/utils';
+import { KdbxUtils, FileUtils, ResourceManager, CommonUtils, FilenameUtils } from '../common/utils';
 import { KdbxEntry, KdbxFieldReference } from 'kdbxweb';
 
 import { Icons } from '../services/TypeDefined';
@@ -9,6 +9,7 @@ import { TotpPreviewComponent } from './TotpPreviewComponent';
 import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 import { FileService } from '../services/FileService';
 import { UIUtils } from '@kit.ArkUI';
+import { ImageViewerDialog } from './ImageViewerDialog';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryViewFieldItem';
@@ -28,6 +29,7 @@ export class FieldView {
   isTotp: boolean = false;
   otpValue: string = '';
   fileSizeStr: string = '';
+  isImageFile: boolean = false;
 
   constructor(key: string, value: string, isProtected: boolean, isCopy: boolean, binaryFile?: ArrayBuffer) {
     this.key = key;
@@ -37,6 +39,7 @@ export class FieldView {
     this.showPlanText = !this.isProtected;
     this.isDownload = binaryFile !== undefined;
     this.binaryFile = binaryFile;
+    this.isImageFile = this.isDownload && FilenameUtils.isImage(key);
     // TOTP类型
     if (KdbxUtils.isTotpUrl(value)) {
       this.isTotp = true;
@@ -59,6 +62,14 @@ export struct EntryViewFieldItem {
   @State autoClearClipboardTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+  private imageViewerDialogController: CustomDialogController = new CustomDialogController({
+    builder: ImageViewerDialog({
+      binaryFile: this.field.binaryFile ?? null,
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: true
+  });
 
   aboutToAppear(): void {
     this.initSettings();
@@ -241,5 +252,11 @@ export struct EntryViewFieldItem {
     .borderRadius(8)
     .padding(12)
     .margin({ bottom: 8 })
+    // 图片附件整行可点击预览
+    .onClick(() => {
+      if (this.field.isImageFile) {
+        this.imageViewerDialogController.open();
+      }
+    })
   }
 }
