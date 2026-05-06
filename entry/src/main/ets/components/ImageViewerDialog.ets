@@ -22,6 +22,9 @@ export struct ImageViewerDialog {
   binaryFile: ArrayBuffer | null = null;
   binaryFileName: string = '';
   controller: CustomDialogController;
+  private initialScale: number = 1.0;
+  private initialOffsetX: number = 0;
+  private initialOffsetY: number = 0;
 
   aboutToAppear() {
     this.convertToDataUri();
@@ -65,7 +68,13 @@ export struct ImageViewerDialog {
     Column() {
       // 顶部标题栏（仅保留关闭按钮）
       Row() {
-        Blank()
+        Text(this.binaryFileName)
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('app.color.text_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
 
         Button() {
           Image($r('sys.media.ohos_ic_public_cancel_filled'))
@@ -86,7 +95,7 @@ export struct ImageViewerDialog {
       .backgroundColor($r("app.color.bg_primary"))
       .borderRadius({ topLeft: 16, topRight: 16 })
 
-      // 图片展示区域
+      // 图片展示区域（clip=true 确保缩放后的图片不超出弹框范围）
       Column() {
         if (this.isLoading) {
           LoadingProgress()
@@ -106,9 +115,12 @@ export struct ImageViewerDialog {
               GestureGroup(GestureMode.Exclusive,
                 PinchGesture({ fingers: 2 })
                   .onActionStart(() => {
+                    // 记录手势开始时的缩放值
+                    this.initialScale = this.scaleValue;
                   })
                   .onActionUpdate((event: GestureEvent) => {
-                    const newScale = this.scaleValue * event.scale;
+                    // event.scale 是从手势开始到当前的累计缩放比
+                    const newScale = this.initialScale * event.scale;
                     if (newScale >= 1.0 && newScale <= 5.0) {
                       this.scaleValue = newScale;
                     }
@@ -127,10 +139,16 @@ export struct ImageViewerDialog {
                     }
                   }),
                 PanGesture({ fingers: 1 })
+                  .onActionStart(() => {
+                    // 记录手势开始时的偏移值
+                    this.initialOffsetX = this.offsetX;
+                    this.initialOffsetY = this.offsetY;
+                  })
                   .onActionUpdate((event: GestureEvent) => {
                     if (this.scaleValue > 1.0) {
-                      this.offsetX += event.offsetX;
-                      this.offsetY += event.offsetY;
+                      // event.offsetX/Y 是从手势开始到当前的累计偏移
+                      this.offsetX = this.initialOffsetX + event.offsetX;
+                      this.offsetY = this.initialOffsetY + event.offsetY;
                     }
                   })
               )
@@ -143,6 +161,7 @@ export struct ImageViewerDialog {
       }
       .layoutWeight(1)
       .width('100%')
+      .clip(true)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .backgroundColor($r("app.color.bg_primary"))
