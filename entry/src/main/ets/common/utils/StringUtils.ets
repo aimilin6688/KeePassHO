@@ -83,4 +83,24 @@ export class StringUtils {
     }
     return pinyin4js.convertToPinyinString(str, '', PinyinFormat.WITHOUT_TONE) ?? str;
   }
+
+  /**
+   * 格式化文件大小
+   * @param size 文件大小（字节）
+   * @returns 格式化后的字符串，如 "1.5 KB"
+   */
+  public static formatFileSize(size: number): string {
+    if (size < 0) {
+      return '-';
+    }
+    if (size < 1024) {
+      return size + ' B';
+    } else if (size < 1024 * 1024) {
+      return (size / 1024).toFixed(1) + ' KB';
+    } else if (size < 1024 * 1024 * 1024) {
+      return (size / (1024 * 1024)).toFixed(1) + ' MB';
+    } else {
+      return (size / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+    }
+  }
 }
