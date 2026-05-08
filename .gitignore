@@ -16,3 +16,5 @@ oh-package-lock.json5
 .codebuddy
 .codeartsdoer
 docs/
+.workbuddy
+.claude
