@@ -328,6 +328,7 @@ struct Password {
       onLocation: (locationInfo: LocationInfo) => {
         this.keyLocation = locationInfo;
         this.keyFileName = locationInfo.fileName;
+        this.shouldStartAuth = false; // 清除生物认证标志
         this.updateButtonState();
         this.router.back({ url: 'pages/Password' });
       }

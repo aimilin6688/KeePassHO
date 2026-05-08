@@ -60,39 +60,31 @@ struct LocalFile {
    */
   async handleSelectFile(path: string) {
     this.isLoading = true;
-    // 永久授权文件访问权限
-    FileUtils.persistPermission(path, fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE)
-      .then(async () => {
-        try {
-          // 获取文件信息
-          const fileInfo = await this.fileManager.getInfo(path);
-          hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-          // 本地配置信息
-          const storageConfig = new LocalFileStorageConfig(fileInfo.size);
-          // 回调位置信息
-          LocationParam.callOnLocation({
-            mode: LocationParam.getMode(),
-            filePath: path,
-            fileName: fileInfo.name,
-            fileSuffix: LocationParam.getFileSuffix(),
-            storageType: StorageType.LOCAL,
-            storageConfig: storageConfig,
-          });
-        } catch (error) {
-          hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error?.message, error?.stack);
-          CommonUtils.showToast({ message: error?.message,duration: 3000});
-        }
-      })
-      .catch((error: Error) => {
-        hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error.message, error.stack);
-        CommonUtils.showToast({
-          message: error.message,
-          duration: 3000
-        });
-      })
-      .finally(() => {
-        this.isLoading = false;
+    const operationMode = fileShare.OperationMode.READ_MODE | fileShare.OperationMode.WRITE_MODE;
+
+    try {
+      // 1. 持久化权限
+      await FileUtils.persistPermission(path, operationMode);
+      // 2. 激活权限（确保权限生效）
+      await FileUtils.activatePermission(path, operationMode);
+      // 3. 获取文件信息
+      const fileInfo = await this.fileManager.getInfo(path);
+      hilog.info(DOMAIN, TAG, `Loading KDBX file: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      // 4. 回调位置信息
+      LocationParam.callOnLocation({
+        mode: LocationParam.getMode(),
+        filePath: path,
+        fileName: fileInfo.name,
+        fileSuffix: LocationParam.getFileSuffix(),
+        storageType: StorageType.LOCAL,
+        storageConfig: new LocalFileStorageConfig(fileInfo.size),
       });
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to load file: %{public}s, stack:%{public}s', error?.message, error?.stack);
+      CommonUtils.showToast({ message: error?.message, duration: 3000 });
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   // 保存数据库文件到本地

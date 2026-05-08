@@ -30,7 +30,7 @@ export class FileUtils {
   }
 
   /**
-   * 激活文件权限
+   * 持久化文件权限
    * @param path 文件路径
    * @returns 结果
    * @throws BusinessError
