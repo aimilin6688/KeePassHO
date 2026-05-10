@@ -62,24 +62,17 @@ export class DistributedKVService {
           DistributedKVService.kvManager.getKVStore<distributedKVStore.SingleKVStore>(DistributedKVService.kvStoreName, options)
             .then((store: distributedKVStore.SingleKVStore) => {
               hilog.info(DOMAIN, TAG, "Succeeded in getting KVStore");
-              DistributedKVService.kvStore = store;
-              // 订阅远端数据变化
-              DistributedKVService.kvStore.on('dataChange', distributedKVStore.SubscribeType.SUBSCRIBE_TYPE_REMOTE, DistributedKVService.onDataChange);
-              // 订阅同步完成事件
-              DistributedKVService.kvStore.on('syncComplete', DistributedKVService.onSyncComplete);
-              // 初始化设备管理器
-              DistributedKVService.initDeviceManager();
-              // 监听分布式数据服务终止
-              if (DistributedKVService.kvManager) {
-                DistributedKVService.kvManager.on('distributedDataServiceDie', DistributedKVService.onServiceDie);
-              }
-              // 初始化完成后触发一次同步，拉取远端最新数据
-              DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
-              resolve();
+              DistributedKVService.onKVStoreReady(store, resolve);
             })
             .catch((err: BusinessError<Object>) => {
-              hilog.error(DOMAIN, TAG, `Failed to get KVStore.code is ${err.code},message is ${err.message}`);
-              reject(err);
+              // 15100002: 已存在数据库但 options 不一致，需要删除旧数据库后重建
+              if (err.code === 15100002) {
+                hilog.warn(DOMAIN, TAG, `KVStore options changed, deleting old store and recreating. code=${err.code}`);
+                DistributedKVService.recreateKVStore(options, resolve, reject);
+              } else {
+                hilog.error(DOMAIN, TAG, `Failed to get KVStore.code is ${err.code},message is ${err.message}`);
+                reject(err);
+              }
             });
         })
       } catch (err) {
@@ -87,6 +80,64 @@ export class DistributedKVService {
         return reject(err)
       }
     })
+  }
+
+  /**
+   * KVStore 就绪后的统一初始化逻辑
+   */
+  private static onKVStoreReady(store: distributedKVStore.SingleKVStore, resolve: Function): void {
+    DistributedKVService.kvStore = store;
+    // 订阅远端数据变化
+    DistributedKVService.kvStore.on('dataChange', distributedKVStore.SubscribeType.SUBSCRIBE_TYPE_REMOTE, DistributedKVService.onDataChange);
+    // 订阅同步完成事件
+    DistributedKVService.kvStore.on('syncComplete', DistributedKVService.onSyncComplete);
+    // 初始化设备管理器
+    DistributedKVService.initDeviceManager();
+    // 监听分布式数据服务终止
+    if (DistributedKVService.kvManager) {
+      DistributedKVService.kvManager.on('distributedDataServiceDie', DistributedKVService.onServiceDie);
+    }
+    // 初始化完成后触发一次同步，拉取远端最新数据
+    DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
+    resolve();
+  }
+
+  /**
+   * 删除旧 KVStore 并重新创建
+   * 用于处理 options 不一致（错误码 15100002）的情况
+   */
+  private static recreateKVStore(options: distributedKVStore.Options, resolve: Function, reject: Function): void {
+    if (!DistributedKVService.kvManager || !DistributedKVService.appId) {
+      reject(new Error('KVManager or appId is not initialized'));
+      return;
+    }
+    const manager = DistributedKVService.kvManager;
+    const appId = DistributedKVService.appId;
+    // 先关闭旧 KVStore（如果存在）
+    manager.closeKVStore(appId, DistributedKVService.kvStoreName, (closeErr: BusinessError<void>) => {
+      if (closeErr) {
+        hilog.warn(DOMAIN, TAG, `Close old KVStore before delete: ${closeErr.code}`);
+      }
+      // 删除旧数据库
+      manager.deleteKVStore(appId, DistributedKVService.kvStoreName, (deleteErr: BusinessError<void>) => {
+        if (deleteErr) {
+          hilog.error(DOMAIN, TAG, `Failed to delete old KVStore: ${deleteErr.code}, ${deleteErr.message}`);
+          reject(deleteErr);
+          return;
+        }
+        hilog.info(DOMAIN, TAG, 'Old KVStore deleted, recreating with new options');
+        // 用新 options 重新创建
+        manager.getKVStore<distributedKVStore.SingleKVStore>(DistributedKVService.kvStoreName, options)
+          .then((store: distributedKVStore.SingleKVStore) => {
+            hilog.info(DOMAIN, TAG, "Succeeded in recreating KVStore");
+            DistributedKVService.onKVStoreReady(store, resolve);
+          })
+          .catch((recreateErr: BusinessError<Object>) => {
+            hilog.error(DOMAIN, TAG, `Failed to recreate KVStore: ${recreateErr.code}, ${recreateErr.message}`);
+            reject(recreateErr);
+          });
+      });
+    });
   }
 
   /**
