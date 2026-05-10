@@ -7,9 +7,12 @@ import { RecentFile } from '../TypeDefined';
 import { distributedKVStore } from '@kit.ArkData';
 import { emitter } from '@kit.BasicServicesKit';
 import preferences from '@ohos.data.preferences';
+import { abilityAccessCtrl, common } from '@kit.AbilityKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'SyncSettingsService';
+const DEVICE_ID_PREFERENCES = 'sync_device_id';
+const DEVICE_ID_KEY = 'device_id';
 
 /**
  * 同步数据类型
@@ -29,6 +32,7 @@ export class SyncSettingsService {
   private static instance: SyncSettingsService | null = null;
   private static deviceId: string = '';
   private static isInitialized: boolean = false;
+  private static deviceIdPreferences: preferences.Preferences | null = null;
 
   private constructor() {
   }
@@ -49,11 +53,14 @@ export class SyncSettingsService {
     }
 
     try {
-      // 获取设备ID作为唯一标识
-      SyncSettingsService.deviceId = await SyncSettingsService.generateDeviceId();
+      // 获取或生成持久化的设备ID
+      SyncSettingsService.deviceId = await SyncSettingsService.getOrCreateDeviceId();
 
       // 订阅远端数据变化
       EventBus.on(EventBus.KV_DATA_CHANGE, (data: emitter.EventData) => SyncSettingsService.handleRemoteDataChange(data.data as distributedKVStore.ChangeNotification));
+
+      // 订阅同步完成事件
+      EventBus.on(EventBus.KV_SYNC_COMPLETE, (data: emitter.EventData) => SyncSettingsService.handleSyncComplete(data.data as Array<[string, number]>));
 
       SyncSettingsService.isInitialized = true;
       hilog.info(DOMAIN, TAG, `SyncSettingsService initialized with deviceId: ${SyncSettingsService.deviceId}`);
@@ -63,13 +70,68 @@ export class SyncSettingsService {
   }
 
   /**
-   * 生成设备ID
+   * 获取或创建持久化的设备ID
+   * 设备ID存储在独立的 preferences 中，重启后保持不变
    */
-  private static async generateDeviceId(): Promise<string> {
-    // 使用时间戳和随机数生成设备ID
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substr(2, 9);
-    return `device_${timestamp}_${random}`;
+  private static async getOrCreateDeviceId(): Promise<string> {
+    try {
+      if (SyncSettingsService.deviceIdPreferences) {
+        const existingId = await SyncSettingsService.deviceIdPreferences.get(DEVICE_ID_KEY, '') as string;
+        if (existingId) {
+          hilog.info(DOMAIN, TAG, `Using existing deviceId: ${existingId}`);
+          return existingId;
+        }
+      }
+
+      // 生成新的设备ID
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substr(2, 9);
+      const newId = `device_${timestamp}_${random}`;
+
+      // 持久化保存
+      if (SyncSettingsService.deviceIdPreferences) {
+        await SyncSettingsService.deviceIdPreferences.put(DEVICE_ID_KEY, newId);
+        await SyncSettingsService.deviceIdPreferences.flush();
+      }
+
+      hilog.info(DOMAIN, TAG, `Generated new deviceId: ${newId}`);
+      return newId;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to get/create deviceId: ${error}`);
+      // 降级：使用内存中的ID
+      const fallback = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      return fallback;
+    }
+  }
+
+  /**
+   * 初始化设备ID的 preferences（由 EntryAbility 调用）
+   */
+  public static async initDeviceIdPreferences(context: common.UIAbilityContext): Promise<void> {
+    try {
+      SyncSettingsService.deviceIdPreferences = await preferences.getPreferences(context, DEVICE_ID_PREFERENCES);
+      hilog.info(DOMAIN, TAG, 'DeviceId preferences initialized');
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to init deviceId preferences: ${error}`);
+    }
+  }
+
+  /**
+   * 请求分布式数据同步权限
+   * @param context UIAbilityContext
+   * @returns 是否授权成功
+   */
+  public static async requestSyncPermission(context: common.UIAbilityContext): Promise<boolean> {
+    try {
+      const atManager = abilityAccessCtrl.createAtManager();
+      const result = await atManager.requestPermissionsFromUser(context, ['ohos.permission.DISTRIBUTED_DATASYNC']);
+      const granted = result.authResults[0] === 0;
+      hilog.info(DOMAIN, TAG, `DISTRIBUTED_DATASYNC permission granted: ${granted}`);
+      return granted;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to request sync permission: ${error}`);
+      return false;
+    }
   }
 
   /**
@@ -158,6 +220,25 @@ export class SyncSettingsService {
   }
 
   /**
+   * 处理同步完成回调
+   */
+  private static handleSyncComplete(data: Array<[string, number]>): void {
+    try {
+      for (const item of data) {
+        const deviceId = item[0];
+        const status = item[1];
+        if (status !== 0) {
+          hilog.warn(DOMAIN, TAG, `Sync to device ${deviceId} failed with status ${status}`);
+        } else {
+          hilog.info(DOMAIN, TAG, `Sync to device ${deviceId} succeeded`);
+        }
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `handleSyncComplete error: ${error}`);
+    }
+  }
+
+  /**
    * 处理远端条目
    */
   private static async processRemoteEntry(key: string, value: Uint8Array | string | number | boolean): Promise<void> {
@@ -242,8 +323,6 @@ export class SyncSettingsService {
     }
   }
 
-
-
   /**
    * 获取本地时间戳
    */
@@ -285,6 +364,9 @@ export class SyncSettingsService {
       // 然后同步本地数据到远端
       await SyncSettingsService.pushLocalDataToRemote();
 
+      // 手动触发 PUSH_PULL 同步确保数据传输
+      DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
+
       hilog.info(DOMAIN, TAG, 'Full sync completed');
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to trigger full sync: ${error}`);
@@ -298,13 +380,16 @@ export class SyncSettingsService {
     try {
       hilog.debug(DOMAIN, TAG, 'Fetching and merging remote data');
 
+      // 先触发拉取同步
+      DistributedKVService.sync(distributedKVStore.SyncMode.PULL_ONLY);
+
       // 获取并合并远端最近文件
       const remoteRecentFiles = await SyncSettingsService.getRemoteRecentFiles();
       if (remoteRecentFiles) {
         const remoteSyncData: SyncData = {
           key: 'recent_files',
           value: remoteRecentFiles,
-          timestamp: Date.now(), // 使用当前时间作为合并时间戳
+          timestamp: Date.now(),
           deviceId: SyncSettingsService.deviceId
         };
         await SyncSettingsService.mergeRecentFiles(remoteSyncData);
@@ -329,8 +414,8 @@ export class SyncSettingsService {
       const localSettingKeys = Object.keys(allSettings);
 
       // 过滤掉时间戳键和同步相关键，只获取真实的设置键
-      const realSettingKeys = localSettingKeys.filter(key => 
-        !key.startsWith('timestamp_') && 
+      const realSettingKeys = localSettingKeys.filter(key =>
+        !key.startsWith('timestamp_') &&
         key !== SettingsService.KEY_APP_SYNC_SETTING_ENABLE
       );
 
@@ -361,14 +446,14 @@ export class SyncSettingsService {
 
       // 推送设置数据
       const settingsService = SettingsService.getInstance();
-      
+
       // 获取所有本地设置键，自动发现需要同步的设置
       const allSettings = SettingsService.getAll();
       const localSettingKeys = Object.keys(allSettings);
 
       // 过滤掉时间戳键和同步相关键，只同步真实的设置键
-      const realSettingKeys = localSettingKeys.filter(key => 
-        !key.startsWith('timestamp_') && 
+      const realSettingKeys = localSettingKeys.filter(key =>
+        !key.startsWith('timestamp_') &&
         key !== SettingsService.KEY_APP_SYNC_SETTING_ENABLE
       );
 
