@@ -5,6 +5,7 @@ import TotpServiceTest from './services/TotpService.test';
 import FileUtilsTest from './utils/FileUtils.test';
 import RecentFilesServiceTest from './services/RecentFilesService.test';
 import DistributedKVServiceTest from './store/DistributedKVService.test';
+import SyncSettingsServiceTest from './store/SyncSettingsService.test';
 
 
 export default function testsuite() {
@@ -15,4 +16,5 @@ export default function testsuite() {
   FileUtilsTest();
   RecentFilesServiceTest();
   DistributedKVServiceTest();
+  SyncSettingsServiceTest();
 }
