@@ -8,6 +8,12 @@ import { distributedDeviceManager } from '@kit.DistributedServiceKit';
 const DOMAIN = 0x0000;
 const TAG = 'DistributedKVService';
 
+// 设备状态变化回调数据
+interface DeviceStateChangeData {
+  action: distributedDeviceManager.DeviceStateChange;
+  device: distributedDeviceManager.DeviceBasicInfo;
+}
+
 /**
  * 分布式KV存储服务
  */
@@ -67,6 +73,8 @@ export class DistributedKVService {
               if (DistributedKVService.kvManager) {
                 DistributedKVService.kvManager.on('distributedDataServiceDie', DistributedKVService.onServiceDie);
               }
+              // 初始化完成后触发一次同步，拉取远端最新数据
+              DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
               resolve();
             })
             .catch((err: BusinessError<Object>) => {
@@ -91,6 +99,8 @@ export class DistributedKVService {
         return;
       }
       DistributedKVService.deviceManager = distributedDeviceManager.createDeviceManager(DistributedKVService.appId);
+      // 监听设备状态变化（上线/下线）
+      DistributedKVService.deviceManager.on('deviceStateChange', DistributedKVService.onDeviceStateChange);
       hilog.info(DOMAIN, TAG, 'Device manager initialized');
     } catch (err) {
       hilog.error(DOMAIN, TAG, `Failed to create device manager: ${err?.code}, ${err?.message}`);
@@ -173,6 +183,21 @@ export class DistributedKVService {
   }
 
   /**
+   * 设备状态变化回调（上线/下线）
+   */
+  private static onDeviceStateChange(data: DeviceStateChangeData): void {
+    try {
+      hilog.info(DOMAIN, TAG, `Device state change: action=${data.action}, device=${data.device.deviceName}`);
+      if (data.action === distributedDeviceManager.DeviceStateChange.AVAILABLE) {
+        hilog.info(DOMAIN, TAG, `Device available: ${data.device.deviceName}, triggering sync`);
+        DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
+      }
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `onDeviceStateChange error: ${err?.code}, ${err?.message}`);
+    }
+  }
+
+  /**
    * 调用put()方法向键值数据库中插入数据
    * @param key
    * @param value
@@ -243,7 +268,11 @@ export class DistributedKVService {
    */
   public static close(): void {
     try {
-      // 取消订阅
+      // 取消订阅设备状态变化
+      if (DistributedKVService.deviceManager) {
+        DistributedKVService.deviceManager.off('deviceStateChange', DistributedKVService.onDeviceStateChange);
+      }
+      // 取消订阅KVStore事件
       if (DistributedKVService.kvStore) {
         DistributedKVService.kvStore.off('dataChange', DistributedKVService.onDataChange);
         DistributedKVService.kvStore.off('syncComplete', DistributedKVService.onSyncComplete);
