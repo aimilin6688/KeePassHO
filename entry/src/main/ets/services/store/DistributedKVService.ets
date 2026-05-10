@@ -262,7 +262,7 @@ export class DistributedKVService {
    * @returns
    */
   public static put(key: string, value: Uint8Array | string | number | boolean): Promise<void> {
-    hilog.debug(DOMAIN, TAG, `KVStore put data. Key:${key}, Value:${value}`);
+    hilog.debug(DOMAIN, TAG, `KVStore put data. Key:${key}`);
     return new Promise((resolve, reject) => {
       if (!DistributedKVService.kvStore) {
         reject(new Error('KVStore is not initialized'));
