@@ -157,6 +157,64 @@ export class SyncSettingsService {
   }
 
   /**
+   * 初始化分布式同步服务（KVStore + 订阅 + 清理旧数据）
+   * 由 EntryAbility 在非核心服务初始化阶段调用
+   */
+  public static async initSync(context: common.UIAbilityContext): Promise<void> {
+    await SyncSettingsService.initDeviceIdPreferences(context);
+    await DistributedKVService.init(context).then(() => {
+      SyncSettingsService.init();
+    }).catch((err: Error) => {
+      hilog.error(DOMAIN, TAG, `Failed to init DistributedKVService: ${err.message}`);
+    });
+  }
+
+  /**
+   * 应用回到前台时触发同步
+   * 由 EntryAbility.onForeground() 调用
+   */
+  public static syncOnForeground(): void {
+    if (SyncSettingsService.isSyncEnabled()) {
+      DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
+    }
+  }
+
+  /**
+   * 开启同步并执行全量同步
+   * 封装权限请求 + 设置保存 + 全量同步的完整流程
+   * @param context UIAbilityContext（用于请求权限）
+   * @param onGranted 权限授予后的回调（UI 状态更新）
+   * @param onDenied 权限拒绝后的回调（UI 状态回滚）
+   * @param onComplete 全量同步完成后的回调
+   * @param onError 全量同步失败的回调
+   */
+  public static async enableSync(context: common.UIAbilityContext,
+    onGranted: () => void,
+    onDenied: () => void,
+    onComplete: () => void,
+    onError: (error: Error) => void): Promise<void> {
+    const granted = await SyncSettingsService.requestSyncPermission(context);
+    if (granted) {
+      onGranted();
+      SettingsService.getInstance().put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
+      SyncSettingsService.triggerFullSync().then(() => {
+        onComplete();
+      }).catch((error: Error) => {
+        onError(error);
+      });
+    } else {
+      onDenied();
+    }
+  }
+
+  /**
+   * 关闭同步
+   */
+  public static disableSync(): void {
+    SettingsService.getInstance().put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, false);
+  }
+
+  /**
    * 同步设置到远端
    * 同步开关本身不同步，避免跨设备关闭同步
    */
