@@ -8,6 +8,7 @@ import { distributedKVStore } from '@kit.ArkData';
 import { emitter } from '@kit.BasicServicesKit';
 import preferences from '@ohos.data.preferences';
 import { abilityAccessCtrl, common } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'SyncSettingsService';
@@ -429,7 +430,11 @@ export class SyncSettingsService {
             }
           }
         } catch (error) {
-          hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote setting ${key}: ${error}`);
+          // 15100004 表示数据不存在，远端尚未推送该设置，属于正常情况
+          const errObj = error as BusinessError;
+          if (errObj.code !== 15100004) {
+            hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote setting ${key}: ${error}`);
+          }
         }
       }
     } catch (error) {
@@ -492,7 +497,11 @@ export class SyncSettingsService {
       }
       return null;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to get remote recent files: ${error}`);
+      // 15100004 表示数据不存在，远端尚未推送，属于正常情况
+      const errObj = error as BusinessError;
+      if (errObj.code !== 15100004) {
+        hilog.error(DOMAIN, TAG, `Failed to get remote recent files: ${error}`);
+      }
       return null;
     }
   }
