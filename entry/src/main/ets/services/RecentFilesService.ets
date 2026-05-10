@@ -161,10 +161,11 @@ export class RecentFilesService {
       }
       const recentFilesJson = await this.preferences.get(RecentFilesService.RECENT_FILES_KEY, '[]');
       let localFiles: RecentFile[] = JSON.parse(recentFilesJson.toString()) as RecentFile[];
-      // 总是尝试与远端数据合并
-      localFiles = await this.syncWithRemote(localFiles);
       // 检查并清除过期密码
       localFiles = this.checkAndClearExpiredPasswords(localFiles);
+
+      // 非阻塞：后台异步同步，不等待结果，立即返回本地数据
+      this.syncWithRemote(localFiles);
 
       return localFiles;
     } catch (error) {
