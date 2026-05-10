@@ -11,7 +11,6 @@ import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';
 import { DistributedKVService } from '../services/store/DistributedKVService';
 import { SyncSettingsService } from '../services/store/SyncSettingsService';
-import { distributedKVStore } from '@kit.ArkData';
 import { DialogHelper } from '@pura/harmony-dialog';
 import { CrashLogService } from '../services/CrashLogService';
 
@@ -103,15 +102,8 @@ export default class EntryAbility extends UIAbility {
   private async initNonEssentialServices(): Promise<void> {
     // 初始化加解密KEY
     Sm4Utils.init();
-    // 初始化同步服务的 deviceId preferences（必须在 DistributedKVService 和 SyncSettingsService 之前）
-    await SyncSettingsService.initDeviceIdPreferences(this.context);
-    // 初始化kv数据库
-    await DistributedKVService.init(this.context).then(() => {
-      // KVStore 初始化成功后，初始化同步服务（订阅 EventBus）
-      SyncSettingsService.init();
-    }).catch((err: Error) => {
-      hilog.error(DOMAIN, TAG, `Failed to init DistributedKVService: ${err.message}`);
-    });
+    // 初始化分布式同步服务
+    await SyncSettingsService.initSync(this.context);
     // 初始化崩溃日志服务
     CrashLogService.getInstance().init(this.context);
     // 初始化弹框
@@ -149,10 +141,7 @@ export default class EntryAbility extends UIAbility {
     if (this.isLockScreen()) {
       this.tryLockScreen();
     }
-    // 应用回到前台时触发分布式同步
-    if (SyncSettingsService.isSyncEnabled()) {
-      DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
-    }
+    SyncSettingsService.syncOnForeground();
   }
 
   onBackground(): void {

@@ -167,30 +167,28 @@ struct SettingApplication {
                   if (isOn) {
                     const context = AppStorage.get<common.UIAbilityContext>('context');
                     if (context) {
-                      SyncSettingsService.requestSyncPermission(context).then((granted) => {
-                        if (granted) {
+                      SyncSettingsService.enableSync(context,
+                        () => {
                           this.isSyncSetting = true;
-                          this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
-                          LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
-                            SyncSettingsService.triggerFullSync().then(() => {
-                              LoadingDialog.hideLoading();
-                              CommonUtils.showToast($r("app.string.application_sync_complete"));
-                            }).catch((error: Error) => {
-                              LoadingDialog.hideLoading();
-                              CommonUtils.showToast(error.message);
-                            });
-                          });
-                        } else {
-                          this.isSyncSetting = false;
+                          LoadingDialog.showLoading($r("app.string.application_sync_loading"));
+                        },
+                        () => { this.isSyncSetting = false; },
+                        () => {
+                          LoadingDialog.hideLoading();
+                          CommonUtils.showToast($r("app.string.application_sync_complete"));
+                        },
+                        (error: Error) => {
+                          LoadingDialog.hideLoading();
+                          CommonUtils.showToast(error.message);
                         }
-                      });
+                      );
                     } else {
                       this.isSyncSetting = true;
                       this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
                     }
                   } else {
                     this.isSyncSetting = false;
-                    this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, false);
+                    SyncSettingsService.disableSync();
                   }
                 })
             }
