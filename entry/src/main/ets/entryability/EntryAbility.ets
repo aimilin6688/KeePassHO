@@ -100,13 +100,13 @@ export default class EntryAbility extends UIAbility {
   /**
    * 非核心服务延迟初始化
    */
-  private initNonEssentialServices(): void {
+  private async initNonEssentialServices(): Promise<void> {
     // 初始化加解密KEY
     Sm4Utils.init();
-    // 初始化同步服务的 deviceId preferences（必须在 DistributedKVService 之前）
-    SyncSettingsService.initDeviceIdPreferences(this.context);
+    // 初始化同步服务的 deviceId preferences（必须在 DistributedKVService 和 SyncSettingsService 之前）
+    await SyncSettingsService.initDeviceIdPreferences(this.context);
     // 初始化kv数据库
-    DistributedKVService.init(this.context).then(() => {
+    await DistributedKVService.init(this.context).then(() => {
       // KVStore 初始化成功后，初始化同步服务（订阅 EventBus）
       SyncSettingsService.init();
     }).catch((err: Error) => {
