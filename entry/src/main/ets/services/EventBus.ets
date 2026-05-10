@@ -12,6 +12,8 @@ export class EventBus {
   public static readonly DATABASE_UPDATE = "database_update";
   // KV 数据变更事件
   public static readonly KV_DATA_CHANGE = "kv_data_change";
+  // KV 同步完成事件
+  public static readonly KV_SYNC_COMPLETE = "kv_sync_complete";
 
   // 发送事件
   static emit<T>(event: string, data?: T) {
