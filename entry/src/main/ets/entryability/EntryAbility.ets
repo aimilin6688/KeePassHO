@@ -11,6 +11,7 @@ import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';
 import { DistributedKVService } from '../services/store/DistributedKVService';
 import { SyncSettingsService } from '../services/store/SyncSettingsService';
+import { distributedKVStore } from '@kit.ArkData';
 import { DialogHelper } from '@pura/harmony-dialog';
 import { CrashLogService } from '../services/CrashLogService';
 
@@ -142,6 +143,10 @@ export default class EntryAbility extends UIAbility {
   onForeground(): void {
     if (this.isLockScreen()) {
       this.tryLockScreen();
+    }
+    // 应用回到前台时触发分布式同步
+    if (SyncSettingsService.isSyncEnabled()) {
+      DistributedKVService.sync(distributedKVStore.SyncMode.PUSH_PULL);
     }
   }
 
