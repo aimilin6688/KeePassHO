@@ -47,9 +47,16 @@ export class SyncSettingsService {
 
   /**
    * 初始化同步服务
+   * 必须在 initDeviceIdPreferences() 之后调用，否则跳过初始化
    */
   public static async init(): Promise<void> {
     if (SyncSettingsService.isInitialized) {
+      return;
+    }
+
+    // deviceIdPreferences 未初始化时跳过，等待 EntryAbility 正确调用
+    if (!SyncSettingsService.deviceIdPreferences) {
+      hilog.warn(DOMAIN, TAG, 'deviceIdPreferences not initialized, skipping SyncSettingsService.init()');
       return;
     }
 
