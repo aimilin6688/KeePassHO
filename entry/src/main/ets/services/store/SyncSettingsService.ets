@@ -21,8 +21,9 @@ const DEVICE_ID_KEY = 'device_id';
 interface SyncData {
   key: string;
   value: preferences.ValueType | RecentFile[];
-  timestamp: number;
-  deviceId: string;
+  version: number;    // 单调递增版本号，冲突解决主依据
+  deviceId: string;   // 数据来源标识
+  timestamp: number;  // 仅审计/调试用，不参与冲突解决
 }
 
 /**
@@ -34,6 +35,7 @@ export class SyncSettingsService {
   private static deviceId: string = '';
   private static isInitialized: boolean = false;
   private static deviceIdPreferences: preferences.Preferences | null = null;
+  private static versionMap: Map<string, number> = new Map();
 
   private constructor() {
   }
@@ -71,6 +73,8 @@ export class SyncSettingsService {
       EventBus.on(EventBus.KV_SYNC_COMPLETE, (data: emitter.EventData) => SyncSettingsService.handleSyncComplete(data.data as Array<[string, number]>));
 
       SyncSettingsService.isInitialized = true;
+      // 清理旧版本遗留的 timestamp_ 键
+      SyncSettingsService.cleanupLegacyTimestampKeys();
       hilog.info(DOMAIN, TAG, `SyncSettingsService initialized with deviceId: ${SyncSettingsService.deviceId}`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to initialize SyncSettingsService: ${error}`);
@@ -154,24 +158,34 @@ export class SyncSettingsService {
 
   /**
    * 同步设置到远端
+   * 同步开关本身不同步，避免跨设备关闭同步
    */
   public static async syncSetting(key: string, value: preferences.ValueType): Promise<void> {
     if (!(SyncSettingsService.isSyncEnabled())) {
       return;
     }
+    // 跳过同步开关本身，避免跨设备关闭同步
+    if (key === SettingsService.KEY_APP_SYNC_SETTING_ENABLE) {
+      return;
+    }
 
     try {
+      const localVersion = SyncSettingsService.getLocalVersion(key);
+      const newVersion = localVersion + 1;
+      SyncSettingsService.setLocalVersion(key, newVersion);
+
       const syncData: SyncData = {
         key: key,
         value: value,
-        timestamp: Date.now(),
-        deviceId: SyncSettingsService.deviceId
+        version: newVersion,
+        deviceId: SyncSettingsService.deviceId,
+        timestamp: Date.now()
       };
 
       await DistributedKVService.put(`sync_${key}`, JSON.stringify(syncData) as string);
-      hilog.debug(DOMAIN, TAG, `Synced setting: ${key}`);
+      hilog.debug(DOMAIN, TAG, `Synced setting: ${key} (v${newVersion})`);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to sync setting ${key}: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to sync setting ${key}: ${error}`);
     }
   }
 
@@ -184,17 +198,22 @@ export class SyncSettingsService {
     }
 
     try {
+      const localVersion = SyncSettingsService.getLocalVersion('recent_files');
+      const newVersion = localVersion + 1;
+      SyncSettingsService.setLocalVersion('recent_files', newVersion);
+
       const syncData: SyncData = {
         key: 'recent_files',
         value: recentFiles,
-        timestamp: Date.now(),
-        deviceId: SyncSettingsService.deviceId
+        version: newVersion,
+        deviceId: SyncSettingsService.deviceId,
+        timestamp: Date.now()
       };
 
       await DistributedKVService.put('sync_recent_files', JSON.stringify(syncData) as string);
-      hilog.debug(DOMAIN, TAG, 'Synced recent files');
+      hilog.debug(DOMAIN, TAG, `Synced recent files (v${newVersion})`);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to sync recent files: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to sync recent files: ${error}`);
     }
   }
 
@@ -278,6 +297,10 @@ export class SyncSettingsService {
     if (!key.startsWith('sync_')) {
       return;
     }
+    // 跳过同步开关本身
+    if (key === `sync_${SettingsService.KEY_APP_SYNC_SETTING_ENABLE}`) {
+      return;
+    }
 
     try {
       const syncData: SyncData = JSON.parse((value as string).toString()) as SyncData;
@@ -295,7 +318,7 @@ export class SyncSettingsService {
         return SyncSettingsService.mergeSetting(syncData);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to process remote entry ${key}: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to process remote entry ${key}: ${error}`);
     }
   }
 
@@ -306,27 +329,31 @@ export class SyncSettingsService {
     try {
       const settingsService = SettingsService.getInstance();
       const currentValue = await settingsService.get(remoteSyncData.key, '' as preferences.ValueType);
+      const localVersion = SyncSettingsService.getLocalVersion(remoteSyncData.key);
 
       if (currentValue === '' || currentValue === undefined) {
-        // 本地没有值，直接使用远端值
+        // 本地无值，直接使用远端值，采用其版本号
+        SyncSettingsService.setLocalVersion(remoteSyncData.key, remoteSyncData.version);
         await settingsService.put(remoteSyncData.key, remoteSyncData.value as preferences.ValueType);
-        hilog.debug(DOMAIN, TAG, `Applied remote setting: ${remoteSyncData.key}`);
+        hilog.debug(DOMAIN, TAG, `Applied remote setting: ${remoteSyncData.key} (v${remoteSyncData.version})`);
         return;
       }
 
-      // 获取本地时间戳（如果有的话）
-      const localTimestamp = await SyncSettingsService.getLocalTimestamp(remoteSyncData.key);
-
-      if (!localTimestamp || remoteSyncData.timestamp > localTimestamp) {
-        // 远端数据更新，使用远端值
+      if (remoteSyncData.version > localVersion) {
+        // 远端版本更高，使用远端值
+        SyncSettingsService.setLocalVersion(remoteSyncData.key, remoteSyncData.version);
         await settingsService.put(remoteSyncData.key, remoteSyncData.value as preferences.ValueType);
-        await SyncSettingsService.setLocalTimestamp(remoteSyncData.key, remoteSyncData.timestamp);
-        hilog.debug(DOMAIN, TAG, `Merged remote setting: ${remoteSyncData.key}`);
+        hilog.debug(DOMAIN, TAG, `Merged remote setting: ${remoteSyncData.key} (local v${localVersion} -> remote v${remoteSyncData.version})`);
+      } else if (remoteSyncData.version === localVersion && remoteSyncData.deviceId !== SyncSettingsService.deviceId) {
+        // 版本相同但来源不同，接受远端值作为兜底
+        SyncSettingsService.setLocalVersion(remoteSyncData.key, remoteSyncData.version);
+        await settingsService.put(remoteSyncData.key, remoteSyncData.value as preferences.ValueType);
+        hilog.info(DOMAIN, TAG, `Version tie on ${remoteSyncData.key}, accepted remote (v${remoteSyncData.version})`);
       } else {
-        hilog.debug(DOMAIN, TAG, `Local setting is newer: ${remoteSyncData.key}`);
+        hilog.debug(DOMAIN, TAG, `Local setting is newer: ${remoteSyncData.key} (local v${localVersion} >= remote v${remoteSyncData.version})`);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to merge setting ${remoteSyncData.key}: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to merge setting ${remoteSyncData.key}: ${error}`);
     }
   }
 
@@ -338,44 +365,64 @@ export class SyncSettingsService {
       const recentFilesService = RecentFilesService.getInstance();
       const localRecentFiles = await recentFilesService.getRecentFiles();
       const remoteRecentFiles: RecentFile[] = remoteSyncData.value as RecentFile[];
+      const localVersion = SyncSettingsService.getLocalVersion('recent_files');
 
-      const localTimestamp = await SyncSettingsService.getLocalTimestamp('recent_files');
-
-      if (!localTimestamp || remoteSyncData.timestamp > localTimestamp) {
-        // 远端数据更新，合并文件列表
+      if (remoteSyncData.version > localVersion) {
+        // 远端版本更高，合并文件列表
         const mergedFiles = RecentFilesService.mergeRecentFileLists(localRecentFiles, remoteRecentFiles);
+        SyncSettingsService.setLocalVersion('recent_files', remoteSyncData.version);
         await recentFilesService.doAddMerged(mergedFiles);
-        await SyncSettingsService.setLocalTimestamp('recent_files', remoteSyncData.timestamp);
-        hilog.debug(DOMAIN, TAG, 'Merged remote recent files');
+        hilog.debug(DOMAIN, TAG, `Merged remote recent files (local v${localVersion} -> remote v${remoteSyncData.version})`);
+      } else if (remoteSyncData.version === localVersion && remoteRecentFiles.length > 0) {
+        // 版本相同，接受远端值作为兜底
+        const mergedFiles = RecentFilesService.mergeRecentFileLists(localRecentFiles, remoteRecentFiles);
+        SyncSettingsService.setLocalVersion('recent_files', remoteSyncData.version);
+        await recentFilesService.doAddMerged(mergedFiles);
+        hilog.info(DOMAIN, TAG, `Version tie on recent_files, merged by tiebreaker (v${remoteSyncData.version})`);
       } else {
-        hilog.debug(DOMAIN, TAG, 'Local recent files are newer');
+        hilog.debug(DOMAIN, TAG, `Local recent files are newer or equal (local v${localVersion} >= remote v${remoteSyncData.version})`);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to merge recent files: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to merge recent files: ${error}`);
     }
   }
 
   /**
-   * 获取本地时间戳
+   * 获取本地版本号
+   * 返回 0 表示未追踪（重启后默认为 0，远端 version >= 1 总是赢）
    */
-  private static async getLocalTimestamp(key: string): Promise<number | null> {
-    try {
-      const timestamp = await SettingsService.getInstance().get(`timestamp_${key}`, 0);
-      return timestamp > 0 ? timestamp : null;
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to get local timestamp for ${key}: ${error}`);
-      return null;
-    }
+  private static getLocalVersion(key: string): number {
+    return SyncSettingsService.versionMap.get(key) ?? 0;
   }
 
   /**
-   * 设置本地时间戳
+   * 设置本地版本号
+   * 纯内存存储，不经过 SettingsService，不触发同步
    */
-  private static async setLocalTimestamp(key: string, timestamp: number): Promise<void> {
+  private static setLocalVersion(key: string, version: number): void {
+    SyncSettingsService.versionMap.set(key, version);
+  }
+
+  /**
+   * 清理旧版本遗留的 timestamp_ 键
+   * 旧版用 timestamp_<key> 存储在 SettingsService 中，新版用内存 versionMap 替代
+   */
+  private static cleanupLegacyTimestampKeys(): void {
     try {
-      await SettingsService.getInstance().put(`timestamp_${key}`, timestamp);
+      const allSettings = SettingsService.getAll();
+      const allKeys = Object.keys(allSettings);
+      const timestampKeys = allKeys.filter(key => key.startsWith('timestamp_'));
+
+      for (const key of timestampKeys) {
+        SettingsService.deleteSync(key);
+        hilog.info(DOMAIN, TAG, `Cleaned up legacy timestamp key: ${key}`);
+      }
+
+      if (timestampKeys.length > 0) {
+        hilog.info(DOMAIN, TAG, `Cleaned up ${timestampKeys.length} legacy timestamp keys`);
+      }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to set local timestamp for ${key}: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to cleanup legacy timestamp keys: ${error}`);
     }
   }
 
@@ -415,16 +462,21 @@ export class SyncSettingsService {
       // 先触发拉取同步
       DistributedKVService.sync(distributedKVStore.SyncMode.PULL_ONLY);
 
-      // 获取并合并远端最近文件
-      const remoteRecentFiles = await SyncSettingsService.getRemoteRecentFiles();
-      if (remoteRecentFiles) {
-        const remoteSyncData: SyncData = {
-          key: 'recent_files',
-          value: remoteRecentFiles,
-          timestamp: Date.now(),
-          deviceId: SyncSettingsService.deviceId
-        };
-        await SyncSettingsService.mergeRecentFiles(remoteSyncData);
+      // 读取远端实际的 SyncData（包含正确的 version 和 deviceId）
+      try {
+        const remoteSyncDataJson = await DistributedKVService.get('sync_recent_files');
+        if (remoteSyncDataJson) {
+          const remoteSyncData: SyncData = JSON.parse(remoteSyncDataJson.toString()) as SyncData;
+          if (remoteSyncData.key === 'recent_files' && remoteSyncData.deviceId !== SyncSettingsService.deviceId) {
+            await SyncSettingsService.mergeRecentFiles(remoteSyncData);
+          }
+        }
+      } catch (error) {
+        // 15100004 表示数据不存在，属于正常情况
+        const errObj = error as BusinessError;
+        if (errObj.code !== 15100004) {
+          hilog.warn(DOMAIN, TAG, `Failed to fetch remote recent files: ${error}`);
+        }
       }
 
       // 获取并合并远端设置数据
@@ -432,7 +484,7 @@ export class SyncSettingsService {
 
       hilog.debug(DOMAIN, TAG, 'Remote data fetch and merge completed');
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote data: ${error}`);
+      hilog.warn(DOMAIN, TAG, `Failed to fetch and merge remote data: ${error}`);
     }
   }
 
@@ -445,9 +497,8 @@ export class SyncSettingsService {
       const allSettings = SettingsService.getAll();
       const localSettingKeys = Object.keys(allSettings);
 
-      // 过滤掉时间戳键和同步相关键，只获取真实的设置键
+      // 只过滤掉同步开关本身
       const realSettingKeys = localSettingKeys.filter(key =>
-        !key.startsWith('timestamp_') &&
         key !== SettingsService.KEY_APP_SYNC_SETTING_ENABLE
       );
 
@@ -464,7 +515,7 @@ export class SyncSettingsService {
           // 15100004 表示数据不存在，远端尚未推送该设置，属于正常情况
           const errObj = error as BusinessError;
           if (errObj.code !== 15100004) {
-            hilog.error(DOMAIN, TAG, `Failed to fetch and merge remote setting ${key}: ${error}`);
+            hilog.warn(DOMAIN, TAG, `Failed to fetch and merge remote setting ${key}: ${error}`);
           }
         }
       }
@@ -487,9 +538,8 @@ export class SyncSettingsService {
       const allSettings = SettingsService.getAll();
       const localSettingKeys = Object.keys(allSettings);
 
-      // 过滤掉时间戳键和同步相关键，只同步真实的设置键
+      // 只过滤掉同步开关本身
       const realSettingKeys = localSettingKeys.filter(key =>
-        !key.startsWith('timestamp_') &&
         key !== SettingsService.KEY_APP_SYNC_SETTING_ENABLE
       );
 

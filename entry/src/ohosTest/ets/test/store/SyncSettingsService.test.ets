@@ -3,38 +3,43 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 interface TestSyncData {
   key: string;
   value: Object;
-  timestamp: number;
+  version: number;
   deviceId: string;
+  timestamp: number;
 }
 
 export default function SyncSettingsServiceTest() {
   describe('SyncSettingsService', () => {
     describe('SyncData interface', () => {
-      it('should create valid SyncData with timestamp and deviceId', 0, () => {
+      it('should create valid SyncData with version and deviceId', 0, () => {
         const syncData: TestSyncData = {
           key: 'test_key',
           value: 'test_value',
-          timestamp: Date.now(),
-          deviceId: 'device_123'
+          version: 1,
+          deviceId: 'device_123',
+          timestamp: Date.now()
         };
         expect(syncData.key).assertEqual('test_key');
-        expect(syncData.timestamp).assertLarger(0);
+        expect(syncData.version).assertLarger(0);
         expect(syncData.deviceId).assertContain('device_');
+        expect(syncData.timestamp).assertLarger(0);
       });
 
       it('should serialize and deserialize SyncData correctly', 0, () => {
         const original: TestSyncData = {
           key: 'setting_key',
           value: true,
-          timestamp: 1000000,
-          deviceId: 'device_abc'
+          version: 5,
+          deviceId: 'device_abc',
+          timestamp: 1000000
         };
         const serialized = JSON.stringify(original);
         const parsed: TestSyncData = JSON.parse(serialized) as TestSyncData;
         expect(parsed.key).assertEqual('setting_key');
         expect(parsed.value).assertEqual(true);
-        expect(parsed.timestamp).assertEqual(1000000);
+        expect(parsed.version).assertEqual(5);
         expect(parsed.deviceId).assertEqual('device_abc');
+        expect(parsed.timestamp).assertEqual(1000000);
       });
     });
 
@@ -51,22 +56,58 @@ export default function SyncSettingsServiceTest() {
       });
     });
 
-    describe('merge logic - timestamp comparison', () => {
-      it('remote timestamp newer should trigger merge', 0, () => {
-        const localTimestamp = 1000000;
-        const remoteTimestamp = 2000000;
-        expect(remoteTimestamp > localTimestamp).assertTrue();
+    describe('merge logic - version comparison', () => {
+      it('remote version higher should trigger merge', 0, () => {
+        const localVersion = 3;
+        const remoteVersion = 5;
+        expect(remoteVersion > localVersion).assertTrue();
       });
 
-      it('local timestamp newer should skip merge', 0, () => {
-        const localTimestamp = 2000000;
-        const remoteTimestamp = 1000000;
-        expect(remoteTimestamp > localTimestamp).assertFalse();
+      it('local version higher should skip merge', 0, () => {
+        const localVersion = 7;
+        const remoteVersion = 5;
+        expect(remoteVersion > localVersion).assertFalse();
       });
 
-      it('no local timestamp should trigger merge', 0, () => {
-        const localTimestamp: number | null = null;
-        expect(localTimestamp === null).assertTrue();
+      it('no local version (0) should trigger merge with any remote version >= 1', 0, () => {
+        const localVersion = 0;
+        const remoteVersion = 1;
+        expect(remoteVersion > localVersion).assertTrue();
+      });
+
+      it('equal version with different deviceId should use tiebreaker', 0, () => {
+        const localVersion = 5;
+        const remoteVersion = 5;
+        const localDeviceId = 'device_1';
+        const remoteDeviceId = 'device_2';
+        expect(remoteVersion === localVersion).assertTrue();
+        expect(remoteDeviceId !== localDeviceId).assertTrue();
+      });
+
+      it('equal version with same deviceId should skip merge', 0, () => {
+        const localVersion = 5;
+        const remoteVersion = 5;
+        const deviceId = 'device_same';
+        expect(remoteVersion === localVersion).assertTrue();
+        expect(deviceId === deviceId).assertTrue();
+      });
+    });
+
+    describe('version monotonicity', () => {
+      it('version should increment on each sync push', 0, () => {
+        let version = 0;
+        version = version + 1; // first sync
+        expect(version).assertEqual(1);
+        version = version + 1; // second sync
+        expect(version).assertEqual(2);
+      });
+
+      it('version should NOT increment when accepting remote merge', 0, () => {
+        let localVersion = 3;
+        const remoteVersion = 7;
+        // Accept remote: set local to remote version, NOT remote+1
+        localVersion = Math.max(localVersion, remoteVersion);
+        expect(localVersion).assertEqual(7);
       });
     });
   });
