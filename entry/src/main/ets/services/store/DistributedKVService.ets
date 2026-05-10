@@ -286,7 +286,12 @@ export class DistributedKVService {
       DistributedKVService.kvStore.get(key).then((value) => {
         resolve(value);
       }).catch((err: BusinessError<Object>) => {
-        hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+        // 15100004 表示数据不存在，属于正常情况，降低日志级别
+        if (err.code === 15100004) {
+          hilog.debug(DOMAIN, TAG, `Key not found: ${key}`);
+        } else {
+          hilog.error(DOMAIN, TAG, `Failed to get data. Key:${key}, Code:${err?.code},message:${err?.message}`);
+        }
         reject(err);
       });
     });
