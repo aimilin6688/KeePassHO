@@ -106,7 +106,12 @@ export default class EntryAbility extends UIAbility {
     // 初始化同步服务的 deviceId preferences（必须在 DistributedKVService 之前）
     SyncSettingsService.initDeviceIdPreferences(this.context);
     // 初始化kv数据库
-    DistributedKVService.init(this.context);
+    DistributedKVService.init(this.context).then(() => {
+      // KVStore 初始化成功后，初始化同步服务（订阅 EventBus）
+      SyncSettingsService.init();
+    }).catch((err: Error) => {
+      hilog.error(DOMAIN, TAG, `Failed to init DistributedKVService: ${err.message}`);
+    });
     // 初始化崩溃日志服务
     CrashLogService.getInstance().init(this.context);
     // 初始化弹框
