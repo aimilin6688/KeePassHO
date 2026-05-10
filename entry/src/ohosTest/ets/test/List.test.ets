@@ -4,6 +4,7 @@ import WebDavTest from './entry/WebDav.test';
 import TotpServiceTest from './services/TotpService.test';
 import FileUtilsTest from './utils/FileUtils.test';
 import RecentFilesServiceTest from './services/RecentFilesService.test';
+import DistributedKVServiceTest from './store/DistributedKVService.test';
 
 
 export default function testsuite() {
@@ -13,4 +14,5 @@ export default function testsuite() {
   TotpServiceTest();
   FileUtilsTest();
   RecentFilesServiceTest();
+  DistributedKVServiceTest();
 }
