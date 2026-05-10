@@ -4,6 +4,7 @@ import { SupportService } from '../../services/SupportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SyncSettingsService } from '../../services/store/SyncSettingsService';
 import { CommonUtils } from '../../common/utils';
+import { common } from '@kit.AbilityKit';
 
 
 @Entry
@@ -163,19 +164,33 @@ struct SettingApplication {
                 .selectedColor('#007DFF')
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
-                  this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, isOn);
-                  this.isSyncSetting = isOn;
-                  // 开启同步时，触发全量同步
-                  if (this.isSyncSetting) {
-                    LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
-                      SyncSettingsService.triggerFullSync().then(() => {
-                        LoadingDialog.hideLoading();
-                        CommonUtils.showToast($r("app.string.application_sync_complete"));
-                      }).catch((error: Error) => {
-                        LoadingDialog.hideLoading();
-                        CommonUtils.showToast(error.message);
+                  if (isOn) {
+                    const context = AppStorage.get<common.UIAbilityContext>('context');
+                    if (context) {
+                      SyncSettingsService.requestSyncPermission(context).then((granted) => {
+                        if (granted) {
+                          this.isSyncSetting = true;
+                          this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
+                          LoadingDialog.showLoading($r("app.string.application_sync_loading")).then(() => {
+                            SyncSettingsService.triggerFullSync().then(() => {
+                              LoadingDialog.hideLoading();
+                              CommonUtils.showToast($r("app.string.application_sync_complete"));
+                            }).catch((error: Error) => {
+                              LoadingDialog.hideLoading();
+                              CommonUtils.showToast(error.message);
+                            });
+                          });
+                        } else {
+                          this.isSyncSetting = false;
+                        }
                       });
-                    });
+                    } else {
+                      this.isSyncSetting = true;
+                      this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
+                    }
+                  } else {
+                    this.isSyncSetting = false;
+                    this.settingsService.put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, false);
                   }
                 })
             }
