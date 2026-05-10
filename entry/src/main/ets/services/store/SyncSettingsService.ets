@@ -209,21 +209,45 @@ export class SyncSettingsService {
     try {
       hilog.debug(DOMAIN, TAG, `Received remote data change: ${JSON.stringify(data)}`);
 
+      const entries: distributedKVStore.Entry[] = [];
       if (data.insertEntries && data.insertEntries.length > 0) {
-        for (const entry of data.insertEntries) {
-          const value = typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value);
-          await SyncSettingsService.processRemoteEntry(entry.key, value);
-        }
+        entries.push(...data.insertEntries);
+      }
+      if (data.updateEntries && data.updateEntries.length > 0) {
+        entries.push(...data.updateEntries);
       }
 
-      if (data.updateEntries && data.updateEntries.length > 0) {
-        for (const entry of data.updateEntries) {
-          const value = typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value);
+      for (const entry of entries) {
+        const value = SyncSettingsService.extractEntryValue(entry);
+        if (value) {
           await SyncSettingsService.processRemoteEntry(entry.key, value);
         }
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to handle remote data change: ${error}`);
+    }
+  }
+
+  /**
+   * 从 Entry 中提取实际的字符串值
+   * KVStore 回调的 entry.value 是 Value 对象 {type: ValueType, value: string}
+   * 需要取出 .value 属性才是实际的同步数据
+   */
+  private static extractEntryValue(entry: distributedKVStore.Entry): string | null {
+    try {
+      const raw = entry.value;
+      if (typeof raw === 'string') {
+        return raw;
+      }
+      // Value 对象：{type: ValueType, value: Uint8Array | string | number | boolean}
+      const kvValue = raw as distributedKVStore.Value;
+      if (kvValue && typeof kvValue.value === 'string') {
+        return kvValue.value;
+      }
+      return null;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to extract entry value: ${error}`);
+      return null;
     }
   }
 
