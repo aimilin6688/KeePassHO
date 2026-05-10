@@ -10,6 +10,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { Constants } from '../common/constants/Constants';
 import { SupportService } from '../services/SupportService';
 import { DistributedKVService } from '../services/store/DistributedKVService';
+import { SyncSettingsService } from '../services/store/SyncSettingsService';
 import { DialogHelper } from '@pura/harmony-dialog';
 import { CrashLogService } from '../services/CrashLogService';
 
@@ -30,6 +31,8 @@ export default class EntryAbility extends UIAbility {
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     hilog.info(DOMAIN, TAG, 'Ability onCreate %{public}s', want.uri);
     this.createUrl = want.uri;
+    // 将 context 存入 AppStorage 供其他组件使用
+    AppStorage.setOrCreate('context', this.context);
     // 初始化核心服务 + 并行预加载
     this.init();
   }
@@ -99,6 +102,8 @@ export default class EntryAbility extends UIAbility {
   private initNonEssentialServices(): void {
     // 初始化加解密KEY
     Sm4Utils.init();
+    // 初始化同步服务的 deviceId preferences（必须在 DistributedKVService 之前）
+    SyncSettingsService.initDeviceIdPreferences(this.context);
     // 初始化kv数据库
     DistributedKVService.init(this.context);
     // 初始化崩溃日志服务
