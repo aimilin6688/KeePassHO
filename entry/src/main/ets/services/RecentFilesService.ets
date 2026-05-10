@@ -10,6 +10,7 @@ import { CryptoUtils } from '../common/utils/CryptoUtils';
 import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { SyncSettingsService } from './store/SyncSettingsService';
+import { DistributedKVService } from './store/DistributedKVService';
 import { CacheConstants } from '../storage';
 
 const DOMAIN = 0x0000;
@@ -264,6 +265,11 @@ export class RecentFilesService {
   private async syncWithRemote(localFiles: RecentFile[]): Promise<RecentFile[]> {
     try {
       if (!SyncSettingsService.isSyncEnabled()) {
+        return localFiles;
+      }
+
+      // 确保 KVStore 已初始化（DistributedKVService.init 异步完成前可能为空）
+      if (!DistributedKVService.isInitialized()) {
         return localFiles;
       }
 
