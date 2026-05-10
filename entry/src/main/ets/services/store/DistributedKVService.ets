@@ -249,6 +249,13 @@ export class DistributedKVService {
   }
 
   /**
+   * 检查 KVStore 是否已初始化
+   */
+  public static isInitialized(): boolean {
+    return DistributedKVService.kvStore !== undefined;
+  }
+
+  /**
    * 调用put()方法向键值数据库中插入数据
    * @param key
    * @param value
