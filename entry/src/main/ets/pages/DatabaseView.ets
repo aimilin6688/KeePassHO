@@ -1267,11 +1267,11 @@ struct DatabaseView {
       return;
     }
     if (this.isSearching) {
-      // 全局搜索模式：搜索整个数据库
+      // 全局搜索模式：搜索整个数据库（排除回收站中的内容）
       this.filteredItems = [];
 
       if (this.database) {
-        let result = KdbxUtils.searchInGroup(this.database.getDefaultGroup(), this.searchText);
+        let result = KdbxUtils.searchInGroup(this.database.getDefaultGroup(), this.searchText, this.database, false);
         // 合并搜索结果：分组在前，条目在后
         this.filteredItems.push(...result.filteredGroups, ...result.filteredEntries);
         KdbxUtils.sortBy(this.filteredItems, this.sortBy);
