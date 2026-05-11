@@ -1197,6 +1197,10 @@
       "value": "无效版本"
     },
     {
+      "name": "network_error",
+      "value": "网络连接失败，请稍后重试"
+    },
+    {
       "name": "attachment",
       "value": "附件"
     },

@@ -1197,6 +1197,10 @@
       "value": "InvalidVersion"
     },
     {
+      "name": "network_error",
+      "value": "Network connection failed, please try again later"
+    },
+    {
       "name": "attachment",
       "value": "Attachment"
     },

@@ -111,11 +111,39 @@ export class CacheConstants {
   static async deleteAllCache(): Promise<void> {
     try {
       const cacheDir: string = CacheConstants.getCacheDir();
+      // 先删除目录中的所有文件
+      const files = CacheConstants.listCacheFiles(cacheDir);
+      for (const file of files) {
+        try {
+          await fs.unlink(file);
+        } catch {
+          // ignore individual file deletion errors
+        }
+      }
+      // 再删除目录
       await fs.rmdir(cacheDir);
       hilog.info(DOMAIN, TAG, `All cache deleted: ${cacheDir}`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to delete all cache, error: ${(error as Error).message}`);
     }
+  }
+
+  /**
+   * 列出缓存目录中的所有文件
+   * @param cacheDir 缓存目录路径
+   * @returns 文件路径列表
+   */
+  private static listCacheFiles(cacheDir: string): string[] {
+    const files: string[] = [];
+    try {
+      const entries = fs.listFileSync(cacheDir);
+      for (const entry of entries) {
+        files.push(cacheDir + '/' + entry);
+      }
+    } catch {
+      // 目录不存在或无法读取
+    }
+    return files;
   }
 
   /**
