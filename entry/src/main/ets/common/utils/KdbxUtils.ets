@@ -143,8 +143,10 @@ export class KdbxUtils {
    * 搜索分组,包含子分组与条目
    * @param group 分组
    * @param searchText 搜索文本
+   * @param database 数据库对象（用于判断是否在回收站中）
+   * @param includeRecycleBin 是否包含回收站中的内容，默认 false
    */
-  public static searchInGroup(group: KdbxGroup, searchText: string): KdbxSearchResult {
+  public static searchInGroup(group: KdbxGroup, searchText: string, database?: Kdbx, includeRecycleBin: boolean = false): KdbxSearchResult {
     const result: KdbxSearchResult = {
       filteredGroups: [],
       filteredEntries: []
@@ -154,21 +156,25 @@ export class KdbxUtils {
     }
     const searchTextLower = searchText.toLowerCase().trim();
 
-    // 检查当前分组是否匹配
+    // 检查当前分组是否匹配（排除回收站）
     if (group.name?.toLowerCase().includes(searchTextLower)) {
-      result.filteredGroups.push(group);
+      if (includeRecycleBin || !database || !database.isInRecycleBin(group)) {
+        result.filteredGroups.push(group);
+      }
     }
 
-    // 搜索当前分组中的条目
+    // 搜索当前分组中的条目（排除回收站中的条目）
     for (const entry of group.entries) {
       if (KdbxUtils.entryMatchesSearch(entry, searchTextLower)) {
-        result.filteredEntries.push(entry);
+        if (includeRecycleBin || !database || !database.isInRecycleBin(entry)) {
+          result.filteredEntries.push(entry);
+        }
       }
     }
 
     // 递归搜索子分组
     for (const subGroup of group.groups) {
-      let subGroupResult = KdbxUtils.searchInGroup(subGroup, searchText);
+      let subGroupResult = KdbxUtils.searchInGroup(subGroup, searchText, database, includeRecycleBin);
       result.filteredGroups.push(...subGroupResult.filteredGroups);
       result.filteredEntries.push(...subGroupResult.filteredEntries);
     }
