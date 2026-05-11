@@ -26,15 +26,47 @@ export class WebDAVStorage implements IFileStorage {
   }
 
   public init(config: WebDAVStorageConfig) {
-    this.config = this.parseConfig(config);
-    if (this.client) {
-      this.client.close();
+    const parsedConfig = this.parseConfig(config);
+    // 配置相同，复用现有连接，避免 close 导致进行中的请求被取消
+    if (this.isSameConfig(parsedConfig)) {
+      this.config = parsedConfig;
+      return;
     }
+    // 配置不同，关闭旧连接，创建新连接
+    this.config = parsedConfig;
+    this.closeClient();
     this.client = new WebDavClient({
       url: this.config.url,
       username: this.config.getUserNameText(),
       password: this.config.getPasswordText()
     });
+  }
+
+  /**
+   * 关闭 WebDAV 客户端连接
+   */
+  private closeClient() {
+    if (this.client) {
+      try {
+        this.client.close();
+      } catch (e) {
+        hilog.warn(DOMAIN, TAG, 'Close old WebDAV client error: %{public}s', e?.message);
+      }
+    }
+  }
+
+  /**
+   * 判断配置是否相同
+   * 比较 url/username/password 三个字段，相同则 session 等价，无需重建
+   * 注意：比较解密后的值，因为加密结果每次不同
+   */
+  private isSameConfig(newConfig: WebDAVStorageConfig): boolean {
+    if (!this.config) {
+      return false;
+    }
+    return this.config.url === newConfig.url
+      && this.config.getUserNameText() === newConfig.getUserNameText()
+      && this.config.getPasswordText() === newConfig.getPasswordText();
   }
 
   private parseConfig(config: WebDAVStorageConfig): WebDAVStorageConfig {
