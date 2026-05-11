@@ -586,9 +586,11 @@ struct DatabaseView {
 
   /**
    * 编辑分组
+   * @param group 要编辑的分组对象
    */
-  private editGroup(group: KdbxGroup, index: number) {
-    this.editingGroupIndex = index;
+  private editGroup(group: KdbxGroup) {
+    // 通过 UUID 在 items 中找到索引
+    this.editingGroupIndex = this.items.findIndex(i => i.uuid.id === group.uuid.id);
     this.newGroupName = group.name;
     this.dialogController.open();
     this.hideMoreMenu();
@@ -779,19 +781,15 @@ struct DatabaseView {
 
   /**
    * 删除条目或分组 - 直接删除
+   * @param item 要删除的条目或分组对象（使用对象引用而非索引，避免搜索模式下索引错位）
    */
-  private deleteItem(index: number) {
+  private deleteItem(item: KdbxGroup | KdbxEntry) {
     if (this.database === null) {
       return;
     }
-    let deleteObj: KdbxGroup | KdbxEntry | null = null;
-    if (index >= 0 && index < this.items.length) {
-      deleteObj = this.items[index];
-    }
-    if (!deleteObj) {
-      CommonUtils.showToast($r("app.string.please_refresh_data_first"));
-      return;
-    }
+
+    const deleteObj = item;
+    const deleteUuid = item.uuid.id;
 
     const msg = this.database.isInRecycleBin(deleteObj) ? $r("app.string.dialog_delete_confirm_message_in_recycle_bin") : $r("app.string.dialog_delete_confirm_message");
 
@@ -807,8 +805,21 @@ struct DatabaseView {
         value: $r("app.string.delete_button_text"),
         action: () => {
           if (deleteObj && this.database) {
-            this.items.splice(index, 1);
+            // 从数据库中删除
             this.database.remove(deleteObj);
+
+            // 从 items 数组中移除（通过 UUID 匹配）
+            const itemsIndex = this.items.findIndex(i => i.uuid.id === deleteUuid);
+            if (itemsIndex >= 0) {
+              this.items.splice(itemsIndex, 1);
+            }
+
+            // 从 filteredItems 数组中移除（通过 UUID 匹配）
+            const filteredIndex = this.filteredItems.findIndex(i => i.uuid.id === deleteUuid);
+            if (filteredIndex >= 0) {
+              this.filteredItems.splice(filteredIndex, 1);
+            }
+
             this.saveDatabase();
             this.hideMoreMenu();
           } else {
@@ -907,7 +918,7 @@ struct DatabaseView {
             if (this.selectedItem instanceof KdbxEntry) {
               this.editEntry(this.selectedItem as KdbxEntry);
             } else if (this.selectedItem instanceof KdbxGroup) {
-              this.editGroup(this.selectedItem as KdbxGroup, this.selectedItemIndex);
+              this.editGroup(this.selectedItem as KdbxGroup);
             }
           })
         }
@@ -932,10 +943,8 @@ struct DatabaseView {
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
-            // 使用 items 数组获取原始对象，避免使用 @State 代理对象
-            const item = this.items[this.selectedItemIndex];
-            if (item) {
-              this.enterSelectionMode(item);
+            if (this.selectedItem) {
+              this.enterSelectionMode(this.selectedItem);
             }
           })
         }
@@ -960,7 +969,9 @@ struct DatabaseView {
           .backgroundColor(Color.Transparent)
           .borderRadius(8)
           .onClick(() => {
-            this.deleteItem(this.selectedItemIndex);
+            if (this.selectedItem) {
+              this.deleteItem(this.selectedItem);
+            }
           })
         }
       }
