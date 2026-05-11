@@ -644,6 +644,11 @@ export class KdbxUtils {
   }
 
   public static kdbxErrorMessage(kdbxError: Error): string {
+    // 先检查是否是网络错误
+    if (KdbxUtils.isNetworkError(kdbxError)) {
+      return ResourceManager.getString($r('app.string.network_error'));
+    }
+
     if (!(kdbxError instanceof KdbxError)) {
       return kdbxError.message || kdbxError.toString();
     }
@@ -668,6 +673,32 @@ export class KdbxUtils {
         return ResourceManager.getString($r('app.string.kdbx_error_InvalidState'));
     }
     return kdbxError.message || kdbxError.toString();
+  }
+
+  /**
+   * 检查是否是网络错误
+   * @param error 错误对象
+   * @returns 是否是网络错误
+   */
+  private static isNetworkError(error: Error): boolean {
+    const message = error.message?.toLowerCase() || '';
+    // 常见的网络错误关键词
+    const networkErrorKeywords = [
+      'couldn\'t resolve host',
+      'network',
+      'timeout',
+      'connection refused',
+      'connection reset',
+      'connection failed',
+      'socket',
+      'dns',
+      'enetunreach',
+      'econnrefused',
+      'etimedout',
+      'ssl',
+      'certificate'
+    ];
+    return networkErrorKeywords.some(keyword => message.includes(keyword));
   }
 
   /**

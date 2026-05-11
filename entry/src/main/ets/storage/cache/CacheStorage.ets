@@ -99,8 +99,6 @@ export class CacheStorage implements IFileStorage {
     // 仅使用本地缓存模式
     if (onlyUseCache && !forceRefresh) {
       hilog.debug(DOMAIN, TAG, 'Write to cache only: %{public}s', cachePath);
-      // TODO: 写入本地缓存，需要联网后恢复记录
-      //  await this.writeToCache(cachePath, content);
       throw new KdbxError(ErrorCodes.READ_ONLY, ResourceManager.getString($r('app.string.cache_read_only')));
     }
 
@@ -142,7 +140,7 @@ export class CacheStorage implements IFileStorage {
     try {
       return await this.decoratedStorage.exists(path);
     } catch (error) {
-      this.showErrorDialog(error?.message);
+      hilog.warn(DOMAIN, TAG, 'Check remote exists failed: %{public}s, fallback to cache', error?.message);
       return await CacheConstants.cacheExists(path);
     }
   }
@@ -179,7 +177,7 @@ export class CacheStorage implements IFileStorage {
       // 正常走远端
       return await this.decoratedStorage.getInfo(path);
     } catch (error) {
-      this.showErrorDialog(error?.message);
+      hilog.warn(DOMAIN, TAG, 'Get remote info failed: %{public}s, fallback to cache', error?.message);
       return await this.getCacheInfo(cachePath);
     }
   }
@@ -195,40 +193,81 @@ export class CacheStorage implements IFileStorage {
   }
 
   /**
+   * 安全关闭文件
+   * @param file 文件对象，可为 null
+   */
+  private async closeFileSafely(file: fs.File | null): Promise<void> {
+    if (file) {
+      try {
+        await fs.close(file.fd);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  /**
    * 从本地缓存读取文件
    * @param cachePath 缓存文件路径
    * @returns 文件内容
    */
   private async readFromCache(cachePath: string): Promise<ArrayBuffer> {
+    let file: fs.File | null = null;
     try {
-      const file = await fs.open(cachePath, fs.OpenMode.READ_ONLY);
+      file = await fs.open(cachePath, fs.OpenMode.READ_ONLY);
       const stat = await fs.stat(file.fd);
       const buffer = new ArrayBuffer(stat.size);
       await fs.read(file.fd, buffer);
-      await fs.close(file.fd);
       hilog.debug(DOMAIN, TAG, 'Read from cache success: %{public}s', cachePath);
       return buffer;
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Read from cache failed: %{public}s, error: %{public}s', cachePath, error?.message);
       throw new Error(ResourceManager.getString($r('app.string.cache_file_not_found')));
+    } finally {
+      await this.closeFileSafely(file);
     }
   }
 
   /**
-   * 写入文件到本地缓存
+   * 写入文件到本地缓存（安全写入）
+   * 使用临时文件 + 原子重命名，确保写入失败不破坏原有缓存
    * @param cachePath 缓存文件路径
    * @param content 文件内容
    */
   private async writeToCache(cachePath: string, content: ArrayBuffer): Promise<void> {
+    const tempPath = cachePath + '.tmp';
+    let file: fs.File | null = null;
+
     try {
+      // 1. 确保目录存在
       const cacheDir: string = CacheConstants.getCacheDir();
       this.ensureCacheDir(cacheDir);
 
-      const file = await fs.open(cachePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      // 2. 写入临时文件（使用 TRUNC 确保清空旧内容）
+      file = await fs.open(tempPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
       await fs.write(file.fd, content);
-      await fs.close(file.fd);
+
+      // 3. 强制落盘，确保数据持久化
+      await fs.fsync(file.fd);
+
+      // 4. 关闭文件
+      await this.closeFileSafely(file);
+      file = null;
+
+      // 5. 原子重命名替换旧文件
+      await fs.rename(tempPath, cachePath);
+
       hilog.debug(DOMAIN, TAG, 'Write to cache success: %{public}s', cachePath);
     } catch (error) {
+      // 确保文件被关闭
+      await this.closeFileSafely(file);
+      // 清理临时文件
+      try {
+        await fs.unlink(tempPath);
+      } catch {
+        // ignore
+      }
+
       hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       throw new Error('Write to cache failed: ' + error?.message);
     }
@@ -287,10 +326,10 @@ export class CacheStorage implements IFileStorage {
    * @returns 文件信息
    */
   private async getCacheInfo(cachePath: string): Promise<FileInfo> {
+    let file: fs.File | null = null;
     try {
-      const file = await fs.open(cachePath, fs.OpenMode.READ_ONLY);
+      file = await fs.open(cachePath, fs.OpenMode.READ_ONLY);
       const stat = await fs.stat(file.fd);
-      await fs.close(file.fd);
       const fileName: string = cachePath.split('/').pop() ?? '';
       const fileInfo: FileInfo = {
         name: fileName,
@@ -304,6 +343,8 @@ export class CacheStorage implements IFileStorage {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Get cache info failed: %{public}s, error: %{public}s', cachePath, error?.stack);
       throw new Error('Get cache info failed: ' + error?.message);
+    } finally {
+      await this.closeFileSafely(file);
     }
   }
 
