@@ -316,8 +316,7 @@ export class CacheStorage implements IFileStorage {
       fs.mkdirSync(cacheDir, true);
       hilog.debug(DOMAIN, TAG, 'Cache dir created: %{public}s', cacheDir);
     } catch (error) {
-      // 目录已存在会报错，可忽略；其他错误记录日志但不阻断流程
-      hilog.error(DOMAIN, TAG, 'Ensure cache dir: %{public}s, error: %{public}s', cacheDir, error?.message);
+      hilog.info(DOMAIN, TAG, 'Ensure cache dir: %{public}s, error: %{public}s', cacheDir, error?.message);
     }
   }
 }
