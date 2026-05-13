@@ -384,6 +384,13 @@ export interface EntryParam {
   historyIndex?: number;
 }
 
+/**
+ * 数据库显示参数定义
+ */
+export interface UnLockDatabaseParam {
+  isLocked?: boolean;
+}
+
 
 /**
  * 移动条目参数定义
