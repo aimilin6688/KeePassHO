@@ -25,6 +25,7 @@ import { CacheConstants } from '../storage/cache/CacheConstants';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
+import window from '@ohos.window';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -101,6 +102,7 @@ struct DatabaseView {
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
   private clearHistoryUrlPage: Array<string> = ["Password", "UnLockDatabase"];
+  private windowClass: window.Window | undefined = undefined; // 窗口实例
   private dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
       newGroupName: this.newGroupName,
@@ -150,6 +152,8 @@ struct DatabaseView {
     SupportService.showSupportDialog(this.getUIContext());
     // 初始化屏幕大小
     this.initScreenSize();
+    // 监听窗口大小变化（小窗模式适配）
+    this.registerWindowSizeChangeListener();
   }
 
   aboutToDisappear() {
@@ -160,6 +164,8 @@ struct DatabaseView {
     // 移除配置监听器
     this.settingsService.unregisterObserver(this.onSettingChanged);
     this.unBindHoldingHandChange();
+    // 取消窗口大小变化监听
+    this.unregisterWindowSizeChangeListener();
   }
 
   onPageShow(): void {
@@ -190,18 +196,43 @@ struct DatabaseView {
   }
 
   /**
+   * 更新屏幕尺寸和边界
+   * @param width 窗口宽度（px）
+   * @param height 窗口高度（px）
+   */
+  private updateScreenBounds(width: number, height: number) {
+    // 将px转换为vp
+    this.screenWidth = this.getUIContext().px2vp(width);
+    this.screenHeight = this.getUIContext().px2vp(height);
+
+    // 计算最大边界
+    this.maxX = this.screenWidth - this.containerWidth;
+    this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
+  }
+
+  /**
+   * 确保悬浮按钮在边界内
+   */
+  private ensureButtonInBounds() {
+    if (this.containerX > this.maxX) {
+      this.containerX = Math.max(0, this.maxX - 22);
+    }
+    if (this.containerY > this.maxY) {
+      this.containerY = Math.max(0, this.maxY - 32);
+    }
+  }
+
+  /**
    * 初始化屏幕大小
    */
   private initScreenSize() {
     try {
       // 获取屏幕尺寸
-      this.screenWidth = this.getUIContext().px2vp(display.getDefaultDisplaySync().width);
-      this.screenHeight = this.getUIContext().px2vp(display.getDefaultDisplaySync().height);
+      const displayInfo = display.getDefaultDisplaySync();
+      this.updateScreenBounds(displayInfo.width, displayInfo.height);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${error?.code}, ${error?.message}`,);
     }
-    this.maxX = this.screenWidth - this.containerWidth;
-    this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
 
     // 第一次初始化执行一次
     if (this.containerX == 0) {
@@ -209,6 +240,42 @@ struct DatabaseView {
       this.containerY = this.maxY - 32;
     }
     this.onHoldingHandChange();
+  }
+
+  /**
+   * 监听窗口大小变化（小窗模式适配）
+   * 参考: @ohos.window on('windowSizeChange') API
+   */
+  private registerWindowSizeChangeListener() {
+    try {
+      // 获取当前窗口实例
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      this.windowClass = context.windowStage.getMainWindowSync();
+
+      if (this.windowClass) {
+        this.windowClass.on('windowSizeChange', (size: window.Size) => {
+          // 更新屏幕边界
+          this.updateScreenBounds(size.width, size.height);
+          // 确保悬浮按钮在边界内
+          this.ensureButtonInBounds();
+        });
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to register window size change listener: ${error?.code}, ${error?.message}`);
+    }
+  }
+
+  /**
+   * 取消监听窗口大小变化
+   */
+  private unregisterWindowSizeChangeListener() {
+    try {
+      if (this.windowClass) {
+        this.windowClass.off('windowSizeChange');
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to unregister window size change listener: ${error?.code}, ${error?.message}`);
+    }
   }
 
   /**
