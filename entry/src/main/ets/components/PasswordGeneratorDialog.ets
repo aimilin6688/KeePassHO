@@ -256,366 +256,372 @@ export struct PasswordGeneratorDialog {
       .alignItems(VerticalAlign.Center)
       .borderRadius({ topLeft: 16, topRight: 16 })
 
-      // 密码生成器内容
-      Column() {
-        Row() {
-          TextArea({ text: this.password })
-            .padding({ top: 14, bottom: 14 })
-            .fontSize(16)
-            .minLines(1)
-            .fontColor($r('app.color.text_primary'))
-            .borderRadius(8)
-            .width("100%")
-            .layoutWeight(1)
-            .onChange((value) => {
-              this.password = value;
-              this.evaluatePasswordStrength();
-            })
+      // 密码生成器内容区域（可滚动）
+      Scroll() {
+        Column() {
+          Row() {
+            TextArea({ text: this.password })
+              .padding({ top: 14, bottom: 14 })
+              .fontSize(16)
+              .minLines(1)
+              .fontColor($r('app.color.text_primary'))
+              .borderRadius(8)
+              .width("100%")
+              .layoutWeight(1)
+              .onChange((value) => {
+                this.password = value;
+                this.evaluatePasswordStrength();
+              })
 
-          Image($r('app.media.ic_copy'))
-            .width(24)
-            .height(24)
-            .fillColor($r('app.color.text_primary'))
-            .margin({ left: 4 })
-            .onClick(() => {
-              if (this.password) {
-                ClipboardUtils.copyAutoClear(this.password);
-              }
-            })
-        }
-        .width('100%')
+            Image($r('app.media.ic_copy'))
+              .width(24)
+              .height(24)
+              .fillColor($r('app.color.text_primary'))
+              .margin({ left: 4 })
+              .onClick(() => {
+                if (this.password) {
+                  ClipboardUtils.copyAutoClear(this.password);
+                }
+              })
+          }
+          .width('100%')
 
-        // 密码强度指示器
-        Row() {
-          Text($r('app.string.PasswordGenerator_strength'))
-            .fontSize(12)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ right: 8 })
+          // 密码强度指示器
+          Row() {
+            Text($r('app.string.PasswordGenerator_strength'))
+              .fontSize(12)
+              .fontColor($r('app.color.text_secondary'))
+              .margin({ right: 8 })
+
+            Row() {
+              Row()
+                .width(24)
+                .height(6)
+                .backgroundColor(this.passwordStrength >= 0 ? '#FF0000' : '#EEEEEE')
+                .borderRadius(3)
+
+              Row()
+                .width(24)
+                .height(6)
+                .backgroundColor(this.passwordStrength >= 1 ? '#FFCC00' : '#EEEEEE')
+                .borderRadius(3)
+                .margin({ left: 2, right: 2 })
+
+              Row()
+                .width(24)
+                .height(6)
+                .backgroundColor(this.passwordStrength >= 2 ? '#00CC00' : '#EEEEEE')
+                .borderRadius(3)
+            }
+
+            Text(this.passwordStrength === 0 ? $r('app.string.PasswordGenerator_weak') :
+              (this.passwordStrength === 1 ? $r('app.string.PasswordGenerator_medium') : $r('app.string.PasswordGenerator_strong')))
+              .fontSize(12)
+              .fontColor(this.passwordStrength === 0 ? '#FF0000' : (this.passwordStrength === 1 ? '#FFCC00' : '#00CC00'))
+              .margin({ left: 8 })
+          }
+          .width('100%')
+          .margin({ top: 8, bottom: 8 })
+
+          // 密码长度滑块
+          Row() {
+            Text($r('app.string.PasswordGenerator_length'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+            Blank()
+            TextInput({ text: this.passwordLength + "" })
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .width(70)
+              .onChange((value: string) => {
+                if (value !== this.passwordLength + "") {
+                  this.passwordLength = parseInt(value) || 0;
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+          .margin({ top: 8, bottom: 4 })
 
           Row() {
-            Row()
-              .width(24)
-              .height(6)
-              .backgroundColor(this.passwordStrength >= 0 ? '#FF0000' : '#EEEEEE')
-              .borderRadius(3)
-
-            Row()
-              .width(24)
-              .height(6)
-              .backgroundColor(this.passwordStrength >= 1 ? '#FFCC00' : '#EEEEEE')
-              .borderRadius(3)
-              .margin({ left: 2, right: 2 })
-
-            Row()
-              .width(24)
-              .height(6)
-              .backgroundColor(this.passwordStrength >= 2 ? '#00CC00' : '#EEEEEE')
-              .borderRadius(3)
-          }
-
-          Text(this.passwordStrength === 0 ? $r('app.string.PasswordGenerator_weak') :
-            (this.passwordStrength === 1 ? $r('app.string.PasswordGenerator_medium') : $r('app.string.PasswordGenerator_strong')))
-            .fontSize(12)
-            .fontColor(this.passwordStrength === 0 ? '#FF0000' : (this.passwordStrength === 1 ? '#FFCC00' : '#00CC00'))
-            .margin({ left: 8 })
-        }
-        .width('100%')
-        .margin({ top: 8, bottom: 8 })
-
-        // 密码长度滑块
-        Row() {
-          Text($r('app.string.PasswordGenerator_length'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-          Blank()
-          TextInput({ text: this.passwordLength + "" })
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .width(70)
-            .onChange((value: string) => {
-              if (value !== this.passwordLength + "") {
-                this.passwordLength = parseInt(value) || 0;
-                this.generatePassword();
-              }
+            Text(this.minLength + "")
+              .fontSize($r('sys.float.Caption_L'))
+              .clip(true)
+              .textAlign(TextAlign.Center)
+              .fontColor($r('app.color.text_primary'))
+            Slider({
+              value: this.passwordLength,
+              min: this.minLength,
+              max: this.maxLength,
+              step: 1,
+              style: SliderStyle.OutSet
             })
-        }
-        .width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ top: 8, bottom: 4 })
+              .width('90%')
+              .onChange((value: number) => {
+                this.passwordLength = value;
+                this.generatePassword();
+              })
+            Text(this.maxLength + "")
+              .fontSize($r('sys.float.Caption_L'))
+              .clip(true)
+              .textAlign(TextAlign.Center)
+              .fontColor($r('app.color.text_primary'))
+          }.width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+          .margin({ bottom: 4 })
 
-        Row() {
-          Text(this.minLength + "")
-            .fontSize($r('sys.float.Caption_L'))
-            .clip(true)
-            .textAlign(TextAlign.Center)
-            .fontColor($r('app.color.text_primary'))
-          Slider({
-            value: this.passwordLength,
-            min: this.minLength,
-            max: this.maxLength,
-            step: 1,
-            style: SliderStyle.OutSet
-          })
-            .width('90%')
-            .onChange((value: number) => {
-              this.passwordLength = value;
+          Row() {
+            Button('6', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
+              this.passwordLength = 6;
               this.generatePassword();
-            })
-          Text(this.maxLength + "")
-            .fontSize($r('sys.float.Caption_L'))
-            .clip(true)
-            .textAlign(TextAlign.Center)
-            .fontColor($r('app.color.text_primary'))
-        }.width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ bottom: 4 })
+            }).width(40);
+            Button('8', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
+              this.passwordLength = 8;
+              this.generatePassword();
+            }).width(40);
+            Button('16', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
+              this.passwordLength = 16;
+              this.generatePassword();
+            }).width(40);
+            Button('32', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
+              this.passwordLength = 32;
+              this.generatePassword();
+            }).width(40);
+            Button('64', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
+              this.passwordLength = 64;
+              this.generatePassword();
+            }).width(40);
+            Button('128', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
+              this.passwordLength = 128;
+              this.generatePassword();
+            }).width(40);
+          }.width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+          .margin({ bottom: 8 })
 
-        Row() {
-          Button('6', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 6;
-            this.generatePassword();
-          }).width(40);
-          Button('8', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 8;
-            this.generatePassword();
-          }).width(40);
-          Button('16', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 16;
-            this.generatePassword();
-          }).width(40);
-          Button('32', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 32;
-            this.generatePassword();
-          }).width(40);
-          Button('64', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 64;
-            this.generatePassword();
-          }).width(40);
-          Button('128', { controlSize: ControlSize.SMALL, buttonStyle: ButtonStyleMode.NORMAL }).onClick(() => {
-            this.passwordLength = 128;
-            this.generatePassword();
-          }).width(40);
-        }.width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ bottom: 8 })
+          // 大写字母选项
+          Row() {
+            Checkbox({ name: 'uppercase', group: 'passwordOptions' })
+              .select(this.useUppercase)
+              .onChange((value) => {
+                this.useUppercase = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_uppercase'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useUppercase = !this.useUppercase;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
 
-        // 大写字母选项
-        Row() {
-          Checkbox({ name: 'uppercase', group: 'passwordOptions' })
-            .select(this.useUppercase)
-            .onChange((value) => {
-              this.useUppercase = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_uppercase'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useUppercase = !this.useUppercase;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
+          // 小写字母选项
+          Row() {
+            Checkbox({ name: 'lowercase', group: 'passwordOptions' })
+              .select(this.useLowercase)
+              .onChange((value) => {
+                this.useLowercase = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_lowercase'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useLowercase = !this.useLowercase;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 数字选项
+          Row() {
+            Checkbox({ name: 'numbers', group: 'passwordOptions' })
+              .select(this.useNumbers)
+              .onChange((value) => {
+                this.useNumbers = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_numbers'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useNumbers = !this.useNumbers;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 特殊字符选项
+          Row() {
+            Checkbox({ name: 'special', group: 'passwordOptions' })
+              .select(this.useSpecial)
+              .onChange((value) => {
+                this.useSpecial = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_special'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useSpecial = !this.useSpecial;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 括号选项
+          Row() {
+            Checkbox({ name: 'brackets', group: 'passwordOptions' })
+              .select(this.useBrackets)
+              .onChange((value) => {
+                this.useBrackets = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_brackets'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useBrackets = !this.useBrackets;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 减号选项
+          Row() {
+            Checkbox({ name: 'minus', group: 'passwordOptions' })
+              .select(this.useMinus)
+              .onChange((value) => {
+                this.useMinus = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_minus'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useMinus = !this.useMinus;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 下划线选项
+          Row() {
+            Checkbox({ name: 'underscore', group: 'passwordOptions' })
+              .select(this.useUnderscore)
+              .onChange((value) => {
+                this.useUnderscore = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_underscore'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useUnderscore = !this.useUnderscore;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 空格选项
+          Row() {
+            Checkbox({ name: 'space', group: 'passwordOptions' })
+              .select(this.useSpace)
+              .onChange((value) => {
+                this.useSpace = value;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+            Text($r('app.string.PasswordGenerator_space'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.useSpace = !this.useSpace;
+                if (this.ensureEachType) {
+                  this.generatePassword();
+                }
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+
+          // 每种符号至少一种选项
+          Row() {
+            Checkbox({ name: 'ensureEachType', group: 'passwordOptions' })
+              .select(this.ensureEachType)
+              .shape(CheckBoxShape.ROUNDED_SQUARE)
+              .onChange((value) => {
+                this.ensureEachType = value;
+                this.generatePassword(); // 选项改变时重新生成密码
+              })
+            Text($r('app.string.PasswordGenerator_ensureEachType'))
+              .fontSize(14)
+              .fontColor($r('app.color.text_primary'))
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.ensureEachType = !this.ensureEachType;
+                this.generatePassword(); // 选项改变时重新生成密码
+              })
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
         }
         .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 小写字母选项
-        Row() {
-          Checkbox({ name: 'lowercase', group: 'passwordOptions' })
-            .select(this.useLowercase)
-            .onChange((value) => {
-              this.useLowercase = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_lowercase'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useLowercase = !this.useLowercase;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 数字选项
-        Row() {
-          Checkbox({ name: 'numbers', group: 'passwordOptions' })
-            .select(this.useNumbers)
-            .onChange((value) => {
-              this.useNumbers = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_numbers'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useNumbers = !this.useNumbers;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 特殊字符选项
-        Row() {
-          Checkbox({ name: 'special', group: 'passwordOptions' })
-            .select(this.useSpecial)
-            .onChange((value) => {
-              this.useSpecial = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_special'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useSpecial = !this.useSpecial;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 括号选项
-        Row() {
-          Checkbox({ name: 'brackets', group: 'passwordOptions' })
-            .select(this.useBrackets)
-            .onChange((value) => {
-              this.useBrackets = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_brackets'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useBrackets = !this.useBrackets;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 减号选项
-        Row() {
-          Checkbox({ name: 'minus', group: 'passwordOptions' })
-            .select(this.useMinus)
-            .onChange((value) => {
-              this.useMinus = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_minus'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useMinus = !this.useMinus;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 下划线选项
-        Row() {
-          Checkbox({ name: 'underscore', group: 'passwordOptions' })
-            .select(this.useUnderscore)
-            .onChange((value) => {
-              this.useUnderscore = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_underscore'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useUnderscore = !this.useUnderscore;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 空格选项
-        Row() {
-          Checkbox({ name: 'space', group: 'passwordOptions' })
-            .select(this.useSpace)
-            .onChange((value) => {
-              this.useSpace = value;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-          Text($r('app.string.PasswordGenerator_space'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.useSpace = !this.useSpace;
-              if (this.ensureEachType) {
-                this.generatePassword();
-              }
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
-
-        // 每种符号至少一种选项
-        Row() {
-          Checkbox({ name: 'ensureEachType', group: 'passwordOptions' })
-            .select(this.ensureEachType)
-            .shape(CheckBoxShape.ROUNDED_SQUARE)
-            .onChange((value) => {
-              this.ensureEachType = value;
-              this.generatePassword(); // 选项改变时重新生成密码
-            })
-          Text($r('app.string.PasswordGenerator_ensureEachType'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ left: 8 })
-            .onClick(() => {
-              this.ensureEachType = !this.ensureEachType;
-              this.generatePassword(); // 选项改变时重新生成密码
-            })
-        }
-        .width('100%')
-        .margin({ top: 4, bottom: 4 })
+        .margin({ top: 16, bottom: 16 })
       }
       .width('100%')
-      .margin({ top: 16, bottom: 16 })
+      .height('70%')
+      .scrollBar(BarState.Auto)
+      .edgeEffect(EdgeEffect.Spring)
 
-      // 底部按钮
+      // 底部按钮（固定在弹窗底部）
       Row() {
         Button() {
           Row() {
@@ -656,7 +662,7 @@ export struct PasswordGeneratorDialog {
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceBetween)
-      .padding({ bottom: 16 })
+      .padding({ top: 8, bottom: 16 })
     }
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))
