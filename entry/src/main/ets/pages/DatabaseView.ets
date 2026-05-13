@@ -1,5 +1,5 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
+import { DatabaseShowParam, Icons, MoveParam, UnLockDatabaseParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -1311,7 +1311,7 @@ struct DatabaseView {
    * 锁定数据库
    */
   private lockDatabase() {
-    CommonUtils.pushUrl({ url: 'pages/UnLockDatabase' })
+    CommonUtils.pushUrl({ url: 'pages/UnLockDatabase', params: { isLocked: true } as UnLockDatabaseParam })
   }
 
   /**

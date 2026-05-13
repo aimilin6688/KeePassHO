@@ -1,6 +1,6 @@
 import { FileService } from '../services/FileService';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
-import { AuthType, DbFileParam } from '../services/TypeDefined';
+import { AuthType, DbFileParam, UnLockDatabaseParam } from '../services/TypeDefined';
 import { Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -18,6 +18,7 @@ struct UnLockDatabase {
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';
   @State isKeyfileOnlyMode: boolean = false; // 是否为仅密钥文件模式
+  private isLocked: boolean = false; // 是否为锁定状态（从锁定按钮进入）
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
   private router: Router = this.getUIContext().getRouter();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupportAndEnabled();
@@ -25,6 +26,9 @@ struct UnLockDatabase {
   private focusController: FocusController = new FocusController();
 
   aboutToAppear(): void {
+    // 获取路由参数，判断是否为锁定状态
+    const params = this.router.getParams() as UnLockDatabaseParam;
+    this.isLocked = params?.isLocked ?? false;
     this.router.clear();
   }
 
@@ -38,7 +42,10 @@ struct UnLockDatabase {
     // 默认认证方式
     SettingsService.get(SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE, this.defaultAuthType, (value) => {
       this.defaultAuthType = value;
-      this.startAuth();
+      // 如果是锁定状态，跳过自动认证，等待用户主动触发
+      if (!this.isLocked) {
+        this.startAuth();
+      }
     });
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
