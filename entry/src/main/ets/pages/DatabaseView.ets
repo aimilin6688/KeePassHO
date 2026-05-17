@@ -150,10 +150,8 @@ struct DatabaseView {
     this.settingsService.registerObserver(this.onSettingChanged);
     // 显示支持弹框
     SupportService.showSupportDialog(this.getUIContext());
-    // 初始化屏幕大小
-    this.initScreenSize();
-    // 监听窗口大小变化（小窗模式适配）
-    this.registerWindowSizeChangeListener();
+    // 初始化窗口大小并注册监听器（支持小窗模式）
+    this.initWindowAndListener();
   }
 
   aboutToDisappear() {
@@ -165,7 +163,7 @@ struct DatabaseView {
     this.settingsService.unregisterObserver(this.onSettingChanged);
     this.unBindHoldingHandChange();
     // 取消窗口大小变化监听
-    this.unregisterWindowSizeChangeListener();
+    this.unregisterWindowListener();
   }
 
   onPageShow(): void {
@@ -196,11 +194,12 @@ struct DatabaseView {
   }
 
   /**
-   * 更新屏幕尺寸和边界
+   * 更新窗口尺寸和按钮位置
    * @param width 窗口宽度（px）
    * @param height 窗口高度（px）
+   * @param isFirstInit 是否为第一次初始化
    */
-  private updateScreenBounds(width: number, height: number) {
+  private updateWindowBounds(width: number, height: number, isFirstInit: boolean = false) {
     // 将px转换为vp
     this.screenWidth = this.getUIContext().px2vp(width);
     this.screenHeight = this.getUIContext().px2vp(height);
@@ -208,73 +207,72 @@ struct DatabaseView {
     // 计算最大边界
     this.maxX = this.screenWidth - this.containerWidth;
     this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
-  }
 
-  /**
-   * 确保悬浮按钮在边界内
-   */
-  private ensureButtonInBounds() {
-    if (this.containerX > this.maxX) {
-      this.containerX = Math.max(0, this.maxX - 22);
-    }
-    if (this.containerY > this.maxY) {
-      this.containerY = Math.max(0, this.maxY - 32);
-    }
-  }
-
-  /**
-   * 初始化屏幕大小
-   */
-  private initScreenSize() {
-    try {
-      // 获取屏幕尺寸
-      const displayInfo = display.getDefaultDisplaySync();
-      this.updateScreenBounds(displayInfo.width, displayInfo.height);
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${error?.code}, ${error?.message}`,);
-    }
-
-    // 第一次初始化执行一次
-    if (this.containerX == 0) {
+    // 首次初始化：设置默认位置（如果按钮未被移动过）
+    if (isFirstInit && this.containerX === 0) {
       this.containerX = this.maxX - 22;
       this.containerY = this.maxY - 32;
     }
-    this.onHoldingHandChange();
+
+    // 窗口大小变化时：确保按钮在边界内
+    if (!isFirstInit) {
+      if (this.containerX > this.maxX) {
+        this.containerX = Math.max(0, this.maxX - 22);
+      }
+      if (this.containerY > this.maxY) {
+        this.containerY = Math.max(0, this.maxY - 32);
+      }
+    }
   }
 
   /**
-   * 监听窗口大小变化（小窗模式适配）
-   * 参考: @ohos.window on('windowSizeChange') API
+   * 初始化窗口大小并注册监听器（统一处理初始化和窗口变化）
    */
-  private registerWindowSizeChangeListener() {
+  private initWindowAndListener() {
     try {
       // 获取当前窗口实例
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
       this.windowClass = context.windowStage.getMainWindowSync();
 
       if (this.windowClass) {
+        // 获取当前窗口尺寸（支持小窗模式）
+        const windowSize = this.windowClass.getWindowProperties().windowRect;
+        
+        // 第一次初始化窗口大小
+        this.updateWindowBounds(windowSize.width, windowSize.height, true);
+
+        // 注册窗口大小变化监听器
         this.windowClass.on('windowSizeChange', (size: window.Size) => {
-          // 更新屏幕边界
-          this.updateScreenBounds(size.width, size.height);
-          // 确保悬浮按钮在边界内
-          this.ensureButtonInBounds();
+          hilog.debug(DOMAIN, TAG, `Window size changed: ${size.width}x${size.height}`);
+          // 窗口大小变化时更新边界
+          this.updateWindowBounds(size.width, size.height, false);
         });
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to register window size change listener: ${error?.code}, ${error?.message}`);
+      hilog.error(DOMAIN, TAG, `初始化窗口失败: ${error?.code}, ${error?.message}`);
+      // 降级方案：使用屏幕尺寸
+      try {
+        const displayInfo = display.getDefaultDisplaySync();
+        this.updateWindowBounds(displayInfo.width, displayInfo.height, true);
+      } catch (displayError) {
+        hilog.error(DOMAIN, TAG, `获取屏幕尺寸失败: ${displayError?.code}, ${displayError?.message}`);
+      }
     }
+
+    // 初始化握持手感知
+    this.onHoldingHandChange();
   }
 
   /**
    * 取消监听窗口大小变化
    */
-  private unregisterWindowSizeChangeListener() {
+  private unregisterWindowListener() {
     try {
       if (this.windowClass) {
         this.windowClass.off('windowSizeChange');
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to unregister window size change listener: ${error?.code}, ${error?.message}`);
+      hilog.error(DOMAIN, TAG, `取消窗口监听失败: ${error?.code}, ${error?.message}`);
     }
   }
 
