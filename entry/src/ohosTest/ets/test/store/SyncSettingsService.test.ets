@@ -78,8 +78,8 @@ export default function SyncSettingsServiceTest() {
       it('equal version with different deviceId should use tiebreaker', 0, () => {
         const localVersion = 5;
         const remoteVersion = 5;
-        const localDeviceId = 'device_1';
-        const remoteDeviceId = 'device_2';
+        const localDeviceId: string = 'device_1';
+        const remoteDeviceId: string = 'device_2';
         expect(remoteVersion === localVersion).assertTrue();
         expect(remoteDeviceId !== localDeviceId).assertTrue();
       });

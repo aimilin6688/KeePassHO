@@ -17,6 +17,7 @@ import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { SortMode } from '../constants/SortConstants';
 import { IconUtils, ResourceManager, StringUtils } from '.';
+import { OtpCompatibilityManager } from '../../services/otp';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
@@ -629,18 +630,11 @@ export class KdbxUtils {
    * @returns TOTP URL数组
    */
   public static getTotpUrl(itemEntry: KdbxEntry): Array<string> {
-    let totpUrls: Array<string> = [];
     if (!itemEntry) {
-      return totpUrls;
+      return [];
     }
-    let valueString = '';
-    itemEntry.fields.forEach((value, key) => {
-      valueString = KdbxUtils.getValueString(value);
-      if (valueString && KdbxUtils.isTotpUrl(valueString)) {
-        totpUrls.push(valueString);
-      }
-    });
-    return totpUrls;
+    // 使用兼容层管理器提取 OTP URL
+    return OtpCompatibilityManager.getInstance().extractOtpUrls(itemEntry);
   }
 
   public static kdbxErrorMessage(kdbxError: Error): string {
