@@ -1,12 +1,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import {FilenameUtils} from "../main/ets/common/utils/FilenameUtils"
-import DateUtils from "../main/ets/common/utils/DateUtils"
+import { DateUtils } from "../main/ets/common/utils/DateUtils"
 
 
 export default function FilenameUtilsTest() {
   describe('FilenameUtils', () => {
     // 保存原始getCurrentDate函数
-    const mockDate = DateUtils.getCurrentDate();
+    const mockDate: string = DateUtils.getCurrentDate();
 
     beforeAll(() => {
     });
