@@ -22,7 +22,7 @@ class MockParser implements IOtpFieldParser {
 }
 
 export default function OtpCompatibilityManagerTest() {
-  describe('OtpCompatibilityManager', () => {
+  describe('OtpCompatibilityManagerTest', () => {
 
     beforeEach(() => {
       // 每个测试前重置单例
