@@ -8,7 +8,7 @@ import { KdbxEntry } from 'kdbxweb';
 import { IOtpFieldParser } from '../../../../../../main/ets/services/otp';
 
 export default function OtpUrlParserTest() {
-  describe('OtpUrlParser', () => {
+  describe('OtpUrlParserTest', () => {
     let parser: IOtpFieldParser;
 
     beforeEach(() => {
