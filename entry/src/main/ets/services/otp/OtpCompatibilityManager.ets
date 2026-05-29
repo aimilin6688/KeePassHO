@@ -11,6 +11,14 @@ import { KeeOtpParser } from './parsers/KeeOtpParser';
 import { KeeTrayTotpParser } from './parsers/KeeTrayTotpParser';
 
 /**
+ * OTP 提取结果接口
+ */
+export interface OtpExtractionResult {
+  urls: string[];
+  processedFields: Set<string>;
+}
+
+/**
  * OTP 兼容层管理器（单例）
  */
 export class OtpCompatibilityManager {
@@ -49,11 +57,11 @@ export class OtpCompatibilityManager {
   }
 
   /**
-   * 从条目中提取所有 OTP URL
+   * 核心提取逻辑：从条目中提取 OTP URL 及已处理的字段名
    * @param entry KeePass 条目
-   * @returns OTPURL 数组
+   * @returns 包含 OTPURL 数组和已处理字段名集合的对象
    */
-  public extractOtpUrls(entry: KdbxEntry): string[] {
+  private doExtractOtpUrls(entry: KdbxEntry): OtpExtractionResult {
     const urls: string[] = [];
     const processedFields = new Set<string>();
 
@@ -71,6 +79,15 @@ export class OtpCompatibilityManager {
             const parsedUrls = parser.parse(key, valueStr, entry);
             urls.push(...parsedUrls);
             processedFields.add(key);
+            // 从解析器获取关联字段并添加到已处理集合
+            if (parser.associatedFields) {
+              const associatedFields = parser.associatedFields.get(key);
+              if (associatedFields) {
+                for (const field of associatedFields) {
+                  processedFields.add(field);
+                }
+              }
+            }
           } catch (error) {
             // 静默忽略解析错误
           }
@@ -78,7 +95,17 @@ export class OtpCompatibilityManager {
       });
     }
 
-    return urls;
+    const result: OtpExtractionResult = { urls, processedFields };
+    return result;
+  }
+
+  /**
+   * 从条目中提取所有 OTP URL
+   * @param entry KeePass 条目
+   * @returns OTPURL 数组
+   */
+  public extractOtpUrls(entry: KdbxEntry): string[] {
+    return this.doExtractOtpUrls(entry).urls;
   }
 
   /**
@@ -86,32 +113,8 @@ export class OtpCompatibilityManager {
    * @param entry KeePass 条目
    * @returns 包含 OTPURL 数组和已处理字段名集合的对象
    */
-  public extractOtpUrlsWithProcessedFields(entry: KdbxEntry): { urls: string[], processedFields: Set<string> } {
-    const urls: string[] = [];
-    const processedFields = new Set<string>();
-
-    // 遍历所有解析器
-    for (const parser of this.parsers) {
-      entry.fields.forEach((value, key) => {
-        // 跳过已处理的字段
-        if (processedFields.has(key)) {
-          return;
-        }
-
-        const valueStr = KdbxUtils.getValueString(value);
-        if (parser.canParse(key, valueStr)) {
-          try {
-            const parsedUrls = parser.parse(key, valueStr, entry);
-            urls.push(...parsedUrls);
-            processedFields.add(key);
-          } catch (error) {
-            // 静默忽略解析错误
-          }
-        }
-      });
-    }
-
-    return { urls, processedFields };
+  public extractOtpUrlsWithProcessedFields(entry: KdbxEntry): OtpExtractionResult {
+    return this.doExtractOtpUrls(entry);
   }
 
   /**
