@@ -82,6 +82,39 @@ export class OtpCompatibilityManager {
   }
 
   /**
+   * 从条目中提取所有 OTP URL 及已处理的字段名
+   * @param entry KeePass 条目
+   * @returns 包含 OTPURL 数组和已处理字段名集合的对象
+   */
+  public extractOtpUrlsWithProcessedFields(entry: KdbxEntry): { urls: string[], processedFields: Set<string> } {
+    const urls: string[] = [];
+    const processedFields = new Set<string>();
+
+    // 遍历所有解析器
+    for (const parser of this.parsers) {
+      entry.fields.forEach((value, key) => {
+        // 跳过已处理的字段
+        if (processedFields.has(key)) {
+          return;
+        }
+
+        const valueStr = KdbxUtils.getValueString(value);
+        if (parser.canParse(key, valueStr)) {
+          try {
+            const parsedUrls = parser.parse(key, valueStr, entry);
+            urls.push(...parsedUrls);
+            processedFields.add(key);
+          } catch (error) {
+            // 静默忽略解析错误
+          }
+        }
+      });
+    }
+
+    return { urls, processedFields };
+  }
+
+  /**
    * 注册自定义解析器（用于扩展）
    * @param parser 解析器实例
    */
