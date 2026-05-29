@@ -41,6 +41,7 @@ export class KdbxUtils {
   public static readonly FIELD_CREATION_TIME = 'creationTime';
   public static readonly FIELD_LASTMOD_TIME = 'lastModTime';
   public static readonly FIELD_EXPIRY_TIME = 'expiryTime';
+  public static readonly FIELD_TOTP = 'TOTP';
   public static readonly GROUP_NAME = 'GroupName';
   public static readonly GROUP_RECYCLE_BIN = 'Recycle Bin';
   public static readonly GROUP_TEMPLATES_NAME = 'Templates';
@@ -635,6 +636,19 @@ export class KdbxUtils {
     }
     // 使用兼容层管理器提取 OTP URL
     return OtpCompatibilityManager.getInstance().extractOtpUrls(itemEntry);
+  }
+
+  /**
+   * 从条目中获取TOTP URL及已处理的字段名
+   * @param itemEntry 条目
+   * @returns 包含 TOTP URL 数组和已处理字段名集合的对象
+   */
+  public static getTotpUrlWithProcessedFields(itemEntry: KdbxEntry): { urls: string[], processedFields: Set<string> } {
+    if (!itemEntry) {
+      return { urls: [], processedFields: new Set() };
+    }
+    // 使用兼容层管理器提取 OTP URL 及已处理字段
+    return OtpCompatibilityManager.getInstance().extractOtpUrlsWithProcessedFields(itemEntry);
   }
 
   public static kdbxErrorMessage(kdbxError: Error): string {
