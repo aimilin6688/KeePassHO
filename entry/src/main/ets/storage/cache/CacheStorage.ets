@@ -79,7 +79,7 @@ export class CacheStorage implements IFileStorage {
    * 优先写入本地缓存，完成后异步推送到远端
    * @param path 文件路径
    * @param content 文件内容
-   * @throws 如果读取失败则抛出异常
+   * @throws 如果写入失败则抛出异常
    */
   public async write(path: string, content: ArrayBuffer): Promise<void> {
     // 如果禁用本地缓存
@@ -102,12 +102,17 @@ export class CacheStorage implements IFileStorage {
       throw new KdbxError(ErrorCodes.READ_ONLY, ResourceManager.getString($r('app.string.cache_read_only')));
     }
 
-    // 正常模式：优先写入本地缓存，然后异步推送到远端
-    hilog.debug(DOMAIN, TAG, 'Write to cache first: %{public}s', cachePath);
-    await this.writeToCache(cachePath, content);
+    // 正常模式：先写入本地缓存，然后推送到远端
+    try {
+      hilog.debug(DOMAIN, TAG, 'Write to cache first: %{public}s', cachePath);
+      await this.writeToCache(cachePath, content);
+    } catch (cacheError) {
+      // 缓存写入失败，记录警告但不阻断主流程
+      hilog.warn(DOMAIN, TAG, 'Cache write failed, continuing with remote: %{public}s', cacheError?.message);
+    }
 
-    // 异步推送到远端
-    this.pushToRemoteAsync(path, content);
+    // 推送到远端（核心操作，必须成功）
+    await this.decoratedStorage.write(path, content);
   }
 
   /**
@@ -231,45 +236,54 @@ export class CacheStorage implements IFileStorage {
   /**
    * 写入文件到本地缓存（安全写入）
    * 使用临时文件 + 原子重命名，确保写入失败不破坏原有缓存
+   * 包含重试机制，处理目录可能被系统清理的情况
    * @param cachePath 缓存文件路径
    * @param content 文件内容
    */
   private async writeToCache(cachePath: string, content: ArrayBuffer): Promise<void> {
     const tempPath = cachePath + '.tmp';
     let file: fs.File | null = null;
+    let retries = 2;
 
-    try {
-      // 1. 确保目录存在
-      const cacheDir: string = CacheConstants.getCacheDir();
-      this.ensureCacheDir(cacheDir);
-
-      // 2. 写入临时文件（使用 TRUNC 确保清空旧内容）
-      file = await fs.open(tempPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      await fs.write(file.fd, content);
-
-      // 3. 强制落盘，确保数据持久化
-      await fs.fsync(file.fd);
-
-      // 4. 关闭文件
-      await this.closeFileSafely(file);
-      file = null;
-
-      // 5. 原子重命名替换旧文件
-      await fs.rename(tempPath, cachePath);
-
-      hilog.debug(DOMAIN, TAG, 'Write to cache success: %{public}s', cachePath);
-    } catch (error) {
-      // 确保文件被关闭
-      await this.closeFileSafely(file);
-      // 清理临时文件
+    while (retries > 0) {
       try {
-        await fs.unlink(tempPath);
-      } catch {
-        // ignore
-      }
+        // 每次尝试前确保目录存在
+        const cacheDir: string = CacheConstants.getCacheDir();
+        this.ensureCacheDir(cacheDir);
 
-      hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.stack);
-      throw new Error('Write to cache failed: ' + error?.message);
+        // 写入临时文件（使用 TRUNC 确保清空旧内容）
+        file = await fs.open(tempPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+        await fs.write(file.fd, content);
+
+        // 强制落盘，确保数据持久化
+        await fs.fsync(file.fd);
+
+        // 关闭文件
+        await this.closeFileSafely(file);
+        file = null;
+
+        // 原子重命名替换旧文件
+        await fs.rename(tempPath, cachePath);
+
+        hilog.debug(DOMAIN, TAG, 'Write to cache success: %{public}s', cachePath);
+        return;
+      } catch (error) {
+        retries--;
+        await this.closeFileSafely(file);
+        file = null;
+        // 清理临时文件
+        try {
+          await fs.unlink(tempPath);
+        } catch {
+          // ignore
+        }
+
+        if (retries === 0) {
+          hilog.error(DOMAIN, TAG, 'Write to cache failed: %{public}s, error: %{public}s', cachePath, error?.stack);
+          throw new Error('Write to cache failed: ' + error?.message);
+        }
+        hilog.warn(DOMAIN, TAG, 'Write to cache retry, previous error: %{public}s', error?.message);
+      }
     }
   }
 
@@ -284,22 +298,6 @@ export class CacheStorage implements IFileStorage {
       hilog.debug(DOMAIN, TAG, 'Save to cache async success: %{public}s', cachePath);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.stack);
-      this.showErrorDialog(error?.message);
-    }
-  }
-
-  /**
-   * 异步推送到远端
-   * @param path 原始文件路径
-   * @param content 文件内容
-   */
-  private async pushToRemoteAsync(path: string, content: ArrayBuffer): Promise<void> {
-    try {
-      hilog.debug(DOMAIN, TAG, 'Push to remote async: %{public}s', path);
-      await this.decoratedStorage.write(path, content);
-      hilog.debug(DOMAIN, TAG, 'Push to remote async success: %{public}s', path);
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Push to remote async failed: %{public}s, error: %{public}s', path, error?.stack);
       this.showErrorDialog(error?.message);
     }
   }
@@ -351,13 +349,19 @@ export class CacheStorage implements IFileStorage {
   /**
    * 确保缓存目录存在
    * @param cacheDir 缓存目录路径
+   * @throws 如果目录创建失败则抛出异常
    */
   private ensureCacheDir(cacheDir: string): void {
     try {
-      fs.mkdirSync(cacheDir, true);
-      hilog.debug(DOMAIN, TAG, 'Cache dir created: %{public}s', cacheDir);
+      // 先检查目录是否存在
+      if (!fs.accessSync(cacheDir, fs.AccessModeType.EXIST)) {
+        fs.mkdirSync(cacheDir, true);
+        hilog.debug(DOMAIN, TAG, 'Cache dir created: %{public}s', cacheDir);
+      }
     } catch (error) {
-      hilog.info(DOMAIN, TAG, 'Ensure cache dir: %{public}s, error: %{public}s', cacheDir, error?.message);
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'Failed to ensure cache dir: %{public}s, error: %{public}s', cacheDir, err.message);
+      throw new Error('Failed to ensure cache dir: ' + err.message);
     }
   }
 }
