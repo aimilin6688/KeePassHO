@@ -21,5 +21,10 @@ export enum StorageType {
   /**
    * Microsoft OneDrive存储
    */
-  ONEDRIVE = 'ONEDRIVE'
+  ONEDRIVE = 'ONEDRIVE',
+
+  /**
+   * S3兼容存储
+   */
+  S3 = 'S3'
 }
