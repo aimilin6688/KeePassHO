@@ -17,7 +17,7 @@ import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { SortMode } from '../constants/SortConstants';
 import { IconUtils, ResourceManager, StringUtils } from '.';
-import { OtpCompatibilityManager } from '../../services/otp';
+import { OtpCompatibilityManager, OtpExtractionResult } from '../../services/otp';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
@@ -643,9 +643,9 @@ export class KdbxUtils {
    * @param itemEntry 条目
    * @returns 包含 TOTP URL 数组和已处理字段名集合的对象
    */
-  public static getTotpUrlWithProcessedFields(itemEntry: KdbxEntry): { urls: string[], processedFields: Set<string> } {
+  public static getTotpUrlWithProcessedFields(itemEntry: KdbxEntry): OtpExtractionResult {
     if (!itemEntry) {
-      return { urls: [], processedFields: new Set() };
+      return { urls: [], processedFields: new Set<string>() } as OtpExtractionResult;
     }
     // 使用兼容层管理器提取 OTP URL 及已处理字段
     return OtpCompatibilityManager.getInstance().extractOtpUrlsWithProcessedFields(itemEntry);
