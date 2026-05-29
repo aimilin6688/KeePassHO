@@ -9,12 +9,24 @@ import { KdbxUtils } from '../../../common/utils/KdbxUtils';
 import { TotpService } from '../../TotpService';
 
 /**
+ * KeePass2 关联字段映射
+ * TimeOtp-Length, TimeOtp-Period, TimeOtp-Algorithm 是所有 TimeOtp-Secret* 字段的配置字段
+ */
+const ASSOCIATED_FIELDS: Map<string, string[]> = new Map([
+  ['TimeOtp-Secret', ['TimeOtp-Length', 'TimeOtp-Period', 'TimeOtp-Algorithm']],
+  ['TimeOtp-Secret-Base32', ['TimeOtp-Length', 'TimeOtp-Period', 'TimeOtp-Algorithm']],
+  ['TimeOtp-Secret-Hex', ['TimeOtp-Length', 'TimeOtp-Period', 'TimeOtp-Algorithm']],
+  ['TimeOtp-Secret-Base64', ['TimeOtp-Length', 'TimeOtp-Period', 'TimeOtp-Algorithm']],
+]);
+
+/**
  * KeePass2Parser - KeePass2 原生字段解析器
  * 支持 KeePass 2.x 的四种 TimeOtp-Secret 字段格式
  */
 export class KeePass2Parser implements IOtpFieldParser {
   readonly name = 'KeePass2Parser';
   readonly priority = 20;
+  readonly associatedFields = ASSOCIATED_FIELDS;
 
   /**
    * 判断是否能解析该字段

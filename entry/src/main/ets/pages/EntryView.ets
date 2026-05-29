@@ -7,6 +7,7 @@ import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { common } from '@kit.AbilityKit';
+import { OtpExtractionResult } from '../services/otp';
 
 
 const DOMAIN = 0xFF00;
@@ -109,7 +110,9 @@ struct EntryView {
     this.fields = [];
 
     // 使用兼容层获取 TOTP URL 及已处理的字段名
-    const { urls: totpUrls, processedFields } = KdbxUtils.getTotpUrlWithProcessedFields(this.entry);
+    const totpResult: OtpExtractionResult = KdbxUtils.getTotpUrlWithProcessedFields(this.entry);
+    const totpUrls: string[] = totpResult.urls;
+    const processedFields: Set<string> = totpResult.processedFields;
 
     // 添加 TOTP 字段（通过兼容层解析，支持多种数据库格式）
     for (const totpUrl of totpUrls) {
