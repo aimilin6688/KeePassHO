@@ -189,4 +189,13 @@ export class S3Storage implements IFileStorage {
 
     return files;
   }
+
+  /**
+   * 关闭 S3 存储连接，释放资源
+   * 应在使用完毕后调用此方法以释放 rcp session
+   */
+  public close(): void {
+    this.client?.close();
+    this.client = undefined;
+  }
 }
