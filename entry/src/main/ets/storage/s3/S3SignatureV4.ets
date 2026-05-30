@@ -26,17 +26,17 @@ export class S3SignatureV4 {
 
   /**
    * 计算 SHA256 哈希值（十六进制字符串）
+   * 注意：HarmonyOS cryptoFramework 的 md.update() 不能处理空数据
    */
   private async sha256Hex(data: Uint8Array | null): Promise<string> {
-    let inputData: Uint8Array;
-    if (data === null || data === undefined) {
-      inputData = new Uint8Array(0);
-    } else {
-      inputData = data;
+    // 对于空数据，返回预计算的空字符串 SHA-256 哈希值
+    // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    if (data === null || data === undefined || data.length === 0) {
+      return 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
     }
 
     const md = cryptoFramework.createMd('SHA256');
-    const dataBlob: cryptoFramework.DataBlob = { data: inputData };
+    const dataBlob: cryptoFramework.DataBlob = { data: data };
     await md.update(dataBlob);
     const result = await md.digest();
     return ByteUtils.bytesToHex(result.data);
@@ -44,10 +44,12 @@ export class S3SignatureV4 {
 
   /**
    * 计算 HMAC-SHA256
+   *
+   * 使用 cryptoFramework 的 createMac('SHA256') + createSymKeyGenerator('HMAC')
    */
   private async hmacSha256(key: Uint8Array, data: string): Promise<Uint8Array> {
-    const mac = cryptoFramework.createMac('HMAC|SHA256');
-    const symKeyGenerator = cryptoFramework.createSymKeyGenerator('HMAC|SHA256');
+    const mac = cryptoFramework.createMac('SHA256');
+    const symKeyGenerator = cryptoFramework.createSymKeyGenerator('HMAC');
     const keyBlob: cryptoFramework.DataBlob = { data: key };
     const symKey = await symKeyGenerator.convertKey(keyBlob);
     await mac.init(symKey);
@@ -123,7 +125,6 @@ export class S3SignatureV4 {
       uri,
       queryString,
       canonicalHeaders,
-      '',
       signedHeaders,
       payloadHash
     ].join('\n');
@@ -175,7 +176,8 @@ export class S3SignatureV4 {
     key: string,
     pathStyle: boolean,
     additionalHeaders: Map<string, string> = new Map(),
-    payload: ArrayBuffer | null = null
+    payload: ArrayBuffer | null = null,
+    queryString: string = ''
   ): Promise<Map<string, string>> {
     const now = new Date();
     const dateStamp = this.formatDate(now);
@@ -208,10 +210,20 @@ export class S3SignatureV4 {
 
     let uri: string = '';
     if (pathStyle) {
-      uri = '/' + this.uriEncode(bucket) + '/' + this.uriEncode(key, false);
+      // 路径风格: /bucket/key 或 /bucket (当 key 为空时)
+      if (key && key.length > 0) {
+        uri = '/' + this.uriEncode(bucket) + '/' + this.uriEncode(key, false);
+      } else {
+        uri = '/' + this.uriEncode(bucket);
+      }
     } else {
+      // 虚拟主机风格: /key 或 / (当 key 为空时)
       host = bucket + '.' + host;
-      uri = '/' + this.uriEncode(key, false);
+      if (key && key.length > 0) {
+        uri = '/' + this.uriEncode(key, false);
+      } else {
+        uri = '/';
+      }
     }
 
     const headers = new Map<string, string>();
@@ -242,7 +254,7 @@ export class S3SignatureV4 {
     const canonicalRequest = this.createCanonicalRequest(
       method,
       uri,
-      '',
+      queryString,
       signedHeaders,
       canonicalHeaders,
       payloadHash
