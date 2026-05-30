@@ -11,7 +11,10 @@ import OtpUrlParserTest from './services/otp/parsers/OtpUrlParser.test';
 import KeePass2ParserTest from './services/otp/parsers/KeePass2Parser.test';
 import KeeOtpParserTest from './services/otp/parsers/KeeOtpParser.test';
 import KeeTrayTotpParserTest from './services/otp/parsers/KeeTrayTotpParser.test';
-import StorageTestSuite from './storage/StorageTestSuite';
+import S3StorageTest from './storage/s3/S3Storage.test';
+import S3XmlParserTest from './storage/s3/S3XmlParser.test';
+import S3SignatureV4Test from './storage/s3/S3SignatureV4.test';
+import S3ClientTest from './storage/s3/S3Client.test';
 
 
 export default function testsuite() {
@@ -28,5 +31,8 @@ export default function testsuite() {
   KeePass2ParserTest();
   KeeOtpParserTest();
   KeeTrayTotpParserTest();
-  StorageTestSuite();
+  S3StorageTest();
+  S3XmlParserTest();
+  S3SignatureV4Test();
+  S3ClientTest();
 }

@@ -2,7 +2,7 @@ import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { S3StorageConfig, S3PageConfig } from './S3Config';
-import { S3Client } from './S3Client';
+import { S3Client, S3ClientOptionsImpl } from './S3Client';
 import { FilenameUtils } from '../../common/utils';
 
 const DOMAIN = 0x0000;
@@ -35,14 +35,15 @@ export class S3Storage implements IFileStorage {
 
   public init(config: StorageConfig): void {
     this.config = this.parseConfig(config);
-    this.client = new S3Client({
-      endpoint: this.config.endpoint,
-      accessKeyId: this.config.getAccessKeyIdText(),
-      secretAccessKey: this.config.getSecretAccessKeyText(),
-      region: this.config.region,
-      pathStyle: this.config.pathStyle,
-      timeout: this.config.timeout
-    });
+    const options: S3ClientOptionsImpl = new S3ClientOptionsImpl(
+      this.config.endpoint,
+      this.config.getAccessKeyIdText(),
+      this.config.getSecretAccessKeyText(),
+      this.config.region,
+      this.config.pathStyle,
+      this.config.timeout
+    );
+    this.client = new S3Client(options);
   }
 
   private parseConfig(config: StorageConfig): S3StorageConfig {
