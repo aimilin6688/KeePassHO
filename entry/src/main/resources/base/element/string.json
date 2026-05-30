@@ -869,6 +869,10 @@
       "value": "超时时间"
     },
     {
+      "name": "s3_file_path",
+      "value": "文件路径"
+    },
+    {
       "name": "s3_advanced_settings",
       "value": "高级设置"
     },

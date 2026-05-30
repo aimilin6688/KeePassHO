@@ -307,7 +307,7 @@ struct S3Page {
           .alignItems(VerticalAlign.Center)
 
           Row() {
-            Text($r('app.string.file_path'))
+            Text($r('app.string.s3_file_path'))
               .fontSize(16)
               .fontWeight(FontWeight.Medium)
               .fontColor($r('app.color.text_primary'))

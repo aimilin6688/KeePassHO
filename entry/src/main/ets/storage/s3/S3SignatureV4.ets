@@ -1,6 +1,7 @@
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { util } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3SignatureV4';
@@ -26,15 +27,19 @@ export class S3SignatureV4 {
   /**
    * 计算 SHA256 哈希值（十六进制字符串）
    */
-  private async sha256Hex(data: ArrayBuffer | Uint8Array | null): Promise<string> {
+  private async sha256Hex(data: Uint8Array | null): Promise<string> {
+    let inputData: Uint8Array;
     if (data === null || data === undefined) {
-      data = new Uint8Array(0);
+      inputData = new Uint8Array(0);
+    } else {
+      inputData = data;
     }
 
     const md = cryptoFramework.createMd('SHA256');
-    await md.update({ data: data instanceof Uint8Array ? data.buffer as ArrayBuffer : data });
+    const dataBlob: cryptoFramework.DataBlob = { data: inputData };
+    await md.update(dataBlob);
     const result = await md.digest();
-    return new util.HexHelper().encodeToStringSync(result.data);
+    return ByteUtils.bytesToHex(result.data);
   }
 
   /**
@@ -42,11 +47,13 @@ export class S3SignatureV4 {
    */
   private async hmacSha256(key: Uint8Array, data: string): Promise<Uint8Array> {
     const mac = cryptoFramework.createMac('HMAC|SHA256');
-    const symKey = await cryptoFramework.createSymKeyGenerator('HMAC|SHA256')
-      .convertKey({ algName: 'HMAC', params: null, data: key });
+    const symKeyGenerator = cryptoFramework.createSymKeyGenerator('HMAC|SHA256');
+    const keyBlob: cryptoFramework.DataBlob = { data: key };
+    const symKey = await symKeyGenerator.convertKey(keyBlob);
     await mac.init(symKey);
     const encoder = new util.TextEncoder();
-    await mac.update({ data: encoder.encodeInto(data).buffer as ArrayBuffer });
+    const dataBlob: cryptoFramework.DataBlob = { data: encoder.encodeInto(data) };
+    await mac.update(dataBlob);
     const result = await mac.doFinal();
     return result.data;
   }
@@ -91,7 +98,8 @@ export class S3SignatureV4 {
       } else {
         const encoder = new util.TextEncoder();
         const bytes = encoder.encodeInto(ch);
-        for (const byte of bytes) {
+        for (let j = 0; j < bytes.length; j++) {
+          const byte = bytes[j];
           result += '%' + byte.toString(16).toUpperCase().padStart(2, '0');
         }
       }
@@ -173,17 +181,36 @@ export class S3SignatureV4 {
     const dateStamp = this.formatDate(now);
     const amzDate = this.formatDateTime(now);
 
-    const payloadHash = await this.sha256Hex(payload);
+    const encoder = new util.TextEncoder();
+    let payloadBytes: Uint8Array | null = null;
+    if (payload !== null) {
+      payloadBytes = new Uint8Array(payload);
+    }
+    const payloadHash = await this.sha256Hex(payloadBytes);
 
-    const url = new URL(endpoint);
-    let host: string;
-    let uri: string;
+    // 解析 endpoint 获取 host
+    let host: string = endpoint;
+    if (endpoint.startsWith('https://')) {
+      host = endpoint.substring(8);
+    } else if (endpoint.startsWith('http://')) {
+      host = endpoint.substring(7);
+    }
+    // 移除路径部分
+    const slashIndex: number = host.indexOf('/');
+    if (slashIndex > 0) {
+      host = host.substring(0, slashIndex);
+    }
+    // 移除端口部分
+    const colonIndex: number = host.indexOf(':');
+    if (colonIndex > 0) {
+      host = host.substring(0, colonIndex);
+    }
 
+    let uri: string = '';
     if (pathStyle) {
-      host = url.host;
       uri = '/' + this.uriEncode(bucket) + '/' + this.uriEncode(key, false);
     } else {
-      host = bucket + '.' + url.host;
+      host = bucket + '.' + host;
       uri = '/' + this.uriEncode(key, false);
     }
 
@@ -192,13 +219,25 @@ export class S3SignatureV4 {
     headers.set('x-amz-date', amzDate);
     headers.set('x-amz-content-sha256', payloadHash);
 
-    additionalHeaders.forEach((value, key) => {
-      headers.set(key.toLowerCase(), value);
+    additionalHeaders.forEach((value: string, keyStr: string) => {
+      headers.set(keyStr.toLowerCase(), value);
     });
 
-    const sortedHeaders = Array.from(headers.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    const signedHeaders = sortedHeaders.map(([k]) => k).join(';');
-    const canonicalHeaders = sortedHeaders.map(([k, v]) => `${k}:${v.trim()}`).join('\n');
+    const entries: [string, string][] = [];
+    headers.forEach((value: string, keyStr: string) => {
+      entries.push([keyStr, value]);
+    });
+    entries.sort((a: [string, string], b: [string, string]): number => a[0].localeCompare(b[0]));
+
+    let signedHeaders = '';
+    let canonicalHeaders = '';
+    for (let i = 0; i < entries.length; i++) {
+      if (i > 0) {
+        signedHeaders += ';';
+      }
+      signedHeaders += entries[i][0];
+      canonicalHeaders += `${entries[i][0]}:${entries[i][1].trim()}\n`;
+    }
 
     const canonicalRequest = this.createCanonicalRequest(
       method,
@@ -209,8 +248,7 @@ export class S3SignatureV4 {
       payloadHash
     );
 
-    const encoder = new util.TextEncoder();
-    const canonicalRequestHash = await this.sha256Hex(encoder.encodeInto(canonicalRequest).buffer as ArrayBuffer);
+    const canonicalRequestHash = await this.sha256Hex(encoder.encodeInto(canonicalRequest));
 
     const credentialScope = this.createCredentialScope(dateStamp);
 
@@ -228,7 +266,7 @@ export class S3SignatureV4 {
     const kSigning = await this.hmacSha256(kService, S3SignatureV4.TERMINATOR);
 
     const signature = await this.hmacSha256(kSigning, stringToSign);
-    const signatureHex = new util.HexHelper().encodeToStringSync(signature);
+    const signatureHex = ByteUtils.bytesToHex(signature);
 
     const authorization = this.buildAuthorizationHeader(dateStamp, signedHeaders, signatureHex);
     headers.set('authorization', authorization);
@@ -239,24 +277,33 @@ export class S3SignatureV4 {
   /**
    * 签名 ListBuckets 请求
    */
-  public async signListBuckets(endpoint: string): Promise<Map<string, string>> {
+  public async signListBuckets(endpoint: string, host: string): Promise<Map<string, string>> {
     const now = new Date();
     const dateStamp = this.formatDate(now);
     const amzDate = this.formatDateTime(now);
 
     const payloadHash = await this.sha256Hex(null);
 
-    const url = new URL(endpoint);
-    const host = url.host;
-
     const headers = new Map<string, string>();
     headers.set('host', host);
     headers.set('x-amz-date', amzDate);
     headers.set('x-amz-content-sha256', payloadHash);
 
-    const sortedHeaders = Array.from(headers.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    const signedHeaders = sortedHeaders.map(([k]) => k).join(';');
-    const canonicalHeaders = sortedHeaders.map(([k, v]) => `${k}:${v.trim()}`).join('\n');
+    const entries: [string, string][] = [];
+    headers.forEach((value: string, keyStr: string) => {
+      entries.push([keyStr, value]);
+    });
+    entries.sort((a: [string, string], b: [string, string]): number => a[0].localeCompare(b[0]));
+
+    let signedHeaders = '';
+    let canonicalHeaders = '';
+    for (let i = 0; i < entries.length; i++) {
+      if (i > 0) {
+        signedHeaders += ';';
+      }
+      signedHeaders += entries[i][0];
+      canonicalHeaders += `${entries[i][0]}:${entries[i][1].trim()}\n`;
+    }
 
     const canonicalRequest = this.createCanonicalRequest(
       'GET',
@@ -268,7 +315,7 @@ export class S3SignatureV4 {
     );
 
     const encoder = new util.TextEncoder();
-    const canonicalRequestHash = await this.sha256Hex(encoder.encodeInto(canonicalRequest).buffer as ArrayBuffer);
+    const canonicalRequestHash = await this.sha256Hex(encoder.encodeInto(canonicalRequest));
     const credentialScope = this.createCredentialScope(dateStamp);
     const stringToSign = this.createStringToSign(amzDate, dateStamp, credentialScope, canonicalRequestHash);
 
@@ -278,7 +325,7 @@ export class S3SignatureV4 {
     const kService = await this.hmacSha256(kRegion, S3SignatureV4.SERVICE);
     const kSigning = await this.hmacSha256(kService, S3SignatureV4.TERMINATOR);
     const signature = await this.hmacSha256(kSigning, stringToSign);
-    const signatureHex = new util.HexHelper().encodeToStringSync(signature);
+    const signatureHex = ByteUtils.bytesToHex(signature);
 
     const authorization = this.buildAuthorizationHeader(dateStamp, signedHeaders, signatureHex);
     headers.set('authorization', authorization);
