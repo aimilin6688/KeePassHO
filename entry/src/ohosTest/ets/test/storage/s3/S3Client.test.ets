@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
-import { S3Client } from '../../../../../main/ets/storage/s3/S3Client';
+import { S3Client, S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
 import { S3Object, S3Result, S3Bucket } from '../../../../../main/ets/storage/s3/S3Types';
-import { S3TestConfig, S3ClientOptionsImpl } from './S3TestConfig';
+import { S3TestConfig } from './S3TestConfig';
 import { util } from '@kit.ArkTS';
 
 

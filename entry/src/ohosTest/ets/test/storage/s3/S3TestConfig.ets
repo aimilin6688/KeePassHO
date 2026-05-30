@@ -1,3 +1,5 @@
+import { S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
+
 /**
  * S3 测试公共配置
  * 包含测试所需的端点、凭证和测试数据
@@ -64,47 +66,6 @@ export class S3TestConfig {
       S3TestConfig.REGION,
       bucket ?? S3TestConfig.BUCKET
     );
-  }
-}
-
-/**
- * S3 客户端配置选项接口
- */
-export interface S3ClientOptions {
-  endpoint: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  region: string;
-  pathStyle: boolean;
-  timeout: number;
-}
-
-/**
- * S3 客户端配置选项实现类
- * ArkTS 要求使用类而非对象字面量实现接口
- */
-export class S3ClientOptionsImpl implements S3ClientOptions {
-  endpoint: string = '';
-  accessKeyId: string = '';
-  secretAccessKey: string = '';
-  region: string = '';
-  pathStyle: boolean = false;
-  timeout: number = 30000;
-
-  constructor(
-    endpoint: string,
-    accessKeyId: string,
-    secretAccessKey: string,
-    region: string,
-    pathStyle: boolean,
-    timeout: number
-  ) {
-    this.endpoint = endpoint;
-    this.accessKeyId = accessKeyId;
-    this.secretAccessKey = secretAccessKey;
-    this.region = region;
-    this.pathStyle = pathStyle;
-    this.timeout = timeout;
   }
 }
 
