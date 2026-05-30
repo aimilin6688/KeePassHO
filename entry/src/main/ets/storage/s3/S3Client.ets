@@ -9,6 +9,16 @@ const DOMAIN = 0x0000;
 const TAG = 'S3Client';
 
 /**
+ * 简单 URL 解析结果
+ */
+interface ParsedUrl {
+  protocol: string;
+  host: string;
+  port: string;
+  path: string;
+}
+
+/**
  * S3 客户端配置选项
  */
 export interface S3ClientOptions {
@@ -27,6 +37,7 @@ export class S3Client {
   private session: rcp.Session | null = null;
   private options: S3ClientOptions;
   private signer: S3SignatureV4;
+  private parsedEndpoint: ParsedUrl;
 
   constructor(options: S3ClientOptions) {
     this.options = options;
@@ -35,7 +46,46 @@ export class S3Client {
       options.secretAccessKey,
       options.region
     );
+    this.parsedEndpoint = this.parseUrl(options.endpoint);
     this.initSession();
+  }
+
+  private parseUrl(url: string): ParsedUrl {
+    let protocol: string = 'https';
+    let host: string = url;
+    let port: string = '';
+    let path: string = '/';
+
+    // 提取协议
+    if (url.startsWith('https://')) {
+      protocol = 'https';
+      host = url.substring(8);
+    } else if (url.startsWith('http://')) {
+      protocol = 'http';
+      host = url.substring(7);
+    }
+
+    // 提取路径
+    const slashIndex: number = host.indexOf('/');
+    if (slashIndex > 0) {
+      path = host.substring(slashIndex);
+      host = host.substring(0, slashIndex);
+    }
+
+    // 提取端口
+    const colonIndex: number = host.indexOf(':');
+    if (colonIndex > 0) {
+      port = host.substring(colonIndex + 1);
+      host = host.substring(0, colonIndex);
+    }
+
+    const result: ParsedUrl = {
+      protocol: protocol,
+      host: host,
+      port: port,
+      path: path
+    };
+    return result;
   }
 
   private initSession(): void {
@@ -49,21 +99,18 @@ export class S3Client {
   }
 
   private buildUrl(bucket: string, key: string): string {
-    const endpoint = this.options.endpoint.endsWith('/')
-      ? this.options.endpoint.slice(0, -1)
-      : this.options.endpoint;
-
     if (this.options.pathStyle) {
-      return `${endpoint}/${bucket}/${key}`;
+      const url: string = `${this.options.endpoint}/${bucket}/${key}`;
+      return url;
     } else {
-      const url = new URL(endpoint);
-      return `${url.protocol}//${bucket}.${url.host}/${key}`;
+      const url: string = `${this.parsedEndpoint.protocol}://${bucket}.${this.parsedEndpoint.host}/${key}`;
+      return url;
     }
   }
 
-  private headersToRecord(headers: Map<string, string>): rcp.Headers {
-    const record: rcp.Headers = {};
-    headers.forEach((value, key) => {
+  private headersToRecord(headers: Map<string, string>): Record<string, string> {
+    const record: Record<string, string> = {};
+    headers.forEach((value: string, key: string) => {
       record[key] = value;
     });
     return record;
@@ -71,11 +118,12 @@ export class S3Client {
 
   private async handleResponse<T>(response: rcp.Response | undefined, parseData?: (body: ArrayBuffer) => T): Promise<S3Result<T>> {
     if (!response) {
-      return {
+      const result: S3Result<T> = {
         success: false,
         statusCode: 500,
         message: 'No response from server'
       };
+      return result;
     }
 
     const result: S3Result<T> = {
@@ -110,26 +158,28 @@ export class S3Client {
 
   public async listBuckets(): Promise<S3Result<S3Bucket[]>> {
     try {
-      const headers = await this.signer.signListBuckets(this.options.endpoint);
-      const url = new URL(this.options.endpoint);
+      const headers = await this.signer.signListBuckets(this.options.endpoint, this.parsedEndpoint.host);
+      const url: string = `${this.parsedEndpoint.protocol}://${this.parsedEndpoint.host}/`;
       const request = new rcp.Request(
-        `${url.protocol}//${url.host}/`,
+        url,
         'GET',
         this.headersToRecord(headers)
       );
 
       const response = await this.session?.fetch(request);
-      return this.handleResponse<S3Bucket[]>(response, (body) => {
+      return this.handleResponse<S3Bucket[]>(response, (body: ArrayBuffer) => {
         const xmlStr = ByteUtils.bytesToString(body);
         return S3XmlParser.parseListBuckets(xmlStr);
       });
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'listBuckets error: %{public}s', (error as Error).message);
-      return {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'listBuckets error: %{public}s', err.message);
+      const result: S3Result<S3Bucket[]> = {
         success: false,
         statusCode: 500,
-        message: (error as Error).message
+        message: err.message
       };
+      return result;
     }
   }
 
@@ -171,17 +221,19 @@ export class S3Client {
       const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
       const response = await this.session?.fetch(request);
 
-      return this.handleResponse<S3Object[]>(response, (body) => {
+      return this.handleResponse<S3Object[]>(response, (body: ArrayBuffer) => {
         const xmlStr = ByteUtils.bytesToString(body);
         return S3XmlParser.parseListObjects(xmlStr);
       });
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'listObjects error: %{public}s', (error as Error).message);
-      return {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'listObjects error: %{public}s', err.message);
+      const result: S3Result<S3Object[]> = {
         success: false,
         statusCode: 500,
-        message: (error as Error).message
+        message: err.message
       };
+      return result;
     }
   }
 
@@ -200,22 +252,25 @@ export class S3Client {
       const response = await this.session?.fetch(request);
 
       if (response && response.statusCode >= 200 && response.statusCode < 300) {
-        return {
+        const result: S3Result<ArrayBuffer> = {
           success: true,
           statusCode: response.statusCode,
           data: response.body,
           headers: response.headers as Record<string, string>
         };
+        return result;
       }
 
       return this.handleResponse<ArrayBuffer>(response);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'getObject error: %{public}s', (error as Error).message);
-      return {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'getObject error: %{public}s', err.message);
+      const result: S3Result<ArrayBuffer> = {
         success: false,
         statusCode: 500,
-        message: (error as Error).message
+        message: err.message
       };
+      return result;
     }
   }
 
@@ -237,12 +292,14 @@ export class S3Client {
 
       return this.handleResponse<void>(response);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'putObject error: %{public}s', (error as Error).message);
-      return {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'putObject error: %{public}s', err.message);
+      const result: S3Result<void> = {
         success: false,
         statusCode: 500,
-        message: (error as Error).message
+        message: err.message
       };
+      return result;
     }
   }
 
@@ -262,12 +319,14 @@ export class S3Client {
 
       return this.handleResponse<void>(response);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'deleteObject error: %{public}s', (error as Error).message);
-      return {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'deleteObject error: %{public}s', err.message);
+      const result: S3Result<void> = {
         success: false,
         statusCode: 500,
-        message: (error as Error).message
+        message: err.message
       };
+      return result;
     }
   }
 
@@ -287,35 +346,44 @@ export class S3Client {
 
       if (response && response.statusCode === 200) {
         const respHeaders = response.headers as Record<string, string>;
-        return {
+        const obj: S3Object = {
+          key: key,
+          size: parseInt(respHeaders['content-length'] || '0', 10),
+          lastModified: new Date(respHeaders['last-modified'] || '').getTime(),
+          etag: (respHeaders['etag'] || '').replace(/"/g, '')
+        };
+        const result: S3Result<S3Object> = {
           success: true,
           statusCode: 200,
-          data: {
-            key: key,
-            size: parseInt(respHeaders['content-length'] || '0', 10),
-            lastModified: new Date(respHeaders['last-modified'] || '').getTime(),
-            etag: (respHeaders['etag'] || '').replace(/"/g, '')
-          }
+          data: obj
         };
+        return result;
       }
 
       return this.handleResponse<S3Object>(response);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'headObject error: %{public}s', (error as Error).message);
-      return {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'headObject error: %{public}s', err.message);
+      const result: S3Result<S3Object> = {
         success: false,
         statusCode: 500,
-        message: (error as Error).message
+        message: err.message
       };
+      return result;
     }
   }
 
   public async testConnection(): Promise<S3Result<void>> {
-    return this.listBuckets().then(result => {
-      if (result.success) {
-        return { success: true, statusCode: 200 };
-      }
-      return { success: false, statusCode: result.statusCode, message: result.message };
-    });
+    const bucketResult = await this.listBuckets();
+    if (bucketResult.success) {
+      const result: S3Result<void> = { success: true, statusCode: 200 };
+      return result;
+    }
+    const result: S3Result<void> = {
+      success: false,
+      statusCode: bucketResult.statusCode,
+      message: bucketResult.message
+    };
+    return result;
   }
 }
