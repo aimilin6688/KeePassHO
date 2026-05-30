@@ -89,7 +89,7 @@ export default function KeePass2ParserTest() {
     it('parse returns OTPURL from TimeOtp-Secret-Hex field', 0, () => {
       const fieldName = 'TimeOtp-Secret-Hex';
       // 十六进制: 48656c6c6f = "Hello" 字节数组
-      // Base32 of "Hello": JBSWY3DPEHPK3PXP
+      // Base32 of "Hello": JBSWY3DP
       const fieldValue = '48656c6c6f';
       const mockEntry = {
         fields: new Map([
@@ -104,7 +104,7 @@ export default function KeePass2ParserTest() {
       expect(urls[0]).assertContain('otpauth://totp/');
       expect(urls[0]).assertContain('secret=');
       // 验证十六进制被正确转换
-      expect(urls[0]).assertContain('JBSWY3DPEHPK3PXP');
+      expect(urls[0]).assertContain('JBSWY3DP');
     });
 
     /**
@@ -113,7 +113,7 @@ export default function KeePass2ParserTest() {
     it('parse returns OTPURL from TimeOtp-Secret-Base64 field', 0, () => {
       const fieldName = 'TimeOtp-Secret-Base64';
       // Base64: SGVsbG8= = "Hello" 字节数组
-      // Base32 of "Hello": JBSWY3DPEHPK3PXP
+      // Base32 of "Hello": JBSWY3DP
       const fieldValue = 'SGVsbG8=';
       const mockEntry = {
         fields: new Map([
@@ -128,7 +128,7 @@ export default function KeePass2ParserTest() {
       expect(urls[0]).assertContain('otpauth://totp/');
       expect(urls[0]).assertContain('secret=');
       // 验证 Base64 被正确转换
-      expect(urls[0]).assertContain('JBSWY3DPEHPK3PXP');
+      expect(urls[0]).assertContain('JBSWY3DP');
     });
 
     /**
@@ -137,7 +137,7 @@ export default function KeePass2ParserTest() {
     it('parse returns OTPURL from TimeOtp-Secret field', 0, () => {
       const fieldName = 'TimeOtp-Secret';
       // UTF-8: "Hello"
-      // Base32 of "Hello": JBSWY3DPEHPK3PXP
+      // Base32 of "Hello": JBSWY3DP
       const fieldValue = 'Hello';
       const mockEntry = {
         fields: new Map([
@@ -152,7 +152,7 @@ export default function KeePass2ParserTest() {
       expect(urls[0]).assertContain('otpauth://totp/');
       expect(urls[0]).assertContain('secret=');
       // 验证 UTF-8 被正确转换
-      expect(urls[0]).assertContain('JBSWY3DPEHPK3PXP');
+      expect(urls[0]).assertContain('JBSWY3DP');
     });
 
     /**
