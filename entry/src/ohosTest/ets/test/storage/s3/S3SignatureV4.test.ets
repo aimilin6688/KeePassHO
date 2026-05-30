@@ -5,23 +5,18 @@ import { util } from '@kit.ArkTS';
 
 
 export default function S3SignatureV4Test() {
-  describe('S3SignatureV4', () => {
-
-    let signer: S3SignatureV4;
-
-    beforeEach(() => {
-      signer = new S3SignatureV4(
-        S3TestConfig.ACCESS_KEY_ID,
-        S3TestConfig.SECRET_ACCESS_KEY,
-        S3TestConfig.REGION
-      );
-    });
+  describe('S3SignatureV4Test', () => {
 
     /**
      * 测试签名对象创建
      */
     describe('Initialization', () => {
       it('should create signer instance', 0, () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         expect(signer).not().assertUndefined();
       });
     });
@@ -31,12 +26,17 @@ export default function S3SignatureV4Test() {
      */
     describe('signRequest', () => {
       it('should generate signed headers for GET request', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'test.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         expect(headers).not().assertUndefined();
@@ -47,6 +47,11 @@ export default function S3SignatureV4Test() {
       });
 
       it('should generate signed headers for PUT request', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const encoder: util.TextEncoder = new util.TextEncoder();
         const payload: Uint8Array = encoder.encodeInto('test content');
 
@@ -55,7 +60,7 @@ export default function S3SignatureV4Test() {
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'upload.txt',
-          false,
+          S3TestConfig.PATH_STYLE,
           new Map([['content-type', 'application/octet-stream']]),
           payload.buffer as ArrayBuffer
         );
@@ -66,6 +71,11 @@ export default function S3SignatureV4Test() {
       });
 
       it('should generate signed headers for path-style URL', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
@@ -79,12 +89,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should include correct algorithm in authorization header', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'test.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         const authorization: string | undefined = headers.get('authorization');
@@ -93,12 +108,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should include access key in credential', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'test.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         const authorization: string | undefined = headers.get('authorization');
@@ -107,12 +127,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should include region in credential scope', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'test.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         const authorization: string | undefined = headers.get('authorization');
@@ -121,12 +146,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should include service "s3" in credential scope', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'test.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         const authorization: string | undefined = headers.get('authorization');
@@ -135,12 +165,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should handle empty key', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           '',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         expect(headers).not().assertUndefined();
@@ -148,12 +183,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should handle special characters in key', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'path/with spaces/file.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         expect(headers).not().assertUndefined();
@@ -161,12 +201,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should handle DELETE method', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'DELETE',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'delete-me.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         expect(headers).not().assertUndefined();
@@ -174,12 +219,17 @@ export default function S3SignatureV4Test() {
       });
 
       it('should handle HEAD method', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'HEAD',
           S3TestConfig.ENDPOINT,
           S3TestConfig.BUCKET,
           'check-me.txt',
-          false
+          S3TestConfig.PATH_STYLE
         );
 
         expect(headers).not().assertUndefined();
@@ -192,6 +242,11 @@ export default function S3SignatureV4Test() {
      */
     describe('signListBuckets', () => {
       it('should generate signed headers for list buckets', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         // 解析 host
         let host: string = S3TestConfig.ENDPOINT;
         if (host.startsWith('https://')) {
@@ -213,6 +268,11 @@ export default function S3SignatureV4Test() {
       });
 
       it('should include correct algorithm in authorization', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         let host: string = S3TestConfig.ENDPOINT;
         if (host.startsWith('https://')) {
           host = host.substring(8);
@@ -277,6 +337,11 @@ export default function S3SignatureV4Test() {
      */
     describe('TimestampFormat', () => {
       it('should generate valid x-amz-date format', 0, async () => {
+        const signer: S3SignatureV4 = new S3SignatureV4(
+          S3TestConfig.ACCESS_KEY_ID,
+          S3TestConfig.SECRET_ACCESS_KEY,
+          S3TestConfig.REGION
+        );
         const headers: Map<string, string> = await signer.signRequest(
           'GET',
           S3TestConfig.ENDPOINT,
