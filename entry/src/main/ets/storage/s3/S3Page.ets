@@ -243,8 +243,10 @@ struct S3Page {
               .fontWeight(FontWeight.Medium)
               .fontColor($r('app.color.text_primary'))
             Blank()
-            TextInput({ text: this.endpoint, placeholder: 'https://s3.amazonaws.com' })
-              .height(40)
+            TextArea({ text: this.endpoint, placeholder: 'https://s3.amazonaws.com' })
+              .minLines(1)
+              .maxLines(3)
+              .padding({ top: 10, bottom: 10 })
               .width('60%')
               .fontColor($r('app.color.text_primary'))
               .backgroundColor($r('app.color.card_bg'))
@@ -253,7 +255,7 @@ struct S3Page {
               })
           }
           .width('100%')
-          .height(40)
+          .height('auto')
           .margin({ top: 20 })
           .alignItems(VerticalAlign.Center)
 
@@ -355,7 +357,8 @@ struct S3Page {
                   .height(36)
                   .width('60%')
                   .fontColor($r('app.color.text_primary'))
-                  .backgroundColor($r('app.color.card_bg'))
+                  .backgroundColor($r('app.color.bg_primary'))
+                  .borderRadius(6)
                   .onChange((value: string) => {
                     this.region = value;
                   })
@@ -374,7 +377,8 @@ struct S3Page {
                   .height(36)
                   .width('60%')
                   .fontColor($r('app.color.text_primary'))
-                  .backgroundColor($r('app.color.card_bg'))
+                  .backgroundColor($r('app.color.bg_primary'))
+                  .borderRadius(6)
                   .onChange((value: string) => {
                     this.bucket = value;
                   })
@@ -398,6 +402,9 @@ struct S3Page {
                   Text($r('app.string.s3_virtual_host_style'))
                     .fontSize(12)
                     .margin({ right: 16 })
+                    .onClick(() => {
+                      this.pathStyle = false;
+                    })
 
                   Radio({ value: 'path', group: 'urlStyle' })
                     .checked(this.pathStyle)
@@ -406,6 +413,9 @@ struct S3Page {
                     })
                   Text($r('app.string.s3_path_style_url'))
                     .fontSize(12)
+                    .onClick(() => {
+                      this.pathStyle = true;
+                    })
                 }
               }
               .width('100%')
@@ -423,7 +433,8 @@ struct S3Page {
                   .width('60%')
                   .type(InputType.Number)
                   .fontColor($r('app.color.text_primary'))
-                  .backgroundColor($r('app.color.card_bg'))
+                  .backgroundColor($r('app.color.bg_primary'))
+                  .borderRadius(6)
                   .onChange((value: string) => {
                     this.timeout = value;
                   })
@@ -490,6 +501,7 @@ struct S3Page {
       }
       .width('100%')
       .layoutWeight(1)
+      .align(Alignment.Top)
     }
     .width('100%')
     .height('100%')
