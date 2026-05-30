@@ -9,8 +9,67 @@ const DOMAIN = 0x0000;
 const TAG = 'S3Client';
 
 /**
- * 简单 URL 解析结果
+ * 全局会话池，用于复用 rcp session
+ * 避免频繁创建和销毁 session 导致资源耗尽
  */
+class SessionPool {
+  private static instance: SessionPool | null = null;
+  private session: rcp.Session | null = null;
+  private refCount: number = 0;
+  private timeout: number = 30000;
+
+  private constructor() {}
+
+  public static getInstance(): SessionPool {
+    if (!SessionPool.instance) {
+      SessionPool.instance = new SessionPool();
+    }
+    return SessionPool.instance;
+  }
+
+  public acquire(timeout: number): rcp.Session | null {
+    if (!this.session) {
+      try {
+        this.session = rcp.createSession({
+          requestConfiguration: {
+            transfer: {
+              timeout: { connectMs: timeout }
+            }
+          }
+        });
+        this.timeout = timeout;
+        hilog.info(DOMAIN, TAG, 'SessionPool: created session id=%{public}s', this.session?.id);
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'SessionPool: failed to create session: %{public}s', err.message);
+        return null;
+      }
+    }
+    this.refCount++;
+    return this.session;
+  }
+
+  public release(): void {
+    this.refCount--;
+    if (this.refCount <= 0) {
+      this.refCount = 0;
+    }
+  }
+
+  public forceClose(): void {
+    if (this.session) {
+      try {
+        this.session.close();
+        hilog.info(DOMAIN, TAG, 'SessionPool: closed session');
+      } catch (error) {
+        // ignore
+      }
+      this.session = null;
+      this.refCount = 0;
+    }
+  }
+}
+
 interface ParsedUrl {
   protocol: string;
   host: string;
@@ -65,10 +124,10 @@ export class S3ClientOptionsImpl {
  * S3 HTTP 客户端
  */
 export class S3Client {
-  private session: rcp.Session | null = null;
   private options: S3ClientOptionsImpl;
   private signer: S3SignatureV4;
   private parsedEndpoint: ParsedUrl;
+  private sessionPool: SessionPool;
 
   constructor(options: S3ClientOptionsImpl) {
     this.options = options;
@@ -78,7 +137,11 @@ export class S3Client {
       options.region
     );
     this.parsedEndpoint = this.parseUrl(options.endpoint);
-    this.initSession();
+    this.sessionPool = SessionPool.getInstance();
+  }
+
+  private getSession(): rcp.Session | null {
+    return this.sessionPool.acquire(this.options.timeout);
   }
 
   private parseUrl(url: string): ParsedUrl {
@@ -119,23 +182,19 @@ export class S3Client {
     return result;
   }
 
-  private initSession(): void {
-    this.session = rcp.createSession({
-      requestConfiguration: {
-        transfer: {
-          timeout: { connectMs: this.options.timeout }
-        }
-      }
-    });
-  }
-
   private buildUrl(bucket: string, key: string): string {
     if (this.options.pathStyle) {
-      const url: string = `${this.options.endpoint}/${bucket}/${key}`;
-      return url;
+      if (key && key.length > 0) {
+        return `${this.options.endpoint}/${bucket}/${key}`;
+      } else {
+        return `${this.options.endpoint}/${bucket}`;
+      }
     } else {
-      const url: string = `${this.parsedEndpoint.protocol}://${bucket}.${this.parsedEndpoint.host}/${key}`;
-      return url;
+      if (key && key.length > 0) {
+        return `${this.parsedEndpoint.protocol}://${bucket}.${this.parsedEndpoint.host}/${key}`;
+      } else {
+        return `${this.parsedEndpoint.protocol}://${bucket}.${this.parsedEndpoint.host}/`;
+      }
     }
   }
 
@@ -183,21 +242,18 @@ export class S3Client {
   }
 
   public close(): void {
-    this.session?.close();
-    this.session = null;
+    this.sessionPool.release();
   }
 
   public async listBuckets(): Promise<S3Result<S3Bucket[]>> {
     try {
       const headers = await this.signer.signListBuckets(this.options.endpoint, this.parsedEndpoint.host);
       const url: string = `${this.parsedEndpoint.protocol}://${this.parsedEndpoint.host}/`;
-      const request = new rcp.Request(
-        url,
-        'GET',
-        this.headersToRecord(headers)
-      );
+      const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
 
-      const response = await this.session?.fetch(request);
+      const session = this.getSession();
+      const response = await session?.fetch(request);
+
       return this.handleResponse<S3Bucket[]>(response, (body: ArrayBuffer) => {
         const xmlStr = ByteUtils.bytesToString(body);
         return S3XmlParser.parseListBuckets(xmlStr);
@@ -225,32 +281,38 @@ export class S3Client {
       );
       const url = this.buildUrl(bucket, '');
       const request = new rcp.Request(url, 'HEAD', this.headersToRecord(headers));
-      const response = await this.session?.fetch(request);
+      const response = await this.getSession()?.fetch(request);
       return response?.statusCode === 200;
-    } catch {
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'headBucket error: %{public}s', err.message);
       return false;
     }
   }
 
   public async listObjects(bucket: string, prefix?: string): Promise<S3Result<S3Object[]>> {
     try {
+      let queryString: string;
+      if (prefix) {
+        queryString = 'delimiter=%2F&prefix=' + encodeURIComponent(prefix);
+      } else {
+        queryString = 'delimiter=%2F';
+      }
+
       const headers = await this.signer.signRequest(
         'GET',
         this.options.endpoint,
         bucket,
         '',
-        this.options.pathStyle
+        this.options.pathStyle,
+        new Map(),
+        null,
+        queryString
       );
 
-      let url = this.buildUrl(bucket, '');
-      if (prefix) {
-        url += '?prefix=' + encodeURIComponent(prefix) + '&delimiter=/';
-      } else {
-        url += '?delimiter=/';
-      }
-
+      const url = this.buildUrl(bucket, '') + '?' + queryString;
       const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
-      const response = await this.session?.fetch(request);
+      const response = await this.getSession()?.fetch(request);
 
       return this.handleResponse<S3Object[]>(response, (body: ArrayBuffer) => {
         const xmlStr = ByteUtils.bytesToString(body);
@@ -280,7 +342,7 @@ export class S3Client {
 
       const url = this.buildUrl(bucket, key);
       const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
-      const response = await this.session?.fetch(request);
+      const response = await this.getSession()?.fetch(request);
 
       if (response && response.statusCode >= 200 && response.statusCode < 300) {
         const result: S3Result<ArrayBuffer> = {
@@ -319,7 +381,7 @@ export class S3Client {
 
       const url = this.buildUrl(bucket, key);
       const request = new rcp.Request(url, 'PUT', this.headersToRecord(headers), data);
-      const response = await this.session?.fetch(request);
+      const response = await this.getSession()?.fetch(request);
 
       return this.handleResponse<void>(response);
     } catch (error) {
@@ -346,7 +408,7 @@ export class S3Client {
 
       const url = this.buildUrl(bucket, key);
       const request = new rcp.Request(url, 'DELETE', this.headersToRecord(headers));
-      const response = await this.session?.fetch(request);
+      const response = await this.getSession()?.fetch(request);
 
       return this.handleResponse<void>(response);
     } catch (error) {
@@ -373,7 +435,7 @@ export class S3Client {
 
       const url = this.buildUrl(bucket, key);
       const request = new rcp.Request(url, 'HEAD', this.headersToRecord(headers));
-      const response = await this.session?.fetch(request);
+      const response = await this.getSession()?.fetch(request);
 
       if (response && response.statusCode === 200) {
         const respHeaders = response.headers as Record<string, string>;
