@@ -1,5 +1,5 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { DatabaseShowParam, Icons, MoveParam, UnLockDatabaseParam } from '../services/TypeDefined';
+import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -8,6 +8,7 @@ import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, The
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
+import { LockScreenService } from '../services/LockScreenService';
 import { SortMode } from '../common/constants/SortConstants';
 import { SettingsService } from '../services/SettingsService';
 import { SupportService } from '../services/SupportService';
@@ -101,7 +102,7 @@ struct DatabaseView {
   });
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
-  private clearHistoryUrlPage: Array<string> = ["Password", "UnLockDatabase"];
+  private clearHistoryUrlPage: Array<string> = ["Password"];
   private windowClass: window.Window | undefined = undefined; // 窗口实例
   private dialogController: CustomDialogController = new CustomDialogController({
     builder: AddGroupDialog({
@@ -1376,7 +1377,7 @@ struct DatabaseView {
    * 锁定数据库
    */
   private lockDatabase() {
-    CommonUtils.pushUrl({ url: 'pages/UnLockDatabase', params: { isLocked: true } as UnLockDatabaseParam })
+    LockScreenService.showLockWindow(true);
   }
 
   /**
