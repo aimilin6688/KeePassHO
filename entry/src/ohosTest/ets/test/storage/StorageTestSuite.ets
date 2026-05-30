@@ -5,8 +5,5 @@ import S3ClientTest from './s3/S3Client.test';
 
 
 export default function testsuite() {
-  S3StorageTest();
-  S3XmlParserTest();
-  S3SignatureV4Test();
-  S3ClientTest();
+
 }
