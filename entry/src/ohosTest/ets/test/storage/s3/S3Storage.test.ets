@@ -36,8 +36,16 @@ export default function S3StorageTest() {
      * 测试 S3Storage 初始化
      */
     describe('S3StorageInitialization', () => {
+      let storage: S3Storage | undefined;
+
+      afterEach(() => {
+        if (storage) {
+          storage.close();
+        }
+      });
+
       it('should throw error when not initialized', 0, async () => {
-        const storage: S3Storage = new S3Storage();
+        storage = new S3Storage();
 
         try {
           await storage.read('test/path');
@@ -49,7 +57,7 @@ export default function S3StorageTest() {
       });
 
       it('should initialize with TestS3StorageConfig', 0, () => {
-        const storage: S3Storage = new S3Storage();
+        storage = new S3Storage();
         const config: TestS3StorageConfig = S3TestConfig.getStorageConfig();
 
         storage.init(config as S3StorageConfig);
@@ -60,7 +68,7 @@ export default function S3StorageTest() {
       });
 
       it('should parse config from TestS3StorageConfig', 0, () => {
-        const storage: S3Storage = new S3Storage();
+        storage = new S3Storage();
         const config: TestS3StorageConfig = S3TestConfig.getStorageConfig();
 
         storage.init(config as S3StorageConfig);
@@ -82,6 +90,12 @@ export default function S3StorageTest() {
         storage.init(config as S3StorageConfig);
       });
 
+      afterEach(() => {
+        if (storage) {
+          storage.close();
+        }
+      });
+
       it('should implement getPageConfig', 0, () => {
         const pageConfig = storage.getPageConfig();
 
@@ -92,12 +106,9 @@ export default function S3StorageTest() {
       });
 
       it('should implement init', 0, () => {
-        const newStorage: S3Storage = new S3Storage();
-        const newConfig: TestS3StorageConfig = S3TestConfig.getStorageConfig();
-
-        newStorage.init(newConfig as S3StorageConfig);
-
-        expect(newStorage.getPageConfig()).not().assertUndefined();
+        // 使用已有的 storage 实例，避免创建新的 session
+        const pageConfig = storage.getPageConfig();
+        expect(pageConfig).not().assertUndefined();
       });
     });
 
@@ -111,6 +122,12 @@ export default function S3StorageTest() {
         storage = new S3Storage();
         const config: TestS3StorageConfig = S3TestConfig.getStorageConfig();
         storage.init(config as S3StorageConfig);
+      });
+
+      afterEach(() => {
+        if (storage) {
+          storage.close();
+        }
       });
 
       it('should check if file exists', 0, async () => {
