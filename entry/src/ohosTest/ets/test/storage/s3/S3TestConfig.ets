@@ -7,6 +7,7 @@ import { S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client
 export class S3TestConfig {
   /**
    * S3 兼容服务端点（腾讯云 COS）
+   * 注意：对于虚拟主机风格，endpoint 不包含 bucket 名
    */
   static readonly ENDPOINT: string = 'https://cos.ap-beijing.myqcloud.com';
 
@@ -23,7 +24,7 @@ export class S3TestConfig {
   /**
    * 区域
    */
-  static readonly REGION: string = 'Auto';
+  static readonly REGION: string = 'ap-beijing';
 
   /**
    * 测试存储桶名称
@@ -41,9 +42,16 @@ export class S3TestConfig {
   static readonly TIMEOUT: number = 30000;
 
   /**
+   * 是否使用路径风格 URL
+   * 注意：2024年1月1日后创建的存储桶不支持 path-style，必须使用 virtual-hosted-style
+   * 腾讯云 COS 文档：https://cloud.tencent.com/document/product/436/96243
+   */
+  static readonly PATH_STYLE: boolean = false;
+
+  /**
    * 获取完整的客户端配置选项
    */
-  static getClientOptions(pathStyle: boolean = false): S3ClientOptionsImpl {
+  static getClientOptions(pathStyle: boolean = S3TestConfig.PATH_STYLE): S3ClientOptionsImpl {
     return new S3ClientOptionsImpl(
       S3TestConfig.ENDPOINT,
       S3TestConfig.ACCESS_KEY_ID,
