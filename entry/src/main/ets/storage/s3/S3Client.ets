@@ -19,7 +19,9 @@ interface ParsedUrl {
 }
 
 /**
- * S3 客户端配置选项
+ * S3 客户端配置选项接口
+ * 注意：由于 ArkTS 不支持结构化类型，此接口仅用于类型文档，
+ * 实际使用时应使用 S3ClientOptionsImpl 类
  */
 export interface S3ClientOptions {
   endpoint: string;
@@ -31,15 +33,44 @@ export interface S3ClientOptions {
 }
 
 /**
+ * S3 客户端配置选项实现类
+ * ArkTS 要求使用类而非对象字面量实现接口
+ */
+export class S3ClientOptionsImpl {
+  endpoint: string = '';
+  accessKeyId: string = '';
+  secretAccessKey: string = '';
+  region: string = '';
+  pathStyle: boolean = false;
+  timeout: number = 30000;
+
+  constructor(
+    endpoint: string,
+    accessKeyId: string,
+    secretAccessKey: string,
+    region: string,
+    pathStyle: boolean,
+    timeout: number
+  ) {
+    this.endpoint = endpoint;
+    this.accessKeyId = accessKeyId;
+    this.secretAccessKey = secretAccessKey;
+    this.region = region;
+    this.pathStyle = pathStyle;
+    this.timeout = timeout;
+  }
+}
+
+/**
  * S3 HTTP 客户端
  */
 export class S3Client {
   private session: rcp.Session | null = null;
-  private options: S3ClientOptions;
+  private options: S3ClientOptionsImpl;
   private signer: S3SignatureV4;
   private parsedEndpoint: ParsedUrl;
 
-  constructor(options: S3ClientOptions) {
+  constructor(options: S3ClientOptionsImpl) {
     this.options = options;
     this.signer = new S3SignatureV4(
       options.accessKeyId,

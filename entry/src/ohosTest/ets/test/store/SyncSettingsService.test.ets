@@ -10,7 +10,7 @@ interface TestSyncData {
 
 export default function SyncSettingsServiceTest() {
   describe('SyncSettingsService', () => {
-    describe('SyncData interface', () => {
+    describe('SyncDataInterface', () => {
       it('should create valid SyncData with version and deviceId', 0, () => {
         const syncData: TestSyncData = {
           key: 'test_key',
@@ -43,7 +43,7 @@ export default function SyncSettingsServiceTest() {
       });
     });
 
-    describe('deviceId format', () => {
+    describe('deviceIdFormat', () => {
       it('deviceId should start with device_ prefix', 0, () => {
         const deviceId = `device_${Date.now()}_test`;
         expect(deviceId.startsWith('device_')).assertTrue();
@@ -56,7 +56,7 @@ export default function SyncSettingsServiceTest() {
       });
     });
 
-    describe('merge logic - version comparison', () => {
+    describe('mergeLogicVersionComparison', () => {
       it('remote version higher should trigger merge', 0, () => {
         const localVersion = 3;
         const remoteVersion = 5;
@@ -93,7 +93,7 @@ export default function SyncSettingsServiceTest() {
       });
     });
 
-    describe('version monotonicity', () => {
+    describe('versionMonotonicity', () => {
       it('version should increment on each sync push', 0, () => {
         let version = 0;
         version = version + 1; // first sync
