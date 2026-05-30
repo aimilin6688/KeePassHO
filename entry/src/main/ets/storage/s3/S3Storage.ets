@@ -9,6 +9,14 @@ const DOMAIN = 0x0000;
 const TAG = 'S3Storage';
 
 /**
+ * S3 路径解析结果
+ */
+interface S3PathResult {
+  bucket: string;
+  key: string;
+}
+
+/**
  * S3 存储实现
  */
 export class S3Storage implements IFileStorage {
@@ -55,24 +63,26 @@ export class S3Storage implements IFileStorage {
     );
   }
 
-  private parsePath(path: string): { bucket: string; key: string } {
-    const parts = path.split('/').filter(p => p.length > 0);
+  private parsePath(path: string): S3PathResult {
+    const parts: string[] = path.split('/').filter((p: string): boolean => p.length > 0);
 
     if (this.config?.bucket) {
-      return {
+      const result: S3PathResult = {
         bucket: this.config.bucket,
         key: path.startsWith('/') ? path.substring(1) : path
       };
+      return result;
     }
 
     if (parts.length < 2) {
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, 'Invalid path format');
     }
 
-    return {
+    const result: S3PathResult = {
       bucket: parts[0],
       key: parts.slice(1).join('/')
     };
+    return result;
   }
 
   private getFileName(key: string): string {
@@ -85,8 +95,8 @@ export class S3Storage implements IFileStorage {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
 
-    const { bucket, key } = this.parsePath(path);
-    const result = await this.client.getObject(bucket, key);
+    const pathResult: S3PathResult = this.parsePath(path);
+    const result = await this.client.getObject(pathResult.bucket, pathResult.key);
 
     if (!result.success || !result.data) {
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message);
@@ -100,8 +110,8 @@ export class S3Storage implements IFileStorage {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
 
-    const { bucket, key } = this.parsePath(path);
-    const result = await this.client.putObject(bucket, key, content);
+    const pathResult: S3PathResult = this.parsePath(path);
+    const result = await this.client.putObject(pathResult.bucket, pathResult.key, content);
 
     if (!result.success) {
       throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, result.message);
@@ -114,8 +124,8 @@ export class S3Storage implements IFileStorage {
     }
 
     try {
-      const { bucket, key } = this.parsePath(path);
-      const result = await this.client.headObject(bucket, key);
+      const pathResult: S3PathResult = this.parsePath(path);
+      const result = await this.client.headObject(pathResult.bucket, pathResult.key);
       return result.success;
     } catch {
       return false;
@@ -127,21 +137,22 @@ export class S3Storage implements IFileStorage {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
 
-    const { bucket, key } = this.parsePath(path);
-    const result = await this.client.headObject(bucket, key);
+    const pathResult: S3PathResult = this.parsePath(path);
+    const result = await this.client.headObject(pathResult.bucket, pathResult.key);
 
     if (!result.success || !result.data) {
       throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, result.message);
     }
 
-    return {
-      name: this.getFileName(key),
+    const info: FileInfo = {
+      name: this.getFileName(pathResult.key),
       size: result.data.size,
       modifiedTime: result.data.lastModified,
       path: path,
       type: FileType.FILE,
       childrenCount: 0
     };
+    return info;
   }
 
   public async listDir(path: string): Promise<FileInfo[]> {
@@ -149,27 +160,30 @@ export class S3Storage implements IFileStorage {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
 
-    const { bucket, key: prefix } = this.parsePath(path);
-    const result = await this.client.listObjects(bucket, prefix);
+    const pathResult: S3PathResult = this.parsePath(path);
+    const prefix: string = pathResult.key;
+    const result = await this.client.listObjects(pathResult.bucket, prefix);
 
     if (!result.success || !result.data) {
       throw new StorageError(StorageErrorCodes.NOT_IMPLEMENTED, result.message);
     }
 
     const files: FileInfo[] = [];
-    for (const obj of result.data) {
+    for (let i = 0; i < result.data.length; i++) {
+      const obj = result.data[i];
       if (obj.key === prefix || obj.key === prefix + '/') {
         continue;
       }
 
-      files.push({
+      const info: FileInfo = {
         name: this.getFileName(obj.key),
         size: obj.size,
         modifiedTime: obj.lastModified,
-        path: `${bucket}/${obj.key}`,
+        path: `${pathResult.bucket}/${obj.key}`,
         type: obj.key.endsWith('/') ? FileType.DIR : FileType.FILE,
         childrenCount: 0
-      });
+      };
+      files.push(info);
     }
 
     return files;
