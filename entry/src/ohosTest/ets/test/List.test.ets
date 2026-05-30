@@ -11,6 +11,7 @@ import OtpUrlParserTest from './services/otp/parsers/OtpUrlParser.test';
 import KeePass2ParserTest from './services/otp/parsers/KeePass2Parser.test';
 import KeeOtpParserTest from './services/otp/parsers/KeeOtpParser.test';
 import KeeTrayTotpParserTest from './services/otp/parsers/KeeTrayTotpParser.test';
+import StorageTestSuite from './storage/StorageTestSuite';
 
 
 export default function testsuite() {
@@ -27,4 +28,5 @@ export default function testsuite() {
   KeePass2ParserTest();
   KeeOtpParserTest();
   KeeTrayTotpParserTest();
+  StorageTestSuite();
 }
