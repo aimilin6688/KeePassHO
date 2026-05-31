@@ -1229,11 +1229,194 @@ struct SettingDatabase {
    - 标记 `KdbxExportService` 为废弃
    - 标记 `KdbxCsvService` 为废弃
 
-### 14.2 兼容性保证
+### 14.2 向后兼容性保证（重要）
 
-- 保留旧的 `KdbxImportService`、`KdbxExportService`、`KdbxCsvService` 类
-- 添加 `@deprecated` 注释，内部委托给新架构
-- 新功能统一使用新架构
+**核心原则：现有导入导出功能必须完全不受影响**
+
+#### 14.2.1 兼容性策略
+
+采用**并行运行、逐步切换**的策略：
+
+```
+阶段1: 新旧并存
+┌─────────────────────────────────────────────────────────┐
+│  UI (SettingDatabase.ets)                               │
+│     │                                                   │
+│     ├──► 旧代码路径 (KdbxImportService/KdbxExportService)│
+│     │    └──► 现有功能，保持不变                         │
+│     │                                                   │
+│     └──► 新代码路径 (ImportExportViewModel)              │
+│          └──► 新功能，通过开关控制                        │
+└─────────────────────────────────────────────────────────┘
+
+阶段2: 功能验证通过后切换
+┌─────────────────────────────────────────────────────────┐
+│  UI (SettingDatabase.ets)                               │
+│     │                                                   │
+│     └──► 新代码路径 (ImportExportViewModel)              │
+│          └──► 完全替代旧功能                             │
+│                                                          │
+│  旧代码保留但标记 @deprecated，供紧急回退                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### 14.2.2 旧代码处理方式
+
+**保留原有类和方法，不做任何修改：**
+
+```typescript
+// services/kdbx/KdbxImportService.ets - 保持原样
+export class KdbxImportService {
+  private static readonly EXPORT_TYPES = ['.kdbx', '.xml', '.csv'];
+
+  public static importDatabase(inputType?: ExportType) {
+    // 原有实现完全保留
+  }
+
+  // ... 其他原有方法
+}
+
+// services/kdbx/KdbxExportService.ets - 保持原样
+export class KdbxExportService {
+  public static exportDatabase(exportType: ExportType) {
+    // 原有实现完全保留
+  }
+
+  // ... 其他原有方法
+}
+
+// services/kdbx/KdbxCsvService.ets - 保持原样
+export class KdbxCsvService {
+  public static async import(csvFile: FileContentInfo): Promise<KdbxGroup> {
+    // 原有实现完全保留
+  }
+
+  public static async export(database: Kdbx): Promise<ArrayBuffer> {
+    // 原有实现完全保留
+  }
+}
+```
+
+#### 14.2.3 功能开关控制
+
+通过 `SettingsService` 控制使用新旧架构：
+
+```typescript
+// services/SettingsService.ets 中添加
+private static readonly KEY_USE_NEW_IMPORT_EXPORT = 'use_new_import_export';
+
+public isUseNewImportExport(): boolean {
+  return this.getSetting(SettingsService.KEY_USE_NEW_IMPORT_EXPORT, false);
+}
+
+public setUseNewImportExport(value: boolean): void {
+  this.setSetting(SettingsService.KEY_USE_NEW_IMPORT_EXPORT, value);
+}
+```
+
+#### 14.2.4 UI 层适配
+
+```typescript
+// pages/setting/SettingDatabase.ets
+import { KdbxImportService } from '../../services/kdbx/KdbxImportService';
+import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
+import { ImportExportViewModel, registerDefaultHandlers } from '../../services/importExport';
+
+@Entry
+@Component
+struct SettingDatabase {
+  private viewModel: ImportExportViewModel = new ImportExportViewModel();
+  @State useNewArchitecture: boolean = false;
+
+  aboutToAppear(): void {
+    // 根据开关决定使用哪个架构
+    this.useNewArchitecture = SettingsService.getInstance().isUseNewImportExport();
+
+    if (this.useNewArchitecture) {
+      registerDefaultHandlers();
+    }
+  }
+
+  // 导入功能
+  private importDatabase(formatId: string): void {
+    if (this.useNewArchitecture) {
+      // 新架构
+      this.startImportNew(formatId);
+    } else {
+      // 旧架构 - 完全保持原有调用方式
+      const exportType = this.convertToExportType(formatId);
+      KdbxImportService.importDatabase(exportType);
+    }
+  }
+
+  // 导出功能
+  private exportDatabase(formatId: string): void {
+    if (this.useNewArchitecture) {
+      // 新架构
+      this.startExportNew(formatId);
+    } else {
+      // 旧架构 - 完全保持原有调用方式
+      const exportType = this.convertToExportType(formatId);
+      KdbxExportService.exportDatabase(exportType);
+    }
+  }
+
+  private convertToExportType(formatId: string): ExportType {
+    switch (formatId) {
+      case 'XML': return ExportType.XML;
+      case 'CSV': return ExportType.CSV;
+      case 'KDBX': return ExportType.KDBX;
+      default: return ExportType.XML;
+    }
+  }
+
+  // ... 其他方法
+}
+```
+
+#### 14.2.5 验证清单
+
+重构完成后必须验证以下功能正常工作：
+
+| 功能 | 验证点 | 优先级 |
+|------|--------|--------|
+| CSV 导入 | 导入 KeePass 导出的 CSV 文件 | P0 |
+| CSV 导出 | 导出为 CSV 格式 | P0 |
+| XML 导入 | 导入 KeePass XML 格式文件 | P0 |
+| XML 导出 | 导出为 XML 格式 | P0 |
+| KDBX 导出 | 导出为 KDBX 格式 | P0 |
+| 文件选择 | 本地文件选择功能 | P0 |
+| 云存储 | WebDAV/OneDrive/FTP 导入导出 | P1 |
+| 错误处理 | 文件不存在、格式错误等提示 | P1 |
+| 进度显示 | Loading 对话框显示 | P2 |
+
+#### 14.2.6 回滚方案
+
+如果新架构出现问题，可以快速回滚：
+
+1. 将 `SettingsService` 中的 `use_new_import_export` 设为 `false`
+2. 用户立即恢复使用旧架构
+3. 无需重新发布应用即可切换
+
+#### 14.2.7 废弃计划
+
+旧代码的废弃时间线：
+
+| 阶段 | 时间 | 操作 |
+|------|------|------|
+| 阶段1 | 重构完成 | 保留旧代码，添加 `@deprecated` 注释 |
+| 阶段2 | 1个月后 | 如果新架构稳定，在文档中标记旧代码计划移除 |
+| 阶段3 | 3个月后 | 评估是否移除旧代码，或继续保留作为备用 |
+
+```typescript
+/**
+ * @deprecated 请使用 ImportExportViewModel 替代
+ * 该类将在未来版本中移除
+ */
+export class KdbxImportService {
+  // ...
+}
+```
 
 ## 15. 扩展新格式指南
 
@@ -1303,8 +1486,23 @@ registry.registerImportHandler(new NewFormatImportHandler());
 | 迁移现有处理器 | 3-4 小时 |
 | 服务层实现 | 2-3 小时 |
 | Facade 和 ViewModel | 2-3 小时 |
-| UI 层适配 | 2-3 小时 |
+| 功能开关与兼容性适配 | 2-3 小时 |
+| UI 层适配（双架构支持） | 3-4 小时 |
 | Bitwarden 支持 | 2-3 小时 |
 | 单元测试 | 3-4 小时 |
-| 集成测试与调试 | 2-3 小时 |
-| **总计** | **19-28 小时** |
+| 集成测试与兼容性验证 | 4-5 小时 |
+| **总计** | **24-34 小时** |
+
+## 19. 实施优先级
+
+| 优先级 | 任务 | 说明 |
+|--------|------|------|
+| P0 | 核心接口与注册表 | 架构基础 |
+| P0 | CSV/XML 导入导出处理器 | 迁移现有功能 |
+| P0 | 功能开关实现 | 保证兼容性 |
+| P0 | UI 双架构支持 | 现有功能不受影响 |
+| P1 | 服务层和 Facade | 业务逻辑 |
+| P1 | ViewModel | UI 状态管理 |
+| P2 | Bitwarden 导入支持 | 新功能 |
+| P2 | KDBX 导出处理器 | 迁移现有功能 |
+| P3 | 旧代码废弃标记 | 稳定后执行 |
