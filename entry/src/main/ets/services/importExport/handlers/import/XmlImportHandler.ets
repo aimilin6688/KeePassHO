@@ -1,5 +1,5 @@
 import { KdbxGroup, Kdbx, KdbxCredentials, ByteUtils } from 'kdbxweb';
-import { IImportHandler } from '../../interfaces/IImportHandler';
+import { IImportHandler } from '../IImportHandler';
 import { FileContentInfo } from '../../../../storage';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
 
