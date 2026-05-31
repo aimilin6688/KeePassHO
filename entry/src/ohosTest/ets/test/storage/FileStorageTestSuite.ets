@@ -32,19 +32,19 @@ export interface FileStorageTestOptions {
  */
 export function runFileStorageTests(options: FileStorageTestOptions): void {
   // ==================== 共享状态 ====================
-  let storage: IFileStorage;
+  let storage: IFileStorage = options.createStorage();
   let realFiles: FileInfo[] = [];
   let listDirFailed: boolean = false;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     storage = options.createStorage();
     storage.init(options.createConfig());
     if (realFiles.length === 0 && !listDirFailed) {
-      try {
-        realFiles = await storage.listDir(options.listDirPath);
-      } catch (error) {
+      storage.listDir(options.listDirPath).then((files: FileInfo[]) => {
+        realFiles = files;
+      }).catch(() => {
         listDirFailed = true;
-      }
+      });
     }
   });
 

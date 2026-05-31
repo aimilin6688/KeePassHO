@@ -102,16 +102,29 @@ export enum FileType {
 }
 
 /**
+ * 文件信息实现类
+ * 用于创建 FileInfo 对象
+ */
+export class FileInfoImpl implements FileInfo {
+  name: string = '';
+  size: number = 0;
+  modifiedTime: number = 0;
+  path: string = '';
+  type: FileType = FileType.FILE;
+  childrenCount: number = 0;
+}
+
+/**
  * 文件内容信息
  */
 export class FileContentInfo implements FileInfo {
-  name: string;
-  size: number;
-  modifiedTime: number;
-  path: string;
-  content: ArrayBuffer;
-  type: FileType;
-  childrenCount: number;
+  name: string = '';
+  size: number = 0;
+  modifiedTime: number = 0;
+  path: string = '';
+  content: ArrayBuffer = new ArrayBuffer(0);
+  type: FileType = FileType.FILE;
+  childrenCount: number = 0;
 
   /**
    * 文件内容信息
@@ -129,13 +142,13 @@ export class FileContentInfo implements FileInfo {
   }
 
   get fileInfo(): FileInfo {
-    return {
-      name: this.name,
-      size: this.size,
-      modifiedTime: this.modifiedTime,
-      path: this.path,
-      type: this.type,
-      childrenCount: this.childrenCount
-    };
+    const info = new FileInfoImpl();
+    info.name = this.name;
+    info.size = this.size;
+    info.modifiedTime = this.modifiedTime;
+    info.path = this.path;
+    info.type = this.type;
+    info.childrenCount = this.childrenCount;
+    return info;
   }
 }
