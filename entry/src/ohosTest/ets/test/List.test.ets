@@ -19,6 +19,7 @@ import PCloudClientTest from './storage/pcloud/PCloudClient.test';
 import PCloudConfigTest from './storage/pcloud/PCloudConfig.test';
 import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test';
 import PCloudClientIntegrationTest from './storage/pcloud/PCloudClientIntegration.test';
+import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
 
 export default function testsuite() {
@@ -43,4 +44,5 @@ export default function testsuite() {
   PCloudConfigTest();
   PCloudOAuth2ProviderTest();
   PCloudClientIntegrationTest();
+  PCloudStorageTest();
 }
