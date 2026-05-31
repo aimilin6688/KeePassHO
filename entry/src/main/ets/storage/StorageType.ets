@@ -26,5 +26,10 @@ export enum StorageType {
   /**
    * S3兼容存储
    */
-  S3 = 'S3'
+  S3 = 'S3',
+
+  /**
+   * pCloud云存储
+   */
+  PCLOUD = 'PCLOUD'
 }
