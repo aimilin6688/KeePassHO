@@ -198,11 +198,11 @@ export class CsvImportHandler implements IImportHandler {
     headerMap: Map<string, number>,
     fields: string[],
     fieldName: string,
-    protected: boolean = false
+    isProtected: boolean = false
   ): void {
     const idx = headerMap.get(fieldName);
     if (idx !== undefined && idx < fields.length && fields[idx]) {
-      entry.setField(fieldName, fields[idx], protected);
+      entry.setField(fieldName, fields[idx], isProtected);
     }
   }
 }

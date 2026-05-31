@@ -1,5 +1,14 @@
 // services/importExport/index.ets
 
+import { FormatHandlerRegistry } from './registry/FormatHandlerRegistry';
+import { CsvImportHandler } from './handlers/import/CsvImportHandler';
+import { XmlImportHandler } from './handlers/import/XmlImportHandler';
+import { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
+import { CsvExportHandler } from './handlers/export/CsvExportHandler';
+import { XmlExportHandler } from './handlers/export/XmlExportHandler';
+import { KdbxExportHandler } from './handlers/export/KdbxExportHandler';
+import { KeyFileExportHandler } from './handlers/export/KeyFileExportHandler';
+
 // 公共类型
 export { Result } from './common/Result';
 export { ImportError, ExportError, ImportExportErrorCode } from './common/ImportExportError';
@@ -32,15 +41,6 @@ export { CsvExportHandler } from './handlers/export/CsvExportHandler';
 export { XmlExportHandler } from './handlers/export/XmlExportHandler';
 export { KdbxExportHandler } from './handlers/export/KdbxExportHandler';
 export { KeyFileExportHandler } from './handlers/export/KeyFileExportHandler';
-
-import { FormatHandlerRegistry } from './registry/FormatHandlerRegistry';
-import { CsvImportHandler } from './handlers/import/CsvImportHandler';
-import { XmlImportHandler } from './handlers/import/XmlImportHandler';
-import { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
-import { CsvExportHandler } from './handlers/export/CsvExportHandler';
-import { XmlExportHandler } from './handlers/export/XmlExportHandler';
-import { KdbxExportHandler } from './handlers/export/KdbxExportHandler';
-import { KeyFileExportHandler } from './handlers/export/KeyFileExportHandler';
 
 /**
  * 注册默认处理器

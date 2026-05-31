@@ -24,10 +24,10 @@ enum CsvTitle {
  * CSV 导出处理器
  */
 export class CsvExportHandler implements IExportHandler {
-  readonly supportedExtensions = ['.csv'];
-  readonly formatName = 'CSV';
-  readonly formatId = 'CSV';
-  readonly defaultFileName = 'export.csv';
+  readonly supportedExtensions: string[] = ['.csv'];
+  readonly formatName: string = 'CSV';
+  readonly formatId: string = 'CSV';
+  readonly defaultFileName: string = 'export.csv';
 
   canHandle(formatId: string): boolean {
     return this.formatId === formatId;
@@ -36,7 +36,13 @@ export class CsvExportHandler implements IExportHandler {
   async export(database: Kdbx): Promise<ArrayBuffer> {
     try {
       const rootGroup = database.getDefaultGroup();
-      const entries = rootGroup.allEntries();
+      const entryIterator = rootGroup.allEntries();
+
+      // 收集所有条目到数组
+      const entries: KdbxEntry[] = [];
+      for (const entry of entryIterator) {
+        entries.push(entry);
+      }
 
       if (entries.length === 0) {
         throw new ExportError(ImportExportErrorCode.DATABASE_EMPTY, '数据库为空，没有可导出的条目');
