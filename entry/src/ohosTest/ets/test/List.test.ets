@@ -21,6 +21,15 @@ import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test
 import PCloudClientIntegrationTest from './storage/pcloud/PCloudClientIntegration.test';
 import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
+// Import/Export 单元测试
+import ImportExportCommonTest from './importExport/ImportExportCommon.test';
+import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
+import CsvImportHandlerTest from './importExport/CsvImportHandler.test';
+import XmlExportHandlerTest from './importExport/XmlExportHandler.test';
+import BitwardenJsonImportHandlerTest from './importExport/BitwardenJsonImportHandler.test';
+import KdbxExportHandlerTest from './importExport/KdbxExportHandler.test';
+import SimpleHandlerTest from './importExport/SimpleHandler.test';
+
 
 export default function testsuite() {
   ActsAbilityTest();
@@ -45,4 +54,13 @@ export default function testsuite() {
   PCloudOAuth2ProviderTest();
   PCloudClientIntegrationTest();
   PCloudStorageTest();
+
+  // Import/Export 单元测试
+  ImportExportCommonTest();
+  FormatHandlerRegistryTest();
+  SimpleHandlerTest();
+  CsvImportHandlerTest();
+  XmlExportHandlerTest();
+  BitwardenJsonImportHandlerTest();
+  KdbxExportHandlerTest();
 }
