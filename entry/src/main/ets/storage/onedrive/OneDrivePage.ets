@@ -135,7 +135,8 @@ struct OneDrive {
       url: 'pages/OAuth2Login',
       params: {
         authUrl: authUrl,
-        oauth2Config: this.oauth2Provider!.getConfig()
+        oauth2Config: this.oauth2Provider!.getConfig(),
+        pageTitle: 'OneDrive 授权'
       }
     });
   }

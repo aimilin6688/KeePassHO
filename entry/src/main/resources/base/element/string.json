@@ -2731,6 +2731,70 @@
     {
       "name": "template_category_other",
       "value": "Other"
+    },
+    {
+      "name": "pcloud_select_desc",
+      "value": "Sign in to pCloud account"
+    },
+    {
+      "name": "pcloud_save_desc",
+      "value": "Save to pCloud"
+    },
+    {
+      "name": "pcloud_authenticating",
+      "value": "Authenticating to pCloud..."
+    },
+    {
+      "name": "pcloud_authentication_successful",
+      "value": "pCloud Authentication successful"
+    },
+    {
+      "name": "pcloud_login_successful",
+      "value": "pCloud Login successful"
+    },
+    {
+      "name": "pcloud_authentication_failed",
+      "value": "pCloud Authentication failed"
+    },
+    {
+      "name": "pcloud_logged_in",
+      "value": "Logged in to pCloud"
+    },
+    {
+      "name": "pcloud_logout",
+      "value": "Logout"
+    },
+    {
+      "name": "pcloud_login_prompt",
+      "value": "Please sign in to your pCloud account to access your cloud files"
+    },
+    {
+      "name": "pcloud_login_button",
+      "value": "Sign in to pCloud"
+    },
+    {
+      "name": "pcloud_login_first",
+      "value": "Please sign in to pCloud first"
+    },
+    {
+      "name": "pcloud_token_missing",
+      "value": "Access token is missing"
+    },
+    {
+      "name": "pcloud_token_expire",
+      "value": "Token expires at: %s"
+    },
+    {
+      "name": "pcloud_select_file",
+      "value": "Select a file from pCloud"
+    },
+    {
+      "name": "pcloud_save_file",
+      "value": "Save the file to pCloud"
+    },
+    {
+      "name": "pcloud_authorize_title",
+      "value": "pCloud Authorization"
     }
   ]
 }
