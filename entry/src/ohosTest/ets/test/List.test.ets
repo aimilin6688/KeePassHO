@@ -15,6 +15,12 @@ import S3StorageTest from './storage/s3/S3Storage.test';
 import S3XmlParserTest from './storage/s3/S3XmlParser.test';
 import S3SignatureV4Test from './storage/s3/S3SignatureV4.test';
 import S3ClientTest from './storage/s3/S3Client.test';
+import PCloudClientTest from './storage/pcloud/PCloudClient.test';
+import PCloudConfigTest from './storage/pcloud/PCloudConfig.test';
+import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test';
+import PCloudClientIntegrationTest from './storage/pcloud/PCloudClientIntegration.test';
+import S3StorageCommonTest from './storage/s3/S3StorageCommon.test';
+import PCloudStorageCommon from './storage/pcloud/PCloudStorageCommon.test';
 
 
 export default function testsuite() {
@@ -31,8 +37,14 @@ export default function testsuite() {
   KeePass2ParserTest();
   KeeOtpParserTest();
   KeeTrayTotpParserTest();
+  S3StorageCommonTest();
+  PCloudStorageCommon();
   S3StorageTest();
   S3XmlParserTest();
   S3SignatureV4Test();
   S3ClientTest();
+  PCloudClientTest();
+  PCloudConfigTest();
+  PCloudOAuth2ProviderTest();
+  PCloudClientIntegrationTest();
 }
