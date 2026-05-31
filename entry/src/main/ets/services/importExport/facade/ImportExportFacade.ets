@@ -85,7 +85,7 @@ export class ImportExportFacade {
         location.storageConfig
       );
 
-      return Result.success(undefined);
+      return Result.success<void>(undefined as void);
     } catch (error) {
       return this.handleError(error);
     }
@@ -127,7 +127,7 @@ export class ImportExportFacade {
   /**
    * 统一错误处理
    */
-  private handleError<T>(error: unknown): Result<T> {
+  private handleError<T>(error: Error | ImportError | ExportError): Result<T> {
     if (error instanceof ImportError || error instanceof ExportError) {
       return Result.failure(error.code, error.message);
     }
