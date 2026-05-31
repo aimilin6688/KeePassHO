@@ -3,11 +3,11 @@
  */
 export class Result<T> {
   readonly isSuccess: boolean;
-  readonly value?: T;
-  readonly errorCode?: string;
-  readonly errorMessage?: string;
+  readonly value: T | undefined;
+  readonly errorCode: string | undefined;
+  readonly errorMessage: string | undefined;
 
-  private constructor(isSuccess: boolean, value?: T, errorCode?: string, errorMessage?: string) {
+  private constructor(isSuccess: boolean, value: T | undefined, errorCode?: string, errorMessage?: string) {
     this.isSuccess = isSuccess;
     this.value = value;
     this.errorCode = errorCode;
@@ -25,6 +25,6 @@ export class Result<T> {
    * 创建失败结果
    */
   static failure<T>(errorCode: string, errorMessage: string): Result<T> {
-    return new Result(false, undefined, errorCode, errorMessage);
+    return new Result<T>(false, undefined, errorCode, errorMessage);
   }
 }
