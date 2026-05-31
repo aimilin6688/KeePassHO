@@ -1,12 +1,12 @@
 // services/importExport/viewmodel/ImportExportViewModel.ets
 
-import { Result } from '../common/Result';
-import { FormatInfo } from '../common/FormatInfo';
-import { ImportExportFacade } from '../facade/ImportExportFacade';
-import { LocationInfo } from '../../beans/LocationParam';
+import { Result } from './common/Result';
+import { FormatInfo } from './common/FormatInfo';
+import { ImportExportFacade } from './ImportExportFacade';
+import { LocationInfo } from '../beans/LocationParam';
 import { KdbxGroup } from 'kdbxweb';
-import { FileService } from '../../FileService';
-import { DateUtils } from '../../../common/utils';
+import { FileService } from '../FileService';
+import { DateUtils } from '../../common/utils';
 
 /**
  * 导入导出视图模型

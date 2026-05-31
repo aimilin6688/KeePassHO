@@ -1,5 +1,5 @@
 import { Kdbx, ByteUtils } from 'kdbxweb';
-import { IExportHandler } from '../../interfaces/IExportHandler';
+import { IExportHandler } from '../IExportHandler';
 import { ExportError, ImportExportErrorCode } from '../../common/ImportExportError';
 
 /**
