@@ -5,6 +5,22 @@ import { ImportError, ImportExportErrorCode } from '../../common/ImportExportErr
 import { FileService } from '../../../FileService';
 
 /**
+ * Bitwarden URI 接口
+ */
+interface BitwardenUri {
+  uri: string;
+  match?: number;
+}
+
+/**
+ * Bitwarden 密码历史接口
+ */
+interface BitwardenPasswordHistory {
+  lastUsedDate: string;
+  password: string;
+}
+
+/**
  * Bitwarden JSON 类型定义
  */
 interface BitwardenFolder {
@@ -21,7 +37,7 @@ interface BitwardenField {
 interface BitwardenLogin {
   username?: string;
   password?: string;
-  uris?: Array<{ uri: string; match?: number }>;
+  uris?: BitwardenUri[];
   totp?: string;
   fv2?: string;
 }
@@ -55,6 +71,10 @@ interface BitwardenIdentity {
   country?: string;
 }
 
+interface BitwardenSecureNote {
+  type: number;
+}
+
 interface BitwardenItem {
   id: string;
   organizationId?: string;
@@ -67,8 +87,8 @@ interface BitwardenItem {
   login?: BitwardenLogin;
   card?: BitwardenCard;
   identity?: BitwardenIdentity;
-  secureNote?: object;
-  passwordHistory?: Array<{ lastUsedDate: string; password: string }>;
+  secureNote?: BitwardenSecureNote;
+  passwordHistory?: BitwardenPasswordHistory[];
   collectionIds?: string[];
   revisionDate?: string;
   creationDate?: string;

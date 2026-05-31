@@ -24,11 +24,11 @@ export enum ImportExportErrorCode {
  * 导入错误
  */
 export class ImportError extends Error {
-  constructor(
-    public readonly code: ImportExportErrorCode,
-    message: string
-  ) {
+  readonly code: ImportExportErrorCode;
+
+  constructor(code: ImportExportErrorCode, message: string) {
     super(message);
+    this.code = code;
     this.name = 'ImportError';
   }
 }
@@ -37,11 +37,11 @@ export class ImportError extends Error {
  * 导出错误
  */
 export class ExportError extends Error {
-  constructor(
-    public readonly code: ImportExportErrorCode,
-    message: string
-  ) {
+  readonly code: ImportExportErrorCode;
+
+  constructor(code: ImportExportErrorCode, message: string) {
     super(message);
+    this.code = code;
     this.name = 'ExportError';
   }
 }

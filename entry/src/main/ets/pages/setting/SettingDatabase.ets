@@ -11,6 +11,13 @@ import {
 } from '../../services/importExport';
 import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/LocationParam';
 
+/**
+ * 格式选择选项
+ */
+interface FormatSelectOption {
+  value: string;
+  formatId: string;
+}
 
 @Entry
 @Component
@@ -294,7 +301,7 @@ struct SettingsDatabase {
                   .flexGrow(1)
                 Blank()
                 Column() {
-                  Select(this.importFormats.map(f => ({ value: f.formatName, formatId: f.formatId })))
+                  Select(this.importFormats.map((f: FormatInfo): FormatSelectOption => ({ value: f.formatName, formatId: f.formatId })))
                     .value($r("app.string.please_select"))
                     .font({ size: 16 })
                     .selectedOptionFont({ size: 16 })
@@ -324,7 +331,7 @@ struct SettingsDatabase {
                   .flexGrow(1)
                 Blank()
                 Column() {
-                  Select(this.exportFormats.map(f => ({ value: f.formatName, formatId: f.formatId })))
+                  Select(this.exportFormats.map((f: FormatInfo): FormatSelectOption => ({ value: f.formatName, formatId: f.formatId })))
                     .value($r("app.string.please_select"))
                     .font({ size: 16 })
                     .selectedOptionFont({ size: 16 })
