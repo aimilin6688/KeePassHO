@@ -1,7 +1,7 @@
 // services/importExport/service/ExportService.ets
 
 import { Kdbx } from 'kdbxweb';
-import { FormatHandlerRegistry } from '../registry/FormatHandlerRegistry';
+import { FormatHandlerRegistry } from '../FormatHandlerRegistry';
 import { KdbxFileManager } from '../../kdbx/KdbxFileManager';
 import { ExportError, ImportExportErrorCode } from '../common/ImportExportError';
 import { StorageType, StorageConfig } from '../../../storage';

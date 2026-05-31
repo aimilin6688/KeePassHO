@@ -1,6 +1,6 @@
-import { IImportHandler } from '../interfaces/IImportHandler';
-import { IExportHandler } from '../interfaces/IExportHandler';
-import { FormatInfo } from '../common/FormatInfo';
+import { IImportHandler } from './handlers/IImportHandler';
+import { IExportHandler } from './handlers/IExportHandler';
+import { FormatInfo } from './common/FormatInfo';
 
 /**
  * 格式处理器注册表
