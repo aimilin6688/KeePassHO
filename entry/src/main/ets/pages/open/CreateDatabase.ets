@@ -2,13 +2,12 @@ import { Router } from '@kit.ArkUI';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
-import { ResourceManager, CommonUtils, WindowUtils } from '../../common/utils';
+import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
 import { LocationMode } from './SelectLocation';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
-import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { common } from '@kit.AbilityKit';
 
@@ -102,7 +101,7 @@ struct CreateDatabase {
       // 写入导出参数
       LocationParam.of({
         mode: LocationMode.SAVE,
-        fileName: KdbxExportService.createFileName(fileName, ExportType.KDBX, false),
+        fileName: FilenameUtils.replaceExt(fileName, ".kdbx"),
         onLocation: (locationInfo: LocationInfo) => {
           DataService.saveKdbx({ kdbx: newDb, exportType: ExportType.KDBX, locationInfo: locationInfo }).then(() => {
             LoadingDialog.hideLoading();
