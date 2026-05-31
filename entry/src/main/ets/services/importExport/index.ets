@@ -1,6 +1,6 @@
 // services/importExport/index.ets
 
-import { FormatHandlerRegistry } from './registry/FormatHandlerRegistry';
+import { FormatHandlerRegistry } from './FormatHandlerRegistry';
 import { CsvImportHandler } from './handlers/import/CsvImportHandler';
 import { XmlImportHandler } from './handlers/import/XmlImportHandler';
 import { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
@@ -15,21 +15,21 @@ export { ImportError, ExportError, ImportExportErrorCode } from './common/Import
 export type { FormatInfo } from './common/FormatInfo';
 
 // 接口
-export type { IImportHandler } from './interfaces/IImportHandler';
-export type { IExportHandler } from './interfaces/IExportHandler';
+export type { IImportHandler } from './handlers/IImportHandler';
+export type { IExportHandler } from './handlers/IExportHandler';
 
 // 注册表
-export { FormatHandlerRegistry } from './registry/FormatHandlerRegistry';
+export { FormatHandlerRegistry } from './FormatHandlerRegistry';
 
 // 服务
 export { ImportService } from './service/ImportService';
 export { ExportService } from './service/ExportService';
 
 // Facade
-export { ImportExportFacade } from './facade/ImportExportFacade';
+export { ImportExportFacade } from './ImportExportFacade';
 
 // ViewModel
-export { ImportExportViewModel } from './viewmodel/ImportExportViewModel';
+export { ImportExportViewModel } from './ImportExportViewModel';
 
 // 导入处理器
 export { CsvImportHandler } from './handlers/import/CsvImportHandler';
