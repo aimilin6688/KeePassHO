@@ -7,6 +7,9 @@
         "ONE_DRIVE_CLIENT_SECRET": "",
         "ONE_DRIVE_TENANT_ID": "common",
         "ONE_DRIVE_REDIRECT_URI": "keepassho://aimilin.com/onedrive/redirect",
+        "PCLOUD_CLIENT_ID": "",
+        "PCLOUD_CLIENT_SECRET": "",
+        "PCLOUD_REDIRECT_URI": "keepassho://aimilin.com/pcloud/redirect",
       }
     }
   },

@@ -1,32 +1,37 @@
 import { PromptAction, Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
-import { OneDriveStorageConfig } from './OneDriveConfig';
+import { PCloudStorageConfig } from './PCloudConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { CommonUtils, DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
-import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
-import { OAuth2AuthRequest, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
+import { createPCloudOAuth2Config, PCloudOAuth2Provider } from './PCloudOAuth2Provider';
+import {
+  OAuth2AuthRequest,
+  OAuth2Provider,
+  OAuth2Token,
+  OAuth2TokenStorageService
+} from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
 import { AuthResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
-const TAG = 'OneDrive';
+const TAG = 'PCloud';
 
 @Entry
 @Component
-struct OneDrive {
+struct PCloud {
   @State oauth2Token: OAuth2Token | null = null;
   @State isLoggedIn: boolean = false;
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
   @State isErrorStatus: boolean = false;
-  private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.ONEDRIVE);
+  private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.PCLOUD);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
-  private oauth2Provider?: OneDriveOAuth2Provider;
+  private oauth2Provider?: PCloudOAuth2Provider;
 
   aboutToAppear(): void {
     this.initSaveParam();
@@ -35,13 +40,20 @@ struct OneDrive {
 
   onPageShow(): void {
     this.connectionStatus = '';
-    hilog.debug(DOMAIN, TAG, 'OneDrivePage onPageAppear');
+    hilog.debug(DOMAIN, TAG, 'PCloudPage onPageAppear');
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
     // 检查是否有从OAuth2登录页返回的授权结果
     const authResult = AppStorage.get<AuthResult>('oauth2_auth_result');
-    if (authResult && authResult.code) {
-      hilog.info(DOMAIN, TAG, `Received auth result with code length: ${authResult.code.length}`);
-      this.handleAuthCallback(authResult.code, authResult.state);
+    if (authResult) {
+      if (authResult.error) {
+        hilog.warn(DOMAIN, TAG, `Auth error from redirect: ${authResult.error}`);
+        this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_failed')) +
+          ': ' + authResult.error;
+        this.isErrorStatus = true;
+      } else if (authResult.code) {
+        hilog.info(DOMAIN, TAG, `Received auth result with code length: ${authResult.code.length}`);
+        this.handleAuthCallback(authResult.code, authResult.state);
+      }
       // 清除存储的授权结果
       AppStorage.delete('oauth2_auth_result');
     }
@@ -51,14 +63,13 @@ struct OneDrive {
    * 初始化OAuth2提供者
    */
   private initOAuth2Provider(): void {
-    const oauth2Config = createOneDriveOAuth2Config(
-      BuildProfile.ONE_DRIVE_CLIENT_ID,
-      BuildProfile.ONE_DRIVE_CLIENT_SECRET,
-      BuildProfile.ONE_DRIVE_REDIRECT_URI,
-      'Files.ReadWrite User.Read offline_access',
-      BuildProfile.ONE_DRIVE_TENANT_ID
+    const oauth2Config = createPCloudOAuth2Config(
+      BuildProfile.PCLOUD_CLIENT_ID,
+      BuildProfile.PCLOUD_CLIENT_SECRET,
+      BuildProfile.PCLOUD_REDIRECT_URI,
+      'https://api.pcloud.com'
     );
-    this.oauth2Provider = new OneDriveOAuth2Provider(oauth2Config);
+    this.oauth2Provider = new PCloudOAuth2Provider(oauth2Config);
   }
 
   /**
@@ -68,7 +79,7 @@ struct OneDrive {
     try {
       const storageService = OAuth2TokenStorageService.getInstance();
       const token = await storageService.loadToken({
-        provider: OAuth2Provider.ONEDRIVE,
+        provider: OAuth2Provider.PCLOUD,
         encrypt: true
       });
 
@@ -95,7 +106,7 @@ struct OneDrive {
     try {
       const storageService = OAuth2TokenStorageService.getInstance();
       await storageService.saveToken(this.oauth2Token, {
-        provider: OAuth2Provider.ONEDRIVE,
+        provider: OAuth2Provider.PCLOUD,
         encrypt: true
       });
       hilog.info(DOMAIN, TAG, 'Token saved to storage service');
@@ -111,7 +122,7 @@ struct OneDrive {
     try {
       const storageService = OAuth2TokenStorageService.getInstance();
       await storageService.deleteToken({
-        provider: OAuth2Provider.ONEDRIVE,
+        provider: OAuth2Provider.PCLOUD,
         encrypt: true
       });
       hilog.info(DOMAIN, TAG, 'Token cleared from storage service');
@@ -136,7 +147,7 @@ struct OneDrive {
       params: {
         authUrl: authUrl,
         oauth2Config: this.oauth2Provider!.getConfig(),
-        pageTitle: 'OneDrive 授权'
+        pageTitle: ResourceManager.getInstance().getString($r('app.string.pcloud_authorize_title'))
       }
     });
   }
@@ -152,7 +163,7 @@ struct OneDrive {
     }
 
     this.isConnecting = true;
-    this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authenticating'));
+    this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authenticating'));
     this.isErrorStatus = false;
 
     try {
@@ -165,19 +176,24 @@ struct OneDrive {
 
       this.oauth2Token = token;
       this.isLoggedIn = true;
-      this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_successful'));
+      this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_successful'));
       this.isErrorStatus = false;
 
       // 保存令牌到存储服务（加密）
       await this.saveTokenToStorage();
 
-      hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
-      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.onedrive_login_successful')) });
+      hilog.info(DOMAIN, TAG, `Token obtained`);
+      CommonUtils.showToast({
+        message: ResourceManager.getString($r('app.string.pcloud_login_successful'))
+      });
     } catch (error) {
-      this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_failed')) + `: ${(error as Error).message}`;
+      this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_failed')) +
+        ': ' + (error as Error).message;
       this.isErrorStatus = true;
       hilog.error(DOMAIN, TAG, 'Authentication failed: %{public}s', (error as Error).message);
-      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.onedrive_authentication_failed')) });
+      CommonUtils.showToast({
+        message: ResourceManager.getString($r('app.string.pcloud_authentication_failed'))
+      });
     } finally {
       this.isConnecting = false;
     }
@@ -203,22 +219,15 @@ struct OneDrive {
     }
     // 初始化导出
     const dbFileParam = FileService.getDbFileParam();
-    if (!(dbFileParam.storageType === StorageType.ONEDRIVE)) {
+    if (!(dbFileParam.storageType === StorageType.PCLOUD)) {
       return;
     }
-    let storageConfig = dbFileParam.storageConfig as OneDriveStorageConfig;
+    const storageConfig = dbFileParam.storageConfig as PCloudStorageConfig;
     if (storageConfig) {
-      storageConfig = new OneDriveStorageConfig(storageConfig.accessToken, storageConfig.refreshToken, storageConfig.expiresAt, {
-        timeout: storageConfig.timeout,
-        scope: storageConfig.scope,
-        tokenType: storageConfig.tokenType
-      });
       this.oauth2Token = {
-        tokenType: storageConfig.tokenType,
-        accessToken: storageConfig.getAccessTokenText(),
-        refreshToken: storageConfig.getRefreshTokenText(),
-        expiresAt: storageConfig.expiresAt,
-        scope: storageConfig.scope
+        tokenType: 'bearer',
+        accessToken: storageConfig.accessToken,
+        expiresAt: storageConfig.expireAt
       } as OAuth2Token;
     }
   }
@@ -227,7 +236,6 @@ struct OneDrive {
    * 处理确认事件
    */
   private handleConfirm(): void {
-    // 导出数据库
     if (LocationParam.isSaveMode()) {
       this.selectDir();
     } else {
@@ -249,14 +257,14 @@ struct OneDrive {
         filePath: '/',
         fileSuffix: LocationParam.getFileSuffix(),
         fileName: LocationParam.getFileName(),
-        storageType: StorageType.ONEDRIVE,
+        storageType: StorageType.PCLOUD,
         storageConfig: this.getStorageConfig()
       }
     });
   }
 
   /**
-   * 测试OneDrive连接
+   * 测试 pCloud 连接
    */
   private async testConnection(): Promise<void> {
     if (!this.checkParam()) {
@@ -278,19 +286,19 @@ struct OneDrive {
       } else {
         this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
         this.isErrorStatus = true;
-        hilog.error(DOMAIN, TAG, 'onedrive connection error: %{public}s', this.connectionStatus);
+        hilog.error(DOMAIN, TAG, 'pcloud connection error: %{public}s', this.connectionStatus);
       }
     } catch (error) {
       this.connectionStatus = (error as Error).message;
       this.isErrorStatus = true;
-      hilog.error(DOMAIN, TAG, `onedrive connection error: ${error?.message}, stack: ${(error as Error).stack}`);
+      hilog.error(DOMAIN, TAG, `pcloud connection error: ${(error as Error).message}`);
     } finally {
       this.isConnecting = false;
     }
   }
 
   /**
-   * 保存OneDrive配置（选择文件）
+   * 保存 pCloud 配置（选择文件）
    */
   private async selectFile(): Promise<void> {
     if (!this.checkParam()) {
@@ -303,7 +311,7 @@ struct OneDrive {
       const storageConfig = this.getStorageConfig();
       // 获取文件信息
       const fileInfo = await this.fileManager.init(storageConfig).getInfo('/');
-      hilog.info(DOMAIN, TAG, `Loading OneDrive root: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      hilog.info(DOMAIN, TAG, `Loading pCloud root: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
       if (fileInfo.type === FileType.DIR) {
         this.toFileList();
       } else {
@@ -313,13 +321,12 @@ struct OneDrive {
           filePath: '/',
           fileName: fileInfo.name,
           fileSuffix: LocationParam.getFileSuffix(),
-          storageType: StorageType.ONEDRIVE,
+          storageType: StorageType.PCLOUD,
           storageConfig: storageConfig
         });
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load OneDrive: %{public}s, %{public}s, stack:%{public}s',
-        '/', (error as Error).message, (error as Error).stack);
+      hilog.error(DOMAIN, TAG, 'Failed to load pCloud: %{public}s', (error as Error).message);
       this.connectionStatus = (error as Error).message;
       this.isErrorStatus = true;
       CommonUtils.showToast({ message: (error as Error).message });
@@ -342,10 +349,10 @@ struct OneDrive {
       // 配置信息
       const storageConfig = this.getStorageConfig();
       this.fileManager.init(storageConfig);
-      this.connectionStatus = ResourceManager.getString($r("app.string.check_file_existing"));
+      this.connectionStatus = ResourceManager.getString($r('app.string.check_file_existing'));
       // 获取文件信息
       const existsFile = await this.fileManager.exists('/');
-      hilog.info(DOMAIN, TAG, `Export file to OneDrive path: /`);
+      hilog.info(DOMAIN, TAG, `Export file to pCloud path: /`);
       if (existsFile) {
         // 获取文件类型
         this.connectionStatus = ResourceManager.getString($r('app.string.get_file_info'));
@@ -361,8 +368,7 @@ struct OneDrive {
         this.handleSelectDir(storageConfig);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s',
-        '/', (error as Error).message, (error as Error).stack);
+      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s', (error as Error).message);
       this.connectionStatus = (error as Error).message;
       this.isErrorStatus = true;
       CommonUtils.showToast({ message: (error as Error).message });
@@ -382,9 +388,9 @@ struct OneDrive {
       LocationParam.callOnLocation({
         mode: LocationParam.getMode(),
         filePath: '/',
-        fileName: 'OneDrive',
+        fileName: 'pCloud',
         fileSuffix: LocationParam.getFileSuffix(),
-        storageType: StorageType.ONEDRIVE,
+        storageType: StorageType.PCLOUD,
         storageConfig: storageConfig
       });
     } catch (error) {
@@ -402,12 +408,12 @@ struct OneDrive {
    */
   private checkParam(): boolean {
     if (!this.isLoggedIn) {
-      this.connectionStatus = 'Please login to OneDrive first';
+      this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_login_first'));
       this.isErrorStatus = true;
       return false;
     }
     if (!this.oauth2Token || !this.oauth2Token.accessToken) {
-      this.connectionStatus = 'Access token is missing';
+      this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_token_missing'));
       this.isErrorStatus = true;
       return false;
     }
@@ -416,21 +422,18 @@ struct OneDrive {
 
   /**
    * 获取存储配置
-   * @returns OneDriveStorageConfig 存储配置
+   * @returns PCloudStorageConfig 存储配置
    */
   private getStorageConfig(): StorageConfig {
     if (!this.oauth2Token) {
       return {};
     }
-    return new OneDriveStorageConfig(
-      this.oauth2Token.accessToken,
-      this.oauth2Token.refreshToken || '',
-      this.oauth2Token.expiresAt || 0,
-      {
-        tokenType: this.oauth2Token.tokenType,
-        scope: this.oauth2Token.scope
-      }
-    );
+    const config = new PCloudStorageConfig();
+    config.accessToken = this.oauth2Token.accessToken;
+    if (this.oauth2Token.expiresAt && this.oauth2Token.expiresAt > 0) {
+      config.expireAt = this.oauth2Token.expiresAt;
+    }
+    return config;
   }
 
   build() {
@@ -446,7 +449,7 @@ struct OneDrive {
             this.router.back()
           })
 
-        Text('OneDrive')
+        Text('pCloud')
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -462,12 +465,12 @@ struct OneDrive {
           if (this.isLoggedIn) {
             Column() {
               Row() {
-                Text($r('app.string.onedrive_logged_in'))
+                Text($r('app.string.pcloud_logged_in'))
                   .fontSize(16)
                   .fontWeight(FontWeight.Medium)
                   .fontColor($r('app.color.success'))
                 Blank()
-                Text($r('app.string.onedrive_logout'))
+                Text($r('app.string.pcloud_logout'))
                   .fontSize(14)
                   .fontColor($r('app.color.text_primary'))
                   .onClick(() => {
@@ -478,7 +481,8 @@ struct OneDrive {
 
               // 令牌过期时间
               if (this.oauth2Token && this.oauth2Token.expiresAt && this.oauth2Token.expiresAt > 0) {
-                Text(`令牌过期时间: ${DateUtils.format(new Date(this.oauth2Token.expiresAt))}`)
+                Text(ResourceManager.getString($r('app.string.pcloud_token_expire'),
+                  DateUtils.format(new Date(this.oauth2Token.expiresAt))))
                   .fontSize(12)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 8 })
@@ -493,12 +497,12 @@ struct OneDrive {
           } else {
             // 未登录状态
             Column() {
-              Text($r('app.string.onedrive_login_prompt'))
+              Text($r('app.string.pcloud_login_prompt'))
                 .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
                 .margin({ top: 20 })
 
-              Button($r('app.string.onedrive_login_button'))
+              Button($r('app.string.pcloud_login_button'))
                 .width('100%')
                 .height(44)
                 .margin({ top: 20 })
@@ -527,7 +531,7 @@ struct OneDrive {
                 .height(50)
                 .color($r('app.color.text_primary'))
 
-              Text($r('app.string.connecting'))
+              Text(ResourceManager.getString($r('app.string.connecting')))
                 .fontSize(16)
                 .margin({ top: 16 })
                 .fontColor($r('app.color.text_primary'))

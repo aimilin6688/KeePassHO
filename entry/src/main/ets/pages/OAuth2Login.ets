@@ -17,6 +17,10 @@ export interface AuthResult {
    * 状态参数
    */
   state: string;
+  /**
+   * 错误信息（如用户拒绝授权）
+   */
+  error?: string;
 }
 
 /**
@@ -53,6 +57,10 @@ struct OAuth2Login {
    */
   @State authUrl: string = '';
   /**
+   * 页面标题
+   */
+  @State pageTitle: string = 'OAuth2 授权';
+  /**
    * Web控制器
    */
   private webviewController: webview.WebviewController = new webview.WebviewController();
@@ -77,6 +85,9 @@ struct OAuth2Login {
         if (params['authUrl']) {
           this.authUrl = params['authUrl'] as string;
         }
+        if (params['pageTitle']) {
+          this.pageTitle = params['pageTitle'] as string;
+        }
       }
     }
     
@@ -96,7 +107,7 @@ struct OAuth2Login {
             this.router.back();
           })
 
-        Text('OneDrive 授权')
+        Text(this.pageTitle)
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -146,6 +157,20 @@ struct OAuth2Login {
     if (url.startsWith(this.oauth2Config.redirectUri)) {
       hilog.info(DOMAIN, TAG, `Redirect detected: ${url}`);
       
+      // 检查是否有错误（pCloud 等提供者在用户拒绝授权时返回 error 参数）
+      const error = this.extractErrorFromUrl(url);
+      if (error) {
+        this.authCompleted = true;
+        hilog.warn(DOMAIN, TAG, `Auth error: ${error}`);
+        AppStorage.setOrCreate('oauth2_auth_result', {
+          code: '',
+          state: '',
+          error: error
+        } as AuthResult);
+        this.router.back();
+        return;
+      }
+
       // 提取授权码和状态
       const code = this.extractCodeFromUrl(url);
       const state = this.extractStateFromUrl(url);
@@ -163,6 +188,28 @@ struct OAuth2Login {
         hilog.info(DOMAIN, TAG, `Auth completed, code length: ${code.length}`);
       }
     }
+  }
+
+  /**
+   * 从URL中提取错误信息
+   * @param url URL
+   * @returns 错误信息
+   */
+  private extractErrorFromUrl(url: string): string | undefined {
+    if (!url || url.trim().length === 0) {
+      return undefined;
+    }
+
+    try {
+      const match = url.match(/[?&]error=([^&]+)/);
+      if (match && match[1]) {
+        return decodeURIComponent(match[1]);
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to extract error: ' + (error as Error).message);
+    }
+
+    return undefined;
   }
 
   /**

@@ -2659,6 +2659,70 @@
     {
       "name": "template_category_other",
       "value": "其他"
+    },
+    {
+      "name": "pcloud_select_desc",
+      "value": "登录 pCloud 账号"
+    },
+    {
+      "name": "pcloud_save_desc",
+      "value": "保存到 pCloud"
+    },
+    {
+      "name": "pcloud_authenticating",
+      "value": "正在进行 pCloud 身份验证..."
+    },
+    {
+      "name": "pcloud_authentication_successful",
+      "value": "pCloud 身份验证成功"
+    },
+    {
+      "name": "pcloud_login_successful",
+      "value": "pCloud 登录成功"
+    },
+    {
+      "name": "pcloud_authentication_failed",
+      "value": "pCloud 身份验证失败"
+    },
+    {
+      "name": "pcloud_logged_in",
+      "value": "已登录 pCloud"
+    },
+    {
+      "name": "pcloud_logout",
+      "value": "退出登录"
+    },
+    {
+      "name": "pcloud_login_prompt",
+      "value": "请登录您的 pCloud 账号以访问云端文件"
+    },
+    {
+      "name": "pcloud_login_button",
+      "value": "登录 pCloud"
+    },
+    {
+      "name": "pcloud_login_first",
+      "value": "请先登录 pCloud"
+    },
+    {
+      "name": "pcloud_token_missing",
+      "value": "访问令牌缺失"
+    },
+    {
+      "name": "pcloud_token_expire",
+      "value": "令牌过期时间: %s"
+    },
+    {
+      "name": "pcloud_select_file",
+      "value": "从 pCloud 中选择文件"
+    },
+    {
+      "name": "pcloud_save_file",
+      "value": "保存文件到 pCloud"
+    },
+    {
+      "name": "pcloud_authorize_title",
+      "value": "pCloud 授权"
     }
   ]
 }

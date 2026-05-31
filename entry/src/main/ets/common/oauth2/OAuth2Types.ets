@@ -17,7 +17,12 @@ export enum OAuth2Provider {
   /**
    * Dropbox
    */
-  DROPBOX = 'DROPBOX'
+  DROPBOX = 'DROPBOX',
+
+  /**
+   * pCloud
+   */
+  PCLOUD = 'PCLOUD'
 }
 
 /**
