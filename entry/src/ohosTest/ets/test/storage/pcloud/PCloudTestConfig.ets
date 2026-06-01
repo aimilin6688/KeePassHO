@@ -43,6 +43,7 @@ export class PCloudTestConfig extends TestStorageConfig {
 export class PCloudStorageTestConfig {
   accessToken: string = '';
   timeout: number = PCloudTestConfig.TIMEOUT;
+  lastActiveAt: number = Date.now();
 
   constructor(accessToken: string) {
     this.accessToken = accessToken;
@@ -54,5 +55,9 @@ export class PCloudStorageTestConfig {
 
   get expireAt(): number {
     return 0;
+  }
+
+  touchActive(): void {
+    this.lastActiveAt = Date.now();
   }
 }
