@@ -56,7 +56,8 @@ export class CsvExportHandler implements IExportHandler {
 
       // 遍历所有条目
       for (const entry of entries) {
-        const groupPath = KdbxUtils.getGroupPath(entry.parentGroup);
+        // 使用 includeRoot=false，这样根分组下的条目 Group 字段为空
+        const groupPath = KdbxUtils.getGroupPath(entry.parentGroup, '/', false);
         const row = this.createCsvRow(entry, groupPath);
         csvContent += row + '\n';
       }

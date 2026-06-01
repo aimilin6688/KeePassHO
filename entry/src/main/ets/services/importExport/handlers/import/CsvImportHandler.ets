@@ -21,6 +21,14 @@ enum CsvTitle {
 }
 
 /**
+ * 解析条目结果
+ */
+interface ParseEntryResult {
+  entry: KdbxEntry;
+  parentGroup: KdbxGroup;
+}
+
+/**
  * CSV 导入处理器
  */
 export class CsvImportHandler implements IImportHandler {
@@ -36,7 +44,7 @@ export class CsvImportHandler implements IImportHandler {
     const content = ByteUtils.bytesToString(fileContent.content);
     const lines = content.split('\n');
 
-    if (lines.length === 0) {
+    if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) {
       throw new ImportError(ImportExportErrorCode.FILE_EMPTY, '文件为空');
     }
 
@@ -51,8 +59,9 @@ export class CsvImportHandler implements IImportHandler {
       if (!lines[i].trim()) continue;
 
       const line = this.parseCsvLine(lines[i]);
-      const entry = this.parseEntry(line, headerMap, rootGroup, groupCache, fieldProtection);
-      rootGroup.entries.push(entry);
+      const result = this.parseEntry(line, headerMap, rootGroup, groupCache, fieldProtection);
+      // 将条目添加到其所属的分组
+      result.parentGroup.entries.push(result.entry);
     }
 
     return rootGroup;
@@ -128,7 +137,7 @@ export class CsvImportHandler implements IImportHandler {
     rootGroup: KdbxGroup,
     groupCache: Map<string, KdbxGroup>,
     fieldProtection: Map<string, boolean>
-  ): KdbxEntry {
+  ): ParseEntryResult {
     // 获取或创建分组
     const groupIndex = headerMap.get(CsvTitle.Group);
     let parentGroup = rootGroup;
@@ -157,7 +166,8 @@ export class CsvImportHandler implements IImportHandler {
       }
     }
 
-    return entry;
+    const result: ParseEntryResult = { entry: entry, parentGroup: parentGroup };
+    return result;
   }
 
   private getOrCreateGroup(
