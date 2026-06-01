@@ -4,6 +4,7 @@ import { ImportError, ImportExportErrorCode } from '../../../../main/ets/service
 import { TestUtils } from './TestUtils';
 import { FileService } from '../../../../main/ets/services/FileService';
 import { Kdbx } from 'kdbxweb';
+import { KdbxUtils } from '../../../../main/ets/common/utils';
 
 /**
  * Bitwarden JSON 导入完整功能测试
@@ -101,7 +102,7 @@ export default function BitwardenJsonImportHandlerTest() {
         const result = await handler.import(fileContent);
 
         expect(result.entries.length).assertEqual(1);
-        expect(result.entries[0].fields.get('TOTP')).assertEqual('otpauth://totp/issuer?secret=ABCDEF');
+        expect(KdbxUtils.getFieldValueString(result.entries[0].fields, 'TOTP')).assertEqual('otpauth://totp/issuer?secret=ABCDEF');
       });
     });
 
@@ -121,8 +122,8 @@ export default function BitwardenJsonImportHandlerTest() {
         expect(entry.fields.get('Title')).assertEqual('[Card] My Card');
         expect(entry.fields.get('Cardholder Name')).assertEqual('John Doe');
         expect(entry.fields.get('Brand')).assertEqual('Visa');
-        expect(entry.fields.get('Number')).assertEqual('4111111111111111');
-        expect(entry.fields.get('CVV')).assertEqual('123');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Number')).assertEqual('4111111111111111');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'CVV')).assertEqual('123');
       });
     });
 
@@ -234,7 +235,7 @@ export default function BitwardenJsonImportHandlerTest() {
         const entry = result.entries[0];
 
         expect(entry.fields.get('API Key')).assertEqual('abc123');
-        expect(entry.fields.get('Secret')).assertEqual('hidden');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Secret')).assertEqual('hidden');
       });
     });
 
@@ -357,7 +358,7 @@ export default function BitwardenJsonImportHandlerTest() {
         expect(workEntry.fields.get('Title')).assertEqual('Work Login');
         expect(workEntry.fields.get('UserName')).assertEqual('work@example.com');
         expect(workEntry.fields.get('URL')).assertEqual('https://work.example.com');
-        expect(workEntry.fields.get('TOTP')).assertEqual('otpauth://totp/work?secret=WORKKEY');
+        expect(KdbxUtils.getFieldValueString(workEntry.fields, 'TOTP')).assertEqual('otpauth://totp/work?secret=WORKKEY');
         expect(workEntry.fields.get('Department')).assertEqual('IT');
         expect(workEntry.fields.get('Favorite')).assertEqual('true');
       });
