@@ -4,7 +4,7 @@ import { CsvExportHandler } from '../../../../main/ets/services/importExport/han
 import { ImportError, ImportExportErrorCode } from '../../../../main/ets/services/importExport/common/ImportExportError';
 import { TestUtils } from './TestUtils';
 import { FileService } from '../../../../main/ets/services/FileService';
-import { KdbxCredentials, Kdbx } from 'kdbxweb';
+import { KdbxUtils } from '../../../../main/ets/common/utils';
 
 /**
  * CSV 导入导出完整功能测试
@@ -94,7 +94,7 @@ export default function CsvImportHandlerTest() {
 
         expect(entry.fields.get('Title')).assertEqual('My Entry');
         expect(entry.fields.get('UserName')).assertEqual('user@example.com');
-        expect(entry.fields.get('Password')).assertEqual('secret123');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('secret123');
         expect(entry.fields.get('URL')).assertEqual('https://example.com');
         expect(entry.fields.get('Notes')).assertEqual('This is a note');
       });
@@ -111,7 +111,7 @@ export default function CsvImportHandlerTest() {
 
         expect(result.entries.length).assertEqual(1);
         const entry = result.entries[0];
-        expect(entry.fields.get('TOTP')).assertEqual('otpauth://totp/issuer?secret=ABCDEF');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'TOTP')).assertEqual('otpauth://totp/issuer?secret=ABCDEF');
       });
     });
 
@@ -454,7 +454,7 @@ export default function CsvImportHandlerTest() {
       const importedEntry = importedGroup.entries[0];
       expect(importedEntry.fields.get('Title')).assertEqual('Original Entry');
       expect(importedEntry.fields.get('UserName')).assertEqual('original@example.com');
-      expect(importedEntry.fields.get('Password')).assertEqual('password123');
+      expect(KdbxUtils.getFieldValueString(importedEntry.fields,'Password')).assertEqual('password123');
     });
 
     it('shouldPreserveMultipleEntriesThroughRoundTrip', 0, async () => {
