@@ -30,7 +30,7 @@ export class FormatHandlerRegistry {
     for (const ext of handler.supportedExtensions) {
       this.importHandlers.set(ext.toLowerCase(), handler);
     }
-    this.importHandlers.set(handler.formatId, handler);
+    this.importHandlers.set(handler.formatId.toLowerCase(), handler);
   }
 
   /**
@@ -40,7 +40,7 @@ export class FormatHandlerRegistry {
     for (const ext of handler.supportedExtensions) {
       this.exportHandlers.set(ext.toLowerCase(), handler);
     }
-    this.exportHandlers.set(handler.formatId, handler);
+    this.exportHandlers.set(handler.formatId.toLowerCase(), handler);
   }
 
   /**

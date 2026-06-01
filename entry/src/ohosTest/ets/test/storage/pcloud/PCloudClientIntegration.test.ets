@@ -10,7 +10,7 @@ const TAG = 'PCloudClientIntegration';
 export default function PCloudClientIntegrationTest() {
   describe('PCloudClientIntegrationTest', () => {
 
-    let client: PCloudClient;
+    let client: PCloudClient = new PCloudClient();
 
     beforeEach(() => {
       client = new PCloudClient();
