@@ -5,7 +5,11 @@ import { FormatHandlerRegistry } from '../FormatHandlerRegistry';
 import { KdbxFileManager } from '../../kdbx/KdbxFileManager';
 import { ExportError, ImportExportErrorCode } from '../common/ImportExportError';
 import { StorageType, StorageConfig } from '../../../storage';
-import { DateUtils } from '../../../common/utils';
+import { DateUtils, ResourceManager } from '../../../common/utils';
+import hilog from '@ohos.hilog';
+
+const TAG = 'ExportService';
+const DOMAIN = 0xFF00;
 
 /**
  * 导出服务
@@ -35,9 +39,10 @@ export class ExportService {
     // 1. 查找处理器
     const handler = this.registry.getExportHandler(formatId);
     if (!handler) {
+      hilog.error(DOMAIN, TAG, 'Unsupported export format: %{public}s', formatId);
       throw new ExportError(
         ImportExportErrorCode.UNSUPPORTED_FORMAT,
-        `不支持的导出格式: ${formatId}`
+        ResourceManager.getString($r('app.string.import_export_unsupported_format'), formatId)
       );
     }
 

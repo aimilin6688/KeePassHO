@@ -2723,6 +2723,50 @@
     {
       "name": "pcloud_authorize_title",
       "value": "pCloud 授权"
+    },
+    {
+      "name": "import_export_import_failed",
+      "value": "导入失败"
+    },
+    {
+      "name": "import_export_export_failed",
+      "value": "导出失败"
+    },
+    {
+      "name": "import_export_unknown_error",
+      "value": "未知错误"
+    },
+    {
+      "name": "import_export_unsupported_format",
+      "value": "不支持的格式: %s"
+    },
+    {
+      "name": "import_export_file_empty",
+      "value": "文件为空"
+    },
+    {
+      "name": "import_export_parse_failed",
+      "value": "解析失败"
+    },
+    {
+      "name": "import_export_invalid_format",
+      "value": "格式无效"
+    },
+    {
+      "name": "import_export_encrypted_not_supported",
+      "value": "不支持加密文件"
+    },
+    {
+      "name": "import_export_no_entries",
+      "value": "没有找到条目"
+    },
+    {
+      "name": "import_export_missing_required_column",
+      "value": "缺少必须的列: %s"
+    },
+    {
+      "name": "import_export_database_empty",
+      "value": "数据库为空"
     }
   ]
 }

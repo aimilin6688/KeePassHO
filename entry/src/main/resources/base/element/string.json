@@ -2795,6 +2795,50 @@
     {
       "name": "pcloud_authorize_title",
       "value": "pCloud Authorization"
+    },
+    {
+      "name": "import_export_import_failed",
+      "value": "Import failed"
+    },
+    {
+      "name": "import_export_export_failed",
+      "value": "Export failed"
+    },
+    {
+      "name": "import_export_unknown_error",
+      "value": "Unknown error"
+    },
+    {
+      "name": "import_export_unsupported_format",
+      "value": "Unsupported format: %s"
+    },
+    {
+      "name": "import_export_file_empty",
+      "value": "File is empty"
+    },
+    {
+      "name": "import_export_parse_failed",
+      "value": "Parse failed"
+    },
+    {
+      "name": "import_export_invalid_format",
+      "value": "Invalid format"
+    },
+    {
+      "name": "import_export_encrypted_not_supported",
+      "value": "Encrypted file not supported"
+    },
+    {
+      "name": "import_export_no_entries",
+      "value": "No entries found"
+    },
+    {
+      "name": "import_export_missing_required_column",
+      "value": "Missing required column: %s"
+    },
+    {
+      "name": "import_export_database_empty",
+      "value": "Database is empty"
     }
   ]
 }
