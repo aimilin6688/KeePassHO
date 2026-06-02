@@ -2,6 +2,11 @@ import { KdbxGroup, Kdbx, KdbxCredentials, ByteUtils } from 'kdbxweb';
 import { IImportHandler } from '../IImportHandler';
 import { FileContentInfo } from '../../../../storage';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
+import { ResourceManager } from '../../../../common/utils';
+import hilog from '@ohos.hilog';
+
+const TAG = 'XmlImportHandler';
+const DOMAIN = 0xFF00;
 
 /**
  * XML 导入处理器
@@ -19,7 +24,7 @@ export class XmlImportHandler implements IImportHandler {
     const content = ByteUtils.bytesToString(fileContent.content);
 
     if (!content || content.trim().length === 0) {
-      throw new ImportError(ImportExportErrorCode.FILE_EMPTY, '文件为空');
+      throw new ImportError(ImportExportErrorCode.FILE_EMPTY, ResourceManager.getString($r('app.string.import_export_file_empty')));
     }
 
     try {
@@ -29,9 +34,11 @@ export class XmlImportHandler implements IImportHandler {
       if (error instanceof ImportError) {
         throw error;
       }
+      const errorMsg = error instanceof Error ? error.message : ResourceManager.getString($r('app.string.import_export_unknown_error'));
+      hilog.error(DOMAIN, TAG, 'XML parse failed: %{public}s', errorMsg);
       throw new ImportError(
         ImportExportErrorCode.INVALID_FILE_FORMAT,
-        `XML 解析失败: ${error instanceof Error ? error.message : '未知错误'}`
+        ResourceManager.getString($r('app.string.import_export_parse_failed'))
       );
     }
   }
