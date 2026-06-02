@@ -8,9 +8,13 @@ import { ExportService } from './service/ExportService';
 import { FormatHandlerRegistry } from './FormatHandlerRegistry';
 import { FormatInfo } from './common/FormatInfo';
 import { FileService } from '../FileService';
-import { KdbxUtils } from '../../common/utils';
+import { KdbxUtils, ResourceManager } from '../../common/utils';
 import { LocationInfo } from '../beans/LocationParam';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
+import hilog from '@ohos.hilog';
+
+const TAG = 'ImportExportFacade';
+const DOMAIN = 0xFF00;
 
 /**
  * 导入导出外观服务
@@ -129,11 +133,20 @@ export class ImportExportFacade {
    */
   private handleError<T>(error: Error | ImportError | ExportError): Result<T> {
     if (error instanceof ImportError || error instanceof ExportError) {
-      return Result.failure(error.code, error.message);
+      hilog.error(DOMAIN, TAG, 'Import/Export error: code=%{public}s, message=%{public}s',
+        error.code, error.message);
+      // 返回统一的错误信息
+      if (error instanceof ImportError) {
+        return Result.failure(error.code, ResourceManager.getString($r('app.string.import_export_import_failed')));
+      } else {
+        return Result.failure(error.code, ResourceManager.getString($r('app.string.import_export_export_failed')));
+      }
     }
     if (error instanceof Error) {
+      hilog.error(DOMAIN, TAG, 'Import/Export error: %{public}s', error.message);
       return Result.failure(ImportExportErrorCode.PARSE_ERROR, error.message);
     }
-    return Result.failure(ImportExportErrorCode.PARSE_ERROR, '未知错误');
+    hilog.error(DOMAIN, TAG, 'Import/Export unknown error');
+    return Result.failure(ImportExportErrorCode.PARSE_ERROR, ResourceManager.getString($r('app.string.import_export_unknown_error')));
   }
 }
