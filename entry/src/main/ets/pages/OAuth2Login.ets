@@ -6,7 +6,7 @@ const DOMAIN = 0x0000;
 const TAG = 'OAuth2Login';
 
 /**
- * 授权结果
+ * Code Flow 授权结果
  */
 export interface AuthResult {
   /**
@@ -21,6 +21,56 @@ export interface AuthResult {
    * 错误信息（如用户拒绝授权）
    */
   error?: string;
+}
+
+/**
+ * Token Flow (Implicit) 授权结果
+ * 适用于 pCloud 等支持 Implicit Grant 的 OAuth2 提供者
+ */
+export interface TokenFlowResult {
+  /**
+   * 访问令牌
+   */
+  accessToken: string;
+  /**
+   * 令牌类型
+   */
+  tokenType: string;
+  /**
+   * 用户ID
+   */
+  uid?: string;
+  /**
+   * 状态参数
+   */
+  state?: string;
+  /**
+   * 数据中心位置ID（pCloud 特有）
+   */
+  locationid?: string;
+  /**
+   * API服务器主机名（pCloud 特有）
+   */
+  hostname?: string;
+  /**
+   * 错误信息
+   */
+  error?: string;
+}
+
+/**
+ * 统一的授权回调结果
+ * 支持 Code Flow 和 Token Flow 两种模式
+ */
+export interface AuthCallbackResult {
+  /**
+   * Code Flow 结果
+   */
+  codeFlow?: AuthResult;
+  /**
+   * Token Flow 结果
+   */
+  tokenFlow?: TokenFlowResult;
 }
 
 /**
@@ -46,35 +96,16 @@ interface WebPageEvent {
 @Entry
 @Component
 struct OAuth2Login {
-  /**
-   * OAuth2配置
-   */
   @State oauth2Config: OAuth2Config = {
     redirectUri: ''
   };
-  /**
-   * 授权URL
-   */
   @State authUrl: string = '';
-  /**
-   * 页面标题
-   */
   @State pageTitle: string = 'OAuth2 授权';
-  /**
-   * Web控制器
-   */
   private webviewController: webview.WebviewController = new webview.WebviewController();
-  /**
-   * 路由
-   */
   private router: Router = this.getUIContext().getRouter();
-  /**
-   * 是否已完成授权
-   */
   private authCompleted: boolean = false;
 
   aboutToAppear(): void {
-    // 获取页面参数
     const state = this.router.getState();
     if (state && state.params) {
       const params = state.params as Record<string, Object>;
@@ -90,7 +121,6 @@ struct OAuth2Login {
         }
       }
     }
-    
     hilog.info(DOMAIN, TAG, `OAuth2Login initialized with authUrl: ${this.authUrl}`);
   }
 
@@ -146,113 +176,146 @@ struct OAuth2Login {
 
   /**
    * 处理URL变化
-   * @param url 当前URL
+   * 支持 Code Flow（?code=xxx）和 Token Flow（#access_token=xxx）
    */
   private handleUrlChange(url: string): void {
     if (this.authCompleted) {
       return;
     }
 
-    // 检查是否是重定向URI
-    if (url.startsWith(this.oauth2Config.redirectUri)) {
-      hilog.info(DOMAIN, TAG, `Redirect detected: ${url}`);
-      
-      // 检查是否有错误（pCloud 等提供者在用户拒绝授权时返回 error 参数）
-      const error = this.extractErrorFromUrl(url);
-      if (error) {
-        this.authCompleted = true;
-        hilog.warn(DOMAIN, TAG, `Auth error: ${error}`);
-        AppStorage.setOrCreate('oauth2_auth_result', {
-          code: '',
-          state: '',
-          error: error
-        } as AuthResult);
-        this.router.back();
-        return;
-      }
+    if (!url.startsWith(this.oauth2Config.redirectUri)) {
+      return;
+    }
 
-      // 提取授权码和状态
-      const code = this.extractCodeFromUrl(url);
-      const state = this.extractStateFromUrl(url);
-      
-      if (code) {
-        this.authCompleted = true;
-        
-        // 使用AppStorage存储授权结果，然后返回
-        AppStorage.setOrCreate('oauth2_auth_result', {
-          code: code,
-          state: state || ''
-        } as AuthResult);
-        
-        this.router.back();
-        hilog.info(DOMAIN, TAG, `Auth completed, code length: ${code.length}`);
-      }
+    hilog.info(DOMAIN, TAG, `Redirect detected: ${url}`);
+    this.authCompleted = true;
+
+    // 检查是否有错误
+    const error = this.extractErrorFromUrl(url);
+    if (error) {
+      hilog.warn(DOMAIN, TAG, `Auth error: ${error}`);
+      AppStorage.setOrCreate('oauth2_auth_result', {
+        codeFlow: { code: '', state: '', error: error }
+      } as AuthCallbackResult);
+      this.router.back();
+      return;
+    }
+
+    // 优先检查 Token Flow（fragment 中有 access_token）
+    const tokenFlowResult = this.extractTokenFromFragment(url);
+    if (tokenFlowResult) {
+      hilog.info(DOMAIN, TAG, `Token Flow completed`);
+      AppStorage.setOrCreate('oauth2_auth_result', {
+        tokenFlow: tokenFlowResult
+      } as AuthCallbackResult);
+      this.router.back();
+      return;
+    }
+
+    // 检查 Code Flow（query 中有 code）
+    const code = this.extractQueryParam(url, 'code');
+    if (code) {
+      const state = this.extractQueryParam(url, 'state') || '';
+      hilog.info(DOMAIN, TAG, `Code Flow completed`);
+      AppStorage.setOrCreate('oauth2_auth_result', {
+        codeFlow: { code: code, state: state }
+      } as AuthCallbackResult);
+      this.router.back();
     }
   }
 
   /**
    * 从URL中提取错误信息
-   * @param url URL
-   * @returns 错误信息
+   * 同时检查 query 参数和 fragment
    */
   private extractErrorFromUrl(url: string): string | undefined {
-    if (!url || url.trim().length === 0) {
-      return undefined;
+    // 检查 query 参数
+    const queryError = this.extractQueryParam(url, 'error');
+    if (queryError) {
+      return queryError;
     }
 
-    try {
-      const match = url.match(/[?&]error=([^&]+)/);
-      if (match && match[1]) {
-        return decodeURIComponent(match[1]);
+    // 检查 fragment
+    const fragmentIndex = url.indexOf('#');
+    if (fragmentIndex >= 0) {
+      const fragment = url.substring(fragmentIndex + 1);
+      const params = this.parseParams(fragment);
+      const fragmentError = params.get('error');
+      if (fragmentError) {
+        return fragmentError;
       }
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to extract error: ' + (error as Error).message);
     }
 
     return undefined;
   }
 
   /**
-   * 从URL中提取授权码
-   * @param url URL
-   * @returns 授权码
+   * 从 URL fragment 中提取 Token Flow 结果
    */
-  private extractCodeFromUrl(url: string): string | undefined {
-    if (!url || url.trim().length === 0) {
+  private extractTokenFromFragment(url: string): TokenFlowResult | undefined {
+    const fragmentIndex = url.indexOf('#');
+    if (fragmentIndex < 0) {
       return undefined;
     }
 
-    try {
-      const match = url.match(/[?&]code=([^&]+)/);
-      if (match && match[1]) {
-        return decodeURIComponent(match[1]);
-      }
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to extract code: ${(error as Error).message}`);
+    const fragment = url.substring(fragmentIndex + 1);
+    if (!fragment || fragment.trim().length === 0) {
+      return undefined;
     }
 
+    const params = this.parseParams(fragment);
+    const accessToken = params.get('access_token');
+    if (!accessToken || accessToken.trim().length === 0) {
+      return undefined;
+    }
+
+    hilog.info(DOMAIN, TAG, `Token extracted from fragment`);
+    return {
+      accessToken: accessToken,
+      tokenType: params.get('token_type') || 'bearer',
+      uid: params.get('uid'),
+      state: params.get('state'),
+      locationid: params.get('locationid'),
+      hostname: params.get('hostname')
+    };
+  }
+
+  /**
+   * 从 URL query 中提取指定参数
+   */
+  private extractQueryParam(url: string, paramName: string): string | undefined {
+    const regex = new RegExp(`[?&]${paramName}=([^&]+)`);
+    const match = url.match(regex);
+    if (match && match[1]) {
+      try {
+        return decodeURIComponent(match[1]);
+      } catch (e) {
+        return match[1];
+      }
+    }
     return undefined;
   }
 
   /**
-   * 从URL中提取状态参数
-   * @param url URL
-   * @returns 状态参数
+   * 解析参数字符串为 Map
    */
-  private extractStateFromUrl(url: string): string | undefined {
-    if (!url || url.trim().length === 0) {
-      return undefined;
-    }
+  private parseParams(paramString: string): Map<string, string> {
+    const params = new Map<string, string>();
+    const pairs = paramString.split('&');
 
-    try {
-      const match = url.match(/[?&]state=([^&]+)/);
-      if (match && match[1]) {
-        return decodeURIComponent(match[1]);
+    for (const pair of pairs) {
+      const equalIndex = pair.indexOf('=');
+      if (equalIndex > 0) {
+        const key = pair.substring(0, equalIndex);
+        const value = pair.substring(equalIndex + 1);
+        try {
+          params.set(decodeURIComponent(key), decodeURIComponent(value));
+        } catch (e) {
+          params.set(key, value);
+        }
       }
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, `Failed to extract state: ${(error as Error).message}`);
     }
 
-    return undefined;
+    return params;
   }
 }
