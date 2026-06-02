@@ -6,15 +6,20 @@ import { TestStorageConfig } from '../TestStorageConfig';
  * 使用方式和 S3TestConfig 完全一致：
  * 硬编码真实凭据，凭据失效测试就会失败。
  *
+ * pCloud 使用 Token Flow (Implicit) 认证方式获取 access_token：
+ * 1. 访问授权 URL: https://my.pcloud.com/oauth2/authorize?client_id=XXX&response_type=token&redirect_uri=XXX
+ * 2. 用户授权后，从回调 URL 的 fragment 中获取 access_token
+ *    格式: redirect_uri#access_token=XXXXX&token_type=bearer&uid=YYYYYY&locationid=1&hostname=api.pcloud.com
+ *
  * pCloud 的 access_token 持续使用会自动延长 expire_inactive，
  * 只要测试定期运行，token 不会因为不活跃而过期。
  * 如果收到 1000 错误码（需要登录），说明 expire 绝对过期时间到了，
- * 需要重新走 OAuth2 流程获取新 token。
+ * 需要重新走 Token Flow 流程获取新 token。
  */
 export class PCloudTestConfig extends TestStorageConfig {
   /**
    * 测试用 access_token
-   * 通过 pCloud OAuth2 授权码流程获取
+   * 通过 pCloud Token Flow (Implicit) 流程获取
    * 如果不填或过期，集成测试会失败——这是正确的行为
    */
   static readonly PCLOUD_TEST_ACCESS_TOKEN: string = '';
