@@ -4,7 +4,6 @@ import { WebDAVStorage } from './webdav/WebDAVStorage';
 import { OneDriveStorage } from './onedrive/OneDriveStorage';
 import { FTPStorage } from './ftp/FTPStorage';
 import { S3Storage } from './s3/S3Storage';
-import { PCloudStorage } from './pcloud/PCloudStorage';
 import { CacheStorage } from './cache/CacheStorage';
 
 /**
@@ -22,7 +21,6 @@ export class FileStorageFactory {
     this.registerStorage(StorageType.LOCAL, new LocalFileStorage());
     this.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
     this.registerStorage(StorageType.S3, new S3Storage());
-    this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
   }
