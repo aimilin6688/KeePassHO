@@ -3,6 +3,11 @@ import { IImportHandler } from '../IImportHandler';
 import { FileContentInfo } from '../../../../storage';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
 import { FileService } from '../../../FileService';
+import { ResourceManager } from '../../../../common/utils';
+import hilog from '@ohos.hilog';
+
+const TAG = 'BitwardenJsonImportHandler';
+const DOMAIN = 0xFF00;
 
 /**
  * Bitwarden URI 接口
@@ -119,20 +124,21 @@ export class BitwardenJsonImportHandler implements IImportHandler {
     try {
       data = JSON.parse(content);
     } catch {
-      throw new ImportError(ImportExportErrorCode.INVALID_JSON_FORMAT, 'JSON 格式无效');
+      throw new ImportError(ImportExportErrorCode.INVALID_JSON_FORMAT, ResourceManager.getString($r('app.string.import_export_invalid_format')));
     }
 
     // 检查是否加密
     if (data.encrypted === true) {
+      hilog.error(DOMAIN, TAG, 'Encrypted Bitwarden export not supported');
       throw new ImportError(
         ImportExportErrorCode.UNSUPPORTED_FORMAT,
-        '不支持加密的 Bitwarden 导出文件，请导出为未加密的 JSON'
+        ResourceManager.getString($r('app.string.import_export_encrypted_not_supported'))
       );
     }
 
     // 检查是否有条目
     if (!data.items || data.items.length === 0) {
-      throw new ImportError(ImportExportErrorCode.FILE_EMPTY, '导出文件中没有条目');
+      throw new ImportError(ImportExportErrorCode.FILE_EMPTY, ResourceManager.getString($r('app.string.import_export_no_entries')));
     }
 
     const rootGroup = new KdbxGroup();

@@ -6,7 +6,7 @@ import { ImportExportFacade } from './ImportExportFacade';
 import { LocationInfo } from '../beans/LocationParam';
 import { KdbxGroup } from 'kdbxweb';
 import { FileService } from '../FileService';
-import { DateUtils } from '../../common/utils';
+import { DateUtils, ResourceManager } from '../../common/utils';
 
 /**
  * 导入导出视图模型
@@ -70,7 +70,7 @@ export class ImportExportViewModel {
       this.lastImportedCount = this.countItems(result.value);
       return true;
     } else {
-      this.errorMessage = result.errorMessage || '导入失败';
+      this.errorMessage = result.errorMessage || ResourceManager.getString($r('app.string.import_export_import_failed'));
       return false;
     }
   }
@@ -89,7 +89,7 @@ export class ImportExportViewModel {
     if (result.isSuccess) {
       return true;
     } else {
-      this.errorMessage = result.errorMessage || '导出失败';
+      this.errorMessage = result.errorMessage || ResourceManager.getString($r('app.string.import_export_export_failed'));
       return false;
     }
   }

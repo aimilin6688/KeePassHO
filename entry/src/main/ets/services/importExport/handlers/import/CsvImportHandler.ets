@@ -3,6 +3,11 @@ import { IImportHandler } from '../IImportHandler';
 import { FileContentInfo } from '../../../../storage';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
 import { FileService } from '../../../FileService';
+import { ResourceManager } from '../../../../common/utils';
+import hilog from '@ohos.hilog';
+
+const TAG = 'CsvImportHandler';
+const DOMAIN = 0xFF00;
 
 /**
  * CSV 标题枚举
@@ -45,7 +50,7 @@ export class CsvImportHandler implements IImportHandler {
     const lines = content.split('\n');
 
     if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) {
-      throw new ImportError(ImportExportErrorCode.FILE_EMPTY, '文件为空');
+      throw new ImportError(ImportExportErrorCode.FILE_EMPTY, ResourceManager.getString($r('app.string.import_export_file_empty')));
     }
 
     const headerMap = this.parseHeader(lines[0]);
@@ -80,9 +85,10 @@ export class CsvImportHandler implements IImportHandler {
     const requiredHeaders = [CsvTitle.Title];
     for (const required of requiredHeaders) {
       if (!map.has(required)) {
+        hilog.error(DOMAIN, TAG, 'Missing required column: %{public}s', required);
         throw new ImportError(
           ImportExportErrorCode.INVALID_CSV_HEADER,
-          `缺少必须的列: ${required}`
+          ResourceManager.getString($r('app.string.import_export_missing_required_column'), required)
         );
       }
     }

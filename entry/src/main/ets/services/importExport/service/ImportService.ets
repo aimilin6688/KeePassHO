@@ -5,6 +5,11 @@ import { FormatHandlerRegistry } from '../FormatHandlerRegistry';
 import { KdbxFileManager } from '../../kdbx/KdbxFileManager';
 import { ImportError, ImportExportErrorCode } from '../common/ImportExportError';
 import { StorageType, StorageConfig } from '../../../storage';
+import { ResourceManager } from '../../../common/utils';
+import hilog from '@ohos.hilog';
+
+const TAG = 'ImportService';
+const DOMAIN = 0xFF00;
 
 /**
  * 导入服务
@@ -34,9 +39,10 @@ export class ImportService {
     // 2. 查找处理器
     const handler = this.registry.getImportHandler(extension);
     if (!handler) {
+      hilog.error(DOMAIN, TAG, 'Unsupported file format: %{public}s', extension);
       throw new ImportError(
         ImportExportErrorCode.UNSUPPORTED_FORMAT,
-        `不支持的文件格式: ${extension}`
+        ResourceManager.getString($r('app.string.import_export_unsupported_format'), extension)
       );
     }
 

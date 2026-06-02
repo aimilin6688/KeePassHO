@@ -1,8 +1,12 @@
 import { Kdbx, KdbxEntry, KdbxGroup, ByteUtils } from 'kdbxweb';
 import { IExportHandler } from '../IExportHandler';
 import { ExportError, ImportExportErrorCode } from '../../common/ImportExportError';
-import { KdbxUtils } from '../../../../common/utils';
+import { KdbxUtils, ResourceManager } from '../../../../common/utils';
+import hilog from '@ohos.hilog';
 import util from '@ohos.util';
+
+const TAG = 'CsvExportHandler';
+const DOMAIN = 0xFF00;
 
 /**
  * CSV 标题枚举
@@ -45,7 +49,7 @@ export class CsvExportHandler implements IExportHandler {
       }
 
       if (entries.length === 0) {
-        throw new ExportError(ImportExportErrorCode.DATABASE_EMPTY, '数据库为空，没有可导出的条目');
+        throw new ExportError(ImportExportErrorCode.DATABASE_EMPTY, ResourceManager.getString($r('app.string.import_export_database_empty')));
       }
 
       let csvContent = '';
@@ -69,9 +73,11 @@ export class CsvExportHandler implements IExportHandler {
       if (error instanceof ExportError) {
         throw error;
       }
+      const errorMsg = error instanceof Error ? error.message : ResourceManager.getString($r('app.string.import_export_unknown_error'));
+      hilog.error(DOMAIN, TAG, 'CSV export failed: %{public}s', errorMsg);
       throw new ExportError(
         ImportExportErrorCode.EXPORT_FAILED,
-        `CSV 导出失败: ${error instanceof Error ? error.message : '未知错误'}`
+        ResourceManager.getString($r('app.string.import_export_export_failed'))
       );
     }
   }
