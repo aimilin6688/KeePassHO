@@ -39,8 +39,8 @@ export class PCloudStorage implements IFileStorage {
       const err = error as Error;
       this.handlePCloudError(error, 'Read');
       throw new StorageError(
-        'Read failed: ' + err.message,
-        StorageErrorCodes.FILE_READ_ERROR
+        StorageErrorCodes.FILE_READ_ERROR,
+        'Read failed: ' + err.message
       );
     }
   }
@@ -53,8 +53,8 @@ export class PCloudStorage implements IFileStorage {
     const lastSlash = path.lastIndexOf('/');
     if (lastSlash < 0) {
       throw new StorageError(
-        'Invalid path format, expected "d{folderId}/{fileName}"',
-        StorageErrorCodes.FILE_WRITE_ERROR
+        StorageErrorCodes.FILE_WRITE_ERROR,
+        'Invalid path format, expected "d{folderId}/{fileName}"'
       );
     }
 
@@ -68,8 +68,8 @@ export class PCloudStorage implements IFileStorage {
       const err = error as Error;
       this.handlePCloudError(error, 'Write');
       throw new StorageError(
-        'Write failed: ' + err.message,
-        StorageErrorCodes.FILE_WRITE_ERROR
+        StorageErrorCodes.FILE_WRITE_ERROR,
+        'Write failed: ' + err.message
       );
     }
   }
@@ -104,8 +104,8 @@ export class PCloudStorage implements IFileStorage {
       const err = error as Error;
       this.handlePCloudError(error, 'GetInfo');
       throw new StorageError(
-        'Get info failed: ' + err.message,
-        StorageErrorCodes.FILE_INFO_ERROR
+        StorageErrorCodes.FILE_INFO_ERROR,
+        'Get info failed: ' + err.message
       );
     }
   }
@@ -125,8 +125,8 @@ export class PCloudStorage implements IFileStorage {
       const err = error as Error;
       this.handlePCloudError(error, 'ListDir');
       throw new StorageError(
-        'List directory failed: ' + err.message,
-        StorageErrorCodes.FILE_INFO_ERROR
+        StorageErrorCodes.FILE_INFO_ERROR,
+        'List directory failed: ' + err.message
       );
     }
   }
@@ -172,8 +172,8 @@ export class PCloudStorage implements IFileStorage {
   private ensureReady(): void {
     if (!this.client || !this.config) {
       throw new StorageError(
-        'PCloudStorage not initialized',
-        StorageErrorCodes.CLIENT_UNDEFINED
+        StorageErrorCodes.CLIENT_UNDEFINED,
+        'PCloudStorage not initialized'
       );
     }
   }
@@ -185,8 +185,8 @@ export class PCloudStorage implements IFileStorage {
   private handlePCloudError(error: Object, operation: string): void {
     if (error instanceof PCloudError && error.code === PCLOUD_ERROR_NEED_LOGIN) {
       throw new StorageError(
-        operation + ' failed: Token expired, please re-login',
-        StorageErrorCodes.CONNECT_ERROR
+        StorageErrorCodes.CONNECT_ERROR,
+        operation + ' failed: Token expired, please re-login'
       );
     }
   }

@@ -8,14 +8,9 @@ import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { createPCloudOAuth2Config, PCloudOAuth2Provider } from './PCloudOAuth2Provider';
-import {
-  OAuth2AuthRequest,
-  OAuth2Provider,
-  OAuth2Token,
-  OAuth2TokenStorageService
-} from '../../common/oauth2';
+import { OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
-import { AuthResult } from '../../pages/OAuth2Login';
+import { TokenFlowResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
 const TAG = 'PCloud';
@@ -42,30 +37,30 @@ struct PCloud {
     this.connectionStatus = '';
     hilog.debug(DOMAIN, TAG, 'PCloudPage onPageAppear');
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
-    // 检查是否有从OAuth2登录页返回的授权结果
-    const authResult = AppStorage.get<AuthResult>('oauth2_auth_result');
+
+    // 检查是否有从 OAuth2 登录页返回的授权结果
+    const authResult = AppStorage.get<TokenFlowResult>('oauth2_auth_result');
     if (authResult) {
+      AppStorage.delete('oauth2_auth_result');
+
       if (authResult.error) {
-        hilog.warn(DOMAIN, TAG, `Auth error from redirect: ${authResult.error}`);
+        hilog.warn(DOMAIN, TAG, `Auth error: ${authResult.error}`);
         this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_failed')) +
           ': ' + authResult.error;
         this.isErrorStatus = true;
-      } else if (authResult.code) {
-        hilog.info(DOMAIN, TAG, `Received auth result with code length: ${authResult.code.length}`);
-        this.handleAuthCallback(authResult.code, authResult.state);
+      } else if (authResult.accessToken) {
+        hilog.info(DOMAIN, TAG, `Received token with length: ${authResult.accessToken.length}`);
+        this.handleTokenFlowCallback(authResult);
       }
-      // 清除存储的授权结果
-      AppStorage.delete('oauth2_auth_result');
     }
   }
 
   /**
-   * 初始化OAuth2提供者
+   * 初始化 OAuth2 提供者
    */
   private initOAuth2Provider(): void {
     const oauth2Config = createPCloudOAuth2Config(
       BuildProfile.PCLOUD_CLIENT_ID,
-      BuildProfile.PCLOUD_CLIENT_SECRET,
       BuildProfile.PCLOUD_REDIRECT_URI,
       'https://api.pcloud.com'
     );
@@ -132,7 +127,7 @@ struct PCloud {
   }
 
   /**
-   * 生成授权URL并跳转到授权页面
+   * 生成授权 URL 并跳转到授权页面
    */
   private generateAuthUrl(): void {
     if (!this.oauth2Provider) {
@@ -141,7 +136,6 @@ struct PCloud {
     const authUrl = this.oauth2Provider!.getAuthorizationUrl();
     hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
 
-    // 跳转到OAuth2登录页面
     CommonUtils.pushUrl({
       url: 'pages/OAuth2Login',
       params: {
@@ -153,36 +147,41 @@ struct PCloud {
   }
 
   /**
-   * 处理授权回调
-   * @param code 授权码
-   * @param state 状态参数
+   * 处理 Token Flow 回调
    */
-  private async handleAuthCallback(code: string, state: string): Promise<void> {
-    if (!this.oauth2Provider) {
-      this.initOAuth2Provider();
-    }
-
+  private async handleTokenFlowCallback(tokenFlow: TokenFlowResult): Promise<void> {
     this.isConnecting = true;
     this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authenticating'));
     this.isErrorStatus = false;
 
     try {
-      const authRequest: OAuth2AuthRequest = {
-        code: code,
-        state: state
+      const token: OAuth2Token = {
+        accessToken: tokenFlow.accessToken,
+        tokenType: tokenFlow.tokenType || 'bearer',
+        extraParams: {}
       };
 
-      const token = await this.oauth2Provider!.authorize(authRequest);
+      if (tokenFlow.uid) {
+        token.extraParams!['uid'] = tokenFlow.uid;
+      }
+      if (tokenFlow.locationid) {
+        token.extraParams!['locationid'] = tokenFlow.locationid;
+      }
+      if (tokenFlow.hostname) {
+        token.extraParams!['hostname'] = tokenFlow.hostname;
+        if (this.oauth2Provider) {
+          this.oauth2Provider.setApiBaseUrl(`https://${tokenFlow.hostname}`);
+        }
+      }
 
       this.oauth2Token = token;
       this.isLoggedIn = true;
       this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_successful'));
       this.isErrorStatus = false;
 
-      // 保存令牌到存储服务（加密）
       await this.saveTokenToStorage();
 
-      hilog.info(DOMAIN, TAG, `Token obtained`);
+      hilog.info(DOMAIN, TAG, `Token obtained, hostname: ${tokenFlow.hostname}`);
       CommonUtils.showToast({
         message: ResourceManager.getString($r('app.string.pcloud_login_successful'))
       });
@@ -217,9 +216,8 @@ struct PCloud {
     if (!LocationParam.isSaveMode()) {
       return;
     }
-    // 初始化导出
     const dbFileParam = FileService.getDbFileParam();
-    if (!(dbFileParam.storageType === StorageType.PCLOUD)) {
+    if (dbFileParam.storageType !== StorageType.PCLOUD) {
       return;
     }
     const storageConfig = dbFileParam.storageConfig as PCloudStorageConfig;
@@ -277,7 +275,6 @@ struct PCloud {
     try {
       hilog.info(DOMAIN, TAG, `testConnection: token exists=${!!this.oauth2Token}`);
       this.fileManager.init(this.getStorageConfig());
-      hilog.debug(DOMAIN, TAG, 'testConnection: Calling exists("/")');
       const exists = await this.fileManager.exists('/');
       hilog.info(DOMAIN, TAG, `testConnection: exists result=${exists}`);
       if (exists) {
@@ -286,7 +283,6 @@ struct PCloud {
       } else {
         this.connectionStatus = ResourceManager.getString($r('app.string.connection_failed'));
         this.isErrorStatus = true;
-        hilog.error(DOMAIN, TAG, 'pcloud connection error: %{public}s', this.connectionStatus);
       }
     } catch (error) {
       this.connectionStatus = (error as Error).message;
@@ -298,7 +294,7 @@ struct PCloud {
   }
 
   /**
-   * 保存 pCloud 配置（选择文件）
+   * 选择文件
    */
   private async selectFile(): Promise<void> {
     if (!this.checkParam()) {
@@ -307,15 +303,14 @@ struct PCloud {
     this.isConnecting = true;
     this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
     this.isErrorStatus = false;
+
     try {
       const storageConfig = this.getStorageConfig();
-      // 获取文件信息
       const fileInfo = await this.fileManager.init(storageConfig).getInfo('/');
-      hilog.info(DOMAIN, TAG, `Loading pCloud root: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
+      hilog.info(DOMAIN, TAG, `Loading pCloud root: ${fileInfo.name}`);
       if (fileInfo.type === FileType.DIR) {
         this.toFileList();
       } else {
-        // 回调位置信息
         LocationParam.callOnLocation({
           mode: LocationParam.getMode(),
           filePath: '/',
@@ -336,7 +331,7 @@ struct PCloud {
   }
 
   /**
-   * 导出数据库（选择目录）
+   * 选择目录（导出）
    */
   private async selectDir(): Promise<void> {
     if (!this.checkParam()) {
@@ -345,20 +340,19 @@ struct PCloud {
     this.isConnecting = true;
     this.connectionStatus = ResourceManager.getString($r('app.string.connecting'));
     this.isErrorStatus = false;
+
     try {
-      // 配置信息
       const storageConfig = this.getStorageConfig();
       this.fileManager.init(storageConfig);
       this.connectionStatus = ResourceManager.getString($r('app.string.check_file_existing'));
-      // 获取文件信息
+
       const existsFile = await this.fileManager.exists('/');
       hilog.info(DOMAIN, TAG, `Export file to pCloud path: /`);
+
       if (existsFile) {
-        // 获取文件类型
         this.connectionStatus = ResourceManager.getString($r('app.string.get_file_info'));
         const fileInfo = await this.fileManager.getInfo('/');
-        hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}, size: ${fileInfo.size} bytes`);
-        // 如果是文件夹，则跳转到文件列表页面
+        hilog.info(DOMAIN, TAG, `Loading file info: ${fileInfo.name}`);
         if (fileInfo.type === FileType.DIR) {
           this.toFileList();
         } else {
@@ -379,12 +373,10 @@ struct PCloud {
 
   /**
    * 处理选择目录
-   * @param storageConfig 存储配置
    */
   private handleSelectDir(storageConfig: StorageConfig): void {
     try {
       this.connectionStatus = ResourceManager.getString($r('app.string.save_saving'));
-      // 回调位置信息
       LocationParam.callOnLocation({
         mode: LocationParam.getMode(),
         filePath: '/',
@@ -404,7 +396,6 @@ struct PCloud {
 
   /**
    * 校验参数合法性
-   * @returns 是否通过校验
    */
   private checkParam(): boolean {
     if (!this.isLoggedIn) {
@@ -422,7 +413,6 @@ struct PCloud {
 
   /**
    * 获取存储配置
-   * @returns PCloudStorageConfig 存储配置
    */
   private getStorageConfig(): StorageConfig {
     if (!this.oauth2Token) {
@@ -479,7 +469,6 @@ struct PCloud {
               }
               .width('100%')
 
-              // 令牌过期时间
               if (this.oauth2Token && this.oauth2Token.expiresAt && this.oauth2Token.expiresAt > 0) {
                 Text(ResourceManager.getString($r('app.string.pcloud_token_expire'),
                   DateUtils.format(new Date(this.oauth2Token.expiresAt))))
@@ -541,7 +530,6 @@ struct PCloud {
 
           if (this.isLoggedIn) {
             Row() {
-              // 测试连接按钮
               Button($r('app.string.test_connection'))
                 .height(40)
                 .margin({ top: 20 })
@@ -552,7 +540,6 @@ struct PCloud {
                   this.testConnection();
                 })
               Blank()
-              // 确定按钮
               Button($r('app.string.confirm_button_text'))
                 .height(40)
                 .margin({ top: 20 })
