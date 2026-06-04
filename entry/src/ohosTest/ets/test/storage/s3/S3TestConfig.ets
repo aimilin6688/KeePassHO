@@ -14,12 +14,12 @@ export class S3TestConfig {
   /**
    * Access Key ID
    */
-  static readonly ACCESS_KEY_ID: string = 'AKID1234567890';
+  static readonly ACCESS_KEY_ID: string = '';
 
   /**
    * Secret Access Key
    */
-  static readonly SECRET_ACCESS_KEY: string = 'AKID1234567890';
+  static readonly SECRET_ACCESS_KEY: string = '';
 
   /**
    * 区域
