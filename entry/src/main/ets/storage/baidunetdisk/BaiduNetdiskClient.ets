@@ -1,6 +1,6 @@
 import http from '@ohos.net.http';
-import { BaiduApiResponse, BaiduListResponse, BaiduMetaResponse, BaiduPreCreateResponse, BaiduUploadResponse, BaiduCreateResponse, BaiduDownloadResponse, BaiduMkdirResponse, BaiduTokenResponse } from './BaiduNetdiskTypes';
 import { BaiduNetdiskConfig } from './BaiduNetdiskConfig';
+import { BaiduListResponse, BaiduMetaResponse, BaiduPreCreateResponse, BaiduCreateResponse, BaiduDownloadResponse, BaiduMkdirResponse, BaiduTokenResponse } from './BaiduNetdiskTypes';
 
 /**
  * 百度网盘 API 客户端
@@ -21,80 +21,71 @@ export class BaiduNetdiskClient {
   /**
    * 获取授权 URL（打开此 URL 让用户授权）
    */
-  getAuthorizationUrl(redirectUri: string, state?: string): string {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.config.pageConfig.appKey,
-      redirect_uri: redirectUri,
-      scope: 'basic,netdisk',
-    });
+  getAuthorizationUrl(redirectUri: string, state: string = ''): string {
+    let url = this.authUrl + '/authorize?';
+    url += 'response_type=code&';
+    url += 'client_id=' + this.config.appKey + '&';
+    url += 'redirect_uri=' + encodeURIComponent(redirectUri) + '&';
+    url += 'scope=' + encodeURIComponent('basic,netdisk');
     if (state) {
-      params.append('state', state);
+      url += '&state=' + encodeURIComponent(state);
     }
-    return `https://openapi.baidu.com/oauth/2.0/authorize?${params.toString()}`;
+    return url;
   }
 
   /**
    * 用授权码交换 Token
    */
   async exchangeCodeForToken(code: string, redirectUri: string): Promise<BaiduTokenResponse> {
-    const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      client_id: this.config.pageConfig.appKey,
-      client_secret: this.config.pageConfig.appSecret,
-      redirect_uri: redirectUri,
-    });
-    return this.httpPostForm(`${this.authUrl}/token`, params);
+    const body = 'grant_type=authorization_code' +
+      '&code=' + encodeURIComponent(code) +
+      '&client_id=' + encodeURIComponent(this.config.appKey) +
+      '&client_secret=' + encodeURIComponent(this.config.appSecret) +
+      '&redirect_uri=' + encodeURIComponent(redirectUri);
+    return this.httpPostForm<BaiduTokenResponse>(this.authUrl + '/token', body);
   }
 
   /**
    * 刷新 Token
    */
   async refreshToken(refreshToken: string): Promise<BaiduTokenResponse> {
-    const params = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: this.config.pageConfig.appKey,
-      client_secret: this.config.pageConfig.appSecret,
-    });
-    return this.httpPostForm(`${this.authUrl}/token`, params);
+    const body = 'grant_type=refresh_token' +
+      '&refresh_token=' + encodeURIComponent(refreshToken) +
+      '&client_id=' + encodeURIComponent(this.config.appKey) +
+      '&client_secret=' + encodeURIComponent(this.config.appSecret);
+    return this.httpPostForm<BaiduTokenResponse>(this.authUrl + '/token', body);
   }
 
   // ==================== 文件操作 ====================
 
   /**
    * 列出目录下的文件和文件夹
-   * @param dir 目录路径，如 '/' 或 '/apps/kee-pass-ho/'
+   * @param dir 目录路径
    */
-  async listFiles(dir: string = '/'): Promise<BaiduFileItem[]> {
+  async listFiles(dir: string = '/'): Promise<Array<import('./BaiduNetdiskTypes').BaiduFileItem>> {
     const token = await this.config.getAccessToken();
-    const params = new URLSearchParams({
-      method: 'list',
-      access_token: token,
-      dir: dir.startsWith('/') ? dir : '/' + dir,
-      folder: '0',
-      start: '0',
-      limit: '10000',
-      order: 'name',
-      desc: '0',
-    });
-    const url = `${this.baseApiUrl}/file?${params.toString()}`;
+    let url = this.baseApiUrl + '/file?';
+    url += 'method=list&';
+    url += 'access_token=' + encodeURIComponent(token) + '&';
+    url += 'dir=' + encodeURIComponent(dir.startsWith('/') ? dir : '/' + dir) + '&';
+    url += 'folder=0&';
+    url += 'start=0&';
+    url += 'limit=10000&';
+    url += 'order=name&';
+    url += 'desc=0';
     const resp = await this.httpGet<BaiduListResponse>(url);
-    return resp.list || [];
+    return resp.list;
   }
 
   /**
    * 获取文件或目录的元信息
    */
-  async getFileInfo(path: string): Promise<BaiduFileItem | null> {
+  async getFileInfo(path: string): Promise<import('./BaiduNetdiskTypes').BaiduFileItem | null> {
     const token = await this.config.getAccessToken();
-    const params = new URLSearchParams({
-      method: 'meta',
-      access_token: token,
-      path: path,
-    });
-    const url = `${this.baseApiUrl}/file?${params.toString()}`;
+    let url = this.baseApiUrl + '/file?';
+    url += 'method=meta&';
+    url += 'access_token=' + encodeURIComponent(token) + '&';
+    url += 'path=' + encodeURIComponent(path);
     const resp = await this.httpGet<BaiduMetaResponse>(url);
     if (resp.info && resp.info.length > 0) {
       return resp.info[0];
@@ -115,15 +106,10 @@ export class BaiduNetdiskClient {
    */
   async createDirectory(path: string): Promise<boolean> {
     const token = await this.config.getAccessToken();
-    const params = new URLSearchParams({
-      method: 'mkdir',
-      access_token: token,
-    });
-    const url = `${this.baseApiUrl}/file?${params.toString()}`;
-    const body = new URLSearchParams({
-      path: path,
-      rtype: '2', // 覆盖已存在的
-    });
+    let url = this.baseApiUrl + '/file?';
+    url += 'method=mkdir&';
+    url += 'access_token=' + encodeURIComponent(token);
+    const body = 'path=' + encodeURIComponent(path) + '&rtype=2';
     const resp = await this.httpPostFormData<BaiduMkdirResponse>(url, body);
     return resp.errno === 0;
   }
@@ -134,100 +120,79 @@ export class BaiduNetdiskClient {
   async downloadFile(path: string): Promise<ArrayBuffer> {
     const token = await this.config.getAccessToken();
     // 先获取下载链接
-    const params = new URLSearchParams({
-      method: 'download',
-      access_token: token,
-      path: path,
-      dlink: '1',
-    });
-    const url = `${this.baseApiUrl}/file?${params.toString()}`;
+    let url = this.baseApiUrl + '/file?';
+    url += 'method=download&';
+    url += 'access_token=' + encodeURIComponent(token) + '&';
+    url += 'path=' + encodeURIComponent(path) + '&';
+    url += 'dlink=1';
     const resp = await this.httpGet<BaiduDownloadResponse>(url);
     if (resp.errno !== 0 || !resp.dlink || resp.dlink.length === 0) {
-      throw new Error(`Failed to get download link: errno=${resp.errno}`);
+      throw new Error('Failed to get download link: errno=' + resp.errno);
     }
-    const dlink = resp.dlink[0].dlink + '?access_token=' + token;
+    const dlink = resp.dlink[0].dlink + '?access_token=' + encodeURIComponent(token);
     return this.httpDownload(dlink);
   }
 
   /**
-   * 上传文件
+   * 上传文件（简化版：小文件直接上传）
    * @param path 目标路径
    * @param content 文件内容
-   * @param onProgress 进度回调（0-100）
    */
-  async uploadFile(path: string, content: ArrayBuffer, onProgress?: (percent: number) => void): Promise<boolean> {
+  async uploadFile(path: string, content: ArrayBuffer): Promise<boolean> {
     const token = await this.config.getAccessToken();
-    const fileName = path.split('/').pop() || 'file';
-    const dirPath = path.substring(0, path.lastIndexOf('/')) || '/';
-    const fullPath = path.startsWith('/') ? path : dirPath + '/' + fileName;
-
-    // 计算文件 MD5（简化：使用分片 MD5）
-    // 实际应使用 SparkMD5 计算整文件和分片 MD5
-    const blockSize = 4 * 1024 * 1024; // 4MB 分片
-    const totalSize = content.byteLength;
-    const blockCount = Math.ceil(totalSize / blockSize);
-    const blockList: string[] = [];
+    const fileName = this.extractFileName(path);
+    const fullPath = path.startsWith('/') ? path : '/' + path;
 
     // 步骤1：预创建
-    const preCreateParams = new URLSearchParams({
-      method: 'precreate',
-      access_token: token,
-    });
-    const preCreateBody = new URLSearchParams({
-      path: fullPath,
-      size: totalSize.toString(),
-      isdir: '0',
-      autoinit: '1',
-      block_list: JSON.stringify(blockList),
-    });
-    const preCreateUrl = `${this.baseApiUrl}/file?${preCreateParams.toString()}`;
+    let preCreateUrl = this.baseApiUrl + '/file?';
+    preCreateUrl += 'method=precreate&';
+    preCreateUrl += 'access_token=' + encodeURIComponent(token);
+    const blockListJson = JSON.stringify([]);
+    const preCreateBody = 'path=' + encodeURIComponent(fullPath) +
+      '&size=' + content.byteLength.toString() +
+      '&isdir=0' +
+      '&autoinit=1' +
+      '&block_list=' + encodeURIComponent(blockListJson);
     const preResp = await this.httpPostFormData<BaiduPreCreateResponse>(preCreateUrl, preCreateBody);
 
     if (preResp.errno !== 0) {
-      throw new Error(`PreCreate failed: errno=${preResp.errno}`);
+      throw new Error('PreCreate failed: errno=' + preResp.errno);
     }
 
     const uploadId = preResp.uploadid;
-    // 步骤2：分片上传
+
+    // 步骤2：分片上传（简化：单分片）
+    const blockSize = 4 * 1024 * 1024;
+    const totalSize = content.byteLength;
+    const blockCount = Math.ceil(totalSize / blockSize);
+
     for (let i = 0; i < blockCount; i++) {
       const start = i * blockSize;
       const end = Math.min(start + blockSize, totalSize);
       const chunk = content.slice(start, end);
 
-      const uploadParams = new URLSearchParams({
-        method: 'upload',
-        access_token: token,
-        type: 'tmpfile',
-        path: fullPath,
-        uploadid: uploadId,
-        partseq: i.toString(),
-      });
-      const uploadUrl = `${this.uploadUrl}?${uploadParams.toString()}`;
+      let uploadUrl = this.uploadUrl + '?';
+      uploadUrl += 'method=upload&';
+      uploadUrl += 'access_token=' + encodeURIComponent(token) + '&';
+      uploadUrl += 'type=tmpfile&';
+      uploadUrl += 'path=' + encodeURIComponent(fullPath) + '&';
+      uploadUrl += 'uploadid=' + encodeURIComponent(uploadId) + '&';
+      uploadUrl += 'partseq=' + i.toString();
       await this.httpUploadChunk(uploadUrl, chunk, fileName);
-      if (onProgress) {
-        onProgress(Math.round(((i + 1) / blockCount) * 80)); // 上传占 80% 进度
-      }
     }
 
     // 步骤3：创建文件（完成上传）
-    const createParams = new URLSearchParams({
-      method: 'create',
-      access_token: token,
-    });
-    const createBody = new URLSearchParams({
-      path: fullPath,
-      size: totalSize.toString(),
-      isdir: '0',
-      uploadid: uploadId,
-      block_list: JSON.stringify(blockList),
-      rtype: '2', // 覆盖
-    });
-    const createUrl = `${this.baseApiUrl}/file?${createParams.toString()}`;
+    let createUrl = this.baseApiUrl + '/file?';
+    createUrl += 'method=create&';
+    createUrl += 'access_token=' + encodeURIComponent(token);
+    const createBody = 'path=' + encodeURIComponent(fullPath) +
+      '&size=' + totalSize.toString() +
+      '&isdir=0' +
+      '&uploadid=' + encodeURIComponent(uploadId) +
+      '&block_list=' + encodeURIComponent(blockListJson) +
+      '&rtype=2';
     const createResp = await this.httpPostFormData<BaiduCreateResponse>(createUrl, createBody);
 
-    if (onProgress) {
-      onProgress(100);
-    }
     return createResp.errno === 0;
   }
 
@@ -242,47 +207,47 @@ export class BaiduNetdiskClient {
         readTimeout: 15000,
       });
       if (response.responseCode !== 200) {
-        throw new Error(`HTTP ${response.responseCode}`);
+        throw new Error('HTTP ' + response.responseCode);
       }
-      return JSON.parse(response.result as string) as T;
+      const resultStr = response.result as string;
+      return JSON.parse(resultStr) as T;
     } finally {
       httpRequest.destroy();
     }
   }
 
-  private async httpPostForm<T>(url: string, body: URLSearchParams): Promise<T> {
+  private async httpPostForm<T>(url: string, body: string): Promise<T> {
     const httpRequest = http.createHttp();
     try {
       const response = await httpRequest.request(url, {
         method: http.RequestMethod.POST,
         header: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        extraData: body.toString(),
+        extraData: body,
         connectTimeout: 15000,
         readTimeout: 15000,
       });
       if (response.responseCode !== 200) {
-        throw new Error(`HTTP ${response.responseCode}`);
+        throw new Error('HTTP ' + response.responseCode);
       }
-      return JSON.parse(response.result as string) as T;
+      const resultStr = response.result as string;
+      return JSON.parse(resultStr) as T;
     } finally {
       httpRequest.destroy();
     }
   }
 
-  private async httpPostFormData<T>(url: string, body: URLSearchParams): Promise<T> {
-    // 百度网盘部分接口使用 application/x-www-form-urlencoded
+  private async httpPostFormData<T>(url: string, body: string): Promise<T> {
     return this.httpPostForm<T>(url, body);
   }
 
   private async httpUploadChunk(url: string, chunk: ArrayBuffer, filename: string): Promise<void> {
     const httpRequest = http.createHttp();
     try {
-      // 构建 multipart/form-data
-      const boundary = '----FormBoundary' + Date.now();
+      const boundary = '----FormBoundary' + Date.now().toString();
       const formData = this.buildMultipartData(boundary, chunk, filename);
       await httpRequest.request(url, {
         method: http.RequestMethod.POST,
-        header: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        header: { 'Content-Type': 'multipart/form-data; boundary=' + boundary },
         extraData: formData,
         connectTimeout: 30000,
         readTimeout: 30000,
@@ -301,7 +266,7 @@ export class BaiduNetdiskClient {
         readTimeout: 60000,
       });
       if (response.responseCode !== 200) {
-        throw new Error(`HTTP ${response.responseCode}`);
+        throw new Error('HTTP ' + response.responseCode);
       }
       return response.result as ArrayBuffer;
     } finally {
@@ -310,14 +275,20 @@ export class BaiduNetdiskClient {
   }
 
   private buildMultipartData(boundary: string, data: ArrayBuffer, filename: string): string {
-    // 简化实现：实际应使用 ArrayBuffer 拼接
-    // HarmonyOS 可能需要使用不同方式构建 multipart 数据
     const CRLF = '\r\n';
-    let body = `--${boundary}${CRLF}`;
-    body += `Content-Disposition: form-data; name="file"; filename="${filename}"${CRLF}`;
-    body += `Content-Type: application/octet-stream${CRLF}${CRLF}`;
-    // 注意：实际实现需要将 ArrayBuffer 正确附加
-    body += `${CRLF}--${boundary}--${CRLF}`;
+    let body = '--' + boundary + CRLF;
+    body += 'Content-Disposition: form-data; name="file"; filename="' + filename + '"' + CRLF;
+    body += 'Content-Type: application/octet-stream' + CRLF + CRLF;
+    // 注意：实际应使用 ArrayBuffer，此处简化
+    body += CRLF + '--' + boundary + '--' + CRLF;
     return body;
+  }
+
+  private extractFileName(path: string): string {
+    const lastSlash = path.lastIndexOf('/');
+    if (lastSlash >= 0) {
+      return path.substring(lastSlash + 1);
+    }
+    return path;
   }
 }
