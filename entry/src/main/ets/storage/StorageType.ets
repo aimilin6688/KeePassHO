@@ -31,5 +31,10 @@ export enum StorageType {
   /**
    * pCloud云存储
    */
-  PCLOUD = 'PCLOUD'
+  PCLOUD = 'PCLOUD',
+
+  /**
+   * 百度网盘存储
+   */
+  BAIDU_NETDISK = 'BAIDU_NETDISK'
 }
