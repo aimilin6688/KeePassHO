@@ -4,6 +4,7 @@ import { WebDAVStorage } from './webdav/WebDAVStorage';
 import { OneDriveStorage } from './onedrive/OneDriveStorage';
 import { FTPStorage } from './ftp/FTPStorage';
 import { S3Storage } from './s3/S3Storage';
+import { BaiduNetdiskStorage } from './baidunetdisk/BaiduNetdiskStorage';
 import { CacheStorage } from './cache/CacheStorage';
 
 /**
@@ -23,6 +24,8 @@ export class FileStorageFactory {
     this.registerStorage(StorageType.S3, new S3Storage());
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
+    // 百度网盘：使用默认配置注册，实际配置在首次访问时加载
+    this.registerStorage(StorageType.BAIDU_NETDISK, new BaiduNetdiskStorage(new BaiduNetdiskConfig()));
   }
 
   /**
