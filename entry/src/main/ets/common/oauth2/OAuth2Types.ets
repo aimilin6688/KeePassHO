@@ -22,7 +22,12 @@ export enum OAuth2Provider {
   /**
    * pCloud
    */
-  PCLOUD = 'PCLOUD'
+  PCLOUD = 'PCLOUD',
+
+  /**
+   * 百度网盘
+   */
+  BAIDU_NETDISK = 'BAIDU_NETDISK'
 }
 
 /**
