@@ -37,6 +37,17 @@ export class S3TestConfig {
   static readonly TEST_FILE: string = 'test-1.kdbx';
 
   /**
+   * 测试路径数组 - 包含中文路径、多级目录等场景
+   */
+  static readonly TEST_PATHS: string[] = [
+    'test-1.kdbx',                           // 根目录文件
+    '密码库/test-1.kdbx',                     // 中文目录
+    'folder1/folder2/test-1.kdbx',            // 多级目录
+    '我的密码/工作账号/test-1.kdbx',           // 中文多级目录
+    'test-folder/special_123/test-1.kdbx'     // 混合路径
+  ];
+
+  /**
    * 超时时间（毫秒）
    */
   static readonly TIMEOUT: number = 30000;
