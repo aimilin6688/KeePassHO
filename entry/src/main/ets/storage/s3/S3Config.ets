@@ -107,11 +107,10 @@ export class S3MultipartConfig {
   static readonly MIN_PART_SIZE = 5 * 1024 * 1024; // 5MB
 
   /**
-   * 推荐分块大小：8MB
-   * - 平衡内存占用和网络效率
-   * - 适合移动设备网络环境
+   * 最大分块大小：32MB
+   * 避免单个分块过大导致内存问题
    */
-  static readonly RECOMMENDED_PART_SIZE = 8 * 1024 * 1024; // 8MB
+  static readonly MAX_PART_SIZE = 32 * 1024 * 1024; // 32MB
 
   /**
    * Multipart 上传阈值：5MB
@@ -120,9 +119,27 @@ export class S3MultipartConfig {
   static readonly MULTIPART_THRESHOLD = 5 * 1024 * 1024; // 5MB
 
   /**
+   * 目标分块数量：500
+   * 自适应算法的目标分块数
+   */
+  static readonly TARGET_PART_COUNT = 500;
+
+  /**
+   * 并发上传数量：3
+   * 同时上传的分块数量
+   */
+  static readonly CONCURRENT_UPLOADS = 3;
+
+  /**
    * 最大重试次数
    */
   static readonly MAX_RETRY_COUNT = 3;
+
+  /**
+   * 进度回调最小间隔：100ms
+   * 避免过于频繁的进度更新
+   */
+  static readonly PROGRESS_CALLBACK_INTERVAL = 100; // ms
 }
 
 /**
