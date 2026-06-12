@@ -864,6 +864,45 @@ ${partsXml}
   }
 
   /**
+   * 复制对象
+   * @param bucket 目标存储桶名称
+   * @param key 目标对象键
+   * @param copyHeaders 复制请求头（包含 x-amz-copy-source）
+   * @returns S3Result<void>
+   */
+  public async copyObject(
+    bucket: string,
+    key: string,
+    copyHeaders: Map<string, string>
+  ): Promise<S3Result<void>> {
+    try {
+      const headers = await this.signer.signRequest(
+        'PUT',
+        this.options.endpoint,
+        bucket,
+        key,
+        this.options.pathStyle,
+        copyHeaders
+      );
+
+      const url = this.buildUrl(bucket, key);
+      const request = new rcp.Request(url, 'PUT', this.headersToRecord(headers));
+      const response = await this.getSession()?.fetch(request);
+
+      return this.handleResponse<void>(response);
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'copyObject error: %{public}s', err.message);
+      const result: S3Result<void> = {
+        success: false,
+        statusCode: 500,
+        message: err.message
+      };
+      return result;
+    }
+  }
+
+  /**
    * 分块下载对象（支持大文件）
    * @param bucket 存储桶名称
    * @param key 对象键
