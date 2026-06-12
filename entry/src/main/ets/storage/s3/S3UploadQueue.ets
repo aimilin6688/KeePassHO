@@ -4,7 +4,7 @@ import { S3MultipartConfig } from './S3Config';
 /**
  * Multipart Upload 任务队列管理器
  */
-export class MultipartUploadQueue {
+export class S3UploadQueue {
   private tasks: UploadTask[] = [];
   private completedCount: number = 0;
   private failedCount: number = 0;

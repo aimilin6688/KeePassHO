@@ -6,7 +6,7 @@ import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, Multip
 import { S3SignatureV4 } from './S3SignatureV4';
 import { S3XmlParser } from './S3XmlParser';
 import { S3MultipartConfig } from './S3Config';
-import { MultipartUploadQueue } from './MultipartUploadQueue';
+import { S3UploadQueue } from './S3UploadQueue';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3Client';
@@ -282,7 +282,7 @@ export class S3Client {
    * 并发上传工作器
    */
   private async uploadWorker(
-    queue: MultipartUploadQueue,
+    queue: S3UploadQueue,
     bucket: string,
     key: string,
     uploadId: string,
@@ -950,7 +950,7 @@ ${partsXml}
         totalSizeMB, partSizeMB, totalParts);
 
       // 3. 创建上传队列
-      const queue = new MultipartUploadQueue(totalSize, totalParts);
+      const queue = new S3UploadQueue(totalSize, totalParts);
 
       for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
         const start = (partNumber - 1) * partSize;
