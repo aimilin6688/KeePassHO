@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import { S3Client, S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
-import { MultipartUploadInit, UploadedPart, MultipartUploadProgress, UploadTask } from '../../../../../main/ets/storage/s3/S3Types';
+import { MultipartUploadInit, UploadedPart, MultipartUploadProgress, UploadTask, UploadWorkerResult } from '../../../../../main/ets/storage/s3/S3Types';
 import { S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3Config';
 import { S3UploadQueue } from '../../../../../main/ets/storage/s3/S3UploadQueue';
 import { S3TestConfig } from './S3TestConfig';
@@ -268,13 +268,11 @@ export default function S3ClientMultipartTest() {
       }
     });
   });
-}
 
-/**
- * 分块大小计算和并发上传逻辑测试
- * 这些测试验证核心算法的正确性，不需要真实的 S3 服务
- */
-export function S3ClientMultipartLogicTest() {
+  /**
+   * 分块大小计算和并发上传逻辑测试
+   * 这些测试验证核心算法的正确性，不需要真实的 S3 服务
+   */
   describe('S3Client_Multipart_Logic', () => {
     /**
      * 测试 MultipartUploadQueue 基本功能
@@ -454,13 +452,16 @@ export function S3ClientMultipartLogicTest() {
       // 100MB 文件 → 5MB 分块
       expect(calculatePartSize(100 * 1024 * 1024)).assertEqual(5 * 1024 * 1024);
 
-      // 1GB 文件 → 8MB 分块（理想大小约 2.1MB，但会使用 8MB）
-      expect(calculatePartSize(1 * 1024 * 1024 * 1024)).assertEqual(8 * 1024 * 1024);
+      // 1GB 文件 → 5MB 分块（理想大小约 2.1MB，提升到 5MB）
+      expect(calculatePartSize(1 * 1024 * 1024 * 1024)).assertEqual(5 * 1024 * 1024);
 
-      // 10GB 文件 → 16MB 分块
+      // 4GB 文件 → 8MB 分块（理想大小约 8.4MB）
+      expect(calculatePartSize(4 * 1024 * 1024 * 1024)).assertEqual(8 * 1024 * 1024);
+
+      // 10GB 文件 → 16MB 分块（理想大小约 21MB）
       expect(calculatePartSize(10 * 1024 * 1024 * 1024)).assertEqual(16 * 1024 * 1024);
 
-      // 100GB 文件 → 32MB 分块
+      // 100GB 文件 → 32MB 分块（理想大小约 210MB，超过 32MB 上限）
       expect(calculatePartSize(100 * 1024 * 1024 * 1024)).assertEqual(32 * 1024 * 1024);
 
       hilog.info(DOMAIN, TAG, 'Part size calculation test passed');
@@ -574,3 +575,4 @@ export function S3ClientMultipartLogicTest() {
     });
   });
 }
+
