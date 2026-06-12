@@ -892,7 +892,14 @@ ${partsXml}
     }
 
     // 大文件：使用 Multipart Upload
-    hilog.debug(DOMAIN, TAG, 'putObjectSmart: using multipart upload (file >= threshold)');
+    const partSize = this.calculatePartSize(data.byteLength);
+    const partSizeMB = (partSize / (1024 * 1024)).toFixed(2);
+    const totalParts = Math.ceil(data.byteLength / partSize);
+
+    hilog.info(DOMAIN, TAG,
+      'putObjectSmart: using multipart upload, partSize=%{public}s MB, totalParts=%{public}d',
+      partSizeMB, totalParts);
+
     return this.putObjectMultipart(bucket, key, data, onProgress);
   }
 
