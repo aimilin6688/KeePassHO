@@ -1,5 +1,6 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { util } from '@kit.ArkTS';
 import { ByteUtils } from 'kdbxweb';
 import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
@@ -680,6 +681,68 @@ export class S3Client {
     } catch (error) {
       const err = error as Error;
       hilog.error(DOMAIN, TAG, 'abortMultipartUpload error: %{public}s', err.message);
+      const result: S3Result<void> = {
+        success: false,
+        statusCode: 500,
+        message: err.message
+      };
+      return result;
+    }
+  }
+
+  /**
+   * 完成 Multipart Upload
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param uploadId Upload ID
+   * @param parts 所有已上传的 Part 信息
+   * @returns S3Result<void>
+   */
+  public async completeMultipartUpload(
+    bucket: string,
+    key: string,
+    uploadId: string,
+    parts: UploadedPart[]
+  ): Promise<S3Result<void>> {
+    try {
+      // 构建 CompleteMultipartUpload XML
+      const partsXml = parts
+        .sort((a: UploadedPart, b: UploadedPart): number => a.partNumber - b.partNumber)
+        .map((part: UploadedPart): string => `  <Part>
+    <PartNumber>${part.partNumber}</PartNumber>
+    <ETag>"${part.etag}"</ETag>
+  </Part>`)
+        .join('\n');
+
+      const xmlBody = `<CompleteMultipartUpload>
+${partsXml}
+</CompleteMultipartUpload>`;
+
+      const encoder = new util.TextEncoder();
+      const payload = encoder.encodeInto(xmlBody).buffer as ArrayBuffer;
+
+      // 查询字符串: ?uploadId={id}
+      const queryString = 'uploadId=' + encodeURIComponent(uploadId);
+
+      const headers = await this.signer.signRequest(
+        'POST',
+        this.options.endpoint,
+        bucket,
+        key,
+        this.options.pathStyle,
+        new Map([['content-type', 'application/xml']]),
+        payload,
+        queryString
+      );
+
+      const url = this.buildUrl(bucket, key) + '?' + queryString;
+      const request = new rcp.Request(url, 'POST', this.headersToRecord(headers), payload);
+      const response = await this.getSession()?.fetch(request);
+
+      return this.handleResponse<void>(response);
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'completeMultipartUpload error: %{public}s', err.message);
       const result: S3Result<void> = {
         success: false,
         statusCode: 500,
