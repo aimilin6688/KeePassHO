@@ -59,6 +59,7 @@ export class S3XmlParser {
 
   /**
    * 解析 ListObjects 响应
+   * 包含 Contents（文件）和 CommonPrefixes（目录）
    */
   public static parseListObjects(xmlStr: string): S3Object[] {
     const objects: S3Object[] = [];
@@ -69,6 +70,7 @@ export class S3XmlParser {
     let currentObject: Partial<S3Object> = {};
     let currentText = '';
     let inContents = false;
+    let inCommonPrefixes = false;
 
     const options: xml.ParseOptions = {
       supportDoctype: true,
@@ -79,6 +81,9 @@ export class S3XmlParser {
         if (eventType === xml.EventType.START_TAG) {
           if (nodeName === 'contents') {
             inContents = true;
+            currentObject = {};
+          } else if (nodeName === 'commonprefixes') {
+            inCommonPrefixes = true;
             currentObject = {};
           }
         } else if (eventType === xml.EventType.TEXT) {
@@ -95,6 +100,18 @@ export class S3XmlParser {
             }
             inContents = false;
             currentObject = {};
+          } else if (nodeName === 'commonprefixes') {
+            // CommonPrefixes 表示目录，key 以 / 结尾
+            if (currentObject.key) {
+              objects.push({
+                key: currentObject.key,
+                size: 0,
+                lastModified: 0,
+                etag: ''
+              });
+            }
+            inCommonPrefixes = false;
+            currentObject = {};
           } else if (inContents) {
             if (nodeName === 'key') {
               currentObject.key = currentText;
@@ -104,6 +121,11 @@ export class S3XmlParser {
               currentObject.lastModified = new Date(currentText).getTime();
             } else if (nodeName === 'etag') {
               currentObject.etag = currentText.replace(/"/g, '');
+            }
+          } else if (inCommonPrefixes) {
+            // CommonPrefixes 中使用 <Prefix> 而不是 <Key>
+            if (nodeName === 'prefix') {
+              currentObject.key = currentText;
             }
           }
         }
