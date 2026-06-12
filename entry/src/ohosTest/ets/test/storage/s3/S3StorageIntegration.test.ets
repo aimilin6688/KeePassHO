@@ -8,7 +8,7 @@ import { MultipartUploadProgress } from '../../../../../main/ets/storage/s3/S3Ty
 const DOMAIN = 0x0000;
 const TAG = 'S3StorageIntegrationTest';
 
-export default function s3StorageIntegrationTest() {
+export default function S3StorageIntegrationTest() {
   describe('S3Storage Integration', () => {
     let storage: S3Storage;
     const testPath = '/test-bucket/test-database.kdbx';
