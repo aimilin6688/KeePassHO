@@ -11,7 +11,7 @@ import { util } from '@kit.ArkTS';
 
 
 export default function S3StorageTest() {
-  describe('S3Storage', () => {
+  describe('S3StorageTest', () => {
 
     /**
      * 测试 S3StorageConfig 配置类
@@ -34,7 +34,7 @@ export default function S3StorageTest() {
 
     });
 
-    describe('S3MultipartConfig', () => {
+    describe('S3MultipartConfigTest', () => {
 
       it('should_have_correct_min_part_size', 0, () => {
         expect(S3MultipartConfig.MIN_PART_SIZE).assertEqual(5 * 1024 * 1024);
