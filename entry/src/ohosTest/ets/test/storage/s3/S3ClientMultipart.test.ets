@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { S3Client, S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
 import { MultipartUploadInit, UploadedPart, MultipartUploadProgress, UploadTask } from '../../../../../main/ets/storage/s3/S3Types';
 import { S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3Config';
-import { MultipartUploadQueue } from '../../../../../main/ets/storage/s3/MultipartUploadQueue';
+import { S3UploadQueue } from '../../../../../main/ets/storage/s3/S3UploadQueue';
 import { S3TestConfig } from './S3TestConfig';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -282,7 +282,7 @@ export function S3ClientMultipartLogicTest() {
     it('should_manage_upload_queue_correctly', 0, () => {
       const totalBytes = 10 * 1024 * 1024; // 10MB
       const totalParts = 2;
-      const queue = new MultipartUploadQueue(totalBytes, totalParts);
+      const queue = new S3UploadQueue(totalBytes, totalParts);
 
       // 添加任务
       const task1: UploadTask = { partNumber: 1, start: 0, end: 5 * 1024 * 1024, retryCount: 0 };
@@ -313,7 +313,7 @@ export function S3ClientMultipartLogicTest() {
      * 测试 MultipartUploadQueue 重试逻辑
      */
     it('should_handle_retry_logic_correctly', 0, () => {
-      const queue = new MultipartUploadQueue(10 * 1024 * 1024, 2);
+      const queue = new S3UploadQueue(10 * 1024 * 1024, 2);
 
       const task: UploadTask = { partNumber: 1, start: 0, end: 5 * 1024 * 1024, retryCount: 0 };
       queue.addTask(task);
@@ -398,7 +398,7 @@ export function S3ClientMultipartLogicTest() {
     it('should_calculate_progress_correctly', 0, () => {
       const totalBytes = 100 * 1024 * 1024; // 100MB
       const totalParts = 20;
-      const queue = new MultipartUploadQueue(totalBytes, totalParts);
+      const queue = new S3UploadQueue(totalBytes, totalParts);
 
       // 模拟上传 10 个分块
       const partSize = 5 * 1024 * 1024; // 5MB
@@ -471,28 +471,26 @@ export function S3ClientMultipartLogicTest() {
      */
     it('should_merge_worker_results_correctly', 0, () => {
       // 模拟 3 个上传器的结果
-      const results = [
-        {
-          success: true,
-          parts: [
-            { partNumber: 1, etag: 'etag1', size: 5 * 1024 * 1024 },
-            { partNumber: 4, etag: 'etag4', size: 5 * 1024 * 1024 }
-          ] as UploadedPart[]
-        },
-        {
-          success: true,
-          parts: [
-            { partNumber: 2, etag: 'etag2', size: 5 * 1024 * 1024 },
-            { partNumber: 5, etag: 'etag5', size: 5 * 1024 * 1024 }
-          ] as UploadedPart[]
-        },
-        {
-          success: true,
-          parts: [
-            { partNumber: 3, etag: 'etag3', size: 5 * 1024 * 1024 }
-          ] as UploadedPart[]
-        }
-      ];
+      const part1: UploadedPart = { partNumber: 1, etag: 'etag1', size: 5 * 1024 * 1024 };
+      const part4: UploadedPart = { partNumber: 4, etag: 'etag4', size: 5 * 1024 * 1024 };
+      const part2: UploadedPart = { partNumber: 2, etag: 'etag2', size: 5 * 1024 * 1024 };
+      const part5: UploadedPart = { partNumber: 5, etag: 'etag5', size: 5 * 1024 * 1024 };
+      const part3: UploadedPart = { partNumber: 3, etag: 'etag3', size: 5 * 1024 * 1024 };
+
+      const result1: UploadWorkerResult = {
+        success: true,
+        parts: [part1, part4]
+      };
+      const result2: UploadWorkerResult = {
+        success: true,
+        parts: [part2, part5]
+      };
+      const result3: UploadWorkerResult = {
+        success: true,
+        parts: [part3]
+      };
+
+      const results: UploadWorkerResult[] = [result1, result2, result3];
 
       // 合并并排序
       const allParts: UploadedPart[] = [];
@@ -516,7 +514,7 @@ export function S3ClientMultipartLogicTest() {
      * 测试队列任务顺序
      */
     it('should_process_tasks_in_fifo_order', 0, () => {
-      const queue = new MultipartUploadQueue(15 * 1024 * 1024, 3);
+      const queue = new S3UploadQueue(15 * 1024 * 1024, 3);
 
       // 按顺序添加任务
       for (let i = 1; i <= 3; i++) {
@@ -547,7 +545,7 @@ export function S3ClientMultipartLogicTest() {
      * 测试重试任务添加到队列末尾
      */
     it('should_add_retry_task_to_end_of_queue', 0, () => {
-      const queue = new MultipartUploadQueue(15 * 1024 * 1024, 3);
+      const queue = new S3UploadQueue(15 * 1024 * 1024, 3);
 
       // 添加 3 个任务
       for (let i = 1; i <= 3; i++) {
