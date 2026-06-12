@@ -223,5 +223,47 @@ export default function s3ClientMultipartTest() {
         throw error;
       }
     });
+
+    /**
+     * 测试 getObjectChunked 分块下载
+     */
+    it('should_download_file_in_chunks', 0, async () => {
+      try {
+        // 先上传一个 20MB 文件
+        const testData = new ArrayBuffer(20 * 1024 * 1024);
+        const uploadResult = await client.putObject(testBucket, testKey + '-chunked', testData);
+
+        hilog.info(DOMAIN, TAG, 'putObject result: success=%{public}s', String(uploadResult.success));
+        expect(uploadResult.success).assertTrue();
+
+        // 分块下载
+        const progressEvents: MultipartUploadProgress[] = [];
+        const result = await client.getObjectChunked(
+          testBucket,
+          testKey + '-chunked',
+          8 * 1024 * 1024, // 8MB chunks
+          (progress) => {
+            progressEvents.push(progress);
+            hilog.info(DOMAIN, TAG, 'Download progress: %{public}d/%{public}d bytes, part %{public}d/%{public}d',
+              progress.uploadedBytes, progress.totalBytes, progress.currentPart, progress.totalParts);
+          }
+        );
+
+        hilog.info(DOMAIN, TAG, 'getObjectChunked result: success=%{public}s, statusCode=%{public}d',
+          String(result.success), result.statusCode);
+
+        expect(result.success).assertTrue();
+        expect(result.data).assertNotNull();
+        expect(result.data?.byteLength).assertEqual(20 * 1024 * 1024);
+        expect(progressEvents.length > 0).assertTrue();
+
+        hilog.info(DOMAIN, TAG, 'Successfully downloaded file in chunks, size=%{public}d, progressEvents=%{public}d',
+          result.data?.byteLength ?? 0, progressEvents.length);
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
+        throw error;
+      }
+    });
   });
 }
