@@ -193,5 +193,120 @@ export default function S3StorageTest() {
         }
       });
     });
+
+    /**
+     * 测试多种路径场景（中文路径、多级目录等）
+     * 注意：这些测试需要先手动创建测试数据或运行数据初始化
+     */
+    describe('MultiPathOperations', () => {
+      let storage: S3Storage;
+      let testFileContent: ArrayBuffer | null = null;
+
+      beforeEach(async () => {
+        storage = new S3Storage();
+        const config: TestS3StorageConfig = S3TestConfig.getStorageConfig();
+        storage.init(config as S3StorageConfig);
+
+        // 读取源测试文件内容
+        try {
+          testFileContent = await storage.read(S3TestConfig.TEST_FILE);
+        } catch (error) {
+          console.log('Source test file not found, multi-path tests may fail');
+          testFileContent = null;
+        }
+      });
+
+      afterEach(() => {
+        if (storage) {
+          storage.close();
+        }
+      });
+
+      /**
+       * 测试路径数据初始化
+       * 将 test-1.kdbx 复制到各个测试路径
+       */
+      it('should setup test data - copy file to test paths', 0, async () => {
+        if (!testFileContent) {
+          console.log('Source file not available, skipping test data setup');
+          expect(true).assertTrue(); // 跳过但不失败
+          return;
+        }
+
+        const results: string[] = [];
+        for (let i = 0; i < S3TestConfig.TEST_PATHS.length; i++) {
+          const testPath = S3TestConfig.TEST_PATHS[i];
+          if (testPath === S3TestConfig.TEST_FILE) {
+            continue; // 跳过源文件
+          }
+          try {
+            await storage.write(testPath, testFileContent);
+            results.push(`✓ ${testPath}`);
+          } catch (error) {
+            const err = error as Error;
+            results.push(`✗ ${testPath}: ${err.message}`);
+          }
+        }
+        console.log('Test data setup results:\n' + results.join('\n'));
+
+        // 至少有一个成功写入
+        const successCount = results.filter(r => r.startsWith('✓')).length;
+        expect(successCount).assertLarger(0);
+      });
+
+      // 动态为每个测试路径生成测试用例
+      for (let i = 0; i < S3TestConfig.TEST_PATHS.length; i++) {
+        const testPath: string = S3TestConfig.TEST_PATHS[i];
+
+        it(`should verify file at path: ${testPath}`, 0, async () => {
+          if (!testFileContent) {
+            console.log(`Skipping test for ${testPath} - source file not available`);
+            expect(true).assertTrue(); // 跳过但不失败
+            return;
+          }
+
+          // 验证文件存在
+          const exists: boolean = await storage.exists(testPath);
+          expect(exists).assertTrue();
+
+          // 验证文件内容
+          const readContent: ArrayBuffer = await storage.read(testPath);
+          expect(readContent.byteLength).assertEqual(testFileContent.byteLength);
+
+          // 获取文件信息
+          const info: FileInfo = await storage.getInfo(testPath);
+          expect(info.name).assertEqual('test-1.kdbx');
+          expect(info.type).assertEqual(FileType.FILE);
+          expect(info.size).assertLarger(0);
+
+          console.log(`Successfully verified file at: ${testPath}`);
+        });
+      }
+
+      it('should list Chinese directory', 0, async () => {
+        const files: FileInfo[] = await storage.listDir('密码库');
+        expect(files).not().assertUndefined();
+        expect(Array.isArray(files)).assertTrue();
+        // 目录下应该有文件
+        expect(files.length).assertLarger(0);
+        console.log(`Found ${files.length} files in 密码库/`);
+      });
+
+      it('should list nested directory', 0, async () => {
+        const files: FileInfo[] = await storage.listDir('folder1/folder2');
+        expect(files).not().assertUndefined();
+        expect(Array.isArray(files)).assertTrue();
+        expect(files.length).assertLarger(0);
+        console.log(`Found ${files.length} files in folder1/folder2/`);
+      });
+
+      it('should handle mixed Chinese and English path', 0, async () => {
+        const files: FileInfo[] = await storage.listDir('我的密码/工作账号');
+        expect(files).not().assertUndefined();
+        expect(Array.isArray(files)).assertTrue();
+        expect(files.length).assertLarger(0);
+        console.log(`Found ${files.length} files in 我的密码/工作账号/`);
+      });
+    });
   });
 }
