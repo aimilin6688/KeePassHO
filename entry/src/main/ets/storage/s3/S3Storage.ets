@@ -1,12 +1,7 @@
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { StorageError, StorageErrorCodes } from '../StorageError';
-import { S3StorageConfig, S3PageConfig } from './S3Config';
+import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
-import { FilenameUtils } from '../../common/utils';
-
-const DOMAIN = 0x0000;
-const TAG = 'S3Storage';
 
 /**
  * S3 路径解析结果
@@ -65,20 +60,43 @@ export class S3Storage implements IFileStorage {
   }
 
   private parsePath(path: string): S3PathResult {
-    const parts: string[] = path.split('/').filter((p: string): boolean => p.length > 0);
+    // 去除开头的斜杠，统一处理
+    const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+    const parts: string[] = normalizedPath.split('/').filter((p: string): boolean => p.length > 0);
 
+    // 情况1: 配置了默认 bucket
     if (this.config?.bucket) {
-      const result: S3PathResult = {
-        bucket: this.config.bucket,
-        key: path.startsWith('/') ? path.substring(1) : path
-      };
+      let bucket: string = this.config.bucket;
+      let key: string = '';
+
+      if (parts.length === 0) {
+        // 空路径，使用默认 bucket，key 为空
+        key = '';
+      } else if (parts[0] === this.config.bucket) {
+        // 路径以 bucket 开头: bucket/key 或 bucket
+        bucket = parts[0];
+        key = parts.slice(1).join('/');
+      } else {
+        // 路径不以 bucket 开头，视为 key
+        key = parts.join('/');
+      }
+
+      const result: S3PathResult = { bucket, key };
       return result;
     }
 
-    if (parts.length < 2) {
-      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, 'Invalid path format');
+    // 情况2: 没有配置默认 bucket，路径必须包含 bucket
+    if (parts.length === 0) {
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, 'Path must contain bucket name');
     }
 
+    if (parts.length === 1) {
+      // 只有 bucket 名称，key 为空
+      const result: S3PathResult = { bucket: parts[0], key: '' };
+      return result;
+    }
+
+    // 路径格式: bucket/key1/key2
     const result: S3PathResult = {
       bucket: parts[0],
       key: parts.slice(1).join('/')
@@ -139,6 +157,20 @@ export class S3Storage implements IFileStorage {
     }
 
     const pathResult: S3PathResult = this.parsePath(path);
+
+    // 空路径或只有 bucket 的路径视为目录
+    if (!pathResult.key || pathResult.key.length === 0) {
+      const info: FileInfo = {
+        name: pathResult.bucket,
+        size: 0,
+        modifiedTime: 0,
+        path: path,
+        type: FileType.DIR,
+        childrenCount: 0
+      };
+      return info;
+    }
+
     const result = await this.client.headObject(pathResult.bucket, pathResult.key);
 
     if (!result.success || !result.data) {
@@ -162,7 +194,11 @@ export class S3Storage implements IFileStorage {
     }
 
     const pathResult: S3PathResult = this.parsePath(path);
-    const prefix: string = pathResult.key;
+    // 确保前缀以 / 结尾，这样才能正确列出目录内容
+    let prefix: string = pathResult.key;
+    if (prefix.length > 0 && !prefix.endsWith('/')) {
+      prefix = prefix + '/';
+    }
     const result = await this.client.listObjects(pathResult.bucket, prefix);
 
     if (!result.success || !result.data) {
@@ -176,12 +212,16 @@ export class S3Storage implements IFileStorage {
         continue;
       }
 
+      // 判断是否为目录
+      const isDir: boolean = obj.key.endsWith('/');
+
       const info: FileInfo = {
         name: this.getFileName(obj.key),
-        size: obj.size,
-        modifiedTime: obj.lastModified,
+        size: isDir ? 0 : obj.size,
+        // 目录没有修改时间，设为 0
+        modifiedTime: isDir ? 0 : obj.lastModified,
         path: `${pathResult.bucket}/${obj.key}`,
-        type: obj.key.endsWith('/') ? FileType.DIR : FileType.FILE,
+        type: isDir ? FileType.DIR : FileType.FILE,
         childrenCount: 0
       };
       files.push(info);
