@@ -1,9 +1,13 @@
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
 import { ProgressCallback, MultipartUploadProgress } from './S3Types';
 import { S3MultipartConfig } from './S3MultipartConfig';
+
+const DOMAIN = 0x0000;
+const TAG = 'S3Storage';
 
 /**
  * S3 路径解析结果
@@ -304,6 +308,122 @@ export class S3Storage implements IFileStorage {
     }
 
     return files;
+  }
+
+  /**
+   * 删除文件
+   * @param path 文件路径
+   */
+  public async delete(path: string): Promise<void> {
+    if (!this.client) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
+    }
+
+    const pathResult: S3PathResult = this.parsePath(path);
+
+    const result = await this.client.deleteObject(pathResult.bucket, pathResult.key);
+
+    if (!result.success) {
+      throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, result.message);
+    }
+  }
+
+  /**
+   * 重命名文件
+   * @param oldPath 原文件路径
+   * @param newPath 新文件路径
+   */
+  public async rename(oldPath: string, newPath: string): Promise<void> {
+    if (!this.client) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
+    }
+
+    const oldPathResult: S3PathResult = this.parsePath(oldPath);
+    const newPathResult: S3PathResult = this.parsePath(newPath);
+
+    // S3 不支持原子的重命名操作，需要复制+删除
+
+    // 1. 复制对象
+    const copySource: string = oldPathResult.bucket + '/' + oldPathResult.key;
+    const copyHeaders: Map<string, string> = new Map();
+    copyHeaders.set('x-amz-copy-source', copySource);
+
+    const copyResult = await this.client.copyObject(
+      newPathResult.bucket,
+      newPathResult.key,
+      copyHeaders
+    );
+
+    if (!copyResult.success) {
+      throw new StorageError(
+        StorageErrorCodes.FILE_WRITE_ERROR,
+        copyResult.message || 'Failed to copy file'
+      );
+    }
+
+    // 2. 删除原文件
+    await this.delete(oldPath);
+  }
+
+  /**
+   * 安全写入文件（原子性保证）
+   * @param path 文件路径
+   * @param content 文件内容
+   */
+  public async writeSafe(path: string, content: ArrayBuffer): Promise<void> {
+    const tempPath: string = `${path}.tmp`;
+
+    try {
+      // 1. 上传到临时路径
+      await this.write(tempPath, content);
+
+      // 2. 验证上传（通过 headObject 验证文件大小）
+      if (!this.client) {
+        throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
+      }
+
+      const pathResult: S3PathResult = this.parsePath(tempPath);
+      const headResult = await this.client.headObject(pathResult.bucket, pathResult.key);
+
+      if (!headResult.success || !headResult.data) {
+        throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, 'Failed to verify uploaded file');
+      }
+
+      if (headResult.data.size !== content.byteLength) {
+        throw new StorageError(
+          StorageErrorCodes.FILE_WRITE_ERROR,
+          `File size mismatch: expected ${content.byteLength}, got ${headResult.data.size}`
+        );
+      }
+
+      // 3. 删除旧文件（如果存在）
+      try {
+        await this.delete(path);
+      } catch {
+        // 旧文件可能不存在，忽略错误
+      }
+
+      // 4. 重命名临时文件
+      await this.rename(tempPath, path);
+
+      hilog.info(DOMAIN, TAG, 'File saved successfully: %{public}s', path);
+
+    } catch (error) {
+      // 失败时清理临时文件
+      try {
+        await this.delete(tempPath);
+      } catch {
+        // 忽略清理错误
+      }
+
+      // 确保抛出的是 StorageError
+      if (error instanceof StorageError) {
+        throw error;
+      } else {
+        const err = error as Error;
+        throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, err.message);
+      }
+    }
   }
 
   /**
