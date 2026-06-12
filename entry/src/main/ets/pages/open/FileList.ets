@@ -500,11 +500,13 @@ struct FileList {
 
                     Row() {
                       // 修改时间
-                      Text(DateUtils.format(new Date(item.modifiedTime)))
-                        .fontSize(14)
-                        .fontColor($r('app.color.text_secondary'))
+                      if (item.modifiedTime && item.modifiedTime > 0) {
+                        Text(DateUtils.format(new Date(item.modifiedTime)))
+                          .fontSize(14)
+                          .fontColor($r('app.color.text_secondary'))
+                      }
                       // 文件大小
-                      Text(item.type === FileType.FILE ? this.formatFileSize(item.size) : item.childrenCount + "")
+                      Text(item.type === FileType.FILE ? this.formatFileSize(item.size) : (item.childrenCount && item.childrenCount > 0 ?  item.childrenCount + '' : ''))
                         .fontSize(14)
                         .fontColor($r('app.color.text_secondary'))
                         .textAlign(TextAlign.End)
