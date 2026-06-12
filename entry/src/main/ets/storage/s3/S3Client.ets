@@ -2,10 +2,11 @@ import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
 import { ByteUtils } from 'kdbxweb';
-import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, MultipartUploadProgress, ProgressCallback } from './S3Types';
+import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, MultipartUploadProgress, ProgressCallback, UploadTask, UploadWorkerResult } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
 import { S3XmlParser } from './S3XmlParser';
 import { S3MultipartConfig } from './S3Config';
+import { MultipartUploadQueue } from './MultipartUploadQueue';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3Client';
@@ -247,6 +248,34 @@ export class S3Client {
 
   public close(): void {
     this.sessionPool.release();
+  }
+
+  /**
+   * 计算最优分块大小
+   * @param fileSize 文件大小（字节）
+   * @returns 分块大小（字节）
+   */
+  private calculatePartSize(fileSize: number): number {
+    const idealSize = Math.max(
+      fileSize / S3MultipartConfig.TARGET_PART_COUNT,
+      S3MultipartConfig.MIN_PART_SIZE
+    );
+
+    // 分级优化，避免过度碎片化
+    const fiveMB = 5 * 1024 * 1024;
+    const eightMB = 8 * 1024 * 1024;
+    const sixteenMB = 16 * 1024 * 1024;
+    const thirtyTwoMB = 32 * 1024 * 1024;
+
+    if (idealSize <= eightMB) {
+      return fiveMB;
+    } else if (idealSize <= sixteenMB) {
+      return eightMB;
+    } else if (idealSize <= thirtyTwoMB) {
+      return sixteenMB;
+    } else {
+      return thirtyTwoMB;
+    }
   }
 
   public async listBuckets(): Promise<S3Result<S3Bucket[]>> {
