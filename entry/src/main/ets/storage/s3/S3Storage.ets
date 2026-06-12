@@ -166,6 +166,12 @@ export class S3Storage implements IFileStorage {
     }
 
     const pathResult: S3PathResult = this.parsePath(path);
+    const fileSizeMB = (content.byteLength / (1024 * 1024)).toFixed(2);
+    const thresholdMB = (S3MultipartConfig.MULTIPART_THRESHOLD / (1024 * 1024)).toFixed(2);
+
+    hilog.info(DOMAIN, TAG,
+      'write: path=%{public}s, bucket=%{public}s, key=%{public}s, size=%{public}s MB, threshold=%{public}s MB',
+      path, pathResult.bucket, pathResult.key, fileSizeMB, thresholdMB);
 
     // 使用新的智能上传方法
     const result = await this.client.putObjectSmart(
@@ -177,8 +183,11 @@ export class S3Storage implements IFileStorage {
     );
 
     if (!result.success) {
+      hilog.error(DOMAIN, TAG, 'write: failed to write file: %{public}s', result.message || 'unknown error');
       throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, result.message);
     }
+
+    hilog.info(DOMAIN, TAG, 'write: successfully wrote file to S3');
   }
 
   public async exists(path: string): Promise<boolean> {
