@@ -2,7 +2,6 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileInfo, FileType, IFileStorage, StorageConfig } from '../index';
 import { CacheConstants } from './CacheConstants';
-import { DialogHelper } from '@pura/harmony-dialog';
 import { ResourceManager } from '../../common/utils';
 import { KdbxError } from 'kdbxweb';
 import { ErrorCodes } from '../../services/error/KeepassHoError';
@@ -69,8 +68,8 @@ export class CacheStorage implements IFileStorage {
     hilog.debug(DOMAIN, TAG, 'Read from remote: %{public}s', path);
     const content: ArrayBuffer = await this.decoratedStorage.read(path);
 
-    // 异步保存到本地缓存
-    this.saveToCacheAsync(cachePath, content);
+    // 异步保存到本地缓存（不阻塞主流程）
+    this.writeToCacheAsync(cachePath, content);
     return content;
   }
 
@@ -102,14 +101,8 @@ export class CacheStorage implements IFileStorage {
       throw new KdbxError(ErrorCodes.READ_ONLY, ResourceManager.getString($r('app.string.cache_read_only')));
     }
 
-    // 正常模式：先写入本地缓存，然后推送到远端
-    try {
-      hilog.debug(DOMAIN, TAG, 'Write to cache first: %{public}s', cachePath);
-      await this.writeToCache(cachePath, content);
-    } catch (cacheError) {
-      // 缓存写入失败，记录警告但不阻断主流程
-      hilog.warn(DOMAIN, TAG, 'Cache write failed, continuing with remote: %{public}s', cacheError?.message);
-    }
+    // 正常模式：异步写入本地缓存（不阻塞），然后推送到远端
+    this.writeToCacheAsync(cachePath, content);
 
     // 推送到远端（核心操作，必须成功）
     await this.decoratedStorage.write(path, content);
@@ -175,7 +168,7 @@ export class CacheStorage implements IFileStorage {
 
     // 仅使用本地缓存模式：只从本地缓存获取
     if (onlyUseCache) {
-      return await this.getCacheInfo(cachePath);
+      return await this.getCacheInfo(cachePath, path);
     }
 
     try {
@@ -183,7 +176,7 @@ export class CacheStorage implements IFileStorage {
       return await this.decoratedStorage.getInfo(path);
     } catch (error) {
       hilog.warn(DOMAIN, TAG, 'Get remote info failed: %{public}s, fallback to cache', error?.message);
-      return await this.getCacheInfo(cachePath);
+      return await this.getCacheInfo(cachePath, path);
     }
   }
 
@@ -288,50 +281,37 @@ export class CacheStorage implements IFileStorage {
   }
 
   /**
-   * 异步保存到本地缓存
+   * 异步写入到本地缓存（不阻塞主流程）
+   * 在正常模式下，缓存失败只记录日志，不向用户显示错误，保持透明性
    * @param cachePath 缓存文件路径
    * @param content 文件内容
    */
-  private async saveToCacheAsync(cachePath: string, content: ArrayBuffer): Promise<void> {
+  private async writeToCacheAsync(cachePath: string, content: ArrayBuffer): Promise<void> {
     try {
       await this.writeToCache(cachePath, content);
-      hilog.debug(DOMAIN, TAG, 'Save to cache async success: %{public}s', cachePath);
+      hilog.debug(DOMAIN, TAG, 'Write to cache async success: %{public}s', cachePath);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Save to cache async failed: %{public}s, error: %{public}s', cachePath, error?.stack);
-      this.showErrorDialog(error?.message);
-    }
-  }
-
-  /**
-   * 显示错误提示对话框
-   * @param errorMessage 错误信息
-   */
-  private showErrorDialog(errorMessage: string): void {
-    try {
-      DialogHelper.showToast(errorMessage, {
-        duration: 3000,
-        fontColor: $r('app.color.button_text_blue'),
-        backgroundColor: $r('app.color.error')
-      })
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Show error dialog failed: %{public}s', error?.stack);
+      // 缓存失败只记录日志，不向用户显示错误，保持缓存层透明性
+      hilog.error(DOMAIN, TAG, 'Write to cache async failed (transparent mode): %{public}s, error: %{public}s', cachePath, error?.stack);
     }
   }
 
   /**
    * 获取缓存文件信息
    * @param cachePath 缓存文件路径
+   * @param originalPath 原始文件路径（用于返回给调用方，保持透明性）
    * @returns 文件信息
    */
-  private async getCacheInfo(cachePath: string): Promise<FileInfo> {
+  private async getCacheInfo(cachePath: string, originalPath?: string): Promise<FileInfo> {
     let file: fs.File | null = null;
     try {
       file = await fs.open(cachePath, fs.OpenMode.READ_ONLY);
       const stat = await fs.stat(file.fd);
-      const fileName: string = cachePath.split('/').pop() ?? '';
+      // 优先使用原始路径提取文件名，确保返回给调用方的是原始路径和文件名
+      const fileName: string = originalPath ? originalPath.split('/').pop() ?? '' : cachePath.split('/').pop() ?? '';
       const fileInfo: FileInfo = {
         name: fileName,
-        path: cachePath,
+        path: originalPath ?? cachePath,  // 返回原始路径而非缓存路径，保持透明性
         size: stat.size,
         modifiedTime: stat.mtime,
         type: FileType.FILE,

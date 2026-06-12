@@ -15,11 +15,11 @@ const TAG = 'S3Page';
 @Entry
 @Component
 struct S3Page {
-  @State endpoint: string = '';
-  @State accessKeyId: string = '';
-  @State secretAccessKey: string = '';
-  @State region: string = '';
-  @State bucket: string = '';
+  @State endpoint: string = 'https://cos.ap-beijing.myqcloud.com';
+  @State accessKeyId: string = 'AKIDicLtENK3Zs0vd7QZVGrGQN9vWvCKH2Zu';
+  @State secretAccessKey: string = 'DIApJ6pTzMZtDUcdfGnBOSOAnFYjjYEh';
+  @State region: string = 'ap-beijing';
+  @State bucket: string = 'default-1253435893';
   @State pathStyle: boolean = false;
   @State timeout: string = '30000';
   @State filePath: string = '';
