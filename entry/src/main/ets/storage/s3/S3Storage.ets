@@ -171,21 +171,43 @@ export class S3Storage implements IFileStorage {
       return info;
     }
 
+    // 先尝试作为文件查询
     const result = await this.client.headObject(pathResult.bucket, pathResult.key);
 
-    if (!result.success || !result.data) {
-      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, result.message);
+    if (result.success && result.data) {
+      // 是文件
+      const info: FileInfo = {
+        name: this.getFileName(pathResult.key),
+        size: result.data.size,
+        modifiedTime: result.data.lastModified,
+        path: path,
+        type: FileType.FILE,
+        childrenCount: 0
+      };
+      return info;
     }
 
-    const info: FileInfo = {
-      name: this.getFileName(pathResult.key),
-      size: result.data.size,
-      modifiedTime: result.data.lastModified,
-      path: path,
-      type: FileType.FILE,
-      childrenCount: 0
-    };
-    return info;
+    // headObject 失败，尝试检查是否是目录
+    // 通过 listObjects 查询该前缀下是否有内容
+    const prefix: string = pathResult.key.endsWith('/') ? pathResult.key : pathResult.key + '/';
+    const listResult = await this.client.listObjects(pathResult.bucket, prefix);
+
+    if (listResult.success && listResult.data && listResult.data.length > 0) {
+      // 该路径下有内容，视为目录
+      const dirName: string = this.getFileName(pathResult.key);
+      const info: FileInfo = {
+        name: dirName,
+        size: 0,
+        modifiedTime: 0,
+        path: path,
+        type: FileType.DIR,
+        childrenCount: listResult.data.length
+      };
+      return info;
+    }
+
+    // 既不是文件也不是目录
+    throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, 'File or directory not found');
   }
 
   public async listDir(path: string): Promise<FileInfo[]> {
