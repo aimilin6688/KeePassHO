@@ -79,5 +79,22 @@ export default function s3MultipartTest() {
 
       expect(result.success).assertTrue();
     });
+
+    /**
+     * 测试 abortMultipartUpload 成功场景
+     */
+    it('should_abort_multipart_upload_successfully', async () => {
+      const initResult = await client.createMultipartUpload(testBucket, testKey);
+      const uploadId = initResult.data!.uploadId;
+
+      // 上传一个 part
+      const partData = new ArrayBuffer(8 * 1024 * 1024);
+      await client.uploadPart(testBucket, testKey, uploadId, 1, partData);
+
+      // 取消上传
+      const result = await client.abortMultipartUpload(testBucket, testKey, uploadId);
+
+      expect(result.success).assertTrue();
+    });
   });
 }
