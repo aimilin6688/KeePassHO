@@ -1,4 +1,5 @@
 import { S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
+import { StorageConfig } from '../../../../../main/ets/storage/StorageConfig';
 
 /**
  * S3 测试公共配置
@@ -92,7 +93,7 @@ export class S3TestConfig {
  * 测试用 S3 存储配置类
  * 直接存储明文凭证，避免 SM4 加密依赖
  */
-export class TestS3StorageConfig {
+export class TestS3StorageConfig implements StorageConfig {
   endpoint: string;
   accessKeyId: string;
   secretAccessKey: string;
