@@ -51,7 +51,7 @@ export default function s3StorageIntegrationTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -83,7 +83,7 @@ export default function s3StorageIntegrationTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -118,7 +118,7 @@ export default function s3StorageIntegrationTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -159,7 +159,7 @@ export default function s3StorageIntegrationTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -190,7 +190,7 @@ export default function s3StorageIntegrationTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -221,7 +221,7 @@ export default function s3StorageIntegrationTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
   });
