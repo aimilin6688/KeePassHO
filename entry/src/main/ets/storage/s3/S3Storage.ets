@@ -4,7 +4,7 @@ import { StorageError, StorageErrorCodes } from '../StorageError';
 import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
 import { ProgressCallback, MultipartUploadProgress } from './S3Types';
-import { S3MultipartConfig } from './S3MultipartConfig';
+import { S3MultipartConfig } from './S3Config';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3Storage';
