@@ -1,6 +1,6 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
 import { S3Client, S3ClientOptionsImpl } from '../../../../main/ets/storage/s3/S3Client';
-import { UploadedPart } from '../../../../main/ets/storage/s3/S3Types';
+import { UploadedPart, MultipartUploadProgress } from '../../../../main/ets/storage/s3/S3Types';
 
 export default function s3MultipartTest() {
   describe('S3MultipartTest', () => {
@@ -95,6 +95,70 @@ export default function s3MultipartTest() {
       const result = await client.abortMultipartUpload(testBucket, testKey, uploadId);
 
       expect(result.success).assertTrue();
+    });
+
+    /**
+     * 测试 putObjectSmart 小文件（< 5MB）
+     */
+    it('should_use_simple_upload_for_small_file', async () => {
+      const smallData = new ArrayBuffer(3 * 1024 * 1024); // 3MB
+      let progressCalled = false;
+
+      const result = await client.putObjectSmart(
+        testBucket,
+        testKey + '-small',
+        smallData,
+        (progress) => {
+          progressCalled = true;
+        }
+      );
+
+      expect(result.success).assertTrue();
+      // 小文件不会触发进度回调
+      expect(progressCalled).assertFalse();
+    });
+
+    /**
+     * 测试 putObjectSmart 大文件（>= 5MB）
+     */
+    it('should_use_multipart_upload_for_large_file', async () => {
+      const largeData = new ArrayBuffer(20 * 1024 * 1024); // 20MB
+      const progressEvents: MultipartUploadProgress[] = [];
+
+      const result = await client.putObjectSmart(
+        testBucket,
+        testKey + '-large',
+        largeData,
+        (progress) => {
+          progressEvents.push(progress);
+        }
+      );
+
+      expect(result.success).assertTrue();
+      expect(progressEvents.length > 0).assertTrue();
+      expect(progressEvents[progressEvents.length - 1].uploadedBytes).assertEqual(20 * 1024 * 1024);
+    });
+
+    /**
+     * 测试 putObjectSmart 自定义阈值
+     */
+    it('should_use_custom_threshold', async () => {
+      const data = new ArrayBuffer(6 * 1024 * 1024); // 6MB
+      let progressCalled = false;
+
+      // 使用 10MB 阈值，6MB 应该使用简单上传
+      const result = await client.putObjectSmart(
+        testBucket,
+        testKey + '-custom',
+        data,
+        (progress) => {
+          progressCalled = true;
+        },
+        10 * 1024 * 1024 // 10MB 阈值
+      );
+
+      expect(result.success).assertTrue();
+      expect(progressCalled).assertFalse();
     });
   });
 }

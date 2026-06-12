@@ -2,7 +2,7 @@ import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
 import { ByteUtils } from 'kdbxweb';
-import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart } from './S3Types';
+import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, MultipartUploadProgress, ProgressCallback } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
 import { S3XmlParser } from './S3XmlParser';
 import { S3MultipartConfig } from './S3MultipartConfig';
@@ -749,6 +749,117 @@ ${partsXml}
         message: err.message
       };
       return result;
+    }
+  }
+
+  /**
+   * 智能上传文件（自动判断是否使用 Multipart）
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param data 文件数据
+   * @param onProgress 进度回调（可选）
+   * @param multipartThreshold 分块阈值，默认 5MB
+   * @returns S3Result<void>
+   */
+  public async putObjectSmart(
+    bucket: string,
+    key: string,
+    data: ArrayBuffer,
+    onProgress?: ProgressCallback,
+    multipartThreshold: number = S3MultipartConfig.MULTIPART_THRESHOLD
+  ): Promise<S3Result<void>> {
+    // 判断文件大小
+    if (data.byteLength < multipartThreshold) {
+      // 小文件：使用现有 putObject
+      return this.putObject(bucket, key, data);
+    }
+
+    // 大文件：使用 Multipart Upload
+    return this.putObjectMultipart(bucket, key, data, onProgress);
+  }
+
+  /**
+   * 使用 Multipart Upload 上传大文件
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param data 文件数据
+   * @param onProgress 进度回调（可选）
+   * @returns S3Result<void>
+   */
+  private async putObjectMultipart(
+    bucket: string,
+    key: string,
+    data: ArrayBuffer,
+    onProgress?: ProgressCallback
+  ): Promise<S3Result<void>> {
+    // 1. 初始化 Multipart Upload
+    const initResult = await this.createMultipartUpload(bucket, key);
+
+    if (!initResult.success || !initResult.data) {
+      return {
+        success: false,
+        statusCode: initResult.statusCode,
+        message: initResult.message || 'Failed to initialize multipart upload'
+      };
+    }
+
+    const uploadId = initResult.data.uploadId;
+    const uploadedParts: UploadedPart[] = [];
+
+    try {
+      // 2. 分块上传
+      const totalSize = data.byteLength;
+      const partSize = S3MultipartConfig.RECOMMENDED_PART_SIZE;
+      const totalParts = Math.ceil(totalSize / partSize);
+
+      for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+        const start = (partNumber - 1) * partSize;
+        const end = Math.min(start + partSize, totalSize);
+        const partData = data.slice(start, end);
+
+        // 上传单个 Part
+        const partResult = await this.uploadPart(bucket, key, uploadId, partNumber, partData);
+
+        if (!partResult.success || !partResult.data) {
+          // 上传失败，取消 Multipart Upload
+          await this.abortMultipartUpload(bucket, key, uploadId);
+
+          return {
+            success: false,
+            statusCode: partResult.statusCode,
+            message: partResult.message || `Failed to upload part ${partNumber}`
+          };
+        }
+
+        uploadedParts.push(partResult.data);
+
+        // 进度回调
+        if (onProgress) {
+          const progress: MultipartUploadProgress = {
+            uploadedBytes: end,
+            totalBytes: totalSize,
+            currentPart: partNumber,
+            totalParts: totalParts
+          };
+          onProgress(progress);
+        }
+      }
+
+      // 3. 完成 Multipart Upload
+      const completeResult = await this.completeMultipartUpload(bucket, key, uploadId, uploadedParts);
+
+      return completeResult;
+
+    } catch (error) {
+      // 发生异常，取消 Multipart Upload
+      await this.abortMultipartUpload(bucket, key, uploadId);
+
+      const err = error as Error;
+      return {
+        success: false,
+        statusCode: 500,
+        message: err.message
+      };
     }
   }
 }
