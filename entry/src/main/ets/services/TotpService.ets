@@ -410,7 +410,7 @@ export class TotpService {
       const secret = params.get('secret');
 
       if (!secret) {
-        hilog.error(DOMAIN, TAG, 'Missing secret parameter');
+        hilog.info(DOMAIN, TAG, 'Missing secret parameter in TOTP URI');
         return null;
       }
 
