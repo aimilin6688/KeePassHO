@@ -30,18 +30,15 @@ export class MultipartUploadQueue {
    * @returns UploadTask 或 null（队列已空）
    */
   public getNextTask(): UploadTask | null {
-    if (this.tasks.length === 0) {
-      return null;
-    }
-    return this.tasks.shift() as UploadTask;
+    const task = this.tasks.shift();
+    return task ?? null;
   }
 
   /**
    * 标记任务完成
-   * @param task 完成的任务
    * @param bytes 上传的字节数
    */
-  public markCompleted(task: UploadTask, bytes: number): void {
+  public markCompleted(bytes: number): void {
     this.completedCount++;
     this.uploadedBytes += bytes;
   }
