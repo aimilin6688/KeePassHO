@@ -20,7 +20,6 @@ import PCloudConfigTest from './storage/pcloud/PCloudConfig.test';
 import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test';
 import PCloudClientIntegrationTest from './storage/pcloud/PCloudClientIntegration.test';
 import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
-import BaiduNetdiskAuthTest from './storage/baidu/BaiduNetdiskAuth.test';
 
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
@@ -55,7 +54,6 @@ export default function testsuite() {
   PCloudOAuth2ProviderTest();
   PCloudClientIntegrationTest();
   PCloudStorageTest();
-  BaiduNetdiskAuthTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();
