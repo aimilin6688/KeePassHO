@@ -160,5 +160,58 @@ export default function s3MultipartTest() {
       expect(result.success).assertTrue();
       expect(progressCalled).assertFalse();
     });
+
+    /**
+     * 测试 getObjectChunked 分块下载
+     */
+    it('should_download_file_in_chunks', async () => {
+      // 先上传一个 20MB 文件
+      const testData = new ArrayBuffer(20 * 1024 * 1024);
+      const uploadResult = await client.putObject(testBucket, testKey + '-chunked', testData);
+      expect(uploadResult.success).assertTrue();
+
+      // 分块下载
+      const progressEvents: MultipartUploadProgress[] = [];
+      const result = await client.getObjectChunked(
+        testBucket,
+        testKey + '-chunked',
+        8 * 1024 * 1024, // 8MB chunks
+        (progress) => {
+          progressEvents.push(progress);
+        }
+      );
+
+      expect(result.success).assertTrue();
+      expect(result.data).assertNotNull();
+      expect(result.data?.byteLength).assertEqual(20 * 1024 * 1024);
+      expect(progressEvents.length > 0).assertTrue();
+    });
+
+    /**
+     * 测试 getObjectChunked 小文件直接下载
+     */
+    it('should_download_small_file_directly', async () => {
+      // 先上传一个小文件 (< 8MB)
+      const testData = new ArrayBuffer(3 * 1024 * 1024); // 3MB
+      const uploadResult = await client.putObject(testBucket, testKey + '-small-chunked', testData);
+      expect(uploadResult.success).assertTrue();
+
+      // 分块下载
+      const progressEvents: MultipartUploadProgress[] = [];
+      const result = await client.getObjectChunked(
+        testBucket,
+        testKey + '-small-chunked',
+        8 * 1024 * 1024, // 8MB chunks
+        (progress) => {
+          progressEvents.push(progress);
+        }
+      );
+
+      expect(result.success).assertTrue();
+      expect(result.data).assertNotNull();
+      expect(result.data?.byteLength).assertEqual(3 * 1024 * 1024);
+      // 小文件直接下载，不会触发进度回调
+      expect(progressEvents.length).assertEqual(0);
+    });
   });
 }

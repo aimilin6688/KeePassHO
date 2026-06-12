@@ -862,4 +862,113 @@ ${partsXml}
       };
     }
   }
+
+  /**
+   * 分块下载对象（支持大文件）
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param chunkSize 分块大小，默认 8MB
+   * @param onProgress 进度回调（可选）
+   */
+  public async getObjectChunked(
+    bucket: string,
+    key: string,
+    chunkSize: number = S3MultipartConfig.RECOMMENDED_PART_SIZE,
+    onProgress?: ProgressCallback
+  ): Promise<S3Result<ArrayBuffer>> {
+    try {
+      // 1. 获取文件大小
+      const headResult = await this.headObject(bucket, key);
+
+      if (!headResult.success || !headResult.data) {
+        return {
+          success: false,
+          statusCode: headResult.statusCode,
+          message: headResult.message || 'Failed to get object info'
+        };
+      }
+
+      const totalSize = headResult.data.size;
+
+      // 小文件直接下载
+      if (totalSize <= chunkSize) {
+        return this.getObject(bucket, key);
+      }
+
+      // 2. 分块下载
+      const totalChunks = Math.ceil(totalSize / chunkSize);
+      const chunks: ArrayBuffer[] = [];
+      let downloadedBytes = 0;
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * chunkSize;
+        const end = Math.min(start + chunkSize - 1, totalSize - 1);
+
+        // 设置 Range 请求头
+        const rangeHeader = `bytes=${start}-${end}`;
+
+        const headers = await this.signer.signRequest(
+          'GET',
+          this.options.endpoint,
+          bucket,
+          key,
+          this.options.pathStyle,
+          new Map([['range', rangeHeader]])
+        );
+
+        const url = this.buildUrl(bucket, key);
+        const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
+        const response = await this.getSession()?.fetch(request);
+
+        if (!response || response.statusCode < 200 || response.statusCode >= 300 || !response.body) {
+          return {
+            success: false,
+            statusCode: response?.statusCode || 500,
+            message: `Failed to download chunk ${chunkIndex + 1}`
+          };
+        }
+
+        chunks.push(response.body);
+        downloadedBytes += response.body.byteLength;
+
+        // 进度回调
+        if (onProgress) {
+          const progress: MultipartUploadProgress = {
+            uploadedBytes: downloadedBytes,
+            totalBytes: totalSize,
+            currentPart: chunkIndex + 1,
+            totalParts: totalChunks
+          };
+          onProgress(progress);
+        }
+      }
+
+      // 3. 合并所有块
+      const result = new ArrayBuffer(totalSize);
+      const resultView = new Uint8Array(result);
+      let offset = 0;
+
+      for (const chunk of chunks) {
+        const chunkView = new Uint8Array(chunk);
+        resultView.set(chunkView, offset);
+        offset += chunk.byteLength;
+      }
+
+      return {
+        success: true,
+        statusCode: 200,
+        data: result
+      };
+
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'getObjectChunked error: %{public}s', err.message);
+
+      return {
+        success: false,
+        statusCode: 500,
+        message: err.message
+      };
+    }
+  }
 }
