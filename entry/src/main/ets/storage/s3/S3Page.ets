@@ -50,12 +50,24 @@ struct S3Page {
       this.filePath = LocationParam.getFileName();
       return;
     }
-    const storageConfig = dbFileParam.storageConfig as S3StorageConfig;
+    let storageConfig = dbFileParam.storageConfig as S3StorageConfig;
     if (storageConfig) {
+      // Reconstruct S3StorageConfig to restore class methods
+      storageConfig = new S3StorageConfig(
+        storageConfig.endpoint,
+        storageConfig.accessKeyId,
+        storageConfig.secretAccessKey,
+        {
+          region: storageConfig.region,
+          bucket: storageConfig.bucket,
+          pathStyle: storageConfig.pathStyle,
+          timeout: storageConfig.timeout
+        }
+      );
       this.endpoint = storageConfig.endpoint;
       this.accessKeyId = storageConfig.getAccessKeyIdText();
       this.secretAccessKey = storageConfig.getSecretAccessKeyText();
-      this.region = storageConfig.region || 'us-east-1';
+      this.region = storageConfig.region || '';
       this.bucket = storageConfig.bucket || '';
       this.pathStyle = storageConfig.pathStyle;
       this.timeout = storageConfig.timeout?.toString() || '30000';
