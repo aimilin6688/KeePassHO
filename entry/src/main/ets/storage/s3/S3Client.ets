@@ -1,7 +1,7 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils } from 'kdbxweb';
-import { S3Bucket, S3Object, S3Result } from './S3Types';
+import { S3Bucket, S3Object, S3Result, MultipartUploadInit } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
 import { S3XmlParser } from './S3XmlParser';
 
@@ -479,5 +479,131 @@ export class S3Client {
       message: bucketResult.message
     };
     return result;
+  }
+
+  /**
+   * 初始化 Multipart Upload
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @returns S3Result<MultipartUploadInit>
+   */
+  public async createMultipartUpload(
+    bucket: string,
+    key: string
+  ): Promise<S3Result<MultipartUploadInit>> {
+    try {
+      // 查询字符串: ?uploads
+      const queryString = 'uploads';
+
+      const headers = await this.signer.signRequest(
+        'POST',
+        this.options.endpoint,
+        bucket,
+        key,
+        this.options.pathStyle,
+        new Map(),
+        null,
+        queryString
+      );
+
+      const url = this.buildUrl(bucket, key) + '?' + queryString;
+      const request = new rcp.Request(url, 'POST', this.headersToRecord(headers));
+      const response = await this.getSession()?.fetch(request);
+
+      if (response && response.statusCode >= 200 && response.statusCode < 300 && response.body) {
+        // 解析 XML 响应获取 uploadId
+        const xmlStr = ByteUtils.bytesToString(response.body);
+        const uploadId = this.parseUploadId(xmlStr);
+
+        const init: MultipartUploadInit = {
+          uploadId: uploadId,
+          key: key,
+          bucket: bucket
+        };
+
+        const result: S3Result<MultipartUploadInit> = {
+          success: true,
+          statusCode: response.statusCode,
+          data: init,
+          headers: response.headers as Record<string, string>
+        };
+
+        return result;
+      }
+
+      return this.handleResponse<MultipartUploadInit>(response);
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'createMultipartUpload error: %{public}s', err.message);
+      const result: S3Result<MultipartUploadInit> = {
+        success: false,
+        statusCode: 500,
+        message: err.message
+      };
+      return result;
+    }
+  }
+
+  /**
+   * 解析 uploadId 从 XML 响应
+   */
+  private parseUploadId(xmlStr: string): string {
+    // S3 响应格式:
+    // <InitiateMultipartUploadResult>
+    //   <Bucket>bucket</Bucket>
+    //   <Key>key</Key>
+    //   <UploadId>uploadId</UploadId>
+    // </InitiateMultipartUploadResult>
+
+    const uploadIdMatch = xmlStr.match(/<UploadId>([^<]+)<\/UploadId>/);
+    if (uploadIdMatch && uploadIdMatch[1]) {
+      return uploadIdMatch[1];
+    }
+
+    throw new Error('Failed to parse uploadId from response');
+  }
+
+  /**
+   * 取消 Multipart Upload
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param uploadId 上传ID
+   * @returns S3Result<void>
+   */
+  public async abortMultipartUpload(
+    bucket: string,
+    key: string,
+    uploadId: string
+  ): Promise<S3Result<void>> {
+    try {
+      // 查询字符串: ?uploadId=xxx
+      const queryString = 'uploadId=' + encodeURIComponent(uploadId);
+
+      const headers = await this.signer.signRequest(
+        'DELETE',
+        this.options.endpoint,
+        bucket,
+        key,
+        this.options.pathStyle,
+        new Map(),
+        null,
+        queryString
+      );
+
+      const url = this.buildUrl(bucket, key) + '?' + queryString;
+      const request = new rcp.Request(url, 'DELETE', this.headersToRecord(headers));
+      const response = await this.getSession()?.fetch(request);
+
+      return this.handleResponse<void>(response);
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'abortMultipartUpload error: %{public}s', err.message);
+      const result: S3Result<void> = {
+        success: false,
+        statusCode: 500,
+        message: err.message
+      };
+      return result;
+    }
   }
 }
