@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import { S3Client, S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
-import { MultipartUploadInit } from '../../../../../main/ets/storage/s3/S3Types';
+import { MultipartUploadInit, UploadedPart } from '../../../../../main/ets/storage/s3/S3Types';
 import { S3TestConfig } from './S3TestConfig';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -137,6 +137,52 @@ export default function s3ClientMultipartTest() {
         if (result.data?.uploadId) {
           await client.abortMultipartUpload(testBucket, testKey, result.data.uploadId);
         }
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
+        throw error;
+      }
+    });
+
+    /**
+     * 测试 uploadPart 成功场景
+     */
+    it('should_upload_part_successfully', 0, async () => {
+      try {
+        // 先创建 multipart upload
+        const initResult = await client.createMultipartUpload(testBucket, testKey);
+        const uploadId = initResult.data!.uploadId;
+
+        hilog.info(DOMAIN, TAG, 'Created multipart upload with uploadId: %{public}s', uploadId);
+
+        // 准备测试数据（8MB）
+        const partData = new ArrayBuffer(8 * 1024 * 1024);
+
+        // 上传第一个 part
+        const result = await client.uploadPart(
+          testBucket,
+          testKey,
+          uploadId,
+          1,
+          partData
+        );
+
+        hilog.info(DOMAIN, TAG, 'uploadPart result: success=%{public}s, statusCode=%{public}d',
+          String(result.success), result.statusCode);
+
+        expect(result.success).assertTrue();
+        expect(result.statusCode).assertEqual(200);
+        expect(result.data).assertNotNull();
+        expect(result.data?.partNumber).assertEqual(1);
+        expect(result.data?.etag).assertNotEmpty();
+        expect(result.data?.size).assertEqual(8 * 1024 * 1024);
+
+        hilog.info(DOMAIN, TAG, 'Uploaded part: partNumber=%{public}d, etag=%{public}s, size=%{public}d',
+          result.data?.partNumber ?? 0, result.data?.etag ?? '', result.data?.size ?? 0);
+
+        // 清理：取消 multipart upload
+        await client.abortMultipartUpload(testBucket, testKey, uploadId);
+        hilog.info(DOMAIN, TAG, 'Aborted multipart upload');
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
