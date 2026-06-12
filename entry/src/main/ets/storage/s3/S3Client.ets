@@ -929,63 +929,94 @@ ${partsXml}
     const uploadId = initResult.data.uploadId;
     hilog.debug(DOMAIN, TAG, 'putObjectMultipart: created upload with uploadId=%{public}s', uploadId);
 
-    const uploadedParts: UploadedPart[] = [];
-
     try {
-      // 2. 分块上传
+      // 2. 计算分块大小并创建队列
       const totalSize = data.byteLength;
-      const partSize = S3MultipartConfig.RECOMMENDED_PART_SIZE;
+      const partSize = this.calculatePartSize(totalSize);
       const totalParts = Math.ceil(totalSize / partSize);
 
-      hilog.debug(DOMAIN, TAG,
-        'putObjectMultipart: totalSize=%{public}d bytes, partSize=%{public}d bytes, totalParts=%{public}d',
-        totalSize, partSize, totalParts);
+      const partSizeMB = (partSize / (1024 * 1024)).toFixed(2);
+      const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+
+      hilog.info(DOMAIN, TAG,
+        'putObjectMultipart: totalSize=%{public}s MB, partSize=%{public}s MB, totalParts=%{public}d',
+        totalSizeMB, partSizeMB, totalParts);
+
+      // 3. 创建上传队列
+      const queue = new MultipartUploadQueue(totalSize, totalParts);
 
       for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
         const start = (partNumber - 1) * partSize;
         const end = Math.min(start + partSize, totalSize);
-        const partData = data.slice(start, end);
 
-        hilog.debug(DOMAIN, TAG,
-          'putObjectMultipart: uploading part %{public}d/%{public}d, bytes %{public}d-%{public}d, size=%{public}d bytes',
-          partNumber, totalParts, start, end - 1, partData.byteLength);
+        const task: UploadTask = {
+          partNumber: partNumber,
+          start: start,
+          end: end,
+          retryCount: 0
+        };
 
-        // 上传单个 Part
-        const partResult = await this.uploadPart(bucket, key, uploadId, partNumber, partData);
-
-        if (!partResult.success || !partResult.data) {
-          // 上传失败，取消 Multipart Upload
-          hilog.error(DOMAIN, TAG, 'putObjectMultipart: failed to upload part %{public}d: %{public}s',
-            partNumber, partResult.message || 'unknown error');
-          await this.abortMultipartUpload(bucket, key, uploadId);
-
-          return {
-            success: false,
-            statusCode: partResult.statusCode,
-            message: partResult.message || `Failed to upload part ${partNumber}`
-          };
-        }
-
-        uploadedParts.push(partResult.data);
-        hilog.debug(DOMAIN, TAG, 'putObjectMultipart: uploaded part %{public}d successfully, etag=%{public}s',
-          partNumber, partResult.data.etag);
-
-        // 进度回调
-        if (onProgress) {
-          const progress: MultipartUploadProgress = {
-            uploadedBytes: end,
-            totalBytes: totalSize,
-            currentPart: partNumber,
-            totalParts: totalParts
-          };
-          onProgress(progress);
-        }
+        queue.addTask(task);
       }
 
-      // 3. 完成 Multipart Upload
+      // 4. 启动并发上传工作器
+      const workers: Promise<UploadWorkerResult>[] = [];
+      const concurrentUploads = S3MultipartConfig.CONCURRENT_UPLOADS;
+
+      for (let i = 0; i < concurrentUploads; i++) {
+        workers.push(this.uploadWorker(queue, bucket, key, uploadId, data, onProgress));
+      }
+
+      // 5. 等待所有工作器完成
+      const results = await Promise.all(workers);
+
+      // 6. 检查结果并合并已上传的 Parts
+      const allParts: UploadedPart[] = [];
+      let hasError = false;
+      let errorMessage = '';
+
+      for (const result of results) {
+        if (!result.success) {
+          hasError = true;
+          errorMessage = result.error || 'Unknown error';
+        }
+        allParts.push(...result.parts);
+      }
+
+      // 检查是否所有部分都上传成功
+      if (queue.hasFailedTasks() || hasError) {
+        hilog.error(DOMAIN, TAG,
+          'putObjectMultipart: upload failed, failed tasks=%{public}d',
+          queue.getFailedCount());
+
+        await this.abortMultipartUpload(bucket, key, uploadId);
+
+        return {
+          success: false,
+          statusCode: 500,
+          message: errorMessage || `Upload failed with ${queue.getFailedCount()} failed parts`
+        };
+      }
+
+      // 检查是否上传了所有部分
+      if (allParts.length !== totalParts) {
+        hilog.error(DOMAIN, TAG,
+          'putObjectMultipart: missing parts, expected=%{public}d, got=%{public}d',
+          totalParts, allParts.length);
+
+        await this.abortMultipartUpload(bucket, key, uploadId);
+
+        return {
+          success: false,
+          statusCode: 500,
+          message: `Missing parts: expected ${totalParts}, got ${allParts.length}`
+        };
+      }
+
+      // 7. 完成 Multipart Upload
       hilog.debug(DOMAIN, TAG, 'putObjectMultipart: completing multipart upload with %{public}d parts',
-        uploadedParts.length);
-      const completeResult = await this.completeMultipartUpload(bucket, key, uploadId, uploadedParts);
+        allParts.length);
+      const completeResult = await this.completeMultipartUpload(bucket, key, uploadId, allParts);
 
       if (completeResult.success) {
         hilog.info(DOMAIN, TAG, 'putObjectMultipart: multipart upload completed successfully');
