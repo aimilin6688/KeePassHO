@@ -189,5 +189,39 @@ export default function s3ClientMultipartTest() {
         throw error;
       }
     });
+
+    /**
+     * 测试 abortMultipartUpload 成功场景
+     */
+    it('should_abort_multipart_upload_successfully', 0, async () => {
+      try {
+        // 先创建 multipart upload
+        const initResult = await client.createMultipartUpload(testBucket, testKey);
+        const uploadId = initResult.data!.uploadId;
+
+        hilog.info(DOMAIN, TAG, 'Created multipart upload with uploadId: %{public}s', uploadId);
+
+        // 上传一个 part
+        const partData = new ArrayBuffer(8 * 1024 * 1024);
+        await client.uploadPart(testBucket, testKey, uploadId, 1, partData);
+
+        hilog.info(DOMAIN, TAG, 'Uploaded part 1');
+
+        // 取消上传
+        const result = await client.abortMultipartUpload(testBucket, testKey, uploadId);
+
+        hilog.info(DOMAIN, TAG, 'abortMultipartUpload result: success=%{public}s, statusCode=%{public}d',
+          String(result.success), result.statusCode);
+
+        expect(result.success).assertTrue();
+        expect(result.statusCode).assertEqual(204);
+
+        hilog.info(DOMAIN, TAG, 'Successfully aborted multipart upload');
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
+        throw error;
+      }
+    });
   });
 }
