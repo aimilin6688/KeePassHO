@@ -573,6 +573,171 @@ export default function S3ClientMultipartTest() {
 
       hilog.info(DOMAIN, TAG, 'Retry task order test passed');
     });
+
+    /**
+     * 真实并发上传测试 - 小文件（10MB）
+     */
+    it('should_upload_small_file_with_concurrent_upload', 0, async () => {
+      try {
+        // 准备 10MB 测试数据
+        const fileSize = 10 * 1024 * 1024;
+        const testData = new ArrayBuffer(fileSize);
+
+        // 填充一些测试数据（可选）
+        const view = new Uint8Array(testData);
+        for (let i = 0; i < view.length; i++) {
+          view[i] = i % 256;
+        }
+
+        const testKey = 'concurrent-test/10MB-test.dat';
+        const startTime = Date.now();
+
+        hilog.info(DOMAIN, TAG, 'Starting concurrent upload for 10MB file...');
+
+        // 使用并发上传
+        const result = await client.putObjectSmart(testBucket, testKey, testData);
+
+        const duration = Date.now() - startTime;
+
+        hilog.info(DOMAIN, TAG,
+          'Concurrent upload completed: success=%{public}s, duration=%{public}d ms',
+          String(result.success), duration);
+
+        expect(result.success).assertTrue();
+
+        // 验证文件是否存在
+        const headResult = await client.headObject(testBucket, testKey);
+        expect(headResult.success).assertTrue();
+        expect(headResult.data?.size).assertEqual(fileSize);
+
+        hilog.info(DOMAIN, TAG,
+          'File verified: size=%{public}d, etag=%{public}s',
+          headResult.data?.size ?? 0, headResult.data?.etag ?? '');
+
+        // 清理测试文件
+        await client.deleteObject(testBucket, testKey);
+        hilog.info(DOMAIN, TAG, 'Test file cleaned up');
+
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    /**
+     * 真实并发上传测试 - 中等文件（20MB，会分成 4 个分块）
+     */
+    it('should_upload_medium_file_with_concurrent_upload', 0, async () => {
+      try {
+        // 准备 20MB 测试数据（会分成 4 个 5MB 分块）
+        const fileSize = 20 * 1024 * 1024;
+        const testData = new ArrayBuffer(fileSize);
+
+        const view = new Uint8Array(testData);
+        for (let i = 0; i < view.length; i++) {
+          view[i] = (i * 7) % 256; // 使用不同的模式
+        }
+
+        const testKey = 'concurrent-test/20MB-test.dat';
+        const startTime = Date.now();
+
+        hilog.info(DOMAIN, TAG, 'Starting concurrent upload for 20MB file (4 parts)...');
+
+        // 使用并发上传，带进度回调
+        const progressEvents: MultipartUploadProgress[] = [];
+        const result = await client.putObjectSmart(
+          testBucket,
+          testKey,
+          testData,
+          (progress) => {
+            progressEvents.push(progress);
+            hilog.debug(DOMAIN, TAG,
+              'Progress: %{public}d/%{public}d bytes, part %{public}d/%{public}d',
+              progress.uploadedBytes, progress.totalBytes,
+              progress.currentPart, progress.totalParts);
+          }
+        );
+
+        const duration = Date.now() - startTime;
+
+        hilog.info(DOMAIN, TAG,
+          'Concurrent upload completed: success=%{public}s, duration=%{public}d ms, progress events=%{public}d',
+          String(result.success), duration, progressEvents.length);
+
+        expect(result.success).assertTrue();
+        expect(progressEvents.length > 0).assertTrue();
+
+        // 验证进度单调递增
+        for (let i = 1; i < progressEvents.length; i++) {
+          expect(progressEvents[i].uploadedBytes)
+            .assertLargerOrEqual(progressEvents[i - 1].uploadedBytes);
+        }
+
+        // 验证最终进度
+        const lastProgress = progressEvents[progressEvents.length - 1];
+        expect(lastProgress.uploadedBytes).assertEqual(fileSize);
+        expect(lastProgress.currentPart).assertEqual(lastProgress.totalParts);
+
+        // 验证文件
+        const headResult = await client.headObject(testBucket, testKey);
+        expect(headResult.success).assertTrue();
+        expect(headResult.data?.size).assertEqual(fileSize);
+
+        hilog.info(DOMAIN, TAG,
+          'File verified: size=%{public}d, parts=%{public}d',
+          headResult.data?.size ?? 0, lastProgress.totalParts);
+
+        // 清理
+        await client.deleteObject(testBucket, testKey);
+        hilog.info(DOMAIN, TAG, 'Test file cleaned up');
+
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    /**
+     * 真实并发上传测试 - 边界情况（刚好 5MB，阈值边界）
+     */
+    it('should_upload_threshold_file', 0, async () => {
+      try {
+        // 准备 5MB 测试数据（刚好在阈值上）
+        const fileSize = 5 * 1024 * 1024;
+        const testData = new ArrayBuffer(fileSize);
+
+        const testKey = 'concurrent-test/5MB-threshold.dat';
+        const startTime = Date.now();
+
+        hilog.info(DOMAIN, TAG, 'Testing threshold file (5MB exactly)...');
+
+        const result = await client.putObjectSmart(testBucket, testKey, testData);
+
+        const duration = Date.now() - startTime;
+
+        hilog.info(DOMAIN, TAG,
+          'Threshold upload completed: success=%{public}s, duration=%{public}d ms',
+          String(result.success), duration);
+
+        expect(result.success).assertTrue();
+
+        // 验证文件
+        const headResult = await client.headObject(testBucket, testKey);
+        expect(headResult.success).assertTrue();
+        expect(headResult.data?.size).assertEqual(fileSize);
+
+        // 清理
+        await client.deleteObject(testBucket, testKey);
+        hilog.info(DOMAIN, TAG, 'Threshold test file cleaned up');
+
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
   });
 }
 
