@@ -232,6 +232,7 @@ export class S3Client {
           const xmlStr = ByteUtils.bytesToString(response.body);
           const error = S3XmlParser.parseError(xmlStr);
           result.message = error.message || `HTTP ${response.statusCode}`;
+          hilog.error(DOMAIN, TAG, 'S3 error: code=%{public}s, message=%{public}s', error.code, error.message);
         } catch {
           result.message = `HTTP ${response.statusCode}`;
         }
