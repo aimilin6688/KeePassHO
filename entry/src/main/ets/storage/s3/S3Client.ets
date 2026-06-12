@@ -1,9 +1,10 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils } from 'kdbxweb';
-import { S3Bucket, S3Object, S3Result, MultipartUploadInit } from './S3Types';
+import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
 import { S3XmlParser } from './S3XmlParser';
+import { S3MultipartConfig } from './S3MultipartConfig';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3Client';
@@ -561,6 +562,87 @@ export class S3Client {
     }
 
     throw new Error('Failed to parse uploadId from response');
+  }
+
+  /**
+   * 上传单个 Part
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param uploadId Upload ID
+   * @param partNumber Part 编号（1-10000）
+   * @param data Part 数据
+   * @returns S3Result<UploadedPart>
+   */
+  public async uploadPart(
+    bucket: string,
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    data: ArrayBuffer
+  ): Promise<S3Result<UploadedPart>> {
+    let retryCount = 0;
+
+    while (retryCount < S3MultipartConfig.MAX_RETRY_COUNT) {
+      try {
+        // 查询字符串: ?partNumber={N}&uploadId={id}
+        const queryString = `partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
+
+        const headers = await this.signer.signRequest(
+          'PUT',
+          this.options.endpoint,
+          bucket,
+          key,
+          this.options.pathStyle,
+          new Map([['content-type', 'application/octet-stream']]),
+          data,
+          queryString
+        );
+
+        const url = this.buildUrl(bucket, key) + '?' + queryString;
+        const request = new rcp.Request(url, 'PUT', this.headersToRecord(headers), data);
+        const response = await this.getSession()?.fetch(request);
+
+        if (response && response.statusCode >= 200 && response.statusCode < 300) {
+          // 从响应头获取 ETag
+          const respHeaders = response.headers as Record<string, string>;
+          const etag = (respHeaders['etag'] || respHeaders['ETag'] || '').replace(/"/g, '');
+
+          const part: UploadedPart = {
+            partNumber: partNumber,
+            etag: etag,
+            size: data.byteLength
+          };
+
+          const result: S3Result<UploadedPart> = {
+            success: true,
+            statusCode: response.statusCode,
+            data: part,
+            headers: respHeaders
+          };
+
+          return result;
+        }
+
+        // 非 2xx 响应，重试
+        retryCount++;
+        hilog.warn(DOMAIN, TAG, 'uploadPart failed with status %{public}d, retry %{public}d/%{public}d',
+          response?.statusCode, retryCount, S3MultipartConfig.MAX_RETRY_COUNT);
+
+      } catch (error) {
+        const err = error as Error;
+        retryCount++;
+        hilog.error(DOMAIN, TAG, 'uploadPart error: %{public}s, retry %{public}d/%{public}d',
+          err.message, retryCount, S3MultipartConfig.MAX_RETRY_COUNT);
+      }
+    }
+
+    // 超过最大重试次数
+    const result: S3Result<UploadedPart> = {
+      success: false,
+      statusCode: 500,
+      message: `uploadPart failed after ${S3MultipartConfig.MAX_RETRY_COUNT} retries`
+    };
+    return result;
   }
 
   /**
