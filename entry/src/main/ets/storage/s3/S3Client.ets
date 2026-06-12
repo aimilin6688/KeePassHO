@@ -278,6 +278,73 @@ export class S3Client {
     }
   }
 
+  /**
+   * 并发上传工作器
+   */
+  private async uploadWorker(
+    queue: MultipartUploadQueue,
+    bucket: string,
+    key: string,
+    uploadId: string,
+    data: ArrayBuffer,
+    onProgress?: ProgressCallback
+  ): Promise<UploadWorkerResult> {
+    const uploadedParts: UploadedPart[] = [];
+
+    try {
+      while (true) {
+        const task = queue.getNextTask();
+        if (!task) break;
+
+        const partData = data.slice(task.start, task.end);
+
+        hilog.debug(DOMAIN, TAG,
+          'uploadWorker: uploading part %{public}d, bytes %{public}d-%{public}d, retry=%{public}d',
+          task.partNumber, task.start, task.end - 1, task.retryCount);
+
+        const partResult = await this.uploadPart(bucket, key, uploadId, task.partNumber, partData);
+
+        if (partResult.success && partResult.data) {
+          queue.markCompleted(partData.byteLength);
+          uploadedParts.push(partResult.data);
+
+          hilog.debug(DOMAIN, TAG,
+            'uploadWorker: uploaded part %{public}d, etag=%{public}s',
+            task.partNumber, partResult.data.etag);
+
+          if (onProgress) {
+            onProgress(queue.getProgress());
+          }
+        } else {
+          hilog.warn(DOMAIN, TAG,
+            'uploadWorker: part %{public}d failed, retrying', task.partNumber);
+
+          if (!queue.retryTask(task)) {
+            hilog.error(DOMAIN, TAG,
+              'uploadWorker: part %{public}d max retries exceeded', task.partNumber);
+
+            return {
+              success: false,
+              parts: uploadedParts,
+              error: `Part ${task.partNumber} failed after retries`
+            };
+          }
+        }
+      }
+
+      hilog.info(DOMAIN, TAG,
+        'uploadWorker: completed, uploaded %{public}d parts', uploadedParts.length);
+
+      return { success: true, parts: uploadedParts };
+
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'uploadWorker exception: %{public}s', err.message);
+
+      return { success: false, parts: uploadedParts, error: err.message };
+    }
+  }
+
   public async listBuckets(): Promise<S3Result<S3Bucket[]>> {
     try {
       const headers = await this.signer.signListBuckets(this.options.endpoint, this.parsedEndpoint.host);
