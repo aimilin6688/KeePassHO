@@ -36,23 +36,23 @@ export default function S3StorageTest() {
 
     describe('S3MultipartConfig', () => {
 
-      it('should_have_correct_min_part_size', () => {
+      it('should_have_correct_min_part_size', 0, () => {
         expect(S3MultipartConfig.MIN_PART_SIZE).assertEqual(5 * 1024 * 1024);
       });
 
-      it('should_have_correct_recommended_part_size', () => {
+      it('should_have_correct_recommended_part_size', 0, () => {
         expect(S3MultipartConfig.RECOMMENDED_PART_SIZE).assertEqual(8 * 1024 * 1024);
       });
 
-      it('should_have_correct_multipart_threshold', () => {
+      it('should_have_correct_multipart_threshold', 0, () => {
         expect(S3MultipartConfig.MULTIPART_THRESHOLD).assertEqual(5 * 1024 * 1024);
       });
 
-      it('should_have_correct_max_retry_count', () => {
+      it('should_have_correct_max_retry_count', 0, () => {
         expect(S3MultipartConfig.MAX_RETRY_COUNT).assertEqual(3);
       });
 
-      it('should_recommended_part_size_be_larger_than_min', () => {
+      it('should_recommended_part_size_be_larger_than_min', 0, () => {
         expect(S3MultipartConfig.RECOMMENDED_PART_SIZE)
           .assertLarger(S3MultipartConfig.MIN_PART_SIZE);
       });
