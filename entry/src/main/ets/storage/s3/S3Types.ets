@@ -148,3 +148,48 @@ export interface MultipartUploadProgress {
  */
 export type ProgressCallback = (progress: MultipartUploadProgress) => void;
 
+/**
+ * 上传任务
+ */
+export interface UploadTask {
+  /**
+   * 分块编号（1-based）
+   */
+  partNumber: number;
+
+  /**
+   * 起始字节位置
+   */
+  start: number;
+
+  /**
+   * 结束字节位置
+   */
+  end: number;
+
+  /**
+   * 已重试次数
+   */
+  retryCount: number;
+}
+
+/**
+ * 上传工作器结果
+ */
+export interface UploadWorkerResult {
+  /**
+   * 是否成功
+   */
+  success: boolean;
+
+  /**
+   * 该上传器成功上传的分块列表
+   */
+  parts: UploadedPart[];
+
+  /**
+   * 错误信息（如果失败）
+   */
+  error?: string;
+}
+
