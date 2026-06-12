@@ -289,10 +289,8 @@ export class CacheStorage implements IFileStorage {
   private async writeToCacheAsync(cachePath: string, content: ArrayBuffer): Promise<void> {
     try {
       await this.writeToCache(cachePath, content);
-      hilog.debug(DOMAIN, TAG, 'Write to cache async success: %{public}s', cachePath);
     } catch (error) {
-      // 缓存失败只记录日志，不向用户显示错误，保持缓存层透明性
-      hilog.error(DOMAIN, TAG, 'Write to cache async failed (transparent mode): %{public}s, error: %{public}s', cachePath, error?.stack);
+      hilog.warn(DOMAIN, TAG, 'Write to cache async failed (transparent mode): %{public}s, error: %{public}s', cachePath, error?.stack);
     }
   }
 
