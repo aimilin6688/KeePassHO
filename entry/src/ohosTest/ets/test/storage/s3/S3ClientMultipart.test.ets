@@ -7,7 +7,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN = 0x0000;
 const TAG = 'S3ClientMultipartTest';
 
-export default function s3ClientMultipartTest() {
+export default function S3ClientMultipartTest() {
   describe('S3Client Multipart Upload', () => {
     let client: S3Client;
     const testBucket = S3TestConfig.BUCKET;

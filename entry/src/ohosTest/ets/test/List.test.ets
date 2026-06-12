@@ -11,11 +11,14 @@ import OtpUrlParserTest from './services/otp/parsers/OtpUrlParser.test';
 import KeePass2ParserTest from './services/otp/parsers/KeePass2Parser.test';
 import KeeOtpParserTest from './services/otp/parsers/KeeOtpParser.test';
 import KeeTrayTotpParserTest from './services/otp/parsers/KeeTrayTotpParser.test';
-import S3StorageTest from './storage/s3/S3Storage.test';
-import S3XmlParserTest from './storage/s3/S3XmlParser.test';
-import S3SignatureV4Test from './storage/s3/S3SignatureV4.test';
+
 import S3ClientTest from './storage/s3/S3Client.test';
-import S3StorageIntegrationTest from './storage/s3/S3StorageIntegrationTest';
+import S3ClientMultipartTest from './storage/s3/S3ClientMultipart.test';
+import S3SignatureV4Test from './storage/s3/S3SignatureV4.test';
+import S3StorageTest from './storage/s3/S3Storage.test';
+import S3StorageIntegrationTest from './storage/s3/S3StorageIntegration.test';
+import S3XmlParserTest from './storage/s3/S3XmlParser.test';
+
 import PCloudClientTest from './storage/pcloud/PCloudClient.test';
 import PCloudConfigTest from './storage/pcloud/PCloudConfig.test';
 import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test';
@@ -46,11 +49,14 @@ export default function testsuite() {
   KeePass2ParserTest();
   KeeOtpParserTest();
   KeeTrayTotpParserTest();
-  S3StorageTest();
-  S3XmlParserTest();
-  S3SignatureV4Test();
+
   S3ClientTest();
+  S3ClientMultipartTest();
+  S3SignatureV4Test();
+  S3StorageTest();
   S3StorageIntegrationTest();
+  S3XmlParserTest();
+
   PCloudClientTest();
   PCloudConfigTest();
   PCloudOAuth2ProviderTest();
