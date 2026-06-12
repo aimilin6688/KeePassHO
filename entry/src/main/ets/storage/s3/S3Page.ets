@@ -18,7 +18,7 @@ struct S3Page {
   @State endpoint: string = '';
   @State accessKeyId: string = '';
   @State secretAccessKey: string = '';
-  @State region: string = 'us-east-1';
+  @State region: string = '';
   @State bucket: string = '';
   @State pathStyle: boolean = false;
   @State timeout: string = '30000';
