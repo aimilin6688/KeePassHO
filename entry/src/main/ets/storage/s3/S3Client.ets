@@ -373,6 +373,10 @@ export class S3Client {
 
   public async putObject(bucket: string, key: string, data: ArrayBuffer): Promise<S3Result<void>> {
     try {
+      const fileSizeMB = (data.byteLength / (1024 * 1024)).toFixed(2);
+      hilog.info(DOMAIN, TAG, 'putObject: bucket=%{public}s, key=%{public}s, size=%{public}s MB',
+        bucket, key, fileSizeMB);
+
       const headers = await this.signer.signRequest(
         'PUT',
         this.options.endpoint,
@@ -386,6 +390,12 @@ export class S3Client {
       const url = this.buildUrl(bucket, key);
       const request = new rcp.Request(url, 'PUT', this.headersToRecord(headers), data);
       const response = await this.getSession()?.fetch(request);
+
+      if (response && response.statusCode >= 200 && response.statusCode < 300) {
+        hilog.info(DOMAIN, TAG, 'putObject: upload successful, statusCode=%{public}d', response.statusCode);
+      } else {
+        hilog.error(DOMAIN, TAG, 'putObject: upload failed, statusCode=%{public}d', response?.statusCode || 0);
+      }
 
       return this.handleResponse<void>(response);
     } catch (error) {
@@ -771,13 +781,22 @@ ${partsXml}
     onProgress?: ProgressCallback,
     multipartThreshold: number = S3MultipartConfig.MULTIPART_THRESHOLD
   ): Promise<S3Result<void>> {
+    const fileSizeMB = (data.byteLength / (1024 * 1024)).toFixed(2);
+    const thresholdMB = (multipartThreshold / (1024 * 1024)).toFixed(2);
+
+    hilog.debug(DOMAIN, TAG,
+      'putObjectSmart: bucket=%{public}s, key=%{public}s, size=%{public}s MB, threshold=%{public}s MB',
+      bucket, key, fileSizeMB, thresholdMB);
+
     // 判断文件大小
     if (data.byteLength < multipartThreshold) {
       // 小文件：使用现有 putObject
+      hilog.debug(DOMAIN, TAG, 'putObjectSmart: using simple putObject (file < threshold)');
       return this.putObject(bucket, key, data);
     }
 
     // 大文件：使用 Multipart Upload
+    hilog.debug(DOMAIN, TAG, 'putObjectSmart: using multipart upload (file >= threshold)');
     return this.putObjectMultipart(bucket, key, data, onProgress);
   }
 
@@ -795,10 +814,15 @@ ${partsXml}
     data: ArrayBuffer,
     onProgress?: ProgressCallback
   ): Promise<S3Result<void>> {
+    hilog.debug(DOMAIN, TAG, 'putObjectMultipart: starting multipart upload for bucket=%{public}s, key=%{public}s',
+      bucket, key);
+
     // 1. 初始化 Multipart Upload
     const initResult = await this.createMultipartUpload(bucket, key);
 
     if (!initResult.success || !initResult.data) {
+      hilog.error(DOMAIN, TAG, 'putObjectMultipart: failed to initialize multipart upload: %{public}s',
+        initResult.message || 'unknown error');
       return {
         success: false,
         statusCode: initResult.statusCode,
@@ -807,6 +831,8 @@ ${partsXml}
     }
 
     const uploadId = initResult.data.uploadId;
+    hilog.debug(DOMAIN, TAG, 'putObjectMultipart: created upload with uploadId=%{public}s', uploadId);
+
     const uploadedParts: UploadedPart[] = [];
 
     try {
@@ -815,16 +841,26 @@ ${partsXml}
       const partSize = S3MultipartConfig.RECOMMENDED_PART_SIZE;
       const totalParts = Math.ceil(totalSize / partSize);
 
+      hilog.debug(DOMAIN, TAG,
+        'putObjectMultipart: totalSize=%{public}d bytes, partSize=%{public}d bytes, totalParts=%{public}d',
+        totalSize, partSize, totalParts);
+
       for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
         const start = (partNumber - 1) * partSize;
         const end = Math.min(start + partSize, totalSize);
         const partData = data.slice(start, end);
+
+        hilog.debug(DOMAIN, TAG,
+          'putObjectMultipart: uploading part %{public}d/%{public}d, bytes %{public}d-%{public}d, size=%{public}d bytes',
+          partNumber, totalParts, start, end - 1, partData.byteLength);
 
         // 上传单个 Part
         const partResult = await this.uploadPart(bucket, key, uploadId, partNumber, partData);
 
         if (!partResult.success || !partResult.data) {
           // 上传失败，取消 Multipart Upload
+          hilog.error(DOMAIN, TAG, 'putObjectMultipart: failed to upload part %{public}d: %{public}s',
+            partNumber, partResult.message || 'unknown error');
           await this.abortMultipartUpload(bucket, key, uploadId);
 
           return {
@@ -835,6 +871,8 @@ ${partsXml}
         }
 
         uploadedParts.push(partResult.data);
+        hilog.debug(DOMAIN, TAG, 'putObjectMultipart: uploaded part %{public}d successfully, etag=%{public}s',
+          partNumber, partResult.data.etag);
 
         // 进度回调
         if (onProgress) {
@@ -849,15 +887,25 @@ ${partsXml}
       }
 
       // 3. 完成 Multipart Upload
+      hilog.debug(DOMAIN, TAG, 'putObjectMultipart: completing multipart upload with %{public}d parts',
+        uploadedParts.length);
       const completeResult = await this.completeMultipartUpload(bucket, key, uploadId, uploadedParts);
+
+      if (completeResult.success) {
+        hilog.info(DOMAIN, TAG, 'putObjectMultipart: multipart upload completed successfully');
+      } else {
+        hilog.error(DOMAIN, TAG, 'putObjectMultipart: failed to complete multipart upload: %{public}s',
+          completeResult.message || 'unknown error');
+      }
 
       return completeResult;
 
     } catch (error) {
       // 发生异常，取消 Multipart Upload
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'putObjectMultipart: exception during upload: %{public}s', err.message);
       await this.abortMultipartUpload(bucket, key, uploadId);
 
-      const err = error as Error;
       return {
         success: false,
         statusCode: 500,
