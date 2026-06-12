@@ -573,6 +573,26 @@ export default function S3ClientMultipartTest() {
 
       hilog.info(DOMAIN, TAG, 'Retry task order test passed');
     });
+  });
+
+  /**
+   * 真实 S3 并发上传集成测试
+   * 这些测试会真实调用 S3 API，需要配置正确的凭证
+   */
+  describe('S3Client_Multipart_Integration', () => {
+    let client: S3Client;
+    const testBucket = S3TestConfig.BUCKET;
+
+    beforeEach(() => {
+      const options = S3TestConfig.getClientOptions();
+      client = new S3Client(options);
+    });
+
+    afterEach(() => {
+      if (client) {
+        client.close();
+      }
+    });
 
     /**
      * 真实并发上传测试 - 小文件（10MB）
@@ -583,7 +603,7 @@ export default function S3ClientMultipartTest() {
         const fileSize = 10 * 1024 * 1024;
         const testData = new ArrayBuffer(fileSize);
 
-        // 填充一些测试数据（可选）
+        // 填充一些测试数据
         const view = new Uint8Array(testData);
         for (let i = 0; i < view.length; i++) {
           view[i] = i % 256;
@@ -636,7 +656,7 @@ export default function S3ClientMultipartTest() {
 
         const view = new Uint8Array(testData);
         for (let i = 0; i < view.length; i++) {
-          view[i] = (i * 7) % 256; // 使用不同的模式
+          view[i] = (i * 7) % 256;
         }
 
         const testKey = 'concurrent-test/20MB-test.dat';
