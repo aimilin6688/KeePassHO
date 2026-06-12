@@ -107,6 +107,12 @@ export class S3MultipartConfig {
   static readonly MIN_PART_SIZE = 5 * 1024 * 1024; // 5MB
 
   /**
+   * 推荐分块大小：8MB
+   * 平衡上传效率和重试成本
+   */
+  static readonly RECOMMENDED_PART_SIZE = 8 * 1024 * 1024; // 8MB
+
+  /**
    * 最大分块大小：32MB
    * 避免单个分块过大导致内存问题
    */
