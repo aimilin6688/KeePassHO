@@ -2674,7 +2674,7 @@
     },
     {
       "name": "s3_endpoint_hint",
-      "value": "支持 AWS S3、MinIO、阿里云 OSS 等"
+      "value": "支持 AWS S3、MinIO、阿里云、腾讯云、京东云 等对象存储"
     },
     {
       "name": "s3_endpoint_empty",
