@@ -232,6 +232,7 @@ export class S3Client {
       if (response.body) {
         try {
           const xmlStr = ByteUtils.bytesToString(response.body);
+          console.error(`[S3Client] Error response (${xmlStr.length} bytes): ${xmlStr}`);
           const error = S3XmlParser.parseError(xmlStr);
           result.message = error.message || `HTTP ${response.statusCode}`;
           hilog.error(DOMAIN, TAG, 'S3 error: code=%{public}s, message=%{public}s', error.code, error.message);
@@ -495,7 +496,8 @@ export class S3Client {
   ): Promise<S3Result<MultipartUploadInit>> {
     try {
       // 查询字符串: ?uploads
-      const queryString = 'uploads';
+      // 注意：签名时查询字符串需要包含 '=' 符号，即 'uploads='
+      const queryString = 'uploads=';
 
       const headers = await this.signer.signRequest(
         'POST',
@@ -508,7 +510,8 @@ export class S3Client {
         queryString
       );
 
-      const url = this.buildUrl(bucket, key) + '?' + queryString;
+      // URL 仍然使用 ?uploads（无等号）
+      const url = this.buildUrl(bucket, key) + '?uploads';
       const request = new rcp.Request(url, 'POST', this.headersToRecord(headers));
       const response = await this.getSession()?.fetch(request);
 
