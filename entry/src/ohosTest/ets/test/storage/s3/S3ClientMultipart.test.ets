@@ -36,7 +36,7 @@ export default function S3ClientMultipartTest() {
 
         expect(result.success).assertTrue();
         expect(result.statusCode).assertEqual(200);
-        expect(result.data).assertNotEqual(null);
+        expect(result.data !== null).assertTrue();
         expect(result.data?.uploadId?.length ?? 0).assertLarger(0);
         expect(result.data?.bucket).assertEqual(testBucket);
         expect(result.data?.key).assertEqual(testKey);
@@ -172,7 +172,7 @@ export default function S3ClientMultipartTest() {
 
         expect(result.success).assertTrue();
         expect(result.statusCode).assertEqual(200);
-        expect(result.data).assertNotEqual(null);
+        expect(result.data !== null).assertTrue();
         expect(result.data?.partNumber).assertEqual(1);
         expect(result.data?.etag?.length ?? 0).assertLarger(0);
         expect(result.data?.size).assertEqual(8 * 1024 * 1024);
@@ -253,7 +253,7 @@ export default function S3ClientMultipartTest() {
           String(result.success), result.statusCode);
 
         expect(result.success).assertTrue();
-        expect(result.data).assertNotEqual(null);
+        expect(result.data !== null).assertTrue();
         expect(result.data?.byteLength).assertEqual(20 * 1024 * 1024);
         expect(progressEvents.length > 0).assertTrue();
 
