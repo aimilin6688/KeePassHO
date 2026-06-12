@@ -2,6 +2,8 @@ import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
+import { ProgressCallback, MultipartUploadProgress } from './S3Types';
+import { S3MultipartConfig } from './S3MultipartConfig';
 
 /**
  * S3 路径解析结果
@@ -17,11 +19,20 @@ interface S3PathResult {
 export class S3Storage implements IFileStorage {
   private config: S3StorageConfig | undefined;
   private client: S3Client | undefined;
+  private progressCallback?: ProgressCallback;
 
   constructor(config?: S3StorageConfig) {
     if (config) {
       this.init(config);
     }
+  }
+
+  /**
+   * 设置进度回调函数
+   * @param callback 进度回调函数
+   */
+  public setProgressCallback(callback: ProgressCallback): void {
+    this.progressCallback = callback;
   }
 
   public getPageConfig(): PageConfig {
@@ -115,13 +126,34 @@ export class S3Storage implements IFileStorage {
     }
 
     const pathResult: S3PathResult = this.parsePath(path);
-    const result = await this.client.getObject(pathResult.bucket, pathResult.key);
 
-    if (!result.success || !result.data) {
-      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message);
+    // 先获取文件信息判断大小
+    const info = await this.client.headObject(pathResult.bucket, pathResult.key);
+
+    if (info.success && info.data && info.data.size >= S3MultipartConfig.MULTIPART_THRESHOLD) {
+      // 大文件：使用分块下载
+      const result = await this.client.getObjectChunked(
+        pathResult.bucket,
+        pathResult.key,
+        S3MultipartConfig.RECOMMENDED_PART_SIZE,
+        this.progressCallback
+      );
+
+      if (!result.success || !result.data) {
+        throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message);
+      }
+
+      return result.data;
+    } else {
+      // 小文件：使用现有方法
+      const result = await this.client.getObject(pathResult.bucket, pathResult.key);
+
+      if (!result.success || !result.data) {
+        throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message);
+      }
+
+      return result.data;
     }
-
-    return result.data;
   }
 
   public async write(path: string, content: ArrayBuffer): Promise<void> {
@@ -130,7 +162,15 @@ export class S3Storage implements IFileStorage {
     }
 
     const pathResult: S3PathResult = this.parsePath(path);
-    const result = await this.client.putObject(pathResult.bucket, pathResult.key, content);
+
+    // 使用新的智能上传方法
+    const result = await this.client.putObjectSmart(
+      pathResult.bucket,
+      pathResult.key,
+      content,
+      this.progressCallback,
+      S3MultipartConfig.MULTIPART_THRESHOLD
+    );
 
     if (!result.success) {
       throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, result.message);
