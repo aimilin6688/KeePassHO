@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@ohos/hypium';
-import { S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3MultipartConfig';
+import { S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3Config';
 
 export default function s3MultipartConfigTest() {
   describe('S3MultipartConfig', () => {

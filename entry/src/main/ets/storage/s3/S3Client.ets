@@ -5,7 +5,7 @@ import { ByteUtils } from 'kdbxweb';
 import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, MultipartUploadProgress, ProgressCallback } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
 import { S3XmlParser } from './S3XmlParser';
-import { S3MultipartConfig } from './S3MultipartConfig';
+import { S3MultipartConfig } from './S3Config';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3Client';

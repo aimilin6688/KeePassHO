@@ -13,5 +13,4 @@ export * from './cache/CacheConstants'
 export * from './s3/S3Storage';
 export * from './s3/S3Config';
 export * from './s3/S3Types';
-export * from './s3/S3MultipartConfig';
 
