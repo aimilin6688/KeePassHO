@@ -144,8 +144,22 @@ export class S3Storage implements IFileStorage {
 
     try {
       const pathResult: S3PathResult = this.parsePath(path);
+
+      // 空路径或只有 bucket 的路径视为存在
+      if (!pathResult.key || pathResult.key.length === 0) {
+        return true;
+      }
+
+      // 先检查是否是文件
       const result = await this.client.headObject(pathResult.bucket, pathResult.key);
-      return result.success;
+      if (result.success) {
+        return true;
+      }
+
+      // 再检查是否是目录
+      const prefix: string = pathResult.key.endsWith('/') ? pathResult.key : pathResult.key + '/';
+      const listResult = await this.client.listObjects(pathResult.bucket, prefix);
+      return listResult.success && listResult.data !== undefined && listResult.data.length > 0;
     } catch {
       return false;
     }
