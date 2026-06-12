@@ -77,3 +77,74 @@ export interface S3Error {
   resourceId?: string;
   resource?: string;
 }
+
+/**
+ * Multipart Upload 初始化响应
+ */
+export interface MultipartUploadInit {
+  /**
+   * Upload ID，用于后续操作
+   */
+  uploadId: string;
+
+  /**
+   * 对象键
+   */
+  key: string;
+
+  /**
+   * 存储桶名称
+   */
+  bucket: string;
+}
+
+/**
+ * 已上传的 Part 信息
+ */
+export interface UploadedPart {
+  /**
+   * Part 编号（1-10000）
+   */
+  partNumber: number;
+
+  /**
+   * Part 的 ETag，用于完成上传
+   */
+  etag: string;
+
+  /**
+   * Part 大小（字节）
+   */
+  size: number;
+}
+
+/**
+ * Multipart Upload 上传进度回调
+ */
+export interface MultipartUploadProgress {
+  /**
+   * 已上传字节数
+   */
+  uploadedBytes: number;
+
+  /**
+   * 总字节数
+   */
+  totalBytes: number;
+
+  /**
+   * 当前 Part 编号
+   */
+  currentPart: number;
+
+  /**
+   * 总 Part 数量
+   */
+  totalParts: number;
+}
+
+/**
+ * 上传进度回调函数类型
+ */
+export type ProgressCallback = (progress: MultipartUploadProgress) => void;
+
