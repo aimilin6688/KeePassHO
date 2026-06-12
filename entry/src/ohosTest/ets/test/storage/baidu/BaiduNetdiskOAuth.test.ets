@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@ohos/hypium';
-import { BaiduNetdiskConfig } from '../../../../../main/ets/storage/baidunetdisk/BaiduNetdiskConfig';
-import { BaiduNetdiskOAuth2Provider } from '../../../../../main/ets/storage/baidunetdisk/BaiduNetdiskOAuth2Provider';
-import { BaiduNetdiskClient } from '../../../../../main/ets/storage/baidunetdisk/BaiduNetdiskClient';
+import { BaiduNetdiskConfig } from '../../../../../main/ets/storage/baidu/BaiduNetdiskConfig';
+import { BaiduNetdiskOAuth2Provider } from '../../../../../main/ets/storage/baidu/BaiduNetdiskOAuth2Provider';
+import { BaiduNetdiskClient } from '../../../../../main/ets/storage/baidu/BaiduNetdiskClient';
 
 export default function BaiduNetdiskOAuthTest() {
   describe('BaiduNetdiskOAuthTest', () => {
