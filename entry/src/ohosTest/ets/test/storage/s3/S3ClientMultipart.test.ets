@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import { S3Client, S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
-import { MultipartUploadInit, UploadedPart } from '../../../../../main/ets/storage/s3/S3Types';
+import { MultipartUploadInit, UploadedPart, MultipartUploadProgress } from '../../../../../main/ets/storage/s3/S3Types';
 import { S3TestConfig } from './S3TestConfig';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -36,8 +36,8 @@ export default function S3ClientMultipartTest() {
 
         expect(result.success).assertTrue();
         expect(result.statusCode).assertEqual(200);
-        expect(result.data).assertNotNull();
-        expect(result.data?.uploadId).assertNotEmpty();
+        expect(result.data).assertNotEqual(null);
+        expect(result.data?.uploadId?.length ?? 0).assertLarger(0);
         expect(result.data?.bucket).assertEqual(testBucket);
         expect(result.data?.key).assertEqual(testKey);
 
@@ -51,7 +51,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -63,7 +63,7 @@ export default function S3ClientMultipartTest() {
         const result = await client.createMultipartUpload(testBucket, testKey);
 
         expect(result.success).assertTrue();
-        expect(result.data?.uploadId).assertNotNull();
+        expect(result.data?.uploadId)).assertNotEqual(null);
 
         // uploadId 应该是一个非空字符串
         const uploadId = result.data?.uploadId ?? '';
@@ -78,7 +78,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -109,7 +109,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -121,7 +121,7 @@ export default function S3ClientMultipartTest() {
         const result = await client.createMultipartUpload(testBucket, testKey);
 
         expect(result.success).assertTrue();
-        expect(result.headers).assertNotNull();
+        expect(result.headers)).assertNotEqual(null);
 
         // 检查关键响应头
         const headers = result.headers;
@@ -130,7 +130,7 @@ export default function S3ClientMultipartTest() {
 
           // 检查是否有 content-type 头
           const contentType = headers['content-type'] || headers['Content-Type'];
-          expect(contentType).assertNotNull();
+          expect(contentType)).assertNotEqual(null);
         }
 
         // 清理
@@ -140,7 +140,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -172,9 +172,9 @@ export default function S3ClientMultipartTest() {
 
         expect(result.success).assertTrue();
         expect(result.statusCode).assertEqual(200);
-        expect(result.data).assertNotNull();
+        expect(result.data).assertNotEqual(null);
         expect(result.data?.partNumber).assertEqual(1);
-        expect(result.data?.etag).assertNotEmpty();
+        expect(result.data?.etag?.length ?? 0).assertLarger(0);
         expect(result.data?.size).assertEqual(8 * 1024 * 1024);
 
         hilog.info(DOMAIN, TAG, 'Uploaded part: partNumber=%{public}d, etag=%{public}s, size=%{public}d',
@@ -186,7 +186,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -220,7 +220,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
 
@@ -253,7 +253,7 @@ export default function S3ClientMultipartTest() {
           String(result.success), result.statusCode);
 
         expect(result.success).assertTrue();
-        expect(result.data).assertNotNull();
+        expect(result.data).assertNotEqual(null);
         expect(result.data?.byteLength).assertEqual(20 * 1024 * 1024);
         expect(progressEvents.length > 0).assertTrue();
 
@@ -262,7 +262,7 @@ export default function S3ClientMultipartTest() {
       } catch (error) {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-        throw error;
+        throw new Error(err.message);
       }
     });
   });
