@@ -202,7 +202,7 @@ public init(config: WebDAVStorageConfig) {
 
 [当选择"自定义 CA 证书"时显示]
 ┌─────────────────────────────────────────┐
-│ $r('app.string.ssl_cert_no_certificate_selected') │ [$r('app.string.ssl_cert_select_certificate')] │
+│ $r('app.string.ssl_cert_no_certificate_selected') │ [$r('app.string.select_button')] │
 └─────────────────────────────────────────┘
 ```
 
@@ -249,7 +249,7 @@ private showSkipWarningDialog() {
     alignment: DialogAlignment.CENTER,
     buttons: [
       {
-        value: $r('app.string.ssl_cert_warning_cancel'),
+        value: $r('app.string.cancel_button_text'),  // 复用现有字符串
         action: () => {
           // 恢复到系统 CA 模式
           this.certValidationMode = CertValidationMode.SYSTEM;
@@ -295,7 +295,18 @@ if (storageConfig) {
 
 所有新增的 UI 字符串必须定义在资源文件中，支持多语言。
 
-### 6.1 新增字符串资源
+### 6.1 可复用的现有字符串
+
+以下字符串已存在，无需重复定义：
+
+| 资源名称 | 英文值 | 用途 |
+|----------|--------|------|
+| `cancel_button_text` | Cancel | 取消按钮 |
+| `confirm_button_text` | Confirm | 确认按钮 |
+| `select_button` | Select | 选择按钮 |
+| `template_field_ca_certificate` | CA Certificate | CA 证书（模板字段） |
+
+### 6.2 新增字符串资源
 
 文件：`entry/src/main/resources/base/element/string.json`
 
@@ -319,10 +330,6 @@ if (storageConfig) {
       "value": "Custom CA Certificate"
     },
     {
-      "name": "ssl_cert_select_certificate",
-      "value": "Select Certificate"
-    },
-    {
       "name": "ssl_cert_no_certificate_selected",
       "value": "No certificate selected"
     },
@@ -343,10 +350,6 @@ if (storageConfig) {
       "value": "Skipping SSL certificate validation reduces connection security and may lead to data leaks or man-in-the-middle attacks.\n\nThis is recommended only for testing environments or servers using self-signed certificates.\n\nDo you want to continue?"
     },
     {
-      "name": "ssl_cert_warning_cancel",
-      "value": "Cancel"
-    },
-    {
       "name": "ssl_cert_warning_continue",
       "value": "Continue"
     }
@@ -354,7 +357,7 @@ if (storageConfig) {
 }
 ```
 
-### 6.2 中文资源
+### 6.3 中文资源
 
 文件：`entry/src/main/resources/zh_CN/element/string.json`
 
@@ -378,10 +381,6 @@ if (storageConfig) {
       "value": "自定义 CA 证书"
     },
     {
-      "name": "ssl_cert_select_certificate",
-      "value": "选择证书"
-    },
-    {
       "name": "ssl_cert_no_certificate_selected",
       "value": "未选择证书"
     },
@@ -402,10 +401,6 @@ if (storageConfig) {
       "value": "跳过 SSL 证书验证会降低连接安全性，可能导致数据泄露或遭受中间人攻击。\n\n仅建议在测试环境或服务器使用自签名证书时使用。\n\n是否继续？"
     },
     {
-      "name": "ssl_cert_warning_cancel",
-      "value": "取消"
-    },
-    {
       "name": "ssl_cert_warning_continue",
       "value": "继续"
     }
@@ -413,7 +408,7 @@ if (storageConfig) {
 }
 ```
 
-### 6.3 UI 中使用方式
+### 6.4 UI 中使用方式
 
 在代码中通过 `$r()` 引用资源：
 
@@ -425,12 +420,15 @@ Text($r('app.string.ssl_cert_validation_title'))
 Radio({ value: 'system', group: 'certValidation' })
   .content($r('app.string.ssl_cert_validation_system'))
 
+// 选择按钮 - 复用现有字符串
+Button($r('app.string.select_button'))
+
 // 风险提示弹框
 AlertDialog.show({
   title: $r('app.string.ssl_cert_warning_title'),
   message: $r('app.string.ssl_cert_warning_message'),
   buttons: [
-    { value: $r('app.string.ssl_cert_warning_cancel'), ... },
+    { value: $r('app.string.cancel_button_text'), ... },  // 复用现有
     { value: $r('app.string.ssl_cert_warning_continue'), ... }
   ]
 })
