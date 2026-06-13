@@ -104,13 +104,11 @@ struct OAuth2Login {
   @State isLoading: boolean = true;
   @State hasError: boolean = false;
   @State errorMessage: string = '';
-  @State lastErrorTime: number = 0; // 最后一次错误时间
   private webviewController: webview.WebviewController = new webview.WebviewController();
   private router: Router = this.getUIContext().getRouter();
   private authCompleted: boolean = false;
-  private loadTimeout: number = 0; // 加载超时定时器
-  private readonly LOAD_TIMEOUT_MS: number = 30000; // 30秒超时
-  private readonly ERROR_THRESHOLD_MS: number = 100; // 错误阈值：100ms内的错误视为页面加载失败
+  private loadTimeout: number = 0;
+  private readonly LOAD_TIMEOUT_MS: number = 30000;
 
   aboutToAppear(): void {
     const state = this.router.getState();
@@ -169,47 +167,29 @@ struct OAuth2Login {
             if (event && event.url) {
               this.isLoading = true;
               this.hasError = false;
-
-              // 启动加载超时定时器
               this.clearLoadTimeout();
               this.loadTimeout = setTimeout(() => {
                 if (this.isLoading && !this.hasError) {
                   this.hasError = true;
                   this.isLoading = false;
-                  this.errorMessage = '页面加载超时。\n\n可能原因：\n1. 网络连接缓慢\n2. 服务器响应慢\n3. 需要使用代理或 VPN 访问\n\n请检查网络后重试。';
+                  this.errorMessage = '页面加载超时，请稍后重试。';
                 }
               }, this.LOAD_TIMEOUT_MS);
             }
           })
           .onPageEnd((event?: WebPageEvent) => {
             if (event && event.url) {
-              // 检查是否在极短时间内发生了错误（说明页面实际上加载失败）
-              const timeSinceLastError = Date.now() - this.lastErrorTime;
-              if (this.lastErrorTime > 0 && timeSinceLastError < this.ERROR_THRESHOLD_MS) {
-                // 不清除加载状态，让错误处理逻辑继续
-                return;
-              }
-
-              // 清除超时定时器
               this.clearLoadTimeout();
-
               this.isLoading = false;
               this.hasError = false;
               this.handleUrlChange(event.url);
             }
           })
           .onErrorReceive((event) => {
-            const errorInfo = event.error.getErrorInfo();
-
-            // 记录错误时间
-            this.lastErrorTime = Date.now();
-
-            // 显示错误信息
-            this.handleWebError(errorInfo);
+            hilog.warn(DOMAIN, TAG, `Web resource error: ${event.error.getErrorInfo()}`);
           })
-          .onHttpErrorReceive((event) => {
-            this.hasError = true;
-            this.isLoading = false;
+          .onHttpErrorReceive(() => {
+            hilog.warn(DOMAIN, TAG, 'HTTP error received');
           })
           .width('100%')
           .height('100%')
@@ -222,7 +202,7 @@ struct OAuth2Login {
               .height(50)
               .color($r('app.color.text_primary'))
 
-            Text('正在加载授权页面...')
+            Text('页面加载中...')
               .fontSize(14)
               .margin({ top: 16 })
               .fontColor($r('app.color.text_secondary'))
@@ -414,24 +394,6 @@ struct OAuth2Login {
     }
 
     return params;
-  }
-
-  /**
-   * 处理 WebView 错误
-   */
-  private handleWebError(errorInfo: string): void {
-    this.hasError = true;
-    this.isLoading = false;
-
-    // 根据错误类型提供友好的提示
-    if (errorInfo.includes('ERR_CONNECTION_RESET') ||
-        errorInfo.includes('ERR_CONNECTION_TIMED_OUT') ||
-        errorInfo.includes('ERR_INTERNET_DISCONNECTED') ||
-        errorInfo.includes('ERR_NAME_NOT_RESOLVED')) {
-      this.errorMessage = '无法连接到服务器。\n\n可能原因：\n1. 网络连接不稳定\n2. 服务器暂时不可用\n3. 需要使用代理或 VPN 访问\n\n请检查网络后重试。';
-    } else {
-      this.errorMessage = `页面加载失败: ${errorInfo}`;
-    }
   }
 
   /**
