@@ -1,7 +1,6 @@
-import { window, display } from '@kit.ArkUI';
+import { display, window } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { EventBus } from './EventBus';
-import { BusinessError } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'LockScreenService';
@@ -57,14 +56,7 @@ export class LockScreenService {
       return;
     }
 
-    // 先销毁旧的锁屏窗口（防止僵尸窗口残留）
-    try {
-      const oldWindow = window.findWindow('lockWindow');
-      oldWindow.destroyWindow();
-      hilog.info(DOMAIN, TAG, 'destroyed existing lockWindow');
-    } catch {
-      // 没有旧的锁屏窗口，继续创建
-    }
+    LockScreenService.closeLockWindow();
 
     try {
       AppStorage.setOrCreate('lockIsManual', isManual);
@@ -84,6 +76,19 @@ export class LockScreenService {
     }
   }
 
+  static async closeLockWindow() {
+    // 先销毁旧的锁屏窗口（防止僵尸窗口残留）
+    try {
+      const oldWindow = window.findWindow('lockWindow');
+      oldWindow.destroyWindow().catch((error: Error) => {
+        hilog.info(DOMAIN, TAG, 'destroyed existing lockWindow error:' + error?.message);
+      });
+      hilog.info(DOMAIN, TAG, 'destroyed existing lockWindow');
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'destroy lock window failed: ' + error?.message);
+    }
+  }
+
   /**
    * 处理锁屏动作
    * 从 Ability 层面销毁子窗口（比从子窗口内部自销毁更可靠）
@@ -91,14 +96,7 @@ export class LockScreenService {
   private static handleAction(action: string): void {
     hilog.info(DOMAIN, TAG, 'handleAction: ' + action);
 
-    // 销毁锁屏子窗口
-    try {
-      const lockWindow = window.findWindow('lockWindow');
-      lockWindow.destroyWindow();
-      hilog.info(DOMAIN, TAG, 'lockWindow destroyed');
-    } catch (error) {
-      hilog.warn(DOMAIN, TAG, 'destroy lock window failed: ' + error?.message);
-    }
+    LockScreenService.closeLockWindow();
 
     // 清理状态
     AppStorage.delete('lockIsManual');
