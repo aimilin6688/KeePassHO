@@ -38,7 +38,9 @@ export class WebDAVStorage implements IFileStorage {
     this.client = new WebDavClient({
       url: this.config.url,
       username: this.config.getUserNameText(),
-      password: this.config.getPasswordText()
+      password: this.config.getPasswordText(),
+      certValidationMode: this.config.certValidationMode,
+      customCaCertContent: this.config.customCaCertContent
     });
   }
 
