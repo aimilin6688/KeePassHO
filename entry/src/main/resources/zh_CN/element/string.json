@@ -2847,6 +2847,46 @@
     {
       "name": "oauth2_page_load_timeout",
       "value": "页面加载超时，请稍后重试。"
+    },
+    {
+      "name": "ssl_cert_validation_title",
+      "value": "SSL 证书验证"
+    },
+    {
+      "name": "ssl_cert_validation_system",
+      "value": "系统 CA（默认）"
+    },
+    {
+      "name": "ssl_cert_validation_skip",
+      "value": "跳过验证（不安全）"
+    },
+    {
+      "name": "ssl_cert_validation_custom_ca",
+      "value": "自定义 CA 证书"
+    },
+    {
+      "name": "ssl_cert_no_certificate_selected",
+      "value": "未选择证书"
+    },
+    {
+      "name": "ssl_cert_certificate_selected",
+      "value": "已选择证书"
+    },
+    {
+      "name": "ssl_cert_select_failed",
+      "value": "选择证书失败"
+    },
+    {
+      "name": "ssl_cert_warning_title",
+      "value": "安全警告"
+    },
+    {
+      "name": "ssl_cert_warning_message",
+      "value": "跳过 SSL 证书验证会降低连接安全性，可能导致数据泄露或遭受中间人攻击。\n\n仅建议在测试环境或服务器使用自签名证书时使用。\n\n是否继续？"
+    },
+    {
+      "name": "ssl_cert_warning_continue",
+      "value": "继续"
     }
   ]
 }
