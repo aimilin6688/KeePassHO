@@ -100,10 +100,10 @@ struct OAuth2Login {
     redirectUri: ''
   };
   @State authUrl: string = '';
-  @State pageTitle: string = 'OAuth2 授权';
+  @State pageTitle: ResourceStr = $r('app.string.oauth2_page_title');
   @State isLoading: boolean = true;
   @State hasError: boolean = false;
-  @State errorMessage: string = '';
+  @State errorMessage: ResourceStr = '';
   private webviewController: webview.WebviewController = new webview.WebviewController();
   private router: Router = this.getUIContext().getRouter();
   private authCompleted: boolean = false;
@@ -172,7 +172,7 @@ struct OAuth2Login {
                 if (this.isLoading && !this.hasError) {
                   this.hasError = true;
                   this.isLoading = false;
-                  this.errorMessage = '页面加载超时，请稍后重试。';
+                  this.errorMessage = $r('app.string.oauth2_page_load_timeout');
                 }
               }, this.LOAD_TIMEOUT_MS);
             }
@@ -202,7 +202,7 @@ struct OAuth2Login {
               .height(50)
               .color($r('app.color.text_primary'))
 
-            Text('页面加载中...')
+            Text($r('app.string.oauth2_page_loading'))
               .fontSize(14)
               .margin({ top: 16 })
               .fontColor($r('app.color.text_secondary'))
@@ -227,7 +227,7 @@ struct OAuth2Login {
               .margin({ bottom: 24 })
               .width('80%')
 
-            Button('重试')
+            Button($r('app.string.retry_button_text'))
               .width(120)
               .height(40)
               .backgroundColor($r('app.color.button_bg_blue'))
