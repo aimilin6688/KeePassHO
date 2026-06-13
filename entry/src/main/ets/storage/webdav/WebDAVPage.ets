@@ -7,6 +7,10 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
+import { picker, fs } from '@kit.CoreFileKit';
+import { CertValidationMode } from './WebDAVConfig';
+import { util } from '@kit.ArkTS';
+import { AlertDialog, DialogAlignment } from '@kit.ArkUI';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
@@ -22,6 +26,9 @@ struct WebDAV {
   @State isConnecting: boolean = false;
   @State connectionStatus: string = '';
   @State isErrorStatus: boolean = false;
+  @State certValidationMode: CertValidationMode = CertValidationMode.SYSTEM;
+  @State customCaCertPath: string = '';
+  @State customCaCertContent: string = '';
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
   private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -49,11 +56,18 @@ struct WebDAV {
     if (storageConfig) {
       storageConfig = new WebDAVStorageConfig(storageConfig.url, storageConfig.username, storageConfig.password, {
         rootPath: storageConfig.rootPath,
-        timeout: storageConfig.timeout
+        timeout: storageConfig.timeout,
+        certValidationMode: storageConfig.certValidationMode,
+        customCaCertContent: storageConfig.customCaCertContent
       });
       this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
       this.username = storageConfig.getUserNameText();
       this.password = storageConfig.getPasswordText();
+      // 恢复证书配置
+      this.certValidationMode = storageConfig.certValidationMode || CertValidationMode.SYSTEM;
+      this.customCaCertContent = storageConfig.customCaCertContent || '';
+      this.customCaCertPath = this.customCaCertContent ?
+        ResourceManager.getString($r('app.string.ssl_cert_certificate_selected')) : '';
     }
   }
 
@@ -241,11 +255,88 @@ struct WebDAV {
   }
 
   /**
+   * 选择 CA 证书文件
+   */
+  private async selectCaCert() {
+    let documentPicker = new picker.DocumentViewPicker();
+    try {
+      const result = await documentPicker.select({
+        maxSelectNumber: 1
+      });
+      if (result && result.length > 0) {
+        const uri = result[0];
+        // 读取证书内容
+        const content = await this.readCertContent(uri);
+        this.customCaCertContent = content;
+        this.customCaCertPath = ResourceManager.getString($r('app.string.ssl_cert_certificate_selected'));
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Select CA cert error: %{public}s', error.message);
+      CommonUtils.showToast({ message: $r('app.string.ssl_cert_select_failed') });
+    }
+  }
+
+  /**
+   * 读取证书文件内容
+   */
+  private async readCertContent(uri: string): Promise<string> {
+    try {
+      const file = fs.openSync(uri, fs.OpenMode.READ_ONLY);
+      const stat = fs.statSync(file.fd);
+      const buf = new ArrayBuffer(stat.size);
+      fs.readSync(file.fd, buf);
+      fs.closeSync(file);
+      // 将 ArrayBuffer 转换为字符串
+      const decoder = new util.TextDecoder('utf-8');
+      return decoder.decodeToString(new Uint8Array(buf));
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Read cert content error: %{public}s', error.message);
+      return '';
+    }
+  }
+
+  /**
+   * 处理证书验证模式变更
+   */
+  private onCertValidationModeChange(mode: CertValidationMode) {
+    if (mode === CertValidationMode.SKIP) {
+      // 显示风险提示
+      AlertDialog.show({
+        title: $r('app.string.ssl_cert_warning_title'),
+        message: $r('app.string.ssl_cert_warning_message'),
+        autoCancel: true,
+        alignment: DialogAlignment.CENTER,
+        buttons: [
+          {
+            value: $r('app.string.cancel_button_text'),
+            action: () => {
+              // 取消，恢复到系统 CA 模式
+              this.certValidationMode = CertValidationMode.SYSTEM;
+            }
+          },
+          {
+            value: $r('app.string.ssl_cert_warning_continue'),
+            action: () => {
+              // 确认，保持跳过验证模式
+              this.certValidationMode = CertValidationMode.SKIP;
+            }
+          }
+        ]
+      });
+    } else {
+      this.certValidationMode = mode;
+    }
+  }
+
+  /**
    * 初始化存储
    * @returns
    */
   private getStorageConfig(): StorageConfig {
-    return new WebDAVStorageConfig(this.url, this.username, this.password);
+    return new WebDAVStorageConfig(this.url, this.username, this.password, {
+      certValidationMode: this.certValidationMode,
+      customCaCertContent: this.customCaCertContent
+    });
   }
 
   build() {
@@ -325,6 +416,98 @@ struct WebDAV {
             .onChange((value: string) => {
               this.password = value;
             })
+
+          // SSL 证书验证
+          Text($r('app.string.ssl_cert_validation_title'))
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .margin({ top: 20, left: 16 })
+            .fontColor($r('app.color.text_primary'))
+            .textAlign(TextAlign.Start)
+
+          Column() {
+            Row() {
+              Radio({ value: CertValidationMode.SYSTEM, group: 'certValidation' })
+                .checked(this.certValidationMode === CertValidationMode.SYSTEM)
+                .onChange((isChecked: boolean) => {
+                  if (isChecked) {
+                    this.certValidationMode = CertValidationMode.SYSTEM;
+                  }
+                })
+              Text($r('app.string.ssl_cert_validation_system'))
+                .fontSize(14)
+                .margin({ left: 8 })
+                .fontColor($r('app.color.text_primary'))
+                .onClick(() => {
+                  this.certValidationMode = CertValidationMode.SYSTEM;
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+
+            Row() {
+              Radio({ value: CertValidationMode.SKIP, group: 'certValidation' })
+                .checked(this.certValidationMode === CertValidationMode.SKIP)
+                .onChange((isChecked: boolean) => {
+                  if (isChecked) {
+                    this.onCertValidationModeChange(CertValidationMode.SKIP);
+                  }
+                })
+              Text($r('app.string.ssl_cert_validation_skip'))
+                .fontSize(14)
+                .margin({ left: 8 })
+                .fontColor($r('app.color.text_primary'))
+                .onClick(() => {
+                  this.onCertValidationModeChange(CertValidationMode.SKIP);
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+
+            Row() {
+              Radio({ value: CertValidationMode.CUSTOM_CA, group: 'certValidation' })
+                .checked(this.certValidationMode === CertValidationMode.CUSTOM_CA)
+                .onChange((isChecked: boolean) => {
+                  if (isChecked) {
+                    this.certValidationMode = CertValidationMode.CUSTOM_CA;
+                  }
+                })
+              Text($r('app.string.ssl_cert_validation_custom_ca'))
+                .fontSize(14)
+                .margin({ left: 8 })
+                .fontColor($r('app.color.text_primary'))
+                .onClick(() => {
+                  this.certValidationMode = CertValidationMode.CUSTOM_CA;
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+
+            // 自定义 CA 证书选择（仅当选择自定义 CA 模式时显示）
+            if (this.certValidationMode === CertValidationMode.CUSTOM_CA) {
+              Row() {
+                Text(this.customCaCertPath || $r('app.string.ssl_cert_no_certificate_selected'))
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+                  .layoutWeight(1)
+
+                Button($r('app.string.select_button'))
+                  .height(32)
+                  .fontSize(14)
+                  .backgroundColor($r('app.color.button_bg_blue'))
+                  .fontColor($r('app.color.button_text_blue'))
+                  .onClick(() => {
+                    this.selectCaCert();
+                  })
+              }
+              .width('100%')
+              .padding({ left: 32, right: 16, top: 4, bottom: 8 })
+            }
+          }
+          .width('100%')
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(8)
+          .margin({ top: 8, left: 16, right: 16 })
 
           // 连接状态
           if (this.connectionStatus) {
