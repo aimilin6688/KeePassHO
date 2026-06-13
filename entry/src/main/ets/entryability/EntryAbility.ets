@@ -167,6 +167,8 @@ export default class EntryAbility extends UIAbility {
     let uri = want.uri;
     hilog.info(DOMAIN, TAG, 'Ability onNewWant: %{public}s', uri);
     if (this.windowStage && uri) {
+      FileService.close();
+      LockScreenService.closeLockWindow();
       this.openDatabase(uri);
     }
   }
