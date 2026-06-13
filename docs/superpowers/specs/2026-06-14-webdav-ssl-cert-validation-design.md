@@ -193,16 +193,16 @@ public init(config: WebDAVStorageConfig) {
 **UI 布局**（在密码输入框下方添加）：
 
 ```
-SSL 证书验证
+[$r('app.string.ssl_cert_validation_title')]
 ┌─────────────────────────────────────────┐
-│ ○ 系统 CA（默认）                        │
-│ ○ 跳过验证（不安全）                     │
-│ ○ 自定义 CA 证书                         │
+│ ○ $r('app.string.ssl_cert_validation_system') │
+│ ○ $r('app.string.ssl_cert_validation_skip')    │
+│ ○ $r('app.string.ssl_cert_validation_custom_ca') │
 └─────────────────────────────────────────┘
 
 [当选择"自定义 CA 证书"时显示]
 ┌─────────────────────────────────────────┐
-│ 未选择证书              [选择证书]       │
+│ $r('app.string.ssl_cert_no_certificate_selected') │ [$r('app.string.ssl_cert_select_certificate')] │
 └─────────────────────────────────────────┘
 ```
 
@@ -228,7 +228,7 @@ private async selectCaCert() {
       this.customCaCertPath = this.extractFileName(uri);
     }
   } catch (error) {
-    CommonUtils.showToast({ message: '选择证书失败' });
+    CommonUtils.showToast({ message: $r('app.string.ssl_cert_select_failed') });
   }
 }
 ```
@@ -243,20 +243,20 @@ private async selectCaCert() {
  */
 private showSkipWarningDialog() {
   AlertDialog.show({
-    title: '安全警告',
-    message: '跳过 SSL 证书验证会降低连接安全性，可能导致数据泄露或遭受中间人攻击。\n\n仅建议在测试环境或服务器使用自签名证书时使用。\n\n是否继续？',
+    title: $r('app.string.ssl_cert_warning_title'),
+    message: $r('app.string.ssl_cert_warning_message'),
     autoCancel: true,
     alignment: DialogAlignment.CENTER,
     buttons: [
       {
-        value: '取消',
+        value: $r('app.string.ssl_cert_warning_cancel'),
         action: () => {
           // 恢复到系统 CA 模式
           this.certValidationMode = CertValidationMode.SYSTEM;
         }
       },
       {
-        value: '继续',
+        value: $r('app.string.ssl_cert_warning_continue'),
         action: () => {
           // 保持跳过验证模式
         }
@@ -286,20 +286,168 @@ if (storageConfig) {
   // ... 现有代码 ...
   this.certValidationMode = storageConfig.certValidationMode || CertValidationMode.SYSTEM;
   this.customCaCertContent = storageConfig.customCaCertContent || '';
-  this.customCaCertPath = this.customCaCertContent ? '已选择证书' : '';
+  this.customCaCertPath = this.customCaCertContent ?
+    ResourceManager.getString($r('app.string.ssl_cert_certificate_selected')) : '';
 }
 ```
 
-## 6. 文件修改清单
+## 6. 国际化字符串设计
+
+所有新增的 UI 字符串必须定义在资源文件中，支持多语言。
+
+### 6.1 新增字符串资源
+
+文件：`entry/src/main/resources/base/element/string.json`
+
+```json
+{
+  "string": [
+    {
+      "name": "ssl_cert_validation_title",
+      "value": "SSL Certificate Validation"
+    },
+    {
+      "name": "ssl_cert_validation_system",
+      "value": "System CA (Default)"
+    },
+    {
+      "name": "ssl_cert_validation_skip",
+      "value": "Skip Validation (Insecure)"
+    },
+    {
+      "name": "ssl_cert_validation_custom_ca",
+      "value": "Custom CA Certificate"
+    },
+    {
+      "name": "ssl_cert_select_certificate",
+      "value": "Select Certificate"
+    },
+    {
+      "name": "ssl_cert_no_certificate_selected",
+      "value": "No certificate selected"
+    },
+    {
+      "name": "ssl_cert_certificate_selected",
+      "value": "Certificate selected"
+    },
+    {
+      "name": "ssl_cert_select_failed",
+      "value": "Failed to select certificate"
+    },
+    {
+      "name": "ssl_cert_warning_title",
+      "value": "Security Warning"
+    },
+    {
+      "name": "ssl_cert_warning_message",
+      "value": "Skipping SSL certificate validation reduces connection security and may lead to data leaks or man-in-the-middle attacks.\n\nThis is recommended only for testing environments or servers using self-signed certificates.\n\nDo you want to continue?"
+    },
+    {
+      "name": "ssl_cert_warning_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "ssl_cert_warning_continue",
+      "value": "Continue"
+    }
+  ]
+}
+```
+
+### 6.2 中文资源
+
+文件：`entry/src/main/resources/zh_CN/element/string.json`
+
+```json
+{
+  "string": [
+    {
+      "name": "ssl_cert_validation_title",
+      "value": "SSL 证书验证"
+    },
+    {
+      "name": "ssl_cert_validation_system",
+      "value": "系统 CA（默认）"
+    },
+    {
+      "name": "ssl_cert_validation_skip",
+      "value": "跳过验证（不安全）"
+    },
+    {
+      "name": "ssl_cert_validation_custom_ca",
+      "value": "自定义 CA 证书"
+    },
+    {
+      "name": "ssl_cert_select_certificate",
+      "value": "选择证书"
+    },
+    {
+      "name": "ssl_cert_no_certificate_selected",
+      "value": "未选择证书"
+    },
+    {
+      "name": "ssl_cert_certificate_selected",
+      "value": "已选择证书"
+    },
+    {
+      "name": "ssl_cert_select_failed",
+      "value": "选择证书失败"
+    },
+    {
+      "name": "ssl_cert_warning_title",
+      "value": "安全警告"
+    },
+    {
+      "name": "ssl_cert_warning_message",
+      "value": "跳过 SSL 证书验证会降低连接安全性，可能导致数据泄露或遭受中间人攻击。\n\n仅建议在测试环境或服务器使用自签名证书时使用。\n\n是否继续？"
+    },
+    {
+      "name": "ssl_cert_warning_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "ssl_cert_warning_continue",
+      "value": "继续"
+    }
+  ]
+}
+```
+
+### 6.3 UI 中使用方式
+
+在代码中通过 `$r()` 引用资源：
+
+```typescript
+// 标题
+Text($r('app.string.ssl_cert_validation_title'))
+
+// 单选按钮选项
+Radio({ value: 'system', group: 'certValidation' })
+  .content($r('app.string.ssl_cert_validation_system'))
+
+// 风险提示弹框
+AlertDialog.show({
+  title: $r('app.string.ssl_cert_warning_title'),
+  message: $r('app.string.ssl_cert_warning_message'),
+  buttons: [
+    { value: $r('app.string.ssl_cert_warning_cancel'), ... },
+    { value: $r('app.string.ssl_cert_warning_continue'), ... }
+  ]
+})
+```
+
+## 7. 文件修改清单
 
 | 文件路径 | 修改类型 | 说明 |
 |----------|----------|------|
+| `entry/src/main/resources/base/element/string.json` | 修改 | 新增 SSL 证书验证相关英文字符串 |
+| `entry/src/main/resources/zh_CN/element/string.json` | 修改 | 新增 SSL 证书验证相关中文字符串 |
 | `entry/src/main/ets/storage/webdav/WebDAVConfig.ets` | 修改 | 新增 `CertValidationMode` 枚举，扩展 `WebDAVStorageConfig` |
 | `entry/src/main/ets/common/utils/WebDavClient.ets` | 修改 | 新增 `buildSecurityConfig` 方法，修改 `updateOptions` 和 `WebDavClientOptions` |
 | `entry/src/main/ets/storage/webdav/WebDAVStorage.ets` | 修改 | 修改 `init` 方法传递证书配置 |
 | `entry/src/main/ets/storage/webdav/WebDAVPage.ets` | 修改 | 新增证书验证模式选择 UI、CA 证书选择、风险提示弹框 |
 
-## 7. 测试要点
+## 9. 测试要点
 
 1. **系统 CA 模式**：使用有效 HTTPS 证书的 WebDAV 服务器，应正常连接
 2. **跳过验证模式**：使用自签名证书的服务器，选择跳过后应能连接
@@ -308,14 +456,14 @@ if (storageConfig) {
 5. **配置持久化**：重新打开已保存的 WebDAV 配置，证书设置应正确恢复
 6. **错误处理**：无效证书内容时应回退到系统 CA 并提示用户
 
-## 8. 安全考虑
+## 10. 安全考虑
 
 1. **默认安全**：默认使用系统 CA 验证，不跳过验证
 2. **用户知情**：跳过验证前必须确认风险提示
 3. **证书内容存储**：CA 证书内容存储在加密的配置中（SM4 加密），不存储明文文件路径
 4. **日志安全**：证书内容不输出到日志
 
-## 9. 后续扩展
+## 11. 后续扩展
 
 - 可考虑支持 `ValidationCallback` 模式，允许用户自定义更复杂的验证逻辑
 - 可增加证书指纹显示，让用户确认证书正确性
