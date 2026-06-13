@@ -2839,6 +2839,18 @@
     {
       "name": "import_export_database_empty",
       "value": "Database is empty"
+    },
+    {
+      "name": "oauth2_page_title",
+      "value": "OAuth2 Authorization"
+    },
+    {
+      "name": "oauth2_page_loading",
+      "value": "Loading page..."
+    },
+    {
+      "name": "oauth2_page_load_timeout",
+      "value": "Page load timeout, please try again later."
     }
   ]
 }

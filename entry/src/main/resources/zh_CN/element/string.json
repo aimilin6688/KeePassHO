@@ -2835,6 +2835,18 @@
     {
       "name": "import_export_database_empty",
       "value": "数据库为空"
+    },
+    {
+      "name": "oauth2_page_title",
+      "value": "OAuth2 授权"
+    },
+    {
+      "name": "oauth2_page_loading",
+      "value": "页面加载中..."
+    },
+    {
+      "name": "oauth2_page_load_timeout",
+      "value": "页面加载超时，请稍后重试。"
     }
   ]
 }
