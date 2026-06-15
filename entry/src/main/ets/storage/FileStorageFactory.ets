@@ -23,7 +23,7 @@ export class FileStorageFactory {
     this.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
     this.registerStorage(StorageType.S3, new S3Storage());
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
-    this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
+    // this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
   }
 
