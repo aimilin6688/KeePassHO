@@ -23,6 +23,7 @@ export struct TotpPreviewComponent {
   @State remainingSeconds: number = 30;
   @State isGeneratingToken: boolean = false;
   @State errorMessage: string = '';
+  @State private currentCounter: number = -1; // 当前周期计数器
   onChange: (value: string) => void = () => {
   };
   doClick: (value: string, event?: ClickEvent) => boolean = () => {
@@ -121,12 +122,19 @@ export struct TotpPreviewComponent {
       this.isGeneratingToken = true;
       this.errorMessage = '';
 
+      // 使用统一的时间戳，确保令牌生成和剩余时间计算一致
+      const now = Date.now();
+      const period = this.totpConfig.period || 30;
+
+      // 更新当前周期计数器
+      this.currentCounter = Math.floor(now / 1000 / period);
+
       // 生成令牌
-      const token = await this.totpService.generateToken(this.totpConfig);
+      const token = await this.totpService.generateToken(this.totpConfig, now);
       this.previewToken = token;
 
-      // 更新剩余秒数
-      this.remainingSeconds = this.totpService.getRemainingSeconds(this.totpConfig);
+      // 更新剩余秒数（使用同一个时间戳）
+      this.remainingSeconds = this.totpService.getRemainingSeconds(this.totpConfig, now);
       // token 修改回调
       this.onChange(token);
 
@@ -146,11 +154,18 @@ export struct TotpPreviewComponent {
     // 每秒更新剩余时间
     this.tokenUpdateTimer = setInterval(() => {
       if (this.totpConfig && this.totpConfig.secret) {
-        // 更新剩余秒数
-        this.remainingSeconds = this.totpService.getRemainingSeconds(this.totpConfig);
+        const period = this.totpConfig.period || 30;
+        const now = Date.now();
 
-        // 如果剩余时间为0，重新生成令牌
-        if (this.remainingSeconds === 0 || this.remainingSeconds === this.totpConfig.period) {
+        // 计算当前周期计数器
+        const newCounter = Math.floor(now / 1000 / period);
+
+        // 更新剩余秒数
+        this.remainingSeconds = this.totpService.getRemainingSeconds(this.totpConfig, now);
+
+        // 如果周期计数器发生变化，重新生成令牌
+        if (newCounter !== this.currentCounter) {
+          this.currentCounter = newCounter;
           this.updatePreviewToken();
         }
       }
