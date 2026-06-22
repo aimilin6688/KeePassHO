@@ -25,6 +25,11 @@ import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test
 import PCloudClientIntegrationTest from './storage/pcloud/PCloudClientIntegration.test';
 import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
+import HuaweiDriveStorageTest from './storage/huawei/HuaweiDriveStorage.test';
+import HuaweiDriveClientTest from './storage/huawei/HuaweiDriveClient.test';
+import HuaweiDriveStorageIntegrationTest from './storage/huawei/HuaweiDriveStorageIntegration.test';
+import HuaweiDriveClientIntegrationTest from './storage/huawei/HuaweiDriveClientIntegration.test';
+
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
 import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
@@ -62,6 +67,14 @@ export default function testsuite() {
   PCloudOAuth2ProviderTest();
   PCloudClientIntegrationTest();
   PCloudStorageTest();
+
+  // 华为云盘单元测试
+  HuaweiDriveStorageTest();
+  HuaweiDriveClientTest();
+
+  // 华为云盘集成测试
+  HuaweiDriveStorageIntegrationTest();
+  HuaweiDriveClientIntegrationTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();

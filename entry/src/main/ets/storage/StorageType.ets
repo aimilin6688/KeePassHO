@@ -36,5 +36,10 @@ export enum StorageType {
   /**
    * 百度网盘存储
    */
-  BAIDU_NETDISK = 'BAIDU_NETDISK'
+  BAIDU_NETDISK = 'BAIDU_NETDISK',
+
+  /**
+   * 华为云盘存储
+   */
+  HUAWEI_DRIVE = 'HUAWEI_DRIVE'
 }

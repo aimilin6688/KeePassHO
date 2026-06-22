@@ -1665,6 +1665,14 @@
       "value": "保存文件到OneDrive中"
     },
     {
+      "name": "huawei_drive_select_file",
+      "value": "从华为云盘中选择文件"
+    },
+    {
+      "name": "huawei_drive_save_file",
+      "value": "保存文件到华为云盘中"
+    },
+    {
       "name": "copy_username",
       "value": "复制\n用户名"
     },
