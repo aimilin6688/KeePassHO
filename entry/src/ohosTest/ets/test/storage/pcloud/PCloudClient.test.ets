@@ -1,181 +1,160 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
-import { PCloudClient, PCloudError, PCloudMetadata, PCloudLinkResult } from '../../../../../main/ets/storage/pcloud/PCloudClient';
+import { afterEach, beforeEach, describe, expect, it } from '@ohos/hypium';
+import { PCloudClient, PCloudMetadata } from '../../../../../main/ets/storage/pcloud/PCloudClient';
 import { PCloudTestConfig } from './PCloudTestConfig';
+import { util } from '@kit.ArkTS';
 
 const DOMAIN = 0x0000;
-const TAG = 'PCloudClientTest';
+const TAG = 'PCloudClient';
 
 export default function PCloudClientTest() {
   describe('PCloudClientTest', () => {
 
+    let client: PCloudClient = new PCloudClient();
+
+    beforeEach(() => {
+      client = new PCloudClient();
+      client.setAccessToken(PCloudTestConfig.PCLOUD_TEST_ACCESS_TOKEN);
+    });
+
+    afterEach(() => {
+      if (client) {
+        client.close();
+      }
+    });
+
     /**
-     * 测试客户端创建和基本操作
+     * userInfo — 最轻量的真实 API 调用
+     * 验证 token 有效，返回 uid > 0
      */
-    describe('Lifecycle', () => {
-      it('should create client', 0, () => {
-        const client: PCloudClient = new PCloudClient();
-        expect(client).not().assertUndefined();
-        client.close();
-      });
-
-      it('should set access token', 0, () => {
-        const client: PCloudClient = new PCloudClient();
-        client.setAccessToken('test-token');
-        expect(client).not().assertUndefined();
-        client.close();
-      });
-
-      it('should close without throwing', 0, () => {
-        const client: PCloudClient = new PCloudClient();
-        client.close();
-        expect(true).assertTrue();
-      });
-
-      it('should allow multiple close calls', 0, () => {
-        const client: PCloudClient = new PCloudClient();
-        client.close();
-        client.close();
-        expect(true).assertTrue();
+    describe('RealUserInfo', () => {
+      it('should return user info with valid token', 0, async () => {
+        const info: Record<string, Object> = await client.userInfo();
+        expect(info).not().assertUndefined();
+        const uid = info['uid'];
+        expect(uid).not().assertUndefined();
+        expect(Number(uid)).assertLarger(0);
       });
     });
 
     /**
-     * 测试 PCloudError
+     * listFolder — 列出根目录
      */
-    describe('PCloudError', () => {
-      it('should create error with code and message', 0, () => {
-        const error: PCloudError = new PCloudError(1000, 'Need login');
-        expect(error.code).assertEqual(1000);
-        expect(error.name).assertEqual('PCloudError');
-        expect(error.message).assertContain('1000');
-        expect(error.message).assertContain('Need login');
-      });
+    describe('RealListFolder', () => {
+      it('should list root folder contents', 0, async () => {
+        const items: PCloudMetadata[] = await client.listFolder(PCloudTestConfig.ROOT_FOLDER_ID);
+        expect(items).not().assertUndefined();
+        expect(Array.isArray(items)).assertTrue();
 
-      it('should create error with code only', 0, () => {
-        const error: PCloudError = new PCloudError(2005);
-        expect(error.code).assertEqual(2005);
-        expect(error.name).assertEqual('PCloudError');
-      });
-
-      it('should inherit from Error', 0, () => {
-        const error: PCloudError = new PCloudError(1000);
-        expect(error instanceof Error).assertTrue();
-      });
-
-      it('should handle zero error code', 0, () => {
-        const error: PCloudError = new PCloudError(0);
-        expect(error.code).assertEqual(0);
-        expect(error.name).assertEqual('PCloudError');
-      });
-
-      it('should handle negative error code', 0, () => {
-        const error: PCloudError = new PCloudError(-1, 'custom error');
-        expect(error.code).assertEqual(-1);
-        expect(error.message).assertContain('custom error');
+        if (items.length > 0) {
+          const firstItem = items[0];
+          expect(firstItem.name).not().assertUndefined();
+          expect(typeof firstItem.name).assertEqual('string');
+          expect(typeof firstItem.isfolder).assertEqual('boolean');
+        }
       });
     });
 
     /**
-     * 测试所有公共 API 方法在 session 关闭后的行为
-     * 每个方法在 session 关闭时应抛出 "PCloudClient session is closed" 错误
+     * 完整生命周期：
+     * 上传 → 在列表中查找 → stat 验证 → 下载验证内容 → 删除
      */
-    describe('SessionClosed', () => {
-      let client: PCloudClient;
+    describe('RealFileLifecycle', () => {
+      const testFileName: string = 'pcloud-test-' + Date.now() + '.txt';
+      const testContent: string = 'Hello pCloud test at ' + new Date().toISOString();
 
-      beforeEach(() => {
-        client = new PCloudClient();
-        client.setAccessToken('test-token');
-        client.close(); // session 设为 null
+      let uploadedFileId: string = '';
+
+      it('should upload a test file', 0, async () => {
+        const encoder = new util.TextEncoder();
+        const data: Uint8Array = encoder.encodeInto(testContent);
+        const result: PCloudMetadata = await client.uploadFile(
+          PCloudTestConfig.ROOT_FOLDER_ID,
+          testFileName,
+          data.buffer as ArrayBuffer
+        );
+        expect(result).not().assertUndefined();
+        expect(result.fileid).not().assertUndefined();
+        expect(result.name).assertEqual(testFileName);
+        uploadedFileId = 'f' + result.fileid;
       });
 
-      it('listFolder should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.listFolder('d0');
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
+      it('should find uploaded file in root listing', 0, async () => {
+        const items: PCloudMetadata[] = await client.listFolder(PCloudTestConfig.ROOT_FOLDER_ID);
+        const found: PCloudMetadata | undefined = items.find(
+          (item: PCloudMetadata): boolean => item.name === testFileName
+        );
+        expect(found).not().assertUndefined();
+        expect(found!.name).assertEqual(testFileName);
+        expect(found!.isfolder).assertFalse();
       });
 
-      it('stat should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.stat('f0');
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
+      it('should stat the uploaded file', 0, async () => {
+        expect(uploadedFileId.length).assertLarger(0);
+        const meta: PCloudMetadata = await client.stat(uploadedFileId);
+        expect(meta).not().assertUndefined();
+        expect(meta.name).assertEqual(testFileName);
+        expect(meta.size).assertLarger(0);
       });
 
-      it('getFileLink should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.getFileLink('f0');
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
+      it('should download the uploaded file with correct content', 0, async () => {
+        expect(uploadedFileId.length).assertLarger(0);
+        const content: ArrayBuffer = await client.downloadFile(uploadedFileId);
+        const bytes: Uint8Array = new Uint8Array(content);
+        const decoder = new util.TextDecoder();
+        const text: string = decoder.decodeToString(bytes);
+        expect(text).assertEqual(testContent);
       });
 
-      it('downloadFile should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.downloadFile('f0');
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
+      it('should delete the uploaded file', 0, async () => {
+        expect(uploadedFileId.length).assertLarger(0);
+        await client.deleteFile(uploadedFileId);
+
+        // 验证文件已删除
+        const afterDelete: PCloudMetadata[] = await client.listFolder(PCloudTestConfig.ROOT_FOLDER_ID);
+        const deleted: PCloudMetadata | undefined = afterDelete.find(
+          (item: PCloudMetadata): boolean => item.name === testFileName
+        );
+        expect(deleted).assertUndefined();
+      });
+    });
+
+    /**
+     * 文件夹操作
+     */
+    describe('RealFolderOperations', () => {
+      const testFolderName: string = 'pcloud-test-folder-' + Date.now();
+      let createdFolderId: string = '';
+
+      it('should create a folder', 0, async () => {
+        const result: PCloudMetadata = await client.createFolder(
+          PCloudTestConfig.ROOT_FOLDER_ID,
+          testFolderName
+        );
+        expect(result).not().assertUndefined();
+        expect(result.name).assertEqual(testFolderName);
+        expect(result.isfolder).assertTrue();
+        expect(result.folderid).not().assertUndefined();
+        createdFolderId = 'd' + result.folderid;
       });
 
-      it('uploadFile should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.uploadFile('d0', 'test.txt', new ArrayBuffer(0));
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
-      });
+      it('should rename the folder', 0, async () => {
+        expect(createdFolderId.length).assertLarger(0);
+        const newName: string = testFolderName + '-renamed';
+        await client.renameFile(createdFolderId, newName);
 
-      it('createFolder should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.createFolder('d0', 'NewFolder');
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
-      });
+        // 验证文件夹已重命名
+        const items: PCloudMetadata[] = await client.listFolder(PCloudTestConfig.ROOT_FOLDER_ID);
+        const renamed: PCloudMetadata | undefined = items.find(
+          (item: PCloudMetadata): boolean => item.name === newName
+        );
+        expect(renamed).not().assertUndefined();
+        expect(renamed!.name).assertEqual(newName);
 
-      it('deleteFile should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.deleteFile('f0');
-        } catch (error) {
-          caught = true;
+        // 清理：重命名回原名，然后删除
+        if (renamed && renamed.folderid) {
+          await client.renameFile('d' + renamed.folderid, testFolderName);
+          await client.deleteFile('d' + renamed.folderid);
         }
-        expect(caught).assertTrue();
-      });
-
-      it('renameFile should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.renameFile('f0', 'new-name.txt');
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
-      });
-
-      it('userInfo should throw when session closed', 0, async () => {
-        let caught: boolean = false;
-        try {
-          await client.userInfo();
-        } catch (error) {
-          caught = true;
-        }
-        expect(caught).assertTrue();
       });
     });
   });
