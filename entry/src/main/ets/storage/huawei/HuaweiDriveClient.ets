@@ -470,7 +470,8 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
-      const response: AxiosResponse = await this.axiosInstance.get('/about');
+      // 华为云盘 API 要求 fields 参数
+      const response: AxiosResponse = await this.axiosInstance.get('/about?fields=*');
       return this.convertAxiosResponse(response);
     } catch (error) {
       return this.convertAxiosError(error as AxiosError);
@@ -487,7 +488,8 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
-      const apiPath = `/files/${fileId}`;
+      // 华为云盘 API 要求 fields 参数，使用 * 表示获取所有字段
+      const apiPath = `/files/${fileId}?fields=*`;
       hilog.info(DOMAIN, TAG, `getInfo: fileId=${fileId}, apiPath=${apiPath}`);
       const response: AxiosResponse = await this.axiosInstance.get(apiPath);
       return this.convertAxiosResponse(response);
@@ -502,8 +504,9 @@ export class HuaweiDriveClient {
 
   /**
    * 列出目录内容
-   * @param folderId 文件夹ID，不传则列出根目录
-   * @param queryParam 查询参数
+   * 根据华为云盘 API 文档，使用 GET /files 接口
+   * @param folderId 文件夹ID（暂未使用，华为 API 使用 queryParam 过滤）
+   * @param queryParam 查询参数，如 queryParam=parentFolder%3D{folderId}
    * @returns Promise<HttpResponse> 结果信息
    */
   public async list(folderId: string = 'root', queryParam?: string): Promise<HttpResponse> {
@@ -511,9 +514,11 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
-      let apiPath = `/files/${folderId}/children`;
+      // 华为云盘 API: GET /files?fields=*
+      // 可通过 queryParam 参数过滤，如 parentFolder={folderId}
+      let apiPath = `/files?fields=*`;
       if (queryParam) {
-        apiPath += `?${queryParam}`;
+        apiPath += `&${queryParam}`;
       }
       hilog.info(DOMAIN, TAG, `list: folderId=${folderId}, apiPath=${apiPath}`);
 
@@ -530,6 +535,7 @@ export class HuaweiDriveClient {
 
   /**
    * 下载文件
+   * 根据华为云盘 API 文档，下载文件需要使用 form=content 参数
    * @param fileId 文件ID
    * @returns Promise<HttpResponse> 结果信息
    */
@@ -538,7 +544,8 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
-      const apiPath = `/files/${fileId}`;
+      // 华为云盘 API: GET /files/{fileId}?form=content
+      const apiPath = `/files/${fileId}?form=content`;
       hilog.info(DOMAIN, TAG, `download: fileId=${fileId}, apiPath=${apiPath}`);
 
       const config: AxiosRequestConfig = {
@@ -554,6 +561,10 @@ export class HuaweiDriveClient {
 
   /**
    * 上传文件
+   * 华为云盘上传文件需要两步：
+   * 1. 创建文件元数据
+   * 2. 上传文件内容（需要使用专门的 upload 端点）
+   * 当前实现：先创建文件，然后通过 update 方法上传内容
    * @param parentFolderId 父文件夹ID
    * @param fileName 文件名
    * @param fileBuffer 文件内容
@@ -564,14 +575,22 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
-      const apiPath = `/files`;
+      // 第一步：创建文件元数据
+      // 注意：华为云盘 Files.create 当前仅支持创建目录
+      // 对于文件，需要使用专门的 upload 端点
+      const createPath = `/files?fields=*`;
       hilog.info(DOMAIN, TAG, `upload: parentFolderId=${parentFolderId}, fileName=${fileName}, size: ${fileBuffer.byteLength}`);
 
-      // 创建文件元数据，包含文件内容
-      const uploadData: UploadFileData = {
+      // 创建文件元数据
+      interface CreateFileData {
+        fileName: string;
+        mimeType: string;
+        parentFolder: string[];
+      }
+      const createData: CreateFileData = {
         fileName: fileName,
-        parentFolder: [{ id: parentFolderId }],
-        content: Array.from(new Uint8Array(fileBuffer))
+        mimeType: 'application/octet-stream',
+        parentFolder: [parentFolderId]
       };
 
       const config: AxiosRequestConfig = {
@@ -580,8 +599,41 @@ export class HuaweiDriveClient {
         }
       };
 
-      const response: AxiosResponse = await this.axiosInstance.post(apiPath, uploadData, config);
-      const result = this.convertAxiosResponse(response);
+      const createResponse: AxiosResponse = await this.axiosInstance.post(createPath, createData, config);
+
+      if (createResponse.status !== 200) {
+        return this.convertAxiosResponse(createResponse);
+      }
+
+      // 获取创建的文件ID
+      const responseData = createResponse.data as Record<string, Object>;
+      const fileId = responseData.id as string;
+
+      if (!fileId) {
+        // 如果创建返回了文件信息但没有ID，直接返回创建结果
+        return this.convertAxiosResponse(createResponse);
+      }
+
+      hilog.info(DOMAIN, TAG, `File created with ID: ${fileId}, now uploading content...`);
+
+      // 第二步：上传文件内容
+      // 使用专门的 upload 端点
+      const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
+        'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
+
+      const uploadConfig: AxiosRequestConfig = {
+        method: 'PATCH',
+        url: `${uploadBase}/files/${fileId}?fields=*&uploadType=content`,
+        data: fileBuffer,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Authorization': `Bearer ${this.config?.accessToken}`
+        },
+        responseType: 'string'
+      };
+
+      const uploadResponse: AxiosResponse = await axios.request(uploadConfig);
+      const result = this.convertAxiosResponse(uploadResponse);
       hilog.info(DOMAIN, TAG, 'upload result: %{public}s', result.message);
       return result;
     } catch (error) {
@@ -592,6 +644,7 @@ export class HuaweiDriveClient {
 
   /**
    * 更新文件内容
+   * 华为云盘更新文件内容需要使用专门的 upload 端点，PATCH 方法
    * @param fileId 文件ID
    * @param fileBuffer 文件内容
    * @returns Promise<HttpResponse> 结果信息
@@ -601,15 +654,23 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
-      const apiPath = `/files/${fileId}`;
+      // 使用专门的 upload 端点
+      const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
+        'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
+
       hilog.info(DOMAIN, TAG, `update: fileId=${fileId}, size: ${fileBuffer.byteLength}`);
 
       const config: AxiosRequestConfig = {
+        method: 'PATCH',
+        url: `${uploadBase}/files/${fileId}?fields=*&uploadType=content`,
+        data: fileBuffer,
         headers: {
-          'Content-Type': 'application/octet-stream'
-        }
+          'Content-Type': 'application/octet-stream',
+          'Authorization': `Bearer ${this.config?.accessToken}`
+        },
+        responseType: 'string'
       };
-      const response: AxiosResponse = await this.axiosInstance.put(apiPath, fileBuffer, config);
+      const response: AxiosResponse = await axios.request(config);
       const result = this.convertAxiosResponse(response);
       hilog.info(DOMAIN, TAG, 'update result: %{public}s', result.message);
       return result;
