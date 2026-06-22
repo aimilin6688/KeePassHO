@@ -10,8 +10,8 @@ const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveStorageIntegrationTest';
 
 export default function HuaweiDriveStorageIntegrationTest() {
-  describe('HuaweiDriveStorage Integration', () => {
-    let storage: HuaweiDriveStorage;
+  describe('HuaweiDriveStorageIntegration', () => {
+    let storage: HuaweiDriveStorage | undefined;
 
     beforeEach(() => {
       const config = HuaweiDriveTestConfig.getStorageConfig();
@@ -28,6 +28,10 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_list_files_in_root_directory', 0, async () => {
       try {
+        if (!storage) {
+          expect(false).assertTrue();
+          return;
+        }
         const files: FileInfo[] = await storage.listDir('root');
 
         hilog.info(DOMAIN, TAG, 'Root directory contains %{public}d files', files.length);
@@ -52,6 +56,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_upload_small_file', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         const testContent: string = 'Test content for Huawei Drive ' + Date.now();
         const encoder: util.TextEncoder = new util.TextEncoder();
         const data: Uint8Array = encoder.encodeInto(testContent);
@@ -86,6 +91,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_upload_and_download_binary_file', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         // 创建测试二进制数据
         const testData = new ArrayBuffer(1024); // 1KB
         const view = new Uint8Array(testData);
@@ -125,6 +131,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_get_file_info', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         // 先上传一个测试文件
         const testContent: string = 'Test file for info check';
         const encoder: util.TextEncoder = new util.TextEncoder();
@@ -157,6 +164,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_check_file_existence', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         // 上传测试文件
         const testContent: string = 'Test file for existence check';
         const encoder: util.TextEncoder = new util.TextEncoder();
@@ -186,6 +194,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_create_folder_and_list_contents', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         // 先列出根目录
         const rootFiles: FileInfo[] = await storage.listDir('root');
 
@@ -218,6 +227,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_upload_larger_file', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         // 创建1MB测试数据
         const testData = new ArrayBuffer(1024 * 1024); // 1MB
         const view = new Uint8Array(testData);
@@ -258,6 +268,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_upload_and_download_kdbx_file', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         // 模拟KDBX文件数据（前几个字节是KDBX魔术数字）
         const kdbxData = new ArrayBuffer(2048);
         const view = new Uint8Array(kdbxData);
@@ -307,6 +318,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_handle_read_nonexistent_file_error', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         await storage.read('non-existent-file-12345.kdbx');
         expect(true).assertFalse(); // 不应该执行到这里
       } catch (error) {
@@ -321,6 +333,7 @@ export default function HuaweiDriveStorageIntegrationTest() {
      */
     it('should_handle_get_info_nonexistent_file_error', 0, async () => {
       try {
+        if (!storage) { expect(false).assertTrue(); return; }
         await storage.getInfo('non-existent-file-12345.kdbx');
         expect(true).assertFalse(); // 不应该执行到这里
       } catch (error) {

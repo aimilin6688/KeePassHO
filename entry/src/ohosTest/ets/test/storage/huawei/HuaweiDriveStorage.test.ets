@@ -5,7 +5,7 @@ import { StorageError } from '../../../../../main/ets/storage/StorageError';
 import { StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
 import { FileType, FileInfo } from '../../../../../main/ets/storage/IFileStorage';
 import { StorageType } from '../../../../../main/ets/storage/StorageType';
-import { HuaweiDriveTestConfig, TestHuaweiDriveStorageConfig } from './HuaweiDriveTestConfig';
+import { HuaweiDriveTestConfig, TestHuaweiDriveStorageConfig, TestConfigOptions } from './HuaweiDriveTestConfig';
 import { util } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -47,11 +47,13 @@ export default function HuaweiDriveStorageTest() {
       });
 
       it('should create config with custom scope', 0, () => {
+        const options = new TestConfigOptions();
+        options.scope = HuaweiDriveTestConfig.SCOPE_APP_FILE;
         const config = new TestHuaweiDriveStorageConfig(
           'token',
           'refresh',
           Date.now() + 3600000,
-          { scope: HuaweiDriveTestConfig.SCOPE_APP_FILE }
+          options
         );
 
         expect(config.scope).assertEqual(HuaweiDriveTestConfig.SCOPE_APP_FILE);
@@ -124,7 +126,7 @@ export default function HuaweiDriveStorageTest() {
      * 测试 IFileStorage 接口实现
      */
     describe('IFileStorageInterface', () => {
-      let storage: HuaweiDriveStorage;
+      let storage: HuaweiDriveStorage | undefined;
 
       beforeEach(() => {
         storage = new HuaweiDriveStorage();
@@ -133,12 +135,14 @@ export default function HuaweiDriveStorageTest() {
       });
 
       afterEach(() => {
-        if (storage) {
-          storage = undefined;
-        }
+        storage = undefined;
       });
 
       it('should implement getPageConfig', 0, () => {
+        if (!storage) {
+          expect(false).assertTrue();
+          return;
+        }
         const pageConfig = storage.getPageConfig();
 
         expect(pageConfig).not().assertUndefined();
@@ -149,11 +153,19 @@ export default function HuaweiDriveStorageTest() {
 
       it('should implement init', 0, () => {
         // 使用已有的 storage 实例，避免创建新的 session
+        if (!storage) {
+          expect(false).assertTrue();
+          return;
+        }
         const pageConfig = storage.getPageConfig();
         expect(pageConfig).not().assertUndefined();
       });
 
       it('should return correct storage type', 0, () => {
+        if (!storage) {
+          expect(false).assertTrue();
+          return;
+        }
         const pageConfig = storage.getPageConfig();
         expect(pageConfig.storageType).assertEqual(StorageType.HUAWEI_DRIVE);
       });
@@ -163,7 +175,7 @@ export default function HuaweiDriveStorageTest() {
      * 测试配置管理
      */
     describe('ConfigManagement', () => {
-      let storage: HuaweiDriveStorage;
+      let storage: HuaweiDriveStorage | undefined;
 
       beforeEach(() => {
         storage = new HuaweiDriveStorage();
@@ -174,14 +186,20 @@ export default function HuaweiDriveStorageTest() {
       });
 
       it('should update config correctly', 0, () => {
+        if (!storage) {
+          expect(false).assertTrue();
+          return;
+        }
         const config1: TestHuaweiDriveStorageConfig = HuaweiDriveTestConfig.getStorageConfig();
         storage.init(config1 as HuaweiDriveStorageConfig);
 
+        const options = new TestConfigOptions();
+        options.scope = HuaweiDriveTestConfig.SCOPE_APP_FILE;
         const newConfig = new TestHuaweiDriveStorageConfig(
           'new_token',
           'new_refresh',
           Date.now() + 7200000,
-          { scope: HuaweiDriveTestConfig.SCOPE_APP_FILE }
+          options
         );
 
         storage.updateConfig(newConfig as HuaweiDriveStorageConfig);
@@ -192,6 +210,10 @@ export default function HuaweiDriveStorageTest() {
       });
 
       it('should get current config', 0, () => {
+        if (!storage) {
+          expect(false).assertTrue();
+          return;
+        }
         const config: TestHuaweiDriveStorageConfig = HuaweiDriveTestConfig.getStorageConfig();
         storage.init(config as HuaweiDriveStorageConfig);
 
