@@ -71,8 +71,14 @@ export class HuaweiDriveStorage implements IFileStorage {
     this.oauth2Config = authConfig;
 
     // 创建华为云盘客户端
+    // API站点域名（需要加 /drive/v1 前缀）：
+    // 全球域名：https://driveapis.cloud.huawei.com.cn/drive/v1
+    // 中国站点：https://drive-drcn.cloud.dbankcloud.cn/drive/v1
+    // 欧洲站点：https://drive-dre.cloud.dbankcloud.cn/drive/v1
+    // 亚非拉站点：https://drive-dra.cloud.dbankcloud.cn/drive/v1
+    // 俄罗斯站点：https://drive-drru.cloud.dbankcloud.cn/drive/v1
     const clientConfig: HuaweiDriveClientOptions = {
-      apiBaseUrl: 'https://drive.cloud.huawei.com/drive/v1',
+      apiBaseUrl: 'https://driveapis.cloud.huawei.com.cn/drive/v1',
       accessToken: this.config!.getAccessTokenText(),
       timeout: this.config!.timeout
     };
