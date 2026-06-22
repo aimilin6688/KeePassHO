@@ -1,6 +1,6 @@
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { HuaweiDriveClient, HuaweiDriveClientOptions } from './HuaweiDriveClient';
+import { HuaweiDriveClient, HuaweiDriveClientOptions, HttpResponse } from './HuaweiDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { HuaweiDrivePageConfig, HuaweiDriveStorageConfig } from './HuaweiDriveConfig';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
@@ -60,13 +60,13 @@ export class HuaweiDriveStorage implements IFileStorage {
 
     // 创建OAuth2配置
     const authConfig: HuaweiDriveOAuth2Config = {
-      provider: OAuth2Provider.HUAWEI_DRIVE,
       clientId: BuildProfile.HUAWEI_DRIVE_CLIENT_ID,
       clientSecret: BuildProfile.HUAWEI_DRIVE_CLIENT_SECRET,
       authorizationEndpoint: 'https://oauth-login.cloud.huawei.com/oauth2/v3/authorize',
       tokenEndpoint: 'https://oauth-login.cloud.huawei.com/oauth2/v3/token',
       redirectUri: BuildProfile.HUAWEI_DRIVE_REDIRECT_URI,
-      scope: this.config.scope || 'https://www.huawei.com/auth/drive'
+      scope: this.config.scope || 'https://www.huawei.com/auth/drive',
+      provider: OAuth2Provider.HUAWEI_DRIVE
     };
     this.oauth2Config = authConfig;
 
@@ -202,7 +202,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     try {
       // 检查文件是否存在
       const fileExists = await this.exists(path);
-      let result;
+      let result: HttpResponse;
 
       if (fileExists) {
         // 更新现有文件

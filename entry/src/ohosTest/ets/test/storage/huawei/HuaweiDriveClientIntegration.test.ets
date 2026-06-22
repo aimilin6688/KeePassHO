@@ -2,12 +2,29 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { HuaweiDriveClient, HuaweiDriveClientOptions, HuaweiDriveFile, HttpResponse } from '../../../../../main/ets/storage/huawei/HuaweiDriveClient';
 import { HuaweiDriveTestConfig } from './HuaweiDriveTestConfig';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { util } from '@kit.ArkTS';
+import { HuaweiDriveOAuth2Provider } from '../../../../../main/ets/storage/huawei/HuaweiDriveOAuth2Provider';
+import { OAuth2AuthRequest, OAuth2RefreshRequest } from '../../../../../main/ets/common/oauth2/OAuth2Types';
 
 const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveClientIntegrationTest';
 
+// 辅助函数：将 ArrayBuffer 转换为字符串
+function arrayBufferToString(buffer: ArrayBuffer): string {
+  const uint8Array = new Uint8Array(buffer);
+  const textDecoder = util.TextDecoder.create('utf-8');
+  return textDecoder.decodeToString(uint8Array);
+}
+
+// 辅助函数：将字符串转换为 ArrayBuffer
+function stringToArrayBuffer(str: string): ArrayBuffer {
+  const textEncoder = new util.TextEncoder();
+  const uint8Array = textEncoder.encodeInto(str);
+  return uint8Array.buffer;
+}
+
 export default function HuaweiDriveClientIntegrationTest() {
-  describe('HuaweiDriveClient Integration', () => {
+  describe('HuaweiDriveClientIntegration', () => {
     let client: HuaweiDriveClient;
 
     beforeEach(() => {
@@ -24,6 +41,201 @@ export default function HuaweiDriveClientIntegrationTest() {
     });
 
     /**
+     * 测试OAuth2认证流程获取ACCESS_TOKEN
+     * 步骤：
+     * 1. 获取授权URL
+     * 2. 打印授权URL供用户访问
+     * 3. 用户需要手动访问授权URL并获取授权码
+     * 4. 使用授权码获取ACCESS_TOKEN
+     */
+    it('should_get_authorization_url_for_token', 0, async () => {
+      try {
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'Huawei Drive OAuth2 Authentication');
+        hilog.info(DOMAIN, TAG, '========================================');
+
+        // 创建OAuth2提供者
+        const config = HuaweiDriveOAuth2Provider.getConfig(HuaweiDriveTestConfig.SCOPE_FULL);
+        config.clientId = HuaweiDriveTestConfig.CLIENT_ID;
+        config.clientSecret = HuaweiDriveTestConfig.CLIENT_SECRET;
+        config.redirectUri = HuaweiDriveTestConfig.REDIRECT_URI;
+        const provider = new HuaweiDriveOAuth2Provider(config);
+
+        // 获取授权URL
+        const authUrl = provider.getAuthorizationUrl();
+
+        hilog.info(DOMAIN, TAG, 'Step 1: Get Authorization URL');
+        hilog.info(DOMAIN, TAG, 'Authorization URL: %{public}s', authUrl);
+        hilog.info(DOMAIN, TAG, '');
+        hilog.info(DOMAIN, TAG, 'Step 2: Manual Action Required');
+        hilog.info(DOMAIN, TAG, 'Please visit the above URL in your browser');
+        hilog.info(DOMAIN, TAG, 'After authorization, you will be redirected to:');
+        hilog.info(DOMAIN, TAG, '  %{public}s', HuaweiDriveTestConfig.REDIRECT_URI);
+        hilog.info(DOMAIN, TAG, 'Copy the "code" parameter from the redirect URL');
+        hilog.info(DOMAIN, TAG, '');
+        hilog.info(DOMAIN, TAG, 'Step 3: Use Authorization Code to Get Token');
+        hilog.info(DOMAIN, TAG, 'Example: If redirect URL is:');
+        hilog.info(DOMAIN, TAG, '  %{public}s?code=ABC123&state=xyz', HuaweiDriveTestConfig.REDIRECT_URI);
+        hilog.info(DOMAIN, TAG, 'Then the authorization code is: ABC123');
+        hilog.info(DOMAIN, TAG, '========================================');
+
+        // 验证授权URL包含必要参数
+        expect(authUrl).not().assertUndefined();
+        expect(authUrl.length).assertLarger(0);
+        expect(authUrl).assertContain('client_id');
+        expect(authUrl).assertContain('redirect_uri');
+        expect(authUrl).assertContain('response_type=code');
+        expect(authUrl).assertContain(HuaweiDriveTestConfig.CLIENT_ID);
+
+        hilog.info(DOMAIN, TAG, 'Authorization URL validation passed');
+
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'OAuth2 authentication error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    /**
+     * 测试通过授权码获取Token
+     * 前提条件：需要先运行 should_get_authorization_url_for_token 获取授权码
+     * 步骤：
+     * 1. 设置授权码（从重定向URL中获取）
+     * 2. 使用授权码调用OAuth2接口获取Token
+     * 3. 打印ACCESS_TOKEN和REFRESH_TOKEN
+     */
+    it('should_exchange_code_for_token', 0, async () => {
+      try {
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'Exchange Authorization Code for Token');
+        hilog.info(DOMAIN, TAG, '========================================');
+
+        // 创建OAuth2提供者
+        const config = HuaweiDriveOAuth2Provider.getConfig(HuaweiDriveTestConfig.SCOPE_FULL);
+        config.clientId = HuaweiDriveTestConfig.CLIENT_ID;
+        config.clientSecret = HuaweiDriveTestConfig.CLIENT_SECRET;
+        config.redirectUri = HuaweiDriveTestConfig.REDIRECT_URI;
+        const provider = new HuaweiDriveOAuth2Provider(config);
+
+        // 从HuaweiDriveTestConfig获取授权码（测试时需要手动设置）
+        // 注意：授权码是一次性的，使用后会失效
+        // 测试前请在 HuaweiDriveTestConfig 中设置有效的授权码
+        const authCode = "EQEEAHui3xsBFMyzS1diOHnZjKaTd%2BngA8XJdLTq1UKsdDqd6ktHOyLah1HSz0GOXpdu8OEPgGplNeOyXWF7vJMrVCTiLO%2Fmmu%2FrV1BzNHwKieBNj%2B8XjQ1605TU2YeNX3rO%2BO4QihuC0x%2FnKOcsvtHnKzq0aDOSrV5Xy9MjG224YZVwQgrvKh1FEXJLQ7KUnRf1cQhglWivxDPA7QQ9hgdpcJ4HEHGrm2UjkyzI1HfMDUKIFY%2Bhz%2FIO2FBOZZiANXXkJ8VAL0LFWST9PS0I0Yw%3D"; // 临时使用，实际应该是授权码
+
+        hilog.info(DOMAIN, TAG, 'Using authorization code to get token...');
+        hilog.info(DOMAIN, TAG, 'Token Endpoint: %{public}s', config.tokenEndpoint);
+        hilog.info(DOMAIN, TAG, 'Client ID: %{public}s', config.clientId);
+
+        // 创建授权请求
+        const authRequest: OAuth2AuthRequest = {
+          code: decodeURIComponent(authCode),
+          state: config.state || ''
+        };
+
+        hilog.info(DOMAIN, TAG, 'Sending token request...');
+
+        // 调用authorize方法交换Token
+        const token = await provider.authorize(authRequest);
+
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'Token Exchange Successful!');
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'ACCESS_TOKEN: %{public}s', token.accessToken);
+        hilog.info(DOMAIN, TAG, 'TOKEN_TYPE: %{public}s', token.tokenType);
+        hilog.info(DOMAIN, TAG, 'REFRESH_TOKEN: %{public}s', token.refreshToken || 'N/A');
+        hilog.info(DOMAIN, TAG, 'EXPIRES_IN: %{public}d', token.expiresAt || 0);
+        hilog.info(DOMAIN, TAG, 'SCOPE: %{public}s', token.scope || 'N/A');
+        hilog.info(DOMAIN, TAG, '========================================');
+
+        // 验证Token
+        expect(token).not().assertUndefined();
+        expect(token.accessToken).not().assertUndefined();
+        expect(token.accessToken.length).assertLarger(0);
+
+        hilog.info(DOMAIN, TAG, 'Token validation passed');
+
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Token exchange failed: %{public}s', err.message);
+        hilog.info(DOMAIN, TAG, '');
+        hilog.info(DOMAIN, TAG, 'Possible reasons:');
+        hilog.info(DOMAIN, TAG, '1. Authorization code is invalid or expired');
+        hilog.info(DOMAIN, TAG, '2. Authorization code has already been used');
+        hilog.info(DOMAIN, TAG, '3. Client credentials are incorrect');
+        hilog.info(DOMAIN, TAG, '');
+        hilog.info(DOMAIN, TAG, 'Please get a new authorization code from:');
+        hilog.info(DOMAIN, TAG, '  Run test: should_get_authorization_url_for_token');
+        // 不抛出异常，允许测试失败但继续执行
+        expect(false).assertTrue(); // 标记测试失败
+      }
+    });
+
+    /**
+     * 测试使用REFRESH_TOKEN刷新ACCESS_TOKEN
+     */
+    it('should_refresh_access_token', 0, async () => {
+      try {
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'Refresh Access Token');
+        hilog.info(DOMAIN, TAG, '========================================');
+
+        // 创建OAuth2提供者
+        const config = HuaweiDriveOAuth2Provider.getConfig(HuaweiDriveTestConfig.SCOPE_FULL);
+        config.clientId = HuaweiDriveTestConfig.CLIENT_ID;
+        config.clientSecret = HuaweiDriveTestConfig.CLIENT_SECRET;
+        config.redirectUri = HuaweiDriveTestConfig.REDIRECT_URI;
+        const provider = new HuaweiDriveOAuth2Provider(config);
+
+        // 从配置获取刷新令牌
+        const refreshToken = HuaweiDriveTestConfig.REFRESH_TOKEN;
+
+        hilog.info(DOMAIN, TAG, 'Using refresh token to get new access token...');
+        hilog.info(DOMAIN, TAG, 'Token Endpoint: %{public}s', config.tokenEndpoint);
+
+        // 创建刷新令牌请求
+        const refreshRequest: OAuth2RefreshRequest = {
+          refreshToken: refreshToken,
+          scope: HuaweiDriveTestConfig.SCOPE_FULL
+        };
+
+        hilog.info(DOMAIN, TAG, 'Sending refresh token request...');
+
+        // 刷新令牌
+        const token = await provider.refreshToken(refreshRequest);
+
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'Token Refresh Successful!');
+        hilog.info(DOMAIN, TAG, '========================================');
+        hilog.info(DOMAIN, TAG, 'NEW ACCESS_TOKEN: %{public}s', token.accessToken);
+        hilog.info(DOMAIN, TAG, 'TOKEN_TYPE: %{public}s', token.tokenType);
+        hilog.info(DOMAIN, TAG, 'NEW REFRESH_TOKEN: %{public}s', token.refreshToken || 'N/A');
+        hilog.info(DOMAIN, TAG, 'EXPIRES_IN: %{public}d', token.expiresAt || 0);
+        hilog.info(DOMAIN, TAG, 'SCOPE: %{public}s', token.scope || 'N/A');
+        hilog.info(DOMAIN, TAG, '========================================');
+
+        // 验证Token
+        expect(token).not().assertUndefined();
+        expect(token.accessToken).not().assertUndefined();
+        expect(token.accessToken.length).assertLarger(0);
+
+        hilog.info(DOMAIN, TAG, 'Token refresh validation passed');
+
+      } catch (error) {
+        const err = error as Error;
+        hilog.error(DOMAIN, TAG, 'Token refresh failed: %{public}s', err.message);
+        hilog.info(DOMAIN, TAG, '');
+        hilog.info(DOMAIN, TAG, 'Possible reasons:');
+        hilog.info(DOMAIN, TAG, '1. Refresh token is invalid or expired');
+        hilog.info(DOMAIN, TAG, '2. Client credentials are incorrect');
+        hilog.info(DOMAIN, TAG, '');
+        hilog.info(DOMAIN, TAG, 'Please get a new token from:');
+        hilog.info(DOMAIN, TAG, '  Run test: should_exchange_code_for_token');
+        // 不抛出异常，允许测试失败但继续执行
+        expect(false).assertTrue(); // 标记测试失败
+      }
+    });
+
+    /**
      * 测试验证连接
      */
     it('should_validate_connection', 0, async () => {
@@ -34,6 +246,7 @@ export default function HuaweiDriveClientIntegrationTest() {
           response.statusCode, response.success.toString());
 
         expect(response).not().assertUndefined();
+        expect(response.success).assertTrue(); // 验证请求必须成功
         expect(response.statusCode).assertEqual(200);
       } catch (error) {
         const err = error as Error;
@@ -53,10 +266,11 @@ export default function HuaweiDriveClientIntegrationTest() {
           response.statusCode, response.success.toString());
 
         expect(response).not().assertUndefined();
+        expect(response.success).assertTrue(); // 验证请求必须成功
 
-        if (response.success && response.body) {
-          const jsonStr = String.fromCharCode.apply(null, Array.from(new Uint8Array(response.body)));
-          const data = JSON.parse(jsonStr);
+        if (response.body) {
+          const jsonStr = arrayBufferToString(response.body);
+          const data = JSON.parse(jsonStr) as Record<string, Object>;
 
           hilog.info(DOMAIN, TAG, 'Root directory: %{public}s', JSON.stringify(data));
 
@@ -83,10 +297,11 @@ export default function HuaweiDriveClientIntegrationTest() {
           response.statusCode, response.success.toString());
 
         expect(response).not().assertUndefined();
+        expect(response.success).assertTrue(); // 验证请求必须成功
 
-        if (response.success && response.body) {
-          const jsonStr = String.fromCharCode.apply(null, Array.from(new Uint8Array(response.body)));
-          const data = JSON.parse(jsonStr);
+        if (response.body) {
+          const jsonStr = arrayBufferToString(response.body);
+          const data = JSON.parse(jsonStr) as Record<string, Object>;
 
           const files: HuaweiDriveFile[] = client.parseFileList(data);
 
@@ -113,22 +328,23 @@ export default function HuaweiDriveClientIntegrationTest() {
     it('should_upload_file', 0, async () => {
       try {
         const testContent = 'Test upload content ' + Date.now();
-        const testData = new TextEncoder().encode(testContent);
+        const testData = stringToArrayBuffer(testContent);
 
         const response: HttpResponse = await client.upload(
           'root',
           `test-upload-${Date.now()}.txt`,
-          testData.buffer as ArrayBuffer
+          testData
         );
 
         hilog.info(DOMAIN, TAG, 'Upload response: status=%{public}d, success=%{public}s',
           response.statusCode, response.success.toString());
 
         expect(response).not().assertUndefined();
+        expect(response.success).assertTrue(); // 验证请求必须成功
 
-        if (response.success && response.body) {
-          const jsonStr = String.fromCharCode.apply(null, Array.from(new Uint8Array(response.body)));
-          const data = JSON.parse(jsonStr);
+        if (response.body) {
+          const jsonStr = arrayBufferToString(response.body);
+          const data = JSON.parse(jsonStr) as Record<string, Object>;
 
           hilog.info(DOMAIN, TAG, 'Uploaded file data: %{public}s', jsonStr);
 
@@ -151,17 +367,19 @@ export default function HuaweiDriveClientIntegrationTest() {
       try {
         // 先上传一个测试文件
         const testContent = 'Test download content ' + Date.now();
-        const testData = new TextEncoder().encode(testContent);
+        const testData = stringToArrayBuffer(testContent);
 
         const uploadResponse: HttpResponse = await client.upload(
           'root',
           `test-download-${Date.now()}.txt`,
-          testData.buffer as ArrayBuffer
+          testData
         );
 
-        if (uploadResponse.success && uploadResponse.body) {
-          const jsonStr = String.fromCharCode.apply(null, Array.from(new Uint8Array(uploadResponse.body)));
-          const data = JSON.parse(jsonStr);
+        expect(uploadResponse.success).assertTrue(); // 验证上传必须成功
+
+        if (uploadResponse.body) {
+          const jsonStr = arrayBufferToString(uploadResponse.body);
+          const data = JSON.parse(jsonStr) as Record<string, Object>;
           const uploadedFile: HuaweiDriveFile = client.parseFile(data);
 
           // 下载文件
@@ -171,10 +389,11 @@ export default function HuaweiDriveClientIntegrationTest() {
             downloadResponse.statusCode, downloadResponse.success.toString());
 
           expect(downloadResponse).not().assertUndefined();
+          expect(downloadResponse.success).assertTrue(); // 验证下载必须成功
           expect(downloadResponse.body).not().assertUndefined();
 
           if (downloadResponse.body) {
-            const downloadedContent = new TextDecoder().decode(downloadResponse.body);
+            const downloadedContent = arrayBufferToString(downloadResponse.body);
 
             hilog.info(DOMAIN, TAG, 'Downloaded content length: %{public}d', downloadedContent.length);
 
@@ -195,17 +414,19 @@ export default function HuaweiDriveClientIntegrationTest() {
       try {
         // 先上传一个测试文件
         const testContent = 'Test file info ' + Date.now();
-        const testData = new TextEncoder().encode(testContent);
+        const testData = stringToArrayBuffer(testContent);
 
         const uploadResponse: HttpResponse = await client.upload(
           'root',
           `test-info-${Date.now()}.txt`,
-          testData.buffer as ArrayBuffer
+          testData
         );
 
-        if (uploadResponse.success && uploadResponse.body) {
-          const jsonStr = String.fromCharCode.apply(null, Array.from(new Uint8Array(uploadResponse.body)));
-          const data = JSON.parse(jsonStr);
+        expect(uploadResponse.success).assertTrue(); // 验证上传必须成功
+
+        if (uploadResponse.body) {
+          const jsonStr = arrayBufferToString(uploadResponse.body);
+          const data = JSON.parse(jsonStr) as Record<string, Object>;
           const uploadedFile: HuaweiDriveFile = client.parseFile(data);
 
           // 获取文件信息
@@ -215,10 +436,11 @@ export default function HuaweiDriveClientIntegrationTest() {
             infoResponse.statusCode, infoResponse.success.toString());
 
           expect(infoResponse).not().assertUndefined();
+          expect(infoResponse.success).assertTrue(); // 验证获取信息必须成功
 
-          if (infoResponse.success && infoResponse.body) {
-            const infoJsonStr = String.fromCharCode.apply(null, Array.from(new Uint8Array(infoResponse.body)));
-            const infoData = JSON.parse(infoJsonStr);
+          if (infoResponse.body) {
+            const infoJsonStr = arrayBufferToString(infoResponse.body);
+            const infoData = JSON.parse(infoJsonStr) as Record<string, Object>;
 
             const fileInfo: HuaweiDriveFile = client.parseFile(infoData);
 

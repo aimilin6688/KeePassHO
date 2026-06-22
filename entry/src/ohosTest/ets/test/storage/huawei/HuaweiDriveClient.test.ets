@@ -73,6 +73,8 @@ export default function HuaweiDriveClientTest() {
       });
 
       it('should parse file info correctly', 0, () => {
+        const parentFolderItem: Record<string, Object> = { 'id': 'folder123' };
+        const parentFolder: Object[] = [parentFolderItem as Object];
         const fileData: Record<string, Object> = {
           'id': 'file123',
           'fileName': 'test.kdbx',
@@ -80,7 +82,7 @@ export default function HuaweiDriveClientTest() {
           'size': 1024,
           'createdTime': '2024-01-01T00:00:00Z',
           'editedTime': '2024-01-02T00:00:00Z',
-          'parentFolder': [{ 'id': 'folder123' }],
+          'parentFolder': parentFolder,
           'contentDownloadLink': 'https://example.com/download'
         };
 
@@ -95,25 +97,25 @@ export default function HuaweiDriveClientTest() {
       });
 
       it('should parse file list correctly', 0, () => {
+        const file1Obj: Record<string, Object> = {
+          'id': 'file1',
+          'fileName': 'test1.kdbx',
+          'mimeType': 'application/octet-stream',
+          'size': 1024,
+          'createdTime': '2024-01-01T00:00:00Z',
+          'editedTime': '2024-01-02T00:00:00Z'
+        };
+        const file2Obj: Record<string, Object> = {
+          'id': 'file2',
+          'fileName': 'test2.kdbx',
+          'mimeType': 'application/octet-stream',
+          'size': 2048,
+          'createdTime': '2024-01-01T00:00:00Z',
+          'editedTime': '2024-01-02T00:00:00Z'
+        };
+        const filesArr: Object[] = [file1Obj as Object, file2Obj as Object];
         const fileListData: Record<string, Object> = {
-          'files': [
-            {
-              'id': 'file1',
-              'fileName': 'test1.kdbx',
-              'mimeType': 'application/octet-stream',
-              'size': 1024,
-              'createdTime': '2024-01-01T00:00:00Z',
-              'editedTime': '2024-01-02T00:00:00Z'
-            },
-            {
-              'id': 'file2',
-              'fileName': 'test2.kdbx',
-              'mimeType': 'application/octet-stream',
-              'size': 2048,
-              'createdTime': '2024-01-01T00:00:00Z',
-              'editedTime': '2024-01-02T00:00:00Z'
-            }
-          ]
+          'files': filesArr
         };
 
         const files: HuaweiDriveFile[] = client.parseFileList(fileListData);
@@ -159,6 +161,11 @@ export default function HuaweiDriveClientTest() {
       });
 
       it('should parse capabilities correctly', 0, () => {
+        const capabilitiesObj: Record<string, Object> = {
+          'downloadPermission': 1,
+          'editPermission': 1,
+          'deletePermission': 0
+        };
         const fileData: Record<string, Object> = {
           'id': 'file123',
           'fileName': 'test.kdbx',
@@ -166,11 +173,7 @@ export default function HuaweiDriveClientTest() {
           'size': 1024,
           'createdTime': '2024-01-01T00:00:00Z',
           'editedTime': '2024-01-02T00:00:00Z',
-          'capabilities': {
-            'downloadPermission': 1,
-            'editPermission': 1,
-            'deletePermission': 0
-          }
+          'capabilities': capabilitiesObj
         };
 
         const file: HuaweiDriveFile = client.parseFile(fileData);

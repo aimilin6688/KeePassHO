@@ -7,34 +7,9 @@ import BuildProfile from 'BuildProfile';
  */
 export interface HuaweiDriveOAuth2Config extends OAuth2Config {
   /**
-   * 客户端ID
+   * 提供者类型
    */
-  clientId: string;
-
-  /**
-   * 客户端密钥
-   */
-  clientSecret?: string;
-
-  /**
-   * 授权端点
-   */
-  authorizationEndpoint: string;
-
-  /**
-   * 令牌端点
-   */
-  tokenEndpoint: string;
-
-  /**
-   * 重定向URI
-   */
-  redirectUri: string;
-
-  /**
-   * 作用域
-   */
-  scope: string;
+  provider?: OAuth2Provider;
 }
 
 /**
@@ -55,15 +30,16 @@ export class HuaweiDriveOAuth2Provider extends BaseOAuth2Provider {
    * @returns HuaweiDriveOAuth2Config
    */
   public static getConfig(scope: string): HuaweiDriveOAuth2Config {
-    return {
-      provider: OAuth2Provider.HUAWEI_DRIVE,
+    const config: HuaweiDriveOAuth2Config = {
       clientId: BuildProfile.HUAWEI_DRIVE_CLIENT_ID,
       clientSecret: BuildProfile.HUAWEI_DRIVE_CLIENT_SECRET,
       authorizationEndpoint: 'https://oauth-login.cloud.huawei.com/oauth2/v3/authorize',
       tokenEndpoint: 'https://oauth-login.cloud.huawei.com/oauth2/v3/token',
       redirectUri: BuildProfile.HUAWEI_DRIVE_REDIRECT_URI,
-      scope: scope
+      scope: scope,
+      provider: OAuth2Provider.HUAWEI_DRIVE
     };
+    return config;
   }
 
   /**

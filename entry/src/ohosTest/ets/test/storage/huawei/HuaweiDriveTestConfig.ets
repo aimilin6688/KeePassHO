@@ -1,5 +1,11 @@
 import { StorageConfig } from '../../../../../main/ets/storage/StorageConfig';
 
+export class TestConfigOptions {
+  timeout?: number;
+  tokenType?: string;
+  scope?: string;
+}
+
 /**
  * 华为云盘测试公共配置
  * 包含测试所需的端点、凭证和测试数据
@@ -20,23 +26,23 @@ export class HuaweiDriveTestConfig {
    * 测试用客户端ID
    * 注意：实际测试时需要替换为真实的客户端ID
    */
-  static readonly CLIENT_ID: string = 'test_client_id';
+  static readonly CLIENT_ID: string = '';
 
   /**
    * 测试用客户端密钥
    * 注意：实际测试时需要替换为真实的客户端密钥
    */
-  static readonly CLIENT_SECRET: string = 'test_client_secret';
+  static readonly CLIENT_SECRET: string = '';
 
   /**
    * 测试用重定向URI
    */
-  static readonly REDIRECT_URI: string = 'com.keepassho:/oauth2redirect';
+  static readonly REDIRECT_URI: string = 'http://keepassho.com/huawei';
 
   /**
    * 测试用访问令牌
    */
-  static readonly ACCESS_TOKEN: string = 'test_access_token_12345';
+  static readonly ACCESS_TOKEN: string = '';
 
   /**
    * 测试用刷新令牌
@@ -80,14 +86,14 @@ export class HuaweiDriveTestConfig {
    * 注意：返回一个模拟的 HuaweiDriveStorageConfig，避免触发 SM4 加密
    */
   static getStorageConfig(): TestHuaweiDriveStorageConfig {
+    const options = new TestConfigOptions();
+    options.timeout = HuaweiDriveTestConfig.TIMEOUT;
+    options.scope = HuaweiDriveTestConfig.SCOPE_FULL;
     return new TestHuaweiDriveStorageConfig(
       HuaweiDriveTestConfig.ACCESS_TOKEN,
       HuaweiDriveTestConfig.REFRESH_TOKEN,
       Date.now() + 3600000, // 1小时后过期
-      {
-        timeout: HuaweiDriveTestConfig.TIMEOUT,
-        scope: HuaweiDriveTestConfig.SCOPE_FULL
-      }
+      options
     );
   }
 }
@@ -108,11 +114,7 @@ export class TestHuaweiDriveStorageConfig implements StorageConfig {
     accessToken: string,
     refreshToken: string,
     expiresAt: number,
-    options?: {
-      timeout?: number;
-      tokenType?: string;
-      scope?: string;
-    }
+    options?: TestConfigOptions
   ) {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;

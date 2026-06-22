@@ -542,7 +542,7 @@ export class HuaweiDriveClient {
       hilog.info(DOMAIN, TAG, `download: fileId=${fileId}, apiPath=${apiPath}`);
 
       const config: AxiosRequestConfig = {
-        responseType: 'arraybuffer'
+        responseType: 'array_buffer'
       };
       const response: AxiosResponse = await this.axiosInstance.get(apiPath, config);
       return this.convertAxiosResponse(response);
@@ -609,7 +609,7 @@ export class HuaweiDriveClient {
           'Content-Type': 'application/octet-stream'
         }
       };
-      const response: AxiosResponse = await this.axiosInstance.patch(apiPath, fileBuffer, config);
+      const response: AxiosResponse = await this.axiosInstance.put(apiPath, fileBuffer, config);
       const result = this.convertAxiosResponse(response);
       hilog.info(DOMAIN, TAG, 'update result: %{public}s', result.message);
       return result;
@@ -659,7 +659,7 @@ export class HuaweiDriveClient {
       const parentFolder: ParentFolder[] = [];
       const parentFolderData = data['parentFolder'];
       if (parentFolderData && Array.isArray(parentFolderData)) {
-        for (const parent of parentFolderData) {
+        for (const parent of parentFolderData as Object[]) {
           const parentObj = parent as Record<string, Object>;
           const parentId = this.extractOptionalStringFromObject(parentObj, 'id');
           if (parentId) {
@@ -720,7 +720,7 @@ export class HuaweiDriveClient {
       // 检查是否有 files 数组
       const filesData = data['files'];
       if (filesData && Array.isArray(filesData)) {
-        for (const item of filesData) {
+        for (const item of filesData as Object[]) {
           const itemData = item as Record<string, Object>;
           const file = this.parseFile(itemData);
           files.push(file);
