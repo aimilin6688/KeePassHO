@@ -1737,6 +1737,14 @@
       "value": "Save the file to OneDrive"
     },
     {
+      "name": "huawei_drive_select_file",
+      "value": "Select a file from Huawei Drive"
+    },
+    {
+      "name": "huawei_drive_save_file",
+      "value": "Save the file to Huawei Drive"
+    },
+    {
       "name": "copy_username",
       "value": "Copy Username"
     },

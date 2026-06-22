@@ -25,6 +25,11 @@ export enum OAuth2Provider {
   PCLOUD = 'PCLOUD',
 
   /**
+   * 华为云盘
+   */
+  HUAWEI_DRIVE = 'HUAWEI_DRIVE',
+
+  /**
    * 百度网盘
    */
   BAIDU_NETDISK = 'BAIDU_NETDISK'

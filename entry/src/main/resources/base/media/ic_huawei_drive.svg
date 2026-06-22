@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="huaweiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EE5A24;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Cloud shape -->
+  <path d="M38 32H12C6.48 32 2 27.52 2 22C2 16.94 5.56 12.74 10.4 11.92C12.12 7.16 16.68 4 22 4C28.68 4 34.12 8.88 34.86 15.14C40.12 15.66 44 20.04 44 25.5C44 31.3 39.3 36 33.5 36H38V32Z"
+        fill="url(#huaweiGrad)"
+        opacity="0.9"/>
+  <!-- Huawei logo simplified -->
+  <circle cx="24" cy="22" r="8" fill="white" opacity="0.3"/>
+  <path d="M20 18L24 26L28 18" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
