@@ -38,7 +38,7 @@ export class HuaweiDriveTestConfig {
    * 测试用客户端密钥
    * 注意：实际测试时需要替换为真实的客户端密钥
    */
-  static readonly CLIENT_SECRET: string = 'test';
+  static readonly CLIENT_SECRET: string = '';
 
   /**
    * 测试用重定向URI
@@ -48,7 +48,7 @@ export class HuaweiDriveTestConfig {
   /**
    * 测试用访问令牌
    */
-  static readonly ACCESS_TOKEN: string = 'DgEAAGFlEUIvvSzkVovI511aUXwF2ZSTb+mCEAC8XL2yvFS7JMYZuOnC/syX3qVMKA2OnNE+Uo+LgNCntzqsbH+il/pEQxXj5Isd5Fqp4BzfsT7LvQ==';
+  static readonly ACCESS_TOKEN: string = '';
 
   /**
    * 测试用刷新令牌
