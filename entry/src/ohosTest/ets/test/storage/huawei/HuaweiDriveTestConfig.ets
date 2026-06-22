@@ -13,8 +13,14 @@ export class TestConfigOptions {
 export class HuaweiDriveTestConfig {
   /**
    * 华为云盘API基础URL
+   * 全球域名: https://driveapis.cloud.huawei.com.cn/drive/v1
+   * 站点域名（需要加 /drive/v1 前缀）:
+   * 中国站点：https://drive-drcn.cloud.dbankcloud.cn/drive/v1
+   * 欧洲站点：https://drive-dre.cloud.dbankcloud.cn/drive/v1
+   * 亚非拉站点：https://drive-dra.cloud.dbankcloud.cn/drive/v1
+   * 俄罗斯站点：https://drive-drru.cloud.dbankcloud.cn/drive/v1
    */
-  static readonly API_BASE_URL: string = 'https://drive.cloud.huawei.com/drive/v1';
+  static readonly API_BASE_URL: string = 'https://driveapis.cloud.huawei.com.cn/drive/v1';
 
   /**
    * OAuth2 端点
@@ -22,17 +28,17 @@ export class HuaweiDriveTestConfig {
   static readonly OAUTH_AUTHORIZATION_ENDPOINT: string = 'https://oauth-login.cloud.huawei.com/oauth2/v3/authorize';
   static readonly OAUTH_TOKEN_ENDPOINT: string = 'https://oauth-login.cloud.huawei.com/oauth2/v3/token';
 
-  /**
-   * 测试用客户端ID
-   * 注意：实际测试时需要替换为真实的客户端ID
+   /**
+    * 测试用客户端ID
+    * 注意：实际测试时需要替换为真实的客户端ID
    */
-  static readonly CLIENT_ID: string = '';
+  static readonly CLIENT_ID: string = 'test';
 
   /**
    * 测试用客户端密钥
    * 注意：实际测试时需要替换为真实的客户端密钥
    */
-  static readonly CLIENT_SECRET: string = '';
+  static readonly CLIENT_SECRET: string = 'test';
 
   /**
    * 测试用重定向URI
@@ -42,7 +48,7 @@ export class HuaweiDriveTestConfig {
   /**
    * 测试用访问令牌
    */
-  static readonly ACCESS_TOKEN: string = '';
+  static readonly ACCESS_TOKEN: string = 'DgEAAGFlEUIvvSzkVovI511aUXwF2ZSTb+mCEAC8XL2yvFS7JMYZuOnC/syX3qVMKA2OnNE+Uo+LgNCntzqsbH+il/pEQxXj5Isd5Fqp4BzfsT7LvQ==';
 
   /**
    * 测试用刷新令牌
