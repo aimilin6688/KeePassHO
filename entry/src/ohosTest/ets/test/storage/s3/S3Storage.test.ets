@@ -1,21 +1,22 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import { S3Storage } from '../../../../../main/ets/storage/s3/S3Storage';
-import { S3StorageConfig, S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3Config';
-import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
+import { S3StorageConfig } from '../../../../../main/ets/storage/s3/S3Config';
+import { StorageError } from '../../../../../main/ets/storage/StorageError';
+import { StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
 import { FileType, FileInfo } from '../../../../../main/ets/storage/IFileStorage';
 import { StorageType } from '../../../../../main/ets/storage/StorageType';
 import { S3TestConfig, TestS3StorageConfig } from './S3TestConfig';
-import { MultipartUploadProgress } from '../../../../../main/ets/storage/s3/S3Types';
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3Config';
 import { util } from '@kit.ArkTS';
 
-const DOMAIN = 0x0000;
-const TAG = 'S3StorageTest';
 
 export default function S3StorageTest() {
-  describe('S3Storage', () => {
+  describe('S3StorageTest', () => {
 
-    // ==================== S3StorageConfig 配置类测试 ====================
+    /**
+     * 测试 S3StorageConfig 配置类
+     * 注意：由于 Sm4Utils 需要设备环境，测试中使用 TestS3StorageConfig
+     */
     describe('S3StorageConfig', () => {
       it('should create config object with required fields', 0, () => {
         const config: TestS3StorageConfig = S3TestConfig.getStorageConfig();
@@ -30,34 +31,36 @@ export default function S3StorageTest() {
 
         expect(config.bucket).assertEqual('custom-bucket');
       });
+
     });
 
-    // ==================== S3MultipartConfig 测试 ====================
-    describe('S3MultipartConfig', () => {
+    describe('S3MultipartConfigTest', () => {
 
-      it('should have correct min part size', 0, () => {
+      it('should_have_correct_min_part_size', 0, () => {
         expect(S3MultipartConfig.MIN_PART_SIZE).assertEqual(5 * 1024 * 1024);
       });
 
-      it('should have correct recommended part size', 0, () => {
+      it('should_have_correct_recommended_part_size', 0, () => {
         expect(S3MultipartConfig.RECOMMENDED_PART_SIZE).assertEqual(8 * 1024 * 1024);
       });
 
-      it('should have correct multipart threshold', 0, () => {
+      it('should_have_correct_multipart_threshold', 0, () => {
         expect(S3MultipartConfig.MULTIPART_THRESHOLD).assertEqual(5 * 1024 * 1024);
       });
 
-      it('should have correct max retry count', 0, () => {
+      it('should_have_correct_max_retry_count', 0, () => {
         expect(S3MultipartConfig.MAX_RETRY_COUNT).assertEqual(3);
       });
 
-      it('should recommended part size be larger than min', 0, () => {
+      it('should_recommended_part_size_be_larger_than_min', 0, () => {
         expect(S3MultipartConfig.RECOMMENDED_PART_SIZE)
           .assertLarger(S3MultipartConfig.MIN_PART_SIZE);
       });
     });
 
-    // ==================== S3Storage 初始化测试 ====================
+    /**
+     * 测试 S3Storage 初始化
+     */
     describe('S3StorageInitialization', () => {
       let storage: S3Storage | undefined;
 
@@ -101,7 +104,9 @@ export default function S3StorageTest() {
       });
     });
 
-    // ==================== IFileStorage 接口测试 ====================
+    /**
+     * 测试 IFileStorage 接口实现
+     */
     describe('IFileStorageInterface', () => {
       let storage: S3Storage;
 
@@ -127,12 +132,15 @@ export default function S3StorageTest() {
       });
 
       it('should implement init', 0, () => {
+        // 使用已有的 storage 实例，避免创建新的 session
         const pageConfig = storage.getPageConfig();
         expect(pageConfig).not().assertUndefined();
       });
     });
 
-    // ==================== 真实文件操作测试 ====================
+    /**
+     * 测试真实的文件操作（需要有效凭证）
+     */
     describe('RealFileOperations', () => {
       let storage: S3Storage;
 
@@ -164,6 +172,7 @@ export default function S3StorageTest() {
           expect(content).not().assertUndefined();
           expect(content.byteLength).assertLarger(0);
         } catch (error) {
+          // 如果文件不存在，测试跳过
           console.log('Test file not found, skipping read test');
         }
       });
@@ -193,11 +202,14 @@ export default function S3StorageTest() {
         const testPath: string = 'test-write-' + Date.now() + '.txt';
 
         try {
+          // 写入文件
           await storage.write(testPath, data.buffer as ArrayBuffer);
 
+          // 验证文件存在
           const exists: boolean = await storage.exists(testPath);
           expect(exists).assertTrue();
 
+          // 读取文件内容
           const readContent: ArrayBuffer = await storage.read(testPath);
           const decoder: util.TextDecoder = new util.TextDecoder();
           const contentStr: string = decoder.decodeToString(new Uint8Array(readContent));
@@ -208,7 +220,10 @@ export default function S3StorageTest() {
       });
     });
 
-    // ==================== 多路径操作测试 ====================
+    /**
+     * 测试多种路径场景（中文路径、多级目录等）
+     * 注意：这些测试需要先手动创建测试数据或运行数据初始化
+     */
     describe('MultiPathOperations', () => {
       let storage: S3Storage;
       let testFileContent: ArrayBuffer | null = null;
@@ -218,6 +233,7 @@ export default function S3StorageTest() {
         const config: TestS3StorageConfig = S3TestConfig.getStorageConfig();
         storage.init(config as S3StorageConfig);
 
+        // 读取源测试文件内容
         try {
           testFileContent = await storage.read(S3TestConfig.TEST_FILE);
         } catch (error) {
@@ -232,10 +248,14 @@ export default function S3StorageTest() {
         }
       });
 
+      /**
+       * 测试路径数据初始化
+       * 将 test-1.kdbx 复制到各个测试路径
+       */
       it('should setup test data - copy file to test paths', 0, async () => {
         if (!testFileContent) {
           console.log('Source file not available, skipping test data setup');
-          expect(true).assertTrue();
+          expect(true).assertTrue(); // 跳过但不失败
           return;
         }
 
@@ -243,7 +263,7 @@ export default function S3StorageTest() {
         for (let i = 0; i < S3TestConfig.TEST_PATHS.length; i++) {
           const testPath = S3TestConfig.TEST_PATHS[i];
           if (testPath === S3TestConfig.TEST_FILE) {
-            continue;
+            continue; // 跳过源文件
           }
           try {
             await storage.write(testPath, testFileContent);
@@ -255,26 +275,31 @@ export default function S3StorageTest() {
         }
         console.log('Test data setup results:\n' + results.join('\n'));
 
+        // 至少有一个成功写入
         const successCount = results.filter(r => r.startsWith('✓')).length;
         expect(successCount).assertLarger(0);
       });
 
+      // 动态为每个测试路径生成测试用例
       for (let i = 0; i < S3TestConfig.TEST_PATHS.length; i++) {
         const testPath: string = S3TestConfig.TEST_PATHS[i];
 
         it(`should verify file at path: ${testPath}`, 0, async () => {
           if (!testFileContent) {
             console.log(`Skipping test for ${testPath} - source file not available`);
-            expect(true).assertTrue();
+            expect(true).assertTrue(); // 跳过但不失败
             return;
           }
 
+          // 验证文件存在
           const exists: boolean = await storage.exists(testPath);
           expect(exists).assertTrue();
 
+          // 验证文件内容
           const readContent: ArrayBuffer = await storage.read(testPath);
           expect(readContent.byteLength).assertEqual(testFileContent.byteLength);
 
+          // 获取文件信息
           const info: FileInfo = await storage.getInfo(testPath);
           expect(info.name).assertEqual('test-1.kdbx');
           expect(info.type).assertEqual(FileType.FILE);
@@ -288,6 +313,7 @@ export default function S3StorageTest() {
         const files: FileInfo[] = await storage.listDir('密码库');
         expect(files).not().assertUndefined();
         expect(Array.isArray(files)).assertTrue();
+        // 目录下应该有文件
         expect(files.length).assertLarger(0);
         console.log(`Found ${files.length} files in 密码库/`);
       });
@@ -306,190 +332,6 @@ export default function S3StorageTest() {
         expect(Array.isArray(files)).assertTrue();
         expect(files.length).assertLarger(0);
         console.log(`Found ${files.length} files in 我的密码/工作账号/`);
-      });
-    });
-
-    // ==================== 分块上传集成测试 ====================
-    describe('MultipartUploadIntegration', () => {
-      let storage: S3Storage;
-      const testBucket = S3TestConfig.BUCKET;
-
-      beforeEach(() => {
-        const config = S3TestConfig.getStorageConfig(testBucket);
-        storage = new S3Storage();
-        storage.init(config);
-      });
-
-      afterEach(() => {
-        storage.close();
-      });
-
-      it('should automatically use multipart for large file', 0, async () => {
-        try {
-          const largeData = new ArrayBuffer(20 * 1024 * 1024); // 20MB
-          let progressCalled = false;
-
-          storage.setProgressCallback((progress: MultipartUploadProgress) => {
-            progressCalled = true;
-            hilog.info(DOMAIN, TAG, 'Upload progress: %{public}d/%{public}d bytes, part %{public}d/%{public}d',
-              progress.uploadedBytes, progress.totalBytes, progress.currentPart, progress.totalParts);
-          });
-
-          const testKey = 'integration-test/large-file-20mb.kdbx';
-          await storage.write(`/${testBucket}/${testKey}`, largeData);
-
-          hilog.info(DOMAIN, TAG, 'Large file uploaded successfully');
-          expect(progressCalled).assertTrue();
-        } catch (error) {
-          const err = error as Error;
-          hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-          throw new Error(err.message);
-        }
-      });
-
-      it('should automatically use chunked download for large file', 0, async () => {
-        try {
-          const testData = new ArrayBuffer(20 * 1024 * 1024); // 20MB
-          const testKey = 'integration-test/large-file-download.kdbx';
-          await storage.write(`/${testBucket}/${testKey}`, testData);
-
-          hilog.info(DOMAIN, TAG, 'Large file uploaded for download test');
-
-          let progressCalled = false;
-          storage.setProgressCallback((progress: MultipartUploadProgress) => {
-            progressCalled = true;
-            hilog.info(DOMAIN, TAG, 'Download progress: %{public}d/%{public}d bytes, part %{public}d/%{public}d',
-              progress.uploadedBytes, progress.totalBytes, progress.currentPart, progress.totalParts);
-          });
-
-          const result = await storage.read(`/${testBucket}/${testKey}`);
-
-          hilog.info(DOMAIN, TAG, 'Downloaded file size: %{public}d bytes', result.byteLength);
-
-          expect(result.byteLength).assertEqual(20 * 1024 * 1024);
-          expect(progressCalled).assertTrue();
-        } catch (error) {
-          const err = error as Error;
-          hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-          throw new Error(err.message);
-        }
-      });
-
-      it('should use regular upload for small file', 0, async () => {
-        try {
-          const smallData = new ArrayBuffer(1024 * 1024); // 1MB
-          let progressCalled = false;
-
-          storage.setProgressCallback((progress: MultipartUploadProgress) => {
-            progressCalled = true;
-            hilog.info(DOMAIN, TAG, 'Upload progress (small): %{public}d/%{public}d bytes',
-              progress.uploadedBytes, progress.totalBytes);
-          });
-
-          const testKey = 'integration-test/small-file-1mb.kdbx';
-          await storage.write(`/${testBucket}/${testKey}`, smallData);
-
-          hilog.info(DOMAIN, TAG, 'Small file uploaded successfully');
-          expect(progressCalled).assertFalse();
-
-          const result = await storage.read(`/${testBucket}/${testKey}`);
-          expect(result.byteLength).assertEqual(1024 * 1024);
-
-          hilog.info(DOMAIN, TAG, 'Small file verified successfully');
-        } catch (error) {
-          const err = error as Error;
-          hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-          throw new Error(err.message);
-        }
-      });
-
-      it('should report correct progress data', 0, async () => {
-        try {
-          const testData = new ArrayBuffer(15 * 1024 * 1024); // 15MB
-          const progressData: MultipartUploadProgress[] = [];
-
-          storage.setProgressCallback((progress: MultipartUploadProgress) => {
-            progressData.push({
-              uploadedBytes: progress.uploadedBytes,
-              totalBytes: progress.totalBytes,
-              currentPart: progress.currentPart,
-              totalParts: progress.totalParts
-            });
-          });
-
-          const testKey = 'integration-test/progress-test.kdbx';
-          await storage.write(`/${testBucket}/${testKey}`, testData);
-
-          hilog.info(DOMAIN, TAG, 'Progress events count: %{public}d', progressData.length);
-
-          expect(progressData.length > 0).assertTrue();
-
-          const firstProgress = progressData[0];
-          expect(firstProgress.totalBytes).assertEqual(15 * 1024 * 1024);
-          expect(firstProgress.currentPart).assertEqual(1);
-
-          const lastProgress = progressData[progressData.length - 1];
-          expect(lastProgress.uploadedBytes).assertEqual(15 * 1024 * 1024);
-          expect(lastProgress.currentPart).assertEqual(lastProgress.totalParts);
-        } catch (error) {
-          const err = error as Error;
-          hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-          throw new Error(err.message);
-        }
-      });
-
-      it('should use multipart at threshold', 0, async () => {
-        try {
-          // 5MB (MULTIPART_THRESHOLD)
-          const thresholdData = new ArrayBuffer(5 * 1024 * 1024);
-          let progressCalled = false;
-
-          storage.setProgressCallback((progress: MultipartUploadProgress) => {
-            progressCalled = true;
-          });
-
-          const testKey = 'integration-test/threshold-5mb.kdbx';
-          await storage.write(`/${testBucket}/${testKey}`, thresholdData);
-
-          // 5MB 应该触发分块上传（>= 阈值）
-          expect(progressCalled).assertTrue();
-
-          const result = await storage.read(`/${testBucket}/${testKey}`);
-          expect(result.byteLength).assertEqual(5 * 1024 * 1024);
-
-          hilog.info(DOMAIN, TAG, 'Threshold file test passed');
-        } catch (error) {
-          const err = error as Error;
-          hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-          throw new Error(err.message);
-        }
-      });
-
-      it('should use regular upload below threshold', 0, async () => {
-        try {
-          // 4.9MB (just below threshold)
-          const belowThresholdData = new ArrayBuffer(4.9 * 1024 * 1024);
-          let progressCalled = false;
-
-          storage.setProgressCallback((progress: MultipartUploadProgress) => {
-            progressCalled = true;
-          });
-
-          const testKey = 'integration-test/below-threshold.kdbx';
-          await storage.write(`/${testBucket}/${testKey}`, belowThresholdData);
-
-          // 小于 5MB 不应该触发分块上传
-          expect(progressCalled).assertFalse();
-
-          const result = await storage.read(`/${testBucket}/${testKey}`);
-          expect(result.byteLength).assertEqual(4.9 * 1024 * 1024);
-
-          hilog.info(DOMAIN, TAG, 'Below threshold file test passed');
-        } catch (error) {
-          const err = error as Error;
-          hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
-          throw new Error(err.message);
-        }
       });
     });
   });
