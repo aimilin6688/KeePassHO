@@ -7,19 +7,11 @@ import { IOtpFieldParser } from '../IOtpFieldParser';
 import { KdbxUtils } from '../../../common/utils/KdbxUtils';
 
 /**
- * KeeTrayTotp 关联字段映射
- */
-const ASSOCIATED_FIELDS: Map<string, string[]> = new Map([
-  ['TOTP Seed', ['TOTP Settings']],
-]);
-
-/**
  * KeeTrayTotpParser - KeeTrayTotp 字段解析器
  */
 export class KeeTrayTotpParser implements IOtpFieldParser {
   readonly name = 'KeeTrayTotpParser';
   readonly priority = 30;
-  readonly associatedFields = ASSOCIATED_FIELDS;
 
   /**
    * 判断是否能解析该字段

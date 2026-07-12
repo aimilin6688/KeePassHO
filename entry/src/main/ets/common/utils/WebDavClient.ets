@@ -4,7 +4,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError, request } from '@kit.BasicServicesKit';
 import { ByteUtils } from 'kdbxweb';
 import { CommonUtils, ResourceManager, StringUtils } from '.';
-import { CertValidationMode } from '../../storage/webdav/WebDAVConfig';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';
@@ -53,10 +52,6 @@ export interface WebDavClientOptions {
   url: string;
   username: string;
   password: string;
-  /** SSL 证书验证模式 */
-  certValidationMode?: CertValidationMode;
-  /** 自定义 CA 证书内容（PEM 格式） */
-  customCaCertContent?: string;
 }
 
 
@@ -78,47 +73,6 @@ export class WebDavClient {
     }
   }
 
-  /**
-   * 构建安全配置
-   * @returns rcp 安全配置
-   */
-  private buildSecurityConfig(): rcp.SecurityConfiguration {
-    const mode = this.config?.certValidationMode || CertValidationMode.SYSTEM;
-
-    let remoteValidation: 'system' | 'skip' | rcp.CertificateAuthority;
-
-    switch (mode) {
-      case CertValidationMode.SKIP:
-        remoteValidation = 'skip';
-        break;
-      case CertValidationMode.CUSTOM_CA:
-        if (this.config?.customCaCertContent) {
-          remoteValidation = {
-            content: this.config.customCaCertContent
-          } as rcp.CertificateAuthority;
-        } else {
-          // 未提供证书时回退到系统验证
-          remoteValidation = 'system';
-        }
-        break;
-      case CertValidationMode.SYSTEM:
-      default:
-        remoteValidation = 'system';
-        break;
-    }
-
-    return {
-      remoteValidation: remoteValidation,
-      serverAuthentication: {
-        credential: {
-          username: this.config?.username ?? '',
-          password: this.config?.password ?? ''
-        },
-        authenticationType: "basic"
-      }
-    };
-  }
-
   public updateOptions(options: WebDavClientOptions) {
     this.config = options;
     this.close();
@@ -130,7 +84,15 @@ export class WebDavClient {
           transfer: {
             timeout: { connectMs: 3000 }
           },
-          security: this.buildSecurityConfig()
+          security: {
+            serverAuthentication: {
+              credential: {
+                username: this.config.username,
+                password: this.config.password
+              },
+              authenticationType: "basic"
+            }
+          }
         }
       });
     } catch (error) {

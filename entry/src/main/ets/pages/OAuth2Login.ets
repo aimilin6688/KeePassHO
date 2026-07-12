@@ -6,7 +6,7 @@ const DOMAIN = 0x0000;
 const TAG = 'OAuth2Login';
 
 /**
- * Code Flow 授权结果
+ * 授权结果
  */
 export interface AuthResult {
   /**
@@ -17,60 +17,6 @@ export interface AuthResult {
    * 状态参数
    */
   state: string;
-  /**
-   * 错误信息（如用户拒绝授权）
-   */
-  error?: string;
-}
-
-/**
- * Token Flow (Implicit) 授权结果
- * 适用于 pCloud 等支持 Implicit Grant 的 OAuth2 提供者
- */
-export interface TokenFlowResult {
-  /**
-   * 访问令牌
-   */
-  accessToken: string;
-  /**
-   * 令牌类型
-   */
-  tokenType: string;
-  /**
-   * 用户ID
-   */
-  uid?: string;
-  /**
-   * 状态参数
-   */
-  state?: string;
-  /**
-   * 数据中心位置ID（pCloud 特有）
-   */
-  locationid?: string;
-  /**
-   * API服务器主机名（pCloud 特有）
-   */
-  hostname?: string;
-  /**
-   * 错误信息
-   */
-  error?: string;
-}
-
-/**
- * 统一的授权回调结果
- * 支持 Code Flow 和 Token Flow 两种模式
- */
-export interface AuthCallbackResult {
-  /**
-   * Code Flow 结果
-   */
-  codeFlow?: AuthResult;
-  /**
-   * Token Flow 结果
-   */
-  tokenFlow?: TokenFlowResult;
 }
 
 /**
@@ -96,21 +42,31 @@ interface WebPageEvent {
 @Entry
 @Component
 struct OAuth2Login {
+  /**
+   * OAuth2配置
+   */
   @State oauth2Config: OAuth2Config = {
     redirectUri: ''
   };
+  /**
+   * 授权URL
+   */
   @State authUrl: string = '';
-  @State pageTitle: ResourceStr = $r('app.string.oauth2_page_title');
-  @State isLoading: boolean = true;
-  @State hasError: boolean = false;
-  @State errorMessage: ResourceStr = '';
+  /**
+   * Web控制器
+   */
   private webviewController: webview.WebviewController = new webview.WebviewController();
+  /**
+   * 路由
+   */
   private router: Router = this.getUIContext().getRouter();
+  /**
+   * 是否已完成授权
+   */
   private authCompleted: boolean = false;
-  private loadTimeout: number = 0;
-  private readonly LOAD_TIMEOUT_MS: number = 30000;
 
   aboutToAppear(): void {
+    // 获取页面参数
     const state = this.router.getState();
     if (state && state.params) {
       const params = state.params as Record<string, Object>;
@@ -121,11 +77,9 @@ struct OAuth2Login {
         if (params['authUrl']) {
           this.authUrl = params['authUrl'] as string;
         }
-        if (params['pageTitle']) {
-          this.pageTitle = params['pageTitle'] as string;
-        }
       }
     }
+    
     hilog.info(DOMAIN, TAG, `OAuth2Login initialized with authUrl: ${this.authUrl}`);
   }
 
@@ -142,7 +96,7 @@ struct OAuth2Login {
             this.router.back();
           })
 
-        Text(this.pageTitle)
+        Text('OneDrive 授权')
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
           .margin({ left: 16 })
@@ -152,99 +106,27 @@ struct OAuth2Login {
       .height(40)
       .backgroundColor($r('app.color.card_bg'))
 
-      // 主要内容区域（使用 Stack 叠加）
-      Stack() {
-        // Web组件（始终存在）
-        Web({
-          src: this.authUrl,
-          controller: this.webviewController
+      // Web组件
+      Web({
+        src: this.authUrl,
+        controller: this.webviewController
+      })
+        .domStorageAccess(true)
+        .javaScriptAccess(true)
+        .mixedMode(MixedMode.All)
+        .cacheMode(CacheMode.Default)
+        .onPageEnd((event?: WebPageEvent) => {
+          if (event && event.url) {
+            hilog.info(DOMAIN, TAG, `Page loaded: ${event.url}`);
+            this.handleUrlChange(event.url);
+          }
         })
-          .domStorageAccess(true)
-          .javaScriptAccess(true)
-          .mixedMode(MixedMode.All)
-          .cacheMode(CacheMode.Default)
-          .onPageBegin((event?: WebPageEvent) => {
-            if (event && event.url) {
-              this.isLoading = true;
-              this.hasError = false;
-              this.clearLoadTimeout();
-              this.loadTimeout = setTimeout(() => {
-                if (this.isLoading && !this.hasError) {
-                  this.hasError = true;
-                  this.isLoading = false;
-                  this.errorMessage = $r('app.string.oauth2_page_load_timeout');
-                }
-              }, this.LOAD_TIMEOUT_MS);
-            }
-          })
-          .onPageEnd((event?: WebPageEvent) => {
-            if (event && event.url) {
-              this.clearLoadTimeout();
-              this.isLoading = false;
-              this.hasError = false;
-              this.handleUrlChange(event.url);
-            }
-          })
-          .onErrorReceive((event) => {
-            hilog.warn(DOMAIN, TAG, `Web resource error: ${event.error.getErrorInfo()}`);
-          })
-          .onHttpErrorReceive(() => {
-            hilog.warn(DOMAIN, TAG, 'HTTP error received');
-          })
-          .width('100%')
-          .height('100%')
-
-        // 加载状态提示（覆盖在 WebView 上方）
-        if (this.isLoading && !this.hasError) {
-          Column() {
-            LoadingProgress()
-              .width(50)
-              .height(50)
-              .color($r('app.color.text_primary'))
-
-            Text($r('app.string.oauth2_page_loading'))
-              .fontSize(14)
-              .margin({ top: 16 })
-              .fontColor($r('app.color.text_secondary'))
-          }
-          .width('100%')
-          .height('100%')
-          .justifyContent(FlexAlign.Center)
-          .backgroundColor($r('app.color.bg_primary'))
-        }
-
-        // 错误状态（覆盖在 WebView 上方）
-        if (this.hasError) {
-          Column() {
-            Text('⚠️')
-              .fontSize(48)
-              .margin({ bottom: 16 })
-
-            Text(this.errorMessage)
-              .fontSize(14)
-              .textAlign(TextAlign.Center)
-              .fontColor($r('app.color.error'))
-              .margin({ bottom: 24 })
-              .width('80%')
-
-            Button($r('app.string.retry_button_text'))
-              .width(120)
-              .height(40)
-              .backgroundColor($r('app.color.button_bg_blue'))
-              .fontColor($r('app.color.button_text_blue'))
-              .onClick(() => {
-                this.retryLoading();
-              })
-          }
-          .width('100%')
-          .height('100%')
-          .justifyContent(FlexAlign.Center)
-          .padding(16)
-          .backgroundColor($r('app.color.bg_primary'))
-        }
-      }
-      .layoutWeight(1)
-      .width('100%')
+        .onErrorReceive((event) => {
+          hilog.error(DOMAIN, TAG, `Web error: ${event.error.getErrorInfo()}`);
+        })
+        .layoutWeight(1)
+        .width('100%')
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     }
     .width('100%')
     .height('100%')
@@ -253,173 +135,77 @@ struct OAuth2Login {
 
   /**
    * 处理URL变化
-   * 支持 Code Flow（?code=xxx）和 Token Flow（#access_token=xxx）
+   * @param url 当前URL
    */
   private handleUrlChange(url: string): void {
     if (this.authCompleted) {
       return;
     }
 
-    if (!url.startsWith(this.oauth2Config.redirectUri)) {
-      return;
-    }
-
-    hilog.info(DOMAIN, TAG, `Redirect detected: ${url}`);
-    this.authCompleted = true;
-
-    // 检查是否有错误
-    const error = this.extractErrorFromUrl(url);
-    if (error) {
-      hilog.warn(DOMAIN, TAG, `Auth error: ${error}`);
-      AppStorage.setOrCreate('oauth2_auth_result', {
-        codeFlow: { code: '', state: '', error: error }
-      } as AuthCallbackResult);
-      this.router.back();
-      return;
-    }
-
-    // 优先检查 Token Flow（fragment 中有 access_token）
-    const tokenFlowResult = this.extractTokenFromFragment(url);
-    if (tokenFlowResult) {
-      hilog.info(DOMAIN, TAG, `Token Flow completed`);
-      AppStorage.setOrCreate('oauth2_auth_result', {
-        tokenFlow: tokenFlowResult
-      } as AuthCallbackResult);
-      this.router.back();
-      return;
-    }
-
-    // 检查 Code Flow（query 中有 code）
-    const code = this.extractQueryParam(url, 'code');
-    if (code) {
-      const state = this.extractQueryParam(url, 'state') || '';
-      hilog.info(DOMAIN, TAG, `Code Flow completed`);
-      AppStorage.setOrCreate('oauth2_auth_result', {
-        codeFlow: { code: code, state: state }
-      } as AuthCallbackResult);
-      this.router.back();
-    }
-  }
-
-  /**
-   * 从URL中提取错误信息
-   * 同时检查 query 参数和 fragment
-   */
-  private extractErrorFromUrl(url: string): string | undefined {
-    // 检查 query 参数
-    const queryError = this.extractQueryParam(url, 'error');
-    if (queryError) {
-      return queryError;
-    }
-
-    // 检查 fragment
-    const fragmentIndex = url.indexOf('#');
-    if (fragmentIndex >= 0) {
-      const fragment = url.substring(fragmentIndex + 1);
-      const params = this.parseParams(fragment);
-      const fragmentError = params.get('error');
-      if (fragmentError) {
-        return fragmentError;
+    // 检查是否是重定向URI
+    if (url.startsWith(this.oauth2Config.redirectUri)) {
+      hilog.info(DOMAIN, TAG, `Redirect detected: ${url}`);
+      
+      // 提取授权码和状态
+      const code = this.extractCodeFromUrl(url);
+      const state = this.extractStateFromUrl(url);
+      
+      if (code) {
+        this.authCompleted = true;
+        
+        // 使用AppStorage存储授权结果，然后返回
+        AppStorage.setOrCreate('oauth2_auth_result', {
+          code: code,
+          state: state || ''
+        } as AuthResult);
+        
+        this.router.back();
+        hilog.info(DOMAIN, TAG, `Auth completed, code length: ${code.length}`);
       }
     }
-
-    return undefined;
   }
 
   /**
-   * 从 URL fragment 中提取 Token Flow 结果
+   * 从URL中提取授权码
+   * @param url URL
+   * @returns 授权码
    */
-  private extractTokenFromFragment(url: string): TokenFlowResult | undefined {
-    const fragmentIndex = url.indexOf('#');
-    if (fragmentIndex < 0) {
+  private extractCodeFromUrl(url: string): string | undefined {
+    if (!url || url.trim().length === 0) {
       return undefined;
     }
 
-    const fragment = url.substring(fragmentIndex + 1);
-    if (!fragment || fragment.trim().length === 0) {
-      return undefined;
-    }
-
-    const params = this.parseParams(fragment);
-    const accessToken = params.get('access_token');
-    if (!accessToken || accessToken.trim().length === 0) {
-      return undefined;
-    }
-
-    hilog.info(DOMAIN, TAG, `Token extracted from fragment`);
-    return {
-      accessToken: accessToken,
-      tokenType: params.get('token_type') || 'bearer',
-      uid: params.get('uid'),
-      state: params.get('state'),
-      locationid: params.get('locationid'),
-      hostname: params.get('hostname')
-    };
-  }
-
-  /**
-   * 从 URL query 中提取指定参数
-   */
-  private extractQueryParam(url: string, paramName: string): string | undefined {
-    const regex = new RegExp(`[?&]${paramName}=([^&]+)`);
-    const match = url.match(regex);
-    if (match && match[1]) {
-      try {
+    try {
+      const match = url.match(/[?&]code=([^&]+)/);
+      if (match && match[1]) {
         return decodeURIComponent(match[1]);
-      } catch (e) {
-        return match[1];
       }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to extract code: ${(error as Error).message}`);
     }
+
     return undefined;
   }
 
   /**
-   * 解析参数字符串为 Map
+   * 从URL中提取状态参数
+   * @param url URL
+   * @returns 状态参数
    */
-  private parseParams(paramString: string): Map<string, string> {
-    const params = new Map<string, string>();
-    const pairs = paramString.split('&');
+  private extractStateFromUrl(url: string): string | undefined {
+    if (!url || url.trim().length === 0) {
+      return undefined;
+    }
 
-    for (const pair of pairs) {
-      const equalIndex = pair.indexOf('=');
-      if (equalIndex > 0) {
-        const key = pair.substring(0, equalIndex);
-        const value = pair.substring(equalIndex + 1);
-        try {
-          params.set(decodeURIComponent(key), decodeURIComponent(value));
-        } catch (e) {
-          params.set(key, value);
-        }
+    try {
+      const match = url.match(/[?&]state=([^&]+)/);
+      if (match && match[1]) {
+        return decodeURIComponent(match[1]);
       }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `Failed to extract state: ${(error as Error).message}`);
     }
 
-    return params;
-  }
-
-  /**
-   * 手动重试加载
-   */
-  private retryLoading(): void {
-    this.hasError = false;
-    this.isLoading = true;
-    this.clearLoadTimeout();
-    this.webviewController.refresh();
-  }
-
-  /**
-   * 清除加载超时定时器
-   */
-  private clearLoadTimeout(): void {
-    if (this.loadTimeout !== 0) {
-      clearTimeout(this.loadTimeout);
-      this.loadTimeout = 0;
-    }
-  }
-
-  /**
-   * 页面即将消失时清理
-   */
-  aboutToDisappear(): void {
-    this.clearLoadTimeout();
+    return undefined;
   }
 }

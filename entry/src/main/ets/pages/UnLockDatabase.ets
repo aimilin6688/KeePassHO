@@ -1,13 +1,12 @@
 import { FileService } from '../services/FileService';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
-import { AuthType, DbFileParam } from '../services/TypeDefined';
+import { AuthType, DbFileParam, UnLockDatabaseParam } from '../services/TypeDefined';
+import { Router } from '@kit.ArkUI';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { CommonUtils, WindowUtils } from '../common/utils';
 import { common } from '@kit.AbilityKit';
-import { LockScreenService } from '../services/LockScreenService';
-import { EventBus } from '../services/EventBus';
 
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
@@ -21,13 +20,16 @@ struct UnLockDatabase {
   @State isKeyfileOnlyMode: boolean = false; // 是否为仅密钥文件模式
   private isLocked: boolean = false; // 是否为锁定状态（从锁定按钮进入）
   private dbFileParam: DbFileParam = FileService.getDbFileParam();
+  private router: Router = this.getUIContext().getRouter();
   private isFingerprintSupport: boolean = AuthService.isFingerprintSupportAndEnabled();
   private isFaceSupport: boolean = AuthService.isFaceSupportAndEnabled();
   private focusController: FocusController = new FocusController();
 
   aboutToAppear(): void {
-    // 从 AppStorage 读取锁定标记，替代 router.getParams()
-    this.isLocked = AppStorage.get<boolean>('lockIsManual') ?? false;
+    // 获取路由参数，判断是否为锁定状态
+    const params = this.router.getParams() as UnLockDatabaseParam;
+    this.isLocked = params?.isLocked ?? false;
+    this.router.clear();
   }
 
   onPageShow(): void {
@@ -49,14 +51,6 @@ struct UnLockDatabase {
   }
 
   /**
-   * 解锁成功后导航。
-   * 通过 EventBus 通知 LockScreenService 销毁子窗口，恢复主窗口
-   */
-  private navigateAfterUnlock(): void {
-    EventBus.emit(LockScreenService.EVENT_LOCK_ACTION, 'unlock');
-  }
-
-  /**
    * 快速解锁
    */
   private quickUnlock() {
@@ -72,7 +66,7 @@ struct UnLockDatabase {
     // 密码长度 <= 快速解锁密码要求长度
     if (password.length <= this.quickLockPasswordLength) {
       if (password.lastIndexOf(this.quickPassword) != -1) {
-        return this.navigateAfterUnlock();
+        return CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       } else {
         CommonUtils.showToast({ message: $r('app.string.password_error') });
         return;
@@ -84,7 +78,7 @@ struct UnLockDatabase {
       return;
     }
     if (password.lastIndexOf(this.quickPassword) != -1) {
-      return this.navigateAfterUnlock();
+      return CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
     } else {
       CommonUtils.showToast({ message: $r('app.string.password_error') });
       return;
@@ -93,7 +87,7 @@ struct UnLockDatabase {
 
   private closeDatabase() {
     FileService.close();
-    EventBus.emit(LockScreenService.EVENT_LOCK_ACTION, 'close_database');
+    CommonUtils.pushUrl({ url: 'pages/Index' });
   }
 
   /**
@@ -156,7 +150,7 @@ struct UnLockDatabase {
   private authServiceCallback() {
     return {
       onSuccess: (result) => {
-        this.navigateAfterUnlock();
+        CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
@@ -324,7 +318,7 @@ struct UnLockDatabase {
         right: 16
       })
       .position({ x: 0, y: '100%' })
-      .translate({ y: -70 }) // 调整位置，确保正确显示
+      .translate({ y: -45 }) // 调整位置，确保正确显示
     }
     .width('100%')
     .height('100%')

@@ -1,6 +1,7 @@
-import { SaveKdbxParam, ExportType, FileContent } from './TypeDefined';
+import { SaveKdbxParam } from './TypeDefined';
 import { Router } from '@kit.ArkUI';
 import { RecentFilesService } from './RecentFilesService';
+import { KdbxExportService } from './kdbx/KdbxExportService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
@@ -9,7 +10,6 @@ import { DateUtils, CommonUtils } from '../common/utils';
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { SettingsService } from './SettingsService';
-import { CsvExportHandler } from './importExport/handlers/export/CsvExportHandler';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
@@ -22,7 +22,7 @@ export class DataService {
    * 保存数据库
    */
   public static saveKdbx(param: SaveKdbxParam): Promise<void> {
-    return DataService.getFileContent(param).then(result => {
+    return KdbxExportService.getFileContent(param).then(result => {
       LoadingDialog.showLoading($r("app.string.handling"));
       const location = param.locationInfo;
       return new KdbxFileManager(location.storageType, location.storageConfig).write(location.filePath, result.content);
@@ -31,42 +31,6 @@ export class DataService {
       LoadingDialog.hideLoading();
       CommonUtils.showToast(error.message);
     });
-  }
-
-  /**
-   * 创建导出文件内容
-   * @param param 保存参数
-   */
-  public static getFileContent(param: SaveKdbxParam): Promise<FileContent> {
-    const kdbx = param.kdbx;
-    const exportType = param.exportType;
-    const location = param.locationInfo;
-
-    if (kdbx) {
-      if (ExportType.KDBX === exportType) {
-        return kdbx.save().then(result => {
-          return new FileContent(location.filePath, result);
-        });
-      }
-      if (ExportType.XML === exportType) {
-        return kdbx.saveXml(true, true).then(result => {
-          return new FileContent(location.filePath, ByteUtils.stringToBuffer(result));
-        });
-      }
-      if (ExportType.CSV === exportType) {
-        // 使用新的导出处理器
-        const handler = new CsvExportHandler();
-        return handler.export(kdbx).then(result => {
-          return new FileContent(location.filePath, result);
-        });
-      }
-    }
-    if (ExportType.CREATE_KEY === exportType) {
-      return KdbxCredentials.createRandomKeyFile().then(result => {
-        return new FileContent(location.filePath, ByteUtils.bytesToBuffer(result));
-      });
-    }
-    return Promise.reject(new Error('Unsupported export type'));
   }
 
   /**

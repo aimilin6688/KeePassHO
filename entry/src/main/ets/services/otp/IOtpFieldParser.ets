@@ -22,12 +22,6 @@ export interface IOtpFieldParser {
   readonly priority: number;
 
   /**
-   * 关联字段列表（当主字段被解析时，这些字段也应该被隐藏）
-   * key: 主字段名，value: 关联字段名列表
-   */
-  readonly associatedFields?: Map<string, string[]>;
-
-  /**
    * 判断是否能解析该字段
    * @param fieldName 字段名称
    * @param fieldValue 字段值
