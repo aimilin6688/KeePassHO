@@ -10,7 +10,7 @@ import { common } from '@kit.AbilityKit';
 import { createOneDriveOAuth2Config, OneDriveOAuth2Provider } from './OneDriveOAuth2Provider';
 import { OAuth2AuthRequest, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
-import { AuthCallbackResult } from '../../pages/OAuth2Login';
+import { AuthResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDrive';
@@ -38,10 +38,10 @@ struct OneDrive {
     hilog.debug(DOMAIN, TAG, 'OneDrivePage onPageAppear');
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
     // 检查是否有从OAuth2登录页返回的授权结果
-    const authResult = AppStorage.get<AuthCallbackResult>('oauth2_auth_result');
-    if (authResult && authResult.codeFlow && authResult.codeFlow.code) {
-      hilog.info(DOMAIN, TAG, `Received auth result with code length: ${authResult.codeFlow.code.length}`);
-      this.handleAuthCallback(authResult.codeFlow.code, authResult.codeFlow.state);
+    const authResult = AppStorage.get<AuthResult>('oauth2_auth_result');
+    if (authResult && authResult.code) {
+      hilog.info(DOMAIN, TAG, `Received auth result with code length: ${authResult.code.length}`);
+      this.handleAuthCallback(authResult.code, authResult.state);
       // 清除存储的授权结果
       AppStorage.delete('oauth2_auth_result');
     }
@@ -135,8 +135,7 @@ struct OneDrive {
       url: 'pages/OAuth2Login',
       params: {
         authUrl: authUrl,
-        oauth2Config: this.oauth2Provider!.getConfig(),
-        pageTitle: 'OneDrive 授权'
+        oauth2Config: this.oauth2Provider!.getConfig()
       }
     });
   }

@@ -34,7 +34,7 @@ export class CacheConstants {
    */
   static getCacheDir(): string {
     const context = CommonUtils.getContext();
-    return context.getApplicationContext().filesDir + '/' + CacheConstants.CACHE_DIR_NAME;
+    return context.getApplicationContext().cacheDir + '/' + CacheConstants.CACHE_DIR_NAME;
   }
 
   /**
