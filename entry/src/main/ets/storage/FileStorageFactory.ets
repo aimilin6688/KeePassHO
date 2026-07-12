@@ -3,9 +3,7 @@ import { LocalFileStorage } from './local/LocalFileStorage';
 import { WebDAVStorage } from './webdav/WebDAVStorage';
 import { OneDriveStorage } from './onedrive/OneDriveStorage';
 import { FTPStorage } from './ftp/FTPStorage';
-import { S3Storage } from './s3/S3Storage';
 import { CacheStorage } from './cache/CacheStorage';
-import {PCloudStorage} from './pcloud/PCloudStorage'
 
 /**
  * 文件存储工厂类
@@ -21,9 +19,7 @@ export class FileStorageFactory {
   private constructor() {
     this.registerStorage(StorageType.LOCAL, new LocalFileStorage());
     this.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
-    this.registerStorage(StorageType.S3, new S3Storage());
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
-    // this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
   }
 

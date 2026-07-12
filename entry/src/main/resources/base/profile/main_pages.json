@@ -27,8 +27,6 @@
     "storage/webdav/WebDAVPage",
     "storage/onedrive/OneDrivePage",
     "storage/ftp/FTPPage",
-    "storage/s3/S3Page",
-    "storage/pcloud/PCloudPage",
     "pages/OAuth2Login"
   ]
 }

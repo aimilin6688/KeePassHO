@@ -13,7 +13,6 @@ import { DistributedKVService } from '../services/store/DistributedKVService';
 import { SyncSettingsService } from '../services/store/SyncSettingsService';
 import { DialogHelper } from '@pura/harmony-dialog';
 import { CrashLogService } from '../services/CrashLogService';
-import { LockScreenService } from '../services/LockScreenService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -28,11 +27,9 @@ export default class EntryAbility extends UIAbility {
   private backgroundTime: number = 0;
   private createUrl: string | undefined = undefined;
   private windowStage: window.WindowStage | undefined = undefined;
-  public static instance: EntryAbility | null = null;
 
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     hilog.info(DOMAIN, TAG, 'Ability onCreate %{public}s', want.uri);
-    EntryAbility.instance = this;
     this.createUrl = want.uri;
     // 将 context 存入 AppStorage 供其他组件使用
     AppStorage.setOrCreate('context', this.context);
@@ -117,7 +114,6 @@ export default class EntryAbility extends UIAbility {
 
   onDestroy(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onDestroy');
-    EntryAbility.instance = null;
     FileService.close();
     DistributedKVService.close();
     // 取消订阅崩溃事件
@@ -127,14 +123,6 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageCreate');
     this.windowStage = windowStage;
-
-    // 初始化锁屏服务
-    LockScreenService.init(windowStage, (action: string) => {
-      if (action === 'close_database') {
-        this.openPage('pages/Index');
-      }
-    });
-
     // 通过URL打开数据库
     if (this.createUrl) {
       this.openDatabase(this.createUrl);
@@ -145,7 +133,6 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageDestroy(): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageDestroy');
-    LockScreenService.destroy();
     this.windowStage = undefined;
     this.createUrl = undefined;
   }
@@ -167,8 +154,6 @@ export default class EntryAbility extends UIAbility {
     let uri = want.uri;
     hilog.info(DOMAIN, TAG, 'Ability onNewWant: %{public}s', uri);
     if (this.windowStage && uri) {
-      FileService.close();
-      LockScreenService.closeLockWindow();
       this.openDatabase(uri);
     }
   }
@@ -252,9 +237,10 @@ export default class EntryAbility extends UIAbility {
     }
     const elapsed = new Date().getTime() - this.backgroundTime;
     const autoLockTime = SettingsService.getSync(SettingsService.KEY_SECURITY_AUTO_LOCK_TIME, SettingsService.KEY_SECURITY_AUTO_LOCK_TIME_DEFAULT);
-    // 检查是否超过设定时间
+    // 检查是否超过30秒
     if (autoLockTime > 0 && elapsed >= autoLockTime * 1000) {
-      await LockScreenService.showLockWindow(false);
+      // 显示解锁界面
+      this.openPage('pages/UnLockDatabase');
     }
   }
 }
