@@ -9,7 +9,7 @@
     "kdbxweb": "file:../kdbxweb",
     "@hw-agconnect/petal-aegis": "^1.4.11-300",
     "@ohos/basic-ftp": "^1.0.3",
-    "@ohos/axios": "^2.2.6",
+    "@ohos/axios": "^2.2.12",
     "@ohos-rs/ssh": "^0.0.1",
     "@pura/harmony-dialog": "^1.1.8",
     "@ohos/pinyin4js": "^2.0.2"
