@@ -1,7 +1,6 @@
 import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
-import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
@@ -18,9 +17,17 @@ import { common } from '@kit.AbilityKit';
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
 
+// EntryEdit页面的Builder函数
+@Builder
+export function EntryEditBuilder(name: string, param: Object): void {
+  EntryEdit({ entryParam: param as EntryParam })
+}
+
 @Entry
 @Component
 struct EntryEdit {
+  @Prop navPathStack: NavPathStack;
+  private entryParam: EntryParam | undefined = undefined;
   @State title: string = '';
   @State username: string = '';
   @State password: string = '';
@@ -53,7 +60,6 @@ struct EntryEdit {
   private entry: KdbxEntry | null = null;
   private standardFields: Array<string> =
     [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
-  private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   // 自定义字段对话框控制器
   private fieldDialogController: CustomDialogController = new CustomDialogController({
@@ -152,88 +158,89 @@ struct EntryEdit {
     this.database = params.database ?? null;
 
     // 获取路由参数
-    const routeParams = this.router.getParams() as EntryParam;
-
-    if (!this.database) {
-      CommonUtils.showToast({
-        message: $r("app.string.invalid_database"),
-        duration: 2000
-      });
-      this.router.back();
-      return;
-    }
-
-    // 获取父分组
-    if (routeParams.groupId) {
-      this.parentGroup = this.database.getGroup(routeParams.groupId);
-      if (!this.parentGroup) {
+    if (this.entryParam) {
+      // 处理参数
+      if (!this.database) {
         CommonUtils.showToast({
-          message: $r("app.string.invalid_group"),
+          message: $r("app.string.invalid_database"),
           duration: 2000
         });
-        this.router.back();
-        return;
-      }
-    } else {
-      this.parentGroup = this.database.getDefaultGroup();
-    }
-
-    // 判断是编辑模式还是添加模式
-    if (routeParams.entryId && routeParams.groupId) {
-      this.isEditMode = true;
-      this.pageTitle = ResourceManager.getString($r("app.string.edit_entry"));
-
-
-      // 使用KdbxUtils.getEntry方法获取现有条目
-      this.entry = KdbxUtils.getEntry(this.database, routeParams.groupId, routeParams.entryId);
-
-      if (!this.entry) {
-        CommonUtils.showToast({
-          message: $r('app.string.invalid_entry_message'),
-          duration: 2000
-        });
-        this.router.back();
+        this.navPathStack.pop();
         return;
       }
 
-      // 加载条目数据
-      this.title = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE);
-      this.username = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_USERNAME);
-      this.password = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD);
-      this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
-      this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
-      this.overrideUrl = this.entry.overrideUrl;
-
-      // 加载标签
-      this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
-
-      // 加载标签
-      if (this.entry.tags && this.entry.tags.length > 0) {
-        this.tags = this.entry.tags.join(', ');
+      // 获取父分组
+      if (this.entryParam.groupId) {
+        this.parentGroup = this.database.getGroup(this.entryParam.groupId);
+        if (!this.parentGroup) {
+          CommonUtils.showToast({
+            message: $r("app.string.invalid_group"),
+            duration: 2000
+          });
+          this.navPathStack.pop();
+          return;
+        }
+      } else {
+        this.parentGroup = this.database.getDefaultGroup();
       }
 
-      // 加载图标ID
-      this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
+      // 判断是编辑模式还是添加模式
+      if (this.entryParam.entryId && this.entryParam.groupId) {
+        this.isEditMode = true;
+        this.pageTitle = ResourceManager.getString($r("app.string.edit_entry"));
 
-      // 加载颜色
-      this.fgColor = this.entry.fgColor;
-      this.bgColor = this.entry.bgColor;
 
-      // 过期时间
-      this.expiryTime = this.entry.times.expiryTime;
-      this.isExpiryEnabled = this.entry.times.expires;
+        // 使用KdbxUtils.getEntry方法获取现有条目
+        this.entry = KdbxUtils.getEntry(this.database, this.entryParam.groupId, this.entryParam.entryId);
 
-      // 加载自定义字段
-      this.loadCustomFields();
+        if (!this.entry) {
+          CommonUtils.showToast({
+            message: $r('app.string.invalid_entry_message'),
+            duration: 2000
+          });
+          this.navPathStack.pop();
+          return;
+        }
 
-      // 加载附件
-      this.attachments = this.entry.binaries;
+        // 加载条目数据
+        this.title = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE);
+        this.username = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_USERNAME);
+        this.password = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_PASSWORD);
+        this.url = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_URL);
+        this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
+        this.overrideUrl = this.entry.overrideUrl;
 
-      // 检验是否修改了
-      this.isModified = false;
-    } else {
-      this.isEditMode = false;
-      this.username = this.database.meta.defaultUser || '';
+        // 加载标签
+        this.notes = KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_NOTES);
+
+        // 加载标签
+        if (this.entry.tags && this.entry.tags.length > 0) {
+          this.tags = this.entry.tags.join(', ');
+        }
+
+        // 加载图标ID
+        this.iconId = this.entry.customIcon ? this.entry.customIcon.id : this.entry.icon;
+
+        // 加载颜色
+        this.fgColor = this.entry.fgColor;
+        this.bgColor = this.entry.bgColor;
+
+        // 过期时间
+        this.expiryTime = this.entry.times.expiryTime;
+        this.isExpiryEnabled = this.entry.times.expires;
+
+        // 加载自定义字段
+        this.loadCustomFields();
+
+        // 加载附件
+        this.attachments = this.entry.binaries;
+
+        // 检验是否修改了
+        this.isModified = false;
+      } else {
+        this.isEditMode = false;
+        this.username = this.database.meta.defaultUser || '';
+      }
     }
   }
 
@@ -245,7 +252,7 @@ struct EntryEdit {
     if (this.isModified) {
       CommonUtils.showUnSaveConfirm(this.getUIContext(), {
         onConfirm: () => {
-          this.router.back();
+          this.navPathStack.pop();
         }
       });
       return true;
@@ -452,7 +459,7 @@ struct EntryEdit {
           let timeOut = setTimeout(() => {
             this.isLoading = false;
             this.loadingDialogController.close();
-            this.router.back();
+            this.navPathStack.pop();
             clearTimeout(timeOut);
           }, 150);
         },
@@ -881,7 +888,7 @@ struct EntryEdit {
             .margin({ left: 16 })
             .fillColor($r('app.color.text_primary'))
             .onClick(() => {
-              this.router.back();
+              this.navPathStack.pop();
             })
 
           Text(this.pageTitle)

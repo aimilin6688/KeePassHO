@@ -5,6 +5,12 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN = 0x0000;
 const TAG = 'OAuth2Login';
 
+// OAuth2Login页面的Builder函数
+@Builder
+export function OAuth2LoginBuilder(name: string, param: Object): void {
+  OAuth2Login({ oauth2Config: (param as Record<string, Object>)?.['oauth2Config'] as OAuth2Config })
+}
+
 /**
  * Code Flow 授权结果
  */
@@ -96,6 +102,7 @@ interface WebPageEvent {
 @Entry
 @Component
 struct OAuth2Login {
+  @Prop navPathStack: NavPathStack;
   @State oauth2Config: OAuth2Config = {
     redirectUri: ''
   };
@@ -105,27 +112,12 @@ struct OAuth2Login {
   @State hasError: boolean = false;
   @State errorMessage: ResourceStr = '';
   private webviewController: webview.WebviewController = new webview.WebviewController();
-  private router: Router = this.getUIContext().getRouter();
   private authCompleted: boolean = false;
   private loadTimeout: number = 0;
   private readonly LOAD_TIMEOUT_MS: number = 30000;
 
   aboutToAppear(): void {
-    const state = this.router.getState();
-    if (state && state.params) {
-      const params = state.params as Record<string, Object>;
-      if (params) {
-        if (params['oauth2Config']) {
-          this.oauth2Config = params['oauth2Config'] as OAuth2Config;
-        }
-        if (params['authUrl']) {
-          this.authUrl = params['authUrl'] as string;
-        }
-        if (params['pageTitle']) {
-          this.pageTitle = params['pageTitle'] as string;
-        }
-      }
-    }
+    // 参数已通过 Builder 函数传递
     hilog.info(DOMAIN, TAG, `OAuth2Login initialized with authUrl: ${this.authUrl}`);
   }
 
@@ -139,7 +131,7 @@ struct OAuth2Login {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            this.navPathStack.pop();
           })
 
         Text(this.pageTitle)
@@ -274,7 +266,7 @@ struct OAuth2Login {
       AppStorage.setOrCreate('oauth2_auth_result', {
         codeFlow: { code: '', state: '', error: error }
       } as AuthCallbackResult);
-      this.router.back();
+      this.navPathStack.pop();
       return;
     }
 
@@ -285,7 +277,7 @@ struct OAuth2Login {
       AppStorage.setOrCreate('oauth2_auth_result', {
         tokenFlow: tokenFlowResult
       } as AuthCallbackResult);
-      this.router.back();
+      this.navPathStack.pop();
       return;
     }
 
@@ -297,7 +289,7 @@ struct OAuth2Login {
       AppStorage.setOrCreate('oauth2_auth_result', {
         codeFlow: { code: code, state: state }
       } as AuthCallbackResult);
-      this.router.back();
+      this.navPathStack.pop();
     }
   }
 

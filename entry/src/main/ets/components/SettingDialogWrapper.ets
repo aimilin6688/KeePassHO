@@ -13,15 +13,15 @@ export struct SettingDialogWrapper {
   @Prop title: ResourceStr = '';
   @Prop context: UIContext | null = null;
   @BuilderParam content: () => void;
-  @Prop onClose: () => void = () => {};
+  onClose: () => void = () => {};
 
-  @State width: string | number = SettingDialogConstants.DIALOG_MAX_WIDTH;
+  @State dialogWidth: string | number = SettingDialogConstants.DIALOG_MAX_WIDTH;
   @State isPercentage: boolean = false;
 
   aboutToAppear() {
     if (this.context) {
       const widthConfig = UIUtils.calculateDialogWidth(this.context);
-      this.width = widthConfig.width;
+      this.dialogWidth = widthConfig.width;
       this.isPercentage = widthConfig.isPercentage;
     }
   }
@@ -36,7 +36,7 @@ export struct SettingDialogWrapper {
 
         Blank()
 
-        Image($r('app.media.ic_close'))
+        Image($r('app.media.ic_clear'))
           .width(SettingDialogConstants.CLOSE_BUTTON_SIZE)
           .height(SettingDialogConstants.CLOSE_BUTTON_SIZE)
           .onClick(() => this.onClose())
@@ -62,13 +62,13 @@ export struct SettingDialogWrapper {
       }
       .layoutWeight(1)
     }
-    .width(this.width)
-    .maxHeight(SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO)
+    .width(this.dialogWidth)
+    .constraintSize({ maxHeight: SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO })
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(SettingDialogConstants.CORNER_RADIUS)
-    .shadow(this.isPercentage ? {} : {
+    .shadow(this.isPercentage ? ShadowStyle.OUTER_DEFAULT_SM : {
       radius: SettingDialogConstants.SHADOW_RADIUS,
-      color: $r('app.color.shadow'),
+      color: Color.Gray,
       offsetX: 0,
       offsetY: SettingDialogConstants.SHADOW_OFFSET_Y
     })

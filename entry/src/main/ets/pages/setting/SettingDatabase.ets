@@ -10,6 +10,12 @@ import {
 } from '../../services/importExport';
 import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/LocationParam';
 
+// SettingDatabase页面的Builder函数
+@Builder
+export function SettingDatabaseBuilder(name: string, param: Object): void {
+  SettingDatabase()
+}
+
 /**
  * 格式选择选项
  */
@@ -20,6 +26,7 @@ interface FormatSelectOption {
 
 @Component
 export struct SettingDatabase {
+  @Prop navPathStack: NavPathStack;
   @State isDatabaseValid: boolean = false;
   @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));
 
@@ -28,7 +35,6 @@ export struct SettingDatabase {
   @State exportFormats: FormatInfo[] = [];
   @State isLoading: boolean = false;
 
-  private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   private viewModel: ImportExportViewModel = new ImportExportViewModel();
 

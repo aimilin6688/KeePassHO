@@ -21,5 +21,3 @@ export * from './WebImageDownloader';
 export * from './WindowUtils';
 export * from './ErrorUtils';
 export * from './UIUtils';
-export * from './PageConfigManager';
-export * from './NavigationManager';

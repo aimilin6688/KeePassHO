@@ -113,20 +113,20 @@ export class PageConstants {
    */
   static getHomePageNames(): string[] {
     return [
-      this.PAGE_INDEX,
-      this.PAGE_PASSWORD,
-      this.PAGE_RECENT_FILES,
-      this.PAGE_SELECT_LOCATION,
-      this.PAGE_CREATE_DATABASE,
-      this.PAGE_UNLOCK_DATABASE,
-      this.PAGE_CHANGE_PASSWORD,
-      this.PAGE_OAUTH2_LOGIN,
-      this.PAGE_LOCAL_FILE,
-      this.PAGE_WEBDAV,
-      this.PAGE_ONEDRIVE,
-      this.PAGE_FTP,
-      this.PAGE_S3,
-      this.PAGE_PCLOUD
+      PageConstants.PAGE_INDEX,
+      PageConstants.PAGE_PASSWORD,
+      PageConstants.PAGE_RECENT_FILES,
+      PageConstants.PAGE_SELECT_LOCATION,
+      PageConstants.PAGE_CREATE_DATABASE,
+      PageConstants.PAGE_UNLOCK_DATABASE,
+      PageConstants.PAGE_CHANGE_PASSWORD,
+      PageConstants.PAGE_OAUTH2_LOGIN,
+      PageConstants.PAGE_LOCAL_FILE,
+      PageConstants.PAGE_WEBDAV,
+      PageConstants.PAGE_ONEDRIVE,
+      PageConstants.PAGE_FTP,
+      PageConstants.PAGE_S3,
+      PageConstants.PAGE_PCLOUD
     ];
   }
 
@@ -135,11 +135,11 @@ export class PageConstants {
    */
   static getDatabasePageNames(): string[] {
     return [
-      this.PAGE_DATABASE_VIEW,
-      this.PAGE_ENTRY_VIEW,
-      this.PAGE_ENTRY_EDIT,
-      this.PAGE_TOTP_VIEW,
-      this.PAGE_TEMPLATE_ENTRY_CREATE
+      PageConstants.PAGE_DATABASE_VIEW,
+      PageConstants.PAGE_ENTRY_VIEW,
+      PageConstants.PAGE_ENTRY_EDIT,
+      PageConstants.PAGE_TOTP_VIEW,
+      PageConstants.PAGE_TEMPLATE_ENTRY_CREATE
     ];
   }
 }

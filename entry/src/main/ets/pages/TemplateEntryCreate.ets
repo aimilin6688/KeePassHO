@@ -4,7 +4,6 @@
  */
 import { Kdbx, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { CommonUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
 import { Icons } from '../services/TypeDefined';
@@ -19,6 +18,18 @@ import { common } from '@kit.AbilityKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'TemplateEntryCreate';
+
+// 定义导航参数接口
+interface TemplateEntryCreateParam {
+  groupId?: string;
+  templateId?: string;
+}
+
+// TemplateEntryCreate页面的Builder函数
+@Builder
+export function TemplateEntryCreateBuilder(name: string, param: Object): void {
+  TemplateEntryCreate({ templateParam: param as TemplateEntryCreateParam })
+}
 
 /**
  * 模板字段数据
@@ -35,6 +46,8 @@ interface TemplateFieldData {
 @Entry
 @Component
 struct TemplateEntryCreate {
+  @Prop navPathStack: NavPathStack;
+  private templateParam: TemplateEntryCreateParam | undefined = undefined;
   @State title: string = '';
   @State template: ITemplate | null = null;
   @State templateName: ResourceStr = '';
@@ -49,7 +62,6 @@ struct TemplateEntryCreate {
 
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
-  private router: Router = this.getUIContext().getRouter();
   private templateService: TemplateService = TemplateService.getInstance();
 
   // 图标选择器对话框控制器
@@ -128,21 +140,18 @@ struct TemplateEntryCreate {
     const params = FileService.getInstance().getDbFileParam();
     this.database = params.database ?? null;
 
-    // 获取路由参数
-    const routeParams = this.router.getParams() as Record<string, Object>;
-
     if (!this.database) {
       CommonUtils.showToast({
         message: $r("app.string.invalid_database"),
         duration: 2000
       });
-      this.router.back();
+      this.navPathStack.pop();
       return;
     }
 
     // 获取父分组
-    if (routeParams['groupId']) {
-      this.parentGroup = this.database.getGroup(routeParams['groupId'] as string);
+    if (this.templateParam?.groupId) {
+      this.parentGroup = this.database.getGroup(this.templateParam.groupId);
     } else {
       this.parentGroup = this.database.getDefaultGroup();
     }
@@ -152,13 +161,13 @@ struct TemplateEntryCreate {
         message: $r("app.string.invalid_group"),
         duration: 2000
       });
-      this.router.back();
+      this.navPathStack.pop();
       return;
     }
 
     // 获取模板
-    const templateId = routeParams['templateId'] as string;
-    const isPreset = routeParams['isPreset'] as boolean;
+    const templateId = this.templateParam?.templateId;
+    const isPreset = (this.templateParam as Record<string, Object>)?.['isPreset'] as boolean;
 
     if (templateId) {
       if (isPreset) {
@@ -174,7 +183,7 @@ struct TemplateEntryCreate {
         message: $r('app.string.template_empty'),
         duration: 2000
       });
-      this.router.back();
+      this.navPathStack.pop();
       return;
     }
 
@@ -190,7 +199,7 @@ struct TemplateEntryCreate {
     if (this.isModified) {
       CommonUtils.showUnSaveConfirm(this.getUIContext(), {
         onConfirm: () => {
-          this.router.back();
+          this.navPathStack.pop();
         }
       });
       return true;
@@ -474,7 +483,7 @@ struct TemplateEntryCreate {
           setTimeout(() => {
             this.isLoading = false;
             this.loadingDialogController.close();
-            this.router.back();
+            this.navPathStack.pop();
           }, 150);
         },
         onMessage: (message: string) => {
@@ -509,7 +518,7 @@ struct TemplateEntryCreate {
             .margin({ left: 16 })
             .fillColor($r('app.color.text_primary'))
             .onClick(() => {
-              this.router.back();
+              this.navPathStack.pop();
             })
 
           Text(this.templateName)

@@ -1,4 +1,4 @@
-import { NavPathStack, PromptAction } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
@@ -7,17 +7,26 @@ import { common } from '@kit.AbilityKit';
 import { CommonUtils, WindowUtils } from '../common/utils';
 import { FileStorage, PageConfig } from '../storage';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
-import { NavigationManager } from '../common/utils/NavigationManager';
 import { PageConstants } from '../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
 
+// 定义导航参数接口
+interface PasswordNavParam {
+  filePath: string;
+}
+
+// RecentFiles页面的Builder函数
+@Builder
+export function RecentFilesBuilder(name: string, param: Object): void {
+  RecentFiles({ source: (param as Record<string, string>)?.source || 'home' })
+}
+
 @Component
 export struct RecentFiles {
   @Prop navPathStack: NavPathStack;
   @Prop source: string = 'home'; // 'home' 或 'settings'
-  private navManager: NavigationManager = NavigationManager.getInstance();
   @State recentFiles: RecentFile [] = [];
   @State isLoading: boolean = true;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -80,9 +89,8 @@ export struct RecentFiles {
       return;
     } else {
       // 导航到密码输入页面
-      this.navManager.navigateTo(PageConstants.PAGE_PASSWORD, {
-        filePath: recentFile.filePath
-      });
+      const navParam: PasswordNavParam = { filePath: recentFile.filePath };
+      this.navPathStack.pushPathByName('Password', navParam);
     }
   }
 
