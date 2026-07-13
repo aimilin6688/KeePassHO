@@ -1,8 +1,8 @@
-import { Router } from '@kit.ArkUI';
+import { NavPathStack } from '@kit.ArkUI';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
-import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils } from '../../common/utils';
+import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils, NavigationManager } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
@@ -10,13 +10,15 @@ import { LocationMode } from './SelectLocation';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { common } from '@kit.AbilityKit';
+import { PageConstants } from '../../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
 
-@Entry
 @Component
-struct CreateDatabase {
+export struct CreateDatabase {
+  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
   @State databaseName: string = '';
   @State password: string = '';
   @State confirmPassword: string = '';
@@ -25,7 +27,6 @@ struct CreateDatabase {
   @State keyLocation: LocationInfo | undefined = undefined;
   @State keyFileName: ResourceStr = $r('app.string.select_key_file_placeholder');
   @State useKeyfileOnly: boolean = false; // 是否使用仅密钥文件模式
-  private router: Router = this.getUIContext().getRouter();
 
   onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
@@ -144,7 +145,7 @@ struct CreateDatabase {
       CommonUtils.showToast($r("app.string.save_success"));
       this.router.back({ url: 'pages/open/CreateDatabase' });
     }, (error) => {
-      this.router.back();
+      this.navPathStack.pop();
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
