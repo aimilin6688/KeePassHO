@@ -70,7 +70,8 @@ export struct Password {
     //初始化认证方式
     this.setAuthType(this.authTypeInfo);
 
-    const params = this.router.getParams() as Record<string, string>;
+    // 通过Navigation系统获取参数
+    const params = this.navPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Record<string, string>;
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
     if (locationInfo) {
@@ -130,7 +131,7 @@ export struct Password {
   private openRecentFileOptimized(filePath: string): void {
     if (!filePath) {
       CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
-      this.router.back();
+      this.navPathStack.pop();
       return;
     }
 
@@ -199,7 +200,7 @@ export struct Password {
   private openRecentFile(filePath: string) {
     if (!filePath) {
       CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
-      this.router.back();
+      this.navPathStack.pop();
     }
     // 获取最近打开记录
     RecentFilesService.getRecentFile(filePath).then(recentFile => {
@@ -214,7 +215,7 @@ export struct Password {
         message: $r('app.string.open_failed', error.message),
         duration: 2000
       });
-      this.router.back();
+      this.navPathStack.pop();
     });
   }
 
@@ -332,10 +333,11 @@ export struct Password {
         this.keyFileName = locationInfo.fileName;
         this.shouldStartAuth = false; // 清除生物认证标志
         this.updateButtonState();
-        this.router.back({ url: 'pages/Password' });
+        // 返回到密码页面
+        this.navPathStack.pop();
       }
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
   }
 
   /**
@@ -535,7 +537,7 @@ export struct Password {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            this.navPathStack.pop();
           })
 
         Text($r('app.string.Password_unlock_title'))
