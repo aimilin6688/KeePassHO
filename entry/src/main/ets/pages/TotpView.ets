@@ -13,9 +13,8 @@ export function TotpViewBuilder(name: string, param: Object): void {
   TotpView()
 }
 
-@Entry
 @Component
-struct TotpView {
+export struct TotpView {
   @Prop navPathStack: NavPathStack;
   @State resultEntries: Array<KdbxEntry> = [];
   @State searchText: string = ''; // 搜索文本

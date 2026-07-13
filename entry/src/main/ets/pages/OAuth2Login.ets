@@ -99,9 +99,8 @@ interface WebPageEvent {
   url?: string;
 }
 
-@Entry
 @Component
-struct OAuth2Login {
+export struct OAuth2Login {
   @Prop navPathStack: NavPathStack;
   @State oauth2Config: OAuth2Config = {
     redirectUri: ''

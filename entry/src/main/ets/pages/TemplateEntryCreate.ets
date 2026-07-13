@@ -43,9 +43,8 @@ interface TemplateFieldData {
   displayName: ResourceStr;
 }
 
-@Entry
 @Component
-struct TemplateEntryCreate {
+export struct TemplateEntryCreate {
   @Prop navPathStack: NavPathStack;
   private templateParam: TemplateEntryCreateParam | undefined = undefined;
   @State title: string = '';

@@ -18,9 +18,8 @@ export function UnLockDatabaseBuilder(name: string, param: Object): void {
   UnLockDatabase()
 }
 
-@Entry
 @Component
-struct UnLockDatabase {
+export struct UnLockDatabase {
   @Prop navPathStack: NavPathStack;
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;

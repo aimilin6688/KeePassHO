@@ -24,9 +24,8 @@ export function EntryViewBuilder(name: string, param: Object): void {
   EntryView({ entryParam: param as EntryParam })
 }
 
-@Entry
 @Component
-struct EntryView {
+export struct EntryView {
   @Prop navPathStack: NavPathStack;
   private entryParam: EntryParam | undefined = undefined;
   @State isLoading: boolean = true;

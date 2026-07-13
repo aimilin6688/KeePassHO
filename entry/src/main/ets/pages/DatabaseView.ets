@@ -36,9 +36,8 @@ export function DatabaseViewBuilder(name: string, param: Object): void {
   DatabaseView({ databaseShowParam: param as DatabaseShowParam })
 }
 
-@Entry
 @Component
-struct DatabaseView {
+export struct DatabaseView {
   @Prop navPathStack: NavPathStack;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   @State newGroupName: string | undefined = "";
