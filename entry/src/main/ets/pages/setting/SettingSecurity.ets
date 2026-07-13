@@ -1,5 +1,4 @@
 import { SettingsService, UnlockAuthType } from '../../services/SettingsService';
-import { Router } from '@kit.ArkUI';
 import { CommonUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { AuthService } from '../../services/AuthService';
@@ -8,9 +7,8 @@ import { AuthType } from '../../services/TypeDefined';
 import { BusinessError } from '@kit.BasicServicesKit';
 
 
-@Entry
 @Component
-struct SettingsSecurity {
+export struct SettingSecurity {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State searchHistoryEnabled: boolean = SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT;
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
@@ -187,22 +185,7 @@ struct SettingsSecurity {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
-        Text($r('app.string.Settings_security'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
-      }
-      .width('100%')
-      .height(40)
-
+      // 设置内容（弹框中显示，无需导航栏）
 
       List() {
         if (this.isFingerprintSupport || this.isFaceSupport) {

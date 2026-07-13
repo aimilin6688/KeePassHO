@@ -1,27 +1,67 @@
 import { ThemeConstants, ThemeMode } from '../../common/constants/ThemeConstants';
 import { SettingsService } from '../../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
-import { router, Router } from '@kit.ArkUI';
+import { NavPathStack } from '@kit.ArkUI';
 import { SortConstants, SortMode } from '../../common/constants/SortConstants';
 import { DataService } from '../../services/DataService';
-import { CommonUtils, ShareUtils } from '../../common/utils';
+import { CommonUtils, ShareUtils, NavigationManager } from '../../common/utils';
 import { CrashLogService } from '../../services/CrashLogService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { PageConstants } from '../../common/constants/PageConstants';
+import { SettingDialogWrapper } from '../../components/SettingDialogWrapper';
 
 const DOMAIN = 0x0000;
 const TAG = 'Settings';
 
-@Entry
+interface SettingItem {
+  id: string;
+  name: string;
+  title: ResourceStr;
+  isPageRoute?: boolean;
+}
+
 @Component
-struct Settings {
+export struct Settings {
+  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
   @State sortBy: SortMode = SortMode.DEFAULT
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
     ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
   @State hasCrashLog: boolean = false;
   private settingsService: SettingsService = SettingsService.getInstance();
-  private router: Router = this.getUIContext().getRouter();
+
+  private settingItems: SettingItem[] = [
+    {
+      id: 'security',
+      name: PageConstants.PAGE_SETTING_SECURITY,
+      title: $r('app.string.Settings_security')
+    },
+    {
+      id: 'database',
+      name: PageConstants.PAGE_SETTING_DATABASE,
+      title: $r('app.string.Settings_database')
+    },
+    {
+      id: 'application',
+      name: PageConstants.PAGE_SETTING_APPLICATION,
+      title: $r('app.string.Settings_application')
+    },
+    {
+      id: 'about',
+      name: PageConstants.PAGE_ABOUT,
+      title: $r('app.string.Settings_about')
+    },
+    {
+      id: 'recentFiles',
+      name: PageConstants.PAGE_RECENT_FILES,
+      title: $r('app.string.recent_files'),
+      isPageRoute: true
+    },
+  ];
+
+  private dialogController: CustomDialogController | null = null;
 
   onColorModeChange(): void {
     // 系统主题变化时应用对应的主题
@@ -78,6 +118,47 @@ struct Settings {
     }
   }
 
+  private handleItemClick(item: SettingItem) {
+    if (item.isPageRoute) {
+      // 在右侧分栏显示
+      this.navManager.navigateTo(item.name, { source: 'settings' });
+    } else {
+      // 使用弹框展示
+      this.showSettingDialog(item);
+    }
+  }
+
+  private showSettingDialog(item: SettingItem) {
+    this.dialogController = new CustomDialogController({
+      builder: SettingDialogWrapper({
+        title: item.title,
+        context: this.getUIContext(),
+        content: this.SettingDialogContentBuilder(item.name),
+        onClose: () => this.dialogController?.close()
+      }),
+      alignment: DialogAlignment.Center,
+      customStyle: true,
+      autoCancel: true,
+    });
+
+    this.dialogController.open();
+  }
+
+  @Builder
+  SettingDialogContentBuilder(settingName: string) {
+    // 直接使用现有页面组件（最小改动）
+    // 注意：这些组件需要是export的，不带@Entry
+    if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
+      SettingSecurity();
+    } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
+      SettingDatabase();
+    } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
+      SettingApplication();
+    } else if (settingName === PageConstants.PAGE_ABOUT) {
+      About();
+    }
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -87,7 +168,7 @@ struct Settings {
           .height(24)
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
+          .onClick(() => this.navPathStack.pop())
         Text($r('app.string.Settings_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
@@ -153,68 +234,24 @@ struct Settings {
           color: $r('app.color.divider'),
         })
 
-        // 安全设置
+        // 设置项列表（使用弹框显示）
         ListItemGroup() {
-          // 安全设置
-          ListItem() {
-            Row() {
-              Text($r('app.string.Settings_security'))
-                .fontSize(16)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(24)
-                .height(24)
-                .fillColor($r('app.color.text_primary'))
+          ForEach(this.settingItems, (item: SettingItem) => {
+            ListItem() {
+              Row() {
+                Text(item.title)
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
             }
-            .width('100%')
-            .padding(16)
-          }
-          .onClick(() => {
-            CommonUtils.pushUrl({
-              url: 'pages/setting/SettingSecurity'
-            }, router.RouterMode.Single);
+            .onClick(() => this.handleItemClick(item))
           })
-
-          // 数据库设置
-          ListItem() {
-            Row() {
-              Text($r('app.string.Settings_database'))
-                .fontSize(16)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(24)
-                .height(24)
-                .fillColor($r('app.color.text_primary'))
-            }
-            .width('100%')
-            .padding(16)
-          }
-          .onClick(() => {
-            CommonUtils.pushUrl({
-              url: 'pages/setting/SettingDatabase'
-            }, router.RouterMode.Single);
-          })
-
-          // 应用设置
-          ListItem() {
-            Row() {
-              Text($r('app.string.Settings_application'))
-                .fontSize(16)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(24)
-                .height(24)
-                .fillColor($r('app.color.text_primary'))
-            }
-            .width('100%')
-            .padding(16)
-          }
-          .onClick(() => {
-            CommonUtils.pushUrl({
-              url: 'pages/setting/SettingApplication'
-            }, router.RouterMode.Single);
-          })
-
         }
         .margin({ top: 12, bottom: 12 })
         .backgroundColor($r("app.color.card_bg"))
@@ -240,9 +277,7 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            CommonUtils.pushUrl({
-              url: 'pages/open/CreateDatabase'
-            }, router.RouterMode.Single);
+            this.navManager.navigateTo(PageConstants.PAGE_CREATE_DATABASE);
           })
 
           // 更换数据库
@@ -260,30 +295,8 @@ struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            DataService.selectKdbx(this.router);
-            CommonUtils.pushUrl({
-              url: 'pages/open/SelectLocation'
-            });
-          })
-
-          // 最近打开
-          ListItem() {
-            Row() {
-              Text($r("app.string.recent_files"))
-                .fontSize(16)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(24)
-                .height(24)
-                .fillColor($r('app.color.text_primary'))
-            }
-            .width('100%')
-            .padding(16)
-          }
-          .onClick(() => {
-            CommonUtils.pushUrl({
-              url: 'pages/RecentFiles'
-            }, router.RouterMode.Single);
+            DataService.selectKdbx(this.getUIContext().getRouter());
+            this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
           })
         }
         .margin({ top: 12, bottom: 12 })
@@ -314,26 +327,6 @@ struct Settings {
               this.shareCrashLog();
             })
           }
-
-          // 关于
-          ListItem() {
-            Row() {
-              Text($r('app.string.Settings_about'))
-                .fontSize(16)
-                .flexGrow(1)
-              Image($r('app.media.ic_arrow_right'))
-                .width(24)
-                .height(24)
-                .fillColor($r('app.color.text_primary'))
-            }
-            .width('100%')
-            .padding(16)
-          }
-          .onClick(() => {
-            CommonUtils.pushUrl({
-              url: 'pages/about/About'
-            }, router.RouterMode.Single);
-          })
         }
         .backgroundColor($r("app.color.card_bg"))
         .margin({ top: 12, bottom: 12 })
