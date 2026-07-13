@@ -23,9 +23,8 @@ export function EntryEditBuilder(name: string, param: Object): void {
   EntryEdit({ entryParam: param as EntryParam })
 }
 
-@Entry
 @Component
-struct EntryEdit {
+export struct EntryEdit {
   @Prop navPathStack: NavPathStack;
   private entryParam: EntryParam | undefined = undefined;
   @State title: string = '';

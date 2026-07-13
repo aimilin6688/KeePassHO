@@ -17,9 +17,8 @@ export function ChangePasswordBuilder(name: string, param: Object): void {
 /**
  * 修改密码
  */
-@Entry
 @Component
-struct ChangePassword {
+export struct ChangePassword {
   @Prop navPathStack: NavPathStack;
   @State oldPassword: string = ''; // 旧密码
   @State newPassword: string = ''; // 新密码

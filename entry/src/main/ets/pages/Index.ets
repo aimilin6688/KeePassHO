@@ -1,10 +1,11 @@
-import { CommonUtils, ThemeManager } from '../common/utils';
+import { CommonUtils, ThemeManager, NavigationManager } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { RecentFile } from '../services/TypeDefined';
 import { Constants } from '../common/constants/Constants';
-import { NavigationConstants } from '../common/constants/NavigationConstants';
+import { PageConstants } from '../common/constants/PageConstants';
+import { PageContainer } from '../components/PageContainer';
 
 const DOMAIN = 0x0000;
 const TAG = 'Index';
@@ -17,19 +18,24 @@ interface PasswordParam {
 // Index页面的Builder函数,用于路由表
 @Builder
 export function IndexBuilder(name: string, param: Object): void {
-  Index()
+  PageContainer({ pageName: PageConstants.PAGE_INDEX }) {
+    Index()
+  }
 }
 
-@Entry
 @Component
-struct Index {
-  private navPathStack: NavPathStack = new NavPathStack();
+export struct Index {
+  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
 
   aboutToAppear() {
+    hilog.info(DOMAIN, TAG, 'Index aboutToAppear');
+
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
+
     // 检查最近文件
     this.checkRecentFilesOptimized();
   }
@@ -93,7 +99,7 @@ struct Index {
    */
   private navigateToPassword(filePath: string): void {
     const param: PasswordParam = { filePath: filePath };
-    this.navPathStack.pushPathByName('Password', param);
+    this.navManager.navigateTo(PageConstants.PAGE_PASSWORD, param);
   }
 
   /**
@@ -144,82 +150,75 @@ struct Index {
   }
 
   build() {
-    Navigation(this.navPathStack) {
-      Column() {
-        // 顶部导航栏
-        Row() {
-          Text('KeePassHO')
-            .fontSize(20)
-            .fontWeight(FontWeight.Medium)
-            .margin({ left: 16 })
-            .fontColor($r('app.color.text_primary'))
-          Blank()
-          Image($r('app.media.ic_settings'))
-            .width(24)
-            .height(24)
-            .margin({ right: 16 })
-            .onClick(() => {
-              this.navPathStack.pushPathByName('Settings', null);
-            })
-        }
-        .width('100%')
-        .height(40)
-
-        // 主要内容区域
-        Column() {
-          // Logo或应用图标
-          Image($r('app.media.startIcon'))
-            .width(120)
-            .height(120)
-            .margin({ top: 60, bottom: 40 })
-
-          // 欢迎文本
-          Text($r('app.string.Index_welcome'))
-            .fontSize(24)
-            .fontWeight(FontWeight.Bold)
-            .margin({ bottom: 8 })
-            .fontColor($r('app.color.text_primary'))
-
-          Text($r('app.string.Index_subtitle'))
-            .fontSize(16)
-            .opacity(0.6)
-            .margin({ bottom: 60 })
-            .fontColor($r('app.color.text_primary'))
-
-          // 主要操作按钮
-          this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
-            DataService.selectKdbx(this.getUIContext().getRouter());
-            this.navPathStack.pushPathByName('SelectLocation', null);
+    Column() {
+      // 顶部导航栏
+      Row() {
+        Text('KeePassHO')
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+          .margin({ left: 16 })
+          .fontColor($r('app.color.text_primary'))
+        Blank()
+        Image($r('app.media.ic_settings'))
+          .width(24)
+          .height(24)
+          .margin({ right: 16 })
+          .onClick(() => {
+            this.navManager.navigateTo(PageConstants.PAGE_SETTINGS);
           })
-
-          // 添加间距
-          Column() {
-            this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
-              this.navPathStack.pushPathByName('CreateDatabase', null);
-            })
-          }
-          .margin({ top: 24 })
-
-          // 最近打开的文件按钮
-          Column() {
-            this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
-              this.navPathStack.pushPathByName('RecentFiles', null);
-            })
-          }
-          .margin({ top: 24 })
-        }
-        .width('100%')
-        .layoutWeight(1)
       }
       .width('100%')
-      .height('100%')
-      .backgroundColor($r("app.color.bg_primary"))
-      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .height(40)
+
+      // 主要内容区域
+      Column() {
+        // Logo或应用图标
+        Image($r('app.media.startIcon'))
+          .width(120)
+          .height(120)
+          .margin({ top: 60, bottom: 40 })
+
+        // 欢迎文本
+        Text($r('app.string.Index_welcome'))
+          .fontSize(24)
+          .fontWeight(FontWeight.Bold)
+          .margin({ bottom: 8 })
+          .fontColor($r('app.color.text_primary'))
+
+        Text($r('app.string.Index_subtitle'))
+          .fontSize(16)
+          .opacity(0.6)
+          .margin({ bottom: 60 })
+          .fontColor($r('app.color.text_primary'))
+
+        // 主要操作按钮
+        this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
+          DataService.selectKdbx(this.getUIContext().getRouter());
+          this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
+        })
+
+        // 添加间距
+        Column() {
+          this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
+            this.navManager.navigateTo(PageConstants.PAGE_CREATE_DATABASE);
+          })
+        }
+        .margin({ top: 24 })
+
+        // 最近打开的文件按钮
+        Column() {
+          this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
+            this.navManager.navigateTo(PageConstants.PAGE_RECENT_FILES);
+          })
+        }
+        .margin({ top: 24 })
+      }
+      .width('100%')
+      .layoutWeight(1)
     }
-    .mode(NavigationMode.Stack)
-    .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
-    .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
     .width('100%')
     .height('100%')
+    .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
