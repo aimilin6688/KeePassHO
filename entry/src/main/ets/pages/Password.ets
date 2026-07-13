@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { NavPathStack, PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
 
@@ -20,13 +20,16 @@ import { LocationInfo, LocationMode, LocationParam } from '../services/beans/Loc
 import { Constants } from '../common/constants/Constants';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
+import { NavigationManager } from '../common/utils/NavigationManager';
+import { PageConstants } from '../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
 
-@Entry
 @Component
-struct Password {
+export struct Password {
+  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
   @State password: string = '';
   @State isShowBiometric: boolean = false; // 是否显示生物认证
   @State isLoading: boolean = false;
@@ -44,7 +47,6 @@ struct Password {
   private filePath: string = '';
   private storageType: StorageType | undefined = undefined;
   private storageConfig: StorageConfig | undefined = undefined;
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private focusController: FocusController = new FocusController();
   // 生物认证支持状态（在 onPageShow 中初始化，依赖 SettingsService）
