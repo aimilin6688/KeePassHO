@@ -8,12 +8,19 @@ import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabase
 import { common } from '@kit.AbilityKit';
 import { AuthType } from '../services/TypeDefined';
 
+// ChangePassword页面的Builder函数
+@Builder
+export function ChangePasswordBuilder(name: string, param: Object): void {
+  ChangePassword()
+}
+
 /**
  * 修改密码
  */
 @Entry
 @Component
 struct ChangePassword {
+  @Prop navPathStack: NavPathStack;
   @State oldPassword: string = ''; // 旧密码
   @State newPassword: string = ''; // 新密码
   @State confirmPassword: string = ''; // 确认新密码
@@ -23,7 +30,6 @@ struct ChangePassword {
   @State notUseKeyFile: boolean = false; // 不使用keyfile
   @State isKeyfileOnlyMode: boolean = false; // 当前是否为仅密钥文件模式
   @State useKeyfileOnly: boolean = false; // 是否切换到仅密钥文件模式
-  private router: Router = this.getUIContext().getRouter();
 
   onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
@@ -106,7 +112,7 @@ struct ChangePassword {
       onLocation: (locationInfo: LocationInfo) => {
         this.keyLocation = locationInfo;
         this.keyFileName = locationInfo.fileName;
-        this.router.back({ url: 'pages/ChangePassword' });
+        this.navPathStack.pop();
       }
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
@@ -120,9 +126,9 @@ struct ChangePassword {
       this.keyLocation = locationInfo;
       this.keyFileName = locationInfo.fileName;
       CommonUtils.showToast({ message: $r("app.string.save_success") });
-      this.router.back({ url: 'pages/ChangePassword' });
+      this.navPathStack.pop();
     }, (error) => {
-      this.router.back();
+      this.navPathStack.pop();
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
@@ -134,7 +140,7 @@ struct ChangePassword {
     const filePath = FileService.getFilePath();
     RecentFilesService.clearPassword(filePath).then(() => {
       FileService.close();
-      this.router.clear();
+      this.navPathStack.clear();
     })
     CommonUtils.pushUrl({
       url: 'pages/Password',
@@ -154,7 +160,7 @@ struct ChangePassword {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            this.navPathStack.pop();
           })
 
         Text($r('app.string.change_password'))
@@ -354,7 +360,7 @@ struct ChangePassword {
           .borderRadius(20)
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
-            this.router.replaceUrl({ url: 'pages/setting/SettingDatabase' });
+            this.navPathStack.replacePathByName('SettingDatabase', null);
           })
         Blank()
         Button($r('app.string.confirm_button_text'))

@@ -1,33 +1,37 @@
 import { CommonUtils, ThemeManager } from '../common/utils';
-import { NavPathStack } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { RecentFile } from '../services/TypeDefined';
 import { Constants } from '../common/constants/Constants';
-import { NavigationManager } from '../common/utils/NavigationManager';
-import { PageConstants } from '../common/constants/PageConstants';
+import { NavigationConstants } from '../common/constants/NavigationConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Index';
 
+// 定义导航参数接口
+interface PasswordParam {
+  filePath: string;
+}
+
+// Index页面的Builder函数,用于路由表
+@Builder
+export function IndexBuilder(name: string, param: Object): void {
+  Index()
+}
+
+@Entry
 @Component
-export struct Index {
-  @Prop navPathStack: NavPathStack;
-  private navManager: NavigationManager = NavigationManager.getInstance();
+struct Index {
+  private navPathStack: NavPathStack = new NavPathStack();
 
   aboutToAppear() {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
-    // 注意：在新的Navigation系统中，参数通过navPathStack传递
-    // 暂时保留原有逻辑，后续可以优化
-    const params = this.navPathStack.getParamByName(PageConstants.PAGE_INDEX) as Record<string, string>;
-    if (!params?.notRedirect) {
-      // 优化：使用预加载的最近文件信息
-      this.checkRecentFilesOptimized();
-    }
+    // 检查最近文件
+    this.checkRecentFilesOptimized();
   }
 
   /**
@@ -88,7 +92,8 @@ export struct Index {
    * 导航到密码页面
    */
   private navigateToPassword(filePath: string): void {
-    this.navManager.navigateTo(PageConstants.PAGE_PASSWORD, { filePath });
+    const param: PasswordParam = { filePath: filePath };
+    this.navPathStack.pushPathByName('Password', param);
   }
 
   /**
@@ -139,76 +144,82 @@ export struct Index {
   }
 
   build() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        Text('KeePassHO')
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-        Blank()
-        Image($r('app.media.ic_settings'))
-          .width(24)
-          .height(24)
-          .margin({ right: 16 })
-          .onClick(() => {
-            this.navManager.navigateTo(PageConstants.PAGE_SETTINGS);
-          })
-      }
-      .width('100%')
-      .height(40)
-
-      // 主要内容区域
+    Navigation(this.navPathStack) {
       Column() {
-        // Logo或应用图标
-        Image($r('app.media.startIcon'))
-          .width(120)
-          .height(120)
-          .margin({ top: 60, bottom: 40 })
-
-        // 欢迎文本
-        Text($r('app.string.Index_welcome'))
-          .fontSize(24)
-          .fontWeight(FontWeight.Bold)
-          .margin({ bottom: 8 })
-          .fontColor($r('app.color.text_primary'))
-
-        Text($r('app.string.Index_subtitle'))
-          .fontSize(16)
-          .opacity(0.6)
-          .margin({ bottom: 60 })
-          .fontColor($r('app.color.text_primary'))
-
-        // 主要操作按钮
-        this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
-          DataService.selectKdbx(this.getUIContext().getRouter());
-          this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
-        })
-
-        // 添加间距
-        Column() {
-          this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
-            this.navManager.navigateTo(PageConstants.PAGE_CREATE_DATABASE);
-          })
+        // 顶部导航栏
+        Row() {
+          Text('KeePassHO')
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 16 })
+            .fontColor($r('app.color.text_primary'))
+          Blank()
+          Image($r('app.media.ic_settings'))
+            .width(24)
+            .height(24)
+            .margin({ right: 16 })
+            .onClick(() => {
+              this.navPathStack.pushPathByName('Settings', null);
+            })
         }
-        .margin({ top: 24 })
+        .width('100%')
+        .height(40)
 
-        // 最近打开的文件按钮
+        // 主要内容区域
         Column() {
-          this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
-            this.navManager.navigateTo(PageConstants.PAGE_RECENT_FILES, { source: 'home' });
+          // Logo或应用图标
+          Image($r('app.media.startIcon'))
+            .width(120)
+            .height(120)
+            .margin({ top: 60, bottom: 40 })
+
+          // 欢迎文本
+          Text($r('app.string.Index_welcome'))
+            .fontSize(24)
+            .fontWeight(FontWeight.Bold)
+            .margin({ bottom: 8 })
+            .fontColor($r('app.color.text_primary'))
+
+          Text($r('app.string.Index_subtitle'))
+            .fontSize(16)
+            .opacity(0.6)
+            .margin({ bottom: 60 })
+            .fontColor($r('app.color.text_primary'))
+
+          // 主要操作按钮
+          this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
+            DataService.selectKdbx(this.getUIContext().getRouter());
+            this.navPathStack.pushPathByName('SelectLocation', null);
           })
+
+          // 添加间距
+          Column() {
+            this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
+              this.navPathStack.pushPathByName('CreateDatabase', null);
+            })
+          }
+          .margin({ top: 24 })
+
+          // 最近打开的文件按钮
+          Column() {
+            this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
+              this.navPathStack.pushPathByName('RecentFiles', null);
+            })
+          }
+          .margin({ top: 24 })
         }
-        .margin({ top: 24 })
+        .width('100%')
+        .layoutWeight(1)
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('100%')
+      .backgroundColor($r("app.color.bg_primary"))
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-
+    .mode(NavigationMode.Stack)
+    .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
+    .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
     .width('100%')
     .height('100%')
-    .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

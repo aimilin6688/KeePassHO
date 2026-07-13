@@ -7,16 +7,22 @@ import { common } from '@kit.AbilityKit';
 import { SortMode } from '../common/constants';
 import { UIUtils } from '@kit.ArkUI';
 
+// TotpView页面的Builder函数
+@Builder
+export function TotpViewBuilder(name: string, param: Object): void {
+  TotpView()
+}
+
 @Entry
 @Component
 struct TotpView {
+  @Prop navPathStack: NavPathStack;
   @State resultEntries: Array<KdbxEntry> = [];
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
   @State indexerSelected: number = 0; // AlphabetIndexer 选中索引
   @State indexerValues: string[] = []; // 索引字母数组
   @State indexerMap: Map<string, number> = new Map(); // 字母到列表索引的映射
-  private router: Router = this.getUIContext().getRouter();
   private totpEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   private listScroller: Scroller = new Scroller(); // List 滚动控制器
 
@@ -137,7 +143,7 @@ struct TotpView {
               .margin({ left: 16 })
               .fillColor($r('app.color.text_primary'))
               .onClick(() => {
-                this.router.back();
+                this.navPathStack.pop();
               })
             Text($r("app.string.totp_title"))
               .fontSize(20)

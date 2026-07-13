@@ -6,7 +6,6 @@ import { motion } from '@kit.MultimodalAwarenessKit';
 
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
-import { Router } from '@kit.ArkUI';
 import { FileService } from '../services/FileService';
 import { LockScreenService } from '../services/LockScreenService';
 import { SortMode } from '../common/constants/SortConstants';
@@ -31,9 +30,17 @@ import window from '@ohos.window';
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
 
+// DatabaseView页面的Builder函数
+@Builder
+export function DatabaseViewBuilder(name: string, param: Object): void {
+  DatabaseView({ databaseShowParam: param as DatabaseShowParam })
+}
+
 @Entry
 @Component
 struct DatabaseView {
+  @Prop navPathStack: NavPathStack;
+  private databaseShowParam: DatabaseShowParam | undefined = undefined;
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
   @State isLoading: boolean = false;
@@ -82,9 +89,7 @@ struct DatabaseView {
   private oldContainerY: number = 0; // 容器Y坐标
   // 其他参数
   private database: Kdbx | null = null;
-  private databaseShowParam: DatabaseShowParam | undefined = undefined;
   private filePath: string = '';
-  private router: Router = this.getUIContext().getRouter();
   private settingsService: SettingsService = SettingsService.getInstance();
   // 模板选择对话框控制器
   private templateSelectorController: CustomDialogController = new CustomDialogController({
@@ -140,7 +145,6 @@ struct DatabaseView {
     this.initSettings();
     // 注册数据库事件
     this.registerDatabaseEvent();
-    this.databaseShowParam = this.router.getParams() as DatabaseShowParam;
     // 加载数据库信息
     this.loadDatabase();
     // 监听主题变化
@@ -382,14 +386,9 @@ struct DatabaseView {
    * 如果从 Password 页面过来直接清空历史记录
    */
   private clearUrl() {
-    let pageNum = this.router.getLength();
-    if (parseInt(pageNum) <= 0) {
-      return;
-    }
-    let prePage = this.router.getStateByIndex(parseInt(this.router.getLength()) - 1);
-    if (prePage && this.clearHistoryUrlPage.includes(prePage.name)) {
-      this.router.clear();
-    }
+    // 在 Navigation 系统中,如果需要清空历史,可以调用 navPathStack.clear()
+    // 暂时保留此方法的接口,具体逻辑需要根据业务需求调整
+    // this.navPathStack.clear();
   }
 
   /**
@@ -1459,9 +1458,8 @@ struct DatabaseView {
   }
 
   private routerBack() {
-    if (parseInt(this.router.getLength()) > 0) {
-      this.router.back();
-    }
+    // 在 Navigation 系统中,可以直接 pop
+    this.navPathStack.pop();
   }
 
   build() {
@@ -1599,7 +1597,7 @@ struct DatabaseView {
                     .margin({ left: 16 })
                     .fillColor($r('app.color.text_primary'))
                     .onClick(() => {
-                      this.router.back();
+                      this.navPathStack.pop();
                     })
                 }
                 // 选择模式下显示已选数量

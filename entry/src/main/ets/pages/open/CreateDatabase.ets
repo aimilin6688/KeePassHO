@@ -1,8 +1,7 @@
-import { NavPathStack } from '@kit.ArkUI';
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
-import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils, NavigationManager } from '../../common/utils';
+import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
@@ -15,10 +14,15 @@ import { PageConstants } from '../../common/constants/PageConstants';
 const DOMAIN = 0x0000;
 const TAG = 'CreateDatabase';
 
+// CreateDatabase页面的Builder函数
+@Builder
+export function CreateDatabaseBuilder(name: string, param: Object): void {
+  CreateDatabase()
+}
+
 @Component
 export struct CreateDatabase {
   @Prop navPathStack: NavPathStack;
-  private navManager: NavigationManager = NavigationManager.getInstance();
   @State databaseName: string = '';
   @State password: string = '';
   @State confirmPassword: string = '';
@@ -107,7 +111,7 @@ export struct CreateDatabase {
           DataService.saveKdbx({ kdbx: newDb, exportType: ExportType.KDBX, locationInfo: locationInfo }).then(() => {
             LoadingDialog.hideLoading();
             this.isCreating = false;
-            DataService.toPasswordPage(this.router, locationInfo);
+            DataService.toPasswordPage(this.getUIContext().getRouter(), locationInfo);
           })
         }
       });

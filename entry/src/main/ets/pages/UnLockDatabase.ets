@@ -12,9 +12,16 @@ import { EventBus } from '../services/EventBus';
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
 
+// UnLockDatabase页面的Builder函数
+@Builder
+export function UnLockDatabaseBuilder(name: string, param: Object): void {
+  UnLockDatabase()
+}
+
 @Entry
 @Component
 struct UnLockDatabase {
+  @Prop navPathStack: NavPathStack;
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';

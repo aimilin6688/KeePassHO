@@ -45,6 +45,6 @@ export class NavigationConstants {
    * @returns true 表示是根页面
    */
   static isRootPage(pageName: string): boolean {
-    return this.ROOT_PAGES.includes(pageName);
+    return NavigationConstants.ROOT_PAGES.includes(pageName);
   }
 }

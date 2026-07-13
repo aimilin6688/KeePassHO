@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
 import { KdbxUtils, DateUtils, WindowUtils, CommonUtils } from '../common/utils';
@@ -9,7 +9,6 @@ import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabase
 import { common } from '@kit.AbilityKit';
 import { OtpExtractionResult } from '../services/otp';
 
-
 const DOMAIN = 0xFF00;
 const TAG = 'EntryView';
 
@@ -19,9 +18,17 @@ interface EntryHistoryView {
   historyId: string;
 }
 
+// EntryView页面的Builder函数
+@Builder
+export function EntryViewBuilder(name: string, param: Object): void {
+  EntryView({ entryParam: param as EntryParam })
+}
+
 @Entry
 @Component
 struct EntryView {
+  @Prop navPathStack: NavPathStack;
+  private entryParam: EntryParam | undefined = undefined;
   @State isLoading: boolean = true;
   @State entry: KdbxEntry | null = null;
   @State fields: Array<FieldView> = [];
@@ -29,17 +36,17 @@ struct EntryView {
   @State showHistory: boolean = false;
   @State selectedHistoryIndex: number = -1;
   private database: Kdbx | null = null;
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private entryId: string = '';
   private groupId: string = '';
 
   aboutToAppear() {
     // 获取从DatabaseShow页面传递的参数
-    const params = this.router.getParams() as EntryParam;
-    this.entryId = params?.entryId || '';
-    this.groupId = params?.groupId || '';
-    this.selectedHistoryIndex = params.historyIndex === undefined ? -1 : params.historyIndex;
+    if (this.entryParam) {
+      this.entryId = this.entryParam.entryId || '';
+      this.groupId = this.entryParam.groupId || '';
+      this.selectedHistoryIndex = this.entryParam.historyIndex === undefined ? -1 : this.entryParam.historyIndex;
+    }
   }
 
   onPageShow(): void {
@@ -65,7 +72,7 @@ struct EntryView {
           message: $r('app.string.invalid_db_or_entry'),
           duration: 2000
         });
-        this.router.back();
+        this.navPathStack.pop();
         return;
       }
 
@@ -77,7 +84,7 @@ struct EntryView {
           message: $r('app.string.entry_not_found'),
           duration: 2000
         });
-        this.router.back();
+        this.navPathStack.pop();
         return;
       }
 
@@ -93,7 +100,7 @@ struct EntryView {
         message: $r('app.string.load_entry_failed') + `: ${error}`,
         duration: 2000
       });
-      this.router.back();
+      this.navPathStack.pop();
     } finally {
       this.isLoading = false;
     }
@@ -289,7 +296,7 @@ struct EntryView {
             entry.removeHistory(this.selectedHistoryIndex);
             KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
-                this.router.back();
+                this.navPathStack.pop();
               }
             }));
           }
@@ -318,7 +325,7 @@ struct EntryView {
             entry.copyFrom(this.entry);
             KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
-                this.router.back();
+                this.navPathStack.pop();
               }
             }));
           }
@@ -387,7 +394,7 @@ struct EntryView {
             .margin({ left: 16 })
             .fillColor($r('app.color.text_primary'))
             .onClick(() => {
-              this.router.back();
+              this.navPathStack.pop();
             })
 
           Row() {

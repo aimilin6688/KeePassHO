@@ -11,6 +11,36 @@ import { FilenameUtils } from '../../common/utils/FilenameUtils';
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
 
+// FileList页面的Builder函数(用于不同的存储类型)
+@Builder
+export function LocalFilePageBuilder(name: string, param: Object): void {
+  FileList()
+}
+
+@Builder
+export function WebDAVPageBuilder(name: string, param: Object): void {
+  FileList()
+}
+
+@Builder
+export function OneDrivePageBuilder(name: string, param: Object): void {
+  FileList()
+}
+
+@Builder
+export function FTPPageBuilder(name: string, param: Object): void {
+  FileList()
+}
+
+@Builder
+export function S3PageBuilder(name: string, param: Object): void {
+  FileList()
+}
+
+@Builder
+export function PCloudPageBuilder(name: string, param: Object): void {
+  FileList()
+}
 
 export interface PathPart {
   name: string;

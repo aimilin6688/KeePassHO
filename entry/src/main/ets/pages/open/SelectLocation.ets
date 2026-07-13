@@ -1,14 +1,18 @@
-import { NavPathStack } from '@kit.ArkUI';
-import { CommonUtils, NavigationManager } from '../../common/utils';
+import { CommonUtils } from '../../common/utils';
 import { OpenMethodButton } from '../../components/OpenMethodButton';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { FileStorage, PageConfig } from '../../storage';
 import { PageConstants } from '../../common/constants/PageConstants';
 
+// SelectLocation页面的Builder函数
+@Builder
+export function SelectLocationBuilder(name: string, param: Object): void {
+  SelectLocation()
+}
+
 @Component
 export struct SelectLocation {
   @Prop navPathStack: NavPathStack;
-  private navManager: NavigationManager = NavigationManager.getInstance();
   @State titleMsg: ResourceStr = '';
   private pageConfigs: PageConfig[] = [];
 

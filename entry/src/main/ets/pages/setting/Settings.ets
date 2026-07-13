@@ -1,18 +1,27 @@
 import { ThemeConstants, ThemeMode } from '../../common/constants/ThemeConstants';
 import { SettingsService } from '../../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
-import { NavPathStack } from '@kit.ArkUI';
 import { SortConstants, SortMode } from '../../common/constants/SortConstants';
 import { DataService } from '../../services/DataService';
-import { CommonUtils, ShareUtils, NavigationManager } from '../../common/utils';
+import { CommonUtils, ShareUtils } from '../../common/utils';
 import { CrashLogService } from '../../services/CrashLogService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { PageConstants } from '../../common/constants/PageConstants';
 import { SettingDialogWrapper } from '../../components/SettingDialogWrapper';
+// import { SettingSecurity } from './SettingSecurity';
+// import { SettingDatabase } from './SettingDatabase';
+// import { SettingApplication } from './SettingApplication';
+// import { About } from '../about/About';
 
 const DOMAIN = 0x0000;
 const TAG = 'Settings';
+
+// Settings页面的Builder函数
+@Builder
+export function SettingsBuilder(name: string, param: Object): void {
+  Settings()
+}
 
 interface SettingItem {
   id: string;
@@ -24,7 +33,6 @@ interface SettingItem {
 @Component
 export struct Settings {
   @Prop navPathStack: NavPathStack;
-  private navManager: NavigationManager = NavigationManager.getInstance();
   @State sortBy: SortMode = SortMode.DEFAULT
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
@@ -121,7 +129,7 @@ export struct Settings {
   private handleItemClick(item: SettingItem) {
     if (item.isPageRoute) {
       // 在右侧分栏显示
-      this.navManager.navigateTo(item.name, { source: 'settings' });
+      this.navPathStack.pushPathByName(item.name, null);
     } else {
       // 使用弹框展示
       this.showSettingDialog(item);
@@ -129,12 +137,20 @@ export struct Settings {
   }
 
   private showSettingDialog(item: SettingItem) {
+    const closeDialog: () => void = () => {
+      if (this.dialogController) {
+        this.dialogController.close();
+      }
+    };
+    const contentBuilder: () => void = () => {
+      this.SettingDialogContentBuilder(item.name);
+    };
     this.dialogController = new CustomDialogController({
       builder: SettingDialogWrapper({
         title: item.title,
         context: this.getUIContext(),
-        content: this.SettingDialogContentBuilder(item.name),
-        onClose: () => this.dialogController?.close()
+        content: contentBuilder,
+        onClose: closeDialog
       }),
       alignment: DialogAlignment.Center,
       customStyle: true,
@@ -148,15 +164,21 @@ export struct Settings {
   SettingDialogContentBuilder(settingName: string) {
     // 直接使用现有页面组件（最小改动）
     // 注意：这些组件需要是export的，不带@Entry
-    if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
-      SettingSecurity();
-    } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
-      SettingDatabase();
-    } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
-      SettingApplication();
-    } else if (settingName === PageConstants.PAGE_ABOUT) {
-      About();
+    Column() {
+      Text('设置项: ' + settingName)
+        .fontSize(16)
+        .padding(20)
     }
+    // TODO: 后续实现设置页面的弹框显示
+    // if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
+    //   SettingSecurity();
+    // } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
+    //   SettingDatabase();
+    // } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
+    //   SettingApplication();
+    // } else if (settingName === PageConstants.PAGE_ABOUT) {
+    //   About();
+    // }
   }
 
   build() {
@@ -277,7 +299,7 @@ export struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.navManager.navigateTo(PageConstants.PAGE_CREATE_DATABASE);
+            this.navPathStack.pushPathByName('CreateDatabase', null);
           })
 
           // 更换数据库
@@ -296,7 +318,7 @@ export struct Settings {
           }
           .onClick(() => {
             DataService.selectKdbx(this.getUIContext().getRouter());
-            this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
+            this.navPathStack.pushPathByName('SelectLocation', null);
           })
         }
         .margin({ top: 12, bottom: 12 })

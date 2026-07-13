@@ -1,4 +1,4 @@
-import { NavPathStack, PromptAction } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
 
@@ -20,16 +20,20 @@ import { LocationInfo, LocationMode, LocationParam } from '../services/beans/Loc
 import { Constants } from '../common/constants/Constants';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
-import { NavigationManager } from '../common/utils/NavigationManager';
 import { PageConstants } from '../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
 
+// Password页面的Builder函数
+@Builder
+export function PasswordBuilder(name: string, param: Object): void {
+  Password()
+}
+
 @Component
 export struct Password {
   @Prop navPathStack: NavPathStack;
-  private navManager: NavigationManager = NavigationManager.getInstance();
   @State password: string = '';
   @State isShowBiometric: boolean = false; // 是否显示生物认证
   @State isLoading: boolean = false;
@@ -71,7 +75,8 @@ export struct Password {
     this.setAuthType(this.authTypeInfo);
 
     // 通过Navigation系统获取参数
-    const params = this.navPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Record<string, string>;
+    const paramsArray: Object[] = this.navPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Object[];
+    const params: Record<string, string> | undefined = paramsArray && paramsArray.length > 0 ? paramsArray[0] as Record<string, string> : undefined;
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
     if (locationInfo) {
@@ -337,7 +342,7 @@ export struct Password {
         this.navPathStack.pop();
       }
     });
-    this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
+    this.navPathStack.pushPathByName('SelectLocation', null);
   }
 
   /**
@@ -345,8 +350,8 @@ export struct Password {
    */
   changeDatabase() {
     // 返回到文件选择页面
-    DataService.selectKdbx(this.router);
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' })
+    DataService.selectKdbx(this.getUIContext().getRouter());
+    this.navPathStack.pushPathByName('SelectLocation', null);
   }
 
   /**
