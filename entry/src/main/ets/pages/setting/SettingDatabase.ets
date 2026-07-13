@@ -1,4 +1,3 @@
-import { Router } from '@kit.ArkUI';
 import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
@@ -19,9 +18,8 @@ interface FormatSelectOption {
   formatId: string;
 }
 
-@Entry
 @Component
-struct SettingsDatabase {
+export struct SettingDatabase {
   @State isDatabaseValid: boolean = false;
   @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));
 
@@ -121,22 +119,7 @@ struct SettingsDatabase {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
-        Text($r('app.string.Settings_database'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
-      }
-      .width('100%')
-      .height(40)
-
+      // 设置内容（弹框中显示，无需导航栏）
 
       List() {
         // 密码相关功能

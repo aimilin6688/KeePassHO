@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { CommonUtils, ResourceManager } from '../../common/utils';
 import { bundleManager, common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -10,11 +10,9 @@ import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 const DOMAIN = 0x0000;
 const TAG = 'About';
 
-@Entry
 @Component
-struct About {
+export struct About {
   @State version: string = '';
-  private router: Router = this.getUIContext().getRouter();
   private context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private bundleName: string = '';
@@ -139,22 +137,8 @@ struct About {
 
   build() {
     Stack() {
-      // 内容区域
+      // 内容区域（弹框中显示，无需导航栏）
       Column() {
-        // 标题栏
-        Row() {
-          Image($r("app.media.ic_angle_left"))
-            .width(24)
-            .height(24)
-            .margin({ left: 12, right: 12 })
-            .fillColor($r('app.color.text_primary'))
-            .onClick(() => {
-              this.router.back()
-            })
-
-          Text($r('app.string.Settings_about'))
-            .fontSize(18)
-            .fontWeight(FontWeight.Medium)
 
           Blank()
         }
