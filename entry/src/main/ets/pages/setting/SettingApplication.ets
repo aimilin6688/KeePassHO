@@ -1,5 +1,4 @@
 import { SettingsService } from '../../services/SettingsService';
-import { Router } from '@kit.ArkUI';
 import { SupportService } from '../../services/SupportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SyncSettingsService } from '../../services/store/SyncSettingsService';
@@ -7,16 +6,14 @@ import { CommonUtils } from '../../common/utils';
 import { common } from '@kit.AbilityKit';
 
 
-@Entry
 @Component
-struct SettingApplication {
+export struct SettingApplication {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
   @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
   @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State isEnableLocalCache: boolean = SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT;
   private settingsService: SettingsService = SettingsService.getInstance();
-  private router: Router = this.getUIContext().getRouter();
 
   aboutToAppear(): void {
     this.initSettings();
@@ -61,22 +58,7 @@ struct SettingApplication {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
-        Text($r('app.string.Settings_application'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
-      }
-      .width('100%')
-      .height(40)
-
+      // 设置内容（弹框中显示，无需导航栏）
 
       List() {
         ListItemGroup() {
