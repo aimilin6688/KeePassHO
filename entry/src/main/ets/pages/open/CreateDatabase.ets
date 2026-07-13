@@ -129,7 +129,7 @@ export struct CreateDatabase {
       onLocation: (locationInfo: LocationInfo) => {
         this.keyLocation = locationInfo;
         this.keyFileName = locationInfo.fileName;
-        this.router.back({ url: 'pages/open/CreateDatabase' });
+        this.navPathStack.pop();
       }
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
@@ -143,7 +143,7 @@ export struct CreateDatabase {
       this.keyLocation = locationInfo;
       this.keyFileName = locationInfo.fileName;
       CommonUtils.showToast($r("app.string.save_success"));
-      this.router.back({ url: 'pages/open/CreateDatabase' });
+      this.navPathStack.pop();
     }, (error) => {
       this.navPathStack.pop();
     });
@@ -176,7 +176,7 @@ export struct CreateDatabase {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back()
+            this.navPathStack.pop()
           })
 
         Text($r("app.string.create_database"))
