@@ -1,34 +1,5 @@
 {
   "src": [
-    "pages/Index",
-    "pages/DatabaseView",
-    "pages/setting/Settings",
-    "pages/setting/SettingSecurity",
-    "pages/setting/SettingDatabase",
-    "pages/setting/SettingDatabaseMeta",
-    "pages/setting/SettingCustomIcons",
-    "pages/setting/SettingDatabaseKeyFunction",
-    "pages/setting/SettingDatabaseProtectedFiled",
-    "pages/setting/SettingApplication",
-    "pages/Password",
-    "pages/RecentFiles",
-    "pages/EntryEdit",
-    "pages/EntryView",
-    "pages/TotpView",
-    "pages/TemplateEntryCreate",
-    "pages/about/About",
-    "pages/about/Support",
-    "pages/UnLockDatabase",
-    "pages/ChangePassword",
-    "pages/open/SelectLocation",
-    "pages/open/FileList",
-    "pages/open/CreateDatabase",
-    "storage/local/LocalFilePage",
-    "storage/webdav/WebDAVPage",
-    "storage/onedrive/OneDrivePage",
-    "storage/ftp/FTPPage",
-    "storage/s3/S3Page",
-    "storage/pcloud/PCloudPage",
-    "pages/OAuth2Login"
+    "pages/AppNavigation"
   ]
 }
