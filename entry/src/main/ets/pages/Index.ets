@@ -1,25 +1,29 @@
 import { CommonUtils, ThemeManager } from '../common/utils';
-import { Router } from '@kit.ArkUI';
+import { NavPathStack } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { RecentFile } from '../services/TypeDefined';
 import { Constants } from '../common/constants/Constants';
+import { NavigationManager } from '../common/utils/NavigationManager';
+import { PageConstants } from '../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'Index';
 
-@Entry
 @Component
-struct Index {
-  private router: Router = this.getUIContext().getRouter();
+export struct Index {
+  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
 
   aboutToAppear() {
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
-    const params = this.router.getParams() as Record<string, string>;
+    // 注意：在新的Navigation系统中，参数通过navPathStack传递
+    // 暂时保留原有逻辑，后续可以优化
+    const params = this.navPathStack.getParamByName(PageConstants.PAGE_INDEX) as Record<string, string>;
     if (!params?.notRedirect) {
       // 优化：使用预加载的最近文件信息
       this.checkRecentFilesOptimized();
@@ -84,12 +88,7 @@ struct Index {
    * 导航到密码页面
    */
   private navigateToPassword(filePath: string): void {
-    CommonUtils.pushUrl({
-      url: 'pages/Password',
-      params: {
-        filePath: filePath
-      }
-    });
+    this.navManager.navigateTo(PageConstants.PAGE_PASSWORD, { filePath });
   }
 
   /**
@@ -154,7 +153,7 @@ struct Index {
           .height(24)
           .margin({ right: 16 })
           .onClick(() => {
-            CommonUtils.pushUrl({ url: 'pages/setting/Settings' })
+            this.navManager.navigateTo(PageConstants.PAGE_SETTINGS);
           })
       }
       .width('100%')
@@ -183,14 +182,14 @@ struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
-          DataService.selectKdbx(this.router);
-          CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' })
+          DataService.selectKdbx(this.getUIContext().getRouter());
+          this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
         })
 
         // 添加间距
         Column() {
           this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
-            CommonUtils.pushUrl({ url: 'pages/open/CreateDatabase' })
+            this.navManager.navigateTo(PageConstants.PAGE_CREATE_DATABASE);
           })
         }
         .margin({ top: 24 })
@@ -198,7 +197,7 @@ struct Index {
         // 最近打开的文件按钮
         Column() {
           this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
-            CommonUtils.pushUrl({ url: 'pages/RecentFiles' })
+            this.navManager.navigateTo(PageConstants.PAGE_RECENT_FILES, { source: 'home' });
           })
         }
         .margin({ top: 24 })
