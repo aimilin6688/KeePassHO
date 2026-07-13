@@ -1,0 +1,109 @@
+{
+  "routerMap": [
+    {
+      "name": "Index",
+      "pageSourceFile": "src/main/ets/pages/Index.ets",
+      "buildFunction": "IndexBuilder"
+    },
+    {
+      "name": "Password",
+      "pageSourceFile": "src/main/ets/pages/Password.ets",
+      "buildFunction": "PasswordBuilder"
+    },
+    {
+      "name": "RecentFiles",
+      "pageSourceFile": "src/main/ets/pages/RecentFiles.ets",
+      "buildFunction": "RecentFilesBuilder"
+    },
+    {
+      "name": "SelectLocation",
+      "pageSourceFile": "src/main/ets/pages/open/SelectLocation.ets",
+      "buildFunction": "SelectLocationBuilder"
+    },
+    {
+      "name": "CreateDatabase",
+      "pageSourceFile": "src/main/ets/pages/open/CreateDatabase.ets",
+      "buildFunction": "CreateDatabaseBuilder"
+    },
+    {
+      "name": "UnLockDatabase",
+      "pageSourceFile": "src/main/ets/pages/UnLockDatabase.ets",
+      "buildFunction": "UnLockDatabaseBuilder"
+    },
+    {
+      "name": "ChangePassword",
+      "pageSourceFile": "src/main/ets/pages/ChangePassword.ets",
+      "buildFunction": "ChangePasswordBuilder"
+    },
+    {
+      "name": "OAuth2Login",
+      "pageSourceFile": "src/main/ets/pages/OAuth2Login.ets",
+      "buildFunction": "OAuth2LoginBuilder"
+    },
+    {
+      "name": "LocalFilePage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "LocalFilePageBuilder"
+    },
+    {
+      "name": "WebDAVPage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "WebDAVPageBuilder"
+    },
+    {
+      "name": "OneDrivePage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "OneDrivePageBuilder"
+    },
+    {
+      "name": "FTPPage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FTPPageBuilder"
+    },
+    {
+      "name": "S3Page",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "S3PageBuilder"
+    },
+    {
+      "name": "PCloudPage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "PCloudPageBuilder"
+    },
+    {
+      "name": "DatabaseView",
+      "pageSourceFile": "src/main/ets/pages/DatabaseView.ets",
+      "buildFunction": "DatabaseViewBuilder"
+    },
+    {
+      "name": "EntryView",
+      "pageSourceFile": "src/main/ets/pages/EntryView.ets",
+      "buildFunction": "EntryViewBuilder"
+    },
+    {
+      "name": "EntryEdit",
+      "pageSourceFile": "src/main/ets/pages/EntryEdit.ets",
+      "buildFunction": "EntryEditBuilder"
+    },
+    {
+      "name": "TotpView",
+      "pageSourceFile": "src/main/ets/pages/TotpView.ets",
+      "buildFunction": "TotpViewBuilder"
+    },
+    {
+      "name": "TemplateEntryCreate",
+      "pageSourceFile": "src/main/ets/pages/TemplateEntryCreate.ets",
+      "buildFunction": "TemplateEntryCreateBuilder"
+    },
+    {
+      "name": "Settings",
+      "pageSourceFile": "src/main/ets/pages/setting/Settings.ets",
+      "buildFunction": "SettingsBuilder"
+    },
+    {
+      "name": "SettingDatabase",
+      "pageSourceFile": "src/main/ets/pages/setting/SettingDatabase.ets",
+      "buildFunction": "SettingDatabaseBuilder"
+    }
+  ]
+}
