@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { NavPathStack, PromptAction } from '@kit.ArkUI';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { RecentFile } from '../services/TypeDefined';
 
@@ -7,16 +7,19 @@ import { common } from '@kit.AbilityKit';
 import { CommonUtils, WindowUtils } from '../common/utils';
 import { FileStorage, PageConfig } from '../storage';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
+import { NavigationManager } from '../common/utils/NavigationManager';
+import { PageConstants } from '../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
 
-@Entry
 @Component
-struct RecentFiles {
+export struct RecentFiles {
+  @Prop navPathStack: NavPathStack;
+  @Prop source: string = 'home'; // 'home' 或 'settings'
+  private navManager: NavigationManager = NavigationManager.getInstance();
   @State recentFiles: RecentFile [] = [];
   @State isLoading: boolean = true;
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private allStorageConfig: Array<PageConfig> = FileStorage.getAllPageConfig();
 
@@ -77,11 +80,8 @@ struct RecentFiles {
       return;
     } else {
       // 导航到密码输入页面
-      CommonUtils.pushUrl({
-        url: 'pages/Password',
-        params: {
-          filePath: recentFile.filePath
-        }
+      this.navManager.navigateTo(PageConstants.PAGE_PASSWORD, {
+        filePath: recentFile.filePath
       });
     }
   }
@@ -147,7 +147,7 @@ struct RecentFiles {
           .margin({ right: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            this.navPathStack.pop();
           })
         Text($r('app.string.recent_files_title'))
           .fontSize(20)
