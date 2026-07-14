@@ -1,7 +1,7 @@
 import { ExportType } from '../../services/TypeDefined';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import * as kdbxweb from 'kdbxweb';
-import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils } from '../../common/utils';
+import { ResourceManager, CommonUtils, WindowUtils, FilenameUtils, NavigationManager } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DataService } from '../../services/DataService';
@@ -17,12 +17,16 @@ const TAG = 'CreateDatabase';
 // CreateDatabase页面的Builder函数
 @Builder
 export function CreateDatabaseBuilder(name: string, param: Object): void {
-  CreateDatabase()
+  NavDestination() {
+    CreateDatabaseContent()
+  }
+  .title($r('app.string.create_database'))
+  .backgroundColor($r('app.color.bg_primary'))
 }
 
 @Component
-export struct CreateDatabase {
-  @Prop navPathStack: NavPathStack;
+struct CreateDatabaseContent {
+  private navManager = NavigationManager.getInstance();
   @State databaseName: string = '';
   @State password: string = '';
   @State confirmPassword: string = '';
@@ -133,7 +137,7 @@ export struct CreateDatabase {
       onLocation: (locationInfo: LocationInfo) => {
         this.keyLocation = locationInfo;
         this.keyFileName = locationInfo.fileName;
-        this.navPathStack.pop();
+        this.navManager.getNavPathStack()?.pop();
       }
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
@@ -147,9 +151,9 @@ export struct CreateDatabase {
       this.keyLocation = locationInfo;
       this.keyFileName = locationInfo.fileName;
       CommonUtils.showToast($r("app.string.save_success"));
-      this.navPathStack.pop();
+      this.navManager.getNavPathStack()?.pop();
     }, (error) => {
-      this.navPathStack.pop();
+      this.navManager.getNavPathStack()?.pop();
     });
     CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
   }
@@ -172,26 +176,6 @@ export struct CreateDatabase {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.navPathStack.pop()
-          })
-
-        Text($r("app.string.create_database"))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-      }
-      .width('100%')
-      .height(40)
-
       // 主要内容区域
       Column() {
         // 数据库名称输入

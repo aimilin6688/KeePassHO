@@ -8,11 +8,6 @@ import { CrashLogService } from '../../services/CrashLogService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { PageConstants } from '../../common/constants/PageConstants';
-import { SettingDialogWrapper } from '../../components/SettingDialogWrapper';
-import { SettingSecurity } from './SettingSecurity';
-import { SettingDatabase } from './SettingDatabase';
-import { SettingApplication } from './SettingApplication';
-// import { About } from '../about/About';
 
 const DOMAIN = 0x0000;
 const TAG = 'Settings';
@@ -44,22 +39,20 @@ export struct Settings {
     {
       id: 'security',
       name: PageConstants.PAGE_SETTING_SECURITY,
-      title: $r('app.string.Settings_security')
+      title: $r('app.string.Settings_security'),
+      isPageRoute: true
     },
     {
       id: 'database',
       name: PageConstants.PAGE_SETTING_DATABASE,
-      title: $r('app.string.Settings_database')
+      title: $r('app.string.Settings_database'),
+      isPageRoute: true
     },
     {
       id: 'application',
       name: PageConstants.PAGE_SETTING_APPLICATION,
-      title: $r('app.string.Settings_application')
-    },
-    {
-      id: 'about',
-      name: PageConstants.PAGE_ABOUT,
-      title: $r('app.string.Settings_about')
+      title: $r('app.string.Settings_application'),
+      isPageRoute: true
     },
     {
       id: 'recentFiles',
@@ -68,8 +61,6 @@ export struct Settings {
       isPageRoute: true
     },
   ];
-
-  private dialogController: CustomDialogController | null = null;
 
   onColorModeChange(): void {
     // 系统主题变化时应用对应的主题
@@ -126,55 +117,13 @@ export struct Settings {
     }
   }
 
-  @State currentDialogSettingName: string = '';
-  @State currentDialogTitle: ResourceStr = '';
-
   private handleItemClick(item: SettingItem) {
     const stack = this.navManager.getNavPathStack();
     if (!stack) {
       hilog.error(DOMAIN, TAG, 'navPathStack is null');
       return;
     }
-    if (item.isPageRoute) {
-      stack.pushPathByName(item.name, null);
-    } else {
-      this.currentDialogSettingName = item.name;
-      this.currentDialogTitle = item.title;
-      this.dialogController = new CustomDialogController({
-        builder: this.SettingDialogBuilder,
-        alignment: DialogAlignment.Center,
-        customStyle: true,
-        autoCancel: true,
-      });
-      this.dialogController.open();
-    }
-  }
-
-  @Builder
-  SettingDialogBuilder() {
-    SettingDialogWrapper({
-      title: this.currentDialogTitle,
-      context: this.getUIContext(),
-      content: () => { this.SettingDialogContentBuilder(this.currentDialogSettingName); },
-      onClose: () => { this.dialogController?.close(); }
-    })
-  }
-
-  @Builder
-  SettingDialogContentBuilder(settingName: string) {
-    if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
-      SettingSecurity();
-    } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
-      SettingDatabase({ navPathStack: this.navManager.getNavPathStack()! });
-    } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
-      SettingApplication();
-    } else if (settingName === PageConstants.PAGE_ABOUT) {
-      Column() {
-        Text('设置项: ' + settingName)
-          .fontSize(16)
-          .padding(20)
-      }
-    }
+    stack.pushPathByName(item.name, null);
   }
 
   build() {
@@ -351,6 +300,36 @@ export struct Settings {
               this.shareCrashLog();
             })
           }
+        }
+        .backgroundColor($r("app.color.card_bg"))
+        .margin({ top: 12, bottom: 12 })
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+        // 关于
+        ListItemGroup() {
+          ListItem() {
+            Row() {
+              Text($r('app.string.Settings_about'))
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .onClick(() => {
+            const stack = this.navManager.getNavPathStack();
+            if (stack) {
+              stack.pushPathByName(PageConstants.PAGE_ABOUT, null);
+            }
+          })
         }
         .backgroundColor($r("app.color.card_bg"))
         .margin({ top: 12, bottom: 12 })

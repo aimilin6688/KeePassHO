@@ -13,7 +13,11 @@ import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/
 // SettingDatabase页面的Builder函数
 @Builder
 export function SettingDatabaseBuilder(name: string, param: Object): void {
-  SettingDatabase()
+  NavDestination() {
+    SettingDatabaseContent()
+  }
+  .title($r('app.string.Settings_database'))
+  .backgroundColor($r('app.color.bg_primary'))
 }
 
 /**
@@ -25,7 +29,7 @@ interface FormatSelectOption {
 }
 
 @Component
-export struct SettingDatabase {
+struct SettingDatabaseContent {
   @Prop navPathStack: NavPathStack;
   @State isDatabaseValid: boolean = false;
   @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));

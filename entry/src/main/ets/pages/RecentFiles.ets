@@ -20,16 +20,19 @@ interface PasswordNavParam {
 // RecentFiles页面的Builder函数
 @Builder
 export function RecentFilesBuilder(name: string, param: Object): void {
-  RecentFiles({
-    navPathStack: NavigationManager.getInstance().getNavPathStack()!,
-    source: (param as Record<string, string>)?.source || 'home'
-  })
+  NavDestination() {
+    RecentFilesContent({
+      source: (param as Record<string, string>)?.source || 'home'
+    })
+  }
+  .title($r('app.string.recent_files'))
+  .backgroundColor($r('app.color.bg_primary'))
 }
 
 @Component
-export struct RecentFiles {
-  @Prop navPathStack: NavPathStack;
-  @Prop source: string = 'home'; // 'home' 或 'settings'
+struct RecentFilesContent {
+  @Prop source: string = 'home';
+  private navManager = NavigationManager.getInstance();
   @State recentFiles: RecentFile [] = [];
   @State isLoading: boolean = true;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -93,7 +96,7 @@ export struct RecentFiles {
     } else {
       // 导航到密码输入页面
       const navParam: PasswordNavParam = { filePath: recentFile.filePath };
-      this.navPathStack.pushPathByName('Password', navParam);
+      this.navManager.getNavPathStack()?.pushPathByName('Password', navParam);
     }
   }
 
@@ -150,19 +153,8 @@ export struct RecentFiles {
 
   build() {
     Column() {
-      // 标题栏
+      // 清除按钮
       Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ right: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.navPathStack.pop();
-          })
-        Text($r('app.string.recent_files_title'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
         Blank()
         Button($r('app.string.clear_all_button'))
           .fontSize(14)
@@ -178,6 +170,7 @@ export struct RecentFiles {
       }
       .width('100%')
       .height(40)
+      .padding({ right: 16 })
       .padding({ left: 16, right: 16 })
 
       // 文件列表

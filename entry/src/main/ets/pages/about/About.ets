@@ -10,8 +10,17 @@ import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 const DOMAIN = 0x0000;
 const TAG = 'About';
 
+@Builder
+export function AboutBuilder(name: string, param: Object): void {
+  NavDestination() {
+    AboutContent()
+  }
+  .title($r('app.string.Settings_about'))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
-export struct About {
+struct AboutContent {
   @State version: string = '';
   private context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -136,31 +145,21 @@ export struct About {
   }
 
   build() {
-    Stack() {
-      // 内容区域（弹框中显示，无需导航栏）
+    Column() {
       Column() {
+        Image($r('app.media.startIcon'))
+          .width(90)
+          .height(90)
+          .margin({ top: 40, bottom: 10 })
+        Text(this.version)
+          .fontSize(16)
+          .margin(5)
 
-          Blank()
-        }
-        .width('100%')
-        .height(40)
-
-        // 内容
-        Column() {
-          // Logo或应用图标
-          Image($r('app.media.startIcon'))
-            .width(90)
-            .height(90)
-            .margin({ top: 40, bottom: 10 })
-          Text(this.version)
-            .fontSize(16)
-            .margin(5)
-
-          Text($r('app.string.About_description'))
-            .margin({ top: 20 })
-            .fontColor($r('app.color.text_secondary'))
-            .fontSize(16)
-            .margin(5)
+        Text($r('app.string.About_description'))
+          .margin({ top: 20 })
+          .fontColor($r('app.color.text_secondary'))
+          .fontSize(16)
+          .margin(5)
 
           List() {
             ListItemGroup() {
@@ -322,11 +321,10 @@ export struct About {
           .height('auto')
           .layoutWeight(1)
           .margin({ top: 12 })
-        }
-        .width('100%')
-        .height('100%')
-        .padding({left: 16, right: 16, top: 4, bottom: 16})
       }
+      .width('100%')
+      .height('100%')
+      .padding({ left: 16, right: 16, top: 4, bottom: 16 })
     }
     .backgroundColor($r('app.color.bg_primary'))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
