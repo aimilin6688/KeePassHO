@@ -1,4 +1,4 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { FileInfo, FileType } from '../../storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { CommonUtils, DateUtils, FileUtils, ResourceManager } from '../../common/utils';
@@ -7,6 +7,7 @@ import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
+import { NavigationManager } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
@@ -14,32 +15,32 @@ const TAG = 'FileList';
 // FileList页面的Builder函数(用于不同的存储类型)
 @Builder
 export function LocalFilePageBuilder(name: string, param: Object): void {
-  FileList()
+  FileList({ locationInfo: param as LocationInfo })
 }
 
 @Builder
 export function WebDAVPageBuilder(name: string, param: Object): void {
-  FileList()
+  FileList({ locationInfo: param as LocationInfo })
 }
 
 @Builder
 export function OneDrivePageBuilder(name: string, param: Object): void {
-  FileList()
+  FileList({ locationInfo: param as LocationInfo })
 }
 
 @Builder
 export function FTPPageBuilder(name: string, param: Object): void {
-  FileList()
+  FileList({ locationInfo: param as LocationInfo })
 }
 
 @Builder
 export function S3PageBuilder(name: string, param: Object): void {
-  FileList()
+  FileList({ locationInfo: param as LocationInfo })
 }
 
 @Builder
 export function PCloudPageBuilder(name: string, param: Object): void {
-  FileList()
+  FileList({ locationInfo: param as LocationInfo })
 }
 
 export interface PathPart {
@@ -73,9 +74,9 @@ export class FileListDataSource extends BasicDataSource<FileInfo> {
   }
 }
 
-@Entry
 @Component
-struct FileList {
+export struct FileList {
+  @Prop locationInfo: LocationInfo | undefined = undefined;
   @State currentPath: string = '/';
   @State itemData: FileListDataSource = new FileListDataSource();
   @State isLoading: boolean = false;
@@ -89,16 +90,13 @@ struct FileList {
   @State selectFileIndex: number = -1;
   @State saveFileName: string = '';
   @State fileSuffix: string[] = [];
-  private router: Router = this.getUIContext().getRouter();
-  private locationInfo: LocationInfo | undefined = undefined;
+  private navManager: NavigationManager = NavigationManager.getInstance();
   private pathScroller: Scroller = new Scroller();
   private dataCache: Map<string, Array<FileInfo>> = new Map();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
-    const params = this.router.getParams() as LocationInfo;
-    if (params) {
-      this.locationInfo = params;
+    if (this.locationInfo) {
       this.currentPath = this.getLocationPath();
       hilog.debug(DOMAIN, TAG, 'currentPath: %{public}s', this.currentPath);
       this.saveFileName = this.locationInfo?.fileName || '';
@@ -275,7 +273,7 @@ struct FileList {
    * 取消操作
    */
   public handleCancel() {
-    this.router.back();
+    this.navManager.pop();
   }
 
   /**
@@ -313,7 +311,7 @@ struct FileList {
     this.isError = true;
     this.errorMessage = ResourceManager.getString($r('app.string.invalid_data_file'));
     CommonUtils.showToast({ message: this.errorMessage });
-    this.router.back();
+    this.navManager.pop();
   }
 
   @Builder
@@ -389,7 +387,7 @@ struct FileList {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            this.navManager.pop();
           })
 
         Text(this.isSaveMode() ? $r('app.string.location_title_save') : $r('app.string.location_title_select'))
