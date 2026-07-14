@@ -111,7 +111,7 @@ export struct CreateDatabase {
           DataService.saveKdbx({ kdbx: newDb, exportType: ExportType.KDBX, locationInfo: locationInfo }).then(() => {
             LoadingDialog.hideLoading();
             this.isCreating = false;
-            DataService.toPasswordPage(this.getUIContext().getRouter(), locationInfo);
+            DataService.toPasswordPage(locationInfo);
           })
         }
       });
