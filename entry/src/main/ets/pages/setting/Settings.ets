@@ -317,7 +317,7 @@ export struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            DataService.selectKdbx(this.getUIContext().getRouter());
+            DataService.selectKdbx();
             this.navPathStack.pushPathByName('SelectLocation', null);
           })
         }

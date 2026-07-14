@@ -190,7 +190,7 @@ export struct Index {
 
         // 主要操作按钮
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
-          DataService.selectKdbx(this.getUIContext().getRouter());
+          DataService.selectKdbx();
           this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
         })
 

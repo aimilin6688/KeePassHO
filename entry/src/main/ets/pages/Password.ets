@@ -350,7 +350,7 @@ export struct Password {
    */
   changeDatabase() {
     // 返回到文件选择页面
-    DataService.selectKdbx(this.getUIContext().getRouter());
+    DataService.selectKdbx();
     this.navPathStack.pushPathByName('SelectLocation', null);
   }
 

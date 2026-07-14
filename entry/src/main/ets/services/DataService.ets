@@ -1,18 +1,27 @@
 import { SaveKdbxParam, ExportType, FileContent } from './TypeDefined';
-import { Router } from '@kit.ArkUI';
 import { RecentFilesService } from './RecentFilesService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam';
-import { DateUtils, CommonUtils } from '../common/utils';
+import { DateUtils, CommonUtils, NavigationManager } from '../common/utils';
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { SettingsService } from './SettingsService';
 import { CsvExportHandler } from './importExport/handlers/export/CsvExportHandler';
+import { PageConstants } from '../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
+
+// 定义参数接口
+interface PasswordParam {
+  filePath: string;
+}
+
+interface IndexParam {
+  notRedirect: boolean;
+}
 
 /**
  * 数据服务
@@ -93,7 +102,7 @@ export class DataService {
   /**
    * 选择数据库
    */
-  public static selectKdbx(router: Router) {
+  public static selectKdbx() {
     const fileSuffix: Array<string> = [];
     if (SettingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT)) {
       fileSuffix.push('kdbx');
@@ -102,17 +111,16 @@ export class DataService {
       mode: LocationMode.SELECT,
       fileSuffix: fileSuffix,
       onLocation: (locationInfo: LocationInfo) => {
-        DataService.toPasswordPage(router, locationInfo);
+        DataService.toPasswordPage(locationInfo);
       }
     });
   }
 
   /**
    * 跳转到数据库打开页面
-   * @param router
-   * @param param
+   * @param locationInfo 位置信息
    */
-  public static toPasswordPage(router: Router, locationInfo: LocationInfo): void {
+  public static toPasswordPage(locationInfo: LocationInfo): void {
     // 添加到最近打开的文件列表
     RecentFilesService.addRecentFile({
       filePath: locationInfo.filePath,
@@ -121,18 +129,17 @@ export class DataService {
       storageConfig: locationInfo.storageConfig
     }).then(() => {
       // 导航到密码输入页面
-      router.pushUrl({
-        url: 'pages/Password',
-        params: {
-          filePath: locationInfo.filePath
-        }
-      });
+      const passwordParam: PasswordParam = {
+        filePath: locationInfo.filePath
+      };
+      NavigationManager.getInstance().navigateTo(PageConstants.PAGE_PASSWORD, passwordParam);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to read data file: %{public}s, error: %{public}s', locationInfo.filePath, error.message);
       if (error instanceof KeePassHoError) {
         // 本地文件创建之后没有读权限
         if (error.code === ErrorCodes.FILE_NOT_PERMISSION) {
-          router.pushUrl({ url: "pages/Index", params: { "notRedirect": true } });
+          const indexParam: IndexParam = { notRedirect: true };
+          NavigationManager.getInstance().navigateTo(PageConstants.PAGE_INDEX, indexParam);
         }
       } else {
         CommonUtils.showToast($r('app.string.open_failed', error.message));
