@@ -5,9 +5,17 @@ import { SyncSettingsService } from '../../services/store/SyncSettingsService';
 import { CommonUtils } from '../../common/utils';
 import { common } from '@kit.AbilityKit';
 
+@Builder
+export function SettingApplicationBuilder(name: string, param: Object): void {
+  NavDestination() {
+    SettingApplicationContent()
+  }
+  .title($r('app.string.Settings_application'))
+  .backgroundColor($r('app.color.bg_primary'))
+}
 
 @Component
-export struct SettingApplication {
+struct SettingApplicationContent {
   @State isHideSupportDialog: boolean = !SettingsService.KEY_SHOW_SUPPORT_DIALOG_DEFAULT;
   @State isLimitDbExt: boolean = SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT;
   @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;

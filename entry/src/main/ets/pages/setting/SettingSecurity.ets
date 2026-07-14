@@ -6,9 +6,17 @@ import { RecentFilesService } from '../../services/RecentFilesService';
 import { AuthType } from '../../services/TypeDefined';
 import { BusinessError } from '@kit.BasicServicesKit';
 
+@Builder
+export function SettingSecurityBuilder(name: string, param: Object): void {
+  NavDestination() {
+    SettingSecurityContent()
+  }
+  .title($r('app.string.Settings_security'))
+  .backgroundColor($r('app.color.bg_primary'))
+}
 
 @Component
-export struct SettingSecurity {
+struct SettingSecurityContent {
   @State isPullToRefresh: boolean = SettingsService.KEY_SECURITY_PULL_REFRESH_DEFAULT;
   @State searchHistoryEnabled: boolean = SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT;
   @State clipboardClearTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
