@@ -9,9 +9,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { PageConstants } from '../../common/constants/PageConstants';
 import { SettingDialogWrapper } from '../../components/SettingDialogWrapper';
-// import { SettingSecurity } from './SettingSecurity';
-// import { SettingDatabase } from './SettingDatabase';
-// import { SettingApplication } from './SettingApplication';
+import { SettingSecurity } from './SettingSecurity';
+import { SettingDatabase } from './SettingDatabase';
+import { SettingApplication } from './SettingApplication';
 // import { About } from '../about/About';
 
 const DOMAIN = 0x0000;
@@ -164,21 +164,21 @@ export struct Settings {
   SettingDialogContentBuilder(settingName: string) {
     // 直接使用现有页面组件（最小改动）
     // 注意：这些组件需要是export的，不带@Entry
-    Column() {
-      Text('设置项: ' + settingName)
-        .fontSize(16)
-        .padding(20)
+    if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
+      SettingSecurity();
+    } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
+      SettingDatabase({ navPathStack: this.navPathStack });
+    } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
+      SettingApplication();
+    } else if (settingName === PageConstants.PAGE_ABOUT) {
+      // About 组件有语法错误，暂时显示占位符
+      Column() {
+        Text('设置项: ' + settingName)
+          .fontSize(16)
+          .padding(20)
+      }
+      // About();
     }
-    // TODO: 后续实现设置页面的弹框显示
-    // if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
-    //   SettingSecurity();
-    // } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
-    //   SettingDatabase();
-    // } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
-    //   SettingApplication();
-    // } else if (settingName === PageConstants.PAGE_ABOUT) {
-    //   About();
-    // }
   }
 
   build() {

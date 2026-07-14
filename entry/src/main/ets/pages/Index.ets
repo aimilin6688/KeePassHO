@@ -18,14 +18,11 @@ interface PasswordParam {
 // Index页面的Builder函数,用于路由表
 @Builder
 export function IndexBuilder(name: string, param: Object): void {
-  PageContainer({ pageName: PageConstants.PAGE_INDEX }) {
-    Index()
-  }
+  Index()
 }
 
 @Component
 export struct Index {
-  @Prop navPathStack: NavPathStack;
   private navManager: NavigationManager = NavigationManager.getInstance();
 
   aboutToAppear() {

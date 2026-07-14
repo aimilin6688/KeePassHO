@@ -131,7 +131,7 @@ export default class EntryAbility extends UIAbility {
     // 初始化锁屏服务
     LockScreenService.init(windowStage, (action: string) => {
       if (action === 'close_database') {
-        this.openPage('pages/Index');
+        this.openPage('pages/AppNavigation');
       }
     });
 
@@ -139,7 +139,7 @@ export default class EntryAbility extends UIAbility {
     if (this.createUrl) {
       this.openDatabase(this.createUrl);
     } else {
-      this.openPage('pages/Index');
+      this.openPage('pages/AppNavigation');
     }
   }
 
