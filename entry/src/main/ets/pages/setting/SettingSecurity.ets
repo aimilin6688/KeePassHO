@@ -57,7 +57,6 @@ export struct SettingSecurity {
     { value: "8" }
   ];
   private settingsService: SettingsService = SettingsService.getInstance();
-  private router: Router = this.getUIContext().getRouter();
 
   aboutToAppear(): void {
     this.initSettings();
