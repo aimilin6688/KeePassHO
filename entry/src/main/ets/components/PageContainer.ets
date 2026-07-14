@@ -53,6 +53,7 @@ export struct PageContainer {
       .width('100%')
       .height('100%')
       .backgroundColor($r('app.color.bg_secondary'))
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     } else {
       // 不限制宽度（分栏模式或无需限制）
       Column() {
@@ -62,6 +63,7 @@ export struct PageContainer {
       .height('100%')
       .backgroundColor($r('app.color.bg_primary'))
       .padding(this.config?.padding || 0)
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
   }
 }

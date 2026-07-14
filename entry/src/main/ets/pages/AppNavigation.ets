@@ -32,6 +32,8 @@ struct AppNavigation {
     .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
     .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
     .enableDragBar(false)
+    .hideTitleBar(true)
+    .hideBackButton(true)
     .width('100%')
     .height('100%')
   }
