@@ -1654,10 +1654,8 @@ export struct DatabaseView {
                     .height(24)
                     .margin({ right: 16 })
                     .onClick(() => {
-                      CommonUtils.pushUrl({ url: 'pages/setting/Settings' }).catch(() => {
-                        hilog.error(DOMAIN, TAG, 'pushUrl error: pages/setting/Settings');
-                      });
-                    })
+                       NavigationManager.getInstance().navigateTo('Settings');
+                     })
                 }
                 .flexShrink(0)
                 .width(112)

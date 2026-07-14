@@ -3,7 +3,7 @@ import { SettingsService } from '../../services/SettingsService';
 import { ConfigurationConstant } from '@kit.AbilityKit';
 import { SortConstants, SortMode } from '../../common/constants/SortConstants';
 import { DataService } from '../../services/DataService';
-import { CommonUtils, ShareUtils } from '../../common/utils';
+import { CommonUtils, NavigationManager, ShareUtils } from '../../common/utils';
 import { CrashLogService } from '../../services/CrashLogService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -20,7 +20,7 @@ const TAG = 'Settings';
 // Settings页面的Builder函数
 @Builder
 export function SettingsBuilder(name: string, param: Object): void {
-  Settings()
+  Settings({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
 }
 
 interface SettingItem {
@@ -33,6 +33,7 @@ interface SettingItem {
 @Component
 export struct Settings {
   @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
   @State sortBy: SortMode = SortMode.DEFAULT
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
@@ -190,7 +191,7 @@ export struct Settings {
           .height(24)
           .margin({ left: 12 })
           .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.navPathStack.pop())
+          .onClick(() => this.navManager.navigateBackToPreviousRoot())
         Text($r('app.string.Settings_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Medium)

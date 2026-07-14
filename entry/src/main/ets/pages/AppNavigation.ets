@@ -3,13 +3,12 @@ import { NavigationModeType } from '../common/constants/PageConfig';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Index } from './Index';
+import { Settings } from './setting/Settings';
+import { DatabaseView } from './DatabaseView';
 
 const DOMAIN = 0x0000;
 const TAG = 'AppNavigation';
 
-/**
- * 应用根导航组件
- */
 @Entry
 @Component
 struct AppNavigation {
@@ -17,16 +16,46 @@ struct AppNavigation {
   private navManager: NavigationManager = NavigationManager.getInstance();
 
   @State currentMode: NavigationMode = NavigationMode.Stack;
+  @State currentRootPage: string = 'Index';
+
+  private modeChangeListener = (mode: NavigationModeType): void => {
+    this.currentMode = mode === NavigationModeType.SPLIT
+      ? NavigationMode.Auto
+      : NavigationMode.Stack;
+  };
+
+  private rootPageChangeListener = (rootPage: string): void => {
+    this.currentRootPage = rootPage;
+  };
 
   aboutToAppear() {
     hilog.info(DOMAIN, TAG, 'AppNavigation aboutToAppear');
     this.navManager.setNavPathStack(this.navPathStack);
-    this.updateNavigationMode();
+    this.navManager.addModeChangeListener(this.modeChangeListener);
+    this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
+    this.modeChangeListener(this.navManager.getCurrentStackMode());
+    this.currentRootPage = this.navManager.getCurrentRootPage();
+  }
+
+  aboutToDisappear() {
+    this.navManager.removeModeChangeListener(this.modeChangeListener);
+    this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
+  }
+
+  @Builder
+  NavBarContent() {
+    if (this.currentRootPage === 'Settings') {
+      Settings({ navPathStack: this.navPathStack })
+    } else if (this.currentRootPage === 'DatabaseView') {
+      DatabaseView({ navPathStack: this.navPathStack, databaseShowParam: undefined })
+    } else {
+      Index()
+    }
   }
 
   build() {
     Navigation(this.navPathStack) {
-      Index()
+      this.NavBarContent()
     }
     .mode(this.currentMode)
     .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
@@ -36,12 +65,5 @@ struct AppNavigation {
     .hideBackButton(true)
     .width('100%')
     .height('100%')
-  }
-
-  private updateNavigationMode(): void {
-    const config = this.navManager.getCurrentPageConfig();
-    this.currentMode = config.navigationMode === NavigationModeType.SPLIT
-      ? NavigationMode.Auto
-      : NavigationMode.Stack;
   }
 }
