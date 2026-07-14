@@ -87,7 +87,7 @@ export class NavigationManager {
     }
 
     // 执行导航
-    this.navPathStack.pushPath({ name: pageName, param: params });
+    this.navPathStack.pushPathByName(pageName, params);
 
     hilog.info(DOMAIN, TAG, 'Navigated to: %{public}s, isRoot: %{public}s', pageName, isRoot.toString());
   }

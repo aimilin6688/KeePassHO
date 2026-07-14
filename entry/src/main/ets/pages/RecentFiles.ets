@@ -4,7 +4,7 @@ import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
-import { CommonUtils, WindowUtils } from '../common/utils';
+import { CommonUtils, NavigationManager, WindowUtils } from '../common/utils';
 import { FileStorage, PageConfig } from '../storage';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { PageConstants } from '../common/constants/PageConstants';
@@ -20,7 +20,10 @@ interface PasswordNavParam {
 // RecentFiles页面的Builder函数
 @Builder
 export function RecentFilesBuilder(name: string, param: Object): void {
-  RecentFiles({ source: (param as Record<string, string>)?.source || 'home' })
+  RecentFiles({
+    navPathStack: NavigationManager.getInstance().getNavPathStack()!,
+    source: (param as Record<string, string>)?.source || 'home'
+  })
 }
 
 @Component

@@ -31,6 +31,9 @@ struct AppNavigation {
 
     // 设置导航栈到管理器
     this.navManager.setNavPathStack(this.navPathStack);
+
+    // 导航到首页
+    this.navManager.navigateTo(PageConstants.PAGE_INDEX);
   }
 
   build() {
@@ -48,8 +51,6 @@ struct AppNavigation {
     .height('100%')
     .onAppear(() => {
       this.updateNavigationMode();
-      // 导航到首页（在 Navigation 组件完全初始化后）
-      this.navManager.navigateTo(PageConstants.PAGE_INDEX);
     })
   }
 

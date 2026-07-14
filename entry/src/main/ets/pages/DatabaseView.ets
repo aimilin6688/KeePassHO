@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
-import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { FileService } from '../services/FileService';
 import { LockScreenService } from '../services/LockScreenService';
@@ -33,7 +33,10 @@ const TAG = 'DatabaseView';
 // DatabaseView页面的Builder函数
 @Builder
 export function DatabaseViewBuilder(name: string, param: Object): void {
-  DatabaseView({ databaseShowParam: param as DatabaseShowParam })
+  DatabaseView({
+    navPathStack: NavigationManager.getInstance().getNavPathStack()!,
+    databaseShowParam: param as DatabaseShowParam
+  })
 }
 
 @Component

@@ -7,7 +7,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { CommonUtils, CryptoUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
@@ -28,7 +28,7 @@ const TAG = 'Password';
 // Password页面的Builder函数
 @Builder
 export function PasswordBuilder(name: string, param: Object): void {
-  Password()
+  Password({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
 }
 
 @Component
@@ -73,6 +73,13 @@ export struct Password {
   aboutToAppear() {
     //初始化认证方式
     this.setAuthType(this.authTypeInfo);
+
+    // 检查 navPathStack 是否有效
+    if (!this.navPathStack) {
+      hilog.error(DOMAIN, TAG, 'navPathStack is undefined!');
+      // 直接从 NavigationManager 获取
+      this.navPathStack = NavigationManager.getInstance().getNavPathStack()!;
+    }
 
     // 通过Navigation系统获取参数
     const paramsArray: Object[] = this.navPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Object[];
