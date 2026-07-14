@@ -45,7 +45,7 @@ struct AppNavigation {
   @Builder
   NavBarContent() {
     if (this.currentRootPage === 'Settings') {
-      Settings({ navPathStack: this.navPathStack })
+      Settings()
     } else if (this.currentRootPage === 'DatabaseView') {
       DatabaseView({ navPathStack: this.navPathStack, databaseShowParam: undefined })
     } else {

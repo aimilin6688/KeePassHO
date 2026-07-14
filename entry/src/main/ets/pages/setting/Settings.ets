@@ -20,7 +20,7 @@ const TAG = 'Settings';
 // Settings页面的Builder函数
 @Builder
 export function SettingsBuilder(name: string, param: Object): void {
-  Settings({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
+  Settings()
 }
 
 interface SettingItem {
@@ -32,7 +32,6 @@ interface SettingItem {
 
 @Component
 export struct Settings {
-  @Prop navPathStack: NavPathStack;
   private navManager: NavigationManager = NavigationManager.getInstance();
   @State sortBy: SortMode = SortMode.DEFAULT
   @State currentThemeMode: ThemeMode = ThemeMode.SYSTEM;
@@ -127,58 +126,54 @@ export struct Settings {
     }
   }
 
+  @State currentDialogSettingName: string = '';
+  @State currentDialogTitle: ResourceStr = '';
+
   private handleItemClick(item: SettingItem) {
+    const stack = this.navManager.getNavPathStack();
+    if (!stack) {
+      hilog.error(DOMAIN, TAG, 'navPathStack is null');
+      return;
+    }
     if (item.isPageRoute) {
-      // 在右侧分栏显示
-      this.navPathStack.pushPathByName(item.name, null);
+      stack.pushPathByName(item.name, null);
     } else {
-      // 使用弹框展示
-      this.showSettingDialog(item);
+      this.currentDialogSettingName = item.name;
+      this.currentDialogTitle = item.title;
+      this.dialogController = new CustomDialogController({
+        builder: this.SettingDialogBuilder,
+        alignment: DialogAlignment.Center,
+        customStyle: true,
+        autoCancel: true,
+      });
+      this.dialogController.open();
     }
   }
 
-  private showSettingDialog(item: SettingItem) {
-    const closeDialog: () => void = () => {
-      if (this.dialogController) {
-        this.dialogController.close();
-      }
-    };
-    const contentBuilder: () => void = () => {
-      this.SettingDialogContentBuilder(item.name);
-    };
-    this.dialogController = new CustomDialogController({
-      builder: SettingDialogWrapper({
-        title: item.title,
-        context: this.getUIContext(),
-        content: contentBuilder,
-        onClose: closeDialog
-      }),
-      alignment: DialogAlignment.Center,
-      customStyle: true,
-      autoCancel: true,
-    });
-
-    this.dialogController.open();
+  @Builder
+  SettingDialogBuilder() {
+    SettingDialogWrapper({
+      title: this.currentDialogTitle,
+      context: this.getUIContext(),
+      content: () => { this.SettingDialogContentBuilder(this.currentDialogSettingName); },
+      onClose: () => { this.dialogController?.close(); }
+    })
   }
 
   @Builder
   SettingDialogContentBuilder(settingName: string) {
-    // 直接使用现有页面组件（最小改动）
-    // 注意：这些组件需要是export的，不带@Entry
     if (settingName === PageConstants.PAGE_SETTING_SECURITY) {
       SettingSecurity();
     } else if (settingName === PageConstants.PAGE_SETTING_DATABASE) {
-      SettingDatabase({ navPathStack: this.navPathStack });
+      SettingDatabase({ navPathStack: this.navManager.getNavPathStack()! });
     } else if (settingName === PageConstants.PAGE_SETTING_APPLICATION) {
       SettingApplication();
     } else if (settingName === PageConstants.PAGE_ABOUT) {
-      // About 组件有语法错误，暂时显示占位符
       Column() {
         Text('设置项: ' + settingName)
           .fontSize(16)
           .padding(20)
       }
-      // About();
     }
   }
 
@@ -300,7 +295,10 @@ export struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            this.navPathStack.pushPathByName('CreateDatabase', null);
+            const stack = this.navManager.getNavPathStack();
+            if (stack) {
+              stack.pushPathByName('CreateDatabase', null);
+            }
           })
 
           // 更换数据库
@@ -319,7 +317,10 @@ export struct Settings {
           }
           .onClick(() => {
             DataService.selectKdbx();
-            this.navPathStack.pushPathByName('SelectLocation', null);
+            const stack = this.navManager.getNavPathStack();
+            if (stack) {
+              stack.pushPathByName('SelectLocation', null);
+            }
           })
         }
         .margin({ top: 12, bottom: 12 })
