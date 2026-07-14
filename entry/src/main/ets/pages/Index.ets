@@ -24,6 +24,7 @@ export function IndexBuilder(name: string, param: Object) {
 @Component
 export struct Index {
   private navManager: NavigationManager = NavigationManager.getInstance();
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
 
   aboutToAppear() {
     hilog.info(DOMAIN, TAG, 'Index aboutToAppear');
@@ -166,9 +167,6 @@ export struct Index {
       }
       .width('100%')
       .height(40)
-      .onAppear(() => {
-        hilog.info(DOMAIN, TAG, 'Index top bar onAppear');
-      })
 
       // 主要内容区域
       Column() {
