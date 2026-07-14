@@ -17,7 +17,7 @@ interface PasswordParam {
 
 // Index页面的Builder函数,用于路由表
 @Builder
-export function IndexBuilder(name: string, param: Object): void {
+export function IndexBuilder(name: string, param: Object) {
   Index()
 }
 
@@ -166,6 +166,9 @@ export struct Index {
       }
       .width('100%')
       .height(40)
+      .onAppear(() => {
+        hilog.info(DOMAIN, TAG, 'Index top bar onAppear');
+      })
 
       // 主要内容区域
       Column() {
