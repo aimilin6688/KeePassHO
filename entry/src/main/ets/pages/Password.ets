@@ -34,6 +34,7 @@ export function PasswordBuilder(name: string, param: Object): void {
 @Component
 export struct Password {
   @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
   @State password: string = '';
   @State isShowBiometric: boolean = false; // 是否显示生物认证
   @State isLoading: boolean = false;
@@ -451,7 +452,7 @@ export struct Password {
     this.putFileToRecentFile();
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
-      CommonUtils.pushUrl({ url: 'pages/DatabaseView' });
+      this.navManager.navigateTo(PageConstants.PAGE_DATABASE_VIEW);
       this.closeLoadingDialog();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);

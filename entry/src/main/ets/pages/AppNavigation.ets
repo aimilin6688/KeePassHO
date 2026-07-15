@@ -58,6 +58,7 @@ struct AppNavigation {
       this.NavBarContent()
     }
     .mode(this.currentMode)
+    .navBarWidth(NavigationConstants.DEFAULT_NAV_BAR_WIDTH)
     .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
     .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
     .enableDragBar(false)
