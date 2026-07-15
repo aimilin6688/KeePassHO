@@ -28,7 +28,11 @@ const TAG = 'Password';
 // Password页面的Builder函数
 @Builder
 export function PasswordBuilder(name: string, param: Object): void {
-  Password({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
+  NavDestination() {
+    Password({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
+  }
+  .title($r('app.string.open_database'))
+  .backgroundColor($r('app.color.bg_primary'))
 }
 
 @Component
