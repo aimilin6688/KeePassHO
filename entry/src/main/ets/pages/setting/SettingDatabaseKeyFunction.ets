@@ -1,4 +1,3 @@
-import { Router } from '@kit.ArkUI';
 import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
 import { CommonUtils, KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';
@@ -7,15 +6,15 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseKeyFunction';
 
-@Entry
 @Component
-struct SettingDatabaseKeyFunction {
+export struct SettingDatabaseKeyFunctionContent {
   @State isDatabaseValid: boolean = false;
   @State algoType: string = Consts.KdfId.Argon2d;
   @State iteration: number = HeaderConst.DefaultKdfIterations;
   @State memory: string = (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "";
   @State parallelism: number = HeaderConst.DefaultKdfParallelism;
   @State rounds: number = Consts.Defaults.KeyEncryptionRounds;
+  onClose?: () => void;
   private keyFunctionOptions: Array<KeyFunctionOption> = [
     {
       value: "Argon2d",
@@ -30,10 +29,9 @@ struct SettingDatabaseKeyFunction {
       type: Consts.KdfId.Aes,
     },
   ];
-  private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
 
-  onPageShow(): void {
+  aboutToAppear(): void {
     const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
     if (this.isDatabaseValid) {
@@ -109,23 +107,6 @@ struct SettingDatabaseKeyFunction {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
-        Text($r("app.string.Settings_database_encryption_key"))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
-      }
-      .width('100%')
-      .height(40)
-
-
       List() {
         if (this.isDatabaseValid) {
           // 主要内容区域
@@ -153,7 +134,8 @@ struct SettingDatabaseKeyFunction {
               }
               .width('100%')
               .padding({
-                left: 16,
+                left: 0,
+                right: 0,
                 top: 9,
                 bottom: 9
               })
@@ -303,11 +285,7 @@ struct SettingDatabaseKeyFunction {
           }
         }
       }
-      .height('auto')
       .width('100%')
-      .layoutWeight(1)
-      .padding({ left: 12, right: 12, top: 4 })
-      .clipContent(ContentClipMode.SAFE_AREA)
 
       // 操作按钮
       Row() {
@@ -326,7 +304,9 @@ struct SettingDatabaseKeyFunction {
         .borderRadius(20)
         .backgroundColor(Color.Gray)
         .onClick(() => {
-          this.router.back();
+          if (this.onClose) {
+            this.onClose();
+          }
         })
 
         Blank()
@@ -350,19 +330,10 @@ struct SettingDatabaseKeyFunction {
       }
       .width('100%')
       .height(45)
-      .padding({
-        top: 12,
-        bottom: 0,
-        left: 16,
-        right: 16
-      })
-      .position({ x: 0, y: '100%' })
-      .translate({ y: -45 }) // 调整位置，确保正确显示
+      .margin({ top: 12, bottom: 0 })
     }
     .width('100%')
-    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
 
