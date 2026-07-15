@@ -1,11 +1,12 @@
 import { PromptAction } from '@kit.ArkUI';
-import { CommonUtils, ResourceManager } from '../../common/utils';
+import { CommonUtils, NavigationManager, ResourceManager } from '../../common/utils';
 import { bundleManager, common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ClipboardUtils } from '../../common/utils/ClipboardUtils';
 import { updateManager } from '@kit.AppGalleryKit';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
+import { PageConstants } from '../../common/constants/PageConstants';
 
 const DOMAIN = 0x0000;
 const TAG = 'About';
@@ -22,6 +23,7 @@ export function AboutBuilder(name: string, param: Object): void {
 @Component
 struct AboutContent {
   @State version: string = '';
+  private navManager = NavigationManager.getInstance();
   private context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private bundleName: string = '';
@@ -211,7 +213,7 @@ struct AboutContent {
                     .fillColor($r('app.color.text_primary'))
                 }
                 .onClick(() => {
-                  CommonUtils.pushUrl({ url: 'pages/about/Support' })
+                  this.navManager.getNavPathStack()?.pushPathByName(PageConstants.PAGE_SUPPORT, null);
                 })
                 .width('100%')
                 .padding(16)

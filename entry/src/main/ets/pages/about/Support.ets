@@ -20,9 +20,17 @@ interface ProductOption {
   thanksMessage: ResourceStr;
 }
 
-@Entry
+@Builder
+export function SupportBuilder(name: string, param: Object): void {
+  NavDestination() {
+    SupportContent()
+  }
+  .title($r('app.string.about_support'))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
-struct Support {
+struct SupportContent {
   @State clickCount: number = 0;
   @State isShowOtherPay: boolean = false;
   private router: Router = this.getUIContext().getRouter();
@@ -197,24 +205,6 @@ struct Support {
   build() {
     // 内容区域
     Column() {
-      // 标题栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12, right: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.router.back()
-          })
-        Text($r("app.string.about_support"))
-          .fontSize(18)
-          .fontWeight(FontWeight.Medium)
-        Blank()
-      }
-      .width('100%')
-      .height(40)
-
       // 内容
       List() {
         ListItem() {

@@ -107,6 +107,7 @@ export class PageConstants {
   static readonly PAGE_SETTING_DATABASE: string = 'SettingDatabase';
   static readonly PAGE_SETTING_APPLICATION: string = 'SettingApplication';
   static readonly PAGE_ABOUT: string = 'About';
+  static readonly PAGE_SUPPORT: string = 'Support';
 
   /**
    * 获取所有首页相关页面名称
