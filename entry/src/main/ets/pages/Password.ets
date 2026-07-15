@@ -31,7 +31,7 @@ export function PasswordBuilder(name: string, param: Object): void {
   NavDestination() {
     Password({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
   }
-  .title($r('app.string.open_database'))
+  .title($r('app.string.Password_unlock_title'))
   .backgroundColor($r('app.color.bg_primary'))
 }
 
@@ -546,26 +546,6 @@ export struct Password {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.navPathStack.pop();
-          })
-
-        Text($r('app.string.Password_unlock_title'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-      }
-      .width('100%')
-      .height(40)
-
       // 主要内容区域
       Column() {
         // Logo或应用图标

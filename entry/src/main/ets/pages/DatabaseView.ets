@@ -1,10 +1,11 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { DatabaseShowParam, Icons, MoveParam } from '../services/TypeDefined';
+import { DatabaseShowParam, EntryParam, Icons, MoveParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
+import { PageConstants } from '../common/constants/PageConstants';
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { FileService } from '../services/FileService';
 import { LockScreenService } from '../services/LockScreenService';
@@ -33,15 +34,13 @@ const TAG = 'DatabaseView';
 // DatabaseView页面的Builder函数
 @Builder
 export function DatabaseViewBuilder(name: string, param: Object): void {
-  DatabaseView({
-    navPathStack: NavigationManager.getInstance().getNavPathStack()!,
-    databaseShowParam: param as DatabaseShowParam
-  })
+  DatabaseView({ databaseShowParam: param as DatabaseShowParam })
 }
 
 @Component
 export struct DatabaseView {
-  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
@@ -1888,10 +1887,8 @@ export struct DatabaseView {
                         if (this.isSelectionMode) {
                           this.toggleSelection(item);
                         } else {
-                          CommonUtils.pushUrl({
-                            url: 'pages/EntryView',
-                            params: { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id }
-                          });
+                          const entryParam: EntryParam = { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id };
+                          this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_VIEW, entryParam);
                         }
                       })
                       .gesture(

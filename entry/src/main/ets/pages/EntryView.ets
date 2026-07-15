@@ -1,7 +1,7 @@
 import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
-import { KdbxUtils, DateUtils, WindowUtils, CommonUtils } from '../common/utils';
+import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, NavigationManager } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
@@ -21,12 +21,15 @@ interface EntryHistoryView {
 // EntryView页面的Builder函数
 @Builder
 export function EntryViewBuilder(name: string, param: Object): void {
-  EntryView({ entryParam: param as EntryParam })
+  NavDestination() {
+    EntryView({ entryParam: param as EntryParam })
+  }
+  .backgroundColor($r('app.color.bg_primary'))
 }
 
 @Component
 export struct EntryView {
-  @Prop navPathStack: NavPathStack;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   private entryParam: EntryParam | undefined = undefined;
   @State isLoading: boolean = true;
   @State entry: KdbxEntry | null = null;
@@ -46,11 +49,11 @@ export struct EntryView {
       this.groupId = this.entryParam.groupId || '';
       this.selectedHistoryIndex = this.entryParam.historyIndex === undefined ? -1 : this.entryParam.historyIndex;
     }
+    // 加载数据库和条目
+    this.loadEntry();
   }
 
   onPageShow(): void {
-    // 加载数据库和条目
-    this.loadEntry();
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
