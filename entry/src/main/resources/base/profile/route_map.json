@@ -119,6 +119,11 @@
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/about/About.ets",
       "buildFunction": "AboutBuilder"
+    },
+    {
+      "name": "Support",
+      "pageSourceFile": "src/main/ets/pages/about/Support.ets",
+      "buildFunction": "SupportBuilder"
     }
   ]
 }

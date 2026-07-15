@@ -58,6 +58,7 @@ struct CreateDatabaseContent {
   }
 
   private async createDatabase() {
+    hilog.info(DOMAIN, TAG, 'createDatabase called');
     if (this.databaseName.length === 0) {
       CommonUtils.showToast({ message: $r("app.string.database_name_placeholder") });
       return;
@@ -82,6 +83,7 @@ struct CreateDatabaseContent {
       }
     }
 
+    hilog.info(DOMAIN, TAG, 'validation passed, starting create');
     this.isCreating = true;
 
     try {
@@ -119,7 +121,8 @@ struct CreateDatabaseContent {
           })
         }
       });
-      CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+      hilog.info(DOMAIN, TAG, 'pushing to SelectLocation');
+      this.navManager.getNavPathStack()?.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to create database: ${error.message}`);
       CommonUtils.showToast({ message: $r('app.string.CreateDatabase_error_message', error.message) });
@@ -140,7 +143,7 @@ struct CreateDatabaseContent {
         this.navManager.getNavPathStack()?.pop();
       }
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navManager.getNavPathStack()?.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
   }
 
   /**
@@ -155,7 +158,7 @@ struct CreateDatabaseContent {
     }, (error) => {
       this.navManager.getNavPathStack()?.pop();
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navManager.getNavPathStack()?.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
   }
 
   /**
