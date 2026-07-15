@@ -5,14 +5,12 @@ import { KdbxUtils, IconUtils } from '../../common/utils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 import { ImageAddComponent } from '../../components/ImageAddComponent';
 
-@Entry
 @Component
-struct SettingCustomIcons {
+export struct SettingCustomIconsContent {
   @State icons: IconResource[] = [];
   @State selectIcons: Set<string | number> = new Set();
   // 图标大小
   private readonly iconSize: number = 52;
-  private router: Router = this.getUIContext().getRouter();
 
   aboutToAppear() {
     this.icons = IconUtils.getAllIcons(true);
@@ -94,41 +92,6 @@ struct SettingCustomIcons {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        // 返回按钮
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
-        Text($r('app.string.Settings_custom_icons'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
-
-        Blank()
-        // 图片添加组件
-        Button() {
-          ImageAddComponent({
-            onSuccess: () => {
-              this.refreshIcons();
-            }
-          })
-            .width(30)
-            .height(30)
-        }
-        .width(36)
-        .height(36)
-        .margin({ right: 16 })
-        .borderRadius(20)
-        .backgroundColor(Color.Transparent)
-
-      }
-      .width('100%')
-      .height(40)
-
       // 图标网格
       Scroll() {
         Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
@@ -220,18 +183,9 @@ struct SettingCustomIcons {
       }
       .width('100%')
       .height(45)
-      .padding({
-        top: 12,
-        bottom: 0,
-        left: 16,
-        right: 16
-      })
-      .position({ x: 0, y: '100%' })
-      .translate({ y: -45 }) // 调整位置，确保正确显示
+      .margin({ top: 12, bottom: 0 })
     }
     .width('100%')
-    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

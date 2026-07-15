@@ -56,14 +56,20 @@ export struct SettingDialogWrapper {
           this.content();
         }
         .width('100%')
+        .constraintSize({ maxWidth: '100%' })
         .padding(this.isPercentage
           ? SettingDialogConstants.PADDING_NARROW
           : SettingDialogConstants.PADDING_WIDE)
       }
+      .width('100%')
       .layoutWeight(1)
+      .scrollBar(BarState.Auto)
     }
-    .width(this.dialogWidth)
-    .constraintSize({ maxHeight: SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO })
+    .width('100%')
+    .constraintSize({ 
+      maxWidth: SettingDialogConstants.DIALOG_MAX_WIDTH,
+      maxHeight: SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO 
+    })
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(SettingDialogConstants.CORNER_RADIUS)
     .shadow(this.isPercentage ? ShadowStyle.OUTER_DEFAULT_SM : {

@@ -5,11 +5,10 @@ import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
-const TAG = 'SettingDatabaseKeyFunction';
+const TAG = 'SettingDatabaseProtectedFiled';
 
-@Entry
 @Component
-struct SettingDatabaseKeyFunction {
+export struct SettingDatabaseProtectedFiledContent {
   @State isDatabaseValid: boolean = false;
   @State protectedField: KdbxMemoryProtection = {
     title: false,
@@ -18,10 +17,9 @@ struct SettingDatabaseKeyFunction {
     url: false,
     notes: false
   };
-  private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
 
-  onPageShow(): void {
+  aboutToAppear(): void {
     const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
     if (this.isDatabaseValid && dbFileParam.database.meta.memoryProtection) {
@@ -54,23 +52,6 @@ struct SettingDatabaseKeyFunction {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.router.back())
-        Text($r("app.string.Settings_default_protected_field"))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
-      }
-      .width('100%')
-      .height(40)
-
-
       List() {
         if (this.isDatabaseValid) {
           // 主要内容区域
@@ -229,15 +210,10 @@ struct SettingDatabaseKeyFunction {
           }
         }
       }
-      .height('auto')
       .width('100%')
-      .layoutWeight(1)
-      .padding({ left: 12, right: 12, top: 4 })
       .clipContent(ContentClipMode.SAFE_AREA)
     }
     .width('100%')
-    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

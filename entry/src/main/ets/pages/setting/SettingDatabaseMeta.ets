@@ -1,4 +1,4 @@
-import { CounterComponent, CounterType, PromptAction, Router } from '@kit.ArkUI';
+import { CounterComponent, CounterType, PromptAction } from '@kit.ArkUI';
 import { FileService } from '../../services/FileService';
 import { KdbxUtils, CommonUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -9,9 +9,8 @@ import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatab
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseMeta';
 
-@Entry
 @Component
-struct SettingDatabaseMeta {
+export struct SettingDatabaseMetaContent {
   @State isModified: boolean = false;
   // 数据库元数据
   @State databaseName: string = '';
@@ -25,8 +24,8 @@ struct SettingDatabaseMeta {
   @State compressionEnabled: boolean = true;
   // 本地属性
   private database: Kdbx | null = null;
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  onClose?: () => void;
 
   aboutToAppear() {
     // 获取数据库对象
@@ -82,8 +81,10 @@ struct SettingDatabaseMeta {
         onSuccess: () => {
           // 通知数据库已更新
           EventBus.emit<void>(EventBus.DATABASE_UPDATE);
-          // 返回上一页
-          this.router.back();
+          // 关闭对话框
+          if (this.onClose) {
+            this.onClose();
+          }
         }
       }));
     } catch (error) {
@@ -100,38 +101,22 @@ struct SettingDatabaseMeta {
    */
   private handleDialogCancel() {
     if (!this.isModified) {
-      this.router.back();
+      if (this.onClose) {
+        this.onClose();
+      }
       return;
     }
     CommonUtils.showUnSaveConfirm(this.getUIContext(), {
       onConfirm: () => {
-        this.router.back();
+        if (this.onClose) {
+          this.onClose();
+        }
       }
     });
   }
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.handleDialogCancel();
-          })
-
-        Text($r('app.string.Settings_database_metadata'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-      }
-      .width('100%')
-      .height(40)
-
       Scroll() {
         // 主要内容区域
         Column() {
@@ -374,12 +359,9 @@ struct SettingDatabaseMeta {
           .height('100')
         }
         .width('100%')
-        .height('auto')
-        .layoutWeight(1)
         .margin({ top: 4 })
         .padding({ left: 12, right: 12 })
       }.width('100%')
-      .height('auto')
       .clipContent(ContentClipMode.SAFE_AREA)
 
 
@@ -400,7 +382,7 @@ struct SettingDatabaseMeta {
         .borderRadius(20)
         .backgroundColor(Color.Gray)
         .onClick(() => {
-          this.router.back();
+          this.handleDialogCancel();
         })
 
         Blank()
@@ -424,18 +406,9 @@ struct SettingDatabaseMeta {
       }
       .width('100%')
       .height(45)
-      .padding({
-        top: 12,
-        bottom: 0,
-        left: 16,
-        right: 16
-      })
-      .position({ x: 0, y: '100%' })
-      .translate({ y: -45 }) // 调整位置，确保正确显示
+      .margin({ top: 12, bottom: 0 })
     }
     .width('100%')
-    .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
