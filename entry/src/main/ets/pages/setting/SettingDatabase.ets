@@ -1,6 +1,7 @@
 import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
-import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
+import { CommonUtils, KdbxUtils, NavigationManager, ResourceManager } from '../../common/utils';
+import { PageConstants } from '../../common/constants/PageConstants';
 import { FileService } from '../../services/FileService';
 import { ExportType } from '../../services/TypeDefined';
 import {
@@ -30,7 +31,8 @@ interface FormatSelectOption {
 
 @Component
 struct SettingDatabaseContent {
-  @Prop navPathStack: NavPathStack;
+  private navManager: NavigationManager = NavigationManager.getInstance();
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isDatabaseValid: boolean = false;
   @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));
 
@@ -49,9 +51,8 @@ struct SettingDatabaseContent {
     // 获取支持的格式
     this.importFormats = this.viewModel.getImportFormatOptions();
     this.exportFormats = this.viewModel.getExportFormatOptions();
-  }
 
-  onPageShow(): void {
+    // 检查数据库是否有效
     const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
     if (this.isDatabaseValid) {
@@ -69,7 +70,7 @@ struct SettingDatabaseContent {
       fileSuffix: extensions,
       onLocation: (location: LocationInfo) => this.doImport(location)
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navPathStack.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
   }
 
   private async doImport(location: LocationInfo): Promise<void> {
@@ -81,7 +82,7 @@ struct SettingDatabaseContent {
 
     if (success) {
       CommonUtils.showToast(`导入成功，共 ${this.viewModel.lastImportedCount} 条记录`);
-      CommonUtils.back({ url: "pages/setting/SettingDatabase" });
+      this.navPathStack.pop();
     } else {
       CommonUtils.showToast(this.viewModel.errorMessage);
     }
@@ -96,7 +97,7 @@ struct SettingDatabaseContent {
       fileName: fileName,
       onLocation: (location: LocationInfo) => this.doExport(formatId, location)
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navPathStack.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
   }
 
   private async doExport(formatId: string, location: LocationInfo): Promise<void> {
@@ -108,7 +109,7 @@ struct SettingDatabaseContent {
 
     if (success) {
       CommonUtils.showToast('导出成功');
-      CommonUtils.back({ url: "pages/setting/SettingDatabase" });
+      this.navPathStack.pop();
     } else {
       CommonUtils.showToast(this.viewModel.errorMessage);
     }
