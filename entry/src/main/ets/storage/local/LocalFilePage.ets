@@ -11,9 +11,17 @@ import { LocationParam } from '../../services/beans/LocationParam';
 const DOMAIN = 0x0000;
 const TAG = 'LocalFile';
 
-@Entry
+@Builder
+export function LocalFilePageBuilder(name: string, param: Object): void {
+  NavDestination() {
+    LocalFileContent()
+  }
+  .title($r('app.string.local_file_button_title'))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
-struct LocalFile {
+struct LocalFileContent {
   @State selectedFile: string = '';
   @State isLoading: boolean = false;
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -120,26 +128,6 @@ struct LocalFile {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.router.back()
-          })
-
-        Text($r('app.string.select_local_file'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-      }
-      .width('100%')
-      .height(56)
-
       // 主要内容区域
       Column() {
         if (this.isLoading) {

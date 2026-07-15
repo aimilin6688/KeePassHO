@@ -1,6 +1,6 @@
 import { CommonUtils } from '../../common/utils/CommonUtils';
 import { DateUtils } from '../../common/utils/DateUtils';
-import { StorageConfig, StorageType } from '../../storage';
+import { FileStorage, StorageConfig, StorageType } from '../../storage';
 
 /**
  * 打开方式类型
@@ -185,5 +185,22 @@ export class LocationParam implements LocationInterface {
     } else {
       CommonUtils.showToast($r('app.string.location_not_set_callback'));
     }
+  }
+
+  /**
+   * 根据 StorageType 创建 LocationInfo
+   * @param storageType 存储类型
+   * @return LocationInfo
+   */
+  public static toLocationInfo(storageType: StorageType): LocationInfo {
+    const instance = LocationParam.getInstance();
+    return {
+      mode: instance.mode,
+      filePath: '',
+      fileName: instance.fileName || '',
+      fileSuffix: instance.fileSuffix,
+      storageType: storageType,
+      storageConfig: {}
+    };
   }
 }

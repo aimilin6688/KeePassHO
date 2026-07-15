@@ -42,7 +42,7 @@
     },
     {
       "name": "LocalFilePage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "pageSourceFile": "src/main/ets/storage/local/LocalFilePage.ets",
       "buildFunction": "LocalFilePageBuilder"
     },
     {

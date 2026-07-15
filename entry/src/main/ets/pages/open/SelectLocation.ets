@@ -54,7 +54,8 @@ struct SelectLocationContent {
                 title: config.title,
                 description: LocationParam.isSaveMode() ? config.saveDesc : config.selectDesc,
                 onClickEvent: () => {
-                  CommonUtils.pushUrl({ url: config.pageUrl })
+                  const pageName = config.pageUrl.split('/').pop() || config.pageUrl;
+                  this.navManager.getNavPathStack()?.pushPathByName(pageName, null);
                 }
               })
             }, (item: PageConfig) => item.pageUrl)
