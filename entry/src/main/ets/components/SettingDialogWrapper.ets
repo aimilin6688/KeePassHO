@@ -27,56 +27,62 @@ export struct SettingDialogWrapper {
   }
 
   build() {
-    Column() {
-      // 标题栏
-      Row() {
-        Text(this.title)
-          .fontSize(SettingDialogConstants.TITLE_FONT_SIZE)
-          .fontWeight(FontWeight.Medium)
+    Row() {
+      Blank()
+        .layoutWeight(1)
 
-        Blank()
+      Column() {
+        // 标题栏
+        Row() {
+          Text(this.title)
+            .fontSize(SettingDialogConstants.TITLE_FONT_SIZE)
+            .fontWeight(FontWeight.Medium)
 
-        Image($r('app.media.ic_clear'))
-          .width(SettingDialogConstants.CLOSE_BUTTON_SIZE)
-          .height(SettingDialogConstants.CLOSE_BUTTON_SIZE)
-          .onClick(() => this.onClose())
-      }
-      .width('100%')
-      .height(SettingDialogConstants.HEADER_HEIGHT)
-      .padding({
-        left: SettingDialogConstants.PADDING_WIDE,
-        right: SettingDialogConstants.PADDING_WIDE
-      })
+          Blank()
 
-      Divider()
-
-      // 内容区
-      Scroll() {
-        Column() {
-          this.content();
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize(SettingDialogConstants.CLOSE_BUTTON_SIZE)
+            .fontColor([$r('app.color.text_primary')])
+            .onClick(() => this.onClose())
         }
         .width('100%')
-        .constraintSize({ maxWidth: '100%' })
-        .padding(this.isPercentage
-          ? SettingDialogConstants.PADDING_NARROW
-          : SettingDialogConstants.PADDING_WIDE)
+        .height(SettingDialogConstants.HEADER_HEIGHT)
+        .padding({
+          left: SettingDialogConstants.PADDING_WIDE,
+          right: SettingDialogConstants.PADDING_WIDE
+        })
+
+        Divider()
+
+        // 内容区
+        Scroll() {
+          Column() {
+            this.content();
+          }
+          .width('100%')
+          .constraintSize({ maxWidth: '100%' })
+          .padding(this.isPercentage
+            ? SettingDialogConstants.PADDING_NARROW
+            : SettingDialogConstants.PADDING_WIDE)
+        }
+        .width('100%')
+        .constraintSize({ maxHeight: SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO })
+        .scrollBar(BarState.Auto)
       }
-      .width('100%')
-      .layoutWeight(1)
-      .scrollBar(BarState.Auto)
+      .width(this.dialogWidth)
+      .backgroundColor($r('app.color.bg_primary'))
+      .borderRadius(SettingDialogConstants.CORNER_RADIUS)
+      .shadow(this.isPercentage ? ShadowStyle.OUTER_DEFAULT_SM : {
+        radius: SettingDialogConstants.SHADOW_RADIUS,
+        color: Color.Gray,
+        offsetX: 0,
+        offsetY: SettingDialogConstants.SHADOW_OFFSET_Y
+      })
+
+      Blank()
+        .layoutWeight(1)
     }
     .width('100%')
-    .constraintSize({ 
-      maxWidth: SettingDialogConstants.DIALOG_MAX_WIDTH,
-      maxHeight: SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO 
-    })
-    .backgroundColor($r('app.color.bg_primary'))
-    .borderRadius(SettingDialogConstants.CORNER_RADIUS)
-    .shadow(this.isPercentage ? ShadowStyle.OUTER_DEFAULT_SM : {
-      radius: SettingDialogConstants.SHADOW_RADIUS,
-      color: Color.Gray,
-      offsetX: 0,
-      offsetY: SettingDialogConstants.SHADOW_OFFSET_Y
-    })
+    .height('100%')
   }
 }
