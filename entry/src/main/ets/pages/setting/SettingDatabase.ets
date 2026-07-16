@@ -37,32 +37,39 @@ export function SettingDatabaseBuilder(name: string, param: Object): void {
 
 @Component
 struct SettingDatabasePage {
-  @State @Watch('onDialogTypeChange') currentDialogType: DialogType = DialogType.NONE;
+  @State currentDialogType: DialogType = DialogType.NONE;
   @State isSheetShow: boolean = false;
 
-  onDialogTypeChange() {
-    hilog.info(DOMAIN, TAG, `onDialogTypeChange: currentDialogType=${this.currentDialogType}, isSheetShow=${this.isSheetShow}`);
-    if (this.currentDialogType !== DialogType.NONE) {
+  private showDialog(type: DialogType) {
+    hilog.info(DOMAIN, TAG, `showDialog: type=${type}, currentDialogType=${this.currentDialogType}, isSheetShow=${this.isSheetShow}`);
+    // 先设置类型，再显示弹框
+    this.currentDialogType = type;
+    // 使用 setTimeout 确保状态更新后再显示弹框
+    setTimeout(() => {
       this.isSheetShow = true;
-    }
+      hilog.info(DOMAIN, TAG, `showDialog done: isSheetShow=${this.isSheetShow}`);
+    }, 50);
   }
 
   private closeDialog() {
-    hilog.info(DOMAIN, TAG, `closeDialog: before isSheetShow=${this.isSheetShow}`);
-    this.currentDialogType = DialogType.NONE;
+    hilog.info(DOMAIN, TAG, `closeDialog: isSheetShow=${this.isSheetShow}`);
     this.isSheetShow = false;
-    hilog.info(DOMAIN, TAG, `closeDialog: after isSheetShow=${this.isSheetShow}`);
+    // 延迟重置类型，确保弹框关闭动画完成
+    setTimeout(() => {
+      this.currentDialogType = DialogType.NONE;
+      hilog.info(DOMAIN, TAG, `closeDialog done: currentDialogType=${this.currentDialogType}`);
+    }, 100);
   }
 
   build() {
     NavDestination() {
       SettingDatabaseContent({
-        currentDialogType: this.currentDialogType
+        onShowDialog: (type: DialogType): void => this.showDialog(type)
       })
     }
     .title($r('app.string.Settings_database'))
     .backgroundColor($r('app.color.bg_primary'))
-    .bindSheet(this.isSheetShow, this.DialogBuilder(), {
+    .bindSheet($$this.isSheetShow, this.DialogBuilder(), {
       preferType: SheetType.BOTTOM,
       mode: SheetMode.OVERLAY,
       height: SheetSize.FIT_CONTENT,
@@ -71,10 +78,7 @@ struct SettingDatabasePage {
       dragBar: false,
       maskColor: Color.Transparent,
       onDisappear: () => {
-        hilog.info(DOMAIN, TAG, `onDisappear: isSheetShow=${this.isSheetShow}`);
-        // 弹框消失时重置状态
-        this.currentDialogType = DialogType.NONE;
-        this.isSheetShow = false;
+        hilog.info(DOMAIN, TAG, `bindSheet onDisappear`);
       }
     })
   }
@@ -127,7 +131,7 @@ interface FormatSelectOption {
 
 @Component
 struct SettingDatabaseContent {
-  @Link currentDialogType: DialogType;
+  onShowDialog?: (type: DialogType) => void;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isDatabaseValid: boolean = false;
@@ -140,10 +144,6 @@ struct SettingDatabaseContent {
 
   private promptAction = this.getUIContext().getPromptAction();
   private viewModel: ImportExportViewModel = new ImportExportViewModel();
-
-  private showDialog(type: DialogType) {
-    this.currentDialogType = type;
-  }
 
   aboutToAppear(): void {
     // 注册处理器
@@ -300,7 +300,9 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.showDialog(DialogType.KEY_FUNCTION);
+                if (this.onShowDialog) {
+                  this.onShowDialog(DialogType.KEY_FUNCTION);
+                }
               })
             }
           }
@@ -327,7 +329,9 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.showDialog(DialogType.META);
+                if (this.onShowDialog) {
+                  this.onShowDialog(DialogType.META);
+                }
               })
             }
 
@@ -345,7 +349,9 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.showDialog(DialogType.CUSTOM_ICONS);
+                if (this.onShowDialog) {
+                  this.onShowDialog(DialogType.CUSTOM_ICONS);
+                }
               })
             }
 
@@ -363,7 +369,9 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.showDialog(DialogType.PROTECTED_FIELDS);
+                if (this.onShowDialog) {
+                  this.onShowDialog(DialogType.PROTECTED_FIELDS);
+                }
               })
             }
           }
