@@ -52,166 +52,159 @@ export struct SettingDatabaseProtectedFiledContent {
 
   build() {
     Column() {
-      List() {
-        if (this.isDatabaseValid) {
-          // 主要内容区域
-          ListItem() {
-            Text($r("app.string.Setting_enable_protected_field_tips"))
-              .fontSize(16)
-          }
-          .margin({ top: 12 })
+      if (this.isDatabaseValid) {
+        Text($r("app.string.Setting_enable_protected_field_tips"))
+          .fontSize(16)
+          .margin({ top: 12, left: 16, right: 16 })
 
-          ListItemGroup() {
-            // 标题启用保护
-            ListItem() {
-              Row() {
-                Column() {
-                  Text($r("app.string.title"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                }
-                .alignItems(HorizontalAlign.Start)
+        Column() {
+          // 标题启用保护
+          Row() {
+            Column() {
+              Text($r("app.string.title"))
+                .fontSize(16)
                 .flexGrow(1)
-                .layoutWeight(1)
-
-                Blank()
-                Column() {
-                  Toggle({ type: ToggleType.Switch, isOn: this.protectedField.title })
-                    .selectedColor('#007DFF')
-                    .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.protectedField.title = isOn;
-                      this.save();
-                    })
-                }
-              }.width("100%")
-              .padding(12)
             }
+            .alignItems(HorizontalAlign.Start)
+            .flexGrow(1)
+            .layoutWeight(1)
 
-            // 用户名启用保护
-            ListItem() {
-              Row() {
-                Column() {
-                  Text($r("app.string.username"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                }
-                .alignItems(HorizontalAlign.Start)
+            Blank()
+            Column() {
+              Toggle({ type: ToggleType.Switch, isOn: this.protectedField.title })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.protectedField.title = isOn;
+                  this.save();
+                })
+            }
+          }.width("100%")
+          .padding(12)
+
+          Divider()
+            .strokeWidth(1)
+            .color($r('app.color.divider'))
+
+          // 用户名启用保护
+          Row() {
+            Column() {
+              Text($r("app.string.username"))
+                .fontSize(16)
                 .flexGrow(1)
-                .layoutWeight(1)
-
-                Blank()
-                Column() {
-                  Toggle({ type: ToggleType.Switch, isOn: this.protectedField.userName })
-                    .selectedColor('#007DFF')
-                    .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.protectedField.userName = isOn;
-                      this.save();
-                    })
-                }
-              }.width("100%")
-              .padding(12)
             }
+            .alignItems(HorizontalAlign.Start)
+            .flexGrow(1)
+            .layoutWeight(1)
 
-            // 密码启用保护
-            ListItem() {
-              Row() {
-                Column() {
-                  Text($r("app.string.password"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                }
-                .alignItems(HorizontalAlign.Start)
+            Blank()
+            Column() {
+              Toggle({ type: ToggleType.Switch, isOn: this.protectedField.userName })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.protectedField.userName = isOn;
+                  this.save();
+                })
+            }
+          }.width("100%")
+          .padding(12)
+
+          Divider()
+            .strokeWidth(1)
+            .color($r('app.color.divider'))
+
+          // 密码启用保护
+          Row() {
+            Column() {
+              Text($r("app.string.password"))
+                .fontSize(16)
                 .flexGrow(1)
-                .layoutWeight(1)
-
-                Blank()
-                Column() {
-                  Toggle({ type: ToggleType.Switch, isOn: this.protectedField.password })
-                    .selectedColor('#007DFF')
-                    .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.protectedField.password = isOn;
-                      this.save();
-                    })
-                }
-              }.width("100%")
-              .padding(12)
             }
+            .alignItems(HorizontalAlign.Start)
+            .flexGrow(1)
+            .layoutWeight(1)
 
-            // URL启用保护
-            ListItem() {
-              Row() {
-                Column() {
-                  Text($r("app.string.url"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                }
-                .alignItems(HorizontalAlign.Start)
+            Blank()
+            Column() {
+              Toggle({ type: ToggleType.Switch, isOn: this.protectedField.password })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.protectedField.password = isOn;
+                  this.save();
+                })
+            }
+          }.width("100%")
+          .padding(12)
+
+          Divider()
+            .strokeWidth(1)
+            .color($r('app.color.divider'))
+
+          // URL启用保护
+          Row() {
+            Column() {
+              Text($r("app.string.url"))
+                .fontSize(16)
                 .flexGrow(1)
-                .layoutWeight(1)
-
-                Blank()
-                Column() {
-                  Toggle({ type: ToggleType.Switch, isOn: this.protectedField.url })
-                    .selectedColor('#007DFF')
-                    .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.protectedField.url = isOn;
-                      this.save();
-                    })
-                }
-              }.width("100%")
-              .padding(12)
             }
+            .alignItems(HorizontalAlign.Start)
+            .flexGrow(1)
+            .layoutWeight(1)
 
-            // 备注启用保护
-            ListItem() {
-              Row() {
-                Column() {
-                  Text($r("app.string.notes"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                }
-                .alignItems(HorizontalAlign.Start)
+            Blank()
+            Column() {
+              Toggle({ type: ToggleType.Switch, isOn: this.protectedField.url })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.protectedField.url = isOn;
+                  this.save();
+                })
+            }
+          }.width("100%")
+          .padding(12)
+
+          Divider()
+            .strokeWidth(1)
+            .color($r('app.color.divider'))
+
+          // 备注启用保护
+          Row() {
+            Column() {
+              Text($r("app.string.notes"))
+                .fontSize(16)
                 .flexGrow(1)
-                .layoutWeight(1)
-
-                Blank()
-                Column() {
-                  Toggle({ type: ToggleType.Switch, isOn: this.protectedField.notes })
-                    .selectedColor('#007DFF')
-                    .switchPointColor('#FFFFFF')
-                    .onChange((isOn: boolean) => {
-                      this.protectedField.notes = isOn;
-                      this.save();
-                    })
-                }
-              }.width("100%")
-              .padding(12)
             }
-          }
-          .margin({ top: 12, bottom: 12 })
-          .backgroundColor($r("app.color.card_bg"))
-          .borderRadius(12)
-          .divider({
-            strokeWidth: 1,
-            color: $r('app.color.divider'),
-          })
-        } else {
-          ListItem() {
-            Text($r('app.string.database_not_opened'))
-              .fontSize(16)
-              .margin({ top: 20, bottom: 12 })
-              .textAlign(TextAlign.Center)
-              .width('100%')
-              .fontColor($r('app.color.text_secondary'))
-          }
+            .alignItems(HorizontalAlign.Start)
+            .flexGrow(1)
+            .layoutWeight(1)
+
+            Blank()
+            Column() {
+              Toggle({ type: ToggleType.Switch, isOn: this.protectedField.notes })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.protectedField.notes = isOn;
+                  this.save();
+                })
+            }
+          }.width("100%")
+          .padding(12)
         }
+        .margin({ top: 12, bottom: 12 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+      } else {
+        Text($r('app.string.database_not_opened'))
+          .fontSize(16)
+          .margin({ top: 20, bottom: 12 })
+          .textAlign(TextAlign.Center)
+          .width('100%')
+          .fontColor($r('app.color.text_secondary'))
       }
-      .width('100%')
-      .clipContent(ContentClipMode.SAFE_AREA)
     }
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))

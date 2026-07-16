@@ -93,8 +93,17 @@ export struct SettingCustomIconsContent {
   build() {
     Column() {
       // 图标网格
-      Scroll() {
-        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
+      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
+          // 添加图标按钮
+          ImageAddComponent({
+            onSuccess: () => {
+              this.refreshIcons();
+            }
+          })
+            .width(this.iconSize)
+            .height(this.iconSize)
+            .margin(8)
+
           ForEach(this.icons, (icon: IconResource) => {
             Column() {
               Stack() {
@@ -132,14 +141,8 @@ export struct SettingCustomIconsContent {
         .padding({
           top: 12,
           left: 12,
-          right: 12,
-          bottom: 100
+          right: 12
         })
-      }
-      .align(Alignment.TopStart)
-      .width('100%')
-      .height('100%')
-      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
       // 操作按钮
       Row() {

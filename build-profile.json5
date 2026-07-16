@@ -57,7 +57,7 @@
     "products": [
       {
         "name": "default",
-        "signingConfig": "win_debug",
+        "signingConfig": "mac_debug",
         "targetSdkVersion": "6.0.0(20)",
         "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",

@@ -7,6 +7,8 @@ import { SettingDialogConstants } from '../common/constants/SettingDialogConstan
  * 宽度规则：
  * - 屏幕宽度 > 700vp：使用固定宽度 700vp，圆角 16vp
  * - 屏幕宽度 ≤ 700vp：使用 100% 宽度，圆角 16vp
+ *
+ * 显示位置：底部弹框样式
  */
 @Component
 export struct SettingDialogWrapper {
@@ -27,11 +29,28 @@ export struct SettingDialogWrapper {
   }
 
   build() {
-    Row() {
-      Blank()
+    Column() {
+      // 顶部空白区域（点击可关闭）
+      Column()
+        .width('100%')
         .layoutWeight(1)
+        .onClick(() => this.onClose())
 
+      // 底部弹框内容
       Column() {
+        // 拖拽条
+        Row() {
+          Row()
+            .width(36)
+            .height(4)
+            .borderRadius(2)
+            .backgroundColor($r('app.color.text_secondary'))
+            .opacity(0.3)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.Center)
+        .margin({ top: 8, bottom: 4 })
+
         // 标题栏
         Row() {
           Text(this.title)
@@ -54,35 +73,39 @@ export struct SettingDialogWrapper {
 
         Divider()
 
-        // 内容区
+        // 内容区 - 使用Scroll包裹，但只在内容超出时才显示滚动条
         Scroll() {
           Column() {
             this.content();
           }
           .width('100%')
-          .constraintSize({ maxWidth: '100%' })
           .padding(this.isPercentage
             ? SettingDialogConstants.PADDING_NARROW
             : SettingDialogConstants.PADDING_WIDE)
         }
         .width('100%')
-        .constraintSize({ maxHeight: SettingDialogConstants.DIALOG_MAX_HEIGHT_RATIO })
-        .scrollBar(BarState.Auto)
+        .constraintSize({ maxHeight: '90%' })
+        .scrollBar(BarState.Off)
+        .edgeEffect(EdgeEffect.Spring)
       }
       .width(this.dialogWidth)
       .backgroundColor($r('app.color.bg_primary'))
-      .borderRadius(SettingDialogConstants.CORNER_RADIUS)
-      .shadow(this.isPercentage ? ShadowStyle.OUTER_DEFAULT_SM : {
+      .borderRadius({
+        topLeft: SettingDialogConstants.CORNER_RADIUS,
+        topRight: SettingDialogConstants.CORNER_RADIUS,
+        bottomLeft: 0,
+        bottomRight: 0
+      })
+      .shadow({
         radius: SettingDialogConstants.SHADOW_RADIUS,
         color: Color.Gray,
         offsetX: 0,
-        offsetY: SettingDialogConstants.SHADOW_OFFSET_Y
+        offsetY: -SettingDialogConstants.SHADOW_OFFSET_Y
       })
-
-      Blank()
-        .layoutWeight(1)
+      .padding({ bottom: 5 })
     }
     .width('100%')
     .height('100%')
+    .justifyContent(FlexAlign.End)
   }
 }
