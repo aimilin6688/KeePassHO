@@ -15,7 +15,6 @@ import { SettingDatabaseKeyFunctionContent } from './SettingDatabaseKeyFunction'
 import { SettingDatabaseMetaContent } from './SettingDatabaseMeta';
 import { SettingCustomIconsContent } from './SettingCustomIcons';
 import { SettingDatabaseProtectedFiledContent } from './SettingDatabaseProtectedFiled';
-import { ChangePasswordContent } from '../ChangePassword';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -27,8 +26,7 @@ enum DialogType {
   KEY_FUNCTION = 1,
   META = 2,
   CUSTOM_ICONS = 3,
-  PROTECTED_FIELDS = 4,
-  CHANGE_PASSWORD = 5
+  PROTECTED_FIELDS = 4
 }
 
 // SettingDatabase页面的Builder函数
@@ -114,16 +112,6 @@ struct SettingDatabasePage {
         onClose: (): void => this.closeDialog()
       }) {
         SettingDatabaseProtectedFiledContent()
-      }
-    } else if (this.currentDialogType === DialogType.CHANGE_PASSWORD) {
-      SettingDialogWrapper({
-        title: $r('app.string.change_password'),
-        context: this.getUIContext(),
-        onClose: (): void => this.closeDialog()
-      }) {
-        ChangePasswordContent({
-          onClose: (): void => this.closeDialog()
-        })
       }
     }
   }
@@ -263,7 +251,8 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.showDialog(DialogType.CHANGE_PASSWORD);
+                // 导航到修改主密码页面（右侧分栏展示）
+                this.navPathStack.pushPathByName(PageConstants.PAGE_CHANGE_PASSWORD, null);
               })
             }
 
