@@ -62,7 +62,7 @@ export struct DatabaseView {
   @State isHoldingHandEnable: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
-  @State headerHeight: number = 40;
+  @State headerHeight: number = 48;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
   @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
@@ -466,6 +466,39 @@ export struct DatabaseView {
     this.items = [...group.groups, ...group.entries];
     KdbxUtils.sortBy(this.items, this.sortBy);
     this.addFavorite();
+    // 清除选中状态
+    this.selectedItem = null;
+    this.selectedItemIndex = -1;
+    // 退出选择模式
+    this.isSelectionMode = false;
+    this.selectedItems.clear();
+  }
+
+  /**
+   * 返回到父分组
+   * 在分栏模式下，左侧列表返回到上一级分组
+   */
+  private navigateToParentGroup() {
+    hilog.info(DOMAIN, TAG, `Navigate to parent group`);
+    if (this.currentGroup && this.currentGroup.parentGroup) {
+      // 有父分组，返回到父分组
+      this.navigateToGroup(this.currentGroup.parentGroup);
+      // 如果父分组是根分组，隐藏返回按钮
+      if (!this.currentGroup.parentGroup || this.currentGroup.parentGroup.uuid.id === this.database?.getDefaultGroup()?.uuid.id) {
+        this.showBack = false;
+      }
+    } else {
+      // 没有父分组，返回到根分组
+      const rootGroup = this.database?.getDefaultGroup();
+      if (rootGroup) {
+        this.currentGroup = rootGroup;
+        this.titleName = KdbxUtils.getFieldName(rootGroup.name) || '';
+        this.showBack = false;
+        this.items = [...rootGroup.groups, ...rootGroup.entries];
+        KdbxUtils.sortBy(this.items, this.sortBy);
+        this.addFavorite();
+      }
+    }
     // 清除选中状态
     this.selectedItem = null;
     this.selectedItemIndex = -1;
@@ -1418,9 +1451,9 @@ export struct DatabaseView {
   private showSearchAnimate() {
     this.getUIContext().animateTo({ curve: Curve.Ease, duration: 200 }, () => {
       if (this.isShowHistory()) {
-        this.headerHeight = 100;
+        this.headerHeight = 108;
       } else {
-        this.headerHeight = 40;
+        this.headerHeight = 48;
       }
     });
   }
@@ -1613,17 +1646,18 @@ export struct DatabaseView {
               Row() {
                 if (this.showBack) {
                   Image($r("app.media.ic_angle_left"))
-                    .width(24)
-                    .height(24)
+                    .width(28)
+                    .height(28)
                     .margin({ left: 16 })
                     .fillColor($r('app.color.text_primary'))
                     .onClick(() => {
-                      this.navPathStack.pop();
+                      // 左侧返回按钮：返回到父分组
+                      this.navigateToParentGroup();
                     })
                 }
                 // 选择模式下显示已选数量
                 Text(this.isSelectionMode ? `${this.titleName}(${this.selectedItems.size})` : this.titleName)
-                  .fontSize(20)
+                  .fontSize(22)
                   .fontWeight(FontWeight.Medium)
                   .margin({ left: 16 })
                   .fontColor($r('app.color.text_primary'))
