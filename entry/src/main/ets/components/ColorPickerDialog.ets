@@ -3,6 +3,8 @@
  * 用于选择条目或分组的前景色和背景色
  */
 
+import { UIUtils } from '../common/utils';
+
 /**
  * 预定义颜色项
  */
@@ -142,7 +144,8 @@ export struct ColorEditDialog {
   @State selectedFgColor: string | undefined = undefined;
   @State selectedBgColor: string | undefined = undefined;
   @State currentTabIndex: number = 0; // 0: 前景色, 1: 背景色
-  
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
+
   // HSV值 (h: 0-1, s: 0-1, v: 0-1)
   @State hue: number = 0;
   @State saturation: number = 1;
@@ -170,6 +173,10 @@ export struct ColorEditDialog {
   private hueBarHeight: number = 24;
   
   aboutToAppear(): void {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     this.selectedFgColor = this.initialFgColor;
     this.selectedBgColor = this.initialBgColor;
     this.updateHsvFromCurrentColor();
@@ -667,7 +674,7 @@ export struct ColorEditDialog {
       .justifyContent(FlexAlign.SpaceBetween)
       .backgroundColor($r('app.color.bg_primary'))
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .height('85%')
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(16)

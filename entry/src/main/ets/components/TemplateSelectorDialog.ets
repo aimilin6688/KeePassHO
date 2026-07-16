@@ -5,7 +5,7 @@
 import { Kdbx } from 'kdbxweb';
 import { ITemplate, IPresetTemplate, IUserTemplate, TemplateCategory, isPresetTemplate } from '../services/template/TemplateTypes';
 import { TemplateService } from '../services/template/TemplateService';
-import { IconUtils, ResourceManager } from '../common/utils';
+import { IconUtils, ResourceManager, UIUtils } from '../common/utils';
 
 @CustomDialog
 export struct TemplateSelectorDialog {
@@ -15,6 +15,7 @@ export struct TemplateSelectorDialog {
   @State presetTemplates: IPresetTemplate[] = [];
   @State userTemplates: IUserTemplate[] = [];
   @State filteredTemplates: ITemplate[] = [];
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
 
   public onTemplateSelected: (template: ITemplate) => void = () => {};
   public database: Kdbx | null = null;
@@ -25,6 +26,10 @@ export struct TemplateSelectorDialog {
   private readonly iconSize: number = 32;
 
   aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     // 加载预置模板
     this.presetTemplates = this.templateService.getPresetTemplates();
 
@@ -290,7 +295,7 @@ export struct TemplateSelectorDialog {
         endMargin: 0
       })
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .height('80%')
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(16)

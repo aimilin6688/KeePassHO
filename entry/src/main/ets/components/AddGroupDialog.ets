@@ -1,4 +1,4 @@
-import { IconUtils } from '../common/utils';
+import { IconUtils, UIUtils } from '../common/utils';
 import { Icons } from '../services/TypeDefined';
 import { IconSelectorDialog } from './IconSelectorDialog';
 import { ColorEditDialog, ColorPickerResult } from './ColorPickerDialog';
@@ -10,7 +10,8 @@ export struct AddGroupDialog {
   @State selectedIconId: number | string = Icons.Folder;
   @State fgColor: string | undefined = undefined;
   @State bgColor: string | undefined = undefined;
-  
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
+
   // 初始颜色值
   public initialFgColor: string | undefined = undefined;
   public initialBgColor: string | undefined = undefined;
@@ -48,6 +49,10 @@ export struct AddGroupDialog {
   }
 
   aboutToAppear(): void {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     this.fgColor = this.initialFgColor;
     this.bgColor = this.initialBgColor;
   }
@@ -216,7 +221,7 @@ export struct AddGroupDialog {
       .justifyContent(FlexAlign.SpaceBetween)
       .backgroundColor($r("app.color.bg_primary"))
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .shadow(ShadowStyle.OUTER_DEFAULT_MD)

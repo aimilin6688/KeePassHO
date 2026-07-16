@@ -6,7 +6,7 @@ import { TotpAlgorithm, TotpConfig, TotpService, TotpType } from '../services/To
 import { ScanService } from '../services/ScanService';
 import { TotpPreviewComponent, TotpPreviewController } from './TotpPreviewComponent';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ResourceManager } from '../common/utils';
+import { ResourceManager, UIUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'TotpService';
@@ -30,6 +30,7 @@ export struct TotpConfigDialog {
   @State private selectedAlgorithm: string = TotpAlgorithm.SHA1;
   @State private errorMessage: string = '';
   @State private showMarkOptions: boolean = false;
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
   // 确认前校验字段名称是否存在
   public checkFieldName: (fieldName: string) => boolean = () => {
     return false;
@@ -48,6 +49,10 @@ export struct TotpConfigDialog {
   private previewController: TotpPreviewController = new TotpPreviewController();
 
   aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     this.totpConfig.name = this.name;
     this.totpConfig.issuer = this.issuer;
   }
@@ -543,7 +548,7 @@ export struct TotpConfigDialog {
       .width('100%')
       .height('auto')
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 16, right: 16, bottom: 16 })

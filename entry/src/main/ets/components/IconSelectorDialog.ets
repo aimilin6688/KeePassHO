@@ -1,4 +1,4 @@
-import { IconUtils } from '../common/utils';
+import { IconUtils, UIUtils } from '../common/utils';
 import { IconResource } from '../services/TypeDefined';
 import { Kdbx } from 'kdbxweb';
 import { ImageAddComponent } from './ImageAddComponent';
@@ -7,6 +7,7 @@ import { ImageAddComponent } from './ImageAddComponent';
 export struct IconSelectorDialog {
   @State selectedIconId: number | string = -1;
   @State icons: IconResource[] = [];
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
   public onIconSelected: (iconId: number | string) => void = () => {
   };
   public database: Kdbx | null = null; // 数据库实例
@@ -19,6 +20,10 @@ export struct IconSelectorDialog {
   private controller: CustomDialogController;
 
   aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     // 获取所有图标
     this.icons = IconUtils.getAllIcons();
   }
@@ -114,7 +119,7 @@ export struct IconSelectorDialog {
       .rowsGap(this.iconGap)
       .padding({ left: 24, right: 24, bottom: 16 })
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .height('85%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)

@@ -1,7 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { WebImageDownloader } from '../common/utils/WebImageDownloader';
 import { UrlUtils } from '../common/utils/UrlUtils';
-import { CommonUtils } from '../common/utils';
+import { CommonUtils, UIUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DownloadImageDialog';
@@ -11,11 +11,18 @@ export struct DownloadImageDialog {
   @State url: string = '';
   @State isDownloading: boolean = false;
   @State errorMessage: ResourceStr = '';
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
   controller: CustomDialogController;
   onSuccess: (imageData: string) => void = () => {
   };
   onCancel: () => void = () => {
   };
+
+  aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+  }
 
   /**
    * 下载图片
@@ -213,7 +220,7 @@ export struct DownloadImageDialog {
       .justifyContent(FlexAlign.SpaceBetween)
       .backgroundColor($r("app.color.bg_primary"))
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .shadow(ShadowStyle.OUTER_DEFAULT_MD)
