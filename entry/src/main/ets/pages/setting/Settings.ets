@@ -131,18 +131,18 @@ export struct Settings {
       // 顶部导航栏
       Row() {
         Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 12 })
+          .width(28)
+          .height(28)
+          .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => this.navManager.navigateBackToPreviousRoot())
         Text($r('app.string.Settings_title'))
-          .fontSize(20)
+          .fontSize(22)
           .fontWeight(FontWeight.Medium)
-          .margin({ left: 12 })
+          .margin({ left: 16 })
       }
       .width('100%')
-      .height(40)
+      .height(48)
 
       // 设置列表
       List() {
