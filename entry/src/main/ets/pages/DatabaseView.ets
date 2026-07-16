@@ -455,6 +455,26 @@ export struct DatabaseView {
   }
 
   /**
+   * 导航到指定分组
+   * 在分栏模式下，直接更新左侧列表内容
+   */
+  private navigateToGroup(group: KdbxGroup) {
+    hilog.info(DOMAIN, TAG, `Navigate to group: ${group.uuid.id}`);
+    this.currentGroup = group;
+    this.titleName = KdbxUtils.getFieldName(group.name) || '';
+    this.showBack = true;
+    this.items = [...group.groups, ...group.entries];
+    KdbxUtils.sortBy(this.items, this.sortBy);
+    this.addFavorite();
+    // 清除选中状态
+    this.selectedItem = null;
+    this.selectedItemIndex = -1;
+    // 退出选择模式
+    this.isSelectionMode = false;
+    this.selectedItems.clear();
+  }
+
+  /**
    * 关闭所有条目左滑操作按钮
    */
   private closeAllSwipeActions() {
@@ -1781,7 +1801,8 @@ export struct DatabaseView {
                         if (this.isSelectionMode) {
                           this.toggleSelection(item);
                         } else {
-                          CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: item.uuid.id } });
+                          // 点击分组时，直接在左侧列表中展开该分组
+                          this.navigateToGroup(item as KdbxGroup);
                         }
                       })
                       .gesture(
