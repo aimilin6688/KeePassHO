@@ -11,14 +11,18 @@ type RootPageChangeListener = (rootPage: string) => void;
 
 export class NavigationManager {
   private static instance: NavigationManager;
-  private navPathStack: NavPathStack | null = null;
   private configManager: PageConfigManager = PageConfigManager.getInstance();
 
   private currentRootPage: string = 'Index';
   private previousRootPage: string = 'Index';
-  private navigationHistory: string[] = [];
   private modeChangeListeners: NavigationModeChangeListener[] = [];
   private rootPageChangeListeners: RootPageChangeListener[] = [];
+
+  /**
+   * 每个根页面独立的导航栈
+   */
+  private navPathStacks: Map<string, NavPathStack> = new Map();
+  private currentNavPathStack: NavPathStack | null = null;
 
   private constructor() {}
 
@@ -29,12 +33,39 @@ export class NavigationManager {
     return NavigationManager.instance;
   }
 
-  setNavPathStack(stack: NavPathStack): void {
-    this.navPathStack = stack;
+  /**
+   * 获取或创建指定根页面的导航栈
+   */
+  getOrCreateNavPathStack(rootPage: string): NavPathStack {
+    let stack = this.navPathStacks.get(rootPage);
+    if (!stack) {
+      stack = new NavPathStack();
+      this.navPathStacks.set(rootPage, stack);
+      hilog.info(DOMAIN, TAG, 'Created new NavPathStack for: %{public}s', rootPage);
+    }
+    return stack;
   }
 
+  /**
+   * 设置当前导航栈
+   */
+  setCurrentNavPathStack(rootPage: string): void {
+    this.currentNavPathStack = this.getOrCreateNavPathStack(rootPage);
+    hilog.info(DOMAIN, TAG, 'Set current NavPathStack for: %{public}s', rootPage);
+  }
+
+  /**
+   * 获取当前导航栈
+   */
   getNavPathStack(): NavPathStack | null {
-    return this.navPathStack;
+    return this.currentNavPathStack;
+  }
+
+  /**
+   * 获取指定根页面的导航栈
+   */
+  getNavPathStackByRoot(rootPage: string): NavPathStack | null {
+    return this.navPathStacks.get(rootPage) || null;
   }
 
   addModeChangeListener(listener: NavigationModeChangeListener): void {
@@ -71,96 +102,31 @@ export class NavigationManager {
     }
   }
 
-  navigateTo(pageName: string, params?: Object): void {
-    if (!this.navPathStack) {
-      hilog.error(DOMAIN, TAG, 'NavPathStack not initialized');
-      return;
-    }
-
-    const isRoot = this.configManager.isRootPage(pageName);
-
-    if (isRoot) {
-      const prevMode = this.getCurrentStackMode();
-      const prevRoot = this.currentRootPage;
-      this.previousRootPage = prevRoot;
-      this.currentRootPage = pageName;
-
-      const rootConfig = this.configManager.getPageConfig(pageName);
-      if (rootConfig) {
-        this.configManager.setNavigationStackConfig(pageName, rootConfig);
-      }
-
-      this.navPathStack.clear();
-      this.navigationHistory = [pageName];
-
-      const newMode = this.getCurrentStackMode();
-      if (prevMode !== newMode) {
-        this.notifyModeChange(newMode);
-      }
-      if (prevRoot !== pageName) {
-        this.notifyRootPageChange(pageName);
-      }
-    } else {
-      this.navigationHistory.push(pageName);
-      this.navPathStack.pushPathByName(pageName, params);
-    }
-
-    hilog.info(DOMAIN, TAG, 'Navigated to: %{public}s, isRoot: %{public}s', pageName, isRoot.toString());
-  }
-
-  getCurrentPageConfig(pageName?: string): PageConfig {
-    const currentPage = pageName || this.navigationHistory[this.navigationHistory.length - 1];
-    return this.configManager.getEffectivePageConfig(currentPage, this.currentRootPage);
-  }
-
   getCurrentRootPage(): string {
     return this.currentRootPage;
   }
 
-  pop(): void {
-    if (this.navPathStack && this.navPathStack.size() > 0) {
-      this.navPathStack.pop();
-      this.navigationHistory.pop();
-
-      if (this.navigationHistory.length > 0) {
-        const lastPage = this.navigationHistory[this.navigationHistory.length - 1];
-        if (this.configManager.isRootPage(lastPage)) {
-          this.currentRootPage = lastPage;
-        }
-      }
-
-      hilog.info(DOMAIN, TAG, 'Popped, current root: %{public}s', this.currentRootPage);
-    }
+  getPreviousRootPage(): string {
+    return this.previousRootPage;
   }
 
-  popToRoot(): void {
-    if (this.navPathStack && this.navPathStack.size() > 0) {
-      const rootPage = this.navigationHistory[0];
-      this.navigationHistory = [rootPage];
-      this.currentRootPage = rootPage;
-
-      while (this.navPathStack.size() > 0) {
-        this.navPathStack.pop();
-      }
-
-      hilog.info(DOMAIN, TAG, 'Popped to root: %{public}s', rootPage);
-    }
-  }
-
+  /**
+   * 导航到指定的根页面
+   * 切换根页面时保持各自的导航栈状态
+   */
   navigateBackToRoot(rootPage: string): void {
     const prevMode = this.getCurrentStackMode();
     const prevRoot = this.currentRootPage;
 
+    this.previousRootPage = prevRoot;
     this.currentRootPage = rootPage;
-    this.navigationHistory = [rootPage];
+
+    // 切换到目标根页面的导航栈
+    this.setCurrentNavPathStack(rootPage);
 
     const rootConfig = this.configManager.getPageConfig(rootPage);
     if (rootConfig) {
       this.configManager.setNavigationStackConfig(rootPage, rootConfig);
-    }
-
-    if (this.navPathStack) {
-      this.navPathStack.clear();
     }
 
     const newMode = this.getCurrentStackMode();
@@ -174,24 +140,24 @@ export class NavigationManager {
     hilog.info(DOMAIN, TAG, 'navigateBackToRoot: %{public}s', rootPage);
   }
 
+  /**
+   * 返回到上一个根页面
+   */
   navigateBackToPreviousRoot(): void {
+    hilog.info(DOMAIN, TAG, 'navigateBackToPreviousRoot: from %{public}s to %{public}s',
+      this.currentRootPage, this.previousRootPage);
     this.navigateBackToRoot(this.previousRootPage);
   }
 
-  replaceAll(pageName: string, params?: Object): void {
-    if (!this.navPathStack) {
-      hilog.error(DOMAIN, TAG, 'NavPathStack not initialized');
-      return;
-    }
-
-    this.navPathStack.clear();
-    this.navigationHistory = [];
-
-    this.navigateTo(pageName, params);
-  }
-
-  getNavigationHistory(): string[] {
-    return [...this.navigationHistory];
+  getCurrentPageConfig(pageName?: string): PageConfig {
+    const config = this.configManager.getPageConfig(this.currentRootPage);
+    return config || {
+      name: this.currentRootPage,
+      navigationMode: NavigationModeType.EXCLUSIVE,
+      constrainMaxWidth: true,
+      maxWidth: 700,
+      padding: 16
+    };
   }
 
   getCurrentStackMode(): NavigationModeType {
@@ -205,6 +171,60 @@ export class NavigationManager {
   }
 
   getStackSize(): number {
-    return this.navPathStack ? this.navPathStack.size() : 0;
+    return this.currentNavPathStack ? this.currentNavPathStack.size() : 0;
+  }
+
+  /**
+   * 导航到页面
+   */
+  navigateTo(pageName: string, params?: Object): void {
+    if (!this.currentNavPathStack) {
+      hilog.error(DOMAIN, TAG, 'NavPathStack not initialized');
+      return;
+    }
+    this.currentNavPathStack.pushPathByName(pageName, params);
+    hilog.info(DOMAIN, TAG, 'Navigated to: %{public}s', pageName);
+  }
+
+  /**
+   * 返回上一页
+   */
+  pop(): void {
+    if (this.currentNavPathStack && this.currentNavPathStack.size() > 0) {
+      this.currentNavPathStack.pop();
+      hilog.info(DOMAIN, TAG, 'Popped from stack');
+    }
+  }
+
+  /**
+   * 替换所有页面
+   */
+  replaceAll(pageName: string, params?: Object): void {
+    if (!this.currentNavPathStack) {
+      hilog.error(DOMAIN, TAG, 'NavPathStack not initialized');
+      return;
+    }
+    this.currentNavPathStack.clear();
+    this.currentNavPathStack.pushPathByName(pageName, params);
+    hilog.info(DOMAIN, TAG, 'Replaced all with: %{public}s', pageName);
+  }
+
+  /**
+   * 清除指定根页面的导航栈
+   */
+  clearNavPathStack(rootPage: string): void {
+    const stack = this.navPathStacks.get(rootPage);
+    if (stack) {
+      stack.clear();
+      hilog.info(DOMAIN, TAG, 'Cleared NavPathStack for: %{public}s', rootPage);
+    }
+  }
+
+  /**
+   * 删除指定根页面的导航栈
+   */
+  removeNavPathStack(rootPage: string): void {
+    this.navPathStacks.delete(rootPage);
+    hilog.info(DOMAIN, TAG, 'Removed NavPathStack for: %{public}s', rootPage);
   }
 }

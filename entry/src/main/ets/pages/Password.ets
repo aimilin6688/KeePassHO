@@ -456,7 +456,8 @@ export struct Password {
     this.putFileToRecentFile();
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
-      this.navManager.navigateTo(PageConstants.PAGE_DATABASE_VIEW);
+      // DatabaseView 是根页面，使用 navigateBackToRoot 切换
+      this.navManager.navigateBackToRoot(PageConstants.PAGE_DATABASE_VIEW);
       this.closeLoadingDialog();
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);

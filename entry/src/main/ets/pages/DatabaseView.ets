@@ -40,7 +40,7 @@ export function DatabaseViewBuilder(name: string, param: Object): void {
 @Component
 export struct DatabaseView {
   private navManager: NavigationManager = NavigationManager.getInstance();
-  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('DatabaseView')!;
   private databaseShowParam: DatabaseShowParam | undefined = undefined;
   @State newGroupName: string | undefined = "";
   @State editingGroupIndex: number = -1;
@@ -62,6 +62,8 @@ export struct DatabaseView {
   @State isHoldingHandEnable: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State searchHistory: Array<string> = [];
   @State currentGroup: KdbxGroup | undefined = undefined;
+  // 使用 @StorageLink 持久化当前分组ID，用于从设置返回时恢复状态
+  @StorageLink('databaseView_currentGroupId') currentGroupId: string = '';
   @State headerHeight: number = 48;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
@@ -140,12 +142,32 @@ export struct DatabaseView {
     hilog.debug(DOMAIN, TAG, 'Receive database update event');
     this.updateUI();
   }
+  /**
+   * 根页面变化监听器
+   */
+  private rootPageChangeListener = (rootPage: string): void => {
+    hilog.info(DOMAIN, TAG, 'Root page changed to: %{public}s', rootPage);
+    if (rootPage === 'DatabaseView') {
+      // 切换到 DatabaseView 时检查是否需要加载数据库
+      const params = FileService.getDbFileParam();
+      if (params.database && !this.database) {
+        // 数据库已打开但当前组件还未加载，重新加载
+        hilog.info(DOMAIN, TAG, 'Database available, loading...');
+        this.loadDatabase();
+      } else {
+        // 恢复分组状态
+        this.restoreGroupState();
+      }
+    }
+  };
 
   aboutToAppear() {
     this.clearUrl();
     this.initSettings();
     // 注册数据库事件
     this.registerDatabaseEvent();
+    // 注册根页面变化监听
+    this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
     // 加载数据库信息
     this.loadDatabase();
     // 监听主题变化
@@ -163,6 +185,8 @@ export struct DatabaseView {
   aboutToDisappear() {
     EventBus.off(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
     EventBus.off(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
+    // 移除根页面变化监听
+    this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
     // 移除主题监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     // 移除配置监听器
@@ -421,14 +445,35 @@ export struct DatabaseView {
 
     this.isLoading = true;
     try {
-      if (dbShowParam && dbShowParam.groupId) {
+      // 优先使用保存的分组ID（从设置返回时恢复状态）
+      if (this.currentGroupId && !dbShowParam?.groupId) {
+        const savedGroup = this.database.getGroup(this.currentGroupId);
+        if (savedGroup) {
+          this.currentGroup = savedGroup;
+          this.titleName = KdbxUtils.getFieldName(savedGroup.name) || '';
+          this.showBack = savedGroup.parentGroup !== undefined &&
+            savedGroup.uuid.id !== this.database.getDefaultGroup()?.uuid.id;
+          hilog.info(DOMAIN, TAG, 'Restored group from saved state: %{public}s', this.currentGroupId);
+        } else {
+          // 保存的分组ID无效，使用根分组
+          this.currentGroup = this.database.getDefaultGroup();
+          this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
+          this.showBack = false;
+          this.currentGroupId = '';
+        }
+      } else if (dbShowParam && dbShowParam.groupId) {
         this.currentGroup = this.database.getGroup(dbShowParam.groupId);
         this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
         this.showBack = true;
+        // 保存分组ID
+        this.currentGroupId = this.currentGroup?.uuid.id || '';
       } else {
         // 获取根分组下的所有子分组
         this.currentGroup = this.database.getDefaultGroup();
+        this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
         this.showBack = false;
+        // 清空保存的分组ID
+        this.currentGroupId = '';
       }
 
       // 判断分组是否有效
@@ -463,6 +508,8 @@ export struct DatabaseView {
     this.currentGroup = group;
     this.titleName = KdbxUtils.getFieldName(group.name) || '';
     this.showBack = true;
+    // 保存分组ID以支持状态恢复
+    this.currentGroupId = group.uuid.id;
     this.items = [...group.groups, ...group.entries];
     KdbxUtils.sortBy(this.items, this.sortBy);
     this.addFavorite();
@@ -472,6 +519,30 @@ export struct DatabaseView {
     // 退出选择模式
     this.isSelectionMode = false;
     this.selectedItems.clear();
+  }
+
+  /**
+   * 恢复分组状态
+   * 从设置返回时恢复之前浏览的分组
+   */
+  private restoreGroupState() {
+    if (!this.database) {
+      return;
+    }
+    // 如果有保存的分组ID且当前不在该分组
+    if (this.currentGroupId) {
+      const savedGroup = this.database.getGroup(this.currentGroupId);
+      if (savedGroup && this.currentGroup?.uuid.id !== this.currentGroupId) {
+        hilog.info(DOMAIN, TAG, 'Restoring group from saved state: %{public}s', this.currentGroupId);
+        this.currentGroup = savedGroup;
+        this.titleName = KdbxUtils.getFieldName(savedGroup.name) || '';
+        this.showBack = savedGroup.parentGroup !== undefined &&
+          savedGroup.uuid.id !== this.database.getDefaultGroup()?.uuid.id;
+        this.items = [...savedGroup.groups, ...savedGroup.entries];
+        KdbxUtils.sortBy(this.items, this.sortBy);
+        this.addFavorite();
+      }
+    }
   }
 
   /**
@@ -1707,7 +1778,7 @@ export struct DatabaseView {
                     .height(24)
                     .margin({ right: 16 })
                     .onClick(() => {
-                       NavigationManager.getInstance().navigateTo('Settings');
+                       NavigationManager.getInstance().navigateBackToRoot('Settings');
                      })
                 }
                 .flexShrink(0)

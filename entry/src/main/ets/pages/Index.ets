@@ -24,7 +24,7 @@ export function IndexBuilder(name: string, param: Object) {
 @Component
 export struct Index {
   private navManager: NavigationManager = NavigationManager.getInstance();
-  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index')!;
 
   aboutToAppear() {
     hilog.info(DOMAIN, TAG, 'Index aboutToAppear');
@@ -162,7 +162,7 @@ export struct Index {
           .height(24)
           .margin({ right: 16 })
           .onClick(() => {
-            this.navManager.navigateTo(PageConstants.PAGE_SETTINGS);
+            this.navManager.navigateBackToRoot(PageConstants.PAGE_SETTINGS);
           })
       }
       .width('100%')
