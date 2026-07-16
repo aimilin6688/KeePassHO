@@ -1,4 +1,4 @@
-import { CommonUtils } from "../common/utils";
+import { CommonUtils, UIUtils } from "../common/utils";
 import {CustomField} from "../services/TypeDefined";
 
 /**
@@ -10,6 +10,7 @@ export struct EntryEditFieldDialog {
   @Link fieldKey: string;
   @Link fieldValue: string;
   @Link isProtected: boolean;
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
 
   public onConfirm: (customField: CustomField) => void = ()=>{};
   public onCancel: () => void = ()=>{};
@@ -23,6 +24,10 @@ export struct EntryEditFieldDialog {
   private promptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     // 初始化临时变量
     this.tempKey = this.fieldKey;
     this.tempValue = this.fieldValue;
@@ -181,7 +186,7 @@ export struct EntryEditFieldDialog {
       .padding({ top: 16})
       .justifyContent(FlexAlign.SpaceBetween)
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 24, right: 24, bottom: 16 })

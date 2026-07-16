@@ -1,7 +1,7 @@
 import HashMap from '@ohos.util.HashMap';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils } from '../common/utils';
+import { CommonUtils, UIUtils } from '../common/utils';
 import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 const DOMAIN = 0x0000;
@@ -27,12 +27,17 @@ export struct PasswordGeneratorDialog {
   @State isAcceptable: boolean = false; // 密码是否可接受
   @State minLength: number = 0;
   @State maxLength: number = 128;
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
   public onGenerate: (password: string) => void = () => {
   };
   private controller: CustomDialogController;
 
   // 显示时评估密码强度
   aboutToAppear(): void {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     this.resetPassword();
     this.evaluatePasswordStrength();
   }
@@ -664,7 +669,7 @@ export struct PasswordGeneratorDialog {
       .justifyContent(FlexAlign.SpaceBetween)
       .padding({ top: 8, bottom: 16 })
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
     .padding({ left: 24, right: 24, bottom: 16 })

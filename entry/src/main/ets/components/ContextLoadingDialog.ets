@@ -1,8 +1,16 @@
+import { UIUtils } from '../common/utils';
 
 @CustomDialog
 export struct ContextLoadingDialog {
   @Link loadingMessage: string;
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
   private controller: CustomDialogController;
+
+  aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+  }
 
   build() {
     Column() {
@@ -21,7 +29,7 @@ export struct ContextLoadingDialog {
       .borderRadius(20)
       .padding({left: 16, right: 16, top: 8, bottom: 8})
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .height('30%')
     .justifyContent(FlexAlign.Center)
   }

@@ -1,6 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
-import { CommonUtils } from '../common/utils';
+import { CommonUtils, UIUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'ImageViewerDialog';
@@ -19,6 +19,7 @@ export struct ImageViewerDialog {
   @State isLoading: boolean = true;
   @State errorMessage: string = '';
   @State imageDataUri: string = '';
+  @State dialogWidth: string | number = '100%'; // 弹框宽度
   binaryFile: ArrayBuffer | null = null;
   binaryFileName: string = '';
   controller: CustomDialogController;
@@ -27,6 +28,10 @@ export struct ImageViewerDialog {
   private initialOffsetY: number = 0;
 
   aboutToAppear() {
+    // 计算弹框宽度
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
+
     this.convertToDataUri();
   }
 
@@ -166,7 +171,7 @@ export struct ImageViewerDialog {
       .alignItems(HorizontalAlign.Center)
       .backgroundColor($r("app.color.bg_primary"))
     }
-    .width('100%')
+    .width(this.dialogWidth)
     .height('80%')
     .backgroundColor($r("app.color.bg_primary"))
     .borderRadius(16)
