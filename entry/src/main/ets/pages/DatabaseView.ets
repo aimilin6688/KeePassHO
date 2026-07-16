@@ -554,12 +554,17 @@ export struct DatabaseView {
     if (this.currentGroup && this.currentGroup.parentGroup) {
       // 记录父分组
       const parentGroup = this.currentGroup.parentGroup;
-      // 有父分组，返回到父分组
-      this.navigateToGroup(parentGroup);
-      // 如果父分组是根分组，隐藏返回按钮
-      if (!parentGroup.parentGroup || parentGroup.uuid.id === this.database?.getDefaultGroup()?.uuid.id) {
-        this.showBack = false;
-      }
+      // 判断父分组是否是根分组
+      const isRootGroup = !parentGroup.parentGroup || parentGroup.uuid.id === this.database?.getDefaultGroup()?.uuid.id;
+
+      this.currentGroup = parentGroup;
+      this.titleName = KdbxUtils.getFieldName(parentGroup.name) || '';
+      this.showBack = !isRootGroup;
+      // 保存分组ID以支持状态恢复
+      this.currentGroupId = parentGroup.uuid.id;
+      this.items = [...parentGroup.groups, ...parentGroup.entries];
+      KdbxUtils.sortBy(this.items, this.sortBy);
+      this.addFavorite();
     } else {
       // 没有父分组，返回到根分组
       const rootGroup = this.database?.getDefaultGroup();
@@ -567,6 +572,7 @@ export struct DatabaseView {
         this.currentGroup = rootGroup;
         this.titleName = KdbxUtils.getFieldName(rootGroup.name) || '';
         this.showBack = false;
+        this.currentGroupId = '';
         this.items = [...rootGroup.groups, ...rootGroup.entries];
         KdbxUtils.sortBy(this.items, this.sortBy);
         this.addFavorite();
