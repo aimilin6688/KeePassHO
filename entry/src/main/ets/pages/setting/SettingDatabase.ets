@@ -34,21 +34,35 @@ export function SettingDatabaseBuilder(name: string, param: Object): void {
 @Component
 struct SettingDatabasePage {
   @State currentDialogType: DialogType = DialogType.NONE;
+  @State isSheetShow: boolean = false;
+  
+  aboutToAppear() {
+    // 监听 currentDialogType 变化，同步 isSheetShow
+  }
   
   build() {
     NavDestination() {
-      SettingDatabaseContent({ currentDialogType: $currentDialogType })
+      SettingDatabaseContent({ 
+        currentDialogType: $currentDialogType,
+        onDialogTypeChange: (type: DialogType) => {
+          this.currentDialogType = type;
+          this.isSheetShow = type !== DialogType.NONE;
+        }
+      })
     }
     .title($r('app.string.Settings_database'))
     .backgroundColor($r('app.color.bg_primary'))
-    .bindSheet(this.currentDialogType !== DialogType.NONE, this.DialogBuilder(), {
+    .bindSheet($$this.isSheetShow, this.DialogBuilder(), {
       preferType: SheetType.BOTTOM,
       mode: SheetMode.OVERLAY,
       height: SheetSize.FIT_CONTENT,
       backgroundColor: Color.Transparent,
       showClose: false,
       dragBar: false,
-      onDisappear: () => { this.currentDialogType = DialogType.NONE; }
+      onDisappear: () => { 
+        this.currentDialogType = DialogType.NONE;
+        this.isSheetShow = false;
+      }
     })
   }
   
@@ -58,23 +72,38 @@ struct SettingDatabasePage {
       SettingDialogWrapper({
         title: $r('app.string.Settings_database_encryption_key'),
         context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
+        onClose: () => { 
+          this.currentDialogType = DialogType.NONE;
+          this.isSheetShow = false;
+        }
       }) {
-        SettingDatabaseKeyFunctionContent({ onClose: () => { this.currentDialogType = DialogType.NONE; } })
+        SettingDatabaseKeyFunctionContent({ onClose: () => { 
+          this.currentDialogType = DialogType.NONE;
+          this.isSheetShow = false;
+        } })
       }
     } else if (this.currentDialogType === DialogType.META) {
       SettingDialogWrapper({
         title: $r('app.string.Settings_database_metadata'),
         context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
+        onClose: () => { 
+          this.currentDialogType = DialogType.NONE;
+          this.isSheetShow = false;
+        }
       }) {
-        SettingDatabaseMetaContent({ onClose: () => { this.currentDialogType = DialogType.NONE; } })
+        SettingDatabaseMetaContent({ onClose: () => { 
+          this.currentDialogType = DialogType.NONE;
+          this.isSheetShow = false;
+        } })
       }
     } else if (this.currentDialogType === DialogType.CUSTOM_ICONS) {
       SettingDialogWrapper({
         title: $r('app.string.Settings_custom_icons'),
         context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
+        onClose: () => { 
+          this.currentDialogType = DialogType.NONE;
+          this.isSheetShow = false;
+        }
       }) {
         SettingCustomIconsContent()
       }
@@ -82,7 +111,10 @@ struct SettingDatabasePage {
       SettingDialogWrapper({
         title: $r('app.string.Settings_default_protected_field'),
         context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
+        onClose: () => { 
+          this.currentDialogType = DialogType.NONE;
+          this.isSheetShow = false;
+        }
       }) {
         SettingDatabaseProtectedFiledContent()
       }
@@ -101,6 +133,7 @@ interface FormatSelectOption {
 @Component
 struct SettingDatabaseContent {
   @Link currentDialogType: DialogType;
+  onDialogTypeChange?: (type: DialogType) => void;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isDatabaseValid: boolean = false;
@@ -113,6 +146,13 @@ struct SettingDatabaseContent {
 
   private promptAction = this.getUIContext().getPromptAction();
   private viewModel: ImportExportViewModel = new ImportExportViewModel();
+  
+  private showDialog(type: DialogType) {
+    this.currentDialogType = type;
+    if (this.onDialogTypeChange) {
+      this.onDialogTypeChange(type);
+    }
+  }
 
   aboutToAppear(): void {
     // 注册处理器
@@ -268,7 +308,7 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.currentDialogType = DialogType.KEY_FUNCTION;
+                this.showDialog(DialogType.KEY_FUNCTION);
               })
             }
           }
@@ -295,7 +335,7 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.currentDialogType = DialogType.META;
+                this.showDialog(DialogType.META);
               })
             }
 
@@ -313,7 +353,7 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.currentDialogType = DialogType.CUSTOM_ICONS;
+                this.showDialog(DialogType.CUSTOM_ICONS);
               })
             }
 
@@ -331,7 +371,7 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                this.currentDialogType = DialogType.PROTECTED_FIELDS;
+                this.showDialog(DialogType.PROTECTED_FIELDS);
               })
             }
           }
