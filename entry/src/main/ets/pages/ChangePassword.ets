@@ -1,12 +1,17 @@
-import { CommonUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
-import { Router } from '@kit.ArkUI';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { common } from '@kit.AbilityKit';
 import { AuthType } from '../services/TypeDefined';
+import { PageConstants } from '../common/constants/PageConstants';
+
+// 定义导航参数接口
+interface PasswordNavParam {
+  filePath: string;
+}
 
 // ChangePassword页面的Builder函数
 @Builder
@@ -15,11 +20,22 @@ export function ChangePasswordBuilder(name: string, param: Object): void {
 }
 
 /**
- * 修改密码
+ * 修改密码（独立页面外壳，实际内容见 ChangePasswordContent）
  */
 @Component
 export struct ChangePassword {
-  @Prop navPathStack: NavPathStack;
+  build() {
+    ChangePasswordContent()
+  }
+}
+
+/**
+ * 修改密码内容组件
+ * 既可作为独立页面使用（onClose 为空时显示自带返回栏），
+ * 也可作为弹框内容嵌入 SettingDialogWrapper（onClose 提供时隐藏自带返回栏，由弹框关闭按钮控制）。
+ */
+@Component
+export struct ChangePasswordContent {
   @State oldPassword: string = ''; // 旧密码
   @State newPassword: string = ''; // 新密码
   @State confirmPassword: string = ''; // 确认新密码
@@ -30,7 +46,12 @@ export struct ChangePassword {
   @State isKeyfileOnlyMode: boolean = false; // 当前是否为仅密钥文件模式
   @State useKeyfileOnly: boolean = false; // 是否切换到仅密钥文件模式
 
-  onPageShow(): void {
+  // 弹框关闭回调：提供时表示以弹框形式展示，取消/完成都应调用它来关闭弹框
+  onClose?: () => void;
+
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
+
+  aboutToAppear(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
     // 初始化当前认证模式
     const dbFileParam = FileService.getDbFileParam();
@@ -105,7 +126,7 @@ export struct ChangePassword {
   /**
    * 选择密钥文件
    */
-  private async selectKeyFile() {
+  private selectKeyFile() {
     LocationParam.of({
       mode: LocationMode.SELECT,
       onLocation: (locationInfo: LocationInfo) => {
@@ -114,7 +135,7 @@ export struct ChangePassword {
         this.navPathStack.pop();
       }
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navPathStack.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
   }
 
   /**
@@ -129,7 +150,7 @@ export struct ChangePassword {
     }, (error) => {
       this.navPathStack.pop();
     });
-    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+    this.navPathStack.pushPathByName(PageConstants.PAGE_SELECT_LOCATION, null);
   }
 
   /**
@@ -140,36 +161,39 @@ export struct ChangePassword {
     RecentFilesService.clearPassword(filePath).then(() => {
       FileService.close();
       this.navPathStack.clear();
-    })
-    CommonUtils.pushUrl({
-      url: 'pages/Password',
-      params: {
-        filePath: filePath,
+      // 若在弹框中，先关闭弹框
+      if (this.onClose) {
+        this.onClose();
       }
-    });
+      // 跳转到密码输入页（使用应用统一的导航方式）
+      const navParam: PasswordNavParam = { filePath: filePath };
+      NavigationManager.getInstance().navigateTo(PageConstants.PAGE_PASSWORD, navParam);
+    })
   }
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.navPathStack.pop();
-          })
+      // 顶部导航栏（仅独立页面模式展示，弹框模式由 SettingDialogWrapper 提供标题与关闭按钮）
+      if (!this.onClose) {
+        Row() {
+          Image($r("app.media.ic_angle_left"))
+            .width(24)
+            .height(24)
+            .margin({ left: 16 })
+            .fillColor($r('app.color.text_primary'))
+            .onClick(() => {
+              this.navPathStack.replacePathByName('SettingDatabase', {});
+            })
 
-        Text($r('app.string.change_password'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
+          Text($r('app.string.change_password'))
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 16 })
+            .fontColor($r('app.color.text_primary'))
+        }
+        .width('100%')
+        .height(40)
       }
-      .width('100%')
-      .height(40)
 
       // 对话框内容
       Column() {
@@ -359,7 +383,11 @@ export struct ChangePassword {
           .borderRadius(20)
           .fontColor($r('app.color.button_text'))
           .onClick(() => {
-            this.navPathStack.replacePathByName('SettingDatabase', null);
+            if (this.onClose) {
+              this.onClose();
+            } else {
+              this.navPathStack.replacePathByName('SettingDatabase', {});
+            }
           })
         Blank()
         Button($r('app.string.confirm_button_text'))
@@ -382,12 +410,8 @@ export struct ChangePassword {
         left: 16,
         right: 16
       })
-      .position({ x: 0, y: '100%' })
-      .translate({ y: -45 }) // 调整位置，确保正确显示
     }
     .width('100%')
-    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

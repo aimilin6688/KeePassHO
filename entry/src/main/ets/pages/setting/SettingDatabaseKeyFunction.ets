@@ -134,8 +134,8 @@ export struct SettingDatabaseKeyFunctionContent {
               }
               .width('100%')
               .padding({
-                left: 0,
-                right: 0,
+                left: 16,
+                right: 16,
                 top: 9,
                 bottom: 9
               })
@@ -181,7 +181,7 @@ export struct SettingDatabaseKeyFunctionContent {
                     .flexGrow(1)
                   Blank()
                   Column() {
-                    TextInput({ text: $$this.memory })
+                    TextInput({ text: this.memory })
                       .type(InputType.Number)
                       .fontSize(16)
                       .fontColor($r('app.color.text_primary'))

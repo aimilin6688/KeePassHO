@@ -94,9 +94,9 @@ struct RecentFilesContent {
       });
       return;
     } else {
-      // 导航到密码输入页面
+      // 使用整个窗口方式打开数据库（清空当前导航栈）
       const navParam: PasswordNavParam = { filePath: recentFile.filePath };
-      this.navManager.getNavPathStack()?.pushPathByName('Password', navParam);
+      this.navManager.replaceAll('Password', navParam);
     }
   }
 

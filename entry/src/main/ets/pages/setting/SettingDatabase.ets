@@ -15,6 +15,11 @@ import { SettingDatabaseKeyFunctionContent } from './SettingDatabaseKeyFunction'
 import { SettingDatabaseMetaContent } from './SettingDatabaseMeta';
 import { SettingCustomIconsContent } from './SettingCustomIcons';
 import { SettingDatabaseProtectedFiledContent } from './SettingDatabaseProtectedFiled';
+import { ChangePasswordContent } from '../ChangePassword';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'SettingDatabase';
 
 // 对话框类型枚举
 enum DialogType {
@@ -22,7 +27,8 @@ enum DialogType {
   KEY_FUNCTION = 1,
   META = 2,
   CUSTOM_ICONS = 3,
-  PROTECTED_FIELDS = 4
+  PROTECTED_FIELDS = 4,
+  CHANGE_PASSWORD = 5
 }
 
 // SettingDatabase页面的Builder函数
@@ -33,33 +39,42 @@ export function SettingDatabaseBuilder(name: string, param: Object): void {
 
 @Component
 struct SettingDatabasePage {
-  @State currentDialogType: DialogType = DialogType.NONE;
+  @State @Watch('onDialogTypeChange') currentDialogType: DialogType = DialogType.NONE;
   @State isSheetShow: boolean = false;
-  
-  aboutToAppear() {
-    // 监听 currentDialogType 变化，同步 isSheetShow
+
+  onDialogTypeChange() {
+    hilog.info(DOMAIN, TAG, `onDialogTypeChange: currentDialogType=${this.currentDialogType}, isSheetShow=${this.isSheetShow}`);
+    if (this.currentDialogType !== DialogType.NONE) {
+      this.isSheetShow = true;
+    }
   }
-  
+
+  private closeDialog() {
+    hilog.info(DOMAIN, TAG, `closeDialog: before isSheetShow=${this.isSheetShow}`);
+    this.currentDialogType = DialogType.NONE;
+    this.isSheetShow = false;
+    hilog.info(DOMAIN, TAG, `closeDialog: after isSheetShow=${this.isSheetShow}`);
+  }
+
   build() {
     NavDestination() {
-      SettingDatabaseContent({ 
-        currentDialogType: $currentDialogType,
-        onDialogTypeChange: (type: DialogType) => {
-          this.currentDialogType = type;
-          this.isSheetShow = type !== DialogType.NONE;
-        }
+      SettingDatabaseContent({
+        currentDialogType: this.currentDialogType
       })
     }
     .title($r('app.string.Settings_database'))
     .backgroundColor($r('app.color.bg_primary'))
-    .bindSheet($$this.isSheetShow, this.DialogBuilder(), {
+    .bindSheet(this.isSheetShow, this.DialogBuilder(), {
       preferType: SheetType.BOTTOM,
       mode: SheetMode.OVERLAY,
       height: SheetSize.FIT_CONTENT,
       backgroundColor: Color.Transparent,
       showClose: false,
       dragBar: false,
-      onDisappear: () => { 
+      maskColor: Color.Transparent,
+      onDisappear: () => {
+        hilog.info(DOMAIN, TAG, `onDisappear: isSheetShow=${this.isSheetShow}`);
+        // 弹框消失时重置状态
         this.currentDialogType = DialogType.NONE;
         this.isSheetShow = false;
       }
@@ -72,38 +87,23 @@ struct SettingDatabasePage {
       SettingDialogWrapper({
         title: $r('app.string.Settings_database_encryption_key'),
         context: this.getUIContext(),
-        onClose: () => { 
-          this.currentDialogType = DialogType.NONE;
-          this.isSheetShow = false;
-        }
+        onClose: (): void => this.closeDialog()
       }) {
-        SettingDatabaseKeyFunctionContent({ onClose: () => { 
-          this.currentDialogType = DialogType.NONE;
-          this.isSheetShow = false;
-        } })
+        SettingDatabaseKeyFunctionContent({ onClose: (): void => this.closeDialog() })
       }
     } else if (this.currentDialogType === DialogType.META) {
       SettingDialogWrapper({
         title: $r('app.string.Settings_database_metadata'),
         context: this.getUIContext(),
-        onClose: () => { 
-          this.currentDialogType = DialogType.NONE;
-          this.isSheetShow = false;
-        }
+        onClose: (): void => this.closeDialog()
       }) {
-        SettingDatabaseMetaContent({ onClose: () => { 
-          this.currentDialogType = DialogType.NONE;
-          this.isSheetShow = false;
-        } })
+        SettingDatabaseMetaContent({ onClose: (): void => this.closeDialog() })
       }
     } else if (this.currentDialogType === DialogType.CUSTOM_ICONS) {
       SettingDialogWrapper({
         title: $r('app.string.Settings_custom_icons'),
         context: this.getUIContext(),
-        onClose: () => { 
-          this.currentDialogType = DialogType.NONE;
-          this.isSheetShow = false;
-        }
+        onClose: (): void => this.closeDialog()
       }) {
         SettingCustomIconsContent()
       }
@@ -111,12 +111,19 @@ struct SettingDatabasePage {
       SettingDialogWrapper({
         title: $r('app.string.Settings_default_protected_field'),
         context: this.getUIContext(),
-        onClose: () => { 
-          this.currentDialogType = DialogType.NONE;
-          this.isSheetShow = false;
-        }
+        onClose: (): void => this.closeDialog()
       }) {
         SettingDatabaseProtectedFiledContent()
+      }
+    } else if (this.currentDialogType === DialogType.CHANGE_PASSWORD) {
+      SettingDialogWrapper({
+        title: $r('app.string.change_password'),
+        context: this.getUIContext(),
+        onClose: (): void => this.closeDialog()
+      }) {
+        ChangePasswordContent({
+          onClose: (): void => this.closeDialog()
+        })
       }
     }
   }
@@ -133,7 +140,6 @@ interface FormatSelectOption {
 @Component
 struct SettingDatabaseContent {
   @Link currentDialogType: DialogType;
-  onDialogTypeChange?: (type: DialogType) => void;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isDatabaseValid: boolean = false;
@@ -146,12 +152,9 @@ struct SettingDatabaseContent {
 
   private promptAction = this.getUIContext().getPromptAction();
   private viewModel: ImportExportViewModel = new ImportExportViewModel();
-  
+
   private showDialog(type: DialogType) {
     this.currentDialogType = type;
-    if (this.onDialogTypeChange) {
-      this.onDialogTypeChange(type);
-    }
   }
 
   aboutToAppear(): void {
@@ -260,7 +263,7 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                CommonUtils.pushUrl({ url: 'pages/ChangePassword' });
+                this.showDialog(DialogType.CHANGE_PASSWORD);
               })
             }
 

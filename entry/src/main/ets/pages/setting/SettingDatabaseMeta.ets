@@ -117,9 +117,8 @@ export struct SettingDatabaseMetaContent {
 
   build() {
     Column() {
-      Scroll() {
-        // 主要内容区域
-        Column() {
+      // 主要内容区域
+      Column() {
           // 数据库名称
           Text($r('app.string.database_name'))
             .fontSize(16)
@@ -196,173 +195,157 @@ export struct SettingDatabaseMetaContent {
               this.defaultUsername = value;
             })
 
-          List() {
+          Column() {
             // 历史记录设置
-            ListItemGroup() {
-              ListItem() {
-                Row() {
-                  Column() {
-                    Text($r("app.string.history_max_items"))
-                      .fontSize(16)
-                      .fontColor($r("app.color.text_primary"))
+            Column() {
+              Row() {
+                Column() {
+                  Text($r("app.string.history_max_items"))
+                    .fontSize(16)
+                    .fontColor($r("app.color.text_primary"))
 
-                    Text($r("app.string.history_max_items_tips"))
-                      .fontSize(12)
-                      .fontColor($r("app.color.text_secondary"))
-                      .margin({ top: 4 })
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .flexGrow(1)
-                  .layoutWeight(1)
+                  Text($r("app.string.history_max_items_tips"))
+                    .fontSize(12)
+                    .fontColor($r("app.color.text_secondary"))
+                    .margin({ top: 4 })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .flexGrow(1)
+                .layoutWeight(1)
 
-                  Blank()
-                  CounterComponent({
-                    options: {
-                      type: CounterType.COMPACT,
-                      numberOptions: {
-                        min: 0,
-                        value: this.historyMaxItems,
-                        max: 999,
-                        onChange: (value) => {
-                          if (this.historyMaxItems !== value) {
-                            this.isModified = true;
-                          }
-                          this.historyMaxItems = value;
+                Blank()
+                CounterComponent({
+                  options: {
+                    type: CounterType.COMPACT,
+                    numberOptions: {
+                      min: 0,
+                      value: this.historyMaxItems,
+                      max: 999,
+                      onChange: (value) => {
+                        if (this.historyMaxItems !== value) {
+                          this.isModified = true;
                         }
+                        this.historyMaxItems = value;
                       }
                     }
-                  })
-                    .margin({ top: 10 })
-                }
-                .width("100%")
-                .padding(12)
+                  }
+                })
+                  .margin({ top: 10 })
               }
+              .width("100%")
+              .padding(12)
+
+              Divider()
+                .strokeWidth(1)
+                .color($r('app.color.divider'))
 
               // 条目最大大小
-              ListItem() {
-                Row() {
-                  Column() {
-                    Text($r("app.string.history_max_size"))
-                      .fontSize(16)
-                      .fontColor($r("app.color.text_primary"))
+              Row() {
+                Column() {
+                  Text($r("app.string.history_max_size"))
+                    .fontSize(16)
+                    .fontColor($r("app.color.text_primary"))
 
-                    Text($r("app.string.history_max_size_tips"))
-                      .fontSize(12)
-                      .fontColor($r("app.color.text_secondary"))
-                      .margin({ top: 4 })
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .flexGrow(1)
-                  .layoutWeight(1)
-
-                  Blank()
-                  CounterComponent({
-                    options: {
-                      type: CounterType.COMPACT,
-                      numberOptions: {
-                        min: 0,
-                        value: this.historyMaxSize,
-                        max: 999,
-                        onChange: (value) => {
-                          if (this.historyMaxSize !== value) {
-                            this.isModified = true;
-                          }
-                          this.historyMaxSize = value;
-                        }
-                      },
-                    }
-                  })
-                    .margin({ top: 10 })
+                  Text($r("app.string.history_max_size_tips"))
+                    .fontSize(12)
+                    .fontColor($r("app.color.text_secondary"))
+                    .margin({ top: 4 })
                 }
-                .width('100%')
-                .padding(12)
+                .alignItems(HorizontalAlign.Start)
+                .flexGrow(1)
+                .layoutWeight(1)
+
+                Blank()
+                CounterComponent({
+                  options: {
+                    type: CounterType.COMPACT,
+                    numberOptions: {
+                      min: 0,
+                      value: this.historyMaxSize,
+                      max: 999,
+                      onChange: (value) => {
+                        if (this.historyMaxSize !== value) {
+                          this.isModified = true;
+                        }
+                        this.historyMaxSize = value;
+                      }
+                    },
+                  }
+                })
+                  .margin({ top: 10 })
               }
+              .width('100%')
+              .padding(12)
             }
             .margin({ top: 12, bottom: 12 })
             .backgroundColor($r("app.color.card_bg"))
             .borderRadius(12)
-            .divider({
-              strokeWidth: 1,
-              color: $r('app.color.divider'),
-            })
 
             // 其他设置
-            ListItemGroup() {
+            Column() {
               // 启用回收站
-              ListItem() {
-                Row() {
-                  Text($r("app.string.recycle_bin_enabled"))
+              Row() {
+                Text($r("app.string.recycle_bin_enabled"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Toggle({ type: ToggleType.Switch, isOn: this.recycleBinEnabled })
+                  .selectedColor('#007DFF')
+                  .switchPointColor('#FFFFFF')
+                  .onChange((isOn: boolean) => {
+                    if (this.recycleBinEnabled !== isOn) {
+                      this.isModified = true;
+                    }
+                    this.recycleBinEnabled = isOn;
+                  })
+              }
+              .justifyContent(FlexAlign.SpaceBetween)
+              .width('100%')
+              .padding(12)
+
+              Divider()
+                .strokeWidth(1)
+                .color($r('app.color.divider'))
+
+              // 启用压缩
+              Row() {
+                Column() {
+                  Text($r("app.string.compression_enabled"))
                     .fontSize(16)
                     .flexGrow(1)
-                  Toggle({ type: ToggleType.Switch, isOn: this.recycleBinEnabled })
+
+                  Text($r("app.string.compression_enabled_tips"))
+                    .fontSize(12)
+                    .fontColor($r("app.color.text_secondary"))
+                    .padding({ top: 4 })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .flexGrow(1)
+                .layoutWeight(1)
+
+                Blank()
+                Column() {
+                  Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
                     .selectedColor('#007DFF')
                     .switchPointColor('#FFFFFF')
                     .onChange((isOn: boolean) => {
-                      if (this.recycleBinEnabled !== isOn) {
-                        this.isModified = true;
-                      }
-                      this.recycleBinEnabled = isOn;
+                      this.compressionEnabled = isOn;
+                      this.isModified = true;
                     })
                 }
-                .justifyContent(FlexAlign.SpaceBetween)
-                .width('100%')
-                .padding(12)
-              }
-
-              // 启用压缩
-              ListItem() {
-                Row() {
-                  Column() {
-                    Text($r("app.string.compression_enabled"))
-                      .fontSize(16)
-                      .flexGrow(1)
-
-                    Text($r("app.string.compression_enabled_tips"))
-                      .fontSize(12)
-                      .fontColor($r("app.color.text_secondary"))
-                      .padding({ top: 4 })
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .flexGrow(1)
-                  .layoutWeight(1)
-
-                  Blank()
-                  Column() {
-                    Toggle({ type: ToggleType.Switch, isOn: this.compressionEnabled })
-                      .selectedColor('#007DFF')
-                      .switchPointColor('#FFFFFF')
-                      .onChange((isOn: boolean) => {
-                        this.compressionEnabled = isOn;
-                        this.isModified = true;
-                      })
-                  }
-                }.width("100%")
-                .padding(12)
-              }
+              }.width("100%")
+              .padding(12)
             }
             .margin({ top: 12, bottom: 12 })
             .backgroundColor($r("app.color.card_bg"))
             .borderRadius(12)
-            .divider({
-              strokeWidth: 1,
-              color: $r('app.color.divider'),
-            })
           }
           .width('100%')
           .height('auto')
           .margin({ top: 12 })
-
-          // 底部占位符
-          List() {
-          }
-          .width('100%')
-          .height('100')
         }
         .width('100%')
         .margin({ top: 4 })
         .padding({ left: 12, right: 12 })
-      }.width('100%')
-      .clipContent(ContentClipMode.SAFE_AREA)
 
 
       // 操作按钮
