@@ -28,11 +28,66 @@ enum DialogType {
 // SettingDatabase页面的Builder函数
 @Builder
 export function SettingDatabaseBuilder(name: string, param: Object): void {
-  NavDestination() {
-    SettingDatabaseContent()
+  SettingDatabasePage()
+}
+
+@Component
+struct SettingDatabasePage {
+  @State currentDialogType: DialogType = DialogType.NONE;
+  
+  build() {
+    NavDestination() {
+      SettingDatabaseContent({ currentDialogType: $currentDialogType })
+    }
+    .title($r('app.string.Settings_database'))
+    .backgroundColor($r('app.color.bg_primary'))
+    .bindSheet(this.currentDialogType !== DialogType.NONE, this.DialogBuilder(), {
+      preferType: SheetType.BOTTOM,
+      mode: SheetMode.OVERLAY,
+      height: SheetSize.FIT_CONTENT,
+      backgroundColor: Color.Transparent,
+      showClose: false,
+      dragBar: false,
+      onDisappear: () => { this.currentDialogType = DialogType.NONE; }
+    })
   }
-  .title($r('app.string.Settings_database'))
-  .backgroundColor($r('app.color.bg_primary'))
+  
+  @Builder
+  DialogBuilder() {
+    if (this.currentDialogType === DialogType.KEY_FUNCTION) {
+      SettingDialogWrapper({
+        title: $r('app.string.Settings_database_encryption_key'),
+        context: this.getUIContext(),
+        onClose: () => { this.currentDialogType = DialogType.NONE; }
+      }) {
+        SettingDatabaseKeyFunctionContent({ onClose: () => { this.currentDialogType = DialogType.NONE; } })
+      }
+    } else if (this.currentDialogType === DialogType.META) {
+      SettingDialogWrapper({
+        title: $r('app.string.Settings_database_metadata'),
+        context: this.getUIContext(),
+        onClose: () => { this.currentDialogType = DialogType.NONE; }
+      }) {
+        SettingDatabaseMetaContent({ onClose: () => { this.currentDialogType = DialogType.NONE; } })
+      }
+    } else if (this.currentDialogType === DialogType.CUSTOM_ICONS) {
+      SettingDialogWrapper({
+        title: $r('app.string.Settings_custom_icons'),
+        context: this.getUIContext(),
+        onClose: () => { this.currentDialogType = DialogType.NONE; }
+      }) {
+        SettingCustomIconsContent()
+      }
+    } else if (this.currentDialogType === DialogType.PROTECTED_FIELDS) {
+      SettingDialogWrapper({
+        title: $r('app.string.Settings_default_protected_field'),
+        context: this.getUIContext(),
+        onClose: () => { this.currentDialogType = DialogType.NONE; }
+      }) {
+        SettingDatabaseProtectedFiledContent()
+      }
+    }
+  }
 }
 
 /**
@@ -45,6 +100,7 @@ interface FormatSelectOption {
 
 @Component
 struct SettingDatabaseContent {
+  @Link currentDialogType: DialogType;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isDatabaseValid: boolean = false;
@@ -54,9 +110,6 @@ struct SettingDatabaseContent {
   @State importFormats: FormatInfo[] = [];
   @State exportFormats: FormatInfo[] = [];
   @State isLoading: boolean = false;
-
-  // 弹框控制器 - 使用统一的对话框类型
-  @State currentDialogType: DialogType = DialogType.NONE;
 
   private promptAction = this.getUIContext().getPromptAction();
   private viewModel: ImportExportViewModel = new ImportExportViewModel();
@@ -378,49 +431,6 @@ struct SettingDatabaseContent {
       .height('100%')
       .backgroundColor($r("app.color.bg_primary"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      .bindSheet(this.currentDialogType !== DialogType.NONE, this.DialogBuilder(), {
-        height: SheetSize.FIT_CONTENT,
-        backgroundColor: Color.Transparent,
-        dragBar: false,
-        onDisappear: () => { this.currentDialogType = DialogType.NONE; }
-      })
-  }
-
-  @Builder
-  DialogBuilder() {
-    if (this.currentDialogType === DialogType.KEY_FUNCTION) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_database_encryption_key'),
-        context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
-      }) {
-        SettingDatabaseKeyFunctionContent({ onClose: () => { this.currentDialogType = DialogType.NONE; } })
-      }
-    } else if (this.currentDialogType === DialogType.META) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_database_metadata'),
-        context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
-      }) {
-        SettingDatabaseMetaContent({ onClose: () => { this.currentDialogType = DialogType.NONE; } })
-      }
-    } else if (this.currentDialogType === DialogType.CUSTOM_ICONS) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_custom_icons'),
-        context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
-      }) {
-        SettingCustomIconsContent()
-      }
-    } else if (this.currentDialogType === DialogType.PROTECTED_FIELDS) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_default_protected_field'),
-        context: this.getUIContext(),
-        onClose: () => { this.currentDialogType = DialogType.NONE; }
-      }) {
-        SettingDatabaseProtectedFiledContent()
-      }
-    }
   }
 }
 
