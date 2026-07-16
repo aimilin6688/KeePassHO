@@ -25,6 +25,7 @@ export function EntryViewBuilder(name: string, param: Object): void {
     EntryView({ entryParam: param as EntryParam })
   }
   .backgroundColor($r('app.color.bg_primary'))
+  .hideTitleBar(true)  // 隐藏 NavDestination 的默认标题栏，使用组件内部的自定义标题栏
 }
 
 @Component
@@ -391,8 +392,8 @@ export struct EntryView {
         // 顶部导航栏
         Row() {
           Image($r("app.media.ic_angle_left"))
-            .width(24)
-            .height(24)
+            .width(28)
+            .height(28)
             .margin({ left: 16 })
             .fillColor($r('app.color.text_primary'))
             .onClick(() => {
@@ -402,13 +403,13 @@ export struct EntryView {
           Row() {
             if (this.selectedHistoryIndex >= 0) {
               Text($r('app.string.history_version', this.selectedHistoryIndex + 1))
-                .fontSize(20)
+                .fontSize(22)
                 .fontWeight(FontWeight.Medium)
                 .margin({ left: 16 })
                 .fontColor($r('app.color.text_primary'))
             } else {
               Text(KdbxUtils.getFieldValueString(this.entry?.fields, KdbxUtils.FIELD_TITLE) || '')
-                .fontSize(20)
+                .fontSize(22)
                 .fontWeight(FontWeight.Medium)
                 .margin({ left: 16 })
                 .fontColor($r('app.color.text_primary'))
@@ -422,8 +423,8 @@ export struct EntryView {
             if (this.selectedHistoryIndex < 0) {
               Button() {
                 Image($r('app.media.ic_edit'))
-                  .width(24)
-                  .height(24)
+                  .width(28)
+                  .height(28)
                   .fillColor($r('app.color.text_primary'))
               }
               .backgroundColor(Color.Transparent)
@@ -442,7 +443,7 @@ export struct EntryView {
 
         }
         .width('100%')
-        .height(40)
+        .height(48)
 
         if (this.isLoading) {
           // 加载中状态
@@ -618,7 +619,7 @@ export struct EntryView {
           .height('100%')
           .barMode(BarMode.Fixed)
           .barWidth('100%')
-          .barHeight(35) // 减少tab标签页的高度
+          .barHeight(48) // Tab 标签页高度，确保文字完整显示
         }
       }
       .width('100%')
