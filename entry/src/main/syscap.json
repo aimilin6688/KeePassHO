@@ -2,7 +2,8 @@
   "devices": {
     "general": [
       "phone",
-      "tablet"
+      "tablet",
+      "2in1"
     ]
   },
   "development": {
