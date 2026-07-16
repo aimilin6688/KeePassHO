@@ -8,12 +8,12 @@ export class NavigationConstants {
    * 导航栏宽度范围 [最小宽度, 最大宽度]
    * 用于 Navigation 组件的 navBarWidthRange 属性
    */
-  static readonly NAV_BAR_WIDTH_RANGE: [number, number] = [240, 360];
+  static readonly NAV_BAR_WIDTH_RANGE: [number, number] = [240, 700];
 
   /**
    * 导航栏默认宽度（vp）
    */
-  static readonly DEFAULT_NAV_BAR_WIDTH: number = 280;
+  static readonly DEFAULT_NAV_BAR_WIDTH: number = 360;
 
   /**
    * 内容区最小宽度（vp）
