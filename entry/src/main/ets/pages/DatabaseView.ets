@@ -154,6 +154,8 @@ export struct DatabaseView {
         // 数据库已打开但当前组件还未加载，重新加载
         hilog.info(DOMAIN, TAG, 'Database available, loading...');
         this.loadDatabase();
+        // 显示支持弹框（每天首次进入数据库页面时）
+        SupportService.showSupportDialog(this.getUIContext());
       } else {
         // 恢复分组状态
         this.restoreGroupState();
@@ -168,16 +170,14 @@ export struct DatabaseView {
     this.registerDatabaseEvent();
     // 注册根页面变化监听
     this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
-    // 加载数据库信息
-    this.loadDatabase();
+    // 不在这里调用 loadDatabase()，因为此时数据库可能还没打开
+    // 数据库加载会在 rootPageChangeListener 中触发
     // 监听主题变化
     ThemeManager.getInstance().addThemeChangeListener(() => {
       this.onThemeChanged();
     });
     // 监听排序方式变化
     this.settingsService.registerObserver(this.onSettingChanged);
-    // 显示支持弹框
-    SupportService.showSupportDialog(this.getUIContext());
     // 初始化窗口大小并注册监听器（支持小窗模式）
     this.initWindowAndListener();
   }
@@ -552,10 +552,12 @@ export struct DatabaseView {
   private navigateToParentGroup() {
     hilog.info(DOMAIN, TAG, `Navigate to parent group`);
     if (this.currentGroup && this.currentGroup.parentGroup) {
+      // 记录父分组
+      const parentGroup = this.currentGroup.parentGroup;
       // 有父分组，返回到父分组
-      this.navigateToGroup(this.currentGroup.parentGroup);
+      this.navigateToGroup(parentGroup);
       // 如果父分组是根分组，隐藏返回按钮
-      if (!this.currentGroup.parentGroup || this.currentGroup.parentGroup.uuid.id === this.database?.getDefaultGroup()?.uuid.id) {
+      if (!parentGroup.parentGroup || parentGroup.uuid.id === this.database?.getDefaultGroup()?.uuid.id) {
         this.showBack = false;
       }
     } else {
