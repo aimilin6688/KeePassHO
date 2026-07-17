@@ -21,5 +21,20 @@ export enum StorageType {
   /**
    * Microsoft OneDrive存储
    */
-  ONEDRIVE = 'ONEDRIVE'
+  ONEDRIVE = 'ONEDRIVE',
+
+  /**
+   * S3兼容存储
+   */
+  S3 = 'S3',
+
+  /**
+   * pCloud云存储
+   */
+  PCLOUD = 'PCLOUD',
+
+  /**
+   * 百度网盘存储
+   */
+  BAIDU_NETDISK = 'BAIDU_NETDISK'
 }

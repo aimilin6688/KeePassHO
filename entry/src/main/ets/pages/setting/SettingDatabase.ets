@@ -3,36 +3,44 @@ import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
-import { KdbxExportService } from '../../services/kdbx/KdbxExportService';
-import { KdbxImportService } from '../../services/kdbx/KdbxImportService';
 import { ExportType } from '../../services/TypeDefined';
+import {
+  ImportExportViewModel,
+  registerDefaultHandlers,
+  FormatInfo
+} from '../../services/importExport';
+import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/LocationParam';
 
+/**
+ * 格式选择选项
+ */
+interface FormatSelectOption {
+  value: string;
+  formatId: string;
+}
 
 @Entry
 @Component
 struct SettingsDatabase {
   @State isDatabaseValid: boolean = false;
   @State algorithmType: ResourceStr = ResourceManager.getString($r("app.string.please_select"));
+
+  // 新架构
+  @State importFormats: FormatInfo[] = [];
+  @State exportFormats: FormatInfo[] = [];
+  @State isLoading: boolean = false;
+
   private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
-  // 数据库导出类型
-  private exportTypeOptions: Array<ExportTypeOptions> = [
-    { value: $r('app.string.export_type_kdbx'), type: ExportType.KDBX },
-    { value: $r('app.string.export_type_xml'), type: ExportType.XML },
-    { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
-  ];
-  // 数据库导入类型
-  private importTypeOptions: Array<ExportTypeOptions> = [
-    { value: $r('app.string.export_type_xml'), type: ExportType.XML },
-    { value: $r('app.string.export_type_csv'), type: ExportType.CSV }
-  ];
-  // 加密算法
-  private algorithmOptions: Array<AlgorithmOptions> = [
-    { value: $r('app.string.Settings_database_algorithm_aes'), type: CipherId.Aes },
-    { value: $r('app.string.Settings_database_algorithm_chacha20'), type: CipherId.ChaCha20 }
-  ];
+  private viewModel: ImportExportViewModel = new ImportExportViewModel();
 
   aboutToAppear(): void {
+    // 注册处理器
+    registerDefaultHandlers();
+
+    // 获取支持的格式
+    this.importFormats = this.viewModel.getImportFormatOptions();
+    this.exportFormats = this.viewModel.getExportFormatOptions();
   }
 
   onPageShow(): void {
@@ -45,13 +53,57 @@ struct SettingsDatabase {
   }
 
   // 导入数据库
-  private importDatabase(inputType: ExportType) {
-    KdbxImportService.importDatabase(inputType);
+  private startImport(formatId: string): void {
+    const extensions = this.viewModel.getFileExtensions(formatId);
+
+    LocationParam.of({
+      mode: LocationMode.SELECT,
+      fileSuffix: extensions,
+      onLocation: (location: LocationInfo) => this.doImport(location)
+    });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+  private async doImport(location: LocationInfo): Promise<void> {
+    this.isLoading = true;
+
+    const success = await this.viewModel.executeImport(location);
+
+    this.isLoading = false;
+
+    if (success) {
+      CommonUtils.showToast(`导入成功，共 ${this.viewModel.lastImportedCount} 条记录`);
+      CommonUtils.back({ url: "pages/setting/SettingDatabase" });
+    } else {
+      CommonUtils.showToast(this.viewModel.errorMessage);
+    }
   }
 
   // 导出数据库
-  private exportDatabase(exportType: ExportType) {
-    KdbxExportService.exportDatabase(exportType);
+  private startExport(formatId: string): void {
+    const fileName = this.viewModel.getExportFileName(formatId);
+
+    LocationParam.of({
+      mode: LocationMode.SAVE,
+      fileName: fileName,
+      onLocation: (location: LocationInfo) => this.doExport(formatId, location)
+    });
+    CommonUtils.pushUrl({ url: 'pages/open/SelectLocation' });
+  }
+
+  private async doExport(formatId: string, location: LocationInfo): Promise<void> {
+    this.isLoading = true;
+
+    const success = await this.viewModel.executeExport(formatId, location);
+
+    this.isLoading = false;
+
+    if (success) {
+      CommonUtils.showToast('导出成功');
+      CommonUtils.back({ url: "pages/setting/SettingDatabase" });
+    } else {
+      CommonUtils.showToast(this.viewModel.errorMessage);
+    }
   }
 
   // 重新加密算法
@@ -60,6 +112,12 @@ struct SettingsDatabase {
     // 保存数据库
     KdbxUtils.saveDatabase();
   }
+
+  // 加密算法选项
+  private algorithmOptions: Array<AlgorithmOptions> = [
+    { value: $r('app.string.Settings_database_algorithm_aes'), type: CipherId.Aes },
+    { value: $r('app.string.Settings_database_algorithm_chacha20'), type: CipherId.ChaCha20 }
+  ];
 
   build() {
     Column() {
@@ -243,14 +301,14 @@ struct SettingsDatabase {
                   .flexGrow(1)
                 Blank()
                 Column() {
-                  Select(this.importTypeOptions)
+                  Select(this.importFormats.map((f: FormatInfo): FormatSelectOption => ({ value: f.formatName, formatId: f.formatId })))
                     .value($r("app.string.please_select"))
                     .font({ size: 16 })
                     .selectedOptionFont({ size: 16 })
                     .optionFont({ size: 16 })
                     .backgroundColor($r("app.color.card_bg"))
                     .onSelect(async (index: number) => {
-                      this.importDatabase(this.importTypeOptions[index].type);
+                      this.startImport(this.importFormats[index].formatId);
                     })
                     .padding({ right: 0 })
                 }
@@ -273,14 +331,14 @@ struct SettingsDatabase {
                   .flexGrow(1)
                 Blank()
                 Column() {
-                  Select(this.exportTypeOptions)
+                  Select(this.exportFormats.map((f: FormatInfo): FormatSelectOption => ({ value: f.formatName, formatId: f.formatId })))
                     .value($r("app.string.please_select"))
                     .font({ size: 16 })
                     .selectedOptionFont({ size: 16 })
                     .optionFont({ size: 16 })
                     .backgroundColor($r("app.color.card_bg"))
                     .onSelect(async (index: number) => {
-                      this.exportDatabase(this.exportTypeOptions[index].type);
+                      this.startExport(this.exportFormats[index].formatId);
                     })
                     .padding({ right: 0 })
                 }
@@ -322,11 +380,6 @@ struct SettingsDatabase {
     .backgroundColor($r("app.color.bg_primary"))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
-}
-
-export interface ExportTypeOptions {
-  value: ResourceStr;
-  type: ExportType;
 }
 
 export interface AlgorithmOptions {

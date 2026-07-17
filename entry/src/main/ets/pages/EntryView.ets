@@ -7,6 +7,7 @@ import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { common } from '@kit.AbilityKit';
+import { OtpExtractionResult } from '../services/otp';
 
 
 const DOMAIN = 0xFF00;
@@ -108,10 +109,25 @@ struct EntryView {
 
     this.fields = [];
 
+    // 使用兼容层获取 TOTP URL 及已处理的字段名
+    const totpResult: OtpExtractionResult = KdbxUtils.getTotpUrlWithProcessedFields(this.entry);
+    const totpUrls: string[] = totpResult.urls;
+    const processedFields: Set<string> = totpResult.processedFields;
+
+    // 添加 TOTP 字段（通过兼容层解析，支持多种数据库格式）
+    for (const totpUrl of totpUrls) {
+      this.fields.push(new FieldView(KdbxUtils.FIELD_TOTP, totpUrl, false, true));
+    }
+
     // 遍历条目的所有字段
     for (const field of this.entry.fields) {
       const key: string = field[0];
+      // 跳过标题字段
       if (key === KdbxUtils.FIELD_TITLE) {
+        continue;
+      }
+      // 跳过已被 TOTP 兼容层处理的字段
+      if (processedFields.has(key)) {
         continue;
       }
       const value = field[1];
@@ -135,7 +151,7 @@ struct EntryView {
     this.fields.sort((a, b) => {
       // 将常用字段排在前面
       const commonFields =
-        [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
+        [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_TOTP, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES, KdbxUtils.FIELD_TAGS,
           KdbxUtils.FIELD_OVERRIDE_URL];
       const aIndex = commonFields.indexOf(a.key);
       const bIndex = commonFields.indexOf(b.key);

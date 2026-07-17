@@ -1,0 +1,148 @@
+import { Kdbx, KdbxEntry, KdbxGroup, ByteUtils } from 'kdbxweb';
+import { IExportHandler } from '../IExportHandler';
+import { ExportError, ImportExportErrorCode } from '../../common/ImportExportError';
+import { KdbxUtils, ResourceManager } from '../../../../common/utils';
+import hilog from '@ohos.hilog';
+import util from '@ohos.util';
+
+const TAG = 'CsvExportHandler';
+const DOMAIN = 0xFF00;
+
+/**
+ * CSV 标题枚举
+ */
+enum CsvTitle {
+  Group = "Group",
+  Title = "Title",
+  Username = "UserName",
+  Password = "Password",
+  URL = "URL",
+  Notes = "Notes",
+  TOTP = "TOTP",
+  Icon = "Icon",
+  Last_Modified = "Last Modified",
+  Created = "Created"
+}
+
+/**
+ * CSV 导出处理器
+ */
+export class CsvExportHandler implements IExportHandler {
+  readonly supportedExtensions: string[] = ['.csv'];
+  readonly formatName: string = 'CSV';
+  readonly formatId: string = 'CSV';
+  readonly defaultFileName: string = 'export.csv';
+
+  canHandle(formatId: string): boolean {
+    return this.formatId === formatId;
+  }
+
+  async export(database: Kdbx): Promise<ArrayBuffer> {
+    try {
+      const rootGroup = database.getDefaultGroup();
+      const entryIterator = rootGroup.allEntries();
+
+      // 收集所有条目到数组
+      const entries: KdbxEntry[] = [];
+      for (const entry of entryIterator) {
+        entries.push(entry);
+      }
+
+      if (entries.length === 0) {
+        throw new ExportError(ImportExportErrorCode.DATABASE_EMPTY, ResourceManager.getString($r('app.string.import_export_database_empty')));
+      }
+
+      let csvContent = '';
+
+      // 添加标题行
+      const titles = Object.values(CsvTitle).join(',');
+      csvContent += titles + '\n';
+
+      // 遍历所有条目
+      for (const entry of entries) {
+        // 使用 includeRoot=false，这样根分组下的条目 Group 字段为空
+        const groupPath = KdbxUtils.getGroupPath(entry.parentGroup, '/', false);
+        const row = this.createCsvRow(entry, groupPath);
+        csvContent += row + '\n';
+      }
+
+      // 转换为 ArrayBuffer
+      const encoder = new util.TextEncoder();
+      return encoder.encodeInto(csvContent).buffer;
+    } catch (error) {
+      if (error instanceof ExportError) {
+        throw error;
+      }
+      const errorMsg = error instanceof Error ? error.message : ResourceManager.getString($r('app.string.import_export_unknown_error'));
+      hilog.error(DOMAIN, TAG, 'CSV export failed: %{public}s', errorMsg);
+      throw new ExportError(
+        ImportExportErrorCode.EXPORT_FAILED,
+        ResourceManager.getString($r('app.string.import_export_export_failed'))
+      );
+    }
+  }
+
+  private createCsvRow(entry: KdbxEntry, groupPath: string): string {
+    const title = this.getFieldValue(entry, 'Title');
+    const username = this.getFieldValue(entry, 'UserName');
+    const password = this.getFieldValue(entry, 'Password');
+    const url = this.getFieldValue(entry, 'URL');
+    const notes = this.getFieldValue(entry, 'Notes');
+    const totp = this.getTotpFieldValue(entry);
+    const icon = entry.icon !== undefined ? entry.icon.toString() : '0';
+    const lastModified = entry.times.lastModTime?.toISOString() || '';
+    const created = entry.times.creationTime?.toISOString() || '';
+
+    const row = [
+      this.escapeCsvField(groupPath),
+      this.escapeCsvField(title),
+      this.escapeCsvField(username),
+      this.escapeCsvField(password),
+      this.escapeCsvField(url),
+      this.escapeCsvField(notes),
+      this.escapeCsvField(totp),
+      this.escapeCsvField(icon),
+      this.escapeCsvField(lastModified),
+      this.escapeCsvField(created)
+    ];
+
+    return row.join(',');
+  }
+
+  private getFieldValue(entry: KdbxEntry, fieldName: string): string {
+    const field = entry.fields.get(fieldName);
+    if (!field) {
+      return '';
+    }
+
+    if (typeof field === 'string') {
+      return field;
+    } else {
+      // ProtectedValue 类型
+      return field.getText();
+    }
+  }
+
+  private getTotpFieldValue(entry: KdbxEntry): string {
+    for (const field of entry.fields) {
+      const value = KdbxUtils.getValueString(field[1]);
+      if (KdbxUtils.isTotpUrl(value)) {
+        return value;
+      }
+    }
+    return '';
+  }
+
+  private escapeCsvField(field: string): string {
+    if (!field) {
+      return '';
+    }
+
+    // 如果字段包含逗号、双引号或换行符，需要用双引号包围
+    if (field.includes(',') || field.includes('"') || field.includes('\n')) {
+      return '"' + field.replace(/"/g, '""') + '"';
+    }
+
+    return field;
+  }
+}
