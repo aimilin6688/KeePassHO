@@ -150,36 +150,43 @@ export struct ColorEditDialog {
   @State hue: number = 0;
   @State saturation: number = 1;
   @State value: number = 1;
-  
+
   // 拖拽位置 (相对于选择区域的百分比)
   @State colorAreaX: number = 1; // 饱和度位置
   @State colorAreaY: number = 0; // 明度位置
   @State huePosition: number = 0; // 色相位置
-  
+
   // 初始颜色值 - 使用 @Prop 实现从父组件同步
   @Prop initialFgColor: string | undefined = undefined;
   @Prop initialBgColor: string | undefined = undefined;
-  
+
   // 回调函数
   public onConfirm: (result: ColorPickerResult) => void = (): void => {};
   public onCancel: () => void = (): void => {};
-  
+
   private controller: CustomDialogController;
-  
+
   // 颜色选择区域实际尺寸
   private colorAreaWidth: number = 0;
   private colorAreaHeight: number = 200;
   private hueBarWidth: number = 0;
   private hueBarHeight: number = 24;
-  
+
   aboutToAppear(): void {
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     this.selectedFgColor = this.initialFgColor;
     this.selectedBgColor = this.initialBgColor;
     this.updateHsvFromCurrentColor();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.dialogWidth = widthConfig.width;
   }
   
   /**
@@ -686,5 +693,9 @@ export struct ColorEditDialog {
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(16)
     .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+    .onAreaChange((_oldValue: Area, _newValue: Area) => {
+      // 窗口大小变化时更新弹框宽度
+      this.updateDialogWidth();
+    })
   }
 }
