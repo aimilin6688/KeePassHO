@@ -1,6 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
-import { CommonUtils, UIUtils } from '../common/utils';
+import { CommonUtils, UIUtils, DialogWindowHelper } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'ImageViewerDialog';
@@ -23,16 +23,32 @@ export struct ImageViewerDialog {
   binaryFile: ArrayBuffer | null = null;
   binaryFileName: string = '';
   controller: CustomDialogController;
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
   private initialScale: number = 1.0;
   private initialOffsetX: number = 0;
   private initialOffsetY: number = 0;
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     this.convertToDataUri();
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
+    this.dialogWidth = widthConfig.width;
   }
 
   /**

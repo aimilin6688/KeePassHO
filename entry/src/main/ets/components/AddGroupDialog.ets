@@ -1,4 +1,4 @@
-import { IconUtils, UIUtils } from '../common/utils';
+import { IconUtils, UIUtils, DialogWindowHelper } from '../common/utils';
 import { Icons } from '../services/TypeDefined';
 import { IconSelectorDialog } from './IconSelectorDialog';
 import { ColorEditDialog, ColorPickerResult } from './ColorPickerDialog';
@@ -15,7 +15,7 @@ export struct AddGroupDialog {
   // 初始颜色值
   public initialFgColor: string | undefined = undefined;
   public initialBgColor: string | undefined = undefined;
-  
+
   private iconSelectorDialogController: CustomDialogController = new CustomDialogController({
     builder: IconSelectorDialog({
       selectedIconId: this.selectedIconId,
@@ -27,7 +27,7 @@ export struct AddGroupDialog {
     customStyle: true,
     autoCancel: false
   });
-  
+
   colorPickerController: CustomDialogController = new CustomDialogController({
     builder: ColorEditDialog({
       initialFgColor: this.fgColor,
@@ -41,20 +41,36 @@ export struct AddGroupDialog {
     customStyle: true,
     autoCancel: false
   });
-  
+
   controller: CustomDialogController
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
   onConfirm: (iconId: number | string, fgColor: string | undefined, bgColor: string | undefined) => void = () => {
   }
   onCancel: () => void = () => {
   }
 
   aboutToAppear(): void {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     this.fgColor = this.initialFgColor;
     this.bgColor = this.initialBgColor;
+  }
+
+  aboutToDisappear(): void {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
+    this.dialogWidth = widthConfig.width;
   }
 
   build() {

@@ -1,4 +1,4 @@
-import { CommonUtils, UIUtils } from "../common/utils";
+import { CommonUtils, UIUtils, DialogWindowHelper } from "../common/utils";
 import {CustomField} from "../services/TypeDefined";
 
 /**
@@ -15,6 +15,7 @@ export struct EntryEditFieldDialog {
   public onConfirm: (customField: CustomField) => void = ()=>{};
   public onCancel: () => void = ()=>{};
   private controller: CustomDialogController;
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
 
   @State tempKey: string = '';
   @State tempValue: string = '';
@@ -24,14 +25,29 @@ export struct EntryEditFieldDialog {
   private promptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     // 初始化临时变量
     this.tempKey = this.fieldKey;
     this.tempValue = this.fieldValue;
     this.tempProtected = this.isProtected;
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
+    this.dialogWidth = widthConfig.width;
   }
 
   /**

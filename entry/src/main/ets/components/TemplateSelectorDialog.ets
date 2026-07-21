@@ -5,7 +5,7 @@
 import { Kdbx } from 'kdbxweb';
 import { ITemplate, IPresetTemplate, IUserTemplate, TemplateCategory, isPresetTemplate } from '../services/template/TemplateTypes';
 import { TemplateService } from '../services/template/TemplateService';
-import { IconUtils, ResourceManager, UIUtils } from '../common/utils';
+import { IconUtils, ResourceManager, UIUtils, DialogWindowHelper } from '../common/utils';
 
 @CustomDialog
 export struct TemplateSelectorDialog {
@@ -23,12 +23,16 @@ export struct TemplateSelectorDialog {
 
   private controller: CustomDialogController;
   private templateService: TemplateService = TemplateService.getInstance();
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
   private readonly iconSize: number = 32;
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     // 加载预置模板
     this.presetTemplates = this.templateService.getPresetTemplates();
@@ -40,6 +44,18 @@ export struct TemplateSelectorDialog {
 
     // 初始化过滤后的模板列表
     this.filterTemplates();
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
+    this.dialogWidth = widthConfig.width;
   }
 
   /**

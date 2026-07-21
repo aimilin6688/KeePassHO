@@ -1,7 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { WebImageDownloader } from '../common/utils/WebImageDownloader';
 import { UrlUtils } from '../common/utils/UrlUtils';
-import { CommonUtils, UIUtils } from '../common/utils';
+import { CommonUtils, UIUtils, DialogWindowHelper } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DownloadImageDialog';
@@ -13,14 +13,30 @@ export struct DownloadImageDialog {
   @State errorMessage: ResourceStr = '';
   @State dialogWidth: string | number = '100%'; // 弹框宽度
   controller: CustomDialogController;
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
   onSuccess: (imageData: string) => void = () => {
   };
   onCancel: () => void = () => {
   };
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.updateDialogWidth();
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
     this.dialogWidth = widthConfig.width;
   }
 

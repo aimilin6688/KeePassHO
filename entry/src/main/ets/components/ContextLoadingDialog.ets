@@ -1,14 +1,30 @@
-import { UIUtils } from '../common/utils';
+import { UIUtils, DialogWindowHelper } from '../common/utils';
 
 @CustomDialog
 export struct ContextLoadingDialog {
   @Link loadingMessage: string;
   @State dialogWidth: string | number = '100%'; // 弹框宽度
   private controller: CustomDialogController;
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
+    this.updateDialogWidth();
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
     this.dialogWidth = widthConfig.width;
   }
 

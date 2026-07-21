@@ -4,6 +4,7 @@ export * from './CryptoUtils';
 export * from './CommonUtils';
 export * from './DateUtils';
 export * from './DeviceUtils';
+export * from './DialogWindowHelper';
 export * from './FilenameUtils';
 export * from './FileUtils';
 export * from './IconUtils';

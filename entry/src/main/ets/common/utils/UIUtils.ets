@@ -19,13 +19,23 @@ export class UIUtils {
    * 规则：
    * - 屏幕宽度 > 700vp：使用固定宽度 700vp
    * - 屏幕宽度 ≤ 700vp：使用 100% 宽度
+   *
+   * @param context UIContext
+   * @param windowWidth 可选的窗口宽度（px），如果不传则使用屏幕宽度
    */
-  static calculateMaxWidth(context: UIContext): WidthResult {
+  static calculateMaxWidth(context: UIContext, windowWidth?: number): WidthResult {
     try {
-      const displayInfo = display.getDefaultDisplaySync();
-      const screenWidthVp = context.px2vp(displayInfo.width);
+      let widthVp: number;
+      if (windowWidth !== undefined) {
+        // 使用传入的窗口宽度
+        widthVp = context.px2vp(windowWidth);
+      } else {
+        // 使用屏幕宽度
+        const displayInfo = display.getDefaultDisplaySync();
+        widthVp = context.px2vp(displayInfo.width);
+      }
 
-      if (screenWidthVp > UIConstants.CONTENT_MAX_WIDTH_THRESHOLD) {
+      if (widthVp > UIConstants.CONTENT_MAX_WIDTH_THRESHOLD) {
         const result: WidthResult = { width: UIConstants.CONTENT_MAX_WIDTH_THRESHOLD, isPercentage: false };
         return result;
       } else {
@@ -41,9 +51,12 @@ export class UIUtils {
   /**
    * 计算弹框宽度（自适应）
    * 复用 calculateMaxWidth 逻辑
+   *
+   * @param context UIContext
+   * @param windowWidth 可选的窗口宽度（px），如果不传则使用屏幕宽度
    */
-  static calculateDialogWidth(context: UIContext): WidthResult {
-    return UIUtils.calculateMaxWidth(context);
+  static calculateDialogWidth(context: UIContext, windowWidth?: number): WidthResult {
+    return UIUtils.calculateMaxWidth(context, windowWidth);
   }
 
   /**
