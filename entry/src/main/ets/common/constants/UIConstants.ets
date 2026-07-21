@@ -10,12 +10,12 @@ export class UIConstants {
    * 内容最大宽度阈值（vp）
    * 屏幕宽度 > 此值时使用固定宽度，否则使用100%
    */
-  static readonly CONTENT_MAX_WIDTH_THRESHOLD: number = 700;
+  static readonly CONTENT_MAX_WIDTH_THRESHOLD: number = 600;
 
   /**
    * 弹框最大宽度（vp）
    */
-  static readonly DIALOG_MAX_WIDTH: number = 700;
+  static readonly DIALOG_MAX_WIDTH: number = 600;
 
   /**
    * 弹框最大高度比例
