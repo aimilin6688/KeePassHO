@@ -13,6 +13,7 @@ import { TemplateService } from '../services/template/TemplateService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { ColorEditDialog, ColorPickerResult } from '../components/ColorPickerDialog';
 import { common } from '@kit.AbilityKit';
+import { EventBus } from '../services/EventBus';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -459,6 +460,8 @@ export struct EntryEdit {
         onSuccess: () => {
           CommonUtils.showToast($r('app.string.save_success'));
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
+          // 发送数据库更新事件，通知其他页面刷新
+          EventBus.emit<void>(EventBus.DATABASE_UPDATE);
           let timeOut = setTimeout(() => {
             this.isLoading = false;
             this.loadingDialogController.close();
