@@ -2,7 +2,7 @@ import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, P
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { FileService } from '../services/FileService';
-import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
@@ -20,12 +20,16 @@ const TAG = 'EntryEdit';
 // EntryEdit页面的Builder函数
 @Builder
 export function EntryEditBuilder(name: string, param: Object): void {
-  EntryEdit({ entryParam: param as EntryParam })
+  NavDestination() {
+    EntryEdit({ entryParam: param as EntryParam })
+  }
+  .backgroundColor($r('app.color.bg_primary'))
+  .hideTitleBar(true)
 }
 
 @Component
 export struct EntryEdit {
-  @Prop navPathStack: NavPathStack;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   private entryParam: EntryParam | undefined = undefined;
   @State title: string = '';
   @State username: string = '';
