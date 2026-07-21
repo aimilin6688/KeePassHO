@@ -6,7 +6,7 @@ import { TotpAlgorithm, TotpConfig, TotpService, TotpType } from '../services/To
 import { ScanService } from '../services/ScanService';
 import { TotpPreviewComponent, TotpPreviewController } from './TotpPreviewComponent';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ResourceManager, UIUtils } from '../common/utils';
+import { ResourceManager, UIUtils, DialogWindowHelper } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'TotpService';
@@ -47,14 +47,30 @@ export struct TotpConfigDialog {
   private totpService: TotpService = TotpService.getInstance();
   private scanService: ScanService = new ScanService(this.getUIContext());
   private previewController: TotpPreviewController = new TotpPreviewController();
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     this.totpConfig.name = this.name;
     this.totpConfig.issuer = this.issuer;
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
+    this.dialogWidth = widthConfig.width;
   }
 
   /**

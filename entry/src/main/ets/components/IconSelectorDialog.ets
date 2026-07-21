@@ -1,4 +1,4 @@
-import { IconUtils, UIUtils } from '../common/utils';
+import { IconUtils, UIUtils, DialogWindowHelper } from '../common/utils';
 import { IconResource } from '../services/TypeDefined';
 import { Kdbx } from 'kdbxweb';
 import { ImageAddComponent } from './ImageAddComponent';
@@ -18,14 +18,30 @@ export struct IconSelectorDialog {
   // 图标间距
   private readonly iconGap: number = 16;
   private controller: CustomDialogController;
+  private windowHelper: DialogWindowHelper = new DialogWindowHelper();
 
   aboutToAppear() {
+    // 注册窗口大小变化监听
+    this.windowHelper.register(this.getUIContext(), () => {
+      this.updateDialogWidth();
+    });
     // 计算弹框宽度
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext());
-    this.dialogWidth = widthConfig.width;
+    this.updateDialogWidth();
 
     // 获取所有图标
     this.icons = IconUtils.getAllIcons();
+  }
+
+  aboutToDisappear() {
+    this.windowHelper.unregister();
+  }
+
+  /**
+   * 更新弹框宽度
+   */
+  private updateDialogWidth(): void {
+    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
+    this.dialogWidth = widthConfig.width;
   }
 
   /**
