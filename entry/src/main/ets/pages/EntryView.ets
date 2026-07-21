@@ -9,6 +9,8 @@ import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem'
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { common } from '@kit.AbilityKit';
 import { OtpExtractionResult } from '../services/otp';
+import { EventBus } from '../services/EventBus';
+import { emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryView';
@@ -43,6 +45,10 @@ export struct EntryView {
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private entryId: string = '';
   private groupId: string = '';
+  private onDatabaseUpdate: Callback<emitter.EventData> = (): void => {
+    // 数据库更新时刷新条目数据
+    this.loadEntry();
+  };
 
   aboutToAppear() {
     // 获取从DatabaseShow页面传递的参数
@@ -53,6 +59,13 @@ export struct EntryView {
     }
     // 加载数据库和条目
     this.loadEntry();
+    // 监听数据库更新事件
+    EventBus.on(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
+  }
+
+  aboutToDisappear() {
+    // 取消监听数据库更新事件
+    EventBus.off(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
   }
 
   onPageShow(): void {
