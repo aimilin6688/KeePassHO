@@ -57,6 +57,8 @@ export struct EntryView {
 
   onPageShow(): void {
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    // 刷新条目数据（从编辑页面返回时）
+    this.loadEntry();
   }
 
   /**
