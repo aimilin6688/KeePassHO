@@ -628,15 +628,22 @@ export struct ColorEditDialog {
       .margin({ top: 8 })
       .backgroundColor($r('app.color.bg_primary'))
       
-      // 颜色选择区域
-      Column() {
-        this.buildColorArea()
-        this.buildPresetColors()
+      // 颜色选择区域（可滚动）
+      Scroll() {
+        Column() {
+          this.buildColorArea()
+          this.buildPresetColors()
+        }
+        .width('100%')
       }
       .width('100%')
       .padding(16)
       .backgroundColor($r('app.color.bg_primary'))
       .layoutWeight(1)
+      .scrollBar(BarState.Auto)
+      .scrollBarColor($r('app.color.text_secondary'))
+      .scrollBarWidth(4)
+      .edgeEffect(EdgeEffect.Spring)
       
       // 底部按钮
       Row() {
