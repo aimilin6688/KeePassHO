@@ -4,6 +4,10 @@
  */
 
 import { UIUtils } from '../common/utils';
+import { display } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
 
 /**
  * 预定义颜色项
@@ -165,6 +169,7 @@ export struct ColorEditDialog {
   public onCancel: () => void = (): void => {};
 
   private controller: CustomDialogController;
+  private displayChangeCallback: Callback<number> | undefined = undefined;
 
   // 颜色选择区域实际尺寸
   private colorAreaWidth: number = 0;
@@ -175,10 +180,46 @@ export struct ColorEditDialog {
   aboutToAppear(): void {
     // 计算弹框宽度
     this.updateDialogWidth();
+    // 监听主窗口大小变化
+    this.registerDisplayChange();
 
     this.selectedFgColor = this.initialFgColor;
     this.selectedBgColor = this.initialBgColor;
     this.updateHsvFromCurrentColor();
+  }
+
+  aboutToDisappear(): void {
+    // 取消窗口大小变化监听
+    this.unregisterDisplayChange();
+  }
+
+  /**
+   * 注册窗口大小变化监听
+   */
+  private registerDisplayChange(): void {
+    try {
+      this.displayChangeCallback = (displayId: number) => {
+        // 主窗口大小变化时更新弹框宽度
+        this.updateDialogWidth();
+      };
+      display.on('change', this.displayChangeCallback);
+    } catch (error) {
+      hilog.error(DOMAIN, 'ColorEditDialog', `Failed to register display change: ${error}`);
+    }
+  }
+
+  /**
+   * 取消窗口大小变化监听
+   */
+  private unregisterDisplayChange(): void {
+    if (this.displayChangeCallback !== undefined) {
+      try {
+        display.off('change', this.displayChangeCallback);
+        this.displayChangeCallback = undefined;
+      } catch (error) {
+        hilog.error(DOMAIN, 'ColorEditDialog', `Failed to unregister display change: ${error}`);
+      }
+    }
   }
 
   /**
@@ -693,9 +734,5 @@ export struct ColorEditDialog {
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(16)
     .shadow(ShadowStyle.OUTER_DEFAULT_MD)
-    .onAreaChange((_oldValue: Area, _newValue: Area) => {
-      // 窗口大小变化时更新弹框宽度
-      this.updateDialogWidth();
-    })
   }
 }
