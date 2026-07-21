@@ -2,6 +2,7 @@ import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
 import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, NavigationManager } from '../common/utils';
+import { PageConstants } from '../common/constants/PageConstants';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
 import { EntryViewFieldItem, FieldView } from '../components/EntryViewFieldItem';
@@ -249,27 +250,23 @@ export struct EntryView {
    * 编辑条目
    */
   private editEntry() {
-    CommonUtils.pushUrl({
-      url: 'pages/EntryEdit',
-      params: {
-        entryId: this.entryId,
-        groupId: this.groupId
-      }
-    });
+    const params: EntryParam = {
+      entryId: this.entryId,
+      groupId: this.groupId
+    };
+    this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_EDIT, params);
   }
 
   /**
    * 查看历史记录详情
    */
   private viewHistoryDetail(index: number) {
-    CommonUtils.pushUrl({
-      url: 'pages/EntryView',
-      params: {
-        entryId: this.entryId,
-        groupId: this.groupId,
-        historyIndex: index
-      }
-    });
+    const params: EntryParam = {
+      entryId: this.entryId,
+      groupId: this.groupId,
+      historyIndex: index
+    };
+    this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_VIEW, params);
   }
 
   /**
