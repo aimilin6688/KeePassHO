@@ -1,10 +1,16 @@
 import { KdbxEntry } from 'kdbxweb';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, StringUtils, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { common } from '@kit.AbilityKit';
 import { SortMode } from '../common/constants';
 import { UIUtils } from '@kit.ArkUI';
+import { PageConstants } from '../common/constants/PageConstants';
+import { EntryParam } from '../services/TypeDefined';
+
+const DOMAIN = 0xFF00;
+const TAG = 'TotpView';
 
 // TotpView页面的Builder函数
 @Builder
@@ -18,7 +24,7 @@ export function TotpViewBuilder(name: string, param: Object): void {
 
 @Component
 export struct TotpView {
-  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('TotpView')!;
   @State resultEntries: Array<KdbxEntry> = [];
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
@@ -27,9 +33,36 @@ export struct TotpView {
   @State indexerMap: Map<string, number> = new Map(); // 字母到列表索引的映射
   private totpEntries: Array<KdbxEntry> = []; // 过滤后的条目列表
   private listScroller: Scroller = new Scroller(); // List 滚动控制器
+  private navManager: NavigationManager = NavigationManager.getInstance();
+
+  /**
+   * 根页面变化监听器
+   */
+  private rootPageChangeListener = (rootPage: string): void => {
+    hilog.info(DOMAIN, TAG, 'Root page changed to: %{public}s', rootPage);
+    if (rootPage === 'TotpView') {
+      // 切换到 TotpView 时加载 TOTP 条目
+      const database = FileService.getDatabase();
+      if (database) {
+        hilog.info(DOMAIN, TAG, 'Database available, loading TOTP entries');
+        this.loadTotpEntries();
+      } else {
+        hilog.warn(DOMAIN, TAG, 'Database not loaded');
+      }
+    }
+  };
 
   aboutToAppear(): void {
+    hilog.info(DOMAIN, TAG, 'TotpView aboutToAppear, navPathStack size: %{public}d', this.navPathStack.size());
+    // 注册根页面变化监听
+    this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
+    // 尝试加载数据（如果数据库已打开）
     this.loadTotpEntries();
+  }
+
+  aboutToDisappear() {
+    // 移除根页面变化监听
+    this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
   }
 
   onPageShow(): void {
@@ -38,11 +71,15 @@ export struct TotpView {
 
   private loadTotpEntries(): void {
     this.totpEntries = [];
+    this.resultEntries = [];
     const kdbx = FileService.getDatabase();
+    hilog.info(DOMAIN, TAG, 'loadTotpEntries: database is %{public}s', kdbx ? 'available' : 'null');
     if (!kdbx) {
+      hilog.warn(DOMAIN, TAG, 'Database not loaded, cannot load TOTP entries');
       return;
     }
     let result = KdbxUtils.searchInGroup(kdbx.getDefaultGroup(), 'otpauth://totp/');
+    hilog.info(DOMAIN, TAG, 'Found %{public}d TOTP entries', result.filteredEntries.length);
 
     // 按名称排序
     KdbxUtils.sortBy(result.filteredEntries, SortMode.NAME);
@@ -145,7 +182,8 @@ export struct TotpView {
               .margin({ left: 16 })
               .fillColor($r('app.color.text_primary'))
               .onClick(() => {
-                this.navPathStack.pop();
+                // 返回到数据库视图
+                NavigationManager.getInstance().navigateBackToRoot('DatabaseView');
               })
             Text($r("app.string.totp_title"))
               .fontSize(20)
@@ -259,7 +297,12 @@ export struct TotpView {
                     bottom: 6
                   })
                   .onClick(() => {
-                    CommonUtils.pushUrl({ url: 'pages/EntryView', params: { entryId: itemEntry.uuid.id, groupId: itemEntry.parentGroup?.uuid.id } });
+                    // 在右侧内容区显示条目详情
+                    const entryParam: EntryParam = {
+                      entryId: itemEntry.uuid.id,
+                      groupId: itemEntry.parentGroup?.uuid.id
+                    };
+                    this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_VIEW, entryParam);
                   })
                 }
               }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)

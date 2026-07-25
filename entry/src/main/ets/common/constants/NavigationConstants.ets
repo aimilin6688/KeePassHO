@@ -35,6 +35,7 @@ export class NavigationConstants {
   static readonly ROOT_PAGES: string[] = [
     'Index',         // 首页
     'DatabaseView',  // 数据库视图
+    'TotpView',      // TOTP 时间令牌视图
     'Settings'       // 设置
   ];
 
