@@ -29,7 +29,7 @@ const TAG = 'Password';
 @Builder
 export function PasswordBuilder(name: string, param: Object): void {
   NavDestination() {
-    Password({ navPathStack: NavigationManager.getInstance().getNavPathStackByRoot('Index')! })
+    Password()
   }
   .title($r('app.string.Password_unlock_title'))
   .backgroundColor($r('app.color.bg_primary'))
@@ -37,8 +37,9 @@ export function PasswordBuilder(name: string, param: Object): void {
 
 @Component
 export struct Password {
-  @Prop navPathStack: NavPathStack;
   private navManager: NavigationManager = NavigationManager.getInstance();
+  // 实际使用的导航栈（在 aboutToAppear 中初始化）
+  private workingNavPathStack: NavPathStack | null = null;
   @State password: string = '';
   @State isShowBiometric: boolean = false; // 是否显示生物认证
   @State isLoading: boolean = false;
@@ -79,15 +80,23 @@ export struct Password {
     //初始化认证方式
     this.setAuthType(this.authTypeInfo);
 
-    // 检查 navPathStack 是否有效
-    if (!this.navPathStack) {
-      hilog.error(DOMAIN, TAG, 'navPathStack is undefined!');
-      // 直接从 NavigationManager 获取 Index 的导航栈
-      this.navPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index')!;
+    // 统一从 NavigationManager 获取导航栈
+    this.workingNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index');
+
+    if (!this.workingNavPathStack) {
+      // 降级方案: 获取当前导航栈
+      this.workingNavPathStack = NavigationManager.getInstance().getNavPathStack();
     }
 
+    if (!this.workingNavPathStack) {
+      hilog.error(DOMAIN, TAG, 'Failed to get NavPathStack from NavigationManager');
+      return;
+    }
+
+    hilog.info(DOMAIN, TAG, 'NavPathStack initialized successfully');
+
     // 通过Navigation系统获取参数
-    const paramsArray: Object[] = this.navPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Object[];
+    const paramsArray: Object[] = this.workingNavPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Object[];
     const params: Record<string, string> | undefined = paramsArray && paramsArray.length > 0 ? paramsArray[0] as Record<string, string> : undefined;
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
@@ -148,7 +157,7 @@ export struct Password {
   private openRecentFileOptimized(filePath: string): void {
     if (!filePath) {
       CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
-      this.navPathStack.pop();
+      this.navigateBack();
       return;
     }
 
@@ -217,7 +226,7 @@ export struct Password {
   private openRecentFile(filePath: string) {
     if (!filePath) {
       CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
-      this.navPathStack.pop();
+      this.navigateBack();
     }
     // 获取最近打开记录
     RecentFilesService.getRecentFile(filePath).then(recentFile => {
@@ -232,7 +241,7 @@ export struct Password {
         message: $r('app.string.open_failed', error.message),
         duration: 2000
       });
-      this.navPathStack.pop();
+      this.navigateBack();
     });
   }
 
@@ -351,10 +360,14 @@ export struct Password {
         this.shouldStartAuth = false; // 清除生物认证标志
         this.updateButtonState();
         // 返回到密码页面
-        this.navPathStack.pop();
+        this.navigateBack();
       }
     });
-    this.navPathStack.pushPathByName('SelectLocation', null);
+    if (this.workingNavPathStack) {
+      this.workingNavPathStack.pushPathByName('SelectLocation', null);
+    } else {
+      hilog.error(DOMAIN, TAG, 'selectKeyFile: NavPathStack is null!');
+    }
   }
 
   /**
@@ -363,7 +376,43 @@ export struct Password {
   changeDatabase() {
     // 返回到文件选择页面
     DataService.selectKdbx();
-    this.navPathStack.pushPathByName('SelectLocation', null);
+
+    // 防御性检查 + 自动恢复
+    if (!this.workingNavPathStack) {
+      hilog.warn(DOMAIN, TAG, 'NavPathStack is null, attempting to recover...');
+      this.workingNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index') ||
+                                   NavigationManager.getInstance().getNavPathStack();
+    }
+
+    if (this.workingNavPathStack) {
+      try {
+        this.workingNavPathStack.pushPathByName('SelectLocation', null);
+        hilog.info(DOMAIN, TAG, 'Navigated to SelectLocation');
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, `Navigation failed: ${JSON.stringify(error)}`);
+        CommonUtils.showToast({
+          message: '导航失败',
+          duration: 2000
+        });
+      }
+    } else {
+      hilog.error(DOMAIN, TAG, 'Cannot navigate: NavPathStack unavailable');
+      CommonUtils.showToast({
+        message: '导航栈不可用',
+        duration: 2000
+      });
+    }
+  }
+
+  /**
+   * 统一的返回导航方法
+   */
+  private navigateBack(): void {
+    if (this.workingNavPathStack) {
+      this.workingNavPathStack.pop();
+    } else {
+      hilog.error(DOMAIN, TAG, 'Cannot navigate back: NavPathStack is null');
+    }
   }
 
   /**
