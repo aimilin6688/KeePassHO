@@ -6,6 +6,7 @@ import { motion } from '@kit.MultimodalAwarenessKit';
 
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
+import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
 import { FileService } from '../services/FileService';
 import { LockScreenService } from '../services/LockScreenService';
@@ -81,6 +82,7 @@ export struct DatabaseView {
   // 拖拽组件
   @StorageLink("containerX") containerX: number = 0; // 容器X坐标
   @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
+  @StorageLink("navBarWidth") @Watch('onNavBarWidthChanged') currentNavBarWidth: number = NavigationConstants.DEFAULT_NAV_BAR_WIDTH; // 当前导航栏实际宽度
   @State isDragging: boolean = false; // 是否正在拖拽
   private screenWidth: number = 360; // 屏幕宽度（默认值）
   private screenHeight: number = 640; // 屏幕高度（默认值）
@@ -234,8 +236,18 @@ export struct DatabaseView {
     this.screenWidth = this.getUIContext().px2vp(width);
     this.screenHeight = this.getUIContext().px2vp(height);
 
-    // 计算最大边界
-    this.maxX = this.screenWidth - this.containerWidth;
+    // 在分栏模式下，按钮应该在左侧导航栏范围内定位
+    // 判断是否处于分栏模式：屏幕宽度 >= 分栏阈值
+    const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+
+    // 计算按钮可移动的最大边界
+    // 分栏模式下：限制在导航栏宽度范围内（使用实际宽度或默认宽度）
+    // 非分栏模式下：限制在整个屏幕宽度范围内
+    // 注意：在分栏模式下，导航栏宽度可能在 [240, 700] 范围内动态变化
+    // 这里使用 currentNavBarWidth（通过 StorageLink 共享），如果没有设置则使用默认值
+    const availableWidth = isSplitMode ? this.currentNavBarWidth : this.screenWidth;
+
+    this.maxX = availableWidth - this.containerWidth;
     this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
 
     // 首次初始化：设置默认位置（如果按钮未被移动过）
@@ -244,7 +256,7 @@ export struct DatabaseView {
       this.containerY = this.maxY - 32;
     }
 
-    // 窗口大小变化时：确保按钮在边界内
+    // 窗口大小变化或导航栏宽度变化时：确保按钮在边界内
     if (!isFirstInit) {
       if (this.containerX > this.maxX) {
         this.containerX = Math.max(0, this.maxX - 22);
@@ -428,6 +440,27 @@ export struct DatabaseView {
       });
     }
     this.initSettings();
+  }
+
+  /**
+   * 监听导航栏宽度变化
+   * 当用户拖拽调整分栏宽度时，更新按钮边界
+   */
+  private onNavBarWidthChanged() {
+    hilog.info(DOMAIN, TAG, 'Navigation bar width changed to: %{public}d', this.currentNavBarWidth);
+
+    // 判断是否处于分栏模式
+    const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+
+    if (isSplitMode) {
+      // 更新按钮边界
+      this.maxX = this.currentNavBarWidth - this.containerWidth;
+
+      // 确保按钮在新边界内
+      if (this.containerX > this.maxX) {
+        this.containerX = Math.max(0, this.maxX - 22);
+      }
+    }
   }
 
   private initData(dbShowParam: DatabaseShowParam | undefined) {
@@ -2096,6 +2129,26 @@ export struct DatabaseView {
       }
       .width('100%')
       .height('100%')
+      .onAreaChange((oldArea: Area, newArea: Area) => {
+        // 监听左侧导航栏区域变化
+        // 在分栏模式下，当用户拖拽调整导航栏宽度时，这个回调会被触发
+        const newWidth = Number(newArea.width);
+        if (newWidth > 0 && newWidth !== this.currentNavBarWidth) {
+          // 更新当前导航栏宽度
+          this.currentNavBarWidth = newWidth;
+
+          // 在分栏模式下更新按钮边界
+          const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+          if (isSplitMode) {
+            this.maxX = this.currentNavBarWidth - this.containerWidth;
+
+            // 确保按钮在新边界内
+            if (this.containerX > this.maxX) {
+              this.containerX = Math.max(0, this.maxX - 22);
+            }
+          }
+        }
+      })
 
       // 点击空白区域隐藏添加按钮
       Column()

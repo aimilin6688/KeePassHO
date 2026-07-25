@@ -21,6 +21,7 @@ struct AppNavigation {
 
   @State currentMode: NavigationMode = NavigationMode.Stack;
   @State currentRootPage: string = 'Index';
+  @StorageLink("navBarWidth") navBarWidth: number = NavigationConstants.DEFAULT_NAV_BAR_WIDTH; // 导航栏宽度
 
   private modeChangeListener = (mode: NavigationModeType): void => {
     this.currentMode = mode === NavigationModeType.SPLIT
