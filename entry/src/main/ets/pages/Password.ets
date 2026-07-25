@@ -131,6 +131,8 @@ export struct Password {
   }
 
   aboutToDisappear() {
+    // 安全措施: 页面销毁时清除敏感数据
+    this.clearSensitiveData();
     KdbxLoadService.stopWorker();
   }
 
@@ -343,9 +345,22 @@ export struct Password {
       },
       onError: (error) => {
         hilog.info(DOMAIN, TAG, 'Fingerprint auth error: ' + error.message);
+        // 安全措施: 认证失败或取消时清除密码
+        this.clearSensitiveData();
         CommonUtils.showToast({ message: error.message });
       }
     } as AuthServiceCallback;
+  }
+
+  /**
+   * 清除敏感数据
+   * 安全措施: 在生物认证失败/取消或页面离开时清除
+   */
+  private clearSensitiveData(): void {
+    this.password = '';
+    this.showPassword = false;
+    this.updateButtonState();
+    hilog.info(DOMAIN, TAG, 'Sensitive data cleared for security');
   }
 
   /**
