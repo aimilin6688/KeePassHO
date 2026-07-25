@@ -66,6 +66,8 @@ export struct Password {
   private recentFile: RecentFile | undefined = undefined;
   // 标记是否需要启动生物认证（用于 onPageShow 判断）
   private shouldStartAuth: boolean = false;
+  // 标记是否应该保留密码（用于选择密钥文件等场景）
+  private shouldPreservePassword: boolean = false;
   // 带内容的进度弹框
   private loadingDialogController: CustomDialogController = new CustomDialogController({
     builder: ContextLoadingDialog({
@@ -117,6 +119,17 @@ export struct Password {
   }
 
   onPageShow(): void {
+    // 安全措施: 页面显示时清除敏感数据
+    // 除非明确标记需要保留密码（如选择密钥文件场景）
+    if (!this.shouldPreservePassword) {
+      this.clearSensitiveData();
+      hilog.info(DOMAIN, TAG, 'onPageShow: cleared sensitive data for security');
+    } else {
+      // 重置标志,下次进入时清除
+      this.shouldPreservePassword = false;
+      hilog.info(DOMAIN, TAG, 'onPageShow: preserved password for current operation');
+    }
+
     // 因为 SettingsService 可能还在异步初始化中
     this.isFingerprintSupport = AuthService.isFingerprintSupportAndEnabled();
     this.isFaceSupport = AuthService.isFaceSupportAndEnabled();
@@ -359,6 +372,7 @@ export struct Password {
   private clearSensitiveData(): void {
     this.password = '';
     this.showPassword = false;
+    this.shouldPreservePassword = false; // 重置保留标志
     this.updateButtonState();
     hilog.info(DOMAIN, TAG, 'Sensitive data cleared for security');
   }
@@ -367,6 +381,9 @@ export struct Password {
    * 选择密钥文件
    */
   private selectKeyFile() {
+    // 标记需要保留密码,因为用户可能已经输入了密码
+    this.shouldPreservePassword = true;
+
     LocationParam.of({
       mode: LocationMode.SELECT,
       onLocation: (locationInfo: LocationInfo) => {
