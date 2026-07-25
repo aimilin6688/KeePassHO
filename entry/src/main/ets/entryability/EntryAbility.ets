@@ -14,6 +14,7 @@ import { SyncSettingsService } from '../services/store/SyncSettingsService';
 import { DialogHelper } from '@pura/harmony-dialog';
 import { CrashLogService } from '../services/CrashLogService';
 import { LockScreenService } from '../services/LockScreenService';
+import { NavigationManager } from '../common/utils/NavigationManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -131,7 +132,8 @@ export default class EntryAbility extends UIAbility {
     // 初始化锁屏服务
     LockScreenService.init(windowStage, (action: string) => {
       if (action === 'close_database') {
-        this.openPage('pages/AppNavigation');
+        // 关闭数据库后，导航回 Index 页面
+        NavigationManager.getInstance().navigateBackToRoot('Index');
       }
     });
 
