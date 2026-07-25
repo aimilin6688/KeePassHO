@@ -1,5 +1,5 @@
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { DatabaseShowParam, EntryParam, Icons, MoveParam } from '../services/TypeDefined';
+import { DatabaseShowParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -805,13 +805,11 @@ export struct DatabaseView {
    * 编辑条目
    */
   private editEntry(entry: KdbxEntry) {
-    CommonUtils.pushUrl({
-      url: 'pages/EntryEdit',
-      params: {
-        groupId: entry.parentGroup?.uuid.id,
-        entryId: entry.uuid.id
-      }
-    });
+    const entryParam: EntryParam = {
+      groupId: entry.parentGroup?.uuid.id,
+      entryId: entry.uuid.id
+    };
+    this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_EDIT, entryParam);
     this.hideMoreMenu();
   }
 
@@ -1324,15 +1322,13 @@ export struct DatabaseView {
     // 跳转到模板创建页面
     const templateId = isPresetTemplate(template) ? (template as IPresetTemplate).id : (template as IUserTemplate).uuid.id;
     const isPreset = isPresetTemplate(template);
-    
-    CommonUtils.pushUrl({
-      url: 'pages/TemplateEntryCreate',
-      params: {
-        groupId: this.currentGroup.uuid.id,
-        templateId: templateId,
-        isPreset: isPreset
-      }
-    });
+
+    const templateParam: TemplateEntryCreateParam = {
+      groupId: this.currentGroup.uuid.id,
+      templateId: templateId,
+      isPreset: isPreset
+    };
+    this.navPathStack.pushPathByName(PageConstants.PAGE_TEMPLATE_ENTRY_CREATE, templateParam);
   }
 
   /**
@@ -2210,12 +2206,11 @@ export struct DatabaseView {
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
         .onClick(() => {
           this.showAddButtons = false;
-          CommonUtils.pushUrl({
-            url: 'pages/EntryEdit',
-            params: {
-              groupId: this.currentGroup?.uuid.id
-            }
-          });
+          // 使用 Navigation 导航，在分栏模式下会在右侧内容区显示
+          const entryParam: EntryParam = {
+            groupId: this.currentGroup?.uuid.id
+          };
+          this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_EDIT, entryParam);
         })
 
         // 从模板创建按钮
@@ -2259,7 +2254,7 @@ export struct DatabaseView {
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
-          CommonUtils.pushUrl({ url: 'pages/TotpView' });
+          this.navPathStack.pushPathByName(PageConstants.PAGE_TOTP_VIEW, null);
         })
 
         // 主添加按钮

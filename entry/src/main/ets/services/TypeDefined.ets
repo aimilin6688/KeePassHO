@@ -385,6 +385,15 @@ export interface EntryParam {
 }
 
 /**
+ * 模板条目创建参数定义
+ */
+export interface TemplateEntryCreateParam {
+  groupId?: string;
+  templateId?: string;
+  isPreset?: boolean;
+}
+
+/**
  * 数据库显示参数定义
  */
 export interface UnLockDatabaseParam {

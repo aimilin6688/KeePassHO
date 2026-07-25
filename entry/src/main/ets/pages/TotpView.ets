@@ -1,5 +1,5 @@
 import { KdbxEntry } from 'kdbxweb';
-import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, StringUtils, WindowUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, StringUtils, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { common } from '@kit.AbilityKit';
@@ -9,12 +9,16 @@ import { UIUtils } from '@kit.ArkUI';
 // TotpView页面的Builder函数
 @Builder
 export function TotpViewBuilder(name: string, param: Object): void {
-  TotpView()
+  NavDestination() {
+    TotpView()
+  }
+  .backgroundColor($r('app.color.bg_primary'))
+  .hideTitleBar(true)
 }
 
 @Component
 export struct TotpView {
-  @Prop navPathStack: NavPathStack;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State resultEntries: Array<KdbxEntry> = [];
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
