@@ -5,7 +5,7 @@
 import { Kdbx, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../services/FileService';
-import { CommonUtils, IconUtils, KdbxUtils, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { Icons } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
@@ -28,7 +28,11 @@ interface TemplateEntryCreateParam {
 // TemplateEntryCreate页面的Builder函数
 @Builder
 export function TemplateEntryCreateBuilder(name: string, param: Object): void {
-  TemplateEntryCreate({ templateParam: param as TemplateEntryCreateParam })
+  NavDestination() {
+    TemplateEntryCreate({ templateParam: param as TemplateEntryCreateParam })
+  }
+  .backgroundColor($r('app.color.bg_primary'))
+  .hideTitleBar(true)
 }
 
 /**
@@ -45,7 +49,7 @@ interface TemplateFieldData {
 
 @Component
 export struct TemplateEntryCreate {
-  @Prop navPathStack: NavPathStack;
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   private templateParam: TemplateEntryCreateParam | undefined = undefined;
   @State title: string = '';
   @State template: ITemplate | null = null;
