@@ -2254,6 +2254,11 @@ export struct DatabaseView {
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
+          // 清空 TotpView 的导航栈，确保右侧分栏为空
+          const totpNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('TotpView');
+          if (totpNavPathStack) {
+            totpNavPathStack.clear();
+          }
           // 切换到 TOTP 根页面
           NavigationManager.getInstance().navigateBackToRoot('TotpView');
         })
