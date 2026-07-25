@@ -29,7 +29,7 @@ const TAG = 'Password';
 @Builder
 export function PasswordBuilder(name: string, param: Object): void {
   NavDestination() {
-    Password({ navPathStack: NavigationManager.getInstance().getNavPathStack()! })
+    Password({ navPathStack: NavigationManager.getInstance().getNavPathStackByRoot('Index')! })
   }
   .title($r('app.string.Password_unlock_title'))
   .backgroundColor($r('app.color.bg_primary'))
@@ -82,8 +82,8 @@ export struct Password {
     // 检查 navPathStack 是否有效
     if (!this.navPathStack) {
       hilog.error(DOMAIN, TAG, 'navPathStack is undefined!');
-      // 直接从 NavigationManager 获取
-      this.navPathStack = NavigationManager.getInstance().getNavPathStack()!;
+      // 直接从 NavigationManager 获取 Index 的导航栈
+      this.navPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index')!;
     }
 
     // 通过Navigation系统获取参数
