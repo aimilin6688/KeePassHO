@@ -74,6 +74,12 @@ export struct UnLockDatabase {
       return
     }
     let password = this.dbFileParam.password;
+    // 检查密码是否存在
+    if (!password) {
+      hilog.warn(DOMAIN, TAG, 'Password is null or undefined');
+      CommonUtils.showToast({ message: $r('app.string.password_error') });
+      return;
+    }
     // 密码长度 <= 快速解锁密码要求长度
     if (password.length <= this.quickLockPasswordLength) {
       if (password.lastIndexOf(this.quickPassword) != -1) {
