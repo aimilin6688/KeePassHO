@@ -5,6 +5,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Index } from './Index';
 import { Settings } from './setting/Settings';
 import { DatabaseView } from './DatabaseView';
+import { TotpView } from './TotpView';
 
 const DOMAIN = 0x0000;
 const TAG = 'AppNavigation';
@@ -17,6 +18,7 @@ struct AppNavigation {
   // 使用 NavigationManager 中的导航栈
   private indexNavPathStack: NavPathStack = NavigationManager.getInstance().getOrCreateNavPathStack('Index');
   private databaseNavPathStack: NavPathStack = NavigationManager.getInstance().getOrCreateNavPathStack('DatabaseView');
+  private totpNavPathStack: NavPathStack = NavigationManager.getInstance().getOrCreateNavPathStack('TotpView');
   private settingsNavPathStack: NavPathStack = NavigationManager.getInstance().getOrCreateNavPathStack('Settings');
 
   @State currentMode: NavigationMode = NavigationMode.Stack;
@@ -77,6 +79,21 @@ struct AppNavigation {
       .width('100%')
       .height('100%')
       .visibility(this.currentRootPage === 'DatabaseView' ? Visibility.Visible : Visibility.None)
+
+      // TotpView 页面
+      Navigation(this.totpNavPathStack) {
+        TotpView()
+      }
+      .mode(this.currentMode)
+      .navBarWidth(NavigationConstants.DEFAULT_NAV_BAR_WIDTH)
+      .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
+      .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
+      .enableDragBar(false)
+      .hideTitleBar(true)
+      .hideBackButton(true)
+      .width('100%')
+      .height('100%')
+      .visibility(this.currentRootPage === 'TotpView' ? Visibility.Visible : Visibility.None)
 
       // Settings 页面
       Navigation(this.settingsNavPathStack) {

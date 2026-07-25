@@ -2254,7 +2254,8 @@ export struct DatabaseView {
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
         .onClick(() => {
-          this.navPathStack.pushPathByName(PageConstants.PAGE_TOTP_VIEW, null);
+          // 切换到 TOTP 根页面
+          NavigationManager.getInstance().navigateBackToRoot('TotpView');
         })
 
         // 主添加按钮
