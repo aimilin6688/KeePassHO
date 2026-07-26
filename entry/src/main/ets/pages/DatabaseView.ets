@@ -582,24 +582,29 @@ export struct DatabaseView {
   private updateBreadcrumb(group: KdbxGroup) {
     const path: NavigationPathItem[] = [];
     let current: KdbxGroup | undefined = group;
+    let depth = 0;
 
     // 从当前分组向上遍历到根分组
     while (current) {
       const groupName = KdbxUtils.getFieldName(current.name);
       const nameStr = typeof groupName === 'string' ? groupName : '';
 
+      hilog.info(DOMAIN, TAG, `Breadcrumb level ${depth}: id=${current.uuid.id}, name=${nameStr}, hasParent=${current.parentGroup !== undefined}`);
+
       // 如果是根分组（没有父分组），显示为 '/'
       if (!current.parentGroup) {
         path.unshift({ id: current.uuid.id, name: '/' });
+        hilog.info(DOMAIN, TAG, `Root group found: ${nameStr}`);
       } else {
         path.unshift({ id: current.uuid.id, name: nameStr });
       }
 
       current = current.parentGroup;
+      depth++;
     }
 
     this.navigationPath = path;
-    hilog.debug(DOMAIN, TAG, `Breadcrumb updated: ${JSON.stringify(path)}`);
+    hilog.info(DOMAIN, TAG, `Breadcrumb updated: total=${path.length}, path=[${path.map(p => p.name).join(' > ')}]`);
   }
 
   /**
@@ -660,6 +665,9 @@ export struct DatabaseView {
       this.items = [...parentGroup.groups, ...parentGroup.entries];
       KdbxUtils.sortBy(this.items, this.sortBy);
       this.addFavorite();
+
+      // 更新面包屑导航
+      this.updateBreadcrumb(parentGroup);
     } else {
       // 没有父分组，返回到根分组
       const rootGroup = this.database?.getDefaultGroup();
@@ -671,14 +679,11 @@ export struct DatabaseView {
         this.items = [...rootGroup.groups, ...rootGroup.entries];
         KdbxUtils.sortBy(this.items, this.sortBy);
         this.addFavorite();
+
+        // 更新面包屑导航
+        this.updateBreadcrumb(rootGroup);
       }
     }
-    // 清除选中状态
-    this.selectedItem = null;
-    this.selectedItemIndex = -1;
-    // 退出选择模式
-    this.isSelectionMode = false;
-    this.selectedItems.clear();
   }
 
   /**
