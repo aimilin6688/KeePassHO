@@ -2069,13 +2069,7 @@ export struct DatabaseView {
                           this.navigateToGroup(item as KdbxGroup);
                         }
                       })
-                      .gesture(
-                        LongPressGesture({ repeat: false })
-                          .onAction((event: GestureEvent) => {
-                            this.showMoreActions(item, index, event);
-                          })
-                      )
-                      .bindContextMenu(this.GroupContextMenu(item), ResponseType.LongPress)
+                      .bindContextMenu(this.GroupContextMenu(item), ResponseType.RightClick)
                     }
                     .swipeAction({
                       end: {
@@ -2177,13 +2171,7 @@ export struct DatabaseView {
                           this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_VIEW, entryParam);
                         }
                       })
-                      .gesture(
-                        LongPressGesture({ repeat: false })
-                          .onAction((event: GestureEvent) => {
-                            this.showMoreActions(item, index, event);
-                          })
-                      )
-                      .bindContextMenu(this.EntryContextMenu(item), ResponseType.LongPress)
+                      .bindContextMenu(this.EntryContextMenu(item), ResponseType.RightClick)
                     }
                     .swipeAction({
                       end: {
