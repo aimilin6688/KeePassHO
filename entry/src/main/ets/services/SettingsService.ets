@@ -72,6 +72,10 @@ export class SettingsService {
   public static readonly KEY_APP_ENABLE_LOCAL_CACHE = "app_enable_local_cache";
   public static readonly KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT = true;
 
+  // 显示面包屑导航
+  public static readonly KEY_APP_BREADCRUMB_VISIBLE = "app_breadcrumb_visible";
+  public static readonly KEY_APP_BREADCRUMB_VISIBLE_DEFAULT = true;
+
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
 
