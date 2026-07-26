@@ -2571,6 +2571,7 @@ export struct DatabaseView {
         .backgroundColor($r("app.color.bg_secondary"))
         .scrollable(ScrollDirection.Horizontal)
         .scrollBar(BarState.Off) // 隐藏滚动条，保持美观
+        .align(Alignment.Start) // 内容居左对齐
         .position({ x: 0, y: '100%' })
         .translate({ y: -36 })
         .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
