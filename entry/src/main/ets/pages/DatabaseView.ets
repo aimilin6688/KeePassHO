@@ -257,7 +257,7 @@ export struct DatabaseView {
     const availableWidth = isSplitMode ? this.currentNavBarWidth : this.screenWidth;
 
     this.maxX = availableWidth - this.containerWidth;
-    this.maxY = this.screenHeight - this.containerHeight - this.headerHeight;
+    this.maxY = this.screenHeight - this.containerHeight - 16; // 距离底部保留16vp的安全距离
 
     // 首次初始化：设置默认位置（如果按钮未被移动过）
     if (isFirstInit && this.containerX === 0) {
@@ -267,11 +267,17 @@ export struct DatabaseView {
 
     // 窗口大小变化或导航栏宽度变化时：确保按钮在边界内
     if (!isFirstInit) {
+      // 确保 X 坐标在有效范围内
       if (this.containerX > this.maxX) {
         this.containerX = Math.max(0, this.maxX - 22);
+      } else if (this.containerX < 0) {
+        this.containerX = 22;
       }
+      // 确保 Y 坐标在有效范围内
       if (this.containerY > this.maxY) {
         this.containerY = Math.max(0, this.maxY - 32);
+      } else if (this.containerY < 0) {
+        this.containerY = 32;
       }
     }
   }
@@ -2350,11 +2356,14 @@ export struct DatabaseView {
         // 监听左侧导航栏区域变化
         // 在分栏模式下，当用户拖拽调整导航栏宽度时，这个回调会被触发
         const newWidth = Number(newArea.width);
+        const newHeight = Number(newArea.height);
+        let needUpdateBounds = false;
+
         if (newWidth > 0 && newWidth !== this.currentNavBarWidth) {
           // 更新当前导航栏宽度
           this.currentNavBarWidth = newWidth;
 
-          // 在分栏模式下更新按钮边界
+          // 在分栏模式下更新按钮X边界
           const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
           if (isSplitMode) {
             this.maxX = this.currentNavBarWidth - this.containerWidth;
@@ -2363,6 +2372,19 @@ export struct DatabaseView {
             if (this.containerX > this.maxX) {
               this.containerX = Math.max(0, this.maxX - 22);
             }
+          }
+        }
+
+        // 监听高度变化，更新Y边界
+        if (newHeight > 0 && newHeight !== this.screenHeight) {
+          this.screenHeight = newHeight;
+          this.maxY = this.screenHeight - this.containerHeight - 16; // 距离底部保留16vp的安全距离
+
+          // 确保按钮在新边界内
+          if (this.containerY > this.maxY) {
+            this.containerY = Math.max(0, this.maxY - 32);
+          } else if (this.containerY < 0) {
+            this.containerY = 32;
           }
         }
       })
