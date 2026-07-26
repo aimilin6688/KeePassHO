@@ -729,6 +729,124 @@ export struct DatabaseView {
   }
 
   /**
+   * 条目右键菜单（分栏模式下使用）
+   */
+  @Builder
+  EntryContextMenu(item: KdbxEntry) {
+    Menu() {
+      // 复制用户名
+      if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME) !== '') {
+        MenuItem({
+          startIcon: $r('app.media.ic_copy'),
+          content: $r('app.string.copy_username'),
+        }).onClick(() => {
+          this.copyUsername(item);
+        })
+      }
+
+      // 复制密码
+      if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_PASSWORD) !== '') {
+        MenuItem({
+          startIcon: $r('app.media.ic_copy'),
+          content: $r('app.string.copy_password'),
+        }).onClick(() => {
+          this.copyPassword(item);
+        })
+      }
+
+      // 收藏/取消收藏
+      MenuItem({
+        startIcon: $r('app.media.ic_favorite'),
+        content: KdbxUtils.isFavorite(item) ? $r('app.string.unfavorite_button_text') : $r('app.string.favorite_button_text'),
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.toggleFavorite();
+      })
+
+      // 置顶/取消置顶
+      MenuItem({
+        startIcon: $r('app.media.ic_top'),
+        content: KdbxUtils.isPinned(item) ? $r('app.string.unpin_button_text') : $r('app.string.pin_button_text'),
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.togglePin();
+      })
+
+      // 编辑
+      MenuItem({
+        startIcon: $r('app.media.ic_edit'),
+        content: $r('app.string.edit_button_text'),
+      }).onClick(() => {
+        this.editEntry(item);
+      })
+
+      // 删除
+      MenuItem({
+        startIcon: $r('app.media.ic_delete'),
+        content: $r('app.string.delete_button_text'),
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.deleteItem(item);
+      })
+    }
+    .backgroundColor($r("app.color.card_bg"))
+    .fontColor($r('app.color.text_primary'))
+  }
+
+  /**
+   * 分组右键菜单（分栏模式下使用）
+   */
+  @Builder
+  GroupContextMenu(item: KdbxGroup) {
+    Menu() {
+      // 复制分组名
+      MenuItem({
+        startIcon: $r('app.media.ic_copy'),
+        content: $r('app.string.copy_group_name'),
+      }).onClick(() => {
+        this.copyGroupName(item);
+      })
+
+      // 收藏/取消收藏
+      MenuItem({
+        startIcon: $r('app.media.ic_favorite'),
+        content: KdbxUtils.isFavorite(item) ? $r('app.string.unfavorite_button_text') : $r('app.string.favorite_button_text'),
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.toggleFavorite();
+      })
+
+      // 置顶/取消置顶
+      MenuItem({
+        startIcon: $r('app.media.ic_top'),
+        content: KdbxUtils.isPinned(item) ? $r('app.string.unpin_button_text') : $r('app.string.pin_button_text'),
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.togglePin();
+      })
+
+      // 编辑
+      MenuItem({
+        startIcon: $r('app.media.ic_edit'),
+        content: $r('app.string.edit_button_text'),
+      }).onClick(() => {
+        this.editGroup(item);
+      })
+
+      // 删除
+      MenuItem({
+        startIcon: $r('app.media.ic_delete'),
+        content: $r('app.string.delete_button_text'),
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.deleteItem(item);
+      })
+    }
+    .backgroundColor($r("app.color.card_bg"))
+    .fontColor($r('app.color.text_primary'))
+  }
+
+  /**
    * 显示更多操作菜单
    * @param item 条目或分组
    * @param index 索引
@@ -1957,6 +2075,7 @@ export struct DatabaseView {
                             this.showMoreActions(item, index, event);
                           })
                       )
+                      .bindContextMenu(this.GroupContextMenu(item), ResponseType.LongPress)
                     }
                     .swipeAction({
                       end: {
@@ -2064,6 +2183,7 @@ export struct DatabaseView {
                             this.showMoreActions(item, index, event);
                           })
                       )
+                      .bindContextMenu(this.EntryContextMenu(item), ResponseType.LongPress)
                     }
                     .swipeAction({
                       end: {
