@@ -590,8 +590,8 @@ export struct DatabaseView {
 
     // 从当前分组向上遍历到根分组
     while (current) {
-      const groupName = KdbxUtils.getFieldName(current.name);
-      const nameStr = typeof groupName === 'string' ? groupName : '';
+      const groupName = current.name; // 直接使用 name 属性
+      const nameStr = groupName || ''; // 处理 undefined 情况
 
       hilog.info(DOMAIN, TAG, `Breadcrumb level ${depth}: id=${current.uuid.id}, name=${nameStr}, hasParent=${current.parentGroup !== undefined}`);
 
@@ -2536,37 +2536,41 @@ export struct DatabaseView {
 
       // 面包屑导航条（仅在分栏模式下显示）
       if (this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD) {
-        Row() {
-          ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
-            Row() {
-              // 路径项
-              Text(pathItem.name)
-                .fontSize(14)
-                .fontColor(index === this.navigationPath.length - 1 ? $r('app.color.text_primary') : $r('app.color.button_bg_blue'))
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .onClick(() => {
-                  // 点击路径项导航到对应分组
-                  if (index < this.navigationPath.length - 1) {
-                    this.navigateToBreadcrumb(pathItem.id);
-                  }
-                })
-
-              // 分隔符（最后一项不显示）
-              if (index < this.navigationPath.length - 1) {
-                Text(' > ')
+        Scroll() {
+          Row() {
+            ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
+              Row() {
+                // 路径项
+                Text(pathItem.name)
                   .fontSize(14)
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor(index === this.navigationPath.length - 1 ? $r('app.color.text_primary') : $r('app.color.button_bg_blue'))
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .onClick(() => {
+                    // 点击路径项导航到对应分组
+                    if (index < this.navigationPath.length - 1) {
+                      this.navigateToBreadcrumb(pathItem.id);
+                    }
+                  })
+
+                // 分隔符（最后一项不显示）
+                if (index < this.navigationPath.length - 1) {
+                  Text(' > ')
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_secondary'))
+                }
               }
-            }
-          })
+            })
+          }
+          .justifyContent(FlexAlign.Start)
+          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
         .height(36)
         .padding({ left: 16, right: 16 })
         .backgroundColor($r("app.color.bg_secondary"))
-        .justifyContent(FlexAlign.Start)
-        .alignItems(VerticalAlign.Center)
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off) // 隐藏滚动条，保持美观
         .position({ x: 0, y: '100%' })
         .translate({ y: -36 })
         .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
