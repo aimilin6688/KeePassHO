@@ -3,7 +3,6 @@ import { DatabaseShowParam, EntryParam, Icons, MoveParam, TemplateEntryCreatePar
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
-
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
@@ -28,6 +27,12 @@ import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
 import window from '@ohos.window';
+
+// 面包屑导航路径项接口
+interface NavigationPathItem {
+  id: string;
+  name: string;
+}
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -65,6 +70,8 @@ export struct DatabaseView {
   @State currentGroup: KdbxGroup | undefined = undefined;
   // 使用 @StorageLink 持久化当前分组ID，用于从设置返回时恢复状态
   @StorageLink('databaseView_currentGroupId') currentGroupId: string = '';
+  // 面包屑导航路径
+  @State navigationPath: NavigationPathItem[] = []; // 导航路径：[{id: 'root', name: '/'}]
   @State headerHeight: number = 48;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
@@ -515,6 +522,10 @@ export struct DatabaseView {
         CommonUtils.showToast({ message: $r('app.string.invalid_group'), duration: 2000 });
         return;
       }
+
+      // 初始化面包屑导航
+      this.updateBreadcrumb(this.currentGroup);
+
       // 合并分组和条目到一个数组
       this.items = [...this.currentGroup.groups, ...this.currentGroup.entries];
       KdbxUtils.sortBy(this.items, this.sortBy);
@@ -536,7 +547,12 @@ export struct DatabaseView {
    * 导航到指定分组
    * 在分栏模式下，直接更新左侧列表内容
    */
-  private navigateToGroup(group: KdbxGroup) {
+  /**
+   * 导航到指定分组
+   * @param group 目标分组
+   * @param updateBreadcrumb 是否更新面包屑导航（收藏条目点击不更新）
+   */
+  private navigateToGroup(group: KdbxGroup, updateBreadcrumb: boolean = true) {
     hilog.info(DOMAIN, TAG, `Navigate to group: ${group.uuid.id}`);
     this.currentGroup = group;
     this.titleName = KdbxUtils.getFieldName(group.name) || '';
@@ -552,6 +568,57 @@ export struct DatabaseView {
     // 退出选择模式
     this.isSelectionMode = false;
     this.selectedItems.clear();
+
+    // 更新面包屑导航
+    if (updateBreadcrumb) {
+      this.updateBreadcrumb(group);
+    }
+  }
+
+  /**
+   * 更新面包屑导航路径
+   * @param group 当前分组
+   */
+  private updateBreadcrumb(group: KdbxGroup) {
+    const path: NavigationPathItem[] = [];
+    let current: KdbxGroup | undefined = group;
+
+    // 从当前分组向上遍历到根分组
+    while (current) {
+      const groupName = KdbxUtils.getFieldName(current.name);
+      path.unshift({ id: current.uuid.id, name: typeof groupName === 'string' ? groupName : '' });
+      current = current.parentGroup;
+    }
+
+    // 添加根目录
+    path.unshift({ id: 'root', name: '/' });
+
+    this.navigationPath = path;
+    hilog.debug(DOMAIN, TAG, `Breadcrumb updated: ${JSON.stringify(path)}`);
+  }
+
+  /**
+   * 从面包屑导航到指定分组
+   * @param groupId 分组ID
+   */
+  private navigateToBreadcrumb(groupId: string) {
+    if (groupId === 'root') {
+      // 导航到根目录
+      if (this.database) {
+        const rootGroup = this.database.getDefaultGroup();
+        if (rootGroup) {
+          this.navigateToGroup(rootGroup);
+        }
+      }
+    } else {
+      // 导航到指定分组
+      if (this.database) {
+        const group = this.database.getGroup(groupId);
+        if (group) {
+          this.navigateToGroup(group);
+        }
+      }
+    }
   }
 
   /**
@@ -2083,8 +2150,11 @@ export struct DatabaseView {
                         if (this.isSelectionMode) {
                           this.toggleSelection(item);
                         } else {
+                          // 判断是否是收藏项
+                          const isFavorite = KdbxUtils.isFavorite(item);
                           // 点击分组时，直接在左侧列表中展开该分组
-                          this.navigateToGroup(item as KdbxGroup);
+                          // 收藏的分组需要更新面包屑，收藏的条目不更新
+                          this.navigateToGroup(item as KdbxGroup, !isFavorite || (item as KdbxGroup).parentGroup?.uuid.id !== this.currentGroup?.uuid.id);
                         }
                       })
                       .bindContextMenu(this.GroupContextMenu(item), ResponseType.RightClick)
@@ -2459,6 +2529,44 @@ export struct DatabaseView {
         duration: 200,
         curve: Curve.EaseInOut
       })
+
+      // 面包屑导航条（仅在分栏模式下显示）
+      if (this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD) {
+        Row() {
+          ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
+            Row() {
+              // 路径项
+              Text(pathItem.name)
+                .fontSize(14)
+                .fontColor(index === this.navigationPath.length - 1 ? $r('app.color.text_primary') : $r('app.color.button_bg_blue'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .onClick(() => {
+                  // 点击路径项导航到对应分组
+                  if (index < this.navigationPath.length - 1) {
+                    this.navigateToBreadcrumb(pathItem.id);
+                  }
+                })
+
+              // 分隔符（最后一项不显示）
+              if (index < this.navigationPath.length - 1) {
+                Text(' > ')
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+              }
+            }
+          })
+        }
+        .width('100%')
+        .height(36)
+        .padding({ left: 16, right: 16 })
+        .backgroundColor($r("app.color.bg_secondary"))
+        .justifyContent(FlexAlign.Start)
+        .alignItems(VerticalAlign.Center)
+        .position({ x: 0, y: '100%' })
+        .translate({ y: -36 })
+        .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
+      }
 
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
