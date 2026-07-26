@@ -76,6 +76,7 @@ export struct DatabaseView {
   @State headerHeight: number = 48;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
+  @State selectedEntryId: string = ''; // 分栏模式下当前右侧显示的条目ID
   @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
   @State moreMenuX: number = 0; // 更多菜单X坐标
   @State moreMenuY: number = 0; // 更多菜单Y坐标
@@ -581,6 +582,7 @@ export struct DatabaseView {
     // 清除选中状态
     this.selectedItem = null;
     this.selectedItemIndex = -1;
+    this.selectedEntryId = ''; // 清除选中的条目ID
     // 退出选择模式
     this.isSelectionMode = false;
     this.selectedItems.clear();
@@ -2266,6 +2268,14 @@ export struct DatabaseView {
                         if (this.isSelectionMode) {
                           this.toggleSelection(item);
                         } else {
+                          // 分栏模式下，判断右侧是否已显示当前条目
+                          const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+                          if (isSplitMode && this.selectedEntryId === item.uuid.id) {
+                            // 右侧已显示当前条目，不重复添加
+                            return;
+                          }
+                          // 更新选中的条目ID并导航
+                          this.selectedEntryId = item.uuid.id;
                           const entryParam: EntryParam = { entryId: item.uuid.id, groupId: item.parentGroup?.uuid.id };
                           this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_VIEW, entryParam);
                         }
