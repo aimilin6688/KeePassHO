@@ -780,6 +780,15 @@ export struct DatabaseView {
         this.editEntry(item);
       })
 
+      // 选择
+      MenuItem({
+        startIcon: $r('app.media.ic_check'),
+        content: '选择',
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.enterSelectionMode(item);
+      })
+
       // 删除
       MenuItem({
         startIcon: $r('app.media.ic_delete'),
@@ -831,6 +840,15 @@ export struct DatabaseView {
         content: '编辑',
       }).onClick(() => {
         this.editGroup(item);
+      })
+
+      // 选择
+      MenuItem({
+        startIcon: $r('app.media.ic_check'),
+        content: '选择',
+      }).onClick(() => {
+        this.selectedItem = item;
+        this.enterSelectionMode(item);
       })
 
       // 删除
