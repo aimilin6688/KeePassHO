@@ -740,8 +740,12 @@ export struct DatabaseView {
 
     // 计算菜单水平位置（右对齐）
     const menuWidth = 280; // 菜单宽度
-    // 右对齐，确保不超出屏幕边界
-    this.moreMenuX = this.screenWidth - menuWidth - 12;
+    // 判断是否处于分栏模式
+    const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+    // 在分栏模式下使用导航栏宽度，非分栏模式下使用屏幕宽度
+    const availableWidth = isSplitMode ? this.currentNavBarWidth : this.screenWidth;
+    // 右对齐，确保不超出可用宽度边界
+    this.moreMenuX = availableWidth - menuWidth - 12;
 
     // 计算菜单垂直位置
     let itemTopY: number = this.headerHeight + 12 + index * (70 + 8);
