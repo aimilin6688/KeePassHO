@@ -2465,40 +2465,40 @@ export struct DatabaseView {
         Column() {
           Row() {
             Button($r('app.string.move_here'), { type: ButtonType.Normal })
-              .width('45%')
+              .layoutWeight(1)
               .height(40)
               .margin({ right: 8 })
               .borderRadius(20)
-              .fontColor($r("app.color.button_text_blue"))
               .backgroundColor($r("app.color.button_bg_blue"))
+              .fontColor($r("app.color.button_text_blue"))
               .onClick(() => {
                 this.moveItemToCurrentGroup();
               })
 
             Button($r('app.string.cancel_button_text'), { type: ButtonType.Normal })
-              .width('45%')
+              .layoutWeight(1)
               .height(40)
-              .backgroundColor(Color.Gray)
               .borderRadius(20)
+              .backgroundColor(Color.Gray)
               .fontColor(Color.White)
               .onClick(() => {
                 // 取消移动模式
                 this.cancelMoving();
               })
           }
-          .width('90%')
-          .justifyContent(FlexAlign.SpaceAround)
+          .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
         }
         .width('100%')
-        .height(45)
+        .height(60)
         .padding({
-          top: 12,
-          bottom: 0,
+          top: 8,
+          bottom: 8,
           left: 16,
           right: 16
         })
         .position({ x: 0, y: '100%' })
-        .translate({ y: -45 })
+        .translate({ y: -60 })
         .justifyContent(FlexAlign.Center)
       }
 
