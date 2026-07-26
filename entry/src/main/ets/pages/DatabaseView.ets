@@ -556,9 +556,13 @@ export struct DatabaseView {
     hilog.info(DOMAIN, TAG, `Navigate to group: ${group.uuid.id}`);
     this.currentGroup = group;
     this.titleName = KdbxUtils.getFieldName(group.name) || '';
-    this.showBack = true;
+
+    // 判断是否为根分组（没有父分组）
+    const isRootGroup = !group.parentGroup;
+    this.showBack = !isRootGroup;
+
     // 保存分组ID以支持状态恢复
-    this.currentGroupId = group.uuid.id;
+    this.currentGroupId = isRootGroup ? '' : group.uuid.id;
     this.items = [...group.groups, ...group.entries];
     KdbxUtils.sortBy(this.items, this.sortBy);
     this.addFavorite();
