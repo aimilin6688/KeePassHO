@@ -21,6 +21,7 @@ struct SettingApplicationContent {
   @State isSyncSetting: boolean = SettingsService.KEY_APP_SYNC_SETTING_ENABLE_DEFAULT;
   @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State isEnableLocalCache: boolean = SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT;
+  @State isBreadcrumbVisible: boolean = SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT;
   private settingsService: SettingsService = SettingsService.getInstance();
 
   aboutToAppear(): void {
@@ -41,6 +42,8 @@ struct SettingApplicationContent {
     this.isHoldingHand = this.settingsService.getSync(SettingsService.KEY_APP_HOLDING_HAND_ENABLE, SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT);
     // 启用本地缓存
     this.isEnableLocalCache = this.settingsService.getSync(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT);
+    // 显示面包屑导航
+    this.isBreadcrumbVisible = this.settingsService.getSync(SettingsService.KEY_APP_BREADCRUMB_VISIBLE, SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT);
   }
 
   // 隐藏支持弹框
@@ -238,6 +241,35 @@ struct SettingApplicationContent {
                 .onChange((isOn: boolean) => {
                   this.isEnableLocalCache = isOn;
                   this.settingsService.put(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, isOn);
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 显示面包屑导航
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_breadcrumb_visible"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_breadcrumb_visible_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+              Toggle({ type: ToggleType.Switch, isOn: this.isBreadcrumbVisible })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.isBreadcrumbVisible = isOn;
+                  this.settingsService.put(SettingsService.KEY_APP_BREADCRUMB_VISIBLE, isOn);
                 })
             }
             .width('100%')

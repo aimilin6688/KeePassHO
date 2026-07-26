@@ -1809,6 +1809,14 @@
       "value": "Disabling will only use the remote database and not the local cache"
     },
     {
+      "name": "application_breadcrumb_visible",
+      "value": "Show breadcrumb navigation"
+    },
+    {
+      "name": "application_breadcrumb_visible_tips",
+      "value": "Display navigation path in split-pane mode"
+    },
+    {
       "name": "please_refresh_data_first",
       "value": "Please refresh first"
     },

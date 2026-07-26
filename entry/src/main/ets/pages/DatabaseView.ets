@@ -72,6 +72,7 @@ export struct DatabaseView {
   @StorageLink('databaseView_currentGroupId') currentGroupId: string = '';
   // 面包屑导航路径
   @State navigationPath: NavigationPathItem[] = []; // 导航路径：[{id: 'root', name: '/'}]
+  @State isBreadcrumbVisible: boolean = SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT; // 面包屑导航可见性
   @State headerHeight: number = 48;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
@@ -396,6 +397,11 @@ export struct DatabaseView {
       this.unBindHoldingHandChange();
       this.onHoldingHandChange();
     });
+    // 面包屑导航可见性
+    this.isBreadcrumbVisible = this.settingsService.getSync(
+      SettingsService.KEY_APP_BREADCRUMB_VISIBLE,
+      SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT
+    );
   }
 
   /**
@@ -482,6 +488,12 @@ export struct DatabaseView {
     if (this.isLoading == true) {
       return;
     }
+
+    // 读取面包屑导航可见性设置
+    this.isBreadcrumbVisible = this.settingsService.getSync(
+      SettingsService.KEY_APP_BREADCRUMB_VISIBLE,
+      SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT
+    );
 
     this.isLoading = true;
     try {
@@ -2529,8 +2541,8 @@ export struct DatabaseView {
         curve: Curve.EaseInOut
       })
 
-      // 面包屑导航条（仅在分栏模式下显示）
-      if (this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD) {
+      // 面包屑导航条（仅在分栏模式下且设置开启时显示）
+      if (this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD && this.isBreadcrumbVisible) {
         Scroll() {
           Row() {
             ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
