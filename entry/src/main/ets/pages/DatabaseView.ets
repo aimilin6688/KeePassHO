@@ -738,7 +738,7 @@ export struct DatabaseView {
       if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME) !== '') {
         MenuItem({
           startIcon: $r('app.media.ic_copy'),
-          content: $r('app.string.copy_username'),
+          content: '复制用户名',
         }).onClick(() => {
           this.copyUsername(item);
         })
@@ -748,7 +748,7 @@ export struct DatabaseView {
       if (KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_PASSWORD) !== '') {
         MenuItem({
           startIcon: $r('app.media.ic_copy'),
-          content: $r('app.string.copy_password'),
+          content: '复制密码',
         }).onClick(() => {
           this.copyPassword(item);
         })
@@ -757,7 +757,7 @@ export struct DatabaseView {
       // 收藏/取消收藏
       MenuItem({
         startIcon: $r('app.media.ic_favorite'),
-        content: KdbxUtils.isFavorite(item) ? $r('app.string.unfavorite_button_text') : $r('app.string.favorite_button_text'),
+        content: KdbxUtils.isFavorite(item) ? '取消收藏' : '收藏',
       }).onClick(() => {
         this.selectedItem = item;
         this.toggleFavorite();
@@ -766,7 +766,7 @@ export struct DatabaseView {
       // 置顶/取消置顶
       MenuItem({
         startIcon: $r('app.media.ic_top'),
-        content: KdbxUtils.isPinned(item) ? $r('app.string.unpin_button_text') : $r('app.string.pin_button_text'),
+        content: KdbxUtils.isPinned(item) ? '取消置顶' : '置顶',
       }).onClick(() => {
         this.selectedItem = item;
         this.togglePin();
@@ -775,7 +775,7 @@ export struct DatabaseView {
       // 编辑
       MenuItem({
         startIcon: $r('app.media.ic_edit'),
-        content: $r('app.string.edit_button_text'),
+        content: '编辑',
       }).onClick(() => {
         this.editEntry(item);
       })
@@ -783,7 +783,7 @@ export struct DatabaseView {
       // 删除
       MenuItem({
         startIcon: $r('app.media.ic_delete'),
-        content: $r('app.string.delete_button_text'),
+        content: '删除',
       }).onClick(() => {
         this.selectedItem = item;
         this.deleteItem(item);
@@ -802,7 +802,7 @@ export struct DatabaseView {
       // 复制分组名
       MenuItem({
         startIcon: $r('app.media.ic_copy'),
-        content: $r('app.string.copy_group_name'),
+        content: '复制分组名',
       }).onClick(() => {
         this.copyGroupName(item);
       })
@@ -810,7 +810,7 @@ export struct DatabaseView {
       // 收藏/取消收藏
       MenuItem({
         startIcon: $r('app.media.ic_favorite'),
-        content: KdbxUtils.isFavorite(item) ? $r('app.string.unfavorite_button_text') : $r('app.string.favorite_button_text'),
+        content: KdbxUtils.isFavorite(item) ? '取消收藏' : '收藏',
       }).onClick(() => {
         this.selectedItem = item;
         this.toggleFavorite();
@@ -819,7 +819,7 @@ export struct DatabaseView {
       // 置顶/取消置顶
       MenuItem({
         startIcon: $r('app.media.ic_top'),
-        content: KdbxUtils.isPinned(item) ? $r('app.string.unpin_button_text') : $r('app.string.pin_button_text'),
+        content: KdbxUtils.isPinned(item) ? '取消置顶' : '置顶',
       }).onClick(() => {
         this.selectedItem = item;
         this.togglePin();
@@ -828,7 +828,7 @@ export struct DatabaseView {
       // 编辑
       MenuItem({
         startIcon: $r('app.media.ic_edit'),
-        content: $r('app.string.edit_button_text'),
+        content: '编辑',
       }).onClick(() => {
         this.editGroup(item);
       })
@@ -836,7 +836,7 @@ export struct DatabaseView {
       // 删除
       MenuItem({
         startIcon: $r('app.media.ic_delete'),
-        content: $r('app.string.delete_button_text'),
+        content: '删除',
       }).onClick(() => {
         this.selectedItem = item;
         this.deleteItem(item);
