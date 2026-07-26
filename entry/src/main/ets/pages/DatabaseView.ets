@@ -586,12 +586,17 @@ export struct DatabaseView {
     // 从当前分组向上遍历到根分组
     while (current) {
       const groupName = KdbxUtils.getFieldName(current.name);
-      path.unshift({ id: current.uuid.id, name: typeof groupName === 'string' ? groupName : '' });
+      const nameStr = typeof groupName === 'string' ? groupName : '';
+
+      // 如果是根分组（没有父分组），显示为 '/'
+      if (!current.parentGroup) {
+        path.unshift({ id: current.uuid.id, name: '/' });
+      } else {
+        path.unshift({ id: current.uuid.id, name: nameStr });
+      }
+
       current = current.parentGroup;
     }
-
-    // 添加根目录
-    path.unshift({ id: 'root', name: '/' });
 
     this.navigationPath = path;
     hilog.debug(DOMAIN, TAG, `Breadcrumb updated: ${JSON.stringify(path)}`);
@@ -602,21 +607,11 @@ export struct DatabaseView {
    * @param groupId 分组ID
    */
   private navigateToBreadcrumb(groupId: string) {
-    if (groupId === 'root') {
-      // 导航到根目录
-      if (this.database) {
-        const rootGroup = this.database.getDefaultGroup();
-        if (rootGroup) {
-          this.navigateToGroup(rootGroup);
-        }
-      }
-    } else {
-      // 导航到指定分组
-      if (this.database) {
-        const group = this.database.getGroup(groupId);
-        if (group) {
-          this.navigateToGroup(group);
-        }
+    // 导航到指定分组
+    if (this.database) {
+      const group = this.database.getGroup(groupId);
+      if (group) {
+        this.navigateToGroup(group);
       }
     }
   }
