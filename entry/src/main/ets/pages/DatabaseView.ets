@@ -586,29 +586,24 @@ export struct DatabaseView {
   private updateBreadcrumb(group: KdbxGroup) {
     const path: NavigationPathItem[] = [];
     let current: KdbxGroup | undefined = group;
-    let depth = 0;
 
     // 从当前分组向上遍历到根分组
     while (current) {
       const groupName = current.name; // 直接使用 name 属性
       const nameStr = groupName || ''; // 处理 undefined 情况
 
-      hilog.info(DOMAIN, TAG, `Breadcrumb level ${depth}: id=${current.uuid.id}, name=${nameStr}, hasParent=${current.parentGroup !== undefined}`);
-
       // 如果是根分组（没有父分组），显示为 '/'
       if (!current.parentGroup) {
         path.unshift({ id: current.uuid.id, name: '/' });
-        hilog.info(DOMAIN, TAG, `Root group found: ${nameStr}`);
       } else {
         path.unshift({ id: current.uuid.id, name: nameStr });
       }
 
       current = current.parentGroup;
-      depth++;
     }
 
     this.navigationPath = path;
-    hilog.info(DOMAIN, TAG, `Breadcrumb updated: total=${path.length}, path=[${path.map(p => p.name).join(' > ')}]`);
+    hilog.debug(DOMAIN, TAG, `Breadcrumb updated: ${path.length} levels`);
   }
 
   /**
