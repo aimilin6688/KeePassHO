@@ -33,6 +33,7 @@ export struct Settings {
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
     ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
   @State hasCrashLog: boolean = false;
+  @State currentRightPageName: string = ''; // 当前右侧导航栈顶页面名称，避免重复添加
   private settingsService: SettingsService = SettingsService.getInstance();
 
   private settingItems: SettingItem[] = [
@@ -123,6 +124,12 @@ export struct Settings {
       hilog.error(DOMAIN, TAG, 'navPathStack is null');
       return;
     }
+    // 分栏模式下，如果右侧导航栈顶已是当前条目，则不需要重复添加
+    if (this.currentRightPageName === item.name) {
+      hilog.info(DOMAIN, TAG, 'Item %{public}s already at top, skipping push', item.name);
+      return;
+    }
+    this.currentRightPageName = item.name;
     stack.pushPathByName(item.name, null);
   }
 
