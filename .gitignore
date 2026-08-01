@@ -20,4 +20,5 @@ oh-package-lock.json5
 **/.superpowers
 /docs/
 /faultlogger/
-CLAUDE.m
+CLAUDE.md
+AGENTS.md
