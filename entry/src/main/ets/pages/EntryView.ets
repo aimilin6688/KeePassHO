@@ -46,7 +46,9 @@ export struct EntryView {
   private entryId: string = '';
   private groupId: string = '';
   private onDatabaseUpdate: Callback<emitter.EventData> = (): void => {
-    // 数据库更新时刷新条目数据
+    if (this.selectedHistoryIndex >= 0) {
+      return;
+    }
     this.loadEntry();
   };
 
@@ -309,6 +311,7 @@ export struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.removeHistory(this.selectedHistoryIndex);
+            this.selectedHistoryIndex = -1;
             KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
                 this.navPathStack.pop();
@@ -554,7 +557,7 @@ export struct EntryView {
           .height(45)
           .padding({
             top: 12,
-            bottom: 0,
+            bottom: 16,
             left: 16,
             right: 16
           })
