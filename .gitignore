@@ -12,11 +12,11 @@
 **/.appanalyzer
 .history
 oh-package-lock.json5
-.joycode
-.codebuddy
-.codeartsdoer
-.workbuddy
-.claude
+**/.joycode
+**/.codebuddy
+**/.codeartsdoer
+**/.workbuddy
+**/.claude
 **/.superpowers
 /docs/
 /faultlogger/
