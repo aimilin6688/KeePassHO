@@ -31,6 +31,12 @@ export class AssetUtils {
       }
       return undefined;
     } catch (error) {
+      // 错误码 24000002 表示关键资产不存在（如首次启动、资产未生成或跨设备可信同步未完成），
+      // 属预期内情况，静默返回 undefined，不弹提示、不打 error 日志。
+      const ASSET_ERROR_CODE_NOT_FOUND = 24000002;
+      if (error?.code === ASSET_ERROR_CODE_NOT_FOUND) {
+        return undefined;
+      }
       hilog.error(DOMAIN, TAG, `queryAsset error:  Code is ${error?.code}, message is ${error?.message}`);
       CommonUtils.showToast(`Query asset failed: ${error?.message}`, 5000);
       return undefined;
