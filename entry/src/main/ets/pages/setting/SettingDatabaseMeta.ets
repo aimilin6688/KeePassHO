@@ -1,6 +1,6 @@
 import { CounterComponent, CounterType, PromptAction } from '@kit.ArkUI';
 import { FileService } from '../../services/FileService';
-import { KdbxUtils, CommonUtils } from '../../common/utils';
+import { KdbxUtils, CommonUtils, NavigationManager } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Consts, Kdbx } from 'kdbxweb';
 import { EventBus } from '../../services/EventBus';
@@ -8,6 +8,27 @@ import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatab
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseMeta';
+
+// SettingDatabaseMeta页面的Builder函数
+@Builder
+export function SettingDatabaseMetaBuilder(name: string, param: Object): void {
+  SettingDatabaseMetaPage()
+}
+
+/**
+ * 数据库元数据设置页面
+ * 在右侧分栏中展示，与修改主密码页面保持一致
+ */
+@Component
+struct SettingDatabaseMetaPage {
+  build() {
+    NavDestination() {
+      SettingDatabaseMetaContent()
+    }
+    .title($r('app.string.Settings_database_metadata'))
+    .backgroundColor($r('app.color.bg_primary'))
+  }
+}
 
 @Component
 export struct SettingDatabaseMetaContent {
@@ -25,7 +46,19 @@ export struct SettingDatabaseMetaContent {
   // 本地属性
   private database: Kdbx | null = null;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   onClose?: () => void;
+
+  /**
+   * 关闭当前页面（未指定外部回调时直接出栈）
+   */
+  private close(): void {
+    if (this.onClose) {
+      this.onClose();
+      return;
+    }
+    this.navPathStack.pop();
+  }
 
   aboutToAppear() {
     // 获取数据库对象
@@ -81,10 +114,8 @@ export struct SettingDatabaseMetaContent {
         onSuccess: () => {
           // 通知数据库已更新
           EventBus.emit<void>(EventBus.DATABASE_UPDATE);
-          // 关闭对话框
-          if (this.onClose) {
-            this.onClose();
-          }
+          // 关闭当前页面
+          this.close();
         }
       }));
     } catch (error) {
@@ -101,16 +132,12 @@ export struct SettingDatabaseMetaContent {
    */
   private handleDialogCancel() {
     if (!this.isModified) {
-      if (this.onClose) {
-        this.onClose();
-      }
+      this.close();
       return;
     }
     CommonUtils.showUnSaveConfirm(this.getUIContext(), {
       onConfirm: () => {
-        if (this.onClose) {
-          this.onClose();
-        }
+        this.close();
       }
     });
   }
@@ -118,7 +145,8 @@ export struct SettingDatabaseMetaContent {
   build() {
     Column() {
       // 主要内容区域
-      Column() {
+      Scroll() {
+        Column() {
           // 数据库名称
           Text($r('app.string.database_name'))
             .fontSize(16)
@@ -345,53 +373,51 @@ export struct SettingDatabaseMetaContent {
         }
         .width('100%')
         .margin({ top: 4 })
-        .padding({ left: 12, right: 12 })
-
-
-      // 操作按钮
-      Row() {
-        // 取消
-        Button() {
-          Row() {
-            Text($r('app.string.cancel_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor(Color.Gray)
-        .onClick(() => {
-          this.handleDialogCancel();
-        })
-
-        Blank()
-        // 保存
-        Button() {
-          Row() {
-            Text($r('app.string.save_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r('app.color.button_bg_blue'))
-        .onClick(() => {
-          this.saveMetadata();
-        })
+        .padding({ left: 12, right: 12, bottom: 16 })
+        .justifyContent(FlexAlign.Start)
       }
       .width('100%')
-      .height(45)
-      .margin({ top: 12, bottom: 0 })
+      .layoutWeight(1)
+      .scrollBar(BarState.Auto)
+      .edgeEffect(EdgeEffect.Spring)
+
+      // 底部操作按钮
+      Row() {
+        Button($r('app.string.cancel_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .backgroundColor(Color.Gray)
+          .onClick(() => {
+            this.handleDialogCancel();
+          })
+
+        Blank()
+
+        Button($r('app.string.save_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .backgroundColor($r('app.color.button_bg_blue'))
+          .onClick(() => {
+            this.saveMetadata();
+          })
+      }
+      .width('100%')
+      .height(60)
+      .padding({
+        top: 8,
+        bottom: 8,
+        left: 16,
+        right: 16
+      })
     }
     .width('100%')
+    .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
   }
 }

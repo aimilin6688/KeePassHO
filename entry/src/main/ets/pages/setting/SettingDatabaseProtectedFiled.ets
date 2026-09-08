@@ -7,6 +7,32 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseProtectedFiled';
 
+// SettingDatabaseProtectedFiled页面的Builder函数
+@Builder
+export function SettingDatabaseProtectedFiledBuilder(name: string, param: Object): void {
+  SettingDatabaseProtectedFiledPage()
+}
+
+/**
+ * 默认保护字段设置页面
+ * 在右侧分栏中展示，与修改主密码页面保持一致
+ */
+@Component
+struct SettingDatabaseProtectedFiledPage {
+  build() {
+    NavDestination() {
+      Scroll() {
+        SettingDatabaseProtectedFiledContent()
+      }
+      .width('100%')
+      .height('100%')
+      .scrollBar(BarState.Off)
+    }
+    .title($r('app.string.Settings_default_protected_field'))
+    .backgroundColor($r('app.color.bg_primary'))
+  }
+}
+
 @Component
 export struct SettingDatabaseProtectedFiledContent {
   @State isDatabaseValid: boolean = false;

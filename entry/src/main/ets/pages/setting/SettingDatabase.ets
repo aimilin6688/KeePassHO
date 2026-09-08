@@ -12,9 +12,6 @@ import {
 import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/LocationParam';
 import { SettingDialogWrapper } from '../../components/SettingDialogWrapper';
 import { SettingDatabaseKeyFunctionContent } from './SettingDatabaseKeyFunction';
-import { SettingDatabaseMetaContent } from './SettingDatabaseMeta';
-import { SettingCustomIconsContent } from './SettingCustomIcons';
-import { SettingDatabaseProtectedFiledContent } from './SettingDatabaseProtectedFiled';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -23,10 +20,7 @@ const TAG = 'SettingDatabase';
 // 对话框类型枚举
 enum DialogType {
   NONE = 0,
-  KEY_FUNCTION = 1,
-  META = 2,
-  CUSTOM_ICONS = 3,
-  PROTECTED_FIELDS = 4
+  KEY_FUNCTION = 1
 }
 
 // SettingDatabase页面的Builder函数
@@ -92,30 +86,6 @@ struct SettingDatabasePage {
         onClose: (): void => this.closeDialog()
       }) {
         SettingDatabaseKeyFunctionContent({ onClose: (): void => this.closeDialog() })
-      }
-    } else if (this.currentDialogType === DialogType.META) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_database_metadata'),
-        context: this.getUIContext(),
-        onClose: (): void => this.closeDialog()
-      }) {
-        SettingDatabaseMetaContent({ onClose: (): void => this.closeDialog() })
-      }
-    } else if (this.currentDialogType === DialogType.CUSTOM_ICONS) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_custom_icons'),
-        context: this.getUIContext(),
-        onClose: (): void => this.closeDialog()
-      }) {
-        SettingCustomIconsContent()
-      }
-    } else if (this.currentDialogType === DialogType.PROTECTED_FIELDS) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_default_protected_field'),
-        context: this.getUIContext(),
-        onClose: (): void => this.closeDialog()
-      }) {
-        SettingDatabaseProtectedFiledContent()
       }
     }
   }
@@ -329,9 +299,8 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                if (this.onShowDialog) {
-                  this.onShowDialog(DialogType.META);
-                }
+                // 导航到数据库元数据设置页面（右侧分栏展示）
+                this.navPathStack.pushPathByName(PageConstants.PAGE_SETTING_DATABASE_META, null);
               })
             }
 
@@ -349,9 +318,8 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                if (this.onShowDialog) {
-                  this.onShowDialog(DialogType.CUSTOM_ICONS);
-                }
+                // 导航到自定义图标管理页面（右侧分栏展示）
+                this.navPathStack.pushPathByName(PageConstants.PAGE_SETTING_CUSTOM_ICONS, null);
               })
             }
 
@@ -369,9 +337,8 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                if (this.onShowDialog) {
-                  this.onShowDialog(DialogType.PROTECTED_FIELDS);
-                }
+                // 导航到默认保护字段设置页面（右侧分栏展示）
+                this.navPathStack.pushPathByName(PageConstants.PAGE_SETTING_DATABASE_PROTECTED_FIELD, null);
               })
             }
           }

@@ -5,6 +5,27 @@ import { KdbxUtils, IconUtils } from '../../common/utils';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 import { ImageAddComponent } from '../../components/ImageAddComponent';
 
+// SettingCustomIcons页面的Builder函数
+@Builder
+export function SettingCustomIconsBuilder(name: string, param: Object): void {
+  SettingCustomIconsPage()
+}
+
+/**
+ * 自定义图标管理页面
+ * 在右侧分栏中展示，与修改主密码页面保持一致
+ */
+@Component
+struct SettingCustomIconsPage {
+  build() {
+    NavDestination() {
+      SettingCustomIconsContent()
+    }
+    .title($r('app.string.Settings_custom_icons'))
+    .backgroundColor($r('app.color.bg_primary'))
+  }
+}
+
 @Component
 export struct SettingCustomIconsContent {
   @State icons: IconResource[] = [];
@@ -93,7 +114,13 @@ export struct SettingCustomIconsContent {
   build() {
     Column() {
       // 图标网格
-      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
+      Scroll() {
+        Flex({
+          direction: FlexDirection.Row,
+          wrap: FlexWrap.Wrap,
+          justifyContent: FlexAlign.Start,
+          alignContent: FlexAlign.Start
+        }) {
           // 添加图标按钮
           ImageAddComponent({
             onSuccess: () => {
@@ -141,54 +168,53 @@ export struct SettingCustomIconsContent {
         .padding({
           top: 12,
           left: 12,
-          right: 12
-        })
-
-      // 操作按钮
-      Row() {
-        // 删除未使用
-        Button() {
-          Row() {
-            Text($r('app.string.delete_not_use'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor(Color.Gray)
-        .onClick(() => {
-          this.deleteNotUse();
-        })
-
-        Blank()
-        // 删除
-        Button() {
-          Row() {
-            Text($r('app.string.delete_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .enabled(this.selectIcons.size > 0)
-        .borderRadius(20)
-        .backgroundColor($r('app.color.button_bg_blue'))
-        .onClick(() => {
-          this.deleteIcons();
+          right: 12,
+          bottom: 16
         })
       }
       .width('100%')
-      .height(45)
-      .margin({ top: 12, bottom: 0 })
+      .layoutWeight(1)
+      .scrollBar(BarState.Auto)
+      .edgeEffect(EdgeEffect.Spring)
+
+      // 底部操作按钮
+      Row() {
+        Button($r('app.string.delete_not_use'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .backgroundColor(Color.Gray)
+          .onClick(() => {
+            this.deleteNotUse();
+          })
+
+        Blank()
+
+        Button($r('app.string.delete_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .enabled(this.selectIcons.size > 0)
+          .backgroundColor($r('app.color.button_bg_blue'))
+          .onClick(() => {
+            this.deleteIcons();
+          })
+      }
+      .width('100%')
+      .height(60)
+      .padding({
+        top: 8,
+        bottom: 8,
+        left: 16,
+        right: 16
+      })
     }
     .width('100%')
+    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
   }
 }
