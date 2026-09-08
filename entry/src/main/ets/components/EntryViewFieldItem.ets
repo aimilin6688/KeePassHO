@@ -44,12 +44,9 @@ export class FieldView {
     if (KdbxUtils.isTotpUrl(value)) {
       this.isTotp = true;
       this.otpValue = value;
-      // 需要展示时才设置 展示totp预览
-      SettingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT, (value) => {
-        if (value) {
-          this.showPlanText = value;
-        }
-      });
+      // 同步读取"条目显示TOTP字段"设置，关闭时不再显示令牌明文
+      this.showPlanText = SettingsService.getSync(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP,
+        SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT);
     }
   }
 }
@@ -60,6 +57,7 @@ export struct EntryViewFieldItem {
   @ObjectLink field: FieldView;
   @State entry: KdbxEntry | null = null;
   @State autoClearClipboardTime: number = SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME_DEFAULT;
+  @State isItemShowTotp: boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private imageViewerDialogController: CustomDialogController = new CustomDialogController({
@@ -91,6 +89,15 @@ export struct EntryViewFieldItem {
       SettingsService.get(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME, this.autoClearClipboardTime, (value) => {
         this.autoClearClipboardTime = value;
       });
+    }
+    // 条目是否显示TOTP字段
+    if (!key || key === SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP) {
+      this.isItemShowTotp = SettingsService.getSync(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP,
+        SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT);
+      // 同步到字段对象，保证数据与展示一致
+      if (this.field && this.field.isTotp) {
+        this.field.showPlanText = this.isItemShowTotp;
+      }
     }
   }
 
@@ -190,9 +197,12 @@ export struct EntryViewFieldItem {
         // 如果是Otp，则显示token码
         if (this.field.isTotp) {
           TotpPreviewComponent({
-            isShow: this.field.showPlanText,
+            isShow: this.isItemShowTotp,
             totpUrl: this.field.otpValue, onChange: (value) => {
-              this.field.value = value;
+              // 仅在允许显示时回写令牌，避免关闭后明文仍被复制
+              if (this.isItemShowTotp) {
+                this.field.value = value;
+              }
             }
           })
             .width('100%')
