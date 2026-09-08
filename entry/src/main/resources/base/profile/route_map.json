@@ -116,6 +116,21 @@
       "buildFunction": "SettingApplicationBuilder"
     },
     {
+      "name": "SettingDatabaseMeta",
+      "pageSourceFile": "src/main/ets/pages/setting/SettingDatabaseMeta.ets",
+      "buildFunction": "SettingDatabaseMetaBuilder"
+    },
+    {
+      "name": "SettingCustomIcons",
+      "pageSourceFile": "src/main/ets/pages/setting/SettingCustomIcons.ets",
+      "buildFunction": "SettingCustomIconsBuilder"
+    },
+    {
+      "name": "SettingDatabaseProtectedFiled",
+      "pageSourceFile": "src/main/ets/pages/setting/SettingDatabaseProtectedFiled.ets",
+      "buildFunction": "SettingDatabaseProtectedFiledBuilder"
+    },
+    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/about/About.ets",
       "buildFunction": "AboutBuilder"
