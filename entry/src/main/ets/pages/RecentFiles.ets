@@ -8,6 +8,7 @@ import { CommonUtils, NavigationManager, WindowUtils } from '../common/utils';
 import { FileStorage, PageConfig } from '../storage';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { PageConstants } from '../common/constants/PageConstants';
+import { Constants } from '../common/constants/Constants';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
@@ -142,6 +143,8 @@ struct RecentFilesContent {
       return;
     } else {
       // 使用整个窗口方式打开数据库（清空当前导航栈）
+      // 清除可能残留的位置信息（如上次通过 URL 打开后未消费），避免 Password 页面优先读到旧库信息
+      AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
       const navParam: PasswordNavParam = { filePath: recentFile.filePath };
       this.navManager.replaceAll('Password', navParam);
     }
