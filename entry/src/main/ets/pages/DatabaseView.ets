@@ -209,6 +209,8 @@ export struct DatabaseView {
 
   onPageShow(): void {
     this.moveParam = MoveParam.getInstance();
+    // 页面显示时刷新设置，保证与最新配置一致
+    this.initSettings();
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
@@ -389,10 +391,11 @@ export struct DatabaseView {
       this.isPullToRefresh = result;
       this.refreshText = result ? $r('app.string.refreshing_message') : $r('app.string.refreshing_disable');
     })
-    // 列表显示TOTP
-    this.settingsService.get(SettingsService.KEY_SECURITY_LIST_SHOW_TOTP, SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT).then(result => {
-      this.isListShowTotp = result;
-    });
+    // 列表显示TOTP（同步读取，避免异步回调晚于首帧渲染导致短暂显示）
+    this.isListShowTotp = this.settingsService.getSync(
+      SettingsService.KEY_SECURITY_LIST_SHOW_TOTP,
+      SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT
+    );
     // 搜索历史改变
     this.settingsService.get(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT)
       .then(result => {
@@ -431,6 +434,10 @@ export struct DatabaseView {
     this.titleName = params.fileName ?? '';
     this.database = params.database ?? null;
     this.filePath = params.filePath ?? '';
+
+    // 重新读取设置：组件在应用启动阶段即创建，此时 SettingsService 可能尚未初始化完成，
+    // 首次 initSettings 读到的可能是默认值，打开数据库时再次读取确保使用真实配置
+    this.initSettings();
 
     // 获取排序方式
     return this.settingsService.getSortBy().then((sortBy: SortMode): void => {
