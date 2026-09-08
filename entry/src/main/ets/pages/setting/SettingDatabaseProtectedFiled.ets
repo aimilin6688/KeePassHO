@@ -21,12 +21,7 @@ export function SettingDatabaseProtectedFiledBuilder(name: string, param: Object
 struct SettingDatabaseProtectedFiledPage {
   build() {
     NavDestination() {
-      Scroll() {
-        SettingDatabaseProtectedFiledContent()
-      }
-      .width('100%')
-      .height('100%')
-      .scrollBar(BarState.Off)
+      SettingDatabaseProtectedFiledContent()
     }
     .title($r('app.string.Settings_default_protected_field'))
     .backgroundColor($r('app.color.bg_primary'))
@@ -81,7 +76,7 @@ export struct SettingDatabaseProtectedFiledContent {
       if (this.isDatabaseValid) {
         Text($r("app.string.Setting_enable_protected_field_tips"))
           .fontSize(16)
-          .margin({ top: 12, left: 16, right: 16 })
+          .width('100%')
 
         Column() {
           // 标题启用保护
@@ -233,6 +228,14 @@ export struct SettingDatabaseProtectedFiledContent {
       }
     }
     .width('100%')
+    .height('100%')
+    .padding({
+      top: 12,
+      left: 16,
+      right: 16,
+      bottom: 16
+    })
     .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
