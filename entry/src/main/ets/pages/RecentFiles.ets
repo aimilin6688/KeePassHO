@@ -20,18 +20,54 @@ interface PasswordNavParam {
 // RecentFiles页面的Builder函数
 @Builder
 export function RecentFilesBuilder(name: string, param: Object): void {
-  NavDestination() {
-    RecentFilesContent({
-      source: (param as Record<string, string>)?.source || 'home'
+  RecentFilesPage({
+    source: (param as Record<string, string>)?.source || 'home'
+  })
+}
+
+/**
+ * 最近打开页面容器
+ * 标题栏右侧通过 menus 自定义"清除全部"
+ */
+@Component
+struct RecentFilesPage {
+  @Prop source: string = 'home';
+  // 点击"清除全部"自增，触发内容区弹出确认并清空
+  @State clearSignal: number = 0;
+
+  @Builder
+  MenuBuilder() {
+    Row() {
+      Text($r('app.string.clear_all_button'))
+        .fontSize(14)
+        .fontColor('#E84026')
+    }
+    .height('100%')
+    .padding({ right: 16 })
+    .justifyContent(FlexAlign.Center)
+    .onClick(() => {
+      this.clearSignal++;
     })
   }
-  .title($r('app.string.recent_files'))
-  .backgroundColor($r('app.color.bg_primary'))
+
+  build() {
+    NavDestination() {
+      RecentFilesContent({
+        source: this.source,
+        clearSignal: this.clearSignal
+      })
+    }
+    .title($r('app.string.recent_files'))
+    .menus(this.MenuBuilder)
+    .backgroundColor($r('app.color.bg_primary'))
+  }
 }
 
 @Component
 struct RecentFilesContent {
   @Prop source: string = 'home';
+  // 标题栏"清除全部"点击信号（由 Page 驱动）
+  @Prop @Watch('onClearSignal') clearSignal: number = 0;
   private navManager = NavigationManager.getInstance();
   @State recentFiles: RecentFile [] = [];
   @State isLoading: boolean = true;
@@ -40,6 +76,17 @@ struct RecentFilesContent {
 
   aboutToAppear() {
     this.loadRecentFiles();
+  }
+
+  /**
+   * 标题栏"清除全部"触发：弹确认框后清空列表
+   */
+  onClearSignal(): void {
+    CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_clear_all_records_tips'), {
+      onConfirm: () => {
+        this.clearAllRecords();
+      }
+    });
   }
 
   onPageShow(): void {
@@ -153,26 +200,6 @@ struct RecentFilesContent {
 
   build() {
     Column() {
-      // 清除按钮
-      Row() {
-        Blank()
-        Button($r('app.string.clear_all_button'))
-          .fontSize(14)
-          .fontColor('#E84026')
-          .backgroundColor(Color.Transparent)
-          .onClick(() => {
-            CommonUtils.showConfirmDialog(this.getUIContext(), $r('app.string.dialog_confirm_title'), $r('app.string.confirm_clear_all_records_tips'), {
-              onConfirm: () => {
-                this.clearAllRecords();
-              }
-            });
-          })
-      }
-      .width('100%')
-      .height(40)
-      .padding({ right: 16 })
-      .padding({ left: 16, right: 16 })
-
       // 文件列表
       if (this.isLoading) {
         LoadingProgress()
