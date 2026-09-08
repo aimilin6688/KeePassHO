@@ -161,7 +161,16 @@ export struct DatabaseView {
     if (rootPage === 'DatabaseView') {
       // 切换到 DatabaseView 时检查是否需要加载数据库
       const params = FileService.getDbFileParam();
-      if (params.database && !this.database) {
+      // 数据库已切换：FileService 中的实例与当前列表持有的实例不同（切换数据库后 Password 会写入新实例）
+      const isDatabaseSwitched = this.database !== undefined && this.database !== null
+        && this.database !== params.database;
+      if (params.database && (!this.database || isDatabaseSwitched)) {
+        // 数据库已切换时重置分组状态，避免旧分组 ID 在新库中无效
+        if (isDatabaseSwitched) {
+          this.currentGroupId = '';
+          this.currentGroup = undefined;
+          this.navigationPath = [];
+        }
         // 数据库已打开但当前组件还未加载，重新加载
         hilog.info(DOMAIN, TAG, 'Database available, loading...');
         this.loadDatabase();

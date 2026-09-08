@@ -82,12 +82,14 @@ export struct Password {
     //初始化认证方式
     this.setAuthType(this.authTypeInfo);
 
-    // 统一从 NavigationManager 获取导航栈
-    this.workingNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index');
+    // 优先使用当前导航栈：页面被 push 到哪个栈就从哪个栈取参
+    // （如从 DatabaseView 根切换数据库时 replaceAll 会把本页 push 到 DatabaseView 栈，
+    //   若固定从 Index 栈取参会读到首次打开时残留的旧 Password 参数，导致显示旧数据库）
+    this.workingNavPathStack = NavigationManager.getInstance().getNavPathStack();
 
     if (!this.workingNavPathStack) {
-      // 降级方案: 获取当前导航栈
-      this.workingNavPathStack = NavigationManager.getInstance().getNavPathStack();
+      // 降级方案: 使用 Index 根页面导航栈
+      this.workingNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('Index');
     }
 
     if (!this.workingNavPathStack) {
@@ -99,7 +101,9 @@ export struct Password {
 
     // 通过Navigation系统获取参数
     const paramsArray: Object[] = this.workingNavPathStack.getParamByName(PageConstants.PAGE_PASSWORD) as Object[];
-    const params: Record<string, string> | undefined = paramsArray && paramsArray.length > 0 ? paramsArray[0] as Record<string, string> : undefined;
+    // 取最后一个（最近 push 的）参数，避免读到栈中残留的旧参数
+    const params: Record<string, string> | undefined = paramsArray && paramsArray.length > 0
+      ? paramsArray[paramsArray.length - 1] as Record<string, string> : undefined;
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
     if (locationInfo) {
@@ -537,6 +541,11 @@ export struct Password {
     this.putFileToRecentFile();
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
+      // 清空本页所在的导航栈（移除 Password 自身及其下方残留页面），
+      // 否则切换根页面后该栈残留 Password，之后切回此根（如点击设置）会再次显示解锁页面
+      if (this.workingNavPathStack) {
+        this.workingNavPathStack.clear();
+      }
       // DatabaseView 是根页面，使用 navigateBackToRoot 切换
       this.navManager.navigateBackToRoot(PageConstants.PAGE_DATABASE_VIEW);
       this.closeLoadingDialog();
