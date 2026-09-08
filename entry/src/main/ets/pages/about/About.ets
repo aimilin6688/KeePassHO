@@ -147,190 +147,189 @@ struct AboutContent {
   }
 
   build() {
-    Column() {
+    Scroll() {
       Column() {
         Image($r('app.media.startIcon'))
           .width(90)
           .height(90)
           .margin({ top: 40, bottom: 10 })
+
         Text(this.version)
           .fontSize(16)
           .margin(5)
 
         Text($r('app.string.About_description'))
-          .margin({ top: 20 })
           .fontColor($r('app.color.text_secondary'))
           .fontSize(16)
-          .margin(5)
+          .margin({ top: 20 })
 
-          List() {
-            ListItemGroup() {
-              // 意见反馈
-              ListItem() {
-                Row() {
-                  Text($r("app.string.feedback"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(24)
-                    .height(24)
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .width('100%')
-                .padding(16)
-                .onClick(() => {
-                  this.sendFeedback();
-                })
+        List() {
+          ListItemGroup() {
+            // 意见反馈
+            ListItem() {
+              Row() {
+                Text($r("app.string.feedback"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
               }
-
-              // 给个好评
-              ListItem() {
-                Row() {
-                  Text($r("app.string.rate_for_us"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(24)
-                    .height(24)
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .onClick(() => {
-                  this.rate();
-                })
-                .width('100%')
-                .padding(16)
-              }
-
-              // 支持作者
-              ListItem() {
-                Row() {
-                  Text($r("app.string.about_support"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(24)
-                    .height(24)
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .onClick(() => {
-                  this.navManager.getNavPathStack()?.pushPathByName(PageConstants.PAGE_SUPPORT, null);
-                })
-                .width('100%')
-                .padding(16)
-              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                this.sendFeedback();
+              })
             }
-            .margin({ top: 12, bottom: 12 })
-            .backgroundColor($r("app.color.card_bg"))
-            .borderRadius(12)
-            .divider({
-              strokeWidth: 1,
-              color: $r('app.color.divider'),
-            })
 
-
-            ListItemGroup() {
-              // 联系作者
-              ListItem() {
-                Row() {
-                  Text($r("app.string.about_contact_author"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Blank()
-                  Text(this.authEmail)
-                    .fontSize(16)
-                    .enableDataDetector(true)
-                }
-                .width('100%')
-                .padding(16)
-                .onClick(() => {
-                  this.contactAuthor();
-                })
+            // 给个好评
+            ListItem() {
+              Row() {
+                Text($r("app.string.rate_for_us"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
               }
-
-              // 源代码
-              ListItem() {
-                Row() {
-                  Text($r("app.string.about_source_code"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(24)
-                    .height(24)
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .onClick(() => {
-                  this.goUrl(this.codeUrl);
-                })
-                .width('100%')
-                .padding(16)
-              }
-
-              // 其他系统
-              ListItem() {
-                Row() {
-                  Text($r("app.string.about_other_system"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(24)
-                    .height(24)
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .onClick(() => {
-                  this.goUrl(this.otherSystemUrl);
-                })
-                .width('100%')
-                .padding(16)
-              }
+              .onClick(() => {
+                this.rate();
+              })
+              .width('100%')
+              .padding(16)
             }
-            .margin({ top: 12, bottom: 12 })
-            .backgroundColor($r("app.color.card_bg"))
-            .borderRadius(12)
-            .divider({
-              strokeWidth: 1,
-              color: $r('app.color.divider'),
-            })
 
-            ListItemGroup() {
-              // 检查更新
-              ListItem() {
-                Row() {
-                  Text($r("app.string.about_check_update"))
-                    .fontSize(16)
-                    .flexGrow(1)
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(24)
-                    .height(24)
-                    .fillColor($r('app.color.text_primary'))
-                }
-                .onClick(() => {
-                  this.checkUpdate();
-                })
-                .width('100%')
-                .padding(16)
+            // 支持作者
+            ListItem() {
+              Row() {
+                Text($r("app.string.about_support"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
               }
+              .onClick(() => {
+                this.navManager.getNavPathStack()?.pushPathByName(PageConstants.PAGE_SUPPORT, null);
+              })
+              .width('100%')
+              .padding(16)
             }
-            .margin({ top: 12, bottom: 12 })
-            .backgroundColor($r("app.color.card_bg"))
-            .borderRadius(12)
-            .divider({
-              strokeWidth: 1,
-              color: $r('app.color.divider'),
-            })
-
           }
-          .width('100%')
-          .height('auto')
-          .layoutWeight(1)
-          .margin({ top: 12 })
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
+
+
+          ListItemGroup() {
+            // 联系作者
+            ListItem() {
+              Row() {
+                Text($r("app.string.about_contact_author"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Blank()
+                Text(this.authEmail)
+                  .fontSize(16)
+                  .enableDataDetector(true)
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                this.contactAuthor();
+              })
+            }
+
+            // 源代码
+            ListItem() {
+              Row() {
+                Text($r("app.string.about_source_code"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .onClick(() => {
+                this.goUrl(this.codeUrl);
+              })
+              .width('100%')
+              .padding(16)
+            }
+
+            // 其他系统
+            ListItem() {
+              Row() {
+                Text($r("app.string.about_other_system"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .onClick(() => {
+                this.goUrl(this.otherSystemUrl);
+              })
+              .width('100%')
+              .padding(16)
+            }
+          }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
+
+          ListItemGroup() {
+            // 检查更新
+            ListItem() {
+              Row() {
+                Text($r("app.string.about_check_update"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(24)
+                  .height(24)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .onClick(() => {
+                this.checkUpdate();
+              })
+              .width('100%')
+              .padding(16)
+            }
+          }
+          .margin({ top: 12, bottom: 12 })
+          .backgroundColor($r("app.color.card_bg"))
+          .borderRadius(12)
+          .divider({
+            strokeWidth: 1,
+            color: $r('app.color.divider'),
+          })
+        }
+        .width('100%')
+        .height('auto')
+        .margin({ top: 12 })
       }
       .width('100%')
-      .height('100%')
       .padding({ left: 16, right: 16, top: 4, bottom: 16 })
     }
-    .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .width('100%')
     .height('100%')
+    .scrollBar(BarState.Auto)
+    .edgeEffect(EdgeEffect.Spring)
+    .backgroundColor($r('app.color.bg_primary'))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
