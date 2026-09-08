@@ -17,11 +17,36 @@ export function SettingCustomIconsBuilder(name: string, param: Object): void {
  */
 @Component
 struct SettingCustomIconsPage {
+  // 添加图标成功后自增，驱动内容区刷新图标列表
+  @State refreshTrigger: number = 0;
+
+  /**
+   * 标题栏右侧菜单区域：添加图标按钮
+   */
+  @Builder
+  MenuBuilder() {
+    Row() {
+      ImageAddComponent({
+        onSuccess: () => {
+          this.refreshTrigger++;
+        }
+      })
+        .width(24)
+        .height(24)
+    }
+    .width(64)
+    .height('100%')
+    .justifyContent(FlexAlign.End)
+    .alignItems(VerticalAlign.Center)
+    .margin({ right: 16 })
+  }
+
   build() {
     NavDestination() {
-      SettingCustomIconsContent()
+      SettingCustomIconsContent({ refreshTrigger: this.refreshTrigger })
     }
     .title($r('app.string.Settings_custom_icons'))
+    .menus(this.MenuBuilder)
     .backgroundColor($r('app.color.bg_primary'))
   }
 }
@@ -30,6 +55,8 @@ struct SettingCustomIconsPage {
 export struct SettingCustomIconsContent {
   @State icons: IconResource[] = [];
   @State selectIcons: Set<string | number> = new Set();
+  // 添加图标成功后的刷新触发计数（由标题栏添加按钮驱动）
+  @Prop @Watch('onRefreshTriggerChange') refreshTrigger: number = 0;
   // 图标大小
   private readonly iconSize: number = 52;
 
@@ -111,27 +138,19 @@ export struct SettingCustomIconsContent {
     this.icons = IconUtils.getAllIcons(true);
   }
 
+  /**
+   * 添加图标成功后刷新列表
+   */
+  private onRefreshTriggerChange(): void {
+    this.refreshIcons();
+  }
+
   build() {
     Column() {
-      // 图标网格
-      Scroll() {
-        Flex({
-          direction: FlexDirection.Row,
-          wrap: FlexWrap.Wrap,
-          justifyContent: FlexAlign.Start,
-          alignContent: FlexAlign.Start
-        }) {
-          // 添加图标按钮
-          ImageAddComponent({
-            onSuccess: () => {
-              this.refreshIcons();
-            }
-          })
-            .width(this.iconSize)
-            .height(this.iconSize)
-            .margin(8)
-
-          ForEach(this.icons, (icon: IconResource) => {
+      // 图标网格：按列宽自动换行，顶部左侧对齐
+      Grid() {
+        ForEach(this.icons, (icon: IconResource) => {
+          GridItem() {
             Column() {
               Stack() {
                 Image(icon.resource)
@@ -157,24 +176,24 @@ export struct SettingCustomIconsContent {
             .onClick(() => {
               this.checkedIcon(icon.id);
             })
-            .margin(8)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .borderRadius(8)
-          })
-        }
-        .width('100%')
-        .height('auto')
-        .padding({
-          top: 12,
-          left: 12,
-          right: 12,
-          bottom: 16
+          }
+          .margin(8)
         })
       }
+      .columnsTemplate(`repeat(auto-fill, ${this.iconSize + 16}vp)`)
+      .columnsGap(0)
+      .rowsGap(0)
       .width('100%')
       .layoutWeight(1)
-      .scrollBar(BarState.Auto)
+      .padding({
+        top: 12,
+        left: 16,
+        right: 16,
+        bottom: 16
+      })
       .edgeEffect(EdgeEffect.Spring)
 
       // 底部操作按钮
@@ -216,5 +235,6 @@ export struct SettingCustomIconsContent {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
