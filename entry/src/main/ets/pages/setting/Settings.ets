@@ -33,7 +33,7 @@ export struct Settings {
   @StorageProp('currentColorMode') @Watch('onColorModeChange') currentSystemMode: ConfigurationConstant.ColorMode =
     ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
   @State hasCrashLog: boolean = false;
-  @State currentRightPageName: string = ''; // 当前右侧导航栈顶页面名称，避免重复添加
+  @State currentRightPageName: string = ''; // 已废弃：以 NavPathStack 实际栈顶判断去重
   private settingsService: SettingsService = SettingsService.getInstance();
 
   private settingItems: SettingItem[] = [
@@ -125,12 +125,15 @@ export struct Settings {
       return;
     }
     // 分栏模式下，如果右侧导航栈顶已是当前条目，则不需要重复添加
-    if (this.currentRightPageName === item.name) {
+    // 使用真实栈顶判断，避免 ListItemGroup 内直接 push 的页面（关于、创建数据库等）不同步 currentRightPageName 导致误判
+    const allPathNames: string[] = stack.getAllPathName();
+    const topName: string = allPathNames.length > 0 ? allPathNames[allPathNames.length - 1] : '';
+    if (topName === item.name) {
       hilog.info(DOMAIN, TAG, 'Item %{public}s already at top, skipping push', item.name);
       return;
     }
-    this.currentRightPageName = item.name;
     stack.pushPathByName(item.name, null);
+    this.currentRightPageName = item.name;
   }
 
   build() {
