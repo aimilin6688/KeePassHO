@@ -118,21 +118,27 @@ export struct Settings {
     }
   }
 
-  private handleItemClick(item: SettingItem) {
+  /**
+   * 入栈页面：若右侧导航栈顶已是该页面，则不再重复打开
+   */
+  private pushPageOnce(pageName: string, param: Object = new Object()): void {
     const stack = this.navManager.getNavPathStack();
     if (!stack) {
       hilog.error(DOMAIN, TAG, 'navPathStack is null');
       return;
     }
-    // 分栏模式下，如果右侧导航栈顶已是当前条目，则不需要重复添加
-    // 使用真实栈顶判断，避免 ListItemGroup 内直接 push 的页面（关于、创建数据库等）不同步 currentRightPageName 导致误判
+    // 使用真实栈顶判断，避免 ListItemGroup 内直接 push 的页面不同步状态导致误判
     const allPathNames: string[] = stack.getAllPathName();
     const topName: string = allPathNames.length > 0 ? allPathNames[allPathNames.length - 1] : '';
-    if (topName === item.name) {
-      hilog.info(DOMAIN, TAG, 'Item %{public}s already at top, skipping push', item.name);
+    if (topName === pageName) {
+      hilog.info(DOMAIN, TAG, 'Page %{public}s already at top, skipping push', pageName);
       return;
     }
-    stack.pushPathByName(item.name, null);
+    stack.pushPathByName(pageName, param);
+  }
+
+  private handleItemClick(item: SettingItem) {
+    this.pushPageOnce(item.name);
     this.currentRightPageName = item.name;
   }
 
@@ -254,10 +260,7 @@ export struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            const stack = this.navManager.getNavPathStack();
-            if (stack) {
-              stack.pushPathByName('CreateDatabase', null);
-            }
+            this.pushPageOnce(PageConstants.PAGE_CREATE_DATABASE);
           })
 
           // 更换数据库
@@ -276,10 +279,7 @@ export struct Settings {
           }
           .onClick(() => {
             DataService.selectKdbx();
-            const stack = this.navManager.getNavPathStack();
-            if (stack) {
-              stack.pushPathByName('SelectLocation', null);
-            }
+            this.pushPageOnce(PageConstants.PAGE_SELECT_LOCATION);
           })
         }
         .margin({ top: 12, bottom: 12 })
@@ -335,10 +335,7 @@ export struct Settings {
             .padding(16)
           }
           .onClick(() => {
-            const stack = this.navManager.getNavPathStack();
-            if (stack) {
-              stack.pushPathByName(PageConstants.PAGE_ABOUT, null);
-            }
+            this.pushPageOnce(PageConstants.PAGE_ABOUT);
           })
         }
         .backgroundColor($r("app.color.card_bg"))
