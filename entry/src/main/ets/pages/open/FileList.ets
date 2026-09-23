@@ -452,6 +452,7 @@ export struct FileList {
             .margin({ top: 24 })
             .backgroundColor($r('app.color.button_bg_blue'))
             .fontColor($r('app.color.button_text_blue'))
+            .id('btn_retry')
             .onClick(() => {
               this.loadItems(this.currentPath);
             })
@@ -538,6 +539,7 @@ export struct FileList {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor(Color.Gray)
+          .id('btn_cancel')
           .onClick(() => {
             this.handleCancel();
           })
@@ -553,6 +555,7 @@ export struct FileList {
           .borderRadius(20)
           .enabled(this.isEnableConfirm)
           .backgroundColor($r('app.color.button_bg_blue'))
+          .id('btn_confirm')
           .onClick(() => {
             this.handleConfirm();
           })

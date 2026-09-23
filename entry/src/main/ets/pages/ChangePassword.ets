@@ -185,6 +185,7 @@ export struct ChangePasswordContent {
             .margin({ top: 0, bottom: 4 })
 
             TextInput({ placeholder: $r('app.string.change_password_old_password_placeholder'), text: this.oldPassword })
+            .id('input_old_password')
               .type(InputType.Password)
               .height(48)
               .fontSize(16)
@@ -235,6 +236,7 @@ export struct ChangePasswordContent {
             }.width('100%').margin({ top: 16, bottom: 4 })
 
             TextInput({ placeholder: $r('app.string.change_password_new_password_placeholder'), text: this.newPassword })
+            .id('input_new_password')
               .type(InputType.Password)
               .height(48)
               .fontSize(16)
@@ -256,6 +258,7 @@ export struct ChangePasswordContent {
             }.width('100%').margin({ top: 16, bottom: 4 })
 
             TextInput({ placeholder: $r('app.string.change_password_confirm_password_placeholder'), text: this.confirmPassword })
+            .id('input_confirm_password')
               .type(InputType.Password)
               .height(48)
               .fontSize(16)
@@ -303,6 +306,7 @@ export struct ChangePasswordContent {
                 .margin({ left: 8 })
                 .fontColor($r('app.color.button_text'))
                 .backgroundColor(Color.Gray)
+                .id('btn_create_key_file')
                 .onClick(() => {
                   this.createNewKey();
                 })
@@ -369,6 +373,7 @@ export struct ChangePasswordContent {
           .backgroundColor(Color.Gray)
           .borderRadius(20)
           .fontColor($r('app.color.button_text'))
+          .id('btn_cancel')
           .onClick(() => {
             this.navPathStack.pop();
           })
@@ -381,6 +386,7 @@ export struct ChangePasswordContent {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor($r("app.color.button_bg_blue"))
+          .id('btn_confirm')
           .onClick(() => {
             this.changePassword();
           })

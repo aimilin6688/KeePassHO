@@ -220,7 +220,7 @@ export struct UnLockDatabase {
 
             TextInput({ text: this.quickPassword })
               .width('100%')
-              .id("quickPasswordInput")
+              .id('input_quick_password')
               .type(InputType.Password)
               .fontSize(16)
               .enableAutoFill(false)
@@ -300,6 +300,7 @@ export struct UnLockDatabase {
         .height(40)
         .borderRadius(20)
         .backgroundColor(Color.Gray)
+        .id('btn_close_database')
         .onClick(() => {
           this.closeDatabase();
         })
@@ -325,6 +326,7 @@ export struct UnLockDatabase {
         .height(40)
         .borderRadius(20)
         .backgroundColor($r('app.color.button_bg_blue'))
+        .id('btn_quick_unlock')
         .onClick(() => {
           this.quickUnlock();
         })

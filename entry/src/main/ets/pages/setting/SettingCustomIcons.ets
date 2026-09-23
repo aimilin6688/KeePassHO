@@ -205,6 +205,7 @@ export struct SettingCustomIconsContent {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor(Color.Gray)
+          .id('btn_delete_unused')
           .onClick(() => {
             this.deleteNotUse();
           })
@@ -219,6 +220,7 @@ export struct SettingCustomIconsContent {
           .borderRadius(20)
           .enabled(this.selectIcons.size > 0)
           .backgroundColor($r('app.color.button_bg_blue'))
+          .id('btn_delete_icons')
           .onClick(() => {
             this.deleteIcons();
           })

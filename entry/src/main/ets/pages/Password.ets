@@ -669,6 +669,7 @@ export struct Password {
             .fontColor($r('app.color.text_primary'))
             .selectedOptionFont({ size: 16 })
             .optionFont({ size: 16 })
+            .id('select_auth_type')
             .width('100%')
             .onSelect((index: number, value: string) => {
               this.setAuthType(AuthType.getByIndex(index));
@@ -687,7 +688,7 @@ export struct Password {
         if (!AuthType.isKeyfileOnly(this.authTypeInfo)) {
           Row() {
             TextInput({ placeholder: $r('app.string.password_placeholder') })
-              .id("passwordInput")
+              .id('input_password')
               .type(this.showPassword ? InputType.Normal : InputType.Password)
               .placeholderColor($r('app.color.text_secondary'))
               .placeholderFont({ size: 16 })
@@ -793,6 +794,7 @@ export struct Password {
             .fontColor($r('app.color.button_text'))
             .borderRadius(20)
             .backgroundColor(Color.Gray)
+            .id('btn_change_database')
             .onClick(() => {
               this.changeDatabase();
             })
@@ -808,6 +810,7 @@ export struct Password {
             .borderRadius(20)
             .enabled(this.buttonEnabled)
             .backgroundColor(this.buttonEnabled ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
+            .id('btn_unlock')
             .onClick(() => {
               this.verifyAndOpenDatabase();
             })
@@ -852,6 +855,7 @@ export struct Password {
         .width('100%')
         .height(48)
         .backgroundColor($r("app.color.button_bg_blue"))
+        .id('btn_select_key_file')
         .onClick(() => {
           this.selectKeyFile();
         })

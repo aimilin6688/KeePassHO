@@ -1904,7 +1904,7 @@ export struct DatabaseView {
                   .height(36)
                   .layoutWeight(1)
                   .flexShrink(1)
-                  .id("searchKey")
+                  .id('input_search')
                   .searchIcon({
                     src: $r('sys.media.ohos_ic_public_search_filled')
                   })
@@ -2455,6 +2455,7 @@ export struct DatabaseView {
         .margin({ bottom: 8, top: 12 })
         .enabled(!this.isLoading)
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .id('btn_add_group')
         .onClick(() => {
           this.showAddButtons = false;
           this.editingGroupIndex = -1;
@@ -2482,6 +2483,7 @@ export struct DatabaseView {
         .margin({ bottom: 8, top: 4 })
         .enabled(!this.isLoading)
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+        .id('btn_add_entry')
         .onClick(() => {
           this.showAddButtons = false;
           // 使用 Navigation 导航，在分栏模式下会在右侧内容区显示
@@ -2555,6 +2557,7 @@ export struct DatabaseView {
         .enabled(!this.isLoading)
         .opacity(this.isLoading ? 0.5 : 1)
         .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
+        .id('btn_add_fab')
         .onClick(() => {
           this.showAddButtons = true;
         })
@@ -2662,6 +2665,7 @@ export struct DatabaseView {
               .borderRadius(20)
               .backgroundColor($r("app.color.button_bg_blue"))
               .fontColor($r("app.color.button_text_blue"))
+              .id('btn_move_here')
               .onClick(() => {
                 this.moveItemToCurrentGroup();
               })
@@ -2672,6 +2676,7 @@ export struct DatabaseView {
               .borderRadius(20)
               .backgroundColor(Color.Gray)
               .fontColor(Color.White)
+              .id('btn_cancel_move')
               .onClick(() => {
                 // 取消移动模式并返回源分组
                 this.exitMoveMode();
@@ -2707,6 +2712,7 @@ export struct DatabaseView {
               .fontColor($r("app.color.button_text_blue"))
               .enabled(this.selectedItems.size > 0)
               .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
+              .id('btn_batch_move')
               .onClick(() => {
                 this.startBatchMove();
               })
@@ -2721,6 +2727,7 @@ export struct DatabaseView {
               .fontColor(Color.White)
               .enabled(this.selectedItems.size > 0)
               .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
+              .id('btn_batch_delete')
               .onClick(() => {
                 this.confirmBatchDelete();
               })
@@ -2732,6 +2739,7 @@ export struct DatabaseView {
               .borderRadius(20)
               .backgroundColor(Color.Gray)
               .fontColor(Color.White)
+              .id('btn_cancel_selection')
               .onClick(() => {
                 this.exitSelectionMode();
               })

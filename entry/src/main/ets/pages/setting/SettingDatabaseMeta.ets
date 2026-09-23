@@ -391,6 +391,7 @@ export struct SettingDatabaseMetaContent {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor(Color.Gray)
+          .id('btn_cancel')
           .onClick(() => {
             this.handleDialogCancel();
           })
@@ -404,6 +405,7 @@ export struct SettingDatabaseMetaContent {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor($r('app.color.button_bg_blue'))
+          .id('btn_save')
           .onClick(() => {
             this.saveMetadata();
           })
