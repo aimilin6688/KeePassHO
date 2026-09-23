@@ -7,7 +7,7 @@ import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
-import { NavigationManager, StorageNavigation } from '../../common/utils';
+import { NavigationManager } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
@@ -18,7 +18,8 @@ export function FileListBuilder(name: string, param: Object): void {
   NavDestination() {
     FileList({ locationInfo: (param as LocationInfo) })
   }
-  .title(StorageNavigation.getStorageTitle((param as LocationInfo)?.storageType))
+  .title((param as LocationInfo)?.mode === LocationMode.SAVE ?
+    $r('app.string.location_title_save') : $r('app.string.location_title_select'))
   .backgroundColor($r('app.color.bg_primary'))
 }
 
@@ -358,38 +359,8 @@ export struct FileList {
 
   build() {
     Column() {
-      // 顶部导航栏
+      // 路径导航栏 + 排序入口（标题与返回键由 NavDestination 系统标题栏提供）
       Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            this.navManager.pop();
-          })
-
-        Text(this.isSaveMode() ? $r('app.string.location_title_save') : $r('app.string.location_title_select'))
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-
-        Blank()
-
-        // 排序菜单按钮
-        Image($r("app.media.ic_sort"))
-          .width(24)
-          .height(24)
-          .margin({ right: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .bindMenu(this.SortMenu)
-      }
-      .width('100%')
-      .height(40)
-
-      // 路径导航栏
-      Column() {
         List({ scroller: this.pathScroller }) {
           ForEach(this.getPathParts(), (part: PathPart, index) => {
             ListItem() {
@@ -414,12 +385,20 @@ export struct FileList {
             }
           }, (item: PathPart) => item.path)
         }
-        .width('100%')
         .height(50)
         .contentStartOffset(20)
         .contentEndOffset(20)
         .scrollBar(BarState.Off)
         .listDirection(Axis.Horizontal)
+        .layoutWeight(1)
+
+        // 排序菜单按钮
+        Image($r("app.media.ic_sort"))
+          .width(24)
+          .height(24)
+          .margin({ right: 16 })
+          .fillColor($r('app.color.text_primary'))
+          .bindMenu(this.SortMenu)
       }
       .width('100%')
       .backgroundColor($r("app.color.card_bg"))

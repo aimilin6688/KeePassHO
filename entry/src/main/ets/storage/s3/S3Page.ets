@@ -224,25 +224,7 @@ struct S3Page {
 
   build() {
     Column() {
-      Row() {
-        Image($r('app.media.ic_angle_left'))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => {
-            StorageNavigation.pop();
-          })
-
-        Text($r('app.string.s3_button_title'))
-          .fontSize(18)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16 })
-          .fontColor($r('app.color.text_primary'))
-      }
-      .width('100%')
-      .height(56)
-
+      // 标题栏与返回键由 NavDestination 系统标题栏提供
       Scroll() {
         Column() {
           Row() {
