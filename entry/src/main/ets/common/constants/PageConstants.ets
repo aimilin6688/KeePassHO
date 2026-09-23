@@ -89,6 +89,17 @@ export class PageConstants {
   static readonly PAGE_FTP: string = 'FTPPage';
   static readonly PAGE_S3: string = 'S3Page';
   static readonly PAGE_PCLOUD: string = 'PCloudPage';
+  static readonly PAGE_HUAWEI_DRIVE: string = 'HuaweiDrivePage';
+
+  /**
+   * 云存储文件列表页面名称
+   */
+  static readonly PAGE_WEBDAV_FILE_LIST: string = 'WebDAVFileListPage';
+  static readonly PAGE_ONEDRIVE_FILE_LIST: string = 'OneDriveFileListPage';
+  static readonly PAGE_FTP_FILE_LIST: string = 'FTPFileListPage';
+  static readonly PAGE_S3_FILE_LIST: string = 'S3FileListPage';
+  static readonly PAGE_PCLOUD_FILE_LIST: string = 'PCloudFileListPage';
+  static readonly PAGE_HUAWEI_DRIVE_FILE_LIST: string = 'HuaweiDriveFileListPage';
 
   /**
    * 数据库相关页面名称
@@ -130,7 +141,14 @@ export class PageConstants {
       PageConstants.PAGE_ONEDRIVE,
       PageConstants.PAGE_FTP,
       PageConstants.PAGE_S3,
-      PageConstants.PAGE_PCLOUD
+      PageConstants.PAGE_PCLOUD,
+      PageConstants.PAGE_HUAWEI_DRIVE,
+      PageConstants.PAGE_WEBDAV_FILE_LIST,
+      PageConstants.PAGE_ONEDRIVE_FILE_LIST,
+      PageConstants.PAGE_FTP_FILE_LIST,
+      PageConstants.PAGE_S3_FILE_LIST,
+      PageConstants.PAGE_PCLOUD_FILE_LIST,
+      PageConstants.PAGE_HUAWEI_DRIVE_FILE_LIST
     ];
   }
 

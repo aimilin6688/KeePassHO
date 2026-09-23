@@ -190,17 +190,18 @@ export class LocationParam implements LocationInterface {
   /**
    * 根据 StorageType 创建 LocationInfo
    * @param storageType 存储类型
+   * @param filePath 初始路径，默认根路径
+   * @param storageConfig 存储配置，默认空配置
    * @return LocationInfo
    */
-  public static toLocationInfo(storageType: StorageType): LocationInfo {
-    const instance = LocationParam.getInstance();
+  public static toLocationInfo(storageType: StorageType, filePath: string = '', storageConfig: StorageConfig = {}): LocationInfo {
     return {
-      mode: instance.mode,
-      filePath: '',
-      fileName: instance.fileName || '',
-      fileSuffix: instance.fileSuffix,
+      mode: LocationParam.getMode(),
+      filePath: filePath,
+      fileName: LocationParam.getFileName(),
+      fileSuffix: LocationParam.getFileSuffix(),
       storageType: storageType,
-      storageConfig: {}
+      storageConfig: storageConfig
     };
   }
 }

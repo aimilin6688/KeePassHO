@@ -1,9 +1,8 @@
-import { Router } from '@kit.ArkUI';
 import { StorageConfig, StorageType, FileType } from '..';
 import { S3StorageConfig } from './S3Config';
 import { S3Storage } from './S3Storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, FilenameUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -12,7 +11,16 @@ import { common } from '@kit.AbilityKit';
 const DOMAIN = 0x0000;
 const TAG = 'S3Page';
 
-@Entry
+// S3配置页面的Builder函数（NavDestination）
+@Builder
+export function S3PageBuilder(name: string, param: Object): void {
+  NavDestination() {
+    S3Page()
+  }
+  .title(StorageNavigation.getStorageTitle(StorageType.S3))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
 struct S3Page {
   @State endpoint: string = '';
@@ -30,7 +38,6 @@ struct S3Page {
   @State isErrorStatus: boolean = false;
 
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.S3);
-  private router: Router = this.getUIContext().getRouter();
 
   aboutToAppear(): void {
     this.initSaveParam();
@@ -140,17 +147,7 @@ struct S3Page {
     if (!this.checkParam()) {
       return;
     }
-    CommonUtils.pushUrl({
-      url: 'pages/open/FileList',
-      params: {
-        mode: LocationParam.getMode(),
-        filePath: this.filePath,
-        fileSuffix: LocationParam.getFileSuffix(),
-        fileName: LocationParam.getFileName(),
-        storageType: StorageType.S3,
-        storageConfig: this.getStorageConfig()
-      }
-    });
+    StorageNavigation.pushFileList(StorageType.S3, this.filePath, this.getStorageConfig());
   }
 
   private async selectFile() {
@@ -234,7 +231,7 @@ struct S3Page {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            StorageNavigation.pop();
           })
 
         Text($r('app.string.s3_button_title'))

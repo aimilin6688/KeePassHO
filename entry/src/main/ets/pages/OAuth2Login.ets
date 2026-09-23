@@ -1,5 +1,6 @@
 import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { OAuth2LoginParam } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'OAuth2Login';
@@ -7,7 +8,11 @@ const TAG = 'OAuth2Login';
 // OAuth2Login页面的Builder函数
 @Builder
 export function OAuth2LoginBuilder(name: string, param: Object): void {
-  OAuth2Login({ oauth2Config: (param as Record<string, Object>)?.['oauth2Config'] as OAuth2Config })
+  OAuth2Login({
+    oauth2Config: (param as OAuth2LoginParam)?.oauth2Config as OAuth2Config,
+    authUrl: (param as OAuth2LoginParam)?.authUrl,
+    pageTitle: (param as OAuth2LoginParam)?.pageTitle
+  })
 }
 
 /**
