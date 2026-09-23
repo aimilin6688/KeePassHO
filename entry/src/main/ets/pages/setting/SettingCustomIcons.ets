@@ -1,4 +1,3 @@
-import { Router } from '@kit.ArkUI';
 import { IconResource } from '../../services/TypeDefined';
 import { FileService } from '../../services/FileService';
 import { KdbxUtils, IconUtils } from '../../common/utils';

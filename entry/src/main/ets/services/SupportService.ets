@@ -1,4 +1,6 @@
 import { DateUnit, DateUtils, CommonUtils } from '../common/utils';
+import { NavigationManager } from '../common/utils/NavigationManager';
+import { PageConstants } from '../common/constants/PageConstants';
 import { SettingsService } from './SettingsService';
 import { promptAction } from '@kit.ArkUI';
 import { iap } from '@kit.IAPKit';
@@ -24,7 +26,8 @@ export class SupportService {
       CommonUtils.showDialog(SupportService.getShowSupportDialog()).then(async result => {
         SettingsService.put(SettingsService.KEY_SHOW_SUPPORT_TIME, new Date().getTime());
         if (result.index === 1) {
-          context.getRouter().pushUrl({ url: "pages/about/Support" });
+          // Navigation 架构下需通过 NavPathStack 跳转，而非 router.pushUrl
+          NavigationManager.getInstance().getNavPathStack()?.pushPathByName(PageConstants.PAGE_SUPPORT, null);
         }
       });
     });
