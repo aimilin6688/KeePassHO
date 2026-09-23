@@ -1183,11 +1183,29 @@ export struct DatabaseView {
     this.selectedItems = new Map();
     this.isSelectionMode = false;
 
-    // 导航到根分组让用户选择目标
+    // 就地导航到根分组让用户选择目标（列表仍在当前页面，底部出现"移动到此处"栏）
+    // 注意：不能往 databaseNavPathStack 再 push 一个 DatabaseView——宽屏分栏下它会
+    // 被塞进右侧内容区，且新实例的数据库加载依赖 rootPageChangeListener（不会触发），
+    // moveParam 也依赖 router 时代的 onPageShow 生命周期（NavDestination 下不回调），只会得到空白页
     if (this.database) {
       const rootGroup = this.database.getDefaultGroup();
-      const databaseShowParam: DatabaseShowParam = { groupId: rootGroup.uuid.id };
-      this.navPathStack.pushPathByName(PageConstants.PAGE_DATABASE_VIEW, databaseShowParam);
+      this.navigateToGroup(rootGroup);
+    }
+  }
+
+  /**
+   * 退出移动模式并返回源分组
+   * 完成"移动到此处"或取消移动后调用，视图回到发起移动的分组
+   */
+  private exitMoveMode() {
+    const sourceGroupId = this.moveSourceGroupId;
+    this.cancelMoving();
+    this.moveSourceGroupId = '';
+    if (sourceGroupId && this.database) {
+      const sourceGroup = this.database.getGroup(sourceGroupId);
+      if (sourceGroup) {
+        this.navigateToGroup(sourceGroup);
+      }
     }
   }
 
@@ -1680,8 +1698,8 @@ export struct DatabaseView {
         duration: 2000
       });
     } finally {
-      // 取消移动模式
-      this.cancelMoving();
+      // 取消移动模式并返回源分组
+      this.exitMoveMode();
     }
   }
 
@@ -2655,8 +2673,8 @@ export struct DatabaseView {
               .backgroundColor(Color.Gray)
               .fontColor(Color.White)
               .onClick(() => {
-                // 取消移动模式
-                this.cancelMoving();
+                // 取消移动模式并返回源分组
+                this.exitMoveMode();
               })
           }
           .width('100%')
