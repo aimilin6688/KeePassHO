@@ -47,28 +47,63 @@
     },
     {
       "name": "WebDAVPage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "pageSourceFile": "src/main/ets/storage/webdav/WebDAVPage.ets",
       "buildFunction": "WebDAVPageBuilder"
     },
     {
-      "name": "OneDrivePage",
+      "name": "WebDAVFileListPage",
       "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FileListBuilder"
+    },
+    {
+      "name": "OneDrivePage",
+      "pageSourceFile": "src/main/ets/storage/onedrive/OneDrivePage.ets",
       "buildFunction": "OneDrivePageBuilder"
     },
     {
-      "name": "FTPPage",
+      "name": "OneDriveFileListPage",
       "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FileListBuilder"
+    },
+    {
+      "name": "FTPPage",
+      "pageSourceFile": "src/main/ets/storage/ftp/FTPPage.ets",
       "buildFunction": "FTPPageBuilder"
     },
     {
-      "name": "S3Page",
+      "name": "FTPFileListPage",
       "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FileListBuilder"
+    },
+    {
+      "name": "S3Page",
+      "pageSourceFile": "src/main/ets/storage/s3/S3Page.ets",
       "buildFunction": "S3PageBuilder"
     },
     {
-      "name": "PCloudPage",
+      "name": "S3FileListPage",
       "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FileListBuilder"
+    },
+    {
+      "name": "PCloudPage",
+      "pageSourceFile": "src/main/ets/storage/pcloud/PCloudPage.ets",
       "buildFunction": "PCloudPageBuilder"
+    },
+    {
+      "name": "PCloudFileListPage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FileListBuilder"
+    },
+    {
+      "name": "HuaweiDrivePage",
+      "pageSourceFile": "src/main/ets/storage/huawei/HuaweiDrivePage.ets",
+      "buildFunction": "HuaweiDrivePageBuilder"
+    },
+    {
+      "name": "HuaweiDriveFileListPage",
+      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
+      "buildFunction": "FileListBuilder"
     },
     {
       "name": "DatabaseView",

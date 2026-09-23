@@ -1,8 +1,7 @@
-import { Router } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { FTPStorageConfig, ProtocolType, SecureType } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, FilenameUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -12,7 +11,16 @@ import { FTPStorage } from './FTPStorage';
 const DOMAIN = 0x0000;
 const TAG = 'FTP';
 
-@Entry
+// FTP配置页面的Builder函数（NavDestination）
+@Builder
+export function FTPPageBuilder(name: string, param: Object): void {
+  NavDestination() {
+    FTP()
+  }
+  .title(StorageNavigation.getStorageTitle(StorageType.FTP))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
 struct FTP {
   @State url: string = '/';
@@ -29,7 +37,6 @@ struct FTP {
   @State secureSelectIndex: number = 0;
   @State secureSelectText: ResourceStr = $r('app.string.ftp_secure_type_none');
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.FTP);
-  private router: Router = this.getUIContext().getRouter();
   private secureTypeOptions: Array<SecureTypeOptions> = [
     { value: $r('app.string.ftp_secure_type_none'), type: false },
     { value: $r('app.string.ftp_secure_type_explicit'), type: true },
@@ -94,18 +101,7 @@ struct FTP {
     if (!this.checkParam()) {
       return;
     }
-    CommonUtils.pushUrl(
-      {
-        url: 'pages/open/FileList',
-        params: {
-          mode: LocationParam.getMode(),
-          filePath: this.url,
-          fileSuffix: LocationParam.getFileSuffix(),
-          fileName: LocationParam.getFileName(),
-          storageType: StorageType.FTP,
-          storageConfig: this.getStorageConfig()
-        }
-      });
+    StorageNavigation.pushFileList(StorageType.FTP, this.url, this.getStorageConfig());
   }
 
   // 测试FTP连接
@@ -288,7 +284,7 @@ struct FTP {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back();
+            StorageNavigation.pop();
           })
 
         Text($r('app.string.ftp_button_title'))

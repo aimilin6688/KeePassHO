@@ -1,21 +1,30 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { PCloudStorageConfig } from './PCloudConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, DateUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { createPCloudOAuth2Config, PCloudOAuth2Provider } from './PCloudOAuth2Provider';
-import { OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
+import { OAuth2AuthService, OAuth2Provider, OAuth2Token } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
 import { TokenFlowResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
 const TAG = 'PCloud';
 
-@Entry
+// PCloud配置页面的Builder函数（NavDestination）
+@Builder
+export function PCloudPageBuilder(name: string, param: Object): void {
+  NavDestination() {
+    PCloud()
+  }
+  .title(StorageNavigation.getStorageTitle(StorageType.PCLOUD))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
 struct PCloud {
   @State oauth2Token: OAuth2Token | null = null;
@@ -24,7 +33,6 @@ struct PCloud {
   @State connectionStatus: string = '';
   @State isErrorStatus: boolean = false;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.PCLOUD);
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private oauth2Provider?: PCloudOAuth2Provider;
 
@@ -71,60 +79,16 @@ struct PCloud {
    * 从存储服务加载令牌
    */
   private async loadTokenFromStorage(): Promise<void> {
-    try {
-      const storageService = OAuth2TokenStorageService.getInstance();
-      const token = await storageService.loadToken({
-        provider: OAuth2Provider.PCLOUD,
-        encrypt: true
-      });
-
-      if (token) {
-        this.oauth2Token = token;
-        this.isLoggedIn = true;
-        hilog.info(DOMAIN, TAG, 'Token loaded from storage service');
-      } else {
-        hilog.debug(DOMAIN, TAG, 'No token found in storage service');
-      }
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load token from storage service: %{public}s', (error as Error).message);
+    const token = await OAuth2AuthService.loadToken(OAuth2Provider.PCLOUD);
+    if (token) {
+      this.oauth2Token = token;
+      this.isLoggedIn = true;
     }
   }
 
   /**
    * 保存令牌到存储服务（加密）
    */
-  private async saveTokenToStorage(): Promise<void> {
-    if (!this.oauth2Token) {
-      return;
-    }
-
-    try {
-      const storageService = OAuth2TokenStorageService.getInstance();
-      await storageService.saveToken(this.oauth2Token, {
-        provider: OAuth2Provider.PCLOUD,
-        encrypt: true
-      });
-      hilog.info(DOMAIN, TAG, 'Token saved to storage service');
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to save token to storage service: %{public}s', (error as Error).message);
-    }
-  }
-
-  /**
-   * 清除保存的令牌
-   */
-  private async clearTokenFromStorage(): Promise<void> {
-    try {
-      const storageService = OAuth2TokenStorageService.getInstance();
-      await storageService.deleteToken({
-        provider: OAuth2Provider.PCLOUD,
-        encrypt: true
-      });
-      hilog.info(DOMAIN, TAG, 'Token cleared from storage service');
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to clear token from storage service: %{public}s', (error as Error).message);
-    }
-  }
 
   /**
    * 生成授权 URL 并跳转到授权页面
@@ -136,14 +100,8 @@ struct PCloud {
     const authUrl = this.oauth2Provider!.getAuthorizationUrl();
     hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
 
-    CommonUtils.pushUrl({
-      url: 'pages/OAuth2Login',
-      params: {
-        authUrl: authUrl,
-        oauth2Config: this.oauth2Provider!.getConfig(),
-        pageTitle: ResourceManager.getInstance().getString($r('app.string.pcloud_authorize_title'))
-      }
-    });
+    StorageNavigation.pushOAuth2Login(authUrl, this.oauth2Provider!.getConfig(),
+      ResourceManager.getInstance().getString($r('app.string.pcloud_authorize_title')));
   }
 
   /**
@@ -179,7 +137,7 @@ struct PCloud {
       this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_successful'));
       this.isErrorStatus = false;
 
-      await this.saveTokenToStorage();
+      await OAuth2AuthService.saveToken(OAuth2Provider.PCLOUD, this.oauth2Token);
 
       hilog.info(DOMAIN, TAG, `Token obtained, hostname: ${tokenFlow.hostname}`);
       CommonUtils.showToast({
@@ -206,7 +164,7 @@ struct PCloud {
     this.isLoggedIn = false;
     this.connectionStatus = '';
     this.oauth2Provider = undefined;
-    await this.clearTokenFromStorage();
+    await OAuth2AuthService.deleteToken(OAuth2Provider.PCLOUD);
   }
 
   /**
@@ -248,17 +206,7 @@ struct PCloud {
     if (!this.checkParam()) {
       return;
     }
-    CommonUtils.pushUrl({
-      url: 'pages/open/FileList',
-      params: {
-        mode: LocationParam.getMode(),
-        filePath: '/',
-        fileSuffix: LocationParam.getFileSuffix(),
-        fileName: LocationParam.getFileName(),
-        storageType: StorageType.PCLOUD,
-        storageConfig: this.getStorageConfig()
-      }
-    });
+    StorageNavigation.pushFileList(StorageType.PCLOUD, '/', this.getStorageConfig());
   }
 
   /**
@@ -436,7 +384,7 @@ struct PCloud {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back()
+            StorageNavigation.pop()
           })
 
         Text('pCloud')

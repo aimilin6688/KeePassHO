@@ -1,8 +1,8 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, FilenameUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
@@ -14,8 +14,16 @@ import { util } from '@kit.ArkTS';
 const DOMAIN = 0x0000;
 const TAG = 'WebDAV';
 
+// WebDAV配置页面的Builder函数（NavDestination）
+@Builder
+export function WebDAVPageBuilder(name: string, param: Object): void {
+  NavDestination() {
+    WebDAV()
+  }
+  .title(StorageNavigation.getStorageTitle(StorageType.WEBDAV))
+  .backgroundColor($r('app.color.bg_primary'))
+}
 
-@Entry
 @Component
 struct WebDAV {
   @State url: string = '';
@@ -30,7 +38,6 @@ struct WebDAV {
   @State customCaCertContent: string = '';
   @State showCertSettings: boolean = false;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   aboutToAppear(): void {
@@ -88,17 +95,7 @@ struct WebDAV {
     if (!this.checkParam()) {
       return;
     }
-    CommonUtils.pushUrl({
-      url: 'pages/open/FileList',
-      params: {
-        mode: LocationParam.getMode(),
-        filePath: this.url,
-        fileSuffix: LocationParam.getFileSuffix(),
-        fileName: LocationParam.getFileName(),
-        storageType: StorageType.WEBDAV,
-        storageConfig: this.getStorageConfig()
-      }
-    });
+    StorageNavigation.pushFileList(StorageType.WEBDAV, this.url, this.getStorageConfig());
   }
 
   // 测试WebDAV连接
@@ -351,7 +348,7 @@ struct WebDAV {
           .margin({ left: 16 })
           .fillColor($r('app.color.text_primary'))
           .onClick(() => {
-            this.router.back()
+            StorageNavigation.pop()
           })
 
         Text('WebDAV')

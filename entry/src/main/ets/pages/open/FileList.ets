@@ -7,54 +7,18 @@ import { LocationInfo, LocationMode, LocationParam } from '../../services/beans/
 import { BasicDataSource } from '../../services/beans/BasicDataSource';
 import { UrlUtils } from '../../common/utils/UrlUtils';
 import { FilenameUtils } from '../../common/utils/FilenameUtils';
-import { NavigationManager } from '../../common/utils';
+import { NavigationManager, StorageNavigation } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'FileList';
 
-// FileList页面的Builder函数(用于网络存储类型)
+// FileList页面公共Builder函数(用于所有网络存储类型，标题按 LocationInfo 中的存储类型解析)
 @Builder
-export function WebDAVPageBuilder(name: string, param: Object): void {
+export function FileListBuilder(name: string, param: Object): void {
   NavDestination() {
-    FileList({ locationInfo: LocationParam.toLocationInfo(StorageType.WEBDAV) })
+    FileList({ locationInfo: (param as LocationInfo) })
   }
-  .title($r('app.string.webdav_button_title'))
-  .backgroundColor($r('app.color.bg_primary'))
-}
-
-@Builder
-export function OneDrivePageBuilder(name: string, param: Object): void {
-  NavDestination() {
-    FileList({ locationInfo: LocationParam.toLocationInfo(StorageType.ONEDRIVE) })
-  }
-  .title($r('app.string.onedrive_login_button'))
-  .backgroundColor($r('app.color.bg_primary'))
-}
-
-@Builder
-export function FTPPageBuilder(name: string, param: Object): void {
-  NavDestination() {
-    FileList({ locationInfo: LocationParam.toLocationInfo(StorageType.FTP) })
-  }
-  .title($r('app.string.ftp_button_title'))
-  .backgroundColor($r('app.color.bg_primary'))
-}
-
-@Builder
-export function S3PageBuilder(name: string, param: Object): void {
-  NavDestination() {
-    FileList({ locationInfo: LocationParam.toLocationInfo(StorageType.S3) })
-  }
-  .title($r('app.string.s3_button_title'))
-  .backgroundColor($r('app.color.bg_primary'))
-}
-
-@Builder
-export function PCloudPageBuilder(name: string, param: Object): void {
-  NavDestination() {
-    FileList({ locationInfo: LocationParam.toLocationInfo(StorageType.PCLOUD) })
-  }
-  .title($r('app.string.pcloud_login_button'))
+  .title(StorageNavigation.getStorageTitle((param as LocationInfo)?.storageType))
   .backgroundColor($r('app.color.bg_primary'))
 }
 

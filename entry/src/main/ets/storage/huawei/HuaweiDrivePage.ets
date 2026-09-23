@@ -1,21 +1,30 @@
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { HuaweiDriveStorageConfig, HuaweiDriveScope } from './HuaweiDriveConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, DateUtils, ResourceManager, WindowUtils } from '../../common/utils';
+import { CommonUtils, DateUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { HuaweiDriveOAuth2Provider } from './HuaweiDriveOAuth2Provider';
-import { OAuth2AuthRequest, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
+import { OAuth2AuthService, OAuth2Provider, OAuth2Token } from '../../common/oauth2';
 import BuildProfile from 'BuildProfile';
 import { AuthCallbackResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
 const TAG = 'HuaweiDrive';
 
-@Entry
+// 华为云盘配置页面的Builder函数（NavDestination）
+@Builder
+export function HuaweiDrivePageBuilder(name: string, param: Object): void {
+  NavDestination() {
+    HuaweiDrive()
+  }
+  .title(StorageNavigation.getStorageTitle(StorageType.HUAWEI_DRIVE))
+  .backgroundColor($r('app.color.bg_primary'))
+}
+
 @Component
 struct HuaweiDrive {
   @State oauth2Token: OAuth2Token | null = null;
@@ -25,7 +34,6 @@ struct HuaweiDrive {
   @State isErrorStatus: boolean = false;
   @State selectedScope: HuaweiDriveScope = HuaweiDriveScope.FULL; // 默认选择完整访问
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.HUAWEI_DRIVE);
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private oauth2Provider?: HuaweiDriveOAuth2Provider;
 
@@ -60,80 +68,16 @@ struct HuaweiDrive {
    * 从存储服务加载令牌
    */
   private async loadTokenFromStorage(): Promise<void> {
-    try {
-      const storageService = OAuth2TokenStorageService.getInstance();
-      const token = await storageService.loadToken({
-        provider: OAuth2Provider.HUAWEI_DRIVE,
-        encrypt: true
-      });
-
-      if (token) {
-        this.oauth2Token = token;
-        this.isLoggedIn = true;
-        hilog.info(DOMAIN, TAG, 'Token loaded from storage service');
-      } else {
-        hilog.debug(DOMAIN, TAG, 'No token found in storage service');
-      }
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load token from storage service: %{public}s', (error as Error).message);
+    const token = await OAuth2AuthService.loadToken(OAuth2Provider.HUAWEI_DRIVE);
+    if (token) {
+      this.oauth2Token = token;
+      this.isLoggedIn = true;
     }
   }
 
   /**
    * 保存令牌到存储服务（加密）
    */
-  private async saveTokenToStorage(): Promise<void> {
-    if (!this.oauth2Token) {
-      return;
-    }
-
-    try {
-      const storageService = OAuth2TokenStorageService.getInstance();
-      await storageService.saveToken(this.oauth2Token, {
-        provider: OAuth2Provider.HUAWEI_DRIVE,
-        encrypt: true
-      });
-      hilog.info(DOMAIN, TAG, 'Token saved to storage service');
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to save token to storage service: %{public}s', (error as Error).message);
-    }
-  }
-
-  /**
-   * 处理授权回调
-   */
-  private async handleAuthCallback(code: string, state: string): Promise<void> {
-    if (!this.oauth2Provider) {
-      this.initOAuth2Provider();
-    }
-
-    try {
-      this.isConnecting = true;
-      this.connectionStatus = '正在获取访问令牌...';
-      this.isErrorStatus = false;
-
-      const authRequest: OAuth2AuthRequest = {
-        code: code,
-        state: state
-      };
-
-      const token = await this.oauth2Provider!.handleAuthCallback(authRequest);
-      this.oauth2Token = token;
-      this.isLoggedIn = true;
-
-      await this.saveTokenToStorage();
-
-      this.connectionStatus = '授权成功！';
-      hilog.info(DOMAIN, TAG, 'OAuth2 authorization successful');
-    } catch (error) {
-      this.connectionStatus = `授权失败: ${(error as Error).message}`;
-      this.isErrorStatus = true;
-      hilog.error(DOMAIN, TAG, 'OAuth2 authorization failed: %{public}s', (error as Error).message);
-    } finally {
-      this.isConnecting = false;
-    }
-  }
-
   /**
    * 生成授权URL并跳转到授权页面
    */
@@ -145,14 +89,7 @@ struct HuaweiDrive {
     hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
 
     // 跳转到OAuth2登录页面
-    CommonUtils.pushUrl({
-      url: 'pages/OAuth2Login',
-      params: {
-        authUrl: authUrl,
-        oauth2Config: this.oauth2Provider!.getConfig(),
-        pageTitle: '华为云盘授权'
-      }
-    });
+    StorageNavigation.pushOAuth2Login(authUrl, this.oauth2Provider!.getConfig(), '华为云盘授权');
   }
 
   /**
@@ -170,20 +107,13 @@ struct HuaweiDrive {
     this.isErrorStatus = false;
 
     try {
-      const authRequest: OAuth2AuthRequest = {
-        code: code,
-        state: state
-      };
-
-      const token = await this.oauth2Provider!.authorize(authRequest);
+      const token = await OAuth2AuthService.exchangeCodeForToken(this.oauth2Provider!, code, state,
+        OAuth2Provider.HUAWEI_DRIVE);
 
       this.oauth2Token = token;
       this.isLoggedIn = true;
       this.connectionStatus = '认证成功';
       this.isErrorStatus = false;
-
-      // 保存令牌到存储服务（加密）
-      await this.saveTokenToStorage();
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
       this.promptAction.showToast({ message: '登录成功' });
@@ -202,10 +132,7 @@ struct HuaweiDrive {
    */
   private async logout(): Promise<void> {
     try {
-      const storageService = OAuth2TokenStorageService.getInstance();
-      await storageService.clearToken({
-        provider: OAuth2Provider.HUAWEI_DRIVE
-      });
+      await OAuth2AuthService.deleteToken(OAuth2Provider.HUAWEI_DRIVE);
 
       this.oauth2Token = null;
       this.isLoggedIn = false;
@@ -225,7 +152,7 @@ struct HuaweiDrive {
   private initSaveParam(): void {
     const saveParam = AppStorage.get<LocationParam>('saveParam');
     if (saveParam) {
-      this.fileManager.setSaveParam(saveParam);
+      // fileManager 不提供 setSaveParam，保存参数由各业务场景自行读取
     }
   }
 
@@ -252,7 +179,7 @@ struct HuaweiDrive {
             .margin({ top: 32, bottom: 16 })
 
           // 授权范围选择
-          Column() {
+          Row() {
             Radio({ value: 'full', group: 'scopeGroup' })
               .checked(this.selectedScope === HuaweiDriveScope.FULL)
               .onChange((isChecked: boolean) => {
@@ -274,7 +201,6 @@ struct HuaweiDrive {
             .margin({ left: 12 })
           }
           .width('90%')
-          .flexDirection(FlexDirection.Row)
           .alignItems(VerticalAlign.Center)
           .padding(16)
           .backgroundColor('#F5F5F5')
@@ -284,7 +210,7 @@ struct HuaweiDrive {
             this.selectedScope = HuaweiDriveScope.FULL;
           })
 
-          Column() {
+          Row() {
             Radio({ value: 'app', group: 'scopeGroup' })
               .checked(this.selectedScope === HuaweiDriveScope.APP_FILE)
               .onChange((isChecked: boolean) => {
@@ -306,7 +232,6 @@ struct HuaweiDrive {
             .margin({ left: 12 })
           }
           .width('90%')
-          .flexDirection(FlexDirection.Row)
           .alignItems(VerticalAlign.Center)
           .padding(16)
           .backgroundColor('#F5F5F5')

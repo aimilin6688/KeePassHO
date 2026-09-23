@@ -24,3 +24,8 @@ export * from './BaseOAuth2Provider'
  */
 export * from './OAuth2TokenStorageService'
 
+/**
+ * OAuth2 令牌与授权流程公共封装
+ */
+export * from './OAuth2AuthService'
+
