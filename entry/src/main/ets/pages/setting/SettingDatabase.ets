@@ -10,19 +10,6 @@ import {
   FormatInfo
 } from '../../services/importExport';
 import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/LocationParam';
-import { SettingDialogWrapper } from '../../components/SettingDialogWrapper';
-import { SettingDatabaseKeyFunctionContent } from './SettingDatabaseKeyFunction';
-import { hilog } from '@kit.PerformanceAnalysisKit';
-
-const DOMAIN = 0x0000;
-const TAG = 'SettingDatabase';
-
-// 对话框类型枚举
-enum DialogType {
-  NONE = 0,
-  KEY_FUNCTION = 1
-}
-
 // SettingDatabase页面的Builder函数
 @Builder
 export function SettingDatabaseBuilder(name: string, param: Object): void {
@@ -31,63 +18,12 @@ export function SettingDatabaseBuilder(name: string, param: Object): void {
 
 @Component
 struct SettingDatabasePage {
-  @State currentDialogType: DialogType = DialogType.NONE;
-  @State isSheetShow: boolean = false;
-
-  private showDialog(type: DialogType) {
-    hilog.info(DOMAIN, TAG, `showDialog: type=${type}, currentDialogType=${this.currentDialogType}, isSheetShow=${this.isSheetShow}`);
-    // 先设置类型，再显示弹框
-    this.currentDialogType = type;
-    // 使用 setTimeout 确保状态更新后再显示弹框
-    setTimeout(() => {
-      this.isSheetShow = true;
-      hilog.info(DOMAIN, TAG, `showDialog done: isSheetShow=${this.isSheetShow}`);
-    }, 50);
-  }
-
-  private closeDialog() {
-    hilog.info(DOMAIN, TAG, `closeDialog: isSheetShow=${this.isSheetShow}`);
-    this.isSheetShow = false;
-    // 延迟重置类型，确保弹框关闭动画完成
-    setTimeout(() => {
-      this.currentDialogType = DialogType.NONE;
-      hilog.info(DOMAIN, TAG, `closeDialog done: currentDialogType=${this.currentDialogType}`);
-    }, 100);
-  }
-
   build() {
     NavDestination() {
-      SettingDatabaseContent({
-        onShowDialog: (type: DialogType): void => this.showDialog(type)
-      })
+      SettingDatabaseContent()
     }
     .title($r('app.string.Settings_database'))
     .backgroundColor($r('app.color.bg_primary'))
-    .bindSheet($$this.isSheetShow, this.DialogBuilder(), {
-      preferType: SheetType.BOTTOM,
-      mode: SheetMode.OVERLAY,
-      height: SheetSize.FIT_CONTENT,
-      backgroundColor: Color.Transparent,
-      showClose: false,
-      dragBar: false,
-      maskColor: Color.Transparent,
-      onDisappear: () => {
-        hilog.info(DOMAIN, TAG, `bindSheet onDisappear`);
-      }
-    })
-  }
-  
-  @Builder
-  DialogBuilder() {
-    if (this.currentDialogType === DialogType.KEY_FUNCTION) {
-      SettingDialogWrapper({
-        title: $r('app.string.Settings_database_encryption_key'),
-        context: this.getUIContext(),
-        onClose: (): void => this.closeDialog()
-      }) {
-        SettingDatabaseKeyFunctionContent({ onClose: (): void => this.closeDialog() })
-      }
-    }
   }
 }
 
@@ -101,7 +37,6 @@ interface FormatSelectOption {
 
 @Component
 struct SettingDatabaseContent {
-  onShowDialog?: (type: DialogType) => void;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isDatabaseValid: boolean = false;
@@ -270,9 +205,8 @@ struct SettingDatabaseContent {
               .width('100%')
               .padding(16)
               .onClick(() => {
-                if (this.onShowDialog) {
-                  this.onShowDialog(DialogType.KEY_FUNCTION);
-                }
+                // 与修改主密码一致：导航到独立页面而非弹框
+                this.navManager.navigateTo(PageConstants.PAGE_SETTING_DATABASE_KEY_FUNCTION);
               })
             }
           }

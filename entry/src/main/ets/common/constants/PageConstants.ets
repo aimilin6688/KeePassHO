@@ -118,6 +118,7 @@ export class PageConstants {
   static readonly PAGE_SETTING_DATABASE: string = 'SettingDatabase';
   static readonly PAGE_SETTING_APPLICATION: string = 'SettingApplication';
   static readonly PAGE_SETTING_DATABASE_META: string = 'SettingDatabaseMeta';
+  static readonly PAGE_SETTING_DATABASE_KEY_FUNCTION: string = 'SettingDatabaseKeyFunction';
   static readonly PAGE_SETTING_CUSTOM_ICONS: string = 'SettingCustomIcons';
   static readonly PAGE_SETTING_DATABASE_PROTECTED_FIELD: string = 'SettingDatabaseProtectedFiled';
   static readonly PAGE_ABOUT: string = 'About';

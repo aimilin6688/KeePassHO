@@ -1,10 +1,36 @@
 import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
-import { CommonUtils, KdbxUtils } from '../../common/utils';
+import { CommonUtils, KdbxUtils, NavigationManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseKeyFunction';
+
+// SettingDatabaseKeyFunction页面的Builder函数
+@Builder
+export function SettingDatabaseKeyFunctionBuilder(name: string, param: Object): void {
+  SettingDatabaseKeyFunctionPage()
+}
+
+/**
+ * 密钥派生函数页面（与修改主密码一致的页面打开方式）
+ */
+@Component
+struct SettingDatabaseKeyFunctionPage {
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
+
+  build() {
+    NavDestination() {
+      SettingDatabaseKeyFunctionContent({
+        onClose: (): void => {
+          this.navPathStack.pop();
+        }
+      })
+    }
+    .title($r('app.string.Settings_database_encryption_key'))
+    .backgroundColor($r("app.color.bg_primary"))
+  }
+}
 
 @Component
 export struct SettingDatabaseKeyFunctionContent {

@@ -161,6 +161,11 @@
       "buildFunction": "SettingCustomIconsBuilder"
     },
     {
+      "name": "SettingDatabaseKeyFunction",
+      "pageSourceFile": "src/main/ets/pages/setting/SettingDatabaseKeyFunction.ets",
+      "buildFunction": "SettingDatabaseKeyFunctionBuilder"
+    },
+    {
       "name": "SettingDatabaseProtectedFiled",
       "pageSourceFile": "src/main/ets/pages/setting/SettingDatabaseProtectedFiled.ets",
       "buildFunction": "SettingDatabaseProtectedFiledBuilder"
