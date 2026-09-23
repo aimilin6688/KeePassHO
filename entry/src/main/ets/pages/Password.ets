@@ -783,40 +783,52 @@ export struct Password {
           .translate({ y: -100 }) // 调整位置，确保正确显示
         }
 
-        // 底部固定按钮栏
+        // 底部固定按钮栏（样式遵循 docs/ui-bottom-button-spec.md 模板 B）
         Row() {
           // 左侧 - 更改数据库按钮
           Button($r("app.string.change_database"))
-            .height(48)
-            .layoutWeight(1)
-            .borderRadius(24)
-            .margin({ left: 16, right: 8 })
-            .backgroundColor($r('app.color.card_bg'))  // 浅灰色背景
-            .fontColor($r('app.color.text_primary'))        // 深灰色文字
+            .width('45%')
+            .height(40)
+            .fontSize(16)
+            .fontColor($r('app.color.button_text'))
+            .borderRadius(20)
+            .backgroundColor(Color.Gray)
             .onClick(() => {
               this.changeDatabase();
             })
 
+          Blank()
+
           // 右侧 - 解锁按钮
           Button(this.isLoading ? $r('app.string.loading_message') : $r('app.string.Password_unlock_title'))
-            .height(48)
-            .layoutWeight(1)
-            .margin({ left: 8, right: 16 })
+            .width('45%')
+            .height(40)
+            .fontSize(16)
+            .fontColor($r('app.color.button_text'))
+            .borderRadius(20)
             .enabled(this.buttonEnabled)
-            .borderRadius(24)
             .backgroundColor(this.buttonEnabled ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
             .onClick(() => {
               this.verifyAndOpenDatabase();
             })
         }
         .width('100%')
-        .padding({ top: 12, bottom: 12 })
+        .height(60)
+        .backgroundColor(Color.Transparent)
+        .padding({
+          top: 8,
+          bottom: 8,
+          left: 16,
+          right: 16
+        })
+        // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
         .position({ x: 0, y: '100%' })
-        .translate({ y: -74 }) // 调整位置，确保正确显示
+        .translate({ y: -70 })
       }
       .width('100%')
       .layoutWeight(1)
-      .padding({ top: 4 })
+      // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
+      .padding({ top: 4, bottom: 70 })
     }
     .width('100%')
     .height('100%')

@@ -71,7 +71,7 @@ export struct FileList {
   @State saveFileName: string = '';
   @State fileSuffix: string[] = [];
   // 底部悬浮按钮栏总高度（含上移留白），列表底部按此留出内容偏移
-  private readonly BOTTOM_BAR_HEIGHT: number = 76;
+  private readonly BOTTOM_BAR_HEIGHT: number = 70;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private pathScroller: Scroller = new Scroller();
   private dataCache: Map<string, Array<FileInfo>> = new Map();

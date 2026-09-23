@@ -8,6 +8,8 @@ const TAG = 'SettingDatabaseKeyFunction';
 
 @Component
 export struct SettingDatabaseKeyFunctionContent {
+  // 底部悬浮按钮栏总高度（自身高度 60 + 底部留白 10）
+  private readonly BOTTOM_BAR_HEIGHT: number = 70;
   @State isDatabaseValid: boolean = false;
   @State algoType: string = Consts.KdfId.Argon2d;
   @State iteration: number = HeaderConst.DefaultKdfIterations;
@@ -286,53 +288,55 @@ export struct SettingDatabaseKeyFunctionContent {
         }
       }
       .width('100%')
+      .layoutWeight(1)
+      // 底部按钮为悬浮层，留出等高的内容偏移，保证最后一项能滚动到按钮上方
+      .contentEndOffset(this.BOTTOM_BAR_HEIGHT)
 
-      // 操作按钮
+      // 操作按钮（样式遵循 docs/ui-bottom-button-spec.md）
       Row() {
         // 取消
-        Button() {
-          Row() {
-            Text($r('app.string.cancel_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor(Color.Gray)
-        .onClick(() => {
-          if (this.onClose) {
-            this.onClose();
-          }
-        })
+        Button($r('app.string.cancel_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .backgroundColor(Color.Gray)
+          .onClick(() => {
+            if (this.onClose) {
+              this.onClose();
+            }
+          })
 
         Blank()
+
         // 保存
-        Button() {
-          Row() {
-            Text($r('app.string.save_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r('app.color.button_bg_blue'))
-        .onClick(() => {
-          this.saveAlgoParams();
-        })
+        Button($r('app.string.save_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .backgroundColor($r('app.color.button_bg_blue'))
+          .onClick(() => {
+            this.saveAlgoParams();
+          })
       }
       .width('100%')
-      .height(45)
-      .margin({ top: 12, bottom: 0 })
+      .height(60)
+      .backgroundColor(Color.Transparent)
+      .padding({
+        top: 8,
+        bottom: 8,
+        left: 16,
+        right: 16
+      })
+      // 脱离文档流悬浮，上移量 = BOTTOM_BAR_HEIGHT
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -this.BOTTOM_BAR_HEIGHT })
     }
     .width('100%')
+    .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
   }
 }
