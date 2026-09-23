@@ -1,4 +1,3 @@
-import { Router } from '@kit.ArkUI';
 import { KdbxMemoryProtection } from 'kdbxweb';
 import { CommonUtils, KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';

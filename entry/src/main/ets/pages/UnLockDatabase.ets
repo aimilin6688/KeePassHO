@@ -4,10 +4,16 @@ import { AuthType, DbFileParam } from '../services/TypeDefined';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
-import { CommonUtils, WindowUtils } from '../common/utils';
+import { CommonUtils, NavigationManager, WindowUtils } from '../common/utils';
+import { PageConstants } from '../common/constants/PageConstants';
 import { common } from '@kit.AbilityKit';
 import { LockScreenService } from '../services/LockScreenService';
 import { EventBus } from '../services/EventBus';
+
+// 导航参数接口
+interface PasswordParam {
+  filePath: string;
+}
 
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
@@ -153,12 +159,8 @@ export struct UnLockDatabase {
   private startPasswordAuth() {
     // 仅密钥文件模式，直接跳转到密码页面
     if (this.isKeyfileOnlyMode) {
-      CommonUtils.pushUrl({
-        url: 'pages/Password',
-        params: {
-          filePath: this.dbFileParam.filePath
-        }
-      });
+      const passwordParam: PasswordParam = { filePath: this.dbFileParam.filePath };
+      NavigationManager.getInstance().getNavPathStack()?.pushPathByName(PageConstants.PAGE_PASSWORD, passwordParam);
     } else {
       this.passwordInputFocus();
     }

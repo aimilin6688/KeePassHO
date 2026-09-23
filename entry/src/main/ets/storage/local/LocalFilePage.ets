@@ -2,7 +2,7 @@ import { fileShare, picker } from '@kit.CoreFileKit';
 import common from '@ohos.app.ability.common';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { StorageType, LocalFileStorageConfig } from '..';
-import { PromptAction, Router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { FileUtils, FilenameUtils, CommonUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -26,7 +26,6 @@ struct LocalFileContent {
   @State isLoading: boolean = false;
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL);
-  private router: Router = this.getUIContext().getRouter();
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
 
   // 处理确认时间

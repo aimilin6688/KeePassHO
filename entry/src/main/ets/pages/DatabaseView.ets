@@ -1186,7 +1186,8 @@ export struct DatabaseView {
     // 导航到根分组让用户选择目标
     if (this.database) {
       const rootGroup = this.database.getDefaultGroup();
-      CommonUtils.pushUrl({ url: 'pages/DatabaseView', params: { groupId: rootGroup.uuid.id } });
+      const databaseShowParam: DatabaseShowParam = { groupId: rootGroup.uuid.id };
+      this.navPathStack.pushPathByName(PageConstants.PAGE_DATABASE_VIEW, databaseShowParam);
     }
   }
 

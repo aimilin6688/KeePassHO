@@ -1,4 +1,3 @@
-import { Router } from '@kit.ArkUI';
 import { iap } from '@kit.IAPKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -33,7 +32,6 @@ export function SupportBuilder(name: string, param: Object): void {
 struct SupportContent {
   @State clickCount: number = 0;
   @State isShowOtherPay: boolean = false;
-  private router: Router = this.getUIContext().getRouter();
   private promptAction = this.getUIContext().getPromptAction();
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private products: Array<ProductOption> = [
