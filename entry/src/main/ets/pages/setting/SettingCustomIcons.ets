@@ -187,11 +187,12 @@ export struct SettingCustomIconsContent {
       .rowsGap(0)
       .width('100%')
       .layoutWeight(1)
+      // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
       .padding({
         top: 12,
         left: 16,
         right: 16,
-        bottom: 16
+        bottom: 70
       })
       .edgeEffect(EdgeEffect.Spring)
 
@@ -224,12 +225,16 @@ export struct SettingCustomIconsContent {
       }
       .width('100%')
       .height(60)
+      .backgroundColor(Color.Transparent)
       .padding({
         top: 8,
         bottom: 8,
         left: 16,
         right: 16
       })
+      // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 10
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -70 })
     }
     .width('100%')
     .height('100%')

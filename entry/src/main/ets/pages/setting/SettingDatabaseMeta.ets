@@ -373,7 +373,8 @@ export struct SettingDatabaseMetaContent {
         }
         .width('100%')
         .margin({ top: 4 })
-        .padding({ left: 12, right: 12, bottom: 16 })
+        // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
+        .padding({ left: 12, right: 12, bottom: 70 })
         .justifyContent(FlexAlign.Start)
       }
       .width('100%')
@@ -409,12 +410,15 @@ export struct SettingDatabaseMetaContent {
       }
       .width('100%')
       .height(60)
+      .backgroundColor(Color.Transparent)
       .padding({
         top: 8,
         bottom: 8,
         left: 16,
         right: 16
       })
+      .position({ x: 0, y: '100%' })
+      .translate({ y: -70 })
     }
     .width('100%')
     .height('100%')

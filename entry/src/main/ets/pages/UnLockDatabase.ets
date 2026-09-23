@@ -240,7 +240,8 @@ export struct UnLockDatabase {
       .width('100%')
       .justifyContent(FlexAlign.Start)
       .layoutWeight(1)
-      .padding({ left: 16, right: 16 })
+      // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
+      .padding({ left: 16, right: 16, bottom: 70 })
 
       Row() {
         if (this.isFingerprintSupport) {
@@ -329,15 +330,17 @@ export struct UnLockDatabase {
         })
       }
       .width('100%')
-      .height(45)
+      .height(60)
+      .backgroundColor(Color.Transparent)
       .padding({
-        top: 12,
-        bottom: 0,
+        top: 8,
+        bottom: 8,
         left: 16,
         right: 16
       })
+      // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
       .position({ x: 0, y: '100%' })
-      .translate({ y: -70 }) // 调整位置，确保正确显示
+      .translate({ y: -70 })
     }
     .width('100%')
     .height('100%')

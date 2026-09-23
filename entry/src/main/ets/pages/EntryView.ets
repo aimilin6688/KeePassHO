@@ -33,6 +33,8 @@ export function EntryViewBuilder(name: string, param: Object): void {
 
 @Component
 export struct EntryView {
+  // 底部悬浮按钮栏总高度（自身高度 60 + 底部留白 16）
+  private readonly BOTTOM_BAR_HEIGHT: number = 70;
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   private entryParam: EntryParam | undefined = undefined;
   @State isLoading: boolean = true;
@@ -484,13 +486,6 @@ export struct EntryView {
                 EntryViewFieldItem({ field: field, entry: this.entry })
               }
             })
-
-            ListItem() {
-              Row()
-                .height(100)
-                .width('100%')
-                .backgroundColor(Color.Transparent)
-            }
           }
           .height('100%')
           .width('100%')
@@ -500,6 +495,8 @@ export struct EntryView {
             bottom: 0
           })
           .layoutWeight(1)
+          // 底部按钮为悬浮层，留出等高的内容偏移，保证最后一项能滚动到按钮上方
+          .contentEndOffset(this.BOTTOM_BAR_HEIGHT)
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
           // 操作按钮
@@ -522,7 +519,7 @@ export struct EntryView {
             }
             .width('45%')
             .height(40)
-            .borderRadius(16)
+            .borderRadius(20)
             .backgroundColor($r("app.color.error"))
             .onClick(() => {
               this.rollbackToHistory();
@@ -547,22 +544,24 @@ export struct EntryView {
             }
             .width('45%')
             .height(40)
-            .borderRadius(16)
+            .borderRadius(20)
             .backgroundColor(Color.Gray)
             .onClick(() => {
               this.deleteHistory();
             })
           }
           .width('100%')
-          .height(45)
+          .height(60)
+          .backgroundColor(Color.Transparent)
           .padding({
-            top: 12,
-            bottom: 16,
+            top: 8,
+            bottom: 8,
             left: 16,
             right: 16
           })
+          // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
           .position({ x: 0, y: '100%' })
-          .translate({ y: -45 }) // 调整位置，确保正确显示
+          .translate({ y: -this.BOTTOM_BAR_HEIGHT })
         } else {
           // 显示当前条目
           Tabs() {
