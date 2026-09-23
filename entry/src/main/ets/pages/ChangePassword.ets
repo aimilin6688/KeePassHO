@@ -273,6 +273,7 @@ export struct ChangePasswordContent {
           Text($r("app.string.key_file"))
             .fontSize(14)
             .fontColor($r('app.color.text_primary'))
+            .width('100%')
             .margin({ top: 16, bottom: 4 })
 
           if (!this.notUseKeyFile) {
@@ -312,6 +313,7 @@ export struct ChangePasswordContent {
             Text($r('app.string.change_password_key_file_tip'))
               .fontSize(12)
               .fontColor($r("app.color.warn"))
+              .width('100%')
               .margin({ top: 4 })
           }
           // 不适用密钥文件
@@ -338,6 +340,7 @@ export struct ChangePasswordContent {
             Text(this.errorMessage)
               .fontSize(12)
               .fontColor('#FF0000')
+              .width('100%')
               .margin({ top: 4 })
           }
         }
