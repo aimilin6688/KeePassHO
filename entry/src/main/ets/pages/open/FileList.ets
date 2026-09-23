@@ -70,6 +70,8 @@ export struct FileList {
   @State selectFileIndex: number = -1;
   @State saveFileName: string = '';
   @State fileSuffix: string[] = [];
+  // 底部悬浮按钮栏总高度（含上移留白），列表底部按此留出内容偏移
+  private readonly BOTTOM_BAR_HEIGHT: number = 76;
   private navManager: NavigationManager = NavigationManager.getInstance();
   private pathScroller: Scroller = new Scroller();
   private dataCache: Map<string, Array<FileInfo>> = new Map();
@@ -435,7 +437,7 @@ export struct FileList {
             .fontColor($r('app.color.text_primary'))
         }
         .width('100%')
-        .height('60%')
+        .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
       } else if (this.isError) {
         Column() {
@@ -455,7 +457,7 @@ export struct FileList {
             })
         }
         .width('100%')
-        .height('60%')
+        .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
       } else {
         Column() {
@@ -515,66 +517,58 @@ export struct FileList {
               }
               .margin({ bottom: 8 })
             }, (item: FileInfo) => item.path)
-            ListItem() {
-            }.height(170)
           }
           .layoutWeight(1)
           .width('100%')
-          .height('auto')
           .padding({ left: 12, right: 12 })
-        }.padding({ top: 12 })
+          // 底部按钮为悬浮层，留出等高的内容偏移，保证最后一项能滚动到按钮上方
+          .contentEndOffset(this.BOTTOM_BAR_HEIGHT)
+        }
+        .layoutWeight(1)
+        .padding({ top: 12 })
       }
 
-      // 操作按钮
+      // 操作按钮（样式与管理自定义图标页底部按钮保持一致）
       Row() {
         // 取消
-        Button() {
-          Row() {
-            Text($r('app.string.cancel_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor(Color.Gray)
-        .onClick(() => {
-          this.handleCancel();
-        })
+        Button($r('app.string.cancel_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .backgroundColor(Color.Gray)
+          .onClick(() => {
+            this.handleCancel();
+          })
 
         Blank()
-        // 保存
-        Button() {
-          Row() {
-            Text($r('app.string.confirm_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r('app.color.button_bg_blue'))
-        .enabled(this.isEnableConfirm)
-        .onClick(() => {
-          this.handleConfirm();
-        })
+
+        // 确定
+        Button($r('app.string.confirm_button_text'))
+          .width('45%')
+          .height(40)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .borderRadius(20)
+          .enabled(this.isEnableConfirm)
+          .backgroundColor($r('app.color.button_bg_blue'))
+          .onClick(() => {
+            this.handleConfirm();
+          })
       }
       .width('100%')
-      .height(45)
+      .height(60)
+      .backgroundColor(Color.Transparent)
       .padding({
-        top: 12,
-        bottom: 0,
+        top: 8,
+        bottom: 8,
         left: 16,
         right: 16
       })
+      // 悬浮在列表之上（脱离文档流），使列表内容可延伸至按钮下方；上移量 = 自身高度 60 + 底部留白 16
       .position({ x: 0, y: '100%' })
-      .translate({ y: -45 }) // 调整位置，确保正确显示
+      .translate({ y: -this.BOTTOM_BAR_HEIGHT })
     }
     .width('100%')
     .height('100%')
