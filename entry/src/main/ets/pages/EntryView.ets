@@ -521,6 +521,7 @@ export struct EntryView {
             .height(40)
             .borderRadius(20)
             .backgroundColor($r("app.color.error"))
+            .id('btn_rollback')
             .onClick(() => {
               this.rollbackToHistory();
             })
@@ -546,6 +547,7 @@ export struct EntryView {
             .height(40)
             .borderRadius(20)
             .backgroundColor(Color.Gray)
+            .id('btn_delete_history')
             .onClick(() => {
               this.deleteHistory();
             })

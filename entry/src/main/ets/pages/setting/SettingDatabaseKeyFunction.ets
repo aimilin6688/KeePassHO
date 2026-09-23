@@ -179,6 +179,7 @@ export struct SettingDatabaseKeyFunctionContent {
                   Blank()
                   Column() {
                     TextInput({ text: this.iteration + "" })
+                    .id('input_iterations')
                       .fontSize(16)
                       .type(InputType.Number)
                       .fontColor($r('app.color.text_primary'))
@@ -210,6 +211,7 @@ export struct SettingDatabaseKeyFunctionContent {
                   Blank()
                   Column() {
                     TextInput({ text: this.memory })
+                    .id('input_memory')
                       .type(InputType.Number)
                       .fontSize(16)
                       .fontColor($r('app.color.text_primary'))
@@ -239,6 +241,7 @@ export struct SettingDatabaseKeyFunctionContent {
                   Blank()
                   Column() {
                     TextInput({ text: this.parallelism + "" })
+                    .id('input_parallelism')
                       .type(InputType.Number)
                       .fontSize(16)
                       .fontColor($r('app.color.text_primary'))
@@ -272,6 +275,7 @@ export struct SettingDatabaseKeyFunctionContent {
                   Blank()
                   Column() {
                     TextInput({ text: this.rounds + "" })
+                    .id('input_rounds')
                       .fontSize(16)
                       .type(InputType.Number)
                       .fontColor($r('app.color.text_primary'))
@@ -328,6 +332,7 @@ export struct SettingDatabaseKeyFunctionContent {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor(Color.Gray)
+          .id('btn_cancel')
           .onClick(() => {
             if (this.onClose) {
               this.onClose();
@@ -344,6 +349,7 @@ export struct SettingDatabaseKeyFunctionContent {
           .fontColor($r('app.color.button_text'))
           .borderRadius(20)
           .backgroundColor($r('app.color.button_bg_blue'))
+          .id('btn_save')
           .onClick(() => {
             this.saveAlgoParams();
           })
