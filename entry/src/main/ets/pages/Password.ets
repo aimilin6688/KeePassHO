@@ -815,7 +815,7 @@ export struct Password {
               this.verifyAndOpenDatabase();
             })
         }
-        .width('100%')
+        .width('90%')
         .height(60)
         .backgroundColor(Color.Transparent)
         .padding({
@@ -825,7 +825,7 @@ export struct Password {
           right: 16
         })
         // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
-        .position({ x: 0, y: '100%' })
+        .position({ x: '5%', y: '100%' })
         .translate({ y: -70 })
       }
       .width('100%')
