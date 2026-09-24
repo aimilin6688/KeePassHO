@@ -237,7 +237,7 @@ export struct UnLockDatabase {
           .margin({ top: 16 })
         }
       }
-      .width('100%')
+      .width('90%')
       .justifyContent(FlexAlign.Start)
       .layoutWeight(1)
       // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
@@ -273,8 +273,8 @@ export struct UnLockDatabase {
         }
       }
       .justifyContent(FlexAlign.Center)
-      .width('100%')
-      .position({ x: 0, y: '100%' })
+      .width('90%')
+      .position({ x: '5%', y: '100%' })
       .translate({ y: -100 }) // 调整位置，确保正确显示
 
 
@@ -331,7 +331,7 @@ export struct UnLockDatabase {
           this.quickUnlock();
         })
       }
-      .width('100%')
+      .width('90%')
       .height(60)
       .backgroundColor(Color.Transparent)
       .padding({
@@ -341,7 +341,7 @@ export struct UnLockDatabase {
         right: 16
       })
       // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
-      .position({ x: 0, y: '100%' })
+      .position({ x: '5%', y: '100%' })
       .translate({ y: -70 })
     }
     .width('100%')
