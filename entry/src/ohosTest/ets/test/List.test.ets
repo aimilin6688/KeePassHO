@@ -35,6 +35,9 @@ import BitwardenJsonImportHandlerTest from './importExport/BitwardenJsonImportHa
 import KdbxExportHandlerTest from './importExport/KdbxExportHandler.test';
 import SimpleHandlerTest from './importExport/SimpleHandler.test';
 
+// UI 自动化测试（真实操作界面，建议用 -s class 单独运行，勿与单元测试混跑）
+import OpenDatabaseUiTest from './ui/OpenDatabaseUiTest';
+
 
 export default function testsuite() {
   ActsAbilityTest();
@@ -74,4 +77,7 @@ export default function testsuite() {
   XmlExportHandlerTest();
   BitwardenJsonImportHandlerTest();
   KdbxExportHandlerTest();
+
+  // UI 自动化测试
+  OpenDatabaseUiTest();
 }

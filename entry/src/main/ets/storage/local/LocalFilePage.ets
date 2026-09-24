@@ -176,6 +176,7 @@ struct LocalFileContent {
 
           Button($r('app.string.select_local_file'))
             .margin({ top: 24 })
+            .id('btn_select_local_file')
             .onClick(() => this.handleConfirm())
         }
       }

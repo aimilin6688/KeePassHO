@@ -267,11 +267,12 @@ struct RecentFilesContent {
               .padding({ left: 10, right: 10 })
               .borderRadius(8)
               .backgroundColor($r("app.color.card_bg"))
-              .onClick(() => {
-                this.openFile(file);
-              })
-            }
-            .margin({ bottom: 8 })
+                .onClick(() => {
+                  this.openFile(file);
+                })
+              }
+              .id('recent_file_item')
+              .margin({ bottom: 8 })
           })
         }
         .width('100%')
