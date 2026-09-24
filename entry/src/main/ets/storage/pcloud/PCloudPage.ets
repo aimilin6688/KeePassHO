@@ -23,6 +23,10 @@ export function PCloudPageBuilder(name: string, param: Object): void {
   }
   .title(StorageNavigation.getStorageTitle(StorageType.PCLOUD))
   .backgroundColor($r('app.color.bg_primary'))
+  .onShown(() => {
+    // NavDestination 下 onPageShow 不回调，通过计数驱动页面显示处理（含 OAuth2 回调）
+    AppStorage.set<number>('pcloud_page_shown_tick', (AppStorage.get<number>('pcloud_page_shown_tick') ?? 0) + 1);
+  })
 }
 
 @Component
@@ -39,6 +43,13 @@ struct PCloud {
   aboutToAppear(): void {
     this.initSaveParam();
     this.loadTokenFromStorage();
+  }
+
+  // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
+  @StorageProp('pcloud_page_shown_tick') @Watch('onPageShownTickChange') pageShownTick: number = 0;
+
+  onPageShownTickChange(): void {
+    this.onPageShow();
   }
 
   onPageShow(): void {
@@ -143,6 +154,8 @@ struct PCloud {
       CommonUtils.showToast({
         message: ResourceManager.getString($r('app.string.pcloud_login_successful'))
       });
+      // 登录成功后继续选择文件的流程：直接进入文件列表
+      this.toFileList();
     } catch (error) {
       this.connectionStatus = ResourceManager.getString($r('app.string.pcloud_authentication_failed')) +
         ': ' + (error as Error).message;

@@ -19,6 +19,10 @@ export function S3PageBuilder(name: string, param: Object): void {
   }
   .title(StorageNavigation.getStorageTitle(StorageType.S3))
   .backgroundColor($r('app.color.bg_primary'))
+  .onShown(() => {
+    // NavDestination 下 onPageShow 不回调，通过计数驱动页面显示处理
+    AppStorage.set<number>('s3_page_shown_tick', (AppStorage.get<number>('s3_page_shown_tick') ?? 0) + 1);
+  })
 }
 
 @Component
@@ -41,6 +45,13 @@ struct S3Page {
 
   aboutToAppear(): void {
     this.initSaveParam();
+  }
+
+  // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
+  @StorageProp('s3_page_shown_tick') @Watch('onPageShownTickChange') pageShownTick: number = 0;
+
+  onPageShownTickChange(): void {
+    this.onPageShow();
   }
 
   onPageShow(): void {
