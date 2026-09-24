@@ -372,9 +372,11 @@ export struct SettingDatabaseMetaContent {
           .margin({ top: 12 })
         }
         .width('100%')
+        .height('100%')
         .margin({ top: 4 })
         // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
         .padding({ left: 12, right: 12, bottom: 70 })
+        // 顶部对齐，避免内容在滚动区域中被垂直居中
         .justifyContent(FlexAlign.Start)
       }
       .width('100%')
