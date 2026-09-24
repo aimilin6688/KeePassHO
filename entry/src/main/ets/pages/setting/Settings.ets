@@ -146,12 +146,15 @@ export struct Settings {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r("app.media.ic_angle_left"))
-          .width(28)
-          .height(28)
-          .margin({ left: 16 })
-          .fillColor($r('app.color.text_primary'))
-          .onClick(() => this.navManager.navigateBackToPreviousRoot())
+        Stack() {
+          Image($r("app.media.ic_angle_left"))
+            .width(28)
+            .height(28)
+            .fillColor($r('app.color.text_primary'))
+        }
+        .margin({ left: 16 })
+        .id('btn_settings_back')
+        .onClick(() => this.navManager.navigateBackToPreviousRoot())
         Text($r('app.string.Settings_title'))
           .fontSize(22)
           .fontWeight(FontWeight.Medium)
@@ -259,6 +262,7 @@ export struct Settings {
             .width('100%')
             .padding(16)
           }
+          .id('menu_create_database')
           .onClick(() => {
             this.pushPageOnce(PageConstants.PAGE_CREATE_DATABASE);
           })
@@ -277,6 +281,7 @@ export struct Settings {
             .width('100%')
             .padding(16)
           }
+          .id('menu_change_database')
           .onClick(() => {
             DataService.selectKdbx();
             this.pushPageOnce(PageConstants.PAGE_SELECT_LOCATION);

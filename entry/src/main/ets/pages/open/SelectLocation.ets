@@ -53,6 +53,7 @@ struct SelectLocationContent {
                 icon: config.icon,
                 title: config.title,
                 description: LocationParam.isSaveMode() ? config.saveDesc : config.selectDesc,
+                componentId: config.id === undefined ? '' : config.id,
                 onClickEvent: () => {
                   const pageName = config.pageUrl.split('/').pop() || config.pageUrl;
                   this.navManager.getNavPathStack()?.pushPathByName(pageName, null);

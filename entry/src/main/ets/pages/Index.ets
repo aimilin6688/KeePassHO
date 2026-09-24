@@ -127,7 +127,7 @@ export struct Index {
   @State private updateUI: boolean = false;
 
   @Builder
-  MainButton(icon: Resource, text: string | Resource, onClick: () => void) {
+  MainButton(icon: Resource, text: string | Resource, onClick: () => void, btnId: string) {
     Button() {
       Row() {
         Image(icon)
@@ -144,6 +144,7 @@ export struct Index {
     .height(56)
     .borderRadius(28)
     .backgroundColor($r("app.color.card_bg"))
+    .id(btnId)
     .onClick(onClick)
   }
 
@@ -157,13 +158,16 @@ export struct Index {
           .margin({ left: 16 })
           .fontColor($r('app.color.text_primary'))
         Blank()
-        Image($r('app.media.ic_settings'))
-          .width(24)
-          .height(24)
-          .margin({ right: 16 })
-          .onClick(() => {
-            this.navManager.navigateBackToRoot(PageConstants.PAGE_SETTINGS);
-          })
+        Stack() {
+          Image($r('app.media.ic_settings'))
+            .width(24)
+            .height(24)
+        }
+        .margin({ right: 16 })
+        .id('btn_open_settings')
+        .onClick(() => {
+          this.navManager.navigateBackToRoot(PageConstants.PAGE_SETTINGS);
+        })
       }
       .width('100%')
       .height(40)
@@ -193,13 +197,13 @@ export struct Index {
         this.MainButton($r('app.media.ic_folder_open'), $r("app.string.open_database"), () => {
           DataService.selectKdbx();
           this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
-        })
+        }, 'btn_open_database')
 
         // 添加间距
         Column() {
           this.MainButton($r('app.media.ic_add_file'), $r('app.string.create_database'), () => {
             this.navManager.navigateTo(PageConstants.PAGE_CREATE_DATABASE);
-          })
+          }, 'btn_create_database')
         }
         .margin({ top: 24 })
 
@@ -207,7 +211,7 @@ export struct Index {
         Column() {
           this.MainButton($r("app.media.ic_clock"), $r('app.string.recent_files_title'), () => {
             this.navManager.navigateTo(PageConstants.PAGE_RECENT_FILES);
-          })
+          }, 'btn_recent_files')
         }
         .margin({ top: 24 })
       }

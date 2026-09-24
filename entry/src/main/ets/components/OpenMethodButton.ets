@@ -4,6 +4,7 @@ export struct OpenMethodButton {
   @Prop icon: Resource = $r('app.media.ic_file');
   @Prop title: ResourceStr = '';
   @Prop description: ResourceStr = '';
+  @Prop componentId: string = '';
   public onClickEvent: () => void = () => {};
 
   build() {
@@ -50,6 +51,7 @@ export struct OpenMethodButton {
         .height(80)
         .backgroundColor($r("app.color.card_bg"))
         .margin({ top: 1 })
+        .id(this.componentId)
         .onClick((e)=>{
           this.onClickEvent();
           return false;

@@ -26,5 +26,6 @@ export const LocalFilePageConfig = {
   selectDesc: $r('app.string.location_local_desc_select'),
   saveDesc: $r('app.string.location_local_desc_save'),
   pageUrl: 'storage/local/LocalFilePage',
-  storageType: StorageType.LOCAL
+  storageType: StorageType.LOCAL,
+  id: 'opt_local_file'
 } as PageConfig;

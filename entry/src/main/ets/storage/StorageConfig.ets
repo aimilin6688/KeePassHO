@@ -38,4 +38,9 @@ export interface PageConfig {
    * 存储类型
    */
   storageType: string;
+
+  /**
+   * UI 测试定位用的组件标识（可选）
+   */
+  id?: string;
 }
