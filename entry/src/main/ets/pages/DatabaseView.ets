@@ -485,17 +485,12 @@ export struct DatabaseView {
   private onNavBarWidthChanged() {
     hilog.info(DOMAIN, TAG, 'Navigation bar width changed to: %{public}d', this.currentNavBarWidth);
 
-    // 判断是否处于分栏模式
-    const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+    // currentNavBarWidth 已是实际可用宽度（分栏=导航栏宽，单列=屏宽），直接计算边界
+    this.maxX = this.currentNavBarWidth - this.containerWidth;
 
-    if (isSplitMode) {
-      // 更新按钮边界
-      this.maxX = this.currentNavBarWidth - this.containerWidth;
-
-      // 确保按钮在新边界内
-      if (this.containerX > this.maxX) {
-        this.containerX = Math.max(0, this.maxX - 22);
-      }
+    // 确保按钮在新边界内
+    if (this.containerX > this.maxX) {
+      this.containerX = Math.max(0, this.maxX - 22);
     }
   }
 
@@ -2398,15 +2393,12 @@ export struct DatabaseView {
           // 更新当前导航栏宽度
           this.currentNavBarWidth = newWidth;
 
-          // 在分栏模式下更新按钮X边界
-          const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
-          if (isSplitMode) {
-            this.maxX = this.currentNavBarWidth - this.containerWidth;
+          // newWidth 已是实际可用宽度（分栏=导航栏宽，单列=屏宽），直接计算边界
+          this.maxX = this.currentNavBarWidth - this.containerWidth;
 
-            // 确保按钮在新边界内
-            if (this.containerX > this.maxX) {
-              this.containerX = Math.max(0, this.maxX - 22);
-            }
+          // 确保按钮在新边界内
+          if (this.containerX > this.maxX) {
+            this.containerX = Math.max(0, this.maxX - 22);
           }
         }
 
