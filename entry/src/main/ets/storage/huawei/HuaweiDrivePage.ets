@@ -23,6 +23,10 @@ export function HuaweiDrivePageBuilder(name: string, param: Object): void {
   }
   .title(StorageNavigation.getStorageTitle(StorageType.HUAWEI_DRIVE))
   .backgroundColor($r('app.color.bg_primary'))
+  .onShown(() => {
+    // NavDestination 下 onPageShow 不回调，通过计数驱动页面显示处理（含 OAuth2 回调）
+    AppStorage.set<number>('huawei_page_shown_tick', (AppStorage.get<number>('huawei_page_shown_tick') ?? 0) + 1);
+  })
 }
 
 @Component
@@ -40,6 +44,13 @@ struct HuaweiDrive {
   aboutToAppear(): void {
     this.initSaveParam();
     this.loadTokenFromStorage();
+  }
+
+  // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
+  @StorageProp('huawei_page_shown_tick') @Watch('onPageShownTickChange') pageShownTick: number = 0;
+
+  onPageShownTickChange(): void {
+    this.onPageShow();
   }
 
   onPageShow(): void {

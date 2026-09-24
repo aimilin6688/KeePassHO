@@ -1,6 +1,6 @@
 import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { OAuth2LoginParam } from '../common/utils';
+import { NavigationManager, OAuth2LoginParam } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'OAuth2Login';
@@ -8,11 +8,15 @@ const TAG = 'OAuth2Login';
 // OAuth2Login页面的Builder函数
 @Builder
 export function OAuth2LoginBuilder(name: string, param: Object): void {
-  OAuth2Login({
-    oauth2Config: (param as OAuth2LoginParam)?.oauth2Config as OAuth2Config,
-    authUrl: (param as OAuth2LoginParam)?.authUrl,
-    pageTitle: (param as OAuth2LoginParam)?.pageTitle
-  })
+  NavDestination() {
+    OAuth2Login({
+      oauth2Config: (param as OAuth2LoginParam)?.oauth2Config as OAuth2Config,
+      authUrl: (param as OAuth2LoginParam)?.authUrl,
+      pageTitle: (param as OAuth2LoginParam)?.pageTitle
+    })
+  }
+  .hideTitleBar(true) // 页面内部使用自定义标题栏（返回键 + 标题）
+  .backgroundColor($r('app.color.bg_primary'))
 }
 
 /**
@@ -105,7 +109,8 @@ interface WebPageEvent {
 
 @Component
 export struct OAuth2Login {
-  @Prop navPathStack: NavPathStack;
+  // 通过 NavigationManager 获取当前导航栈（与 EntryView/SettingDatabase 等页面保持一致）
+  private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State oauth2Config: OAuth2Config = {
     redirectUri: ''
   };

@@ -15,14 +15,10 @@ import { AuthCallbackResult } from '../../pages/OAuth2Login';
 const DOMAIN = 0x0000;
 const TAG = 'OneDrive';
 
-// OneDrive配置页面的Builder函数（NavDestination）
+// OneDrive配置页面的Builder函数（NavDestination 由 OneDrive 组件自身构建，便于挂载 onShown 生命周期）
 @Builder
 export function OneDrivePageBuilder(name: string, param: Object): void {
-  NavDestination() {
-    OneDrive()
-  }
-  .title(StorageNavigation.getStorageTitle(StorageType.ONEDRIVE))
-  .backgroundColor($r('app.color.bg_primary'))
+  OneDrive()
 }
 
 @Component
@@ -41,9 +37,21 @@ struct OneDrive {
     this.loadTokenFromStorage();
   }
 
+  /**
+   * Router 时代的页面显示回调
+   * 注意：分栏/Navigation 架构下 NavDestination 页面不会回调 onPageShow，
+   * 因此授权结果处理统一走 handlePageShown()，由 NavDestination 的 onShown 触发。
+   */
   onPageShow(): void {
+    this.handlePageShown();
+  }
+
+  /**
+   * 页面显示处理（首次进入 / 从 OAuth2 登录页返回 均会触发）
+   */
+  private handlePageShown(): void {
     this.connectionStatus = '';
-    hilog.debug(DOMAIN, TAG, 'OneDrivePage onPageAppear');
+    hilog.debug(DOMAIN, TAG, 'OneDrivePage onPageShown');
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
     // 检查是否有从OAuth2登录页返回的授权结果
     const authResult = AppStorage.get<AuthCallbackResult>('oauth2_auth_result');
@@ -123,6 +131,8 @@ struct OneDrive {
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
       CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.onedrive_login_successful')) });
+      // 登录成功后继续选择文件的流程：直接进入文件列表
+      this.toFileList();
     } catch (error) {
       this.connectionStatus = ResourceManager.getString($r('app.string.onedrive_authentication_failed')) + `: ${(error as Error).message}`;
       this.isErrorStatus = true;
@@ -374,7 +384,8 @@ struct OneDrive {
   }
 
   build() {
-    Column() {
+    NavDestination() {
+      Column() {
       // 主要内容区域（标题栏与返回键由 NavDestination 系统标题栏提供）
       Scroll() {
         Column() {
@@ -487,10 +498,18 @@ struct OneDrive {
       }
       .width('100%')
       .layoutWeight(1)
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor($r("app.color.bg_primary"))
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor($r("app.color.bg_primary"))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    .title(StorageNavigation.getStorageTitle(StorageType.ONEDRIVE))
+    .backgroundColor($r('app.color.bg_primary'))
+    .onShown(() => {
+      // Router 时代的 onPageShow 在 NavDestination 下不回调，
+      // 这里保证从 OAuth2 登录页返回时能处理授权回调
+      this.handlePageShown();
+    })
   }
 }

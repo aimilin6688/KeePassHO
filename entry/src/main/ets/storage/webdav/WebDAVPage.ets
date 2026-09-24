@@ -22,6 +22,10 @@ export function WebDAVPageBuilder(name: string, param: Object): void {
   }
   .title(StorageNavigation.getStorageTitle(StorageType.WEBDAV))
   .backgroundColor($r('app.color.bg_primary'))
+  .onShown(() => {
+    // NavDestination 下 onPageShow 不回调，通过计数驱动页面显示处理
+    AppStorage.set<number>('webdav_page_shown_tick', (AppStorage.get<number>('webdav_page_shown_tick') ?? 0) + 1);
+  })
 }
 
 @Component
@@ -42,6 +46,13 @@ struct WebDAV {
 
   aboutToAppear(): void {
     this.initSaveParam();
+  }
+
+  // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
+  @StorageProp('webdav_page_shown_tick') @Watch('onPageShownTickChange') pageShownTick: number = 0;
+
+  onPageShownTickChange(): void {
+    this.onPageShow();
   }
 
   onPageShow(): void {
