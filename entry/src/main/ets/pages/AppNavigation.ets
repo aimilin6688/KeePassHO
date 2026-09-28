@@ -86,6 +86,20 @@ struct AppNavigation {
     return this.windowInfo.isSplitMode ? NavigationMode.Split : NavigationMode.Stack;
   }
 
+  /**
+   * 同步分栏下导航栏的实际渲染宽度到 AppStorage('navBarWidth')。
+   *
+   * Navigation 本身没有提供「拖拽分隔条」的宽度回调，但分栏模式下
+   * Navigation 的子组件（DatabaseView/TotpView/Settings）恰好渲染在导航栏区域，
+   * 因此用 onAreaChange 观测到的子组件宽度即导航栏实际宽度。
+   * 仅在分栏模式回写，避免单栏模式（子组件撑满窗口）污染存储值。
+   */
+  private syncNavBarWidth(width: number): void {
+    if (this.windowInfo.isSplitMode && width > 0 && width !== this.navBarWidth) {
+      this.navBarWidth = width;
+    }
+  }
+
   build() {
     // 根据当前根页面选择对应的导航栈
     Stack() {
@@ -103,6 +117,9 @@ struct AppNavigation {
       // DatabaseView 页面
       Navigation(this.databaseNavPathStack) {
         DatabaseView({ navPathStack: this.databaseNavPathStack, databaseShowParam: undefined })
+          .onAreaChange((_oldValue: Area, newValue: Area) => {
+            this.syncNavBarWidth(Number(newValue.width));
+          })
       }
       .mode(this.resolveNavigationMode())
       .navBarWidth(this.navBarWidth)
@@ -118,6 +135,9 @@ struct AppNavigation {
       // TotpView 页面
       Navigation(this.totpNavPathStack) {
         TotpView()
+          .onAreaChange((_oldValue: Area, newValue: Area) => {
+            this.syncNavBarWidth(Number(newValue.width));
+          })
       }
       .mode(this.resolveNavigationMode())
       .navBarWidth(this.navBarWidth)
@@ -133,6 +153,9 @@ struct AppNavigation {
       // Settings 页面
       Navigation(this.settingsNavPathStack) {
         Settings()
+          .onAreaChange((_oldValue: Area, newValue: Area) => {
+            this.syncNavBarWidth(Number(newValue.width));
+          })
       }
       .mode(this.resolveNavigationMode())
       .navBarWidth(this.navBarWidth)
