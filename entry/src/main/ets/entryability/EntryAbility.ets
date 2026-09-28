@@ -159,6 +159,18 @@ export default class EntryAbility extends UIAbility {
     SyncSettingsService.syncOnForeground();
   }
 
+  /**
+   * 系统返回键回调。
+   *
+   * 当 Navigation 的路由栈非空时，返回事件会先被 Navigation 消费（弹出 NavDestination），
+   * 不会走到这里；只有路由栈为空（例如 DatabaseView 内部原位进入子分组）时，
+   * 才会回调到此，交由 NavigationManager 的上下文处理器决定是否消费返回事件，
+   * 从而避免「在子分组页面按系统返回直接退出应用」。
+   */
+  onBackPressed(): boolean {
+    return NavigationManager.getInstance().handleSystemBack();
+  }
+
   onBackground(): void {
     if (this.isLockScreen()) {
       this.backgroundTime = new Date().getTime(); // 记录当前时间戳
