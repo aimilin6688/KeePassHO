@@ -1,6 +1,7 @@
 import { PageConfigManager } from './PageConfigManager';
 import { PageConfig, NavigationModeType } from '../constants/PageConfig';
 import { NavigationConstants } from '../constants/NavigationConstants';
+import { PageConstants } from '../constants/PageConstants';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -111,10 +112,24 @@ export class NavigationManager {
   /**
    * 处理系统返回键（UIAbility.onBackPressed 调用）。
    * @returns true 表示已消费返回事件（应用不退出）；false 表示未消费（走默认退出逻辑）。
+   *
+   * 处理顺序：
+   * 1. 优先交给当前页面注册的上下文处理器消费（如 DatabaseView 子分组原位返回上一层）。
+   * 2. 若未消费，且当前处于「次级根页面」（Settings/TotpView 等从主入口进入的根页面），
+   *    则回到上一个根页面，避免系统返回直接退出应用。Index（首页）与 DatabaseView（主界面）
+   *    不在此列：前者是应用入口，后者由其 systemBackHandler 自行处理、根分组时保持退出行为。
    */
   handleSystemBack(): boolean {
     if (this.systemBackHandler) {
-      return this.systemBackHandler();
+      if (this.systemBackHandler()) {
+        return true;
+      }
+    }
+    if (this.currentRootPage !== PageConstants.PAGE_INDEX
+      && this.currentRootPage !== PageConstants.PAGE_DATABASE_VIEW
+      && this.previousRootPage !== this.currentRootPage) {
+      this.navigateBackToPreviousRoot();
+      return true;
     }
     return false;
   }
