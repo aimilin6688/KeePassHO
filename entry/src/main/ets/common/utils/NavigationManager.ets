@@ -8,6 +8,7 @@ const TAG = 'NavigationManager';
 
 type NavigationModeChangeListener = (mode: NavigationModeType) => void;
 type RootPageChangeListener = (rootPage: string) => void;
+type SystemBackHandler = () => boolean;
 
 export class NavigationManager {
   private static instance: NavigationManager;
@@ -17,6 +18,15 @@ export class NavigationManager {
   private previousRootPage: string = 'Index';
   private modeChangeListeners: NavigationModeChangeListener[] = [];
   private rootPageChangeListeners: RootPageChangeListener[] = [];
+
+  /**
+   * 系统返回键的上下文处理器。
+   *
+   * 当 Navigation 的路由栈为空（系统返回无法被 Navigation 消费）时，
+   * UIAbility.onBackPressed 会回调到这里，由当前可见页面决定是否消费返回事件。
+   * 例如 DatabaseView 处于子分组（栈内无路由页）时，用该处理器向上返回一层分组。
+   */
+  private systemBackHandler: SystemBackHandler | null = null;
 
   /**
    * 每个根页面独立的导航栈
@@ -88,6 +98,25 @@ export class NavigationManager {
     if (index >= 0) {
       this.rootPageChangeListeners.splice(index, 1);
     }
+  }
+
+  /**
+   * 注册/注销系统返回键的上下文处理器。
+   * 由当前可见根页面（如 DatabaseView）在 aboutToAppear/aboutToDisappear 中维护。
+   */
+  setSystemBackHandler(handler: SystemBackHandler | null): void {
+    this.systemBackHandler = handler;
+  }
+
+  /**
+   * 处理系统返回键（UIAbility.onBackPressed 调用）。
+   * @returns true 表示已消费返回事件（应用不退出）；false 表示未消费（走默认退出逻辑）。
+   */
+  handleSystemBack(): boolean {
+    if (this.systemBackHandler) {
+      return this.systemBackHandler();
+    }
+    return false;
   }
 
   private notifyModeChange(mode: NavigationModeType): void {

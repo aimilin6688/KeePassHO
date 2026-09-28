@@ -75,6 +75,22 @@ struct AppNavigation {
   }
 
   /**
+   * 根页面（Router 页）的返回键回调。
+   *
+   * 系统返回在「Navigation 路由栈为空」时不会走到 Navigation 的弹出逻辑，
+   * 而是被路由到当前根页面的 onBackPress。这里优先把非空路由栈交给 Navigation 默认弹出；
+   * 路由栈为空时，交由 NavigationManager 的上下文处理器处理（如 DatabaseView 子分组原位返回）。
+   */
+  onBackPress(): boolean {
+    const stack = this.navManager.getNavPathStack();
+    if (stack && stack.size() > 0) {
+      // 路由栈中有 NavDestination，交给 Navigation 默认弹出。
+      return false;
+    }
+    return this.navManager.handleSystemBack();
+  }
+
+  /**
    * 根据当前根页面的配置与窗口断点，计算 Navigation 实际显示模式。
    * 分栏页：宽窗口（宽度达阈值）且非竖长窗口时进入分栏，否则单栏。
    * 独占页（首页相关）：始终单栏。

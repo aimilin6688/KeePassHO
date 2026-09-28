@@ -185,6 +185,28 @@ export struct DatabaseView {
     }
   };
 
+  /**
+   * 系统返回键的上下文处理器。
+   *
+   * DatabaseView 内部进入子分组是「原位切换」（更新 currentGroup/items），
+   * 并未压入 NavDestination 路由栈，因此系统返回无法被 Navigation 消费而被带到 Ability 层。
+   * 这里在根页面为 DatabaseView 且处于子分组（存在父分组）时消费返回事件：向上返回一层分组。
+   * 处于根分组、锁屏、或非 DatabaseView 根页面时返回 false（保持默认退出行为）。
+   */
+  private systemBackHandler: () => boolean = (): boolean => {
+    if (this.navManager.getCurrentRootPage() !== PageConstants.PAGE_DATABASE_VIEW) {
+      return false;
+    }
+    if (AppStorage.get<boolean>('isLocked')) {
+      return false;
+    }
+    if (this.currentGroup && this.currentGroup.parentGroup) {
+      this.navigateToParentGroup();
+      return true;
+    }
+    return false;
+  };
+
   aboutToAppear() {
     this.clearUrl();
     this.initSettings();
@@ -192,6 +214,8 @@ export struct DatabaseView {
     this.registerDatabaseEvent();
     // 注册根页面变化监听
     this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
+    // 注册系统返回键的上下文处理器（处理子分组原位导航的系统返回）
+    this.navManager.setSystemBackHandler(this.systemBackHandler);
     // 不在这里调用 loadDatabase()，因为此时数据库可能还没打开
     // 数据库加载会在 rootPageChangeListener 中触发
     // 监听主题变化
@@ -209,6 +233,8 @@ export struct DatabaseView {
     EventBus.off(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
     // 移除根页面变化监听
     this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
+    // 注销系统返回键的上下文处理器
+    this.navManager.setSystemBackHandler(null);
     // 移除主题监听器
     ThemeManager.getInstance().removeThemeChangeListenerAll();
     // 移除配置监听器
