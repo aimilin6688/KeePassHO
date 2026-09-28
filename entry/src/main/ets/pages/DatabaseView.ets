@@ -191,7 +191,10 @@ export struct DatabaseView {
    * DatabaseView 内部进入子分组是「原位切换」（更新 currentGroup/items），
    * 并未压入 NavDestination 路由栈，因此系统返回无法被 Navigation 消费而被带到 Ability 层。
    * 这里在根页面为 DatabaseView 且处于子分组（存在父分组）时消费返回事件：向上返回一层分组。
-   * 处于根分组、锁屏、或非 DatabaseView 根页面时返回 false（保持默认退出行为）。
+   * 处于根分组、锁屏、或非 DatabaseView 根页面时返回 false：
+   *   - 根分组：保持默认退出行为；
+   *   - 非 DatabaseView 根页面（如 Settings/TotpView）：交由 NavigationManager.handleSystemBack
+   *     的二级逻辑回到上一个根页面，避免直接退出应用。
    */
   private systemBackHandler: () => boolean = (): boolean => {
     if (this.navManager.getCurrentRootPage() !== PageConstants.PAGE_DATABASE_VIEW) {
