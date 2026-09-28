@@ -1,8 +1,9 @@
-import { NavigationManager } from '../common/utils/NavigationManager';
+import { NavigationManager, WindowService, WindowInfo } from '../common/utils';
 import { NavigationModeType } from '../common/constants/PageConfig';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { emitter } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
 import { Index } from './Index';
 import { Settings } from './setting/Settings';
 import { DatabaseView } from './DatabaseView';
@@ -25,16 +26,14 @@ struct AppNavigation {
   private totpNavPathStack: NavPathStack = NavigationManager.getInstance().getOrCreateNavPathStack('TotpView');
   private settingsNavPathStack: NavPathStack = NavigationManager.getInstance().getOrCreateNavPathStack('Settings');
 
-  @State currentMode: NavigationMode = NavigationMode.Stack;
   @State currentRootPage: string = 'Index';
   @StorageLink("navBarWidth") navBarWidth: number = NavigationConstants.DEFAULT_NAV_BAR_WIDTH; // 导航栏宽度
   @StorageLink('isLocked') isLocked: boolean = false; // 锁屏状态
 
-  private modeChangeListener = (mode: NavigationModeType): void => {
-    this.currentMode = mode === NavigationModeType.SPLIT
-      ? NavigationMode.Auto
-      : NavigationMode.Stack;
-  };
+  // 订阅响应式窗口信息：窗口尺寸变化时自动刷新、驱动分栏/单栏切换
+  @State windowInfo: WindowInfo = WindowService.getInstance().info;
+
+  private windowService: WindowService = WindowService.getInstance();
 
   private rootPageChangeListener = (rootPage: string): void => {
     this.currentRootPage = rootPage;
@@ -54,12 +53,14 @@ struct AppNavigation {
 
   aboutToAppear() {
     hilog.info(DOMAIN, TAG, 'AppNavigation aboutToAppear');
+    // 初始化窗口服务（断点 + 分栏判定的单一来源）
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+    this.windowService.init(context, this.getUIContext());
+
     // 设置初始导航栈
     this.navManager.setCurrentNavPathStack('Index');
 
-    this.navManager.addModeChangeListener(this.modeChangeListener);
     this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
-    this.modeChangeListener(this.navManager.getCurrentStackMode());
     this.currentRootPage = this.navManager.getCurrentRootPage();
 
     // 注册锁屏/解锁事件监听
@@ -68,10 +69,21 @@ struct AppNavigation {
   }
 
   aboutToDisappear() {
-    this.navManager.removeModeChangeListener(this.modeChangeListener);
     this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
     EventBus.off('lock_screen', this.lockEventListener);
     EventBus.off('unlock_screen', this.unlockEventListener);
+  }
+
+  /**
+   * 根据当前根页面的配置与窗口断点，计算 Navigation 实际显示模式。
+   * 分栏页：宽窗口（宽度达阈值）且非竖长窗口时进入分栏，否则单栏。
+   * 独占页（首页相关）：始终单栏。
+   */
+  private resolveNavigationMode(): NavigationMode {
+    if (this.navManager.getCurrentStackMode() !== NavigationModeType.SPLIT) {
+      return NavigationMode.Stack;
+    }
+    return this.windowInfo.isSplitMode ? NavigationMode.Split : NavigationMode.Stack;
   }
 
   build() {
@@ -92,8 +104,8 @@ struct AppNavigation {
       Navigation(this.databaseNavPathStack) {
         DatabaseView({ navPathStack: this.databaseNavPathStack, databaseShowParam: undefined })
       }
-      .mode(this.currentMode)
-      .navBarWidth(NavigationConstants.DEFAULT_NAV_BAR_WIDTH)
+      .mode(this.resolveNavigationMode())
+      .navBarWidth(this.navBarWidth)
       .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
       .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
       .enableDragBar(false)
@@ -107,8 +119,8 @@ struct AppNavigation {
       Navigation(this.totpNavPathStack) {
         TotpView()
       }
-      .mode(this.currentMode)
-      .navBarWidth(NavigationConstants.DEFAULT_NAV_BAR_WIDTH)
+      .mode(this.resolveNavigationMode())
+      .navBarWidth(this.navBarWidth)
       .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
       .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
       .enableDragBar(false)
@@ -122,8 +134,8 @@ struct AppNavigation {
       Navigation(this.settingsNavPathStack) {
         Settings()
       }
-      .mode(this.currentMode)
-      .navBarWidth(NavigationConstants.DEFAULT_NAV_BAR_WIDTH)
+      .mode(this.resolveNavigationMode())
+      .navBarWidth(this.navBarWidth)
       .navBarWidthRange(NavigationConstants.NAV_BAR_WIDTH_RANGE)
       .minContentWidth(NavigationConstants.MIN_CONTENT_WIDTH)
       .enableDragBar(false)

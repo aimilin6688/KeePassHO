@@ -3,7 +3,7 @@ import { DatabaseShowParam, EntryParam, Icons, MoveParam, TemplateEntryCreatePar
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
-import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils, WindowService, WindowInfo } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
@@ -95,6 +95,8 @@ export struct DatabaseView {
   @State isDragging: boolean = false; // 是否正在拖拽
   private screenWidth: number = 360; // 屏幕宽度（默认值）
   private screenHeight: number = 640; // 屏幕高度（默认值）
+  // 订阅响应式窗口信息：分栏/单栏判定的单一事实来源（与 Navigation 显示模式保持一致）
+  @State windowInfo: WindowInfo = WindowService.getInstance().info;
   private maxX: number = 0; // 可移动x轴最大值
   private maxY: number = 0; // 可移动y轴最大值
   private containerWidth: number = 75; // 容器宽度
@@ -257,8 +259,8 @@ export struct DatabaseView {
     this.screenHeight = this.getUIContext().px2vp(height);
 
     // 在分栏模式下，按钮应该在左侧导航栏范围内定位
-    // 判断是否处于分栏模式：屏幕宽度 >= 分栏阈值
-    const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+    // 判断是否处于分栏模式（与 Navigation 显示模式同源，见 WindowService）
+    const isSplitMode = this.windowInfo.isSplitMode;
 
     // 计算按钮可移动的最大边界
     // 分栏模式下：限制在导航栏宽度范围内（使用实际宽度或默认宽度）
@@ -974,7 +976,7 @@ export struct DatabaseView {
     // 计算菜单水平位置（右对齐）
     const menuWidth = 280; // 菜单宽度
     // 判断是否处于分栏模式
-    const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+    const isSplitMode = this.windowInfo.isSplitMode;
     // 在分栏模式下使用导航栏宽度，非分栏模式下使用屏幕宽度
     const availableWidth = isSplitMode ? this.currentNavBarWidth : this.screenWidth;
     // 右对齐，确保不超出可用宽度边界
@@ -2305,7 +2307,7 @@ export struct DatabaseView {
                           this.toggleSelection(item);
                         } else {
                           // 分栏模式下，判断右侧是否已显示当前条目
-                          const isSplitMode = this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD;
+                          const isSplitMode = this.windowInfo.isSplitMode;
                           if (isSplitMode && this.selectedEntryId === item.uuid.id) {
                             // 右侧已显示当前条目，不重复添加
                             return;
@@ -2604,7 +2606,7 @@ export struct DatabaseView {
       })
 
       // 面包屑导航条（仅在分栏模式下且设置开启时显示）
-      if (this.screenWidth >= NavigationConstants.SPLIT_MODE_THRESHOLD && this.isBreadcrumbVisible) {
+      if (this.windowInfo.isSplitMode && this.isBreadcrumbVisible) {
         Scroll() {
           Row() {
             ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
