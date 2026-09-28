@@ -23,10 +23,18 @@ export class NavigationConstants {
 
   /**
    * 分栏模式切换阈值（vp）
-   * 屏幕宽度 >= 此值时自动切换为分栏模式
-   * 用于 NavigationMode.Auto 的判断
+   * 分栏时需同时容纳「实际导航栏默认宽 + 内容区最小宽」，故阈值 = DEFAULT_NAV_BAR_WIDTH + MIN_CONTENT_WIDTH。
+   * 这样强制分栏时内容区不会小于 minContentWidth，避免「导航栏固定后内容被挤窄」的问题。
+   * 注意：当前采用显式 NavigationMode.Split/Stack 驱动（而非 NavigationMode.Auto），
+   * 因此该阈值由应用侧统一判定，避免与框架 Auto 的内部阈值不一致。
    */
-  static readonly SPLIT_MODE_THRESHOLD: number = 600;
+  static readonly SPLIT_MODE_THRESHOLD: number = NavigationConstants.DEFAULT_NAV_BAR_WIDTH + NavigationConstants.MIN_CONTENT_WIDTH;
+
+  /**
+   * 分栏的高宽比阈值
+   * 高宽比（height / width）高于该值的竖长窗口按单栏展示，语义与 AUTO_WITH_ASPECT_RATIO 保持一致。
+   */
+  static readonly SPLIT_ASPECT_RATIO_THRESHOLD: number = 1.2;
 
   /**
    * 根页面列表
