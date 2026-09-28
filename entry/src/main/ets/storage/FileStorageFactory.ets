@@ -26,7 +26,7 @@ export class FileStorageFactory {
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
     // this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
-    this.registerStorage(StorageType.HUAWEI_DRIVE, new HuaweiDriveStorage());
+    // this.registerStorage(StorageType.HUAWEI_DRIVE, new HuaweiDriveStorage());
   }
 
   /**
