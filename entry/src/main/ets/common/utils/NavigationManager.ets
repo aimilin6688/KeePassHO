@@ -164,12 +164,6 @@ export class NavigationManager {
     return this.getCurrentPageConfig().navigationMode;
   }
 
-  toNavigationMode(modeType: NavigationModeType): NavigationMode {
-    return modeType === NavigationModeType.SPLIT
-      ? NavigationMode.Auto
-      : NavigationMode.Stack;
-  }
-
   getStackSize(): number {
     return this.currentNavPathStack ? this.currentNavPathStack.size() : 0;
   }
