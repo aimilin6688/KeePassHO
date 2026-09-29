@@ -73,6 +73,8 @@ export class HuaweiDriveStorage implements IFileStorage {
   public init(config: StorageConfig): void {
     this.config = this.parseConfig(config);
     hilog.debug(DOMAIN, TAG, `HuaweiDriveStorage init: accessToken length=${this.config.getAccessTokenText().length}`);
+    // 重新初始化可能切换了账号，清空路径→fileId 缓存，避免命中上一个账号的失效 fileId
+    this.pathIdCache.clear();
     if (this.client) {
       this.client.close();
     }
