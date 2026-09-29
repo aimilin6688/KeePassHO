@@ -2919,6 +2919,86 @@
     {
       "name": "ssl_cert_warning_continue",
       "value": "Continue"
+    },
+    {
+      "name": "huawei_drive_auth_title",
+      "value": "Huawei Drive Authorization"
+    },
+    {
+      "name": "huawei_drive_authenticating",
+      "value": "Authenticating..."
+    },
+    {
+      "name": "huawei_drive_authentication_successful",
+      "value": "Authentication successful"
+    },
+    {
+      "name": "huawei_drive_login_successful",
+      "value": "Login successful"
+    },
+    {
+      "name": "huawei_drive_authentication_failed",
+      "value": "Authentication failed"
+    },
+    {
+      "name": "huawei_drive_authentication_failed_message",
+      "value": "Authentication failed: %s"
+    },
+    {
+      "name": "huawei_drive_logged_out",
+      "value": "Logged out"
+    },
+    {
+      "name": "huawei_drive_logout_failed_message",
+      "value": "Logout failed: %s"
+    },
+    {
+      "name": "huawei_drive_title",
+      "value": "Huawei Drive"
+    },
+    {
+      "name": "huawei_drive_select_scope",
+      "value": "Select authorization scope"
+    },
+    {
+      "name": "huawei_drive_scope_full",
+      "value": "Full drive access (Recommended)"
+    },
+    {
+      "name": "huawei_drive_scope_full_desc",
+      "value": "Can access all files in the drive, suitable for users who need to manage password vaults in multiple locations"
+    },
+    {
+      "name": "huawei_drive_scope_app",
+      "value": "App file access only"
+    },
+    {
+      "name": "huawei_drive_scope_app_desc",
+      "value": "Can only access files created by this app, more secure but cannot open existing password vault files"
+    },
+    {
+      "name": "huawei_drive_login_button",
+      "value": "Sign in with Huawei"
+    },
+    {
+      "name": "huawei_drive_authorized",
+      "value": "Authorized"
+    },
+    {
+      "name": "huawei_drive_scope_label",
+      "value": "Authorization scope: %s"
+    },
+    {
+      "name": "huawei_drive_scope_label_full",
+      "value": "Full access"
+    },
+    {
+      "name": "huawei_drive_scope_label_app",
+      "value": "App files only"
+    },
+    {
+      "name": "huawei_drive_logout",
+      "value": "Sign out"
     }
   ]
 }
