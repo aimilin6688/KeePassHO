@@ -100,7 +100,8 @@ struct HuaweiDrive {
     hilog.info(DOMAIN, TAG, `Auth URL generated: ${authUrl}`);
 
     // 跳转到OAuth2登录页面
-    StorageNavigation.pushOAuth2Login(authUrl, this.oauth2Provider!.getConfig(), '华为云盘授权');
+    StorageNavigation.pushOAuth2Login(authUrl, this.oauth2Provider!.getConfig(),
+      ResourceManager.getString($r('app.string.huawei_drive_auth_title')));
   }
 
   /**
@@ -114,7 +115,7 @@ struct HuaweiDrive {
     }
 
     this.isConnecting = true;
-    this.connectionStatus = '正在认证...';
+    this.connectionStatus = ResourceManager.getString($r('app.string.huawei_drive_authenticating'));
     this.isErrorStatus = false;
 
     try {
@@ -123,16 +124,17 @@ struct HuaweiDrive {
 
       this.oauth2Token = token;
       this.isLoggedIn = true;
-      this.connectionStatus = '认证成功';
+      this.connectionStatus = ResourceManager.getString($r('app.string.huawei_drive_authentication_successful'));
       this.isErrorStatus = false;
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
-      this.promptAction.showToast({ message: '登录成功' });
+      this.promptAction.showToast({ message: $r('app.string.huawei_drive_login_successful') });
     } catch (error) {
-      this.connectionStatus = `认证失败: ${(error as Error).message}`;
+      this.connectionStatus = ResourceManager.getString($r('app.string.huawei_drive_authentication_failed_message'),
+        (error as Error).message);
       this.isErrorStatus = true;
       hilog.error(DOMAIN, TAG, 'Authentication failed: %{public}s', (error as Error).message);
-      this.promptAction.showToast({ message: '认证失败' });
+      this.promptAction.showToast({ message: $r('app.string.huawei_drive_authentication_failed') });
     } finally {
       this.isConnecting = false;
     }
@@ -150,10 +152,13 @@ struct HuaweiDrive {
       this.connectionStatus = '';
 
       hilog.info(DOMAIN, TAG, 'Logged out successfully');
-      this.promptAction.showToast({ message: '已退出登录' });
+      this.promptAction.showToast({ message: $r('app.string.huawei_drive_logged_out') });
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to logout: %{public}s', (error as Error).message);
-      this.promptAction.showToast({ message: `退出失败: ${(error as Error).message}` });
+      this.promptAction.showToast({
+        message: ResourceManager.getString($r('app.string.huawei_drive_logout_failed_message'),
+          (error as Error).message)
+      });
     }
   }
 
@@ -171,7 +176,7 @@ struct HuaweiDrive {
     Column() {
       // 标题栏
       Row() {
-        Text('华为云盘')
+        Text($r('app.string.huawei_drive_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .layoutWeight(1)
@@ -184,7 +189,7 @@ struct HuaweiDrive {
       if (!this.isLoggedIn) {
         // 未登录状态 - 显示授权范围选择和登录按钮
         Column() {
-          Text('选择授权范围')
+          Text($r('app.string.huawei_drive_select_scope'))
             .fontSize(18)
             .fontWeight(FontWeight.Medium)
             .margin({ top: 32, bottom: 16 })
@@ -199,10 +204,10 @@ struct HuaweiDrive {
                 }
               })
             Column() {
-              Text('完整访问云盘（推荐）')
+              Text($r('app.string.huawei_drive_scope_full'))
                 .fontSize(16)
                 .fontWeight(FontWeight.Medium)
-              Text('可以访问云盘中所有文件，适合需要在多个位置管理密码库的用户')
+              Text($r('app.string.huawei_drive_scope_full_desc'))
                 .fontSize(14)
                 .fontColor('#666666')
                 .margin({ top: 4 })
@@ -230,10 +235,10 @@ struct HuaweiDrive {
                 }
               })
             Column() {
-              Text('仅访问应用文件')
+              Text($r('app.string.huawei_drive_scope_app'))
                 .fontSize(16)
                 .fontWeight(FontWeight.Medium)
-              Text('只能访问本应用创建的文件，更安全但无法打开已有的密码库文件')
+              Text($r('app.string.huawei_drive_scope_app_desc'))
                 .fontSize(14)
                 .fontColor('#666666')
                 .margin({ top: 4 })
@@ -252,7 +257,7 @@ struct HuaweiDrive {
           })
 
           // 登录按钮
-          Button('登录华为账号')
+          Button($r('app.string.huawei_drive_login_button'))
             .width('90%')
             .height(48)
             .fontSize(16)
@@ -278,17 +283,20 @@ struct HuaweiDrive {
       } else {
         // 已登录状态 - 显示文件浏览器
         Column() {
-          Text('已授权')
+          Text($r('app.string.huawei_drive_authorized'))
             .fontSize(16)
             .fontColor('#52C419')
             .margin({ top: 16, bottom: 8 })
 
-          Text(`授权范围: ${this.selectedScope === HuaweiDriveScope.FULL ? '完整访问' : '仅应用文件'}`)
+          Text(ResourceManager.getString($r('app.string.huawei_drive_scope_label'),
+            this.selectedScope === HuaweiDriveScope.FULL
+              ? ResourceManager.getString($r('app.string.huawei_drive_scope_label_full'))
+              : ResourceManager.getString($r('app.string.huawei_drive_scope_label_app'))))
             .fontSize(14)
             .fontColor('#666666')
             .margin({ bottom: 16 })
 
-          Button('退出登录')
+          Button($r('app.string.huawei_drive_logout'))
             .width('90%')
             .height(48)
             .fontSize(16)

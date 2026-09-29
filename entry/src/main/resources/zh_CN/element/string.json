@@ -2915,6 +2915,86 @@
     {
       "name": "ssl_cert_warning_continue",
       "value": "继续"
+    },
+    {
+      "name": "huawei_drive_auth_title",
+      "value": "华为云盘授权"
+    },
+    {
+      "name": "huawei_drive_authenticating",
+      "value": "正在认证..."
+    },
+    {
+      "name": "huawei_drive_authentication_successful",
+      "value": "认证成功"
+    },
+    {
+      "name": "huawei_drive_login_successful",
+      "value": "登录成功"
+    },
+    {
+      "name": "huawei_drive_authentication_failed",
+      "value": "认证失败"
+    },
+    {
+      "name": "huawei_drive_authentication_failed_message",
+      "value": "认证失败: %s"
+    },
+    {
+      "name": "huawei_drive_logged_out",
+      "value": "已退出登录"
+    },
+    {
+      "name": "huawei_drive_logout_failed_message",
+      "value": "退出失败: %s"
+    },
+    {
+      "name": "huawei_drive_title",
+      "value": "华为云盘"
+    },
+    {
+      "name": "huawei_drive_select_scope",
+      "value": "选择授权范围"
+    },
+    {
+      "name": "huawei_drive_scope_full",
+      "value": "完整访问云盘（推荐）"
+    },
+    {
+      "name": "huawei_drive_scope_full_desc",
+      "value": "可以访问云盘中所有文件，适合需要在多个位置管理密码库的用户"
+    },
+    {
+      "name": "huawei_drive_scope_app",
+      "value": "仅访问应用文件"
+    },
+    {
+      "name": "huawei_drive_scope_app_desc",
+      "value": "只能访问本应用创建的文件，更安全但无法打开已有的密码库文件"
+    },
+    {
+      "name": "huawei_drive_login_button",
+      "value": "登录华为账号"
+    },
+    {
+      "name": "huawei_drive_authorized",
+      "value": "已授权"
+    },
+    {
+      "name": "huawei_drive_scope_label",
+      "value": "授权范围: %s"
+    },
+    {
+      "name": "huawei_drive_scope_label_full",
+      "value": "完整访问"
+    },
+    {
+      "name": "huawei_drive_scope_label_app",
+      "value": "仅应用文件"
+    },
+    {
+      "name": "huawei_drive_logout",
+      "value": "退出登录"
     }
   ]
 }
