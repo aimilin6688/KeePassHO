@@ -22,3 +22,4 @@ oh-package-lock.json5
 /faultlogger/
 .codegenie
 .deveco
+.cache

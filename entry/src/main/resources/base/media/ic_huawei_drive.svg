@@ -1,15 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <defs>
-    <linearGradient id="huaweiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#EE5A24;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <!-- Cloud shape -->
-  <path d="M38 32H12C6.48 32 2 27.52 2 22C2 16.94 5.56 12.74 10.4 11.92C12.12 7.16 16.68 4 22 4C28.68 4 34.12 8.88 34.86 15.14C40.12 15.66 44 20.04 44 25.5C44 31.3 39.3 36 33.5 36H38V32Z"
-        fill="url(#huaweiGrad)"
-        opacity="0.9"/>
-  <!-- Huawei logo simplified -->
-  <circle cx="24" cy="22" r="8" fill="white" opacity="0.3"/>
-  <path d="M20 18L24 26L28 18" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic_cloud_h</title>
+    <g id="ic_cloud" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M19.35,10.04 C18.67,6.59 15.64,4 12,4 C9.11,4 6.6,5.64 5.35,8.04 C2.34,8.36 0,10.91 0,14 C0,17.31 2.69,20 6,20 L19,20 C21.76,20 24,17.76 24,15 C24,12.36 21.95,10.22 19.35,10.04 Z M19,18 L6,18 C3.79,18 2,16.21 2,14 C2,11.95 3.53,10.24 5.56,10.03 L6.63,9.92 L7.13,8.97 C8.08,7.14 9.94,6 12,6 C14.62,6 16.88,7.86 17.39,10.43 L17.69,11.93 L19.22,12.04 C20.78,12.14 22,13.45 22,15 C22,16.65 20.65,18 19,18 Z" id="Shape" fill="#000000" fill-rule="nonzero"></path>
+        <path id="H" d="M9.5 10.5 L9.5 16.5 M14.5 10.5 L14.5 16.5 M9.5 13.5 L14.5 13.5" stroke="#000000" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+    </g>
 </svg>
