@@ -10,7 +10,7 @@ import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxwe
 import { FileService } from '../services/FileService';
 import { LockScreenService } from '../services/LockScreenService';
 import { SortMode } from '../common/constants/SortConstants';
-import { SettingsService } from '../services/SettingsService';
+import { SettingsService, BreadcrumbPosition } from '../services/SettingsService';
 import { SupportService } from '../services/SupportService';
 import { EventBus } from '../services/EventBus';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
@@ -73,6 +73,7 @@ export struct DatabaseView {
   // 面包屑导航路径
   @State navigationPath: NavigationPathItem[] = []; // 导航路径：[{id: 'root', name: '/'}]
   @State isBreadcrumbVisible: boolean = SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT; // 面包屑导航可见性
+  @State breadcrumbPosition: BreadcrumbPosition = SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT; // 面包屑导航位置
   @State headerHeight: number = 48;
   @State selectedItem: KdbxGroup | KdbxEntry | null = null; // 当前选中的条目或分组
   @State selectedItemIndex: number = -1; // 当前选中项的索引
@@ -452,6 +453,11 @@ export struct DatabaseView {
       SettingsService.KEY_APP_BREADCRUMB_VISIBLE,
       SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT
     );
+    // 面包屑导航位置
+    this.breadcrumbPosition = this.settingsService.getSync(
+      SettingsService.KEY_APP_BREADCRUMB_POSITION,
+      SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT
+    );
   }
 
   /**
@@ -542,6 +548,11 @@ export struct DatabaseView {
     this.isBreadcrumbVisible = this.settingsService.getSync(
       SettingsService.KEY_APP_BREADCRUMB_VISIBLE,
       SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT
+    );
+    // 读取面包屑导航位置设置
+    this.breadcrumbPosition = this.settingsService.getSync(
+      SettingsService.KEY_APP_BREADCRUMB_POSITION,
+      SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT
     );
 
     this.isLoading = true;
@@ -2117,6 +2128,44 @@ export struct DatabaseView {
         .width('100%')
         .height(this.headerHeight)
 
+        // 顶部面包屑导航条（进入布局流，内容区自动下移，不遮挡条目）
+        if (this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.TOP
+          && !this.moveParam && !this.isSelectionMode) {
+          Scroll() {
+            Row() {
+              ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
+                Row() {
+                  Text(pathItem.name)
+                    .fontSize(14)
+                    .fontColor(index === this.navigationPath.length - 1 ? $r('app.color.text_primary') : $r('app.color.button_bg_blue'))
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .onClick(() => {
+                      if (index < this.navigationPath.length - 1) {
+                        this.navigateToBreadcrumb(pathItem.id);
+                      }
+                    })
+
+                  if (index < this.navigationPath.length - 1) {
+                    Text(' > ')
+                      .fontSize(14)
+                      .fontColor($r('app.color.text_secondary'))
+                  }
+                }
+              })
+            }
+            .justifyContent(FlexAlign.Start)
+            .alignItems(VerticalAlign.Center)
+          }
+          .width('100%')
+          .height(36)
+          .padding({ left: 16, right: 16 })
+          .backgroundColor($r("app.color.bg_secondary"))
+          .scrollable(ScrollDirection.Horizontal)
+          .scrollBar(BarState.Off)
+          .align(Alignment.Start)
+        }
+
         if (this.isLoading) {
           // 加载中状态
           Column() {
@@ -2634,8 +2683,8 @@ export struct DatabaseView {
         curve: Curve.EaseInOut
       })
 
-      // 面包屑导航条（仅在分栏模式下且设置开启时显示）
-      if (this.windowInfo.isSplitMode && this.isBreadcrumbVisible) {
+      // 底部面包屑导航条（绝对定位浮层，贴容器底部上方 36vp，不影响内容区起点）
+      if (this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM) {
         Scroll() {
           Row() {
             ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {

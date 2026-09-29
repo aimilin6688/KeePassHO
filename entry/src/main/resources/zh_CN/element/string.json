@@ -1745,6 +1745,18 @@
       "value": "在分栏模式下显示当前目录的导航路径"
     },
     {
+      "name": "application_breadcrumb_position",
+      "value": "面包屑位置"
+    },
+    {
+      "name": "application_breadcrumb_position_top",
+      "value": "顶部"
+    },
+    {
+      "name": "application_breadcrumb_position_bottom",
+      "value": "底部"
+    },
+    {
       "name": "please_refresh_data_first",
       "value": "请先刷新"
     },

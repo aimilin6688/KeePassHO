@@ -1,4 +1,4 @@
-import { SettingsService } from '../../services/SettingsService';
+import { SettingsService, BreadcrumbPosition } from '../../services/SettingsService';
 import { SupportService } from '../../services/SupportService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SyncSettingsService } from '../../services/store/SyncSettingsService';
@@ -22,7 +22,13 @@ struct SettingApplicationContent {
   @State isHoldingHand: boolean = SettingsService.KEY_APP_HOLDING_HAND_ENABLE_DEFAULT;
   @State isEnableLocalCache: boolean = SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT;
   @State isBreadcrumbVisible: boolean = SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT;
+  @State breadcrumbPosition: BreadcrumbPosition = SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT;
   private settingsService: SettingsService = SettingsService.getInstance();
+  // 面包屑位置选项
+  private breadcrumbPositionOptions: SelectOption[] = [
+    { value: $r('app.string.application_breadcrumb_position_top') },
+    { value: $r('app.string.application_breadcrumb_position_bottom') }
+  ];
 
   aboutToAppear(): void {
     this.initSettings();
@@ -44,6 +50,8 @@ struct SettingApplicationContent {
     this.isEnableLocalCache = this.settingsService.getSync(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT);
     // 显示面包屑导航
     this.isBreadcrumbVisible = this.settingsService.getSync(SettingsService.KEY_APP_BREADCRUMB_VISIBLE, SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT);
+    // 面包屑位置
+    this.breadcrumbPosition = this.settingsService.getSync(SettingsService.KEY_APP_BREADCRUMB_POSITION, SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT);
   }
 
   // 隐藏支持弹框
@@ -274,6 +282,29 @@ struct SettingApplicationContent {
             }
             .width('100%')
             .padding(16)
+          }
+
+          // 面包屑位置（仅在开启面包屑导航时显示）
+          if (this.isBreadcrumbVisible) {
+            ListItem() {
+              Row() {
+                Text($r("app.string.application_breadcrumb_position"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Select(this.breadcrumbPositionOptions)
+                  .value(this.breadcrumbPositionOptions[this.breadcrumbPosition === BreadcrumbPosition.TOP ? 0 : 1].value as string)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect((index: number) => {
+                    this.breadcrumbPosition = index === 0 ? BreadcrumbPosition.TOP : BreadcrumbPosition.BOTTOM;
+                    this.settingsService.put(SettingsService.KEY_APP_BREADCRUMB_POSITION, this.breadcrumbPosition);
+                  })
+              }
+              .width('100%')
+              .padding(16)
+            }
           }
         }
         .margin({ top: 12, bottom: 12 })
