@@ -1817,6 +1817,18 @@
       "value": "Display navigation path in split-pane mode"
     },
     {
+      "name": "application_breadcrumb_position",
+      "value": "Breadcrumb position"
+    },
+    {
+      "name": "application_breadcrumb_position_top",
+      "value": "Top"
+    },
+    {
+      "name": "application_breadcrumb_position_bottom",
+      "value": "Bottom"
+    },
+    {
       "name": "please_refresh_data_first",
       "value": "Please refresh first"
     },

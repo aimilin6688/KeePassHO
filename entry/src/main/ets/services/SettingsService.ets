@@ -17,6 +17,14 @@ export enum UnlockAuthType {
   PASSWORD = "PASSWORD"
 }
 
+/**
+ * 面包屑导航显示位置
+ */
+export enum BreadcrumbPosition {
+  TOP = "TOP",
+  BOTTOM = "BOTTOM"
+}
+
 export class SettingsService {
   private static instance: SettingsService = new SettingsService();
   private preferences: preferences.Preferences | null = null;
@@ -75,6 +83,10 @@ export class SettingsService {
   // 显示面包屑导航
   public static readonly KEY_APP_BREADCRUMB_VISIBLE = "app_breadcrumb_visible";
   public static readonly KEY_APP_BREADCRUMB_VISIBLE_DEFAULT = true;
+
+  // 面包屑导航位置
+  public static readonly KEY_APP_BREADCRUMB_POSITION = "app_breadcrumb_position";
+  public static readonly KEY_APP_BREADCRUMB_POSITION_DEFAULT = BreadcrumbPosition.BOTTOM;
 
   // 观察者列表
   private observers: ((key: string) => void)[] = [];
