@@ -113,7 +113,7 @@ export class StorageNavigation {
       case StorageType.PCLOUD:
         return $r('app.string.pcloud_login_button');
       case StorageType.HUAWEI_DRIVE:
-        return $r('app.string.huawei_drive_select_file');
+        return $r('app.string.huawei_drive_title');
       default:
         return '';
     }

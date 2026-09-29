@@ -37,7 +37,10 @@ export class HuaweiDriveOAuth2Provider extends BaseOAuth2Provider {
       tokenEndpoint: 'https://oauth-login.cloud.huawei.com/oauth2/v3/token',
       redirectUri: BuildProfile.HUAWEI_DRIVE_REDIRECT_URI,
       scope: scope,
-      provider: OAuth2Provider.HUAWEI_DRIVE
+      provider: OAuth2Provider.HUAWEI_DRIVE,
+      authExtraParams: {
+        'access_type': 'offline'
+      }
     };
     return config;
   }

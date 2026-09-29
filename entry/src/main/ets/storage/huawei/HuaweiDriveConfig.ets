@@ -122,12 +122,12 @@ export enum HuaweiDriveScope {
   /**
    * 完整访问云盘
    */
-  FULL = 'https://www.huawei.com/auth/drive',
+  FULL = 'openid https://www.huawei.com/auth/drive',
 
   /**
    * 仅访问应用文件
    */
-  APP_FILE = 'https://www.huawei.com/auth/drive.file'
+  APP_FILE = 'openid https://www.huawei.com/auth/drive.file'
 }
 
 /**
@@ -135,7 +135,7 @@ export enum HuaweiDriveScope {
  */
 export const HuaweiDrivePageConfig: PageConfig = {
   icon: $r("app.media.ic_huawei_drive"),
-  title: '华为云盘',
+  title: $r('app.string.huawei_drive_title'),
   selectDesc: $r('app.string.huawei_drive_select_file'),
   saveDesc: $r('app.string.huawei_drive_save_file'),
   pageUrl: 'storage/huawei/HuaweiDrivePage',
