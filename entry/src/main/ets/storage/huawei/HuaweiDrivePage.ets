@@ -94,13 +94,17 @@ struct HuaweiDrive {
     if (!this.oauth2Token) {
       return;
     }
+    const storage = new HuaweiDriveStorage(this.getStorageConfig());
     try {
-      const storage = new HuaweiDriveStorage(this.getStorageConfig());
       const about = await storage.getAbout();
       this.aboutInfo = about;
-      storage.close();
       hilog.info(DOMAIN, TAG, `About loaded: user=${about.user.displayName}, ` +
         `total=${about.space.totalSpace}, used=${about.space.usedSpace}`);
+      // getAbout 内部可能已刷新并持久化令牌，重载最新令牌，避免页面继续持有过期/已轮换的旧令牌
+      const latestToken = await OAuth2AuthService.loadToken(OAuth2Provider.HUAWEI_DRIVE);
+      if (latestToken) {
+        this.oauth2Token = latestToken;
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to load about info: %{public}s', (error as Error).message);
       this.aboutInfo = null;
@@ -108,6 +112,8 @@ struct HuaweiDrive {
         message: ResourceManager.getString($r('app.string.huawei_drive_load_about_failed'),
           (error as Error).message)
       });
+    } finally {
+      storage.close();
     }
   }
 

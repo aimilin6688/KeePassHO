@@ -485,16 +485,14 @@ export class HuaweiDriveClient {
       };
 
       const url = this.oauth2Config.tokenEndpoint;
-      const axiosInstance = axios.create({
-        timeout: this.config?.timeout || 30000
-      });
 
       const config: AxiosRequestConfig = {
+        timeout: this.config?.timeout || 30000,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       };
-      const response: AxiosResponse = await axiosInstance.post(url, this.urlEncode(body), config);
+      const response: AxiosResponse = await axios.post(url, this.urlEncode(body), config);
 
       const httpResponse = this.convertAxiosResponse(response);
       if (httpResponse.success && httpResponse.body) {
@@ -717,17 +715,19 @@ export class HuaweiDriveClient {
 
       const createResponse: AxiosResponse = await this.axiosInstance.post(createPath, createData, config);
 
-      if (createResponse.status !== 200) {
-        return this.convertAxiosResponse(createResponse);
+      // axios 默认仅 2xx 才 resolve（非 2xx 走 catch 返回失败），此处状态码必为创建成功
+      // 兼容响应体为 JSON 字符串或已解析对象两种形式，提取文件ID
+      let responseData: Record<string, Object>;
+      if (typeof createResponse.data === 'string') {
+        responseData = JSON.parse(createResponse.data) as Record<string, Object>;
+      } else {
+        responseData = createResponse.data as Record<string, Object>;
       }
-
-      // 获取创建的文件ID
-      const responseData = createResponse.data as Record<string, Object>;
       const fileId = responseData.id as string;
 
       if (!fileId) {
-        // 如果创建返回了文件信息但没有ID，直接返回创建结果
-        return this.convertAxiosResponse(createResponse);
+        // 创建成功但未返回文件ID，无法继续上传内容，必须视为失败，避免假成功导致内容丢失
+        return new HttpResponse(false, createResponse.status, 'Created file has no id', {});
       }
 
       hilog.info(DOMAIN, TAG, `File created with ID: ${fileId}, now uploading content...`);
