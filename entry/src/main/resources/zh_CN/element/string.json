@@ -2995,6 +2995,30 @@
     {
       "name": "huawei_drive_logout",
       "value": "退出登录"
+    },
+    {
+      "name": "huawei_drive_login_required",
+      "value": "请先登录华为云盘"
+    },
+    {
+      "name": "huawei_drive_token_missing",
+      "value": "访问令牌缺失"
+    },
+    {
+      "name": "huawei_drive_user",
+      "value": "用户"
+    },
+    {
+      "name": "huawei_drive_total_space",
+      "value": "总容量"
+    },
+    {
+      "name": "huawei_drive_used_space",
+      "value": "已用容量"
+    },
+    {
+      "name": "huawei_drive_load_about_failed",
+      "value": "加载账户信息失败: %s"
     }
   ]
 }

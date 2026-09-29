@@ -2999,6 +2999,30 @@
     {
       "name": "huawei_drive_logout",
       "value": "Sign out"
+    },
+    {
+      "name": "huawei_drive_login_required",
+      "value": "Please sign in to Huawei Drive first"
+    },
+    {
+      "name": "huawei_drive_token_missing",
+      "value": "Access token is missing"
+    },
+    {
+      "name": "huawei_drive_user",
+      "value": "User"
+    },
+    {
+      "name": "huawei_drive_total_space",
+      "value": "Total space"
+    },
+    {
+      "name": "huawei_drive_used_space",
+      "value": "Used space"
+    },
+    {
+      "name": "huawei_drive_load_about_failed",
+      "value": "Failed to load account info: %s"
     }
   ]
 }

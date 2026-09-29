@@ -8,6 +8,54 @@ const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveClient';
 
 /**
+ * 华为云盘文件夹 MIME 类型
+ * 统一常量，避免各处字符串不一致导致文件夹类型误判
+ */
+export const HUAWEI_DRIVE_FOLDER_MIME_TYPE = 'application/vnd.huawei-apps.folder';
+
+/**
+ * 华为云盘 about 接口返回的用户信息
+ */
+export interface HuaweiDriveAboutUser {
+  /**
+   * 用户ID
+   */
+  id: string;
+  /**
+   * 显示名称
+   */
+  displayName: string;
+}
+
+/**
+ * 华为云盘 about 接口返回的空间信息（单位：字节）
+ */
+export interface HuaweiDriveAboutSpace {
+  /**
+   * 总容量（字节）
+   */
+  totalSpace: number;
+  /**
+   * 已用容量（字节）
+   */
+  usedSpace: number;
+}
+
+/**
+ * 华为云盘 about 接口返回的汇总信息
+ */
+export interface HuaweiDriveAbout {
+  /**
+   * 用户信息
+   */
+  user: HuaweiDriveAboutUser;
+  /**
+   * 空间信息
+   */
+  space: HuaweiDriveAboutSpace;
+}
+
+/**
  * 父文件夹信息
  */
 export interface ParentFolder {
@@ -479,6 +527,68 @@ export class HuaweiDriveClient {
   }
 
   /**
+   * 获取云盘汇总信息（用户显示名、总容量、已用容量）
+   * GET /about?fields=*
+   * @returns Promise<HttpResponse> 响应
+   */
+  public async getAbout(): Promise<HttpResponse> {
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      const response: AxiosResponse = await this.axiosInstance.get('/about?fields=*');
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
+  }
+
+  /**
+   * 解析 about 接口返回的汇总信息
+   * 实际返回结构：
+   * {
+   *   "user": { "displayName": "xxx", "permissionId": "xxx", "category": "drive#user" },
+   *   "storageQuota": { "usedSpace": "1458200675", "userCapacity": "5368709120" },
+   *   "category": "drive#about",
+   *   ...
+   * }
+   * @param data API 响应数据
+   * @returns HuaweiDriveAbout 汇总信息
+   */
+  public parseAbout(data: Record<string, Object>): HuaweiDriveAbout {
+    // 解析用户信息：data.user.displayName / data.user.permissionId
+    let userId = '';
+    let displayName = '';
+    const userObj = data['user'];
+    if (userObj && typeof userObj === 'object') {
+      const user = userObj as Record<string, Object>;
+      userId = this.extractOptionalStringFromObject(user, 'permissionId');
+      displayName = this.extractOptionalStringFromObject(user, 'displayName');
+    }
+
+    // 解析空间信息：data.storageQuota.userCapacity / data.storageQuota.usedSpace
+    // 注意：usedSpace 和 userCapacity 均为字符串类型，需转换为数字
+    let totalSpace = 0;
+    let usedSpace = 0;
+    const quotaObj = data['storageQuota'];
+    if (quotaObj && typeof quotaObj === 'object') {
+      const quota = quotaObj as Record<string, Object>;
+      const userCapacityStr = this.extractOptionalStringFromObject(quota, 'userCapacity');
+      const usedSpaceStr = this.extractOptionalStringFromObject(quota, 'usedSpace');
+      if (userCapacityStr) {
+        totalSpace = Number(userCapacityStr) || 0;
+      }
+      if (usedSpaceStr) {
+        usedSpace = Number(usedSpaceStr) || 0;
+      }
+    }
+
+    const user: HuaweiDriveAboutUser = { id: userId, displayName: displayName };
+    const space: HuaweiDriveAboutSpace = { totalSpace: totalSpace, usedSpace: usedSpace };
+    return { user: user, space: space };
+  }
+
+  /**
    * 获取文件/文件夹信息
    * @param fileId 文件ID，不传则获取根目录
    * @returns Promise<HttpResponse> 结果信息
@@ -504,22 +614,28 @@ export class HuaweiDriveClient {
 
   /**
    * 列出目录内容
-   * 根据华为云盘 API 文档，使用 GET /files 接口
-   * @param folderId 文件夹ID（暂未使用，华为 API 使用 queryParam 过滤）
-   * @param queryParam 查询参数，如 queryParam=parentFolder%3D{folderId}
+   * 根据华为云盘 API 文档，使用 GET /files 接口，通过 queryParam 过滤：
+   * - recycled=false：排除回收站文件
+   * - '{folderId}' in parentFolder：只返回指定父目录下的文件
+   * @param folderId 文件夹ID，'root' 表示根目录
+   * @param cursor 分页游标（可选）
    * @returns Promise<HttpResponse> 结果信息
    */
-  public async list(folderId: string = 'root', queryParam?: string): Promise<HttpResponse> {
+  public async list(folderId: string = 'root', cursor?: string): Promise<HttpResponse> {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
     try {
-      // 华为云盘 API: GET /files?fields=*
-      // 可通过 queryParam 参数过滤，如 parentFolder={folderId}
-      let apiPath = `/files?fields=*`;
-      if (queryParam) {
-        apiPath += `&${queryParam}`;
+      // 构建华为 API queryParam 查询语句：recycled=false and '{folderId}' in parentFolder
+      const queryParamStmt = `recycled=false and '${folderId}' in parentFolder`;
+      const params: string[] = [
+        'fields=*',
+        `queryParam=${encodeURIComponent(queryParamStmt)}`
+      ];
+      if (cursor) {
+        params.push(`cursor=${encodeURIComponent(cursor)}`);
       }
+      const apiPath = `/files?${params.join('&')}`;
       hilog.info(DOMAIN, TAG, `list: folderId=${folderId}, apiPath=${apiPath}`);
 
       const response: AxiosResponse = await this.axiosInstance.get(apiPath);
@@ -676,6 +792,45 @@ export class HuaweiDriveClient {
       return result;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `update error: fileId=${fileId}, error=${(error as Error).message}`);
+      return this.convertAxiosError(error as AxiosError);
+    }
+  }
+
+  /**
+   * 创建文件夹
+   * @param parentFolderId 父文件夹ID
+   * @param folderName 文件夹名称
+   * @returns Promise<HttpResponse> 结果信息
+   */
+  public async createFolder(parentFolderId: string, folderName: string): Promise<HttpResponse> {
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      const createPath = `/files?fields=*`;
+      hilog.info(DOMAIN, TAG, `createFolder: parentFolderId=${parentFolderId}, folderName=${folderName}`);
+
+      interface CreateFolderData {
+        fileName: string;
+        mimeType: string;
+        parentFolder: string[];
+      }
+      const createData: CreateFolderData = {
+        fileName: folderName,
+        mimeType: HUAWEI_DRIVE_FOLDER_MIME_TYPE,
+        parentFolder: [parentFolderId]
+      };
+
+      const config: AxiosRequestConfig = {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const response: AxiosResponse = await this.axiosInstance.post(createPath, createData, config);
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `createFolder error: folderName=${folderName}, error=${(error as Error).message}`);
       return this.convertAxiosError(error as AxiosError);
     }
   }
