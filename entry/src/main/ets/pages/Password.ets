@@ -637,199 +637,215 @@ export struct Password {
 
   build() {
     Column() {
-      // 主要内容区域
-      Column() {
-        // Logo或应用图标
-        Image($r('app.media.startIcon'))
-          .width(90)
-          .height(90)
-          .margin({ top: 40, bottom: 10 })
-        // 文件名显示
-        Text(this.fileName)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-          .margin({ bottom: 32 })
-          .textAlign(TextAlign.Center)
-          .width('80%')
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      GridRow({
+        columns: { xs: 2, sm: 5, md: 8, lg: 12, xl: 12, xxl: 12 },
+        breakpoints: {
+          value: ['320vp', '600vp', '840vp'],
+          reference: BreakpointsReference.WindowSize
+        }
+      }) {
+        GridCol({
+          span: { xs: 2, sm: 5, md: 6, lg: 6, xl: 4, xxl: 4 },
+          offset: { xs: 0, sm: 0, md: 1, lg: 3, xl: 4, xxl: 4 }
+        }) {
+          Column() {
+            // 顶部：表单内容组
+            Column() {
+              // Logo或应用图标
+              Image($r('app.media.startIcon'))
+                .width(90)
+                .height(90)
+                .margin({ top: 40, bottom: 10 })
+              // 文件名显示
+              Text(this.fileName)
+                .fontSize(16)
+                .fontColor($r('app.color.text_primary'))
+                .margin({ bottom: 32 })
+                .textAlign(TextAlign.Center)
+                .width('100%')
+                .maxLines(2)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        // 认证方式选择
-        Column() {
-          Text($r('app.string.auth_type'))
-            .fontSize(16)
-            .fontColor($r('app.color.text_primary'))
-            .margin({ bottom: 16 })
-            .alignSelf(ItemAlign.Start)
+              // 认证方式选择
+              Column() {
+                Text($r('app.string.auth_type'))
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+                  .margin({ bottom: 16 })
+                  .alignSelf(ItemAlign.Start)
 
-          Select(this.allAuthType)
-            .selected(this.authTypeIndex)
-            .value(this.authTypeText)
-            .font({ size: 16 })
-            .fontColor($r('app.color.text_primary'))
-            .selectedOptionFont({ size: 16 })
-            .optionFont({ size: 16 })
-            .id('select_auth_type')
-            .width('100%')
-            .onSelect((index: number, value: string) => {
-              this.setAuthType(AuthType.getByIndex(index));
-              // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
-              if (!AuthType.useKeyAuth(this.authTypeInfo)) {
-                this.keyLocation = undefined;
-                this.keyFileName = '';
+                Select(this.allAuthType)
+                  .selected(this.authTypeIndex)
+                  .value(this.authTypeText)
+                  .font({ size: 16 })
+                  .fontColor($r('app.color.text_primary'))
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .id('select_auth_type')
+                  .width('100%')
+                  .onSelect((index: number, value: string) => {
+                    this.setAuthType(AuthType.getByIndex(index));
+                    // 如果选择的认证类型不需要密钥文件，则清除密钥文件相关的状态
+                    if (!AuthType.useKeyAuth(this.authTypeInfo)) {
+                      this.keyLocation = undefined;
+                      this.keyFileName = '';
+                    }
+                    this.updateButtonState(); // 更新按钮状态
+                  })
               }
-              this.updateButtonState(); // 更新按钮状态
-            })
-        }
-        .width('90%')
-        .padding({ left: 16, right: 16, bottom: 24 })
-
-        // 密码输入框（仅密钥文件模式下隐藏）
-        if (!AuthType.isKeyfileOnly(this.authTypeInfo)) {
-          Row() {
-            TextInput({ placeholder: $r('app.string.password_placeholder') })
-              .id('input_password')
-              .type(this.showPassword ? InputType.Normal : InputType.Password)
-              .placeholderColor($r('app.color.text_secondary'))
-              .placeholderFont({ size: 16 })
-              .fontSize(16)
-              .fontColor($r('app.color.text_primary'))
-              .backgroundColor(Color.Transparent)
               .width('100%')
-              .height(48)
-              .onChange((value) => {
-                this.password = value;
-                this.updateButtonState(); // 更新按钮状态
-              })
-              .onSubmit(() => {
-                this.verifyAndOpenDatabase();
-              })
-          }
-          .width('90%')
-          .padding({ left: 16, right: 16 })
-          .border({
-            width: { bottom: 1 },
-            color: $r('app.color.divider')
-          })
-          .margin({ bottom: 16 })
-        }
+              .padding({ left: 16, right: 16, bottom: 24 })
 
-        // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
-        if (AuthType.useKeyAuth(this.authTypeInfo)) {
-          this.KeyFileSelector()
-        }
-
-        // 仅使用本地缓存复选框（仅在远程存储且有缓存时显示）
-        if (this.showCacheCheckbox) {
-          Row() {
-            Checkbox({ name: 'onlyUseCache' })
-              .select(this.onlyUseCache)
-              .shape(CheckBoxShape.ROUNDED_SQUARE)
-              .onChange((isSelected: boolean) => {
-                this.onlyUseCache = isSelected;
-                CacheConstants.setOnlyCache(isSelected);
-              })
-            Text($r('app.string.only_use_local_cache'))
-              .fontSize(14)
-              .fontColor($r('app.color.text_primary'))
-              .margin({ left: 8 })
-              .onClick(() => {
-                this.onlyUseCache = !this.onlyUseCache;
-                CacheConstants.setOnlyCache(this.onlyUseCache);
-              })
-          }
-          .width('90%')
-          .padding({
-            left: 16,
-            right: 16,
-            top: 8,
-            bottom: 8
-          })
-          .alignItems(VerticalAlign.Center)
-        }
-
-        if (this.isShowBiometric) {
-          Row() {
-            if (this.isFingerprintSupport) {
-              Text($r('app.string.auth_by_fingerprint'))
-                .fontSize(14)
-                .fontColor($r('app.color.button_bg_blue'))
-                .margin({ bottom: 8, left: 8, right: 8 })
-                .decoration({
-                  type: TextDecorationType.Underline,
-                  color: $r('app.color.button_bg_blue')
+              // 密码输入框（仅密钥文件模式下隐藏）
+              if (!AuthType.isKeyfileOnly(this.authTypeInfo)) {
+                Row() {
+                  TextInput({ placeholder: $r('app.string.password_placeholder') })
+                    .id('input_password')
+                    .type(this.showPassword ? InputType.Normal : InputType.Password)
+                    .placeholderColor($r('app.color.text_secondary'))
+                    .placeholderFont({ size: 16 })
+                    .fontSize(16)
+                    .fontColor($r('app.color.text_primary'))
+                    .backgroundColor(Color.Transparent)
+                    .width('100%')
+                    .height(48)
+                    .onChange((value) => {
+                      this.password = value;
+                      this.updateButtonState(); // 更新按钮状态
+                    })
+                    .onSubmit(() => {
+                      this.verifyAndOpenDatabase();
+                    })
+                }
+                .width('100%')
+                .padding({ left: 16, right: 16 })
+                .border({
+                  width: { bottom: 1 },
+                  color: $r('app.color.divider')
                 })
-                .onClick(() => {
-                  this.startAuth(UnlockAuthType.FINGERPRINT);
+                .margin({ bottom: 16 })
+              }
+
+              // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
+              if (AuthType.useKeyAuth(this.authTypeInfo)) {
+                this.KeyFileSelector()
+              }
+
+              // 仅使用本地缓存复选框（仅在远程存储且有缓存时显示）
+              if (this.showCacheCheckbox) {
+                Row() {
+                  Checkbox({ name: 'onlyUseCache' })
+                    .select(this.onlyUseCache)
+                    .shape(CheckBoxShape.ROUNDED_SQUARE)
+                    .onChange((isSelected: boolean) => {
+                      this.onlyUseCache = isSelected;
+                      CacheConstants.setOnlyCache(isSelected);
+                    })
+                  Text($r('app.string.only_use_local_cache'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                    .margin({ left: 8 })
+                    .onClick(() => {
+                      this.onlyUseCache = !this.onlyUseCache;
+                      CacheConstants.setOnlyCache(this.onlyUseCache);
+                    })
+                }
+                .width('100%')
+                .padding({
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  bottom: 8
                 })
+                .alignItems(VerticalAlign.Center)
+              }
             }
 
-            if (this.isFaceSupport) {
-              Text($r('app.string.auth_by_face'))
-                .fontSize(14)
-                .fontColor($r('app.color.button_bg_blue'))
-                .margin({ bottom: 8, left: 8, right: 8 })
-                .decoration({
-                  type: TextDecorationType.Underline,
-                  color: $r('app.color.button_bg_blue')
-                })
-                .onClick(() => {
-                  this.startAuth(UnlockAuthType.FACE);
-                })
+            // 底部：生物认证 + 按钮组（SpaceBetween 自然贴底，替代原 position/translate 绝对定位）
+            Column() {
+              if (this.isShowBiometric) {
+                Row() {
+                  if (this.isFingerprintSupport) {
+                    Text($r('app.string.auth_by_fingerprint'))
+                      .fontSize(14)
+                      .fontColor($r('app.color.button_bg_blue'))
+                      .margin({ bottom: 8, left: 8, right: 8 })
+                      .decoration({
+                        type: TextDecorationType.Underline,
+                        color: $r('app.color.button_bg_blue')
+                      })
+                      .onClick(() => {
+                        this.startAuth(UnlockAuthType.FINGERPRINT);
+                      })
+                  }
+
+                  if (this.isFaceSupport) {
+                    Text($r('app.string.auth_by_face'))
+                      .fontSize(14)
+                      .fontColor($r('app.color.button_bg_blue'))
+                      .margin({ bottom: 8, left: 8, right: 8 })
+                      .decoration({
+                        type: TextDecorationType.Underline,
+                        color: $r('app.color.button_bg_blue')
+                      })
+                      .onClick(() => {
+                        this.startAuth(UnlockAuthType.FACE);
+                      })
+                  }
+                }
+                .justifyContent(FlexAlign.Center)
+                .width('100%')
+              }
+
+              // 底部固定按钮栏
+              Row() {
+                // 左侧 - 更改数据库按钮
+                Button($r("app.string.change_database"))
+                  .layoutWeight(1)
+                  .height(40)
+                  .fontSize(16)
+                  .fontColor($r('app.color.button_text'))
+                  .borderRadius(20)
+                  .backgroundColor(Color.Gray)
+                  .id('btn_change_database')
+                  .onClick(() => {
+                    this.changeDatabase();
+                  })
+
+                Blank().width("30")
+
+                // 右侧 - 解锁按钮
+                Button(this.isLoading ? $r('app.string.loading_message') : $r('app.string.Password_unlock_title'))
+                  .layoutWeight(1)
+                  .height(40)
+                  .fontSize(16)
+                  .fontColor($r('app.color.button_text'))
+                  .borderRadius(20)
+                  .enabled(this.buttonEnabled)
+                  .backgroundColor(this.buttonEnabled ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
+                  .id('btn_unlock')
+                  .onClick(() => {
+                    this.verifyAndOpenDatabase();
+                  })
+              }
+              .width('100%')
+              .height(60)
+              .backgroundColor(Color.Transparent)
+              .padding({
+                top: 8,
+                bottom: 8,
+                left: 16,
+                right: 16
+              })
             }
           }
-          .justifyContent(FlexAlign.Center)
           .width('100%')
-          .position({ x: 0, y: '100%' })
-          .translate({ y: -100 }) // 调整位置，确保正确显示
+          .height('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
         }
-
-        // 底部固定按钮栏（样式遵循 docs/ui-bottom-button-spec.md 模板 B）
-        Row() {
-          // 左侧 - 更改数据库按钮
-          Button($r("app.string.change_database"))
-            .width('45%')
-            .height(40)
-            .fontSize(16)
-            .fontColor($r('app.color.button_text'))
-            .borderRadius(20)
-            .backgroundColor(Color.Gray)
-            .id('btn_change_database')
-            .onClick(() => {
-              this.changeDatabase();
-            })
-
-          Blank()
-
-          // 右侧 - 解锁按钮
-          Button(this.isLoading ? $r('app.string.loading_message') : $r('app.string.Password_unlock_title'))
-            .width('45%')
-            .height(40)
-            .fontSize(16)
-            .fontColor($r('app.color.button_text'))
-            .borderRadius(20)
-            .enabled(this.buttonEnabled)
-            .backgroundColor(this.buttonEnabled ? $r("app.color.button_bg_blue") : $r("app.color.button_bg_disabled"))
-            .id('btn_unlock')
-            .onClick(() => {
-              this.verifyAndOpenDatabase();
-            })
-        }
-        .width('90%')
-        .height(60)
-        .backgroundColor(Color.Transparent)
-        .padding({
-          top: 8,
-          bottom: 8,
-          left: 16,
-          right: 16
-        })
-        // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
-        .position({ x: '5%', y: '100%' })
-        .translate({ y: -70 })
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('100%')
     }
     .width('100%')
     .height('100%')
@@ -867,7 +883,7 @@ export struct Password {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
     }
-    .width('90%')
+    .width('100%')
     .padding({ left: 16, right: 16, bottom: 24 })
   }
 }
