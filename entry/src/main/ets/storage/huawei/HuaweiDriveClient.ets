@@ -716,16 +716,21 @@ export class HuaweiDriveClient {
       const editedTime = this.extractOptionalStringFromObject(data, 'editedTime');
       const contentDownloadLink = this.extractOptionalStringFromObject(data, 'contentDownloadLink');
 
-      // 解析父文件夹
+      // 解析父文件夹（兼容字符串数组 ["id"] 和对象数组 [{id:"id"}] 两种形式）
       const parentFolder: ParentFolder[] = [];
       const parentFolderData = data['parentFolder'];
       if (parentFolderData && Array.isArray(parentFolderData)) {
         for (const parent of parentFolderData as Object[]) {
-          const parentObj = parent as Record<string, Object>;
-          const parentId = this.extractOptionalStringFromObject(parentObj, 'id');
-          if (parentId) {
-            const folderItem: ParentFolder = { id: parentId };
+          if (typeof parent === 'string') {
+            const folderItem: ParentFolder = { id: parent };
             parentFolder.push(folderItem);
+          } else {
+            const parentObj = parent as Record<string, Object>;
+            const parentId = this.extractOptionalStringFromObject(parentObj, 'id');
+            if (parentId) {
+              const folderItem: ParentFolder = { id: parentId };
+              parentFolder.push(folderItem);
+            }
           }
         }
       }

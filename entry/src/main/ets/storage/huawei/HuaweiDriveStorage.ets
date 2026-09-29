@@ -1,6 +1,6 @@
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { HuaweiDriveClient, HuaweiDriveClientOptions, HttpResponse } from './HuaweiDriveClient';
+import { HuaweiDriveClient, HuaweiDriveClientOptions, HuaweiDriveFile, ParentFolder, HttpResponse } from './HuaweiDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { HuaweiDrivePageConfig, HuaweiDriveStorageConfig } from './HuaweiDriveConfig';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
@@ -159,8 +159,105 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
+   * 按文件路径查找华为云盘文件对象。
+   * IFileStorage 契约传入的是文件路径（如 "test.kdbx" 或 "dir/sub/test.kdbx"），
+   * 而华为云盘 API 需要 fileId。本方法通过 list 接口获取文件列表，本地按
+   * fileName + parentFolder 逐级匹配，解析出目标文件的 fileId。
+   * @param path 文件路径
+   * @returns Promise<HuaweiDriveFile | null> 找到返回文件对象，未找到返回 null
+   */
+  private async findFileByPath(path: string): Promise<HuaweiDriveFile | null> {
+    if (!this.client) {
+      return null;
+    }
+    // 规范化路径：去掉开头的 '/'
+    const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+    const segments = normalizedPath.split('/').filter((s: string) => s.length > 0);
+    if (segments.length === 0) {
+      return null;
+    }
+
+    // 分页获取全部文件（华为 API 每页最多返回若干条，需通过 nextCursor 翻页）
+    const allFiles: HuaweiDriveFile[] = [];
+    let cursor: string = '';
+    do {
+      const queryParam: string | undefined = cursor ? `cursor=${encodeURIComponent(cursor)}` : undefined;
+      const result = await this.client.list('root', queryParam);
+      if (!result.success || !result.body) {
+        hilog.error(DOMAIN, TAG, 'findFileByPath list failed: status=%{public}d', result.statusCode);
+        return null;
+      }
+      const jsonStr = ByteUtils.bytesToString(result.body);
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const files: HuaweiDriveFile[] = this.client.parseFileList(data);
+      for (const f of files) {
+        allFiles.push(f);
+      }
+      const nextCursorVal = data['nextCursor'];
+      cursor = (nextCursorVal && typeof nextCursorVal === 'string') ? nextCursorVal as string : '';
+    } while (cursor);
+
+    // 获取 root 文件夹的真实 id（华为 API 中 "root" 是别名，文件 parentFolder 存的是真实 fileId）
+    let currentParentId: string = '';
+    for (const file of allFiles) {
+      if (file.mimeType === 'application/vnd.huawei-apps.folder' && file.parentFolder.length === 0) {
+        currentParentId = file.id;
+        break;
+      }
+    }
+    if (!currentParentId) {
+      // 兜底：通过 getInfo('root') 获取真实 id
+      const rootResp = await this.client.getInfo('root');
+      if (rootResp.success && rootResp.body) {
+        const rootJson = ByteUtils.bytesToString(rootResp.body);
+        const rootData: Record<string, Object> = JSON.parse(rootJson);
+        currentParentId = this.client.parseFile(rootData).id;
+      }
+    }
+    if (!currentParentId) {
+      hilog.error(DOMAIN, TAG, 'findFileByPath: failed to resolve root folder id');
+      return null;
+    }
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const isLast = i === segments.length - 1;
+      let found: HuaweiDriveFile | null = null;
+      for (const file of allFiles) {
+        if (file.fileName === segment && this.containsParent(file.parentFolder, currentParentId)) {
+          found = file;
+          break;
+        }
+      }
+      if (!found) {
+        return null;
+      }
+      if (isLast) {
+        return found;
+      }
+      // 中间段必须是文件夹才能继续向下查找
+      if (found.mimeType !== 'application/vnd.huawei-apps.folder') {
+        return null;
+      }
+      currentParentId = found.id;
+    }
+    return null;
+  }
+
+  /**
+   * 判断父文件夹列表中是否包含指定 parentId
+   */
+  private containsParent(parents: ParentFolder[], parentId: string): boolean {
+    for (const p of parents) {
+      if (p.id === parentId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * 读取文件内容
-   * @param path 文件路径（华为云盘使用文件ID作为路径）
+   * @param path 文件路径
    * @returns Promise<ArrayBuffer> 文件内容
    * @throws StorageError
    */
@@ -176,7 +273,11 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     try {
-      const result = await this.client.download(path);
+      const file = await this.findFileByPath(path);
+      if (!file) {
+        return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, `File not found: ${path}`));
+      }
+      const result = await this.client.download(file.id);
       if (result.success && result.body) {
         return Promise.resolve(result.body);
       }
@@ -189,7 +290,7 @@ export class HuaweiDriveStorage implements IFileStorage {
 
   /**
    * 写入文件内容
-   * @param path 文件路径（华为云盘使用文件ID作为路径）
+   * @param path 文件路径
    * @param data 文件内容
    * @returns Promise<void>
    * @throws StorageError 如果写入失败
@@ -206,13 +307,13 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     try {
-      // 检查文件是否存在
-      const fileExists = await this.exists(path);
+      // 按路径查找现有文件，找到则更新，找不到则创建
+      const file = await this.findFileByPath(path);
       let result: HttpResponse;
 
-      if (fileExists) {
+      if (file) {
         // 更新现有文件
-        result = await this.client.update(path, data);
+        result = await this.client.update(file.id, data);
       } else {
         // 创建新文件（在根目录）
         const fileName = path.split('/').pop() || path;
@@ -230,7 +331,7 @@ export class HuaweiDriveStorage implements IFileStorage {
 
   /**
    * 检查文件是否存在
-   * @param path 文件路径（华为云盘使用文件ID作为路径）
+   * @param path 文件路径
    * @returns Promise<boolean> 文件是否存在
    * @throws StorageError 如果检查失败则抛出异常
    */
@@ -245,23 +346,18 @@ export class HuaweiDriveStorage implements IFileStorage {
       await this.refreshAccessToken();
     }
 
-    const result = await this.client.getInfo(path);
-    // 如果成功，文件存在
-    if (result.success) {
-      return true;
+    try {
+      const file = await this.findFileByPath(path);
+      return file !== null;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Huawei Drive exists error: %{public}s', (error as Error).message);
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
-    // 如果失败但状态码是404，文件不存在
-    if (result.statusCode === 404) {
-      return false;
-    }
-    // 其他错误，抛出异常
-    hilog.error(DOMAIN, TAG, 'Huawei Drive exists error: status=%{public}d, message=%{public}s', result.statusCode, result.message);
-    return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message));
   }
 
   /**
    * 获取文件信息
-   * @param path 文件路径（华为云盘使用文件ID作为路径）
+   * @param path 文件路径
    * @returns Promise<FileInfo> 文件信息
    * @throws StorageError 如果获取失败则抛出异常
    */
@@ -276,11 +372,11 @@ export class HuaweiDriveStorage implements IFileStorage {
       await this.refreshAccessToken();
     }
 
-    const result = await this.client.getInfo(path);
-    if (result.success && result.body) {
-      const jsonStr = ByteUtils.bytesToString(result.body);
-      const data: Record<string, Object> = JSON.parse(jsonStr);
-      const file = this.client.parseFile(data);
+    try {
+      const file = await this.findFileByPath(path);
+      if (!file) {
+        throw new Error(`File not found: ${path}`);
+      }
       return {
         name: file.fileName,
         size: file.size,
@@ -289,8 +385,9 @@ export class HuaweiDriveStorage implements IFileStorage {
         type: file.mimeType === 'application/vnd.huawei.folder' ? FileType.DIR : FileType.FILE,
         childrenCount: 0
       };
-    } else {
-      throw new Error(result.message);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Huawei Drive getInfo error: %{public}s', (error as Error).message);
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
   }
 
