@@ -830,8 +830,6 @@ export struct Password {
       }
       .width('100%')
       .layoutWeight(1)
-      // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
-      .padding({ top: 4, bottom: 70 })
     }
     .width('100%')
     .height('100%')
