@@ -516,8 +516,8 @@ export struct TemplateEntryCreate {
         // 顶部导航栏
         Row() {
           Image($r("app.media.ic_angle_left"))
-            .width(24)
-            .height(24)
+            .width(28)
+            .height(28)
             .margin({ left: 16 })
             .fillColor($r('app.color.text_primary'))
             .onClick(() => {
