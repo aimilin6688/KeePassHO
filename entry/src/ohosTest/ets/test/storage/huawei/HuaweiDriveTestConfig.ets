@@ -32,7 +32,7 @@ export class HuaweiDriveTestConfig {
     * 测试用客户端ID
     * 注意：实际测试时需要替换为真实的客户端ID
    */
-  static readonly CLIENT_ID: string = 'test';
+  static readonly CLIENT_ID: string = '119166997';
 
   /**
    * 测试用客户端密钥
@@ -43,22 +43,22 @@ export class HuaweiDriveTestConfig {
   /**
    * 测试用重定向URI
    */
-  static readonly REDIRECT_URI: string = 'http://keepassho.com/huawei';
+  static readonly REDIRECT_URI: string = 'http://aimilin.com/huawei/redirect';
 
   /**
    * 测试用访问令牌
    */
-  static readonly ACCESS_TOKEN: string = '';
+  static readonly ACCESS_TOKEN: string = 'DgEAAHF8YjXNvAV0hApWjQhdr/lD80PAQ6zUg7Gsp9S1MHuitzPs4HWe9T5dIN3JNLYXfttjpgb/1DWZf3LIus6JZmIEyVo0OfjpYc4LHrmodyOcmRb/';
 
   /**
    * 测试用刷新令牌
    */
-  static readonly REFRESH_TOKEN: string = 'test_refresh_token_67890';
+  static readonly REFRESH_TOKEN: string = 'DgECAPpU9n53LJzRg6y8r9I33AzBVbsSy3BI5EHG2iTmcR4i44xbWlfzYyYeVqrdLr8CGiMWLTmUgWUV/g//D0se0Ek7CmeVC8WTga327566OBe2rf1e';
 
   /**
    * 测试用文件ID
    */
-  static readonly TEST_FILE_ID: string = 'test_file_id_123';
+  static readonly TEST_FILE_ID: string = '';
 
   /**
    * 测试用文件夹ID（根目录）
@@ -86,6 +86,21 @@ export class HuaweiDriveTestConfig {
    */
   static readonly SCOPE_FULL: string = 'https://www.huawei.com/auth/drive';
   static readonly SCOPE_APP_FILE: string = 'https://www.huawei.com/auth/drive.file';
+
+  /**
+   * 授权请求使用的 scope。
+   * 文档要求：scope 是空格分隔的字符串数组，必须包含 "openid"。
+   * 示例：'openid https://www.huawei.com/auth/drive'
+   */
+  static readonly SCOPE_AUTH: string = 'openid https://www.huawei.com/auth/drive';
+
+  /**
+   * 授权码（一次性）。
+   * 运行 should_generate_auth_url 这类用例后会打印出授权 URL，
+   * 浏览器打开授权后，把重定向 URL 中 code= 的值填入此处再运行换取 Token 的用例。
+   * 注意：授权码是一次性的，且短时效。
+   */
+  static readonly AUTHORIZATION_CODE: string = '';
 
   /**
    * 获取存储配置对象（用于 HuaweiDriveStorage.init）
