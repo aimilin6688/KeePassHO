@@ -765,6 +765,10 @@
       "value": "Request timeout"
     },
     {
+      "name": "webdav_rate_limited",
+      "value": "Too many requests, the server is rate limiting. Please try again later"
+    },
+    {
       "name": "webdav_not_file",
       "value": "Please input a file url"
     },
@@ -1271,6 +1275,26 @@
     {
       "name": "kdbx_error_InvalidVersion",
       "value": "InvalidVersion"
+    },
+    {
+      "name": "kdbx_upgrade_title",
+      "value": "Upgrade to KDBX4"
+    },
+    {
+      "name": "kdbx_upgrade_message",
+      "value": "The Argon2 key derivation function is only supported by the KDBX4 format. The database will be upgraded to KDBX4 and saved. Continue?"
+    },
+    {
+      "name": "kdbx_upgrade_confirm",
+      "value": "Upgrade"
+    },
+    {
+      "name": "kdbx_upgrade_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "kdbx_upgrade_success",
+      "value": "Database upgraded to KDBX4"
     },
     {
       "name": "network_error",

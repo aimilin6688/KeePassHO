@@ -2,6 +2,8 @@ import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
 import { CommonUtils, KdbxUtils, NavigationManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
+import { SuccessMessage } from '../../workers/WorkerParam';
 
 const DOMAIN = 0x0000;
 const TAG = 'SettingDatabaseKeyFunction';
@@ -63,8 +65,15 @@ export struct SettingDatabaseKeyFunctionContent {
     const dbFileParam = FileService.getDbFileParam();
     this.isDatabaseValid = dbFileParam && dbFileParam.database !== undefined;
     if (this.isDatabaseValid) {
-      const kdfParameters = dbFileParam.database.header.kdfParameters;
+      const header = dbFileParam.database.header;
+      const kdfParameters = header.kdfParameters;
       if (!kdfParameters) {
+        // KDBX3.x：无 kdfParameters，KDF 固定为 AES-KDF，
+        // 转换轮数取头部 keyEncryptionRounds（FR-011）
+        if (header.versionMajor === 3) {
+          this.algoType = Consts.KdfId.Aes;
+          this.rounds = header.keyEncryptionRounds ?? Consts.Defaults.KeyEncryptionRounds;
+        }
         return;
       }
       this.algoType = ByteUtils.bytesToBase64(kdfParameters.get('$UUID') as ArrayBuffer);
@@ -91,8 +100,18 @@ export struct SettingDatabaseKeyFunctionContent {
     }
     try {
       const dbFileParam = FileService.getDbFileParam();
-      const kdfParameters = dbFileParam.database.header.kdfParameters;
-      if (kdfParameters && this.isArgon2()) {
+      const header = dbFileParam.database.header;
+      const kdfParameters = header.kdfParameters;
+      const isVersion3: boolean = header.versionMajor === 3;
+      if (isVersion3 && this.isArgon2()) {
+        // KDBX3.x 选择 Argon2：Argon2 仅 KDBX4 支持，需用户显式确认升级（FR-012）；
+        // 取消则不应用任何变更
+        this.confirmUpgradeToKdbx4();
+        return;
+      } else if (isVersion3 && this.isAes()) {
+        // KDBX3.x + AES-KDF：直接写头部转换轮数，保持 v3 格式（不创建 kdfParameters）
+        header.keyEncryptionRounds = this.rounds;
+      } else if (kdfParameters && this.isArgon2()) {
         // 设置内存最大值为512M
         this.memory = this.resetMemory(this.memory, (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
         kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
@@ -119,6 +138,65 @@ export struct SettingDatabaseKeyFunctionContent {
 
   private isAes(): boolean {
     return this.algoType === Consts.KdfId.Aes;
+  }
+
+  /**
+   * KDBX3.x 选择 Argon2d/Argon2id 时弹出"升级为 KDBX4"确认弹窗（FR-012）：
+   * 确认 → setVersion(4)+setKdf(所选) 并应用用户输入的参数后保存；
+   * 取消 → 不应用任何变更，文件保持 KDBX3 格式
+   */
+  private confirmUpgradeToKdbx4() {
+    this.getUIContext().showAlertDialog({
+      title: $r('app.string.kdbx_upgrade_title'),
+      message: $r('app.string.kdbx_upgrade_message'),
+      autoCancel: true,
+      primaryButton: {
+        value: $r('app.string.kdbx_upgrade_cancel'),
+        action: () => {
+          // 取消：不应用任何变更
+        }
+      },
+      secondaryButton: {
+        value: $r('app.string.kdbx_upgrade_confirm'),
+        action: () => {
+          this.upgradeToKdbx4();
+        }
+      }
+    });
+  }
+
+  /**
+   * 升级数据库为 KDBX4（设置所选 Argon2 KDF 与用户输入参数）并保存
+   */
+  private upgradeToKdbx4() {
+    try {
+      const dbFileParam = FileService.getDbFileParam();
+      const header = dbFileParam.database.header;
+      // 先升级版本（v3 无 kdfParameters 时由 setVersion 创建默认参数），再设置所选 KDF
+      header.setVersion(4);
+      header.setKdf(this.algoType);
+      // 应用用户输入的 Argon2 参数
+      const kdfParameters = header.kdfParameters;
+      if (kdfParameters) {
+        this.memory = this.resetMemory(this.memory, (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
+        kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
+        kdfParameters.set('I', VarDictionary.ValueType.UInt64, Int64.from(this.iteration));
+        kdfParameters.set('M', VarDictionary.ValueType.UInt64, Int64.from(Number(this.memory) * 1024 * 1024));
+        kdfParameters.set('P', VarDictionary.ValueType.UInt32, this.parallelism);
+      }
+      hilog.debug(DOMAIN, TAG, 'Upgrade database to KDBX4, kdf: %{public}s', this.algoType);
+      // 保存成功后提示升级完成
+      const callback: SaveDatabaseCallback = {
+        onSuccess: (message: SuccessMessage): void => {
+          CommonUtils.showToast({ message: $r('app.string.kdbx_upgrade_success') });
+        }
+      };
+      KdbxUtils.saveDatabase(callback);
+    } catch (error) {
+      const errorMsg = KdbxUtils.kdbxErrorMessage(error);
+      hilog.error(DOMAIN, TAG, 'Failed to upgrade database to KDBX4: %{public}s', errorMsg);
+      CommonUtils.showToast({ message: errorMsg, duration: 2000 });
+    }
   }
 
   /**
