@@ -140,17 +140,23 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     try {
-      const token = await this.client.refreshToken(this.config.getRefreshTokenText());
+      const currentRefreshToken = this.config.getRefreshTokenText();
+      hilog.debug(DOMAIN, TAG, 'refreshAccessToken: current refreshToken length=%{public}d', currentRefreshToken.length);
+
+      const token = await this.client.refreshToken(currentRefreshToken);
       this.config.setAccessToken(token.accessToken);
-      if (token.refreshToken) {
+      // 华为刷新接口响应不返回新的 refresh_token，保留原有的避免被空值覆盖
+      if (token.refreshToken && token.refreshToken.length > 0) {
         this.config.setRefreshToken(token.refreshToken);
+      } else {
+        token.refreshToken = currentRefreshToken;
       }
       if (token.expiresAt) {
         this.config.setExpiresAt(token.expiresAt);
       }
       this.client.updateAccessToken(token.accessToken);
 
-      // 发送令牌更新事件
+      // 发送令牌更新事件（token.refreshToken 已确保非空，避免持久化时覆盖原有值）
       await this.notifyTokenUpdated(token);
 
       hilog.info(DOMAIN, TAG, 'Access token refreshed successfully');
