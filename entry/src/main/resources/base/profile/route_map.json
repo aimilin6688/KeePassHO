@@ -171,6 +171,11 @@
       "buildFunction": "SettingDatabaseProtectedFiledBuilder"
     },
     {
+      "name": "SettingDatabaseClean",
+      "pageSourceFile": "src/main/ets/pages/setting/SettingDatabaseClean.ets",
+      "buildFunction": "SettingDatabaseCleanBuilder"
+    },
+    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/about/About.ets",
       "buildFunction": "AboutBuilder"

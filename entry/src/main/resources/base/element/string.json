@@ -1469,6 +1469,50 @@
       "value": "Default protected field"
     },
     {
+      "name": "Settings_clean_database",
+      "value": "Clean Database"
+    },
+    {
+      "name": "Settings_clean_history_title",
+      "value": "Clean History"
+    },
+    {
+      "name": "Settings_clean_history_desc",
+      "value": "Delete all history records older than the specified days. This operation is irreversible. Enter 0 to clean all history records."
+    },
+    {
+      "name": "Settings_clean_history_days_label",
+      "value": "Days"
+    },
+    {
+      "name": "Settings_clean_history_days_unit",
+      "value": "days"
+    },
+    {
+      "name": "Settings_clean_history_confirm_title",
+      "value": "Confirm Cleanup"
+    },
+    {
+      "name": "Settings_clean_history_confirm_message",
+      "value": "This will delete history records older than the specified days and unused attachments. This operation is irreversible. Continue?"
+    },
+    {
+      "name": "Settings_clean_button",
+      "value": "Clean"
+    },
+    {
+      "name": "Settings_clean_success",
+      "value": "Cleanup complete. Deleted %d history records and %d attachments."
+    },
+    {
+      "name": "Settings_clean_no_record",
+      "value": "Cleanup complete. No records to clean."
+    },
+    {
+      "name": "Settings_clean_invalid_days",
+      "value": "Please enter a valid number of days"
+    },
+    {
       "name": "Setting_enable_protected_field_tips",
       "value": "Enable protection, which only affects new entries"
     },
