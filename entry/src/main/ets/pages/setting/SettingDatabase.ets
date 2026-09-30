@@ -275,6 +275,25 @@ struct SettingDatabaseContent {
                 this.navPathStack.pushPathByName(PageConstants.PAGE_SETTING_DATABASE_PROTECTED_FIELD, null);
               })
             }
+
+            // 清理数据库
+            ListItem() {
+              Row() {
+                Text($r("app.string.Settings_clean_database"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Image($r('app.media.ic_arrow_right'))
+                  .width(20)
+                  .height(20)
+                  .fillColor($r('app.color.text_primary'))
+              }
+              .width('100%')
+              .padding(16)
+              .onClick(() => {
+                // 导航到清理数据库页面（右侧分栏展示）
+                this.navPathStack.pushPathByName(PageConstants.PAGE_SETTING_DATABASE_CLEAN, null);
+              })
+            }
           }
           .margin({ top: 12, bottom: 12 })
           .backgroundColor($r("app.color.card_bg"))

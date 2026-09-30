@@ -2,6 +2,7 @@ import {
   ByteUtils,
   Consts,
   Kdbx,
+  KdbxBinaries,
   KdbxCredentials,
   KdbxCustomIcon,
   KdbxEntry,
@@ -580,6 +581,98 @@ export class KdbxUtils {
   }
 
   /**
+   * 清理指定天数前的条目历史版本，并清理完全未被任何条目（当前版本+剩余历史版本）引用的孤儿附件。
+   * 不调用 saveDatabase（由调用方在清理后调用），不删除条目本身（当前版本）。
+   * @param database 已打开的数据库实例
+   * @param days 清理天数（正整数，由调用方校验）
+   * @returns 清理结果统计
+   */
+  public static cleanHistoryAndBinaries(database: Kdbx, days: number): CleanResult {
+    const cutoff = Date.now() - days * 86400000;
+    let deletedHistoryCount: number = 0;
+    let deletedBinariesCount: number = 0;
+
+    hilog.debug(DOMAIN, TAG, 'cleanHistoryAndBinaries: start, days=%{public}d, cutoff=%{public}s, cutoffDate=%{public}s',
+      days, cutoff.toString(), new Date(cutoff).toISOString());
+
+    const rootGroup = database.getDefaultGroup();
+
+    // 1. 历史版本清理：遍历所有条目（含回收站），从后往前收集索引避免删除时偏移
+    let processedEntryCount: number = 0;
+    for (const item of rootGroup.allGroupsAndEntries()) {
+      if (item instanceof KdbxEntry) {
+        const entry: KdbxEntry = item;
+        processedEntryCount++;
+        const indicesToDelete: number[] = [];
+        for (let i = entry.history.length - 1; i >= 0; i--) {
+          const historyEntry = entry.history[i];
+          const lastModTime = historyEntry.times.lastModTime;
+          if (lastModTime == undefined) {
+            hilog.debug(DOMAIN, TAG, 'cleanHistory: entry history[%{public}d] lastModTime is empty, skip', i);
+            continue;
+          }
+          if (lastModTime.getTime() < cutoff) {
+            indicesToDelete.push(i);
+            hilog.debug(DOMAIN, TAG, 'cleanHistory: entry history[%{public}d] lastModTime=%{public}s < cutoff, will delete',
+              i, lastModTime.toISOString());
+          }
+        }
+        if (indicesToDelete.length > 0) {
+          hilog.debug(DOMAIN, TAG, 'cleanHistory: entry totalHistory=%{public}d, willDelete=%{public}d',
+            entry.history.length, indicesToDelete.length);
+        }
+        for (const index of indicesToDelete) {
+          entry.removeHistory(index, 1);
+          deletedHistoryCount++;
+        }
+      }
+    }
+    hilog.debug(DOMAIN, TAG, 'cleanHistory: done, processedEntries=%{public}d, deletedHistoryCount=%{public}d',
+      processedEntryCount, deletedHistoryCount);
+
+    // 2. 孤儿附件清理：扫描当前版本+剩余历史版本的 binaries 引用集合，删除全局 binaries 中无引用的附件
+    const usedHashes: Set<string> = new Set<string>();
+    for (const item of rootGroup.allGroupsAndEntries()) {
+      if (item instanceof KdbxEntry) {
+        const entry: KdbxEntry = item;
+        KdbxUtils.collectUsedBinaryHashes(entry, usedHashes);
+        for (const historyEntry of entry.history) {
+          KdbxUtils.collectUsedBinaryHashes(historyEntry, usedHashes);
+        }
+      }
+    }
+
+    const allBinaries = database.binaries.getAllWithHashes();
+    hilog.debug(DOMAIN, TAG, 'cleanBinaries: totalBinaries=%{public}d, usedBinaries=%{public}d, orphanBinaries=%{public}d',
+      allBinaries.length, usedHashes.size, allBinaries.length - usedHashes.size);
+    for (const binary of allBinaries) {
+      if (!usedHashes.has(binary.hash)) {
+        hilog.debug(DOMAIN, TAG, 'cleanBinaries: delete orphan binary, hash=%{public}s', binary.hash);
+        database.binaries.deleteWithHash(binary.hash);
+        deletedBinariesCount++;
+      }
+    }
+    hilog.debug(DOMAIN, TAG, 'cleanBinaries: done, deletedBinariesCount=%{public}d', deletedBinariesCount);
+
+    hilog.debug(DOMAIN, TAG, 'cleanHistoryAndBinaries: finish, deletedHistory=%{public}d, deletedBinaries=%{public}d',
+      deletedHistoryCount, deletedBinariesCount);
+    return { deletedHistoryCount, deletedBinariesCount } as CleanResult;
+  }
+
+  /**
+   * 收集条目 binaries Map 中所有带 hash 的附件引用到目标集合
+   * @param entry 条目（当前版本或历史版本）
+   * @param usedHashes 收集目标集合
+   */
+  private static collectUsedBinaryHashes(entry: KdbxEntry, usedHashes: Set<string>): void {
+    for (const value of entry.binaries.values()) {
+      if (KdbxBinaries.isKdbxBinaryWithHash(value)) {
+        usedHashes.add(value.hash);
+      }
+    }
+  }
+
+  /**
    * 添加自定义图标到数据库
    * @param database 数据库实例
    * @param base64Image base64编码的图像数据（格式：data:image/png;base64,...)
@@ -797,4 +890,14 @@ export interface KdbxIndexer {
    * 索引器映射
    */
   indexerMap: Map<string, number>;
+}
+
+/**
+ * 清理结果统计
+ */
+export interface CleanResult {
+  /** 被删除的历史版本总数 */
+  deletedHistoryCount: number;
+  /** 被删除的孤儿附件总数 */
+  deletedBinariesCount: number;
 }

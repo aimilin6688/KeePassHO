@@ -1397,6 +1397,50 @@
       "value": "默认保护字段"
     },
     {
+      "name": "Settings_clean_database",
+      "value": "清理数据库"
+    },
+    {
+      "name": "Settings_clean_history_title",
+      "value": "清理历史记录"
+    },
+    {
+      "name": "Settings_clean_history_desc",
+      "value": "删除指定天数以前的所有历史记录，本操作不可逆。输入 0 表示清理全部历史记录。"
+    },
+    {
+      "name": "Settings_clean_history_days_label",
+      "value": "天数"
+    },
+    {
+      "name": "Settings_clean_history_days_unit",
+      "value": "天"
+    },
+    {
+      "name": "Settings_clean_history_confirm_title",
+      "value": "确认清理"
+    },
+    {
+      "name": "Settings_clean_history_confirm_message",
+      "value": "本操作将删除指定天数前的历史记录及未使用的附件，且不可逆，是否继续？"
+    },
+    {
+      "name": "Settings_clean_button",
+      "value": "清理"
+    },
+    {
+      "name": "Settings_clean_success",
+      "value": "清理完成，共删除 %d 条历史记录、%d 个附件"
+    },
+    {
+      "name": "Settings_clean_no_record",
+      "value": "清理完成，没有可清理的记录"
+    },
+    {
+      "name": "Settings_clean_invalid_days",
+      "value": "请输入有效的天数"
+    },
+    {
       "name": "Setting_enable_protected_field_tips",
       "value": "启用保护，只影响新增条目"
     },
