@@ -22,4 +22,8 @@ export enum StorageErrorCodes {
   NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
   CLIENT_UNDEFINED = 'CLIENT_UNDEFINED',
   CONNECT_ERROR = 'CONNECT_ERROR',
+  /**
+   * 认证过期（refresh_token 失效），需重新登录授权
+   */
+  AUTH_EXPIRED = 'AUTH_EXPIRED',
 }
