@@ -220,6 +220,12 @@ export class RecentFilesService {
   /**
    * 加载最近打开的文件
    * 返回最近打开的第一个文件的参数，如果没有则返回null
+   *
+   * 文件存在性检查策略：
+   * - 文件存在 → 返回该文件
+   * - 文件确实不存在（exists 返回 false）→ 从列表移除，递归尝试下一个
+   * - 无法判定（exists 抛异常：token 失效、网络错误等）→ 保留该文件记录，
+   *   返回它让用户仍可尝试打开（避免因临时错误清空最近列表）
    */
   public async loadMostRecentFile(): Promise<RecentFile | null> {
     try {
@@ -231,9 +237,16 @@ export class RecentFilesService {
       // 获取最近打开的第一个文件
       const recentFile = recentFiles[0];
       // 检查文件是否存在
-      const fileExists = await this.checkFileExists(recentFile);
+      let fileExists: boolean;
+      try {
+        fileExists = await this.checkFileExists(recentFile);
+      } catch (error) {
+        // 无法判定文件是否存在（token 失效、网络错误等），保留记录，返回让用户尝试打开
+        hilog.warn(DOMAIN, TAG, 'checkFileExists failed, keep recent file: %{public}s, error: %{public}s', recentFile.filePath, (error as Error).message);
+        return recentFile;
+      }
       if (!fileExists) {
-        // 如果文件不存在，从列表中移除
+        // 文件确实不存在，从列表中移除
         await this.removeRecentFile(recentFile);
         // 递归调用，尝试加载下一个文件
         return await this.loadMostRecentFile();
@@ -248,14 +261,12 @@ export class RecentFilesService {
 
   /**
    * 检查文件是否存在
-   * @param filePath 文件路径
+   * @param recentFile 最近文件记录
+   * @returns true=存在，false=不存在
+   * @throws 当无法判定（token 失效、网络错误、权限错误等）时抛出异常，调用方应保留文件记录
    */
   public async checkFileExists(recentFile: RecentFile): Promise<boolean> {
-    try {
-      return new KdbxFileManager(recentFile.storageType, recentFile.storageConfig).exists(recentFile.filePath);
-    } catch (error) {
-      return false;
-    }
+    return new KdbxFileManager(recentFile.storageType, recentFile.storageConfig).exists(recentFile.filePath);
   }
 
   /**

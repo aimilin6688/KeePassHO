@@ -246,6 +246,7 @@ export struct Password {
     if (!filePath) {
       CommonUtils.showToast({ message: $r('app.string.invalid_data_file'), duration: 2000 });
       this.navigateBack();
+      return;
     }
     // 获取最近打开记录
     RecentFilesService.getRecentFile(filePath).then(recentFile => {
@@ -253,6 +254,14 @@ export struct Password {
         this.applyRecentFile(recentFile);
         // 尝试启动生物认证
         this.tryStartAuth();
+      } else {
+        // 文件记录未找到（可能已被自动清理或远端同步覆盖），提示并返回
+        hilog.warn(DOMAIN, TAG, 'Recent file not found for: %{public}s', filePath);
+        CommonUtils.showToast({
+          message: $r('app.string.recent_file_not_found'),
+          duration: 2000
+        });
+        this.navigateBack();
       }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Failed to open recent file: %{public}s, stack: %{public}s', error.message, error.stack);

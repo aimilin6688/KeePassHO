@@ -471,6 +471,9 @@ export class HuaweiDriveStorage implements IFileStorage {
       return Promise.reject(new Error(result.message));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive readFile error:%{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
   }
@@ -521,6 +524,9 @@ export class HuaweiDriveStorage implements IFileStorage {
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive writeFile error:%{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
     }
   }
@@ -550,6 +556,9 @@ export class HuaweiDriveStorage implements IFileStorage {
         return rootResp.success;
       } catch (error) {
         hilog.error(DOMAIN, TAG, 'Huawei Drive exists root error: %{public}s', (error as Error).message);
+        if (error instanceof StorageError) {
+          return Promise.reject(error);
+        }
         return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
       }
     }
@@ -559,6 +568,10 @@ export class HuaweiDriveStorage implements IFileStorage {
       return file !== null;
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive exists error: %{public}s', (error as Error).message);
+      // 保留原始 StorageError（如 AUTH_EXPIRED），避免丢失错误码导致上层误判为文件不存在
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
   }
@@ -615,6 +628,9 @@ export class HuaweiDriveStorage implements IFileStorage {
       };
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive getInfo error: %{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
   }
@@ -737,6 +753,9 @@ export class HuaweiDriveStorage implements IFileStorage {
       return this.client.parseAbout(data);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive getAbout error: %{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
   }
@@ -768,6 +787,9 @@ export class HuaweiDriveStorage implements IFileStorage {
       }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive delete error: %{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
     }
   }
