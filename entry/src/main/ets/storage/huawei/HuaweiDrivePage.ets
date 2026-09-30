@@ -2,6 +2,7 @@ import { FileType, StorageConfig, StorageType } from '..';
 import { HuaweiDriveStorageConfig, HuaweiDriveScope } from './HuaweiDriveConfig';
 import { HuaweiDriveAbout } from './HuaweiDriveClient';
 import { HuaweiDriveStorage } from './HuaweiDriveStorage';
+import { StorageError, StorageErrorCodes } from '../StorageError';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { CommonUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -14,6 +15,18 @@ import { AuthCallbackResult } from '../../pages/OAuth2Login';
 
 const DOMAIN = 0x0000;
 const TAG = 'HuaweiDrive';
+
+/**
+ * handleStorageError 的可选配置
+ */
+interface StorageErrorHandleOptions {
+  /** 自定义 toast 消息（默认显示 error.message） */
+  toastMessage?: string;
+  /** false 时不显示 toast（如 testConnection 仅用 connectionStatus 展示），默认 true */
+  showToast?: boolean;
+  /** true 时清空 aboutInfo（loadAboutInfo 场景），默认 false */
+  resetAbout?: boolean;
+}
 
 // 华为云盘配置页面的Builder函数（NavDestination）
 @Builder
@@ -106,15 +119,61 @@ struct HuaweiDrive {
         this.oauth2Token = latestToken;
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load about info: %{public}s', (error as Error).message);
-      this.aboutInfo = null;
-      CommonUtils.showToast({
-        message: ResourceManager.getString($r('app.string.huawei_drive_load_about_failed'),
-          (error as Error).message)
+      this.handleStorageError(error, 'Failed to load about info', {
+        toastMessage: ResourceManager.getString($r('app.string.huawei_drive_load_about_failed'),
+          (error as Error).message),
+        resetAbout: true
       });
     } finally {
       storage.close();
     }
+  }
+
+  /**
+   * 统一处理 storage 操作错误：
+   * 1. 若为 AUTH_EXPIRED（refresh_token 失效）：重置登录状态、提示重新登录，返回 true
+   * 2. 否则按通用错误处理：记录日志、设置 connectionStatus/isErrorStatus、可选显示 toast
+   * @param error 捕获的错误
+   * @param logTag 日志标识（用于 hilog 定位）
+   * @param options 可选配置：
+   *   - toastMessage: 非空时显示此消息 toast（默认显示 error.message）
+   *   - showToast: false 时不显示 toast（如 testConnection 仅用 connectionStatus 展示）
+   *   - resetAbout: true 时清空 aboutInfo（loadAboutInfo 场景）
+   * @returns true 表示 AUTH_EXPIRED 已处理；false 表示按通用错误处理
+   */
+  private handleStorageError(
+    error: Error,
+    logTag: string,
+    options?: StorageErrorHandleOptions
+  ): boolean {
+    // AUTH_EXPIRED：refresh_token 失效，重置登录态 + 提示重新登录
+    if (error instanceof StorageError && error.code === StorageErrorCodes.AUTH_EXPIRED) {
+      hilog.warn(DOMAIN, TAG, '%{public}s: auth expired, resetting login state', logTag);
+      this.oauth2Token = null;
+      this.isLoggedIn = false;
+      this.aboutInfo = null;
+      this.connectionStatus = ResourceManager.getString($r('app.string.huawei_drive_login_required'));
+      this.isErrorStatus = true;
+      CommonUtils.showToast({
+        message: ResourceManager.getString($r('app.string.huawei_drive_auth_expired'))
+      });
+      return true;
+    }
+
+    // 通用错误：记录日志 + 设置状态 + 可选 toast
+    hilog.error(DOMAIN, TAG, '%{public}s: %{public}s, stack:%{public}s',
+      logTag, error.message, error.stack ?? '');
+    this.connectionStatus = error.message;
+    this.isErrorStatus = true;
+    if (options?.resetAbout) {
+      this.aboutInfo = null;
+    }
+    const showToast = options?.showToast ?? true;
+    if (showToast) {
+      const msg = options?.toastMessage ?? error.message;
+      CommonUtils.showToast({ message: msg });
+    }
+    return false;
   }
 
   /**
@@ -261,7 +320,7 @@ struct HuaweiDrive {
     return new HuaweiDriveStorageConfig(
       this.oauth2Token.accessToken,
       this.oauth2Token.refreshToken || '',
-      this.oauth2Token.expiresAt || 0,
+      this.oauth2Token.expiresAt ?? 0,
       {
         tokenType: this.oauth2Token.tokenType,
         scope: this.oauth2Token.scope
@@ -294,9 +353,7 @@ struct HuaweiDrive {
         hilog.error(DOMAIN, TAG, 'huawei drive connection error: %{public}s', this.connectionStatus);
       }
     } catch (error) {
-      this.connectionStatus = (error as Error).message;
-      this.isErrorStatus = true;
-      hilog.error(DOMAIN, TAG, `huawei drive connection error: ${(error as Error).message}, stack: ${(error as Error).stack}`);
+      this.handleStorageError(error, 'huawei drive connection error', { showToast: false });
     } finally {
       this.isConnecting = false;
     }
@@ -350,11 +407,7 @@ struct HuaweiDrive {
         });
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load Huawei Drive: %{public}s, %{public}s, stack:%{public}s',
-        '/', (error as Error).message, (error as Error).stack);
-      this.connectionStatus = (error as Error).message;
-      this.isErrorStatus = true;
-      CommonUtils.showToast({ message: (error as Error).message });
+      this.handleStorageError(error, 'Failed to load Huawei Drive');
     } finally {
       this.isConnecting = false;
     }
@@ -389,11 +442,7 @@ struct HuaweiDrive {
         this.handleSelectDir(storageConfig);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to select file: %{public}s, %{public}s, stack:%{public}s',
-        '/', (error as Error).message, (error as Error).stack);
-      this.connectionStatus = (error as Error).message;
-      this.isErrorStatus = true;
-      CommonUtils.showToast({ message: (error as Error).message });
+      this.handleStorageError(error, 'Failed to select file');
     } finally {
       this.isConnecting = false;
     }

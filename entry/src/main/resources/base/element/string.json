@@ -3067,6 +3067,10 @@
     {
       "name": "huawei_drive_load_about_failed",
       "value": "Failed to load account info: %s"
+    },
+    {
+      "name": "huawei_drive_auth_expired",
+      "value": "Authorization expired, please login again"
     }
   ]
 }

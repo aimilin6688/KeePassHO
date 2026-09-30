@@ -104,11 +104,12 @@ export class HuaweiDriveStorageConfig implements StorageConfig {
 
   /**
    * 检查令牌是否过期
+   * expiresAt 为 0/undefined 时视为已过期（保守策略，触发刷新，避免用过期 token 硬请求）
    * @returns 是否过期
    */
   public isTokenExpired(): boolean {
     if (!this.expiresAt) {
-      return false;
+      return true;
     }
     // 提前5分钟认为令牌过期
     return Date.now() > this.expiresAt - 5 * 60 * 1000;

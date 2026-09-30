@@ -3063,6 +3063,10 @@
     {
       "name": "huawei_drive_load_about_failed",
       "value": "加载账户信息失败: %s"
+    },
+    {
+      "name": "huawei_drive_auth_expired",
+      "value": "授权已过期，请重新登录"
     }
   ]
 }

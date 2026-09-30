@@ -47,6 +47,11 @@ export class HuaweiDriveStorage implements IFileStorage {
    * 避免 findFileByPath 逐级 list 下钻带来的多次 API 调用
    */
   private pathIdCache: Map<string, string> = new Map();
+  /**
+   * 正在进行的刷新 Promise（并发去重，避免多个操作同时刷新）
+   * 刷新完成（成功或失败）后置空
+   */
+  private refreshingPromise: Promise<void> | null = null;
 
   /**
    * 构造函数
@@ -131,38 +136,90 @@ export class HuaweiDriveStorage implements IFileStorage {
 
   /**
    * 刷新访问令牌
+   * 并发去重：多个操作同时触发刷新时复用同一个 Promise，避免并发刷新冲突
+   * refresh_token 失效（400 + sub_error）时清理持久化 token 并抛 AUTH_EXPIRED
    * @returns Promise<void>
-   * @throws StorageError
+   * @throws StorageError AUTH_EXPIRED（需重新登录）/ CONNECT_ERROR（网络等）
    */
   private async refreshAccessToken(): Promise<void> {
     if (!this.client || !this.config) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized');
     }
 
-    try {
-      const currentRefreshToken = this.config.getRefreshTokenText();
-      hilog.debug(DOMAIN, TAG, 'refreshAccessToken: current refreshToken length=%{public}d', currentRefreshToken.length);
+    // 并发去重：已有刷新在进行中，复用该 Promise
+    if (this.refreshingPromise) {
+      hilog.debug(DOMAIN, TAG, 'refreshAccessToken: another refresh in progress, waiting for it');
+      return this.refreshingPromise;
+    }
 
-      const token = await this.client.refreshToken(currentRefreshToken);
-      this.config.setAccessToken(token.accessToken);
+    this.refreshingPromise = this.doRefreshAccessToken();
+    try {
+      await this.refreshingPromise;
+    } finally {
+      this.refreshingPromise = null;
+    }
+  }
+
+  /**
+   * 实际执行刷新逻辑
+   */
+  private async doRefreshAccessToken(): Promise<void> {
+    if (!this.client || !this.config) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized');
+    }
+    const config = this.config;
+    const client = this.client;
+    try {
+      const currentRefreshToken = config.getRefreshTokenText();
+      hilog.debug(DOMAIN, TAG, 'refreshAccessToken: current refreshToken length=%{public}d, expiresAt=%{public}s',
+        currentRefreshToken.length, config.expiresAt?.toString());
+
+      const token = await client.refreshToken(currentRefreshToken);
+      config.setAccessToken(token.accessToken);
       // 华为刷新接口响应不返回新的 refresh_token，保留原有的避免被空值覆盖
       if (token.refreshToken && token.refreshToken.length > 0) {
-        this.config.setRefreshToken(token.refreshToken);
+        config.setRefreshToken(token.refreshToken);
       } else {
         token.refreshToken = currentRefreshToken;
       }
+      // 刷新响应必含 expires_in，parseTokenResponse 已转为 expiresAt；若意外缺失则保留原值避免死循环
       if (token.expiresAt) {
-        this.config.setExpiresAt(token.expiresAt);
+        config.setExpiresAt(token.expiresAt);
+      } else {
+        token.expiresAt = config.expiresAt;
       }
-      this.client.updateAccessToken(token.accessToken);
+      client.updateAccessToken(token.accessToken);
 
-      // 发送令牌更新事件（token.refreshToken 已确保非空，避免持久化时覆盖原有值）
+      // 发送令牌更新事件（token.refreshToken 与 expiresAt 已确保非空，避免持久化时覆盖原有值）
       await this.notifyTokenUpdated(token);
 
       hilog.info(DOMAIN, TAG, 'Access token refreshed successfully');
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to refresh access token: %{public}s', (error as Error).message);
-      throw new StorageError(StorageErrorCodes.CONNECT_ERROR, (error as Error).message);
+      const errMsg = (error as Error).message || '';
+      hilog.error(DOMAIN, TAG, 'Failed to refresh access token: %{public}s', errMsg);
+
+      // 检测 refresh_token 失效（华为返回 400 + missing/invalid refresh_token 相关错误）
+      // sub_error 12304=invalid client_secret, 20191=missing refresh_token, 12300=invalid grant
+      const isRefreshTokenInvalid = errMsg.includes('400') &&
+        (errMsg.includes('refresh_token') || errMsg.includes('invalid_grant') ||
+          errMsg.includes('invalid client'));
+
+      if (isRefreshTokenInvalid) {
+        // refresh_token 已失效（超过180天或被撤销），清理持久化 token，提示重新登录
+        hilog.error(DOMAIN, TAG, 'Refresh token invalid or expired, clearing stored token');
+        try {
+          await OAuth2TokenStorageService.getInstance().deleteToken({
+            provider: OAuth2Provider.HUAWEI_DRIVE,
+            encrypt: true
+          });
+        } catch (clearErr) {
+          hilog.error(DOMAIN, TAG, 'Failed to clear expired token: %{public}s', (clearErr as Error).message);
+        }
+        throw new StorageError(StorageErrorCodes.AUTH_EXPIRED,
+          'Login expired, please re-authorize Huawei Drive');
+      }
+
+      throw new StorageError(StorageErrorCodes.CONNECT_ERROR, errMsg);
     }
   }
 
