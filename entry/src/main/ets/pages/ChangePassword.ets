@@ -406,8 +406,6 @@ export struct ChangePasswordContent {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
-    // 延伸进底部系统安全区：单栏模式下悬浮按钮锚点跟随物理底边，
-    // 分栏模式无底部避让区时该扩展为空操作，布局不变
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
