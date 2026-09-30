@@ -11,9 +11,11 @@ import {
 } from './HuaweiDriveClient';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { HuaweiDrivePageConfig, HuaweiDriveStorageConfig } from './HuaweiDriveConfig';
+import { HuaweiDrivePathCacheData, HuaweiDrivePathCacheEntry, HuaweiDrivePathCacheStore } from './HuaweiDrivePathCacheStore';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import { HuaweiDriveOAuth2Config } from './HuaweiDriveOAuth2Provider';
 import { ByteUtils } from 'kdbxweb';
+import { BusinessError } from '@kit.BasicServicesKit';
 import BuildProfile from 'BuildProfile';
 
 const DOMAIN = 0x0000;
@@ -23,6 +25,10 @@ const TAG = 'HuaweiDriveStorage';
  * 路径→fileId 映射缓存上限，超过后清空重建，避免无限增长
  */
 const PATH_ID_CACHE_LIMIT = 200;
+/**
+ * 持久化防抖延迟（毫秒）：合并短时间内的多次缓存变更，一次落盘
+ */
+const PATH_CACHE_PERSIST_DELAY = 500;
 
 /**
  * 华为云盘存储实现类
@@ -42,11 +48,35 @@ export class HuaweiDriveStorage implements IFileStorage {
    */
   private oauth2Config: OAuth2Config | undefined;
   /**
-   * 文件路径→fileId 映射缓存
-   * listDir 时建立映射，read/getInfo/exists/delete 时优先查缓存命中 fileId，
-   * 避免 findFileByPath 逐级 list 下钻带来的多次 API 调用
+   * 文件路径→fileId 映射缓存（静态，跨实例共享）
+   * listDir/findFileByPath 时建立映射，read/getInfo/exists/delete 时优先查缓存命中 fileId，
+   * 避免 findFileByPath 逐级 list 下钻带来的多次 API 调用。
+   * 工厂单例与文件浏览页的独立实例共享同一缓存，同一账号内避免重复解析同一路径；
+   * 账号切换时在 init() 中按 cacheOwnerKey 统一清空。
    */
-  private pathIdCache: Map<string, string> = new Map();
+  private static pathIdCache: Map<string, string> = new Map();
+  /**
+   * 根目录真实 fileId 缓存（静态，跨实例共享）
+   * 同一账号内根目录 id 不变，避免每次 findFileByPath 都 list('root')+getInfo('root')
+   */
+  private static rootFolderId: string = '';
+  /**
+   * 缓存所属账号指纹（refreshToken 明文，仅驻内存；落盘前经 SHA-256 截断）
+   * init() 时与当前配置比对，不一致则清空 pathIdCache/rootFolderId，避免命中其他账号的失效 fileId
+   */
+  private static cacheOwnerKey: string = '';
+  /**
+   * 磁盘缓存是否已水合到内存（配合 hydratePromise 单飞，整个进程只加载一次）
+   */
+  private static cacheHydrated: boolean = false;
+  /**
+   * 进行中的水合 Promise（并发去重）
+   */
+  private static hydratePromise: Promise<void> | null = null;
+  /**
+   * 防抖落盘定时器 id（-1 表示无待写任务）
+   */
+  private static persistTimer: number = -1;
   /**
    * 正在进行的刷新 Promise（并发去重，避免多个操作同时刷新）
    * 刷新完成（成功或失败）后置空
@@ -78,8 +108,19 @@ export class HuaweiDriveStorage implements IFileStorage {
   public init(config: StorageConfig): void {
     this.config = this.parseConfig(config);
     hilog.debug(DOMAIN, TAG, `HuaweiDriveStorage init: accessToken length=${this.config.getAccessTokenText().length}`);
-    // 重新初始化可能切换了账号，清空路径→fileId 缓存，避免命中上一个账号的失效 fileId
-    this.pathIdCache.clear();
+    // 账号切换时清空路径→fileId 缓存，避免命中上一个账号的失效 fileId；
+    // 同一账号重复 init（每次 KdbxFileManager 构造都会触发）时保留缓存，避免重复的路径解析请求
+    const ownerKey = this.config.getRefreshTokenText();
+    if (HuaweiDriveStorage.cacheOwnerKey !== ownerKey) {
+      HuaweiDriveStorage.cacheOwnerKey = ownerKey;
+      HuaweiDriveStorage.pathIdCache.clear();
+      HuaweiDriveStorage.rootFolderId = '';
+      // 重置水合状态：下次解析前重新尝试从磁盘加载新账号的缓存
+      // （磁盘若残留其他账号的数据，水合时按 owner 指纹比对后会被丢弃）
+      HuaweiDriveStorage.cacheHydrated = false;
+      HuaweiDriveStorage.hydratePromise = null;
+      hilog.debug(DOMAIN, TAG, 'Account changed, path id cache cleared');
+    }
     if (this.client) {
       this.client.close();
     }
@@ -215,6 +256,12 @@ export class HuaweiDriveStorage implements IFileStorage {
         } catch (clearErr) {
           hilog.error(DOMAIN, TAG, 'Failed to clear expired token: %{public}s', (clearErr as Error).message);
         }
+        // 令牌已失效（等效强制登出），同步清空路径→fileId 缓存（内存+磁盘）
+        try {
+          await HuaweiDriveStorage.clearPathCache();
+        } catch (cacheErr) {
+          hilog.warn(DOMAIN, TAG, 'Failed to clear path cache on auth expiry: %{public}s', (cacheErr as Error).message);
+        }
         throw new StorageError(StorageErrorCodes.AUTH_EXPIRED,
           'Login expired, please re-authorize Huawei Drive');
       }
@@ -255,6 +302,8 @@ export class HuaweiDriveStorage implements IFileStorage {
     if (!this.client) {
       return null;
     }
+    // 确保磁盘持久化缓存已水合（单飞），冷启动首次解析即可命中
+    await HuaweiDriveStorage.ensureHydrated();
     // 规范化路径：去掉开头的 '/'
     const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
     if (!normalizedPath) {
@@ -262,7 +311,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 1. 优先查路径→fileId 缓存，命中则直接 getInfo(fileId)
-    const cachedFileId = this.pathIdCache.get(path);
+    const cachedFileId = HuaweiDriveStorage.pathIdCache.get(normalizedPath);
     if (cachedFileId) {
       try {
         const cachedResp = await this.client.getInfo(cachedFileId);
@@ -276,23 +325,27 @@ export class HuaweiDriveStorage implements IFileStorage {
         }
       } catch {
         // 缓存的 fileId 可能已失效，清除后继续走其他方式
-        this.pathIdCache.delete(path);
+        HuaweiDriveStorage.pathIdCache.delete(normalizedPath);
+        HuaweiDriveStorage.schedulePersist();
       }
     }
 
     // 2. 尝试将 path 当作 fileId 直接查询
-    try {
-      const directResp = await this.client.getInfo(normalizedPath);
-      if (directResp.success && directResp.body) {
-        const jsonStr = ByteUtils.bytesToString(directResp.body);
-        const data: Record<string, Object> = JSON.parse(jsonStr);
-        const file = this.client.parseFile(data);
-        if (file.id) {
-          return file;
+    //（fileId 不含 '/'，含 '/' 的一定是路径，跳过探测避免必然失败的请求）
+    if (!normalizedPath.includes('/')) {
+      try {
+        const directResp = await this.client.getInfo(normalizedPath);
+        if (directResp.success && directResp.body) {
+          const jsonStr = ByteUtils.bytesToString(directResp.body);
+          const data: Record<string, Object> = JSON.parse(jsonStr);
+          const file = this.client.parseFile(data);
+          if (file.id) {
+            return file;
+          }
         }
+      } catch {
+        // 不是有效的 fileId，继续走路径解析
       }
-    } catch {
-      // 不是有效的 fileId，继续走路径解析
     }
 
     // 3. 路径解析：逐级下钻
@@ -323,6 +376,8 @@ export class HuaweiDriveStorage implements IFileStorage {
       if (!found) {
         return null;
       }
+      // 缓存本段路径→fileId（含中间目录与最终文件），后续同路径的 read/getInfo/exists 直接命中
+      this.cachePathId(segments.slice(0, i + 1).join('/'), found.id);
       if (isLast) {
         return found;
       }
@@ -336,17 +391,141 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
+   * 清空路径→fileId 缓存（内存 + 磁盘）
+   * 退出登录 / refresh_token 失效强制登出时调用，避免残留上一个账号的映射数据
+   */
+  public static async clearPathCache(): Promise<void> {
+    // 取消待写的防抖任务，避免清空后又被旧数据回写
+    if (HuaweiDriveStorage.persistTimer >= 0) {
+      clearTimeout(HuaweiDriveStorage.persistTimer);
+      HuaweiDriveStorage.persistTimer = -1;
+    }
+    HuaweiDriveStorage.pathIdCache.clear();
+    HuaweiDriveStorage.rootFolderId = '';
+    HuaweiDriveStorage.cacheOwnerKey = '';
+    HuaweiDriveStorage.hydratePromise = null;
+    // 磁盘数据同步清除，标记已水合（无数据可加载），后续 init 账号比对会自行重置
+    HuaweiDriveStorage.cacheHydrated = true;
+    await HuaweiDrivePathCacheStore.clear();
+    hilog.info(DOMAIN, TAG, 'Path id cache cleared (memory + disk)');
+  }
+
+  /**
+   * 确保磁盘持久化缓存已水合到内存（单飞，整个进程只加载一次）
+   * 在任何路径解析（findFileByPath/listDir）前调用，
+   * 保证冷启动第一次解析即可命中持久化的 fileId，跳过逐级下钻
+   */
+  private static ensureHydrated(): Promise<void> {
+    if (HuaweiDriveStorage.cacheHydrated) {
+      return Promise.resolve();
+    }
+    if (HuaweiDriveStorage.hydratePromise) {
+      return HuaweiDriveStorage.hydratePromise;
+    }
+    HuaweiDriveStorage.hydratePromise = HuaweiDriveStorage.doHydrate();
+    return HuaweiDriveStorage.hydratePromise;
+  }
+
+  /**
+   * 从磁盘加载缓存到静态成员
+   * 仅在内存缓存为空且账号指纹匹配时水合；内存数据永远比磁盘新
+   */
+  private static async doHydrate(): Promise<void> {
+    try {
+      const ownerKey = HuaweiDriveStorage.cacheOwnerKey;
+      // 无账号信息，或内存已有数据（如账号切换后已重新解析），跳过水合
+      if (!ownerKey || HuaweiDriveStorage.pathIdCache.size > 0) {
+        return;
+      }
+      const data = await HuaweiDrivePathCacheStore.load();
+      if (!data) {
+        return;
+      }
+      const currentHash = await HuaweiDrivePathCacheStore.ownerHash(ownerKey);
+      if (data.owner !== currentHash) {
+        hilog.info(DOMAIN, TAG, 'Persisted path cache owner mismatch, ignored');
+        return;
+      }
+      for (const entry of data.entries) {
+        if (HuaweiDriveStorage.pathIdCache.size >= PATH_ID_CACHE_LIMIT) {
+          break;
+        }
+        HuaweiDriveStorage.pathIdCache.set(entry.p, entry.id);
+      }
+      if (!HuaweiDriveStorage.rootFolderId && data.rootId) {
+        HuaweiDriveStorage.rootFolderId = data.rootId;
+      }
+      hilog.info(DOMAIN, TAG, 'Hydrated path cache from disk: %{public}d entries', data.entries.length);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Hydrate path cache failed: %{public}s', (error as Error).message);
+    } finally {
+      HuaweiDriveStorage.cacheHydrated = true;
+      HuaweiDriveStorage.hydratePromise = null;
+    }
+  }
+
+  /**
+   * 防抖持久化：缓存变更点调用，500ms 内的多次变更合并为一次落盘
+   * 避免浏览目录时（listDir 一次缓存 N 个子项）产生写放大
+   */
+  private static schedulePersist(): void {
+    // 水合未完成前不落盘，避免用半空数据覆盖磁盘上的有效缓存
+    if (!HuaweiDriveStorage.cacheHydrated) {
+      return;
+    }
+    if (HuaweiDriveStorage.persistTimer >= 0) {
+      return;
+    }
+    HuaweiDriveStorage.persistTimer = setTimeout(() => {
+      HuaweiDriveStorage.persistTimer = -1;
+      HuaweiDriveStorage.doPersist();
+    }, PATH_CACHE_PERSIST_DELAY);
+  }
+
+  /**
+   * 将静态缓存序列化落盘（fire-and-forget，失败仅告警）
+   */
+  private static doPersist(): void {
+    const ownerKey = HuaweiDriveStorage.cacheOwnerKey;
+    if (!ownerKey) {
+      return;
+    }
+    const entries: HuaweiDrivePathCacheEntry[] = [];
+    HuaweiDriveStorage.pathIdCache.forEach((fileId: string, path: string) => {
+      entries.push({ p: path, id: fileId });
+    });
+    const data: HuaweiDrivePathCacheData = {
+      owner: '',
+      rootId: HuaweiDriveStorage.rootFolderId,
+      entries: entries
+    };
+    HuaweiDrivePathCacheStore.ownerHash(ownerKey).then((hash: string) => {
+      data.owner = hash;
+      return HuaweiDrivePathCacheStore.save(data);
+    }).catch((error: BusinessError) => {
+      hilog.warn(DOMAIN, TAG, 'Persist path cache failed: %{public}s', error.message);
+    });
+  }
+
+  /**
    * 解析根目录真实 fileId
-   * 先通过 list('root') 查找 parentFolder 为空的文件夹；找不到则通过 getInfo('root') 兜底
+   * 优先使用缓存（同一账号内根目录 id 不变）；未缓存时通过 list('root') 查找
+   * parentFolder 为空的文件夹；找不到则通过 getInfo('root') 兜底，成功后写入缓存
    * @returns Promise<string> 根目录 id，失败返回空字符串
    */
   private async resolveRootFolderId(): Promise<string> {
     if (!this.client) {
       return '';
     }
+    // 命中缓存直接返回，避免每次 findFileByPath 都 list('root')+getInfo('root')
+    if (HuaweiDriveStorage.rootFolderId) {
+      return HuaweiDriveStorage.rootFolderId;
+    }
     const rootFiles = await this.listFilesInFolder('root');
     for (const file of rootFiles) {
       if (file.mimeType === HUAWEI_DRIVE_FOLDER_MIME_TYPE && file.parentFolder.length === 0) {
+        HuaweiDriveStorage.rootFolderId = file.id;
+        HuaweiDriveStorage.schedulePersist();
         return file.id;
       }
     }
@@ -355,7 +534,12 @@ export class HuaweiDriveStorage implements IFileStorage {
     if (rootResp.success && rootResp.body) {
       const rootJson = ByteUtils.bytesToString(rootResp.body);
       const rootData: Record<string, Object> = JSON.parse(rootJson);
-      return this.client.parseFile(rootData).id;
+      const rootId = this.client.parseFile(rootData).id;
+      if (rootId) {
+        HuaweiDriveStorage.rootFolderId = rootId;
+        HuaweiDriveStorage.schedulePersist();
+      }
+      return rootId;
     }
     return '';
   }
@@ -652,13 +836,16 @@ export class HuaweiDriveStorage implements IFileStorage {
       await this.refreshAccessToken();
     }
 
+    // 确保磁盘持久化缓存已水合（单飞），冷启动首次解析即可命中
+    await HuaweiDriveStorage.ensureHydrated();
+
     // 将路径解析为文件夹 fileId
     // 根目录直接用 'root'；非根目录先查缓存，缓存未命中则通过 findFileByPath 解析
     let folderId: string;
     if (!path || path === '/') {
       folderId = 'root';
     } else {
-      const cachedId = this.pathIdCache.get(path);
+      const cachedId = HuaweiDriveStorage.pathIdCache.get(path.startsWith('/') ? path.substring(1) : path);
       if (cachedId) {
         folderId = cachedId;
       } else {
@@ -785,6 +972,10 @@ export class HuaweiDriveStorage implements IFileStorage {
       if (!result.success) {
         return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, result.message));
       }
+      // 删除成功后同步移除路径→fileId 缓存，避免后续 exists/getInfo 命中已删除的 fileId
+      const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+      HuaweiDriveStorage.pathIdCache.delete(normalizedPath);
+      HuaweiDriveStorage.schedulePersist();
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive delete error: %{public}s', (error as Error).message);
       if (error instanceof StorageError) {
@@ -800,11 +991,18 @@ export class HuaweiDriveStorage implements IFileStorage {
    * @param fileId 华为云盘文件ID
    */
   private cachePathId(path: string, fileId: string): void {
-    if (this.pathIdCache.size >= PATH_ID_CACHE_LIMIT) {
-      // 简单淘汰：清空缓存重建（Map 保持插入顺序，这里不做精细 LRU）
-      this.pathIdCache.clear();
+    // 统一去掉开头的 '/'，保证写入与查询的 key 一致（findFileByPath 用 normalizedPath 查询）
+    const key = path.startsWith('/') ? path.substring(1) : path;
+    if (!key) {
+      return;
     }
-    this.pathIdCache.set(path, fileId);
+    if (HuaweiDriveStorage.pathIdCache.size >= PATH_ID_CACHE_LIMIT) {
+      // 简单淘汰：清空缓存重建（Map 保持插入顺序，这里不做精细 LRU）
+      HuaweiDriveStorage.pathIdCache.clear();
+    }
+    HuaweiDriveStorage.pathIdCache.set(key, fileId);
+    // 防抖落盘（水合完成前内部会跳过）
+    HuaweiDriveStorage.schedulePersist();
   }
 
   /**
@@ -817,6 +1015,7 @@ export class HuaweiDriveStorage implements IFileStorage {
       this.client = undefined;
     }
     this.config = undefined;
-    this.pathIdCache.clear();
+    // 不清空静态 pathIdCache/rootFolderId：它们按账号指纹（cacheOwnerKey）管理，
+    // 且 fileId 失效时 findFileByPath 步骤1 会自动降级重新解析
   }
 }

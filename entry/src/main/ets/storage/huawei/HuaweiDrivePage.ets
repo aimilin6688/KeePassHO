@@ -237,6 +237,8 @@ struct HuaweiDrive {
   private async logout(): Promise<void> {
     try {
       await OAuth2AuthService.deleteToken(OAuth2Provider.HUAWEI_DRIVE);
+      // 退出登录后清空路径→fileId 缓存（内存+磁盘），避免残留当前账号的映射数据
+      await HuaweiDriveStorage.clearPathCache();
 
       this.oauth2Token = null;
       this.isLoggedIn = false;
