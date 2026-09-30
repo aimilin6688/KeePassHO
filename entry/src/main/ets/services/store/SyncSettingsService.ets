@@ -36,6 +36,8 @@ export class SyncSettingsService {
   private static isInitialized: boolean = false;
   private static deviceIdPreferences: preferences.Preferences | null = null;
   private static versionMap: Map<string, number> = new Map();
+  // 分布式 KV 栈（KVManager/KVStore 等）是否已在本会话加载
+  private static syncStackLoaded: boolean = false;
 
   private constructor() {
   }
@@ -158,11 +160,21 @@ export class SyncSettingsService {
 
   /**
    * 初始化分布式同步服务（KVStore + 订阅 + 清理旧数据）
-   * 由 EntryAbility 在非核心服务初始化阶段调用
+   * 由 EntryAbility 在非核心服务初始化阶段调用；同步开关开启时由 enableSync 按需调用
    */
   public static async initSync(context: common.UIAbilityContext): Promise<void> {
+    // 同步开关未开启时不加载分布式 KV 数据库等资源，所有消费方均已按 isSyncEnabled 门控
+    if (!SyncSettingsService.isSyncEnabled()) {
+      hilog.info(DOMAIN, TAG, 'Sync setting disabled, skip distributed sync init');
+      return;
+    }
+    // 幂等保护：本会话已加载过则跳过（如开启后又关闭再开启）
+    if (SyncSettingsService.syncStackLoaded) {
+      return;
+    }
     await SyncSettingsService.initDeviceIdPreferences(context);
     await DistributedKVService.init(context).then(() => {
+      SyncSettingsService.syncStackLoaded = true;
       SyncSettingsService.init();
     }).catch((err: Error) => {
       hilog.error(DOMAIN, TAG, `Failed to init DistributedKVService: ${err.message}`);
@@ -196,7 +208,10 @@ export class SyncSettingsService {
     const granted = await SyncSettingsService.requestSyncPermission(context);
     if (granted) {
       onGranted();
-      SettingsService.getInstance().put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
+      // 先持久化开关（syncSetting 会跳过该键本身），确保 initSync 门控能读取到 true
+      await SettingsService.getInstance().put(SettingsService.KEY_APP_SYNC_SETTING_ENABLE, true);
+      // 本会话尚未加载分布式 KV 栈时按需加载（如启动时同步开关为关闭状态）
+      await SyncSettingsService.initSync(context);
       SyncSettingsService.triggerFullSync().then(() => {
         onComplete();
       }).catch((error: Error) => {

@@ -1,5 +1,5 @@
 import { distributedKVStore } from '@kit.ArkData';
-import { bundleManager, common } from '@kit.AbilityKit';
+import { abilityAccessCtrl, bundleManager, common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { EventBus } from '../EventBus';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -141,12 +141,34 @@ export class DistributedKVService {
   }
 
   /**
+   * 检查分布式数据同步权限是否已授权
+   * ohos.permission.DISTRIBUTED_DATASYNC 为用户授权（user_grant）权限，
+   * 未授权时 DeviceManager 相关接口（on/getAvailableDeviceListSync 等）会抛 201
+   */
+  private static isSyncPermissionGranted(): boolean {
+    try {
+      const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
+      const atManager = abilityAccessCtrl.createAtManager();
+      const result = atManager.checkAccessTokenSync(bundleInfo.appInfo.accessTokenId, 'ohos.permission.DISTRIBUTED_DATASYNC');
+      return result === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `Failed to check sync permission: ${err?.code}, ${err?.message}`);
+      return false;
+    }
+  }
+
+  /**
    * 初始化设备管理器
    */
   private static initDeviceManager(): void {
     try {
       if (!DistributedKVService.appId) {
         hilog.error(DOMAIN, TAG, 'appId is not initialized');
+        return;
+      }
+      // 未授权时跳过初始化，避免设备管理器接口抛 201 权限错误
+      if (!DistributedKVService.isSyncPermissionGranted()) {
+        hilog.info(DOMAIN, TAG, 'DISTRIBUTED_DATASYNC permission not granted, skip device manager init');
         return;
       }
       DistributedKVService.deviceManager = distributedDeviceManager.createDeviceManager(DistributedKVService.appId);
