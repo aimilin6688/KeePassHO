@@ -521,6 +521,10 @@
       "value": "Invalid data file"
     },
     {
+      "name": "recent_file_not_found",
+      "value": "Recent file record not found, it may have been removed"
+    },
+    {
       "name": "open_failed",
       "value": "Open failed: %s"
     },

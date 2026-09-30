@@ -509,6 +509,10 @@
       "value": "无效的数据文件"
     },
     {
+      "name": "recent_file_not_found",
+      "value": "最近文件记录未找到，可能已被移除"
+    },
+    {
       "name": "open_failed",
       "value": "打开失败:%s"
     },
