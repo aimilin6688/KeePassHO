@@ -398,7 +398,7 @@ export struct DatabaseView {
         });
       }
     } catch (err) {
-      hilog.error(DOMAIN, TAG, `订阅握持手感知失败: ${err?.code}, ${err?.message}`);
+      hilog.warn(DOMAIN, TAG, `订阅握持手感知失败: ${err?.code}, ${err?.message}`);
     }
   }
 
