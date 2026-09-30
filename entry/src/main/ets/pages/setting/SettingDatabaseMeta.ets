@@ -372,15 +372,13 @@ export struct SettingDatabaseMetaContent {
           .margin({ top: 12 })
         }
         .width('100%')
-        .height('100%')
         .margin({ top: 4 })
-        // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
         .padding({ left: 12, right: 12, bottom: 70 })
-        // 顶部对齐，避免内容在滚动区域中被垂直居中
         .justifyContent(FlexAlign.Start)
       }
       .width('100%')
       .layoutWeight(1)
+      .align(Alignment.Top) // 内容高度小于视口时，子组件顶部对齐，避免默认居中
       .scrollBar(BarState.Auto)
       .edgeEffect(EdgeEffect.Spring)
 
@@ -427,5 +425,8 @@ export struct SettingDatabaseMetaContent {
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
+    // 延伸进底部系统安全区：单栏模式下悬浮按钮锚点跟随物理底边，
+    // 分栏模式无底部避让区时该扩展为空操作，布局不变
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }

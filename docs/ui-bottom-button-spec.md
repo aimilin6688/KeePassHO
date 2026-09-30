@@ -20,6 +20,7 @@
 | 按钮行高度 | `60` | |
 | 按钮行内边距 | `{ top: 8, bottom: 8, left: 16, right: 16 }` | 底部留白 8，避免贴底 |
 | 行背景 | `Color.Transparent` | **必须显式声明**，透出页面底色 |
+| 页面根容器安全区 | `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])` | **必须加在页面根 Column 上**（见 `SettingCustomIcons.ets`）。单栏模式下 NavDestination 内容区会避让底部系统安全区，缺了它悬浮按钮会整体偏高一截；分栏模式无底部避让区，该属性为空操作，不影响既有布局 |
 
 > **Button 必须用纯文本形式 `Button($r('...'))`**，禁止用 `Button() { Row() { Text() } }` 包一层纯文字。
 > 带自定义子组件的 `Button` 会带出组件自带的默认样式背景层，`.backgroundColor()` 盖不住它——这就是历史上出现"按钮背景那一长条"的根因。
@@ -218,6 +219,7 @@ build() {
 - [ ] 按钮行：`.height(60)` + `.backgroundColor(Color.Transparent)` + padding `{8,8,16,16}`
 - [ ] 内容区是否 `.layoutWeight(1)`（否则按钮不贴底）
 - [ ] 按钮行已悬浮：有 `.position()` + `.translate()`（**所有页面必须**，流式会露出割裂底条）
+- [ ] 页面根容器已加 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])`（单栏模式悬浮按钮贴底的关键）
 - [ ] 内容防遮挡：List 有 `.contentEndOffset(70)`；Scroll/Grid/固定内容有 `bottom: 70` 的 padding
 - [ ] 悬浮高度与防遮挡空间数值一致（均为 70）
 - [ ] 已执行 **编译 → 安装到设备 → 启动应用 → `pidof` 确认**（见 `.codebuddy/rules/harmony-deploy.md`）
