@@ -25,8 +25,6 @@ export interface DavResource {
   contentType?: string
   // 文件大小
   contentLength?: number
-  // 子文件数量
-  childrenCount?: number
 }
 
 export class WebDavResource implements DavResource {
@@ -37,7 +35,6 @@ export class WebDavResource implements DavResource {
   etag: string | undefined = undefined;
   contentType?: string | undefined = undefined;
   contentLength?: number | undefined = undefined;
-  childrenCount?: number | undefined = undefined;
 }
 
 export class ResultInfo {
@@ -195,6 +192,11 @@ export class WebDavClient {
         requestReturn.success = false;
         return requestReturn;
       }
+      if (resp.statusCode === 429) {
+        requestReturn.message = ResourceManager.getString($r("app.string.webdav_rate_limited"));
+        requestReturn.success = false;
+        return requestReturn;
+      }
       if (resp.statusCode === 409) {
         requestReturn.message = ResourceManager.getString($r("app.string.webdav_no_permission"));
         requestReturn.success = false;
@@ -259,7 +261,7 @@ export class WebDavClient {
    * @param path
    * @returns
    */
-  public async list(path: string = '/', filter: number = 0, queryChildrenCount: boolean = false): Promise<ResultInfo> {
+  public async list(path: string = '/', filter: number = 0): Promise<ResultInfo> {
     const body = `<?xml version="1.0"?>
       <d:propfind xmlns:d="DAV:">
         <d:prop>
@@ -280,13 +282,11 @@ export class WebDavClient {
         for (let i = 0; i < items.length; i++) {
           let item = items[i];
           if (filter == 0) {
-            item.childrenCount = (queryChildrenCount && item.type === 'collection') ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);
             continue;
           }
           // 文件夹
           if (item.type === 'collection' && filter === 1) {
-            item.childrenCount = (queryChildrenCount && item.type === 'collection') ? await this.getChildrenCount(item.href) : 0;
             dirs.push(item);
             continue;
           }
@@ -301,29 +301,6 @@ export class WebDavClient {
       hilog.info(DOMAIN, TAG, `get dir, return : ${JSON.stringify(rr)}`);
     }
     return rr;
-  }
-
-  /**
-   * 获取目录下的所有文件, 记录总数
-   * @param path 目录
-   * @returns 结果
-   */
-  private async getChildrenCount(path: string): Promise<number> {
-    const body = `<?xml version="1.0"?>
-      <d:propfind xmlns:d="DAV:">
-        <d:prop>
-          <d:resourcetype/>
-        </d:prop>
-      </d:propfind>`;
-    const req = new rcp.Request(path, "PROPFIND", { "Depth": "1" }, body);
-    const rr = await this.request(req);
-    if (rr.statusCode === 200) {
-      const items = this.parseXml(rr.body ? ByteUtils.bytesToString(rr.body) : "");
-      return items?.length || 0;
-    } else {
-      hilog.info(DOMAIN, TAG, `get dir, return : ${JSON.stringify(rr)}`);
-    }
-    return 0;
   }
 
   /**
@@ -418,6 +395,10 @@ export class WebDavClient {
     const req = new rcp.Request(remoteUri, "PUT", {}, fileBuffer, {}, {},
       { tracing: { httpEventsHandler: customHttpEventsHandler } });
     const rr = await this.request(req);
+    if (!rr.success) {
+      hilog.error(DOMAIN, TAG, "File upload failed, url: %{public}s, statusCode: %{public}d, message: %{public}s", remoteUri, rr.statusCode, rr.message);
+      return Promise.reject(rr);
+    }
     hilog.info(DOMAIN, TAG, "File upload success:" + (remoteUri) + ', ' + rr.statusCode);
     return rr
   }
@@ -514,12 +495,13 @@ export class WebDavClient {
       supportDoctype: true,
       ignoreNameSpace: true,
       tokenValueCallbackFunction: (eventType: xml.EventType, value: xml.ParseInfo) => {
-        let nodeName = value.getName().toLowerCase();
+        // 节点匹配采用"最后一个冒号后的本地名再小写"，兼容 D:/d:/lp1:/无前缀等任意命名空间前缀
+        let nodeName = WebDavClient.toLocalName(value.getName()).toLowerCase();
         if (eventType == xml.EventType.START_DOCUMENT || eventType == xml.EventType.END_DOCUMENT) {
           return true;
         }
         if (eventType == xml.EventType.START_TAG) {
-          if (nodeName === "d:response") {
+          if (nodeName === "response") {
             curItem = new WebDavResource();
             return true;
           }
@@ -529,38 +511,42 @@ export class WebDavClient {
           return true;
         }
         if (eventType == xml.EventType.END_TAG) {
-          if (nodeName === "d:response") {
+          if (nodeName === "response") {
             if (curItem.type === "") {
               curItem.type = "file"
+            }
+            // displayName 缺失时以 href 末段解码兜底
+            if (!curItem.displayName) {
+              curItem.displayName = WebDavClient.displayNameFromHref(curItem.href);
             }
             items.push(curItem)
             return true;
           }
-          if (nodeName === "d:href") {
+          if (nodeName === "href") {
             curItem.href = preText;
             return true;
           }
-          if (nodeName === "d:displayname") {
+          if (nodeName === "displayname") {
             curItem.displayName = preText;
             return true;
           }
-          if (nodeName === "d:collection") {
+          if (nodeName === "collection") {
             curItem.type = "collection";
             return true;
           }
-          if (nodeName === "d:getcontentlength") {
+          if (nodeName === "getcontentlength") {
             curItem.contentLength = parseInt(preText);
             return true;
           }
-          if (nodeName === "d:getlastmodified") {
+          if (nodeName === "getlastmodified") {
             curItem.lastModified = preText;
             return true;
           }
-          if (nodeName === "d:getetag") {
+          if (nodeName === "getetag") {
             curItem.etag = preText;
             return true;
           }
-          if (nodeName === "d:getcontenttype") {
+          if (nodeName === "getcontenttype") {
             curItem.contentType = preText;
             return true;
           }
@@ -570,5 +556,34 @@ export class WebDavClient {
     };
     that.parseXml(options);
     return items;
+  }
+
+  /**
+   * 取节点名的本地名（最后一个冒号之后的部分），无前缀时原样返回
+   */
+  private static toLocalName(nodeName: string): string {
+    const colonIndex: number = nodeName.lastIndexOf(':');
+    return colonIndex >= 0 ? nodeName.substring(colonIndex + 1) : nodeName;
+  }
+
+  /**
+   * 以 href 末段解码作为显示名兜底
+   */
+  private static displayNameFromHref(href: string): string {
+    if (!href) {
+      return '';
+    }
+    const trimmed: string = href.endsWith('/') ? href.substring(0, href.length - 1) : href;
+    const lastSlashIndex: number = trimmed.lastIndexOf('/');
+    const lastSegment: string = lastSlashIndex >= 0 ? trimmed.substring(lastSlashIndex + 1) : trimmed;
+    if (!lastSegment) {
+      return '';
+    }
+    try {
+      return decodeURIComponent(lastSegment);
+    } catch (error) {
+      // 含非法百分号序列时原样返回
+      return lastSegment;
+    }
   }
 }

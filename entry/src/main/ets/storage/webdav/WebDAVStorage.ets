@@ -110,8 +110,16 @@ export class WebDAVStorage implements IFileStorage {
     try {
       await this.client.upload(path, data);
     } catch (error) {
-      console.error('WebDAV writeFile error:', error);
-      return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message));
+      // upload 失败以 ResultInfo 形式 reject（含 statusCode 与映射后的可读消息），
+      // 此处透传为携带状态码的错误信息，不吞错、不静默成功
+      let errorMessage: string;
+      if (error instanceof ResultInfo) {
+        errorMessage = `${error.message}(${error.statusCode})`;
+      } else {
+        errorMessage = error.message;
+      }
+      hilog.error(DOMAIN, TAG, 'WebDAV writeFile error: %{public}s', errorMessage);
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, errorMessage));
     }
   }
 
@@ -141,7 +149,7 @@ export class WebDAVStorage implements IFileStorage {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
-    return this.client.list(path, 0, false).then((res: ResultInfo) => {
+    return this.client.list(path, 0).then((res: ResultInfo) => {
       if (res.success && res.data && res.data.length > 0) {
         const fileInfo = res.data[0];
         return Promise.resolve({
@@ -150,7 +158,7 @@ export class WebDAVStorage implements IFileStorage {
           modifiedTime: new Date(fileInfo.lastModified).getTime(),
           path: fileInfo.href,
           type: fileInfo.type == 'collection' ? FileType.DIR : FileType.FILE,
-          childrenCount: fileInfo.childrenCount
+          childrenCount: 0
         } as FileInfo);
       } else {
         return Promise.reject(new WebDAVError(res.statusCode, res.message));
@@ -168,7 +176,8 @@ export class WebDAVStorage implements IFileStorage {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
-    return this.client.list(path, 0, true).then((res: ResultInfo) => {
+    // 单次目录列表请求（FR-005），不再查询子目录计数，childrenCount 恒为 0
+    return this.client.list(path, 0).then((res: ResultInfo) => {
       if (res.success && res.data) {
         if (res.data.length <= 0) {
           return Promise.resolve([]);
@@ -186,7 +195,7 @@ export class WebDAVStorage implements IFileStorage {
             modifiedTime: new Date(fileInfo.lastModified).getTime(),
             path: fileInfo.href,
             type: fileInfo.type == 'collection' ? FileType.DIR : FileType.FILE,
-            childrenCount: fileInfo.childrenCount
+            childrenCount: 0
           } as FileInfo);
         }
         return Promise.resolve(files);
