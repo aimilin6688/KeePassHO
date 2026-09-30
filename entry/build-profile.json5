@@ -9,9 +9,9 @@
         "ONE_DRIVE_REDIRECT_URI": "keepassho://aimilin.com/onedrive/redirect",
         "PCLOUD_CLIENT_ID": "B1lgs9UGl2H",
         "PCLOUD_REDIRECT_URI": "keepassho://aimilin.com/pcloud/redirect",
-        "HUAWEI_DRIVE_CLIENT_ID": "",
+        "HUAWEI_DRIVE_CLIENT_ID": "119166997",
         "HUAWEI_DRIVE_CLIENT_SECRET": "",
-        "HUAWEI_DRIVE_REDIRECT_URI": "keepassho://aimilin.com/huaweidrive/redirect"
+        "HUAWEI_DRIVE_REDIRECT_URI": "http://aimilin.com/huawei/redirect"
       }
     }
   },
