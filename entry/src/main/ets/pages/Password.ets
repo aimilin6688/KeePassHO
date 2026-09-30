@@ -33,6 +33,10 @@ export function PasswordBuilder(name: string, param: Object): void {
   }
   .title($r('app.string.Password_unlock_title'))
   .backgroundColor($r('app.color.bg_primary'))
+  .onShown(() => {
+    // NavDestination 下 onPageShow 不回调，通过计数驱动页面显示处理
+    AppStorage.set<number>('password_page_shown_tick', (AppStorage.get<number>('password_page_shown_tick') ?? 0) + 1);
+  })
 }
 
 @Component
@@ -122,6 +126,13 @@ export struct Password {
     this.updateButtonState();
   }
 
+  // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
+  @StorageProp('password_page_shown_tick') @Watch('onPageShownTickChange') pageShownTick: number = 0;
+
+  onPageShownTickChange(): void {
+    this.onPageShow();
+  }
+
   onPageShow(): void {
     // 安全措施: 页面显示时清除敏感数据
     // 除非明确标记需要保留密码（如选择密钥文件场景）
@@ -140,8 +151,9 @@ export struct Password {
     hilog.info(DOMAIN, TAG, `onPageShow: isFingerprintSupport=${this.isFingerprintSupport}, isFaceSupport=${this.isFaceSupport}, shouldStartAuth=${this.shouldStartAuth}`);
     WindowUtils.onPageShow(this.getUIContext().getHostContext() as common.UIAbilityContext);
 
-    // 如果标记需要启动生物认证，则延迟启动
+    // 如果标记需要启动生物认证，则启动
     if (this.shouldStartAuth) {
+      this.shouldStartAuth = false;
       hilog.info(DOMAIN, TAG, 'onPageShow: starting auth due to shouldStartAuth=true');
       this.startAuth();
     }
