@@ -370,6 +370,7 @@ export struct SettingDatabaseKeyFunctionContent {
     .width('100%')
     .height('100%')
     .backgroundColor($r("app.color.bg_primary"))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
 
