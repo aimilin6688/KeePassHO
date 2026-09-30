@@ -477,11 +477,14 @@ export class HuaweiDriveClient {
     }
 
     try {
+      // 华为账号服务「刷新用户级凭证」接口要求必传 client_secret（机密客户端），
+      // 否则返回 HTTP 400 (sub_error=12304, error_description=invalid client_secret)。
+      // redirect_uri 仅 authorization_code 模式需要，刷新接口不要求，此处移除以与文档对齐。
       const body: Record<string, string> = {
         'grant_type': 'refresh_token',
         'refresh_token': refreshToken,
         'client_id': this.oauth2Config.clientId,
-        'redirect_uri': this.oauth2Config.redirectUri
+        'client_secret': this.oauth2Config.clientSecret
       };
 
       const url = this.oauth2Config.tokenEndpoint;
@@ -502,8 +505,27 @@ export class HuaweiDriveClient {
         throw new Error(`HTTP ${httpResponse.statusCode}: ${httpResponse.message}`);
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Refresh token failed: %{public}s', (error as Error).message);
-      throw new Error(`Refresh token failed: ${(error as Error).message}`);
+      // 解析华为返回的详细错误（sub_error / error_description），便于定位 400 根因
+      const err: Error = error as Error;
+      const axiosErr: AxiosError = error as AxiosError;
+      let detail: string = err.message;
+      // axios 的 response.data 类型为 unknown，需显式 cast 为 Object，避免触发 arkts-no-any-unknown
+      const respData: Object | undefined = axiosErr.response?.data as Object | undefined;
+      if (respData) {
+        try {
+          if (respData instanceof ArrayBuffer) {
+            detail = ByteUtils.bytesToString(respData);
+          } else if (typeof respData === 'object') {
+            detail = JSON.stringify(respData);
+          } else {
+            detail = String(respData);
+          }
+        } catch {
+          // 解析失败则保留原始 message
+        }
+      }
+      hilog.error(DOMAIN, TAG, 'Refresh token failed: %{public}s, response: %{public}s', err.message, detail);
+      throw new Error(`Refresh token failed: ${err.message}`);
     }
   }
 
