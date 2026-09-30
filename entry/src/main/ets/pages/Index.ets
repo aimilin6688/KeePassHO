@@ -57,9 +57,12 @@ export struct Index {
 
   /**
    * 等待预加载完成
+   * 预加载包含网络请求（最近文件 exists 检查），可能需要数秒；
+   * EntryAbility 在成功/失败时都会置位 PRELOAD_READY，因此按标志位等待是安全的，
+   * 超时回退只在预加载真正卡死（5秒）时触发，避免与预加载重复执行 loadMostRecentFile
    */
   private waitForPreloadAndNavigate(): void {
-    const maxWaitTime = 500; // 最大等待时间
+    const maxWaitTime = 5000; // 最大等待时间（硬上限，防预加载卡死）
     const checkInterval = 50; // 检查间隔
     let waitedTime = 0;
 
