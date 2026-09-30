@@ -39,9 +39,18 @@ export struct UnLockDatabase {
   aboutToAppear(): void {
     // 从 AppStorage 读取锁定标记，替代 router.getParams()
     this.isLocked = AppStorage.get<boolean>('lockIsManual') ?? false;
+    // 锁屏遮罩为条件挂载组件，挂载时 onPageShow 不回调，直接初始化页面状态
+    this.initPageState();
   }
 
   onPageShow(): void {
+    this.initPageState();
+  }
+
+  /**
+   * 页面显示处理（挂载时及应用切前台时触发）
+   */
+  private initPageState(): void {
     // 判断是否为仅密钥文件模式
     this.isKeyfileOnlyMode = AuthType.isKeyfileOnly(this.dbFileParam.authType);
     // 原有密码模式逻辑
