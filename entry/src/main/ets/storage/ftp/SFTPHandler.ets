@@ -1,11 +1,76 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { DisconnectReason, Client as SSHClient, connect as sshConnect } from '@ohos-rs/ssh';
+import { SshClient } from 'sftp-ohos';
 import { FileItemInfo, IFTPHandler } from './IFTPHandler';
-import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
 const TAG = 'SFTPHandler';
+
+/** 默认连接超时（毫秒） */
+const DEFAULT_TIMEOUT_MS = 30000;
+/** 流式传输分块大小（原生层按 SFTP 数据包上限自动裁剪） */
+const TRANSFER_CHUNK_SIZE = 256 * 1024; // 256KB
+
+/**
+ * SFTP 错误码（与 native/sftp-ohos/src/error.rs 保持一致）
+ */
+export enum SftpErrorCode {
+  UNKNOWN = 0,
+  NETWORK_ERROR = 1,
+  TIMEOUT = 2,
+  AUTH_FAILED = 3,
+  HANDSHAKE_FAILED = 4,
+  CHANNEL_ERROR = 5,
+  SFTP_ERROR = 6,
+  NO_SUCH_FILE = 7,
+  DISPOSED = 8,
+  NOT_CONNECTED = 9,
+  BAD_HANDLE = 10
+}
+
+/** 错误码映射表：数值 → 枚举 */
+const SFTP_CODE_MAP: Map<number, SftpErrorCode> = new Map([
+  [0, SftpErrorCode.UNKNOWN],
+  [1, SftpErrorCode.NETWORK_ERROR],
+  [2, SftpErrorCode.TIMEOUT],
+  [3, SftpErrorCode.AUTH_FAILED],
+  [4, SftpErrorCode.HANDSHAKE_FAILED],
+  [5, SftpErrorCode.CHANNEL_ERROR],
+  [6, SftpErrorCode.SFTP_ERROR],
+  [7, SftpErrorCode.NO_SUCH_FILE],
+  [8, SftpErrorCode.DISPOSED],
+  [9, SftpErrorCode.NOT_CONNECTED],
+  [10, SftpErrorCode.BAD_HANDLE]
+]);
+
+/**
+ * 从错误信息中解析 SFTP 错误码。
+ * 原生层错误消息编码格式为 `[sftp:{code}] {detail}`。
+ */
+export function parseSftpErrorCode(message: string): SftpErrorCode {
+  const match = message.match(/\[sftp:(\d+)\]/);
+  if (match !== null && match.length > 1) {
+    const code = parseInt(match[1]);
+    const mapped = SFTP_CODE_MAP.get(code);
+    if (mapped !== undefined) {
+      return mapped;
+    }
+  }
+  return SftpErrorCode.UNKNOWN;
+}
+
+/**
+ * 携带错误码的 SFTP 异常
+ */
+export class SftpError extends Error {
+  readonly code: SftpErrorCode;
+
+  constructor(code: SftpErrorCode, message: string) {
+    super(message);
+    this.name = 'SftpError';
+    this.code = code;
+  }
+}
 
 /**
  * SFTP配置接口
@@ -15,95 +80,106 @@ export interface SFTPConfig {
   port: number;
   username: string;
   password: string;
+  /** 连接超时（毫秒），默认 30000 */
   timeout?: number;
+  /** keepalive 心跳间隔（秒），默认 30；0 禁用 */
+  keepaliveSec?: number;
 }
 
 /**
- * SFTP处理器，使用SSH执行SFTP命令
+ * SFTP处理器，基于原生 sftp-ohos（russh + russh-sftp）协议级实现。
+ *
+ * 与旧 exec 方案的本质差异：`exists` 仅在服务器明确报告"文件不存在"时
+ * 返回 false，网络/超时等错误一律上抛，避免"最近文件"记录被误删。
  */
 export class SFTPHandler implements IFTPHandler {
-  private client: SSHClient | undefined;
+  private client: SshClient | undefined;
   private config: SFTPConfig;
-  // 上传分块大小：64KB，更小的块以避免连接超时
-  private static readonly UPLOAD_CHUNK_SIZE = 64 * 1024; // 64KB
-  // 下载分块大小：256KB
-  private static readonly DOWNLOAD_CHUNK_SIZE = 256 * 1024; // 256KB
 
   constructor(config: SFTPConfig) {
     this.config = config;
   }
 
   /**
-   * 连接到SFTP服务器
+   * 连接并完成认证 + SFTP 子系统初始化
    */
   public async connect(): Promise<void> {
+    const client = new SshClient();
     try {
-      this.client = await sshConnect(`${this.config.host}:${this.config.port}`);
-      const authenticated = await this.client.authenticatePassword(this.config.username, this.config.password);
+      // 重连场景：先释放旧实例
+      this.releaseClient();
+
+      const timeoutMs = this.config.timeout && this.config.timeout > 0 ? this.config.timeout : DEFAULT_TIMEOUT_MS;
+      await client.connect({
+        host: this.config.host,
+        port: this.config.port,
+        timeoutSec: Math.ceil(timeoutMs / 1000),
+        keepaliveSec: this.config.keepaliveSec
+      });
+
+      const authenticated = await client.authenticatePassword(this.config.username, this.config.password);
       if (!authenticated) {
-        throw new Error('SFTP authentication failed');
+        throw new SftpError(SftpErrorCode.AUTH_FAILED, 'SFTP authentication failed');
       }
+
+      await client.sftpInit();
+      this.client = client;
       hilog.info(DOMAIN, TAG, 'SFTP connected successfully');
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      hilog.error(DOMAIN, TAG, 'SFTP connection failed: ' + err.message);
+      // 失败清理：断开半开连接并释放原生资源，不依赖 GC 兜底
+      try {
+        await client.disconnect();
+      } catch {
+        // 忽略断开异常
+      }
+      client.dispose();
+      const err = SFTPHandler.wrapError(error, 'SFTP connection failed');
+      hilog.error(DOMAIN, TAG, err.message);
       throw err;
     }
   }
 
   /**
-   * 检查是否已关闭
+   * 检查是否已关闭（含断线感知：服务器掐断 / keepalive 超时）
    */
   public isClosed(): boolean {
-    return !this.client || this.client.isClosed() === true;
+    return this.client === undefined || this.client.isClosed();
   }
 
   /**
-   * 关闭连接
+   * 关闭连接并释放原生资源
    */
   public async close(): Promise<void> {
-    if (this.client && !this.client.isClosed()) {
-      await this.client.disconnect(DisconnectReason.ByApplication, 'Normal close', 'en');
-    }
+    const client = this.client;
     this.client = undefined;
+    if (client === undefined) {
+      return;
+    }
+    try {
+      await client.sftpShutdown();
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `sftpShutdown warning: ${String(error)}`);
+    }
+    try {
+      await client.disconnect();
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `disconnect warning: ${String(error)}`);
+    }
+    client.dispose();
     hilog.info(DOMAIN, TAG, 'SFTP connection closed');
   }
 
   /**
-   * 执行命令并返回输出
-   */
-  private async exec(command: string): Promise<string> {
-    if (!this.client || this.client.isClosed()) {
-      throw new Error('SFTP client is not connected');
-    }
-    const result = await this.client.exec(command);
-    if (result.status !== 0) {
-      throw new Error(`Command failed with status ${result.status}: ${command}`);
-    }
-    return ByteUtils.bytesToString(result.output);
-  }
-
-  /**
-   * 检查文件或目录是否存在
+   * 检查文件或目录是否存在。
+   * 仅"明确不存在"返回 false，网络/超时/权限等错误上抛。
    */
   public async exists(path: string): Promise<boolean> {
     try {
-      await this.exec(`test -e "${path}"`);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * 检查是否是目录
-   */
-  private async isDirectory(path: string): Promise<boolean> {
-    try {
-      await this.exec(`test -d "${path}"`);
-      return true;
-    } catch {
-      return false;
+      return await this.requireClient().sftpExists(path);
+    } catch (error) {
+      const err = SFTPHandler.wrapError(error, `Failed to check existence of ${path}`);
+      hilog.error(DOMAIN, TAG, err.message);
+      throw err;
     }
   }
 
@@ -113,301 +189,202 @@ export class SFTPHandler implements IFTPHandler {
   public async getFileInfo(path: string): Promise<FileItemInfo> {
     // 特殊处理根路径
     if (path === '/' || path === '') {
-      return {
+      const rootInfo: FileItemInfo = {
         name: '/',
         size: 0,
         isDirectory: true,
         modifiedTime: 0
       };
+      return rootInfo;
     }
 
     try {
-      const statOutput = await this.exec(`stat -c "%s %Y" "${path}"`);
-      const parts = statOutput.trim().split(' ');
-      const size = parseInt(parts[0]) || 0;
-      const modifiedTime = parseInt(parts[1]) || 0;
-      const isDirectory = await this.isDirectory(path);
-      const name = path.substring(path.lastIndexOf('/') + 1);
-      const fileInfo: FileItemInfo = {
-        name,
-        size,
-        isDirectory,
-        modifiedTime
+      const stat = await this.requireClient().sftpStat(path);
+      const fallbackName = path.substring(path.lastIndexOf('/') + 1);
+      const info: FileItemInfo = {
+        name: stat.name.length > 0 ? stat.name : fallbackName,
+        size: stat.size,
+        isDirectory: stat.isDir,
+        modifiedTime: stat.mtime * 1000
       };
-      return fileInfo;
+      return info;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      hilog.error(DOMAIN, TAG, `Failed to get file info for ${path}: ${err.message}`);
-      throw new Error(`Failed to get file info for ${path}: ${err.message}`);
+      const err = SFTPHandler.wrapError(error, `Failed to get file info for ${path}`);
+      hilog.error(DOMAIN, TAG, err.message);
+      throw err;
     }
   }
 
   /**
-   * 列出目录内容
+   * 列出目录内容（跳过 . 与 ..）
    */
   public async listDir(path: string): Promise<Array<FileItemInfo>> {
     try {
-      const lsOutput = await this.exec(`ls -la --time-style="+%Y-%m-%d %H:%M:%S" "${path}"`);
-      const lines = lsOutput.trim().split('\n');
-      const result: FileItemInfo[] = [];
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        // 跳过total行和 . / ..
-        if (!trimmedLine || trimmedLine.startsWith('total')) {
-          continue;
-        }
-        // 跳过 . 和 .. 目录
-        const parts = trimmedLine.split(/\s+/);
-        if (parts.length >= 8) {
-          const name = parts.slice(7).join(' ');
-          if (name === '.' || name === '..') {
-            continue;
-          }
-          const isDirectory = parts[0].startsWith('d');
-          const size = parseInt(parts[4]) || 0;
-          // 时间格式: 2024-01-15 10:30:45，在 parts[5] 和 parts[6]
-          const dateStr = parts[5] + ' ' + parts[6];
-          const modifiedTime = this.parseDate(dateStr);
-          const fileInfo: FileItemInfo = {
-            name,
-            size,
-            isDirectory,
-            modifiedTime
-          };
-          result.push(fileInfo);
-        }
+      const entries = await this.requireClient().sftpListDir(path);
+      const result: Array<FileItemInfo> = [];
+      for (const entry of entries) {
+        const info: FileItemInfo = {
+          name: entry.name,
+          size: entry.size,
+          isDirectory: entry.isDir,
+          modifiedTime: entry.mtime * 1000
+        };
+        result.push(info);
       }
       hilog.info(DOMAIN, TAG, `Listed ${result.length} items in ${path}`);
       return result;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      hilog.error(DOMAIN, TAG, `Failed to list directory ${path}: ${err.message}`);
-      throw new Error(`Failed to list directory ${path}: ${err.message}`);
+      const err = SFTPHandler.wrapError(error, `Failed to list directory ${path}`);
+      hilog.error(DOMAIN, TAG, err.message);
+      throw err;
     }
   }
 
   /**
-   * 解析日期字符串为时间戳
-   * 格式: "YYYY-MM-DD HH:MM:SS"
-   */
-  private parseDate(dateStr: string): number {
-    try {
-      const parts = dateStr.split(' ');
-      if (parts.length >= 2) {
-        const datePart = parts[0];
-        const timePart = parts[1];
-        const dateParts = datePart.split('-');
-        const timeParts = timePart.split(':');
-        const year = parseInt(dateParts[0]) || 0;
-        const month = parseInt(dateParts[1]) || 0;
-        const day = parseInt(dateParts[2]) || 0;
-        const hour = parseInt(timeParts[0]) || 0;
-        const minute = parseInt(timeParts[1]) || 0;
-        const second = parseInt(timeParts[2]) || 0;
-        const date = new Date(year, month - 1, day, hour, minute, second, 0);
-        return date.getTime();
-      }
-    } catch (error) {
-      hilog.warn(DOMAIN, TAG, `Failed to parse date: ${dateStr}`);
-    }
-    return 0;
-  }
-
-  /**
-   * 下载文件到本地（支持大文件分块下载）
+   * 下载远程文件到本地（SFTP 流式读取 + 大小校验）
    */
   public async downloadFrom(remotePath: string, localPath: string): Promise<void> {
+    let client: SshClient | undefined = undefined;
+    let handle = -1;
     try {
-      hilog.info(DOMAIN, TAG, `Starting download: ${remotePath} -> ${localPath}`);
+      client = this.requireClient();
+      const stat = await client.sftpStat(remotePath);
+      const fileSize = stat.size;
+      hilog.info(DOMAIN, TAG, `Downloading ${remotePath} (${fileSize} bytes) -> ${localPath}`);
 
-      // 获取文件大小
-      const fileInfo = await this.getFileInfo(remotePath);
-      const fileSize = fileInfo.size;
-
-      hilog.info(DOMAIN, TAG, `Remote file size: ${fileSize} bytes`);
-
-      // 对于大文件，使用分块读取
-      if (fileSize > SFTPHandler.DOWNLOAD_CHUNK_SIZE) {
-        await this.downloadInChunks(remotePath, localPath, fileSize);
-      } else {
-        // 小文件使用单次读取
-        // 使用base64 -w 0避免在输出中添加换行符
-        const output = await this.exec(`cat "${remotePath}" | base64 -w 0`);
-        const buffer = ByteUtils.base64ToBytes(output.trim()).buffer;
-        const file = await fs.open(localPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-        await fs.write(file.fd, buffer);
-        await fs.close(file.fd);
+      handle = await client.sftpOpenRead(remotePath);
+      const file = await fs.open(localPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      try {
+        let offset = 0;
+        while (offset < fileSize) {
+          const chunk = await client.sftpRead(handle, TRANSFER_CHUNK_SIZE);
+          if (chunk.byteLength === 0) {
+            break; // 远端提前 EOF
+          }
+          await fs.write(file.fd, chunk, { offset: offset });
+          offset += chunk.byteLength;
+        }
+      } finally {
+        try {
+          await fs.close(file.fd);
+        } catch (error) {
+          hilog.warn(DOMAIN, TAG, `Failed to close local file: ${String(error)}`);
+        }
       }
 
-      // 验证下载的文件大小
+      // 校验下载完整性
       const localFile = await fs.open(localPath, fs.OpenMode.READ_ONLY);
       const localStat = await fs.stat(localFile.fd);
       await fs.close(localFile.fd);
-
       if (localStat.size !== fileSize) {
-        throw new Error(`Download verification failed: expected ${fileSize} bytes, got ${localStat.size} bytes`);
+        throw new SftpError(SftpErrorCode.SFTP_ERROR,
+          `Download verification failed: expected ${fileSize} bytes, got ${localStat.size} bytes`);
       }
-
-      hilog.info(DOMAIN, TAG, `Download completed: ${remotePath} (${localStat.size} bytes)`);
+      hilog.info(DOMAIN, TAG, `Download completed: ${remotePath} (${fileSize} bytes)`);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      hilog.error(DOMAIN, TAG, `Failed to download ${remotePath}: ${err.message}`);
-      throw new Error(`Failed to download ${remotePath}: ${err.message}`);
-    }
-  }
-
-  /**
-   * 分块下载大文件
-   * @throws {Error} 如果下载失败
-   */
-  private async downloadInChunks(remotePath: string, localPath: string, totalSize: number): Promise<void> {
-    const localFile = await fs.open(localPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-    let offset = 0;
-    let chunkCount = 0;
-    const totalChunks = Math.ceil(totalSize / SFTPHandler.DOWNLOAD_CHUNK_SIZE);
-
-    try {
-      while (offset < totalSize) {
-        const remainingBytes = totalSize - offset;
-        const currentChunkSize = Math.min(SFTPHandler.DOWNLOAD_CHUNK_SIZE, remainingBytes);
-        chunkCount++;
-
-        hilog.info(DOMAIN, TAG, `Downloading chunk ${chunkCount}/${totalChunks}: offset=${offset}, size=${currentChunkSize}`);
-
-        // 使用dd命令分块读取并base64编码
-        // 使用base64 -w 0避免在输出中添加换行符
-        const base64Chunk = await this.exec(
-          `dd if="${remotePath}" bs=1 skip=${offset} count=${currentChunkSize} 2>/dev/null | base64 -w 0`
-        );
-
-        const buffer = ByteUtils.base64ToBytes(base64Chunk.trim()).buffer;
-        await fs.write(localFile.fd, buffer);
-
-        offset += currentChunkSize;
-      }
+      const err = SFTPHandler.wrapError(error, `Failed to download ${remotePath}`);
+      hilog.error(DOMAIN, TAG, err.message);
+      throw err;
     } finally {
-      try {
-        await fs.close(localFile.fd);
-      } catch (error) {
-        hilog.warn(DOMAIN, TAG, `Failed to close file: ${error.message}`);
-      }
+      await SFTPHandler.closeHandleQuietly(client, handle);
     }
   }
 
   /**
-   * 上传本地文件到远程（支持大文件分块上传）
+   * 上传本地文件到远程（SFTP 流式写入 + 大小校验）
    */
   public async uploadTo(localPath: string, remotePath: string): Promise<void> {
+    let client: SshClient | undefined = undefined;
+    let handle = -1;
+    const file = await fs.open(localPath, fs.OpenMode.READ_ONLY);
     try {
-      hilog.info(DOMAIN, TAG, `Starting upload: ${localPath} -> ${remotePath}`);
+      const localStat = await fs.stat(file.fd);
+      const fileSize = localStat.size;
+      hilog.info(DOMAIN, TAG, `Uploading ${localPath} (${fileSize} bytes) -> ${remotePath}`);
 
-      // 读取本地文件信息
-      const file = await fs.open(localPath, fs.OpenMode.READ_ONLY);
-      const fileInfo = await fs.stat(file.fd);
-      const fileSize = fileInfo.size;
+      client = this.requireClient();
+      handle = await client.sftpOpenWrite(remotePath);
 
-      hilog.info(DOMAIN, TAG, `Local file size: ${fileSize} bytes`);
-
-      // 对于大文件，使用分块上传
-      if (fileSize > SFTPHandler.UPLOAD_CHUNK_SIZE) {
-        await this.uploadInChunks(localPath, remotePath, fileSize);
-      } else {
-        // 小文件使用单次上传
-        const buffer = new ArrayBuffer(fileInfo.size);
-        await fs.read(file.fd, buffer);
-        await fs.close(file.fd);
-
-        const base64Content = ByteUtils.bytesToBase64(buffer);
-        // 使用printf避免echo的换行符问题
-        // 转义单引号以避免shell解析问题
-        const escapedContent = base64Content.replace(/'/g, "'\\''");
-        const command = `printf '%s' '${escapedContent}' | base64 -d > "${remotePath}"`;
-        await this.exec(command);
+      let offset = 0;
+      while (offset < fileSize) {
+        const chunkSize = Math.min(TRANSFER_CHUNK_SIZE, fileSize - offset);
+        const buffer = new ArrayBuffer(chunkSize);
+        const readLen = await fs.read(file.fd, buffer, { offset: offset });
+        if (readLen === 0) {
+          break; // 本地文件提前 EOF
+        }
+        const data = readLen === chunkSize ? buffer : buffer.slice(0, readLen);
+        await client.sftpWrite(handle, data);
+        offset += readLen;
       }
-
-      // 验证上传的文件大小
-      const remoteFileInfo = await this.getFileInfo(remotePath);
-      if (remoteFileInfo.size !== fileSize) {
-        throw new Error(`Upload verification failed: expected ${fileSize} bytes, got ${remoteFileInfo.size} bytes`);
-      }
-
-      hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath} (${fileSize} bytes)`);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      hilog.error(DOMAIN, TAG, `Failed to upload ${localPath}: ${err.message}`);
-      throw new Error(`Failed to upload ${localPath}: ${err.message}`);
+      const err = SFTPHandler.wrapError(error, `Failed to upload ${localPath}`);
+      hilog.error(DOMAIN, TAG, err.message);
+      throw err;
+    } finally {
+      try {
+        await fs.close(file.fd);
+      } catch (error) {
+        hilog.warn(DOMAIN, TAG, `Failed to close local file: ${String(error)}`);
+      }
+      await SFTPHandler.closeHandleQuietly(client, handle);
+    }
+
+    // 校验上传完整性（句柄关闭后远端大小才是最终值）
+    if (client !== undefined) {
+      const remoteStat = await client.sftpStat(remotePath);
+      const localStat = await fs.stat(localPath);
+      if (remoteStat.size !== localStat.size) {
+        const err = new SftpError(SftpErrorCode.SFTP_ERROR,
+          `Upload verification failed: expected ${localStat.size} bytes, got ${remoteStat.size} bytes`);
+        hilog.error(DOMAIN, TAG, err.message);
+        throw err;
+      }
+      hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath} (${remoteStat.size} bytes)`);
     }
   }
 
   /**
-   * 分块上传大文件 - 使用更保守的64KB块大小
-   * @throws {Error} 如果上传失败
+   * 获取已连接的客户端，未连接时抛出 NOT_CONNECTED
    */
-  private async uploadInChunks(localPath: string, remotePath: string, totalSize: number): Promise<void> {
-    const file = await fs.open(localPath, fs.OpenMode.READ_ONLY);
-    let offset = 0;
-    let chunkCount = 0;
-    const totalChunks = Math.ceil(totalSize / SFTPHandler.UPLOAD_CHUNK_SIZE);
-
-    try {
-      // 使用远程临时文件
-      const tempRemotePath = `/tmp/sftp_upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.tmp`;
-
-      // 确保临时文件为空
-      try {
-        await this.exec(`: > "${tempRemotePath}"`);
-      } catch {
-        // 忽略创建失败
-      }
-
-      while (offset < totalSize) {
-        const remainingBytes = totalSize - offset;
-        const currentChunkSize = Math.min(SFTPHandler.UPLOAD_CHUNK_SIZE, remainingBytes);
-        chunkCount++;
-
-        hilog.info(DOMAIN, TAG, `Uploading chunk ${chunkCount}/${totalChunks}: offset=${offset}, size=${currentChunkSize}`);
-
-        const buffer = new ArrayBuffer(currentChunkSize);
-        const readLen = await fs.read(file.fd, buffer, { offset: offset });
-
-        if (readLen === 0) {
-          break;
-        }
-
-        // 调整buffer大小为实际读取的字节数
-        const actualBuffer = buffer.slice(0, readLen);
-        const base64Chunk = ByteUtils.bytesToBase64(actualBuffer);
-
-        // 使用printf输出，避免heredoc的问题
-        // 转义单引号
-        const escapedChunk = base64Chunk.replace(/'/g, "'\\''");
-        const command = `printf '%s' '${escapedChunk}' >> "${tempRemotePath}"`;
-        await this.exec(command);
-
-        offset += readLen;
-      }
-
-      // 将base64临时文件解码到目标位置
-      hilog.info(DOMAIN, TAG, `Decoding uploaded chunks to ${remotePath}`);
-      // 先检查临时文件大小
-      const tempSizeOutput = await this.exec(`wc -c < "${tempRemotePath}"`);
-      hilog.info(DOMAIN, TAG, `Temp base64 file size: ${tempSizeOutput.trim()} bytes`);
-
-      await this.exec(`base64 -d < "${tempRemotePath}" > "${remotePath}"`);
-
-      // 清理临时文件
-      try {
-        await this.exec(`rm -f "${tempRemotePath}"`);
-      } catch (e) {
-        hilog.warn(DOMAIN, TAG, `Failed to clean temp file: ${e}`);
-      }
-    } finally {
-      try {
-        await fs.close(file.fd);
-      } catch (e) {
-        hilog.warn(DOMAIN, TAG, `Failed to close file: ${e.message}`);
-      }
+  private requireClient(): SshClient {
+    if (this.client === undefined || this.client.isClosed()) {
+      throw new SftpError(SftpErrorCode.NOT_CONNECTED, 'SFTP client is not connected');
     }
+    return this.client;
+  }
+
+  /**
+   * 释放旧客户端实例（重连前清理）
+   */
+  private releaseClient(): void {
+    const client = this.client;
+    this.client = undefined;
+    client?.dispose();
+  }
+
+  /**
+   * 静默关闭远端文件句柄
+   */
+  private static async closeHandleQuietly(client: SshClient | undefined, handle: number): Promise<void> {
+    if (client === undefined || handle < 0) {
+      return;
+    }
+    try {
+      await client.sftpClose(handle);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `Failed to close sftp handle: ${String(error)}`);
+    }
+  }
+
+  /**
+   * 将任意异常转换为 SftpError（保留原生错误码与消息）
+   */
+  private static wrapError(error: Object, context: string): SftpError {
+    if (error instanceof SftpError) {
+      return error;
+    }
+    const raw = error instanceof Error ? error.message : String(error);
+    return new SftpError(parseSftpErrorCode(raw), `${context}: ${raw}`);
   }
 }
