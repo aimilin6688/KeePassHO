@@ -139,7 +139,14 @@ export class CacheStorage implements IFileStorage {
       return await this.decoratedStorage.exists(path);
     } catch (error) {
       hilog.warn(DOMAIN, TAG, 'Check remote exists failed: %{public}s, fallback to cache', error?.message);
-      return await CacheConstants.cacheExists(path);
+      const cached = await CacheConstants.cacheExists(path);
+      if (cached) {
+        // 远端不可达但存在本地缓存副本：视为存在（支持离线打开）
+        return true;
+      }
+      // 远端错误且无缓存副本：无法判定文件是否存在，上抛错误
+      // 由调用方保留最近文件记录（避免网络抖动导致记录被误删）
+      throw error as Error;
     }
   }
 
