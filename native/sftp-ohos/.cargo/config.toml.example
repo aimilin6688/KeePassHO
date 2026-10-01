@@ -1,0 +1,21 @@
+# HarmonyOS 三 ABI 交叉编译配置模板
+# 复制为 .cargo/config.toml 并将 NDK_HOME 替换为本机 OpenHarmony NDK 路径，例如：
+#   macOS:  /Users/<user>/workspace/software/command-line-tools/sdk/default/openharmony/native
+# NDK 需 >= API 26（llvm/bin 下自带 *-unknown-linux-ohos-clang 包装器）
+#
+# 用法：source ~/.cargo/env && cargo build --target aarch64-unknown-linux-ohos --release
+
+[target.aarch64-unknown-linux-ohos]
+linker = "NDK_HOME/llvm/bin/aarch64-unknown-linux-ohos-clang"
+ar = "NDK_HOME/llvm/bin/llvm-ar"
+rustflags = ["-C", "link-arg=-lace_napi.z"]
+
+[target.armv7-unknown-linux-ohos]
+linker = "NDK_HOME/llvm/bin/armv7-unknown-linux-ohos-clang"
+ar = "NDK_HOME/llvm/bin/llvm-ar"
+rustflags = ["-C", "link-arg=-lace_napi.z"]
+
+[target.x86_64-unknown-linux-ohos]
+linker = "NDK_HOME/llvm/bin/x86_64-unknown-linux-ohos-clang"
+ar = "NDK_HOME/llvm/bin/llvm-ar"
+rustflags = ["-C", "link-arg=-lace_napi.z"]
