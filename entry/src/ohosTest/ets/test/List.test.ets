@@ -25,6 +25,8 @@ import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
 import HuaweiDriveStorageTest from './storage/huawei/HuaweiDriveStorage.test';
 import HuaweiDriveClientTest from './storage/huawei/HuaweiDriveClient.test';
+import SFTPHandlerTest from './storage/SFTPHandler.test';
+import SFTPStorageSemanticsTest from './storage/SFTPStorageSemantics.test';
 
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
@@ -68,6 +70,12 @@ export default function testsuite() {
   // 华为云盘单元测试
   HuaweiDriveStorageTest();
   HuaweiDriveClientTest();
+
+  // SFTP 处理器单元测试（错误码解析 / 未连接语义 / 原生连接失败路径）
+  SFTPHandlerTest();
+
+  // SFTP 存储层语义测试（FTPStorage L1 / CacheStorage 装饰器 / RecentFilesService L2）
+  SFTPStorageSemanticsTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();
