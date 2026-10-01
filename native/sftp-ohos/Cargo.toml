@@ -1,0 +1,29 @@
+[package]
+name = "sftp-ohos"
+version = "0.1.0"
+edition = "2021"
+description = "Native SFTP client for HarmonyOS: russh + russh-sftp napi binding (replaces exec-based @ohos-rs/ssh usage in KeePassHO)"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+async-trait = "0.1"
+russh = "0.46"
+russh-sftp = "2.4"
+tokio = { version = "1", features = ["sync", "time", "io-util"] }
+
+# napi 绑定层仅在 ohos target 编译；宿主机 cargo test 不拉取 napi 依赖
+[target.'cfg(target_env = "ohos")'.dependencies]
+napi-derive-ohos = "1"
+napi-ohos = { version = "1", default-features = false, features = ["napi4", "async", "tokio_net", "tokio_time"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "io-util"] }
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"

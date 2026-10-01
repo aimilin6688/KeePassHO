@@ -1,0 +1,10 @@
+{
+  license: "Apache-2.0",
+  author: "KeePassHO",
+  name: "sftp-ohos",
+  description: "Native SFTP client for HarmonyOS (russh + russh-sftp), replaces @ohos-rs/ssh exec-based SFTP",
+  main: "index.ets",
+  version: "0.1.0",
+  types: "libs/index.d.ts",
+  dependencies: {}
+}
