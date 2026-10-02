@@ -1,0 +1,11 @@
+[
+    {
+        "Name": " basic-ftp",
+        "License": " MIT ",
+        "License File": " LICENSE ",
+        "Version Number": " v5.0.3 ",
+        "Owner": "xiafeng@huawei.com",
+        "Upstream URL": " https://github.com/patrickjuchli/basic-ftp ",
+        "Description": "  This is an FTP client library for Node.js. It supports FTPS over TLS, Passive Mode over IPv6, has a Promise-based API, and offers methods to operate on whole directories. "
+    }
+]
