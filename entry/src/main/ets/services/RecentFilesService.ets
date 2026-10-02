@@ -221,10 +221,10 @@ export class RecentFilesService {
    * 加载最近打开的文件
    * 返回最近打开的第一个文件的参数，如果没有则返回null
    *
-   * 文件存在性检查策略：
+   * 文件存在性检查策略（不主动删除记录）：
    * - 文件存在 → 返回该文件
-   * - 文件确实不存在（exists 返回 false）→ 从列表移除，递归尝试下一个
-   * - 无法判定（exists 抛异常：token 失效、网络错误等）→ 保留该文件记录，
+   * - 文件确实不存在（exists 返回 false）→ 保留记录，提示用户，返回null
+   * - 无法判定（exists 抛异常：token 失效、网络错误等）→ 保留记录，提示用户，
    *   返回它让用户仍可尝试打开（避免因临时错误清空最近列表）
    */
   public async loadMostRecentFile(): Promise<RecentFile | null> {
@@ -241,15 +241,16 @@ export class RecentFilesService {
       try {
         fileExists = await this.checkFileExists(recentFile);
       } catch (error) {
-        // 无法判定文件是否存在（token 失效、网络错误等），保留记录，返回让用户尝试打开
+        // 无法判定文件是否存在（token 失效、网络错误等），保留记录，提示用户
         hilog.warn(DOMAIN, TAG, 'checkFileExists failed, keep recent file: %{public}s, error: %{public}s', recentFile.filePath, (error as Error).message);
+        CommonUtils.showToast((error as Error).message);
         return recentFile;
       }
       if (!fileExists) {
-        // 文件确实不存在，从列表中移除
-        await this.removeRecentFile(recentFile);
-        // 递归调用，尝试加载下一个文件
-        return await this.loadMostRecentFile();
+        // 文件确实不存在，保留记录不主动删除，提示用户由用户自行处理
+        hilog.warn(DOMAIN, TAG, 'Recent file not exists, keep record: %{public}s', recentFile.filePath);
+        CommonUtils.showToast($r('app.string.file_not_exists'));
+        return null;
       }
       return recentFile;
     } catch (error) {
