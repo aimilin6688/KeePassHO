@@ -395,7 +395,10 @@ export class FTPContext {
       // Only track control socket timeout during the lifecycle of a task. This avoids timeouts on idle sockets,
       // the default socket behaviour which is not expected by most users.
       // this.socket.setTimeout(this.timeout)
-      let [extraErr, extraInfo] = await to<void>(this.socket.setExtraOptions({ socketTimeout: 0 }))
+      // FIX(A): restore control-socket timeout so greeting/command-response waits fail fast instead of hanging
+      // forever. Data-transfer phases are still protected by TransferResolver (onDataStart sets 0, onDataDone
+      // restores this.timeout), so no false timeout during active transfers.
+      let [extraErr, extraInfo] = await to<void>(this.socket.setExtraOptions({ socketTimeout: this.timeout ? this.timeout : 0 }))
       if (extraErr) throw extraErr
       if (command) {
         let startTime1 = new Date().getTime();
