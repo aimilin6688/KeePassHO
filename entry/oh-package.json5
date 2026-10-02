@@ -8,7 +8,7 @@
   "dependencies": {
     "kdbxweb": "file:../libs/kdbxweb",
     "@hw-agconnect/petal-aegis": "^1.4.11-300",
-    "@ohos/basic-ftp": "file:../libs/basic_ftp",
+    "@ohos/basic-ftp": "file:../libs/basic-ftp",
     "@ohos/axios": "^2.2.12",
     "sftp-ohos": "file:../libs/sftp-ohos.har",
     "@pura/harmony-dialog": "^1.1.8",
