@@ -14,6 +14,8 @@ import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
+import { LockScreenService } from '../services/LockScreenService';
+import { EventBus } from '../services/EventBus';
 import { AuthService, AuthServiceCallback } from '../services/AuthService';
 import { DataService } from '../services/DataService';
 import { LocationInfo, LocationMode, LocationParam } from '../services/beans/LocationParam';
@@ -570,6 +572,8 @@ export struct Password {
       // DatabaseView 是根页面，使用 navigateBackToRoot 切换
       this.navManager.navigateBackToRoot(PageConstants.PAGE_DATABASE_VIEW);
       this.closeLoadingDialog();
+      // 通知解锁会话：与 UnLockDatabase 页保持同一事件流（冷启动/换库路径此前缺失）
+      EventBus.emit(LockScreenService.EVENT_LOCK_ACTION, 'unlock');
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
       CommonUtils.showToast({ message: error.message, duration: 3000 });

@@ -3095,6 +3095,58 @@
     {
       "name": "huawei_drive_auth_expired",
       "value": "授权已过期，请重新登录"
+    },
+    {
+      "name": "session_notify_title",
+      "value": "快速填充"
+    },
+    {
+      "name": "session_notify_text_default",
+      "value": "解锁会话进行中"
+    },
+    {
+      "name": "session_copy_hint_both",
+      "value": "点按钮可快速复制账号或密码"
+    },
+    {
+      "name": "session_copy_hint_username",
+      "value": "点按钮可快速复制账号"
+    },
+    {
+      "name": "session_copy_hint_password",
+      "value": "点按钮可快速复制密码"
+    },
+    {
+      "name": "session_copied_text",
+      "value": "已复制%s，%d秒后自动清除"
+    },
+    {
+      "name": "session_copied_text_no_clear",
+      "value": "已复制%s"
+    },
+    {
+      "name": "session_field_username",
+      "value": "账号"
+    },
+    {
+      "name": "session_field_password",
+      "value": "密码"
+    },
+    {
+      "name": "session_copy_username",
+      "value": "复制账号"
+    },
+    {
+      "name": "session_copy_password",
+      "value": "复制密码"
+    },
+    {
+      "name": "security_session_notify_enable",
+      "value": "解锁会话通知"
+    },
+    {
+      "name": "security_session_notify_enable_tips",
+      "value": "解锁后在通知栏提供快捷复制按钮"
     }
   ]
 }

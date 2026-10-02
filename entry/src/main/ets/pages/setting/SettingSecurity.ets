@@ -4,6 +4,7 @@ import { FileService } from '../../services/FileService';
 import { AuthService } from '../../services/AuthService';
 import { RecentFilesService } from '../../services/RecentFilesService';
 import { AuthType } from '../../services/TypeDefined';
+import { SessionManager } from '../../services/SessionManager';
 import { BusinessError } from '@kit.BasicServicesKit';
 
 @Builder
@@ -25,6 +26,8 @@ struct SettingSecurityContent {
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State isItemShowTotp: boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
   @State isPrivacyWindow: boolean = SettingsService.KEY_SECURITY_PRIVACY_WINDOW_DEFAULT;
+  // 解锁会话通知
+  @State sessionNotifyEnabled: boolean = SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE_DEFAULT;
   // 认证方式
   @State fingerprintLogin: boolean = SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT;
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
@@ -55,8 +58,7 @@ struct SettingSecurityContent {
     { value: ResourceManager.getString($r("app.string.never")), time: -1 },
   ];
   // 快速解锁密码长度
-  private quickLockPasswordLengthOptions: Array<LengthOption> = [
-    { value: "2" },
+  private quickLockPasswordLengthOptions: Array<LengthOption> = [    { value: "2" },
     { value: "3" },
     { value: "4" },
     { value: "5" },
@@ -129,6 +131,11 @@ struct SettingSecurityContent {
     // 是否启用隐私窗口
     this.settingsService.get(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, this.isPrivacyWindow).then(result => {
       this.isPrivacyWindow = result;
+    });
+
+    // 解锁会话通知开关
+    this.settingsService.get(SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE, this.sessionNotifyEnabled).then(result => {
+      this.sessionNotifyEnabled = result;
     });
   }
 
@@ -347,6 +354,41 @@ struct SettingSecurityContent {
                 .onChange((isOn: boolean) => {
                   this.isPrivacyWindow = isOn;
                   this.settingsService.put(SettingsService.KEY_SECURITY_PRIVACY_WINDOW, isOn);
+                })
+            }
+            .width('100%')
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
+          }
+
+          // 解锁会话通知开关
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.security_session_notify_enable"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.security_session_notify_enable_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+
+              Toggle({ type: ToggleType.Switch, isOn: this.sessionNotifyEnabled })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.sessionNotifyEnabled = isOn;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE, isOn);
+                  // 启用→禁用：立即删除已显示的通知；禁用→启用：会话进行中立即恢复
+                  // 显式传入新值：put 异步落盘，refreshNotification 内部回读会拿到旧值导致行为颠倒
+                  SessionManager.getInstance().refreshNotification(isOn);
                 })
             }
             .width('100%')

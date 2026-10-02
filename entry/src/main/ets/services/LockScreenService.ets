@@ -1,6 +1,7 @@
 import { display, window } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { EventBus } from './EventBus';
+import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 
 const DOMAIN = 0x0000;
 const TAG = 'LockScreenService';
@@ -12,6 +13,8 @@ const TAG = 'LockScreenService';
 export class LockScreenService {
   /** 解锁动作事件名 */
   static readonly EVENT_LOCK_ACTION = 'lock_screen_action';
+  /** 锁屏显示事件名（AppNavigation 监听显示锁屏遮罩） */
+  static readonly EVENT_LOCK_SCREEN = 'lock_screen';
   private static onActionCallback: ((action: string) => void) | null = null;
 
   /**
@@ -48,10 +51,12 @@ export class LockScreenService {
    */
   static async showLockWindow(isManual: boolean): Promise<void> {
     hilog.info(DOMAIN, TAG, 'showLockWindow called, isManual: ' + isManual);
+    // 锁库即净：立即清除剪贴板并取消未执行的清除任务
+    ClipboardUtils.forceClearNow();
     // 保存锁定状态到 AppStorage
     AppStorage.setOrCreate('lockIsManual', isManual);
     // 发送锁屏事件，通知 AppNavigation 显示锁屏遮罩
-    EventBus.emit<boolean>('lock_screen', isManual);
+    EventBus.emit<boolean>(LockScreenService.EVENT_LOCK_SCREEN, isManual);
     hilog.info(DOMAIN, TAG, 'lock_screen event emitted');
   }
 
@@ -60,6 +65,11 @@ export class LockScreenService {
    */
   private static handleAction(action: string): void {
     hilog.info(DOMAIN, TAG, 'handleAction: ' + action);
+
+    // 关闭数据库即净：立即清除剪贴板
+    if (action === 'close_database') {
+      ClipboardUtils.forceClearNow();
+    }
 
     // 发送解锁事件，通知 AppNavigation 隐藏锁屏遮罩
     if (action === 'unlock' || action === 'close_database') {
