@@ -3,7 +3,7 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { RecentFile } from './TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { CommonUtils, DeviceUtils, FileUtils } from '../common/utils';
+import { CommonUtils, DeviceUtils, FileUtils, NetworkUtils } from '../common/utils';
 import { fileShare } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { CryptoUtils } from '../common/utils/CryptoUtils';
@@ -11,7 +11,7 @@ import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { SyncSettingsService } from './store/SyncSettingsService';
 import { DistributedKVService } from './store/DistributedKVService';
-import { CacheConstants } from '../storage';
+import { CacheConstants, StorageType } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -236,6 +236,20 @@ export class RecentFilesService {
 
       // 获取最近打开的第一个文件
       const recentFile = recentFiles[0];
+
+      // 远程存储且无网络：跳过远端 exists 检查，避免离线时弹出网络错误
+      if (recentFile.storageType !== StorageType.LOCAL && !(await NetworkUtils.hasNetwork())) {
+        // 有本地缓存副本：视为存在，直接进密码页（用户勾选"仅使用本地缓存"即可离线打开）
+        if (await CacheConstants.cacheExists(recentFile.filePath)) {
+          hilog.info(DOMAIN, TAG, 'Offline with local cache, skip remote exists check: %{public}s', recentFile.filePath);
+          return recentFile;
+        }
+        // 无缓存副本：离线无法打开，保留记录并友好提示
+        hilog.warn(DOMAIN, TAG, 'Offline without local cache, keep recent file: %{public}s', recentFile.filePath);
+        CommonUtils.showToast($r('app.string.network_error'));
+        return null;
+      }
+
       // 检查文件是否存在
       let fileExists: boolean;
       try {
