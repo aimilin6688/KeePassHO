@@ -35,7 +35,11 @@ export class FTPHandler implements IFTPHandler {
    */
   public async connect(): Promise<void> {
     try {
-      if (!this.client) {
+      // 旧 client 已死（isClosed 检测到 _closingError）时丢弃重建，支持断线重连
+      if (this.client !== undefined && this.client.closed) {
+        this.client = undefined;
+      }
+      if (this.client === undefined) {
         this.client = new FTPClient(CommonUtils.getContext(), this.config.timeout);
       }
       await this.client.access({
@@ -59,7 +63,12 @@ export class FTPHandler implements IFTPHandler {
    * 检查是否已关闭
    */
   public isClosed(): boolean {
-    return !this.client;
+    if (this.client === undefined) {
+      return true;
+    }
+    // basic-ftp Client.closed 检查 _closingError（socket close 事件触发 closeWithError 置位），
+    // 可靠检测服务端关闭/空闲超时/错误导致的死连接，避免 ensureConnected 复用死 client
+    return this.client.closed;
   }
 
   /**
