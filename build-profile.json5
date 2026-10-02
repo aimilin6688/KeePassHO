@@ -147,7 +147,11 @@
     },
     {
       "name": "kdbxweb",
-      "srcPath": "./kdbxweb",
+      "srcPath": "./libs/kdbxweb"
+    },
+    {
+      "name": "basic_ftp",
+      "srcPath": "./libs/basic-ftp",
     }
   ]
 }

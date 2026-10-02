@@ -1,0 +1,15 @@
+{
+  "module": {
+    "name": "kdbxweb_test",
+    "type": "feature",
+    "deviceTypes": [
+      "default",
+      "tablet",
+      "2in1"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "dependencies": [
+    ]
+  }
+}
