@@ -151,7 +151,7 @@
     },
     {
       "name": "basic_ftp",
-      "srcPath": "./libs/basic-ftp",
+      "srcPath": "./libs/basic_ftp"
     }
   ]
 }
