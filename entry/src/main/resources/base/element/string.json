@@ -3099,6 +3099,58 @@
     {
       "name": "huawei_drive_auth_expired",
       "value": "Authorization expired, please login again"
+    },
+    {
+      "name": "session_notify_title",
+      "value": "Quick Fill"
+    },
+    {
+      "name": "session_notify_text_default",
+      "value": "Session active"
+    },
+    {
+      "name": "session_copy_hint_both",
+      "value": "Use the buttons to copy username or password"
+    },
+    {
+      "name": "session_copy_hint_username",
+      "value": "Use the button to copy username"
+    },
+    {
+      "name": "session_copy_hint_password",
+      "value": "Use the button to copy password"
+    },
+    {
+      "name": "session_copied_text",
+      "value": "%s copied, clipboard clears in %d s"
+    },
+    {
+      "name": "session_copied_text_no_clear",
+      "value": "%s copied"
+    },
+    {
+      "name": "session_field_username",
+      "value": "Username"
+    },
+    {
+      "name": "session_field_password",
+      "value": "Password"
+    },
+    {
+      "name": "session_copy_username",
+      "value": "Copy username"
+    },
+    {
+      "name": "session_copy_password",
+      "value": "Copy password"
+    },
+    {
+      "name": "security_session_notify_enable",
+      "value": "Session notification"
+    },
+    {
+      "name": "security_session_notify_enable_tips",
+      "value": "Quick copy buttons in the notification panel after unlock"
     }
   ]
 }

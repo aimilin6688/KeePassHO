@@ -10,6 +10,7 @@ import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabase
 import { common } from '@kit.AbilityKit';
 import { OtpExtractionResult } from '../services/otp';
 import { EventBus } from '../services/EventBus';
+import { SessionManager } from '../services/SessionManager';
 import { emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0xFF00;
@@ -109,6 +110,16 @@ export struct EntryView {
         });
         this.navPathStack.pop();
         return;
+      }
+
+      // 解锁会话通知仅绑定含账号或密码的条目；无账号且无密码（含分组类条目）不更新通知；
+      // 字段可用性标记决定通知按钮动态显示（仅账号→复制账号，仅密码→复制密码，都有→双按钮）
+      const entryFields = this.entry?.fields;
+      const hasUsername = !!KdbxUtils.getFieldValueString(entryFields, KdbxUtils.FIELD_USERNAME);
+      const hasPassword = !!KdbxUtils.getFieldValueString(entryFields, KdbxUtils.FIELD_PASSWORD);
+      if (hasUsername || hasPassword) {
+        SessionManager.getInstance().setActiveEntry(this.groupId, this.entryId,
+          KdbxUtils.getFieldValueString(entryFields, KdbxUtils.FIELD_TITLE) || '', hasUsername, hasPassword);
       }
 
       // 加载字段

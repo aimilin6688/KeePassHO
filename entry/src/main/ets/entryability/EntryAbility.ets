@@ -15,6 +15,9 @@ import { DialogHelper } from '@pura/harmony-dialog';
 import { CrashLogService } from '../services/CrashLogService';
 import { LockScreenService } from '../services/LockScreenService';
 import { NavigationManager } from '../common/utils/NavigationManager';
+import { ClipboardUtils } from '../common/utils/ClipboardUtils';
+import { SessionManager } from '../services/SessionManager';
+import { CopyEventService } from '../services/CopyEventService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -114,6 +117,10 @@ export default class EntryAbility extends UIAbility {
     DialogHelper.setDefaultConfig((config) => {
       config.uiAbilityContext = this.context;
     });
+    // 初始化解锁会话通知（SessionManager 监听解锁/锁库事件）
+    SessionManager.getInstance().init();
+    // 初始化通知栏快捷复制公共事件订阅
+    await CopyEventService.getInstance().init();
   }
 
   onDestroy(): void {
@@ -123,6 +130,9 @@ export default class EntryAbility extends UIAbility {
     DistributedKVService.close();
     // 取消订阅崩溃事件
     CrashLogService.getInstance().unsubscribeCrashEvent();
+    // 清理会话通知与公共事件订阅
+    SessionManager.getInstance().destroy();
+    CopyEventService.getInstance().destroy();
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -153,6 +163,9 @@ export default class EntryAbility extends UIAbility {
   }
 
   onForeground(): void {
+    // 剪贴板清除任务补偿：后台冻结期间定时器暂停，回前台检查是否到期未清除
+    ClipboardUtils.flushPendingClears();
+    SessionManager.getInstance().onAppForeground();
     if (this.isLockScreen()) {
       this.tryLockScreen();
     }
@@ -172,6 +185,8 @@ export default class EntryAbility extends UIAbility {
   }
 
   onBackground(): void {
+    // 会话进行中申请短时任务保活（通知窗口/剪贴板清理定时器、通知按钮事件投递依赖进程运行）
+    SessionManager.getInstance().onAppBackground();
     if (this.isLockScreen()) {
       this.backgroundTime = new Date().getTime(); // 记录当前时间戳
     }
