@@ -35,28 +35,46 @@ export class FTPHandler implements IFTPHandler {
    */
   public async connect(): Promise<void> {
     try {
-      // 旧 client 已死（isClosed 检测到 _closingError）时丢弃重建，支持断线重连
-      if (this.client !== undefined && this.client.closed) {
-        this.client = undefined;
-      }
-      if (this.client === undefined) {
-        this.client = new FTPClient(CommonUtils.getContext(), this.config.timeout);
-      }
-      await this.client.access({
-        host: this.config.host,
-        port: this.config.port,
-        user: this.config.username,
-        password: this.config.password,
-        secure: this.config.secure
-      });
-      // 连接成功后设置为二进制传输模式
-      // TYPE I: 设置数据传输模式为二进制(图片、视频、压缩文件等)
-      await this.client.send("TYPE I");
-      hilog.info(DOMAIN, TAG, 'FTP connected successfully (binary transfer mode, UTF-8 control encoding)');
+      await this.doConnect();
     } catch (error) {
+      // 偶发 EINPROGRESS（缺陷 A 家族：冷启动后 _newSocket 的 getDefaultNet/bind 竞态，
+      // socket.connect 立即以 "Operation in progress" 拒绝）。实测重试即成功，自动重试一次
+      // 把偶发抖动吸收在存储层，用户无感；若重试仍失败则上抛真实错误。
+      if (error instanceof Error && error.message.includes('Operation in progress')) {
+        hilog.warn(DOMAIN, TAG, 'FTP connect hit EINPROGRESS, retrying once');
+        try {
+          await this.doConnect();
+          hilog.info(DOMAIN, TAG, 'FTP connect retry succeeded');
+          return;
+        } catch (retryError) {
+          hilog.error(DOMAIN, TAG, 'FTP connection failed after retry: ' + retryError.message);
+          throw new StorageError(StorageErrorCodes.CONNECT_ERROR, retryError.message);
+        }
+      }
       hilog.error(DOMAIN, TAG, 'FTP connection failed: ' + error.message);
       throw new StorageError(StorageErrorCodes.CONNECT_ERROR, error.message);
     }
+  }
+
+  private async doConnect(): Promise<void> {
+    // 旧 client 已死（isClosed 检测到 _closingError）时丢弃重建，支持断线重连
+    if (this.client !== undefined && this.client.closed) {
+      this.client = undefined;
+    }
+    if (this.client === undefined) {
+      this.client = new FTPClient(CommonUtils.getContext(), this.config.timeout);
+    }
+    await this.client.access({
+      host: this.config.host,
+      port: this.config.port,
+      user: this.config.username,
+      password: this.config.password,
+      secure: this.config.secure
+    });
+    // 连接成功后设置为二进制传输模式
+    // TYPE I: 设置数据传输模式为二进制(图片、视频、压缩文件等)
+    await this.client.send("TYPE I");
+    hilog.info(DOMAIN, TAG, 'FTP connected successfully (binary transfer mode, UTF-8 control encoding)');
   }
 
   /**
@@ -76,8 +94,9 @@ export class FTPHandler implements IFTPHandler {
    */
   public async close(): Promise<void> {
     if (this.client) {
-      this.client.close();
+      const client = this.client;
       this.client = undefined;
+      await client.close();
       hilog.info(DOMAIN, TAG, 'FTP connection closed');
     }
   }

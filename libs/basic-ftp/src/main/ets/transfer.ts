@@ -513,9 +513,8 @@ export function uploadFrom(source: fs.Stream, config: TransferConfig, options: U
             }
             let trueData = readBuffer.slice(0, readLen)
             if (isHttps) {
-              let data = buffer.from(trueData).toString(config.ftp.encoding ? config.ftp.encoding : 'utf8')
               let localTlsSocket = dataSocket as socket.TLSSocket;
-              await localTlsSocket.send(data);
+              await localTlsSocket.send(trueData);
             } else {
               let localTlsSocket = dataSocket as socket.TCPSocket;
               await localTlsSocket.send({

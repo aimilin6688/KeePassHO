@@ -18,6 +18,8 @@ const TAG = 'FTPStorage';
 export class FTPStorage implements IFileStorage {
   private config: FTPStorageConfig | undefined;
   private handler: IFTPHandler | undefined;
+  private pendingClose: Promise<void> | undefined;
+  private opQueue: Promise<void> = Promise.resolve();
 
   constructor(config?: FTPStorageConfig) {
     if (config) {
@@ -42,14 +44,20 @@ export class FTPStorage implements IFileStorage {
 
   private static configEqual(a: FTPStorageConfig, b: FTPStorageConfig): boolean {
     // 比较"连接语义"是否一致。username/password 在 FTPStorageConfig 中是 SM4-CBC 加密存储
-    // （随机 IV，非确定性），直接比密文永不相等 → 必须解密比明文，复用优化才真正生效
-    return a.host === b.host
-      && a.port === b.port
-      && a.protocol === b.protocol
-      && a.secure === b.secure
-      && (a.timeout ?? 0) === (b.timeout ?? 0)
-      && a.getUserNameText() === b.getUserNameText()
-      && a.getPasswordText() === b.getPasswordText();
+    // （随机 IV，非确定性），直接比密文永不相等 → 必须解密比明文，复用优化才真正生效。
+    // 解密失败（密文损坏/资产密钥丢失）视为"不相等"走重建，保证 init() 不抛错。
+    try {
+      return a.host === b.host
+        && a.port === b.port
+        && a.protocol === b.protocol
+        && a.secure === b.secure
+        && (a.timeout ?? 0) === (b.timeout ?? 0)
+        && a.getUserNameText() === b.getUserNameText()
+        && a.getPasswordText() === b.getPasswordText();
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'configEqual decrypt failed, treating as not equal: %{public}s', error.message);
+      return false;
+    }
   }
 
   public static parseConfig(config: FTPStorageConfig): FTPStorageConfig {
@@ -87,7 +95,8 @@ export class FTPStorage implements IFileStorage {
     // 旧 handler 不再使用（配置变更或重建），异步关闭避免控制连接泄漏
     //（createHandler 为同步，无法 await；close 触发后异步完成，旧 handler 不再被引用）
     if (this.handler) {
-      this.handler.close().catch((e: Error) => {
+      const oldHandler = this.handler;
+      this.pendingClose = oldHandler.close().catch((e: Error) => {
         hilog.error(DOMAIN, TAG, 'Failed to close previous handler: %{public}s', e.message);
       });
     }
@@ -131,6 +140,12 @@ export class FTPStorage implements IFileStorage {
 
     const config = this.config;
 
+    // 旧连接（换配置场景）先关完再连新的，避免 socket close/connect 系统级并发（EINPROGRESS）
+    if (this.pendingClose) {
+      await this.pendingClose;
+      this.pendingClose = undefined;
+    }
+
     // 检查连接状态，如果未连接则连接
     const ftpHandler = this.handler as FTPHandler;
     const sftpHandler = this.handler as SFTPHandler;
@@ -157,9 +172,28 @@ export class FTPStorage implements IFileStorage {
   }
 
   /**
+   * 将操作排入串行队列。队列链通过双处理器派生 promise 吞掉前序 op 的失败
+   * （失败语义由 op 自身返回的 Promise 传给其调用方），保证一个 op 失败不断链。
+   * 调用方契约：xxxOnce 内不得再调用其他 serialize 方法（会自等待死锁）——
+   * 当前 5 个 op 互不嵌套，外部链路（KdbxFileManager/CacheStorage/FTPPage）均为顺序 await。
+   */
+  private serialize<T>(op: () => Promise<T>): Promise<T> {
+    const run: Promise<T> = this.opQueue.then(() => op());
+    // 队列链只关心"前一个完成"，吞掉失败避免断链；失败语义由 op 自身的 Promise 传给调用方
+    this.opQueue = run.then(() => {
+    }, () => {
+    });
+    return run;
+  }
+
+  /**
    * 读取文件内容
    */
-  public async read(path: string): Promise<ArrayBuffer> {
+  public read(path: string): Promise<ArrayBuffer> {
+    return this.serialize(() => this.readOnce(path));
+  }
+
+  private async readOnce(path: string): Promise<ArrayBuffer> {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
@@ -199,7 +233,11 @@ export class FTPStorage implements IFileStorage {
   /**
    * 写入文件内容
    */
-  public async write(path: string, content: ArrayBuffer): Promise<void> {
+  public write(path: string, content: ArrayBuffer): Promise<void> {
+    return this.serialize(() => this.writeOnce(path, content));
+  }
+
+  private async writeOnce(path: string, content: ArrayBuffer): Promise<void> {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
@@ -235,7 +273,11 @@ export class FTPStorage implements IFileStorage {
   /**
    * 检查文件是否存在
    */
-  public async exists(path: string): Promise<boolean> {
+  public exists(path: string): Promise<boolean> {
+    return this.serialize(() => this.existsOnce(path));
+  }
+
+  private async existsOnce(path: string): Promise<boolean> {
     try {
       const handler = await this.ensureConnected();
       return await handler.exists(this.getFullPath(path));
@@ -254,7 +296,11 @@ export class FTPStorage implements IFileStorage {
   /**
    * 获取文件信息
    */
-  public async getInfo(path: string): Promise<FileInfo> {
+  public getInfo(path: string): Promise<FileInfo> {
+    return this.serialize(() => this.getInfoOnce(path));
+  }
+
+  private async getInfoOnce(path: string): Promise<FileInfo> {
     try {
       const handler = await this.ensureConnected();
       const fullPath = this.getFullPath(path);
@@ -280,7 +326,11 @@ export class FTPStorage implements IFileStorage {
   /**
    * 获取目录内容
    */
-  public async listDir(path: string): Promise<Array<FileInfo>> {
+  public listDir(path: string): Promise<Array<FileInfo>> {
+    return this.serialize(() => this.listDirOnce(path));
+  }
+
+  private async listDirOnce(path: string): Promise<Array<FileInfo>> {
     try {
       const handler = await this.ensureConnected();
       const fullPath = this.getFullPath(path);
@@ -309,7 +359,9 @@ export class FTPStorage implements IFileStorage {
   }
 
   /**
-   * 关闭连接
+   * 关闭连接。close() 不走 serialize 队列（关闭是清理语义，允许插队）；
+   * 若 handler.close() reject，this.handler 有意保留——isClosed() 为 true 时
+   * ensureConnected 会丢弃重建（自愈），置 undefined 反而丢失该路径。
    */
   public async close(): Promise<void> {
     if (this.handler) {
