@@ -30,8 +30,26 @@ export class FTPStorage implements IFileStorage {
   }
 
   public init(config: FTPStorageConfig): void {
-    this.config = FTPStorage.parseConfig(config);
+    const newConfig = FTPStorage.parseConfig(config);
+    // 同配置复用现有 handler，避免 FTPPage 每次操作（测试连接/选目录/保存）都重建 handler 导致控制连接泄漏
+    if (this.handler && this.config && FTPStorage.configEqual(this.config, newConfig)) {
+      this.config = newConfig;
+      return;
+    }
+    this.config = newConfig;
     this.createHandler();
+  }
+
+  private static configEqual(a: FTPStorageConfig, b: FTPStorageConfig): boolean {
+    // 比较"连接语义"是否一致。username/password 在 FTPStorageConfig 中是 SM4-CBC 加密存储
+    // （随机 IV，非确定性），直接比密文永不相等 → 必须解密比明文，复用优化才真正生效
+    return a.host === b.host
+      && a.port === b.port
+      && a.protocol === b.protocol
+      && a.secure === b.secure
+      && (a.timeout ?? 0) === (b.timeout ?? 0)
+      && a.getUserNameText() === b.getUserNameText()
+      && a.getPasswordText() === b.getPasswordText();
   }
 
   public static parseConfig(config: FTPStorageConfig): FTPStorageConfig {
@@ -64,6 +82,14 @@ export class FTPStorage implements IFileStorage {
   private createHandler(): void {
     if (!this.config) {
       return;
+    }
+
+    // 旧 handler 不再使用（配置变更或重建），异步关闭避免控制连接泄漏
+    //（createHandler 为同步，无法 await；close 触发后异步完成，旧 handler 不再被引用）
+    if (this.handler) {
+      this.handler.close().catch((e: Error) => {
+        hilog.error(DOMAIN, TAG, 'Failed to close previous handler: %{public}s', e.message);
+      });
     }
 
     const config = this.config;

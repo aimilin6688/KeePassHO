@@ -118,6 +118,9 @@ struct CreateDatabaseContent {
             LoadingDialog.hideLoading();
             this.isCreating = false;
             DataService.toPasswordPage(locationInfo);
+          }).catch((error: Error) => {
+            this.isCreating = false;
+            hilog.error(DOMAIN, TAG, 'Create database save failed, staying on page: %{public}s', error.message);
           })
         }
       });
