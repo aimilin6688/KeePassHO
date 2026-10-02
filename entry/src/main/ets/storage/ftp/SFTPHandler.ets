@@ -250,7 +250,7 @@ export class SFTPHandler implements IFTPHandler {
       client = this.requireClient();
       const stat = await client.sftpStat(remotePath);
       const fileSize = stat.size;
-      hilog.info(DOMAIN, TAG, `Downloading ${remotePath} (${fileSize} bytes) -> ${localPath}`);
+      hilog.debug(DOMAIN, TAG, `Downloading ${remotePath} (${fileSize} bytes) -> ${localPath}`);
 
       handle = await client.sftpOpenRead(remotePath);
       const file = await fs.open(localPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
@@ -280,7 +280,7 @@ export class SFTPHandler implements IFTPHandler {
         throw new SftpError(SftpErrorCode.SFTP_ERROR,
           `Download verification failed: expected ${fileSize} bytes, got ${localStat.size} bytes`);
       }
-      hilog.info(DOMAIN, TAG, `Download completed: ${remotePath} (${fileSize} bytes)`);
+      hilog.debug(DOMAIN, TAG, `Download completed: ${remotePath} (${fileSize} bytes)`);
     } catch (error) {
       const err = SFTPHandler.wrapError(error, `Failed to download ${remotePath}`);
       hilog.error(DOMAIN, TAG, err.message);
@@ -300,7 +300,7 @@ export class SFTPHandler implements IFTPHandler {
     try {
       const localStat = await fs.stat(file.fd);
       const fileSize = localStat.size;
-      hilog.info(DOMAIN, TAG, `Uploading ${localPath} (${fileSize} bytes) -> ${remotePath}`);
+      hilog.debug(DOMAIN, TAG, `Uploading ${localPath} (${fileSize} bytes) -> ${remotePath}`);
 
       client = this.requireClient();
       handle = await client.sftpOpenWrite(remotePath);
@@ -340,7 +340,7 @@ export class SFTPHandler implements IFTPHandler {
         hilog.error(DOMAIN, TAG, err.message);
         throw err;
       }
-      hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath} (${remoteStat.size} bytes)`);
+      hilog.debug(DOMAIN, TAG, `Upload completed: ${remotePath} (${remoteStat.size} bytes)`);
     }
   }
 
