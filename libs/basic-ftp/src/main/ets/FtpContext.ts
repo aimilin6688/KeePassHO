@@ -399,7 +399,14 @@ export class FTPContext {
       // forever. Data-transfer phases are still protected by TransferResolver (onDataStart sets 0, onDataDone
       // restores this.timeout), so no false timeout during active transfers.
       let [extraErr, extraInfo] = await to<void>(this.socket.setExtraOptions({ socketTimeout: this.timeout ? this.timeout : 0 }))
-      if (extraErr) throw extraErr
+      // FIX(A2): async executor 内 throw 不会 settle 外层 Promise（executor 的 return/throw
+      // 被 Promise 构造器忽略，只产生 unhandled rejection）→ task 永久挂起。存储层操作
+      // 队列（FTPStorage.serialize）会把后续所有 FTP 操作阻塞在这个挂起上。必须显式
+      // rejectTask 让调用方收到错误、队列得以释放。
+      if (extraErr) {
+        rejectTask(extraErr)
+        return
+      }
       if (command) {
         let startTime1 = new Date().getTime();
         this.send(command)
