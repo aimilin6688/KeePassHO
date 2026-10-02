@@ -1,5 +1,7 @@
 # 鸿蒙 UI 自动化测试指南（KeePassHO 实测版）
 
+> **实战篇**：`docs/uitest-manual-driving-guide.md`——手动 uitest 驱动完成真实服务器 E2E 的完整操作流程（追加式输入、KEYCODE_DEL=2055、掩码陷阱、podman SFTP 服务器、rport 隧道等实测坑），长表单/联调场景请先读它。
+
 > 调研 + 设备实测：2026-09-24，设备 `127.0.0.1:5555`，`uitest` 版本 **6.0.2.3**
 > 官方文档：[UI测试框架使用指导](https://device.harmonyos.com/cn/docs/apiref/harmonyos-guides/uitest-guidelines)、[js-apis-uitest](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-uitest)
 
