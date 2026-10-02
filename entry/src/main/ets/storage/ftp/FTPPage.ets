@@ -138,6 +138,11 @@ struct FTP {
             hilog.error(DOMAIN, TAG, 'FTP connection error: %{public}s', this.connectionStatus);
           }
         })
+        .catch((error: Error) => {
+          this.connectionStatus = error.message;
+          this.isErrorStatus = true;
+          hilog.error(DOMAIN, TAG, 'FTP connection error: %{public}s, stack: %{public}s', error.message, error.stack);
+        })
     } catch (error) {
       this.connectionStatus = error.message;
       this.isErrorStatus = true;
