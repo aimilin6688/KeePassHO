@@ -24,5 +24,6 @@ export * from './ErrorUtils';
 export * from './UIUtils';
 export * from './PageConfigManager';
 export * from './NavigationManager';
+export * from './NetworkUtils';
 export * from './WindowService';
 export * from './StorageNavigation';
