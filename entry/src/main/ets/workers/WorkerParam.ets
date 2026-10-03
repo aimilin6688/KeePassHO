@@ -26,6 +26,11 @@ export enum MessageType {
    * 加载失败
    */
   ERROR = "ERROR",
+
+  /**
+   * 保存时检测到远端已被其他设备修改（冲突）
+   */
+  CONFLICT = 'CONFLICT',
 }
 
 // 定义消息
@@ -62,12 +67,45 @@ export class SuccessMessage implements WorkerMessage {
    */
   isMerge: boolean;
 
+  /**
+   * 写入后的远端文件版本标识（不透明字符串），无此能力的存储为 null
+   */
+  version?: string | null;
 
-  constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean) {
+  /**
+   * 写入内容的 SHA256（十六进制小写），作为下次保存的冲突检测基线
+   */
+  contentHash?: string | null;
+
+
+  constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean, version?: string | null, contentHash?: string | null) {
     this.type = MessageType.SUCCESS;
     this.data = data;
     this.modifiedTime = modifiedTime;
     this.isMerge = isMerge || false;
+    this.version = version ?? null;
+    this.contentHash = contentHash ?? null;
+  }
+}
+
+// 冲突消息：保存时检测到远端文件已被其他设备修改
+export class ConflictMessage implements WorkerMessage {
+  type: MessageType;
+  /**
+   * 远端文件最后修改时间,单位为毫秒
+   */
+  remoteModifiedTime: number;
+
+  /**
+   * 远端文件版本标识（不透明字符串）
+   */
+  remoteVersion: string | null;
+
+
+  constructor(remoteModifiedTime: number, remoteVersion: string | null) {
+    this.type = MessageType.CONFLICT;
+    this.remoteModifiedTime = remoteModifiedTime;
+    this.remoteVersion = remoteVersion;
   }
 }
 

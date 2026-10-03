@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
@@ -102,14 +102,23 @@ export class WebDAVStorage implements IFileStorage {
     }
   }
 
-  public async write(path: string, data: ArrayBuffer): Promise<void> {
+  public async write(path: string, data: ArrayBuffer, option?: WriteOption): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
     }
+    const expectedVersion: string | null = option?.expectedVersion ?? null;
     try {
+      // 条件写入：写前复核远端版本，防止覆盖其他设备的修改（TOCTOU 窗口由上层重试兜底）
+      if (expectedVersion !== null) {
+        await this.checkVersionUnchanged(path, expectedVersion);
+      }
       await this.client.upload(path, data);
     } catch (error) {
+      // 版本冲突直接透传，保持错误码不被改写
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
       // upload 失败以 ResultInfo 形式 reject（含 statusCode 与映射后的可读消息），
       // 此处透传为携带状态码的错误信息，不吞错、不静默成功
       let errorMessage: string;
@@ -120,6 +129,22 @@ export class WebDAVStorage implements IFileStorage {
       }
       hilog.error(DOMAIN, TAG, 'WebDAV writeFile error: %{public}s', errorMessage);
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, errorMessage));
+    }
+  }
+
+  /**
+   * 写前复核：校验远端当前版本与期望版本一致，不一致抛出版本冲突
+   * @param path 文件路径
+   * @param expectedVersion 期望的远端版本
+   * @throws StorageError(VERSION_CONFLICT) 版本不一致时抛出
+   */
+  private async checkVersionUnchanged(path: string, expectedVersion: string): Promise<void> {
+    const currentInfo: FileInfo = await this.getInfo(path);
+    const currentVersion: string | null = currentInfo.version ?? null;
+    if (currentVersion === null || currentVersion !== expectedVersion) {
+      hilog.warn(DOMAIN, TAG, 'WebDAV version conflict, path: %{public}s, expected: %{public}s, current: %{public}s',
+        path, expectedVersion, currentVersion);
+      throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'WebDAV file version changed');
     }
   }
 
@@ -158,12 +183,27 @@ export class WebDAVStorage implements IFileStorage {
           modifiedTime: new Date(fileInfo.lastModified).getTime(),
           path: fileInfo.href,
           type: fileInfo.type == 'collection' ? FileType.DIR : FileType.FILE,
-          childrenCount: 0
+          childrenCount: 0,
+          version: WebDAVStorage.buildVersion(fileInfo.etag, fileInfo.lastModified)
         } as FileInfo);
       } else {
         return Promise.reject(new WebDAVError(res.statusCode, res.message));
       }
     });
+  }
+
+  /**
+   * 构建不透明版本标识：ETag 与 Last-Modified 复合串
+   * 弱 ETag（W/"..."）不可靠，以 Last-Modified 为主；两者皆空返回 null
+   * @param etag ETag 值
+   * @param lastModified 最后修改时间字符串
+   */
+  private static buildVersion(etag: string | undefined, lastModified: string): string | null {
+    const normalizedEtag: string = etag ?? '';
+    if (!normalizedEtag && !lastModified) {
+      return null;
+    }
+    return `${normalizedEtag}|${lastModified}`;
   }
 
   /**

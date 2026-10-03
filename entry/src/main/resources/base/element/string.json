@@ -465,6 +465,30 @@
       "value": "Saved successfully"
     },
     {
+      "name": "save_conflict_title",
+      "value": "Remote database modified"
+    },
+    {
+      "name": "save_conflict_message",
+      "value": "The database file has been modified by another device. Merge keeps both changes, Overwrite discards remote changes, Reload discards local changes and uses the remote version."
+    },
+    {
+      "name": "save_conflict_merge",
+      "value": "Merge"
+    },
+    {
+      "name": "save_conflict_overwrite",
+      "value": "Overwrite"
+    },
+    {
+      "name": "save_conflict_reload",
+      "value": "Reload"
+    },
+    {
+      "name": "save_conflict_retry_exhausted",
+      "value": "The remote file keeps changing. Please try saving again later. Your local changes are kept."
+    },
+    {
       "name": "save_failed_message",
       "value": "Save failed: %s"
     },

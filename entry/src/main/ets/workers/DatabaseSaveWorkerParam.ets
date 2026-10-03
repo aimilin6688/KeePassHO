@@ -5,6 +5,28 @@ import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDef
 import { MessageType, WorkerMessage } from './WorkerParam';
 
 
+/**
+ * 保存冲突处理策略
+ */
+export enum ConflictStrategy {
+  /**
+   * 自动：检测到远端已修改时通知上层（弹框让用户选择），本次不保存
+   */
+  AUTO = 'AUTO',
+  /**
+   * 合并：将远端修改合并进本地数据库后条件写入
+   */
+  MERGE = 'MERGE',
+  /**
+   * 覆盖：丢弃远端修改，用本地内容直接写入
+   */
+  OVERWRITE = 'OVERWRITE',
+  /**
+   * 重载：丢弃本地修改，从远端重新加载数据库（服务层拦截，不进入保存流程）
+   */
+  RELOAD = 'RELOAD',
+}
+
 export class SaveDatabaseMessage implements WorkerMessage {
   type: MessageType;
   /**
@@ -13,7 +35,7 @@ export class SaveDatabaseMessage implements WorkerMessage {
   data: ArrayBuffer | Kdbx;
   dbFileParam: string;
 
-  constructor(data: ArrayBuffer | Kdbx, dbFileParam: DbFileParam) {
+  constructor(data: ArrayBuffer | Kdbx, dbFileParam: DbFileParam, conflictStrategy?: string) {
     this.type = MessageType.SAVE_DATABASE;
     this.data = data;
     this.dbFileParam = JSON.stringify({
@@ -25,6 +47,9 @@ export class SaveDatabaseMessage implements WorkerMessage {
       storageType: dbFileParam.storageType,
       storageConfig: dbFileParam.storageConfig,
       modifiedTime: dbFileParam.modifiedTime,
+      expectedVersion: dbFileParam.version ?? null,
+      baseContentHash: dbFileParam.contentHash ?? null,
+      conflictStrategy: conflictStrategy ?? ConflictStrategy.AUTO,
       newPassword: dbFileParam.newPassword,
       newKeyLocation: dbFileParam.newKeyLocation,
       notUseKeyFile: dbFileParam.notUseKeyFile
@@ -43,6 +68,18 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   storageType: StorageType;
   storageConfig: StorageConfig;
   modifiedTime: number;
+  /**
+   * 期望的远端版本（基线A：存储原生版本标识）
+   */
+  expectedVersion?: string | null;
+  /**
+   * 基线远端内容哈希（基线B：内容 SHA256，最终裁判）
+   */
+  baseContentHash?: string | null;
+  /**
+   * 冲突处理策略
+   */
+  conflictStrategy?: string;
   newPassword?: string;
   newKeyLocation?: LocationInfo;
   notUseKeyFile?: boolean;
@@ -58,6 +95,9 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.storageType = dbParam.storageType;
     this.storageConfig = dbParam.storageConfig;
     this.modifiedTime = dbParam.modifiedTime;
+    this.expectedVersion = dbParam.expectedVersion ?? null;
+    this.baseContentHash = dbParam.baseContentHash ?? null;
+    this.conflictStrategy = dbParam.conflictStrategy;
     this.newPassword = dbParam.newPassword;
     this.newKeyLocation = dbParam.newKeyLocation;
     this.notUseKeyFile = dbParam.notUseKeyFile;
@@ -107,6 +147,21 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
    * 最后修改时间,单位为毫秒
    */
   modifiedTime: number;
+
+  /**
+   * 期望的远端版本标识（来自 DbFileParam.version），用于冲突检测与条件写入
+   */
+  expectedVersion?: string | null;
+
+  /**
+   * 基线远端内容 SHA256（来自 DbFileParam.contentHash），冲突检测的最终裁判
+   */
+  baseContentHash?: string | null;
+
+  /**
+   * 冲突处理策略（ConflictStrategy 枚举值）
+   */
+  conflictStrategy?: string;
 
   /**
    * 新密码

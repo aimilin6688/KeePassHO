@@ -65,11 +65,15 @@ export class FileService {
    * 重置数据库文件参数
    * @param kdbx 数据库
    * @param modifiedTime 修改时间
+   * @param version 远端文件版本标识（不透明字符串）
+   * @param contentHash 远端文件内容 SHA256
    * @returns 结果
    */
-  public static resetDbFileParam(kdbx: Kdbx, modifiedTime: number): DbFileParam {
+  public static resetDbFileParam(kdbx: Kdbx, modifiedTime: number, version?: string | null, contentHash?: string | null): DbFileParam {
     FileService.getDbFileParam().database = kdbx;
     FileService.getDbFileParam().modifiedTime = modifiedTime;
+    FileService.getDbFileParam().version = version ?? null;
+    FileService.getDbFileParam().contentHash = contentHash ?? null;
     return FileService.getDbFileParam();
   }
 }

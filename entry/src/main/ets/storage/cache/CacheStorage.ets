@@ -1,6 +1,6 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileInfo, FileType, IFileStorage, StorageConfig } from '../index';
+import { FileInfo, FileType, IFileStorage, StorageConfig, WriteOption } from '../index';
 import { CacheConstants } from './CacheConstants';
 import { ResourceManager } from '../../common/utils';
 import { KdbxError } from 'kdbxweb';
@@ -78,12 +78,13 @@ export class CacheStorage implements IFileStorage {
    * 优先写入本地缓存，完成后异步推送到远端
    * @param path 文件路径
    * @param content 文件内容
+   * @param option 写入选项，透传给底层远端存储（条件写入）
    * @throws 如果写入失败则抛出异常
    */
-  public async write(path: string, content: ArrayBuffer): Promise<void> {
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     // 如果禁用本地缓存
     if(!CacheConstants.isEnableLocalCache()){
-      return this.decoratedStorage.write(path, content);
+      return this.decoratedStorage.write(path, content, option);
     }
 
     const cachePath: string = CacheConstants.getCacheFilePath(path);
@@ -104,8 +105,8 @@ export class CacheStorage implements IFileStorage {
     // 正常模式：异步写入本地缓存（不阻塞），然后推送到远端
     this.writeToCacheAsync(cachePath, content);
 
-    // 推送到远端（核心操作，必须成功）
-    await this.decoratedStorage.write(path, content);
+    // 推送到远端（核心操作，必须成功；版本冲突错误原样上抛由编排层处理）
+    await this.decoratedStorage.write(path, content, option);
   }
 
   /**

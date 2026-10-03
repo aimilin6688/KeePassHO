@@ -453,6 +453,30 @@
       "value": "保存成功"
     },
     {
+      "name": "save_conflict_title",
+      "value": "远端数据库已修改"
+    },
+    {
+      "name": "save_conflict_message",
+      "value": "数据库文件已被其他设备修改。合并将保留双方修改，覆盖将丢弃远端修改，重载将丢弃本地修改并以远端为准。"
+    },
+    {
+      "name": "save_conflict_merge",
+      "value": "合并"
+    },
+    {
+      "name": "save_conflict_overwrite",
+      "value": "覆盖"
+    },
+    {
+      "name": "save_conflict_reload",
+      "value": "重载"
+    },
+    {
+      "name": "save_conflict_retry_exhausted",
+      "value": "远端文件持续变化，请稍后重试保存。本地修改已保留。"
+    },
+    {
       "name": "save_failed_message",
       "value": "保存失败:%s"
     },

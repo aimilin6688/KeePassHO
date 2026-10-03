@@ -269,6 +269,7 @@ export class WebDavClient {
           <d:displayname/>
           <d:getcontentlength/>
           <d:getlastmodified/>
+          <d:getetag/>
         </d:prop>
       </d:propfind>`;
     const req = new rcp.Request(path, "PROPFIND", { "Depth": "1" }, body);

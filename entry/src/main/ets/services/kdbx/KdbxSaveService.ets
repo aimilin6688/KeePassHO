@@ -1,12 +1,18 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { promptAction, ShowDialogSuccessResponse } from '@kit.ArkUI';
+import { Kdbx } from 'kdbxweb';
 import { Constants } from '../../common/constants/Constants';
+import { CacheConstants } from '../../storage';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
+import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
-import { SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
-import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
+import { ConflictStrategy, SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
+import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
+import KdbxLoadService from './KdbxLoadService';
+import { ConflictMessage, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
 
 const DOMAIN = 0x0000;
@@ -14,15 +20,24 @@ const TAG = 'KdbxSaveService';
 
 /**
  * 保存数据库服务类
+ * 保存冲突时弹框让用户选择处理策略：合并（保留双方修改）/ 覆盖（丢弃远端修改）/ 重载（丢弃本地修改）
  */
 export default class KdbxSaveService {
   private static databaseWorker: worker.ThreadWorker | null = null;
 
   /**
    * 保存数据库
+   * @param callback 回调
+   * @param conflictStrategy 冲突处理策略，默认 AUTO（检测到冲突时弹框询问用户）
    * @returns 结果信息
    */
-  public static saveDatabase(callback?: SaveDatabaseCallback): void {
+  public static saveDatabase(callback?: SaveDatabaseCallback, conflictStrategy?: string): void {
+    const strategy: string = conflictStrategy ?? ConflictStrategy.AUTO;
+    // 重载策略由服务层拦截：放弃本地修改，直接从远端重新加载数据库
+    if (strategy === ConflictStrategy.RELOAD) {
+      KdbxSaveService.reloadFromRemote(callback);
+      return;
+    }
     // 启用保存线程，保存数据库
     const dbFileParam = FileService.getDbFileParam();
     if (!dbFileParam.database) {
@@ -33,13 +48,93 @@ export default class KdbxSaveService {
       return;
     }
 
-    const saveDatabaseReq = new SaveDatabaseMessage(dbFileParam.database, dbFileParam);
+    const saveDatabaseReq = new SaveDatabaseMessage(dbFileParam.database, dbFileParam, strategy);
     const callbackWarp = KdbxSaveService.callbackWarp(callback);
     if (Constants.ASYNC_SAVE_DATABASE) {
       KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp);
     } else {
       new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq);
     }
+  }
+
+  /**
+   * 处理保存冲突：弹框让用户选择处理策略
+   * @param message 冲突信息
+   * @param callback 原始回调（选择策略后继续保存时复用）
+   */
+  private static handleConflict(message: ConflictMessage, callback?: SaveDatabaseCallback): void {
+    // 关闭保存过程的加载弹框，避免与冲突弹框叠加
+    LoadingDialog.hideLoading();
+    hilog.info(DOMAIN, TAG, 'Save conflict detected, remoteModifiedTime: %{public}d', message.remoteModifiedTime);
+    const dialogOptions: promptAction.ShowDialogOptions = {
+      title: $r('app.string.save_conflict_title'),
+      message: $r('app.string.save_conflict_message'),
+      buttons: [
+        { text: $r('app.string.save_conflict_merge'), color: '#007dfe' },
+        { text: $r('app.string.save_conflict_overwrite'), color: '#007dfe' },
+        { text: $r('app.string.save_conflict_reload'), color: '#e84026' }
+      ]
+    };
+    CommonUtils.showDialog(dialogOptions).then((response: ShowDialogSuccessResponse) => {
+      if (response.index === 0) {
+        // 合并：保留双方修改
+        KdbxSaveService.saveDatabase(callback, ConflictStrategy.MERGE);
+      } else if (response.index === 1) {
+        // 覆盖：丢弃远端修改
+        KdbxSaveService.saveDatabase(callback, ConflictStrategy.OVERWRITE);
+      } else if (response.index === 2) {
+        // 重载：丢弃本地修改，以远端为准
+        KdbxSaveService.saveDatabase(callback, ConflictStrategy.RELOAD);
+      }
+    }).catch((error: Error) => {
+      // 用户关闭弹框：放弃本次保存，本地修改保留在内存中
+      hilog.warn(DOMAIN, TAG, 'Conflict dialog dismissed: %{public}s', error?.message);
+    });
+  }
+
+  /**
+   * 从远端重新加载数据库（丢弃本地未保存的修改）
+   * @param callback 原始回调，重载完成后回调 onSuccess/onError，保证调用方流程不挂起
+   */
+  private static reloadFromRemote(callback?: SaveDatabaseCallback): void {
+    const dbFileParam = FileService.getDbFileParam();
+    if (!dbFileParam.database) {
+      hilog.error(DOMAIN, TAG, 'Database is null');
+      if (callback && callback.onError) {
+        callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
+      }
+      return;
+    }
+    // 强制从远端刷新，忽略仅使用本地缓存的设置
+    CacheConstants.setForceRefresh(true);
+    const loadParam = LoadDatabase.byDbFileParam(dbFileParam);
+    KdbxLoadService.loadDatabase(loadParam, {
+      onSuccessMessage: (message: SuccessMessage) => {
+        KdbxUtils.arrayBufferToKdbx(message.data, loadParam).then((database: Kdbx) => {
+          FileService.resetDbFileParam(database, message.modifiedTime, message.version ?? null,
+            message.contentHash ?? null);
+          EventBus.emit<void>(EventBus.DATABASE_RELOAD);
+          if (callback && callback.onSuccess) {
+            callback.onSuccess(message);
+          }
+        }).catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, 'Reload database error: %{public}s', error?.message);
+          if (callback && callback.onError) {
+            callback.onError(error.message);
+          } else {
+            CommonUtils.showToast(error.message);
+          }
+        });
+      },
+      onErrorMessage: (message: LoadMessage) => {
+        const errorMessage: string = ResourceManager.getString(message.message);
+        if (callback && callback.onError) {
+          callback.onError(errorMessage);
+        } else {
+          CommonUtils.showToast(errorMessage);
+        }
+      }
+    });
   }
 
   /**
@@ -81,7 +176,7 @@ export default class KdbxSaveService {
       }
       return;
     }
-    // work 现成中执行
+    // work 线程中执行
     KdbxSaveService.databaseWorker.onmessage = (e: MessageEvents) => {
       let data = e.data as WorkerMessage;
       switch (data.type) {
@@ -91,6 +186,9 @@ export default class KdbxSaveService {
           return;
         case MessageType.SUCCESS:
           KdbxSaveService.onSuccess(data as SuccessMessage, callback);
+          return;
+        case MessageType.CONFLICT:
+          KdbxSaveService.onConflict(data as ConflictMessage, callback);
           return;
         case MessageType.ERROR:
           KdbxSaveService.onError(data as LoadMessage, callback);
@@ -120,13 +218,19 @@ export default class KdbxSaveService {
         KdbxSaveService.handleSuccess(message, callback);
       },
       onError: callback?.onError,
-      onMessage: callback?.onMessage
+      onMessage: callback?.onMessage,
+      onConflict: (message: ConflictMessage) => {
+        KdbxSaveService.handleConflict(message, callback);
+      }
     }
   }
 
   static handleSuccess(message: SuccessMessage, callback?: SaveDatabaseCallback) {
-    // 数据库加载成功
-    FileService.getDbFileParam().modifiedTime = message.modifiedTime;
+    // 数据库保存成功：更新版本基线（modifiedTime + version + contentHash），供下次保存做冲突检测
+    const dbFileParam = FileService.getDbFileParam();
+    dbFileParam.modifiedTime = message.modifiedTime;
+    dbFileParam.version = message.version ?? null;
+    dbFileParam.contentHash = message.contentHash ?? null;
     if (message.isMerge) {
       KdbxUtils.arrayBufferToKdbx(message.data, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
@@ -156,6 +260,15 @@ export default class KdbxSaveService {
     }
     if (callback.onSuccess) {
       callback.onSuccess(message);
+    }
+  }
+
+  static onConflict(message: ConflictMessage, callback?: SaveDatabaseCallback) {
+    if (!callback) {
+      return;
+    }
+    if (callback.onConflict) {
+      callback.onConflict(message);
     }
   }
 

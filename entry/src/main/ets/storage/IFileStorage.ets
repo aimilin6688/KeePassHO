@@ -30,9 +30,10 @@ export interface IFileStorage {
    * 写入文件内容
    * @param path 文件路径
    * @param content 文件内容
+   * @param option 写入选项，传入 expectedVersion 时支持条件写入（写入前校验远端版本，不一致抛出 VERSION_CONFLICT）
    * @throws 如果写入失败则抛出异常
    */
-  write(path: string, content: ArrayBuffer): Promise<void>;
+  write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void>;
 
   /**
    * 检查文件是否存在
@@ -56,6 +57,18 @@ export interface IFileStorage {
    * @throws 如果获取失败则抛出异常
    */
   listDir(path: string): Promise<Array<FileInfo>>;
+}
+
+/**
+ * 写入选项
+ */
+export interface WriteOption {
+  /**
+   * 期望的远端当前版本（来自上次 read/getInfo 的 FileInfo.version）
+   * 传入后由存储实现决定校验方式：支持原生条件写的存储在服务端原子校验，
+   * 不支持的存储在写入前重新获取版本比对（写前复核），不一致时抛出 VERSION_CONFLICT
+   */
+  expectedVersion?: string | null;
 }
 
 /**
@@ -91,6 +104,13 @@ export interface FileInfo {
    * 文件夹子节点个数
    */
   childrenCount: number;
+
+  /**
+   * 存储原生版本标识（不透明字符串，仅用于相等比较，不可解析其内容）
+   * 各存储实现自定义语义（如 ETag、Last-Modified、size+mtime 复合串），
+   * 无此能力的存储返回 null，由上层用内容哈希兜底
+   */
+  version?: string | null;
 }
 
 /**
@@ -112,6 +132,7 @@ export class FileInfoImpl implements FileInfo {
   path: string = '';
   type: FileType = FileType.FILE;
   childrenCount: number = 0;
+  version: string | null = null;
 }
 
 /**
@@ -125,6 +146,7 @@ export class FileContentInfo implements FileInfo {
   content: ArrayBuffer = new ArrayBuffer(0);
   type: FileType = FileType.FILE;
   childrenCount: number = 0;
+  version: string | null = null;
 
   /**
    * 文件内容信息
@@ -139,6 +161,7 @@ export class FileContentInfo implements FileInfo {
     this.content = content;
     this.type = fileInfo.type;
     this.childrenCount = fileInfo.childrenCount;
+    this.version = fileInfo.version ?? null;
   }
 
   get fileInfo(): FileInfo {
@@ -149,6 +172,7 @@ export class FileContentInfo implements FileInfo {
     info.path = this.path;
     info.type = this.type;
     info.childrenCount = this.childrenCount;
+    info.version = this.version;
     return info;
   }
 }

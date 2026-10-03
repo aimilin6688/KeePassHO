@@ -6,7 +6,7 @@ import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { LoadMessage, SuccessMessage, toLoadMessage } from './WorkerParam';
-import { KdbxUtils } from '../common/utils';
+import { KdbxUtils, HashUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoad';
@@ -32,7 +32,10 @@ export class DatabaseLoad {
       hilog.debug(DOMAIN, TAG, "Load database cost time: %{public}d ms", Date.now() - logTime);
 
       this.postMessage($r('app.string.loading_complete'), callback?.onLoadMessage);
-      this.postSuccessMessage(new SuccessMessage(kdbx, fileContent.modifiedTime), callback?.onSuccessMessage);
+      // 记录远端内容哈希与版本，作为后续保存的冲突检测基线
+      const contentHash: string = await HashUtils.sha256Hex(fileContent.content);
+      this.postSuccessMessage(new SuccessMessage(kdbx, fileContent.modifiedTime, false,
+        fileContent.version ?? null, contentHash), callback?.onSuccessMessage);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
       this.postErrorMessage(KdbxUtils.kdbxErrorMessage(error), callback?.onErrorMessage);
