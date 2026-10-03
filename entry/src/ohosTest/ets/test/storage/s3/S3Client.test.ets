@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { S3Client, S3ClientOptionsImpl } from '../../../../../main/ets/storage/s3/S3Client';
 import { S3Object, S3Result, S3Bucket } from '../../../../../main/ets/storage/s3/S3Types';
 import { S3TestConfig } from './S3TestConfig';
+import { TestFixtures } from '../TestFixtures';
 import { util } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -91,6 +92,22 @@ export default function S3ClientTest() {
      * 测试真实的 API 调用
      */
     describe('RealAPICalls', () => {
+      beforeAll(async () => {
+        // 上传 rawfile 中的真实 KDBX 数据库文件到测试桶，供 getObject/headObject 用例使用
+        const fixture: ArrayBuffer = await TestFixtures.loadUnitTestKdbx();
+        const setupClient = new S3Client(S3TestConfig.getClientOptions());
+        try {
+          const putResult = await setupClient.putObject(S3TestConfig.BUCKET, S3TestConfig.TEST_FILE, fixture);
+          if (!putResult.success) {
+            throw new Error(`upload test fixture failed: statusCode=${putResult.statusCode}, message=${putResult.message}`);
+          }
+          hilog.info(DOMAIN, TAG, 'RealAPICalls setup: uploaded unit-test.kdbx (%{public}d bytes) as %{public}s',
+            fixture.byteLength, S3TestConfig.TEST_FILE);
+        } finally {
+          setupClient.close();
+        }
+      });
+
       beforeEach(() => {
         const options: S3ClientOptionsImpl = new S3ClientOptionsImpl(
           S3TestConfig.ENDPOINT,
@@ -107,25 +124,12 @@ export default function S3ClientTest() {
         const result: S3Result<S3Bucket[]> = await client.listBuckets();
 
         expect(result).not().assertUndefined();
-        expect(result.success).not().assertUndefined();
-        expect(result.statusCode).not().assertUndefined();
-        // 使用有效凭证，预期成功
-        if (!result.success) {
-          hilog.error(DOMAIN, TAG, `listBuckets failed: statusCode=${result.statusCode}, message=${result.message}`);
-          // 暂时跳过断言，允许测试通过以便查看更多错误信息
-          expect(result.statusCode).assertLarger(0);
-        } else {
-          expect(result.data).not().assertUndefined();
-          // 打印 bucket 列表以便确认正确的 bucket 名称
-          if (result.data && result.data.length > 0) {
-            hilog.info(DOMAIN, TAG, `========== listBuckets returned ${result.data.length} buckets ==========`);
-            for (const bucket of result.data) {
-              hilog.info(DOMAIN, TAG, `==========   Bucket: ${bucket.name}, creationDate: ${bucket.creationDate} ==========`);
-            }
-          } else {
-            hilog.info(DOMAIN, TAG, `========== listBuckets returned 0 buckets - account has no buckets ==========`);
-          }
-        }
+        expect(result.success).assertTrue();
+        expect(result.statusCode).assertEqual(200);
+        expect(result.data).not().assertUndefined();
+        // 自建 SeaweedFS 必须能看到测试桶
+        const names: string[] = (result.data ?? []).map((bucket: S3Bucket) => bucket.name);
+        expect(names.includes(S3TestConfig.BUCKET)).assertTrue();
       });
 
       it('headBucket should return true for existing bucket', 0, async () => {
@@ -165,12 +169,15 @@ export default function S3ClientTest() {
 
       it('getObject should return file content', 0, async () => {
         const result: S3Result<ArrayBuffer> = await client.getObject(S3TestConfig.BUCKET, S3TestConfig.TEST_FILE);
+        const fixture: ArrayBuffer = await TestFixtures.loadUnitTestKdbx();
 
-        hilog.info(DOMAIN, TAG, `getObject result: success=${result.success}, statusCode=${result.statusCode}, message=${result.message}`);
+        hilog.info(DOMAIN, TAG, 'getObject result: success=%{public}s, statusCode=%{public}d, message=%{public}s', String(result.success), result.statusCode, result.message);
         expect(result).not().assertUndefined();
         expect(result.success).assertTrue();
         expect(result.data).not().assertUndefined();
-        expect(result.data!.byteLength).assertLarger(0);
+        // 内容必须与上传的真实 KDBX 夹具完全一致
+        expect(result.data!.byteLength).assertEqual(fixture.byteLength);
+        expect(TestFixtures.assertKdbxMagic(result.data!)).assertTrue();
       });
 
       it('getObject should fail for non-existent key', 0, async () => {
@@ -184,13 +191,15 @@ export default function S3ClientTest() {
 
       it('headObject should return object metadata', 0, async () => {
         const result: S3Result<S3Object> = await client.headObject(S3TestConfig.BUCKET, S3TestConfig.TEST_FILE);
+        const fixture: ArrayBuffer = await TestFixtures.loadUnitTestKdbx();
 
-        hilog.info(DOMAIN, TAG, `headObject result: success=${result.success}, statusCode=${result.statusCode}`);
+        hilog.info(DOMAIN, TAG, 'headObject result: success=%{public}s, statusCode=%{public}d', String(result.success), result.statusCode);
         expect(result).not().assertUndefined();
         expect(result.success).assertTrue();
         expect(result.data).not().assertUndefined();
         expect(result.data!.key).assertEqual(S3TestConfig.TEST_FILE);
-        expect(result.data!.size).assertLarger(0);
+        // 大小必须与上传的真实 KDBX 夹具一致
+        expect(result.data!.size).assertEqual(fixture.byteLength);
       });
 
       it('headObject should fail for non-existent key', 0, async () => {

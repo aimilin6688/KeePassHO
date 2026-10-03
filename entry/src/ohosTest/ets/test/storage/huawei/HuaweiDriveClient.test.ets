@@ -133,6 +133,11 @@ export default function HuaweiDriveClientTest() {
       }
     });
 
+    // ==================== 真实 API 用例 ====================
+    // 华为云盘为专有云服务，无法本地自建；仅在配置了有效凭证时注册这些用例，
+    // 未配置时整体不注册（诚实跳过，见 HuaweiDriveTestConfig.isRealApiEnabled 与 docs/storage-regression-test.md）
+    if (HuaweiDriveTestConfig.isRealApiEnabled()) {
+
     /**
      * 测试通过授权码获取Token
      * 前提条件：需要先运行 should_get_authorization_url_for_token 获取授权码
@@ -517,5 +522,7 @@ export default function HuaweiDriveClientTest() {
         expect(err).not().assertUndefined();
       }
     });
+
+    } // end isRealApiEnabled
   });
 }

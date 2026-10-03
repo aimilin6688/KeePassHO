@@ -3,34 +3,35 @@ import { StorageConfig } from '../../../../../main/ets/storage/StorageConfig';
 
 /**
  * S3 测试公共配置
- * 包含测试所需的端点、凭证和测试数据
+ * 指向本地 podman 部署的 SeaweedFS S3 网关（搭建步骤见 docs/s3/seaweedfs-server.md）。
+ * 测试通过设备侧 rport 反向隧道访问宿主机服务，设备内地址固定为 127.0.0.1:9000。
  */
 export class S3TestConfig {
   /**
-   * S3 兼容服务端点（腾讯云 COS）
-   * 注意：对于虚拟主机风格，endpoint 不包含 bucket 名
+   * S3 兼容服务端点（设备侧 rport 隧道 → 宿主机 SeaweedFS S3 网关）
+   * 注意：自建网关必须使用 path-style，endpoint 不包含 bucket 名
    */
-  static readonly ENDPOINT: string = 'https://cos.ap-beijing.myqcloud.com';
+  static readonly ENDPOINT: string = 'http://127.0.0.1:9000';
 
   /**
-   * Access Key ID
+   * Access Key ID（SeaweedFS 未启用 IAM，任意非空凭证即可通过签名校验）
    */
-  static readonly ACCESS_KEY_ID: string = 'AKIDicLtENK3Zs0vd7QZVGrGQN9vWvCKH2Zu';
+  static readonly ACCESS_KEY_ID: string = 'e2e';
 
   /**
    * Secret Access Key
    */
-  static readonly SECRET_ACCESS_KEY: string = 'DIApJ6pTzMZtDUcdfGnBOSOAnFYjjYEh';
+  static readonly SECRET_ACCESS_KEY: string = 'e2etest123';
 
   /**
-   * 区域
+   * 区域（SeaweedFS 不校验区域，保持 AWS 默认区域）
    */
-  static readonly REGION: string = 'ap-beijing';
+  static readonly REGION: string = 'us-east-1';
 
   /**
-   * 测试存储桶名称
+   * 测试存储桶名称（由 seaweedfs-server.md 中的初始化步骤创建）
    */
-  static readonly BUCKET: string = 'default-1253435893';
+  static readonly BUCKET: string = 'e2e-test';
 
   /**
    * 测试文件路径
@@ -55,10 +56,9 @@ export class S3TestConfig {
 
   /**
    * 是否使用路径风格 URL
-   * 注意：2024年1月1日后创建的存储桶不支持 path-style，必须使用 virtual-hosted-style
-   * 腾讯云 COS 文档：https://cloud.tencent.com/document/product/436/96243
+   * 自建 S3 网关（SeaweedFS）必须使用 path-style
    */
-  static readonly PATH_STYLE: boolean = false;
+  static readonly PATH_STYLE: boolean = true;
 
   /**
    * 获取完整的客户端配置选项
@@ -79,13 +79,16 @@ export class S3TestConfig {
    * 注意：返回一个模拟的 S3StorageConfig，避免触发 SM4 加密
    */
   static getStorageConfig(bucket?: string): TestS3StorageConfig {
-    return new TestS3StorageConfig(
+    const config: TestS3StorageConfig = new TestS3StorageConfig(
       S3TestConfig.ENDPOINT,
       S3TestConfig.ACCESS_KEY_ID,
       S3TestConfig.SECRET_ACCESS_KEY,
       S3TestConfig.REGION,
       bucket ?? S3TestConfig.BUCKET
     );
+    config.pathStyle = S3TestConfig.PATH_STYLE;
+    config.timeout = S3TestConfig.TIMEOUT;
+    return config;
   }
 }
 

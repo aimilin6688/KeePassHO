@@ -36,7 +36,7 @@ export class HuaweiDriveTestConfig {
 
   /**
    * 测试用客户端密钥
-   * 注意：实际测试时需要替换为真实的客户端密钥
+   * 真实回归时填入有效密钥；为空时真实 API 用例不注册（见 isRealApiEnabled）
    */
   static readonly CLIENT_SECRET: string = '';
 
@@ -47,13 +47,25 @@ export class HuaweiDriveTestConfig {
 
   /**
    * 测试用访问令牌
+   * 通过 OAuth2 授权流程获取（见下方 AUTHORIZATION_CODE 说明）。
+   * 为空时真实 API 用例不注册（见 isRealApiEnabled 与 docs/storage-regression-test.md）
    */
-  static readonly ACCESS_TOKEN: string = 'DgEAAHF8YjXNvAV0hApWjQhdr/lD80PAQ6zUg7Gsp9S1MHuitzPs4HWe9T5dIN3JNLYXfttjpgb/1DWZf3LIus6JZmIEyVo0OfjpYc4LHrmodyOcmRb/';
+  static readonly ACCESS_TOKEN: string = '';
 
   /**
    * 测试用刷新令牌
+   * 为空时刷新令牌用例不注册
    */
-  static readonly REFRESH_TOKEN: string = 'DgECAPpU9n53LJzRg6y8r9I33AzBVbsSy3BI5EHG2iTmcR4i44xbWlfzYyYeVqrdLr8CGiMWLTmUgWUV/g//D0se0Ek7CmeVC8WTga327566OBe2rf1e';
+  static readonly REFRESH_TOKEN: string = '';
+
+  /**
+   * 是否启用真实 API 用例。
+   * 华为云盘为专有云服务，无法本地自建；未配置有效凭证时，
+   * 相关真实 API 用例整体不注册（诚实跳过，而非用 mock 数据伪造通过）。
+   */
+  static isRealApiEnabled(): boolean {
+    return HuaweiDriveTestConfig.ACCESS_TOKEN.length > 0;
+  }
 
   /**
    * 测试用文件ID
