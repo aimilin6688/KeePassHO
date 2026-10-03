@@ -1,6 +1,7 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { ByteUtils } from 'kdbxweb';
 import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, MultipartUploadProgress, ProgressCallback, UploadTask, UploadWorkerResult } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
@@ -185,6 +186,16 @@ export class S3Client {
     return result;
   }
 
+  /**
+   * 构造带端口号的 host（非标准端口场景，如自建 S3 网关）
+   */
+  private buildAuthority(): string {
+    if (this.parsedEndpoint.port && this.parsedEndpoint.port.length > 0) {
+      return `${this.parsedEndpoint.host}:${this.parsedEndpoint.port}`;
+    }
+    return this.parsedEndpoint.host;
+  }
+
   private buildUrl(bucket: string, key: string): string {
     if (this.options.pathStyle) {
       if (key && key.length > 0) {
@@ -193,10 +204,11 @@ export class S3Client {
         return `${this.options.endpoint}/${bucket}`;
       }
     } else {
+      const authority: string = this.buildAuthority();
       if (key && key.length > 0) {
-        return `${this.parsedEndpoint.protocol}://${bucket}.${this.parsedEndpoint.host}/${key}`;
+        return `${this.parsedEndpoint.protocol}://${bucket}.${authority}/${key}`;
       } else {
-        return `${this.parsedEndpoint.protocol}://${bucket}.${this.parsedEndpoint.host}/`;
+        return `${this.parsedEndpoint.protocol}://${bucket}.${authority}/`;
       }
     }
   }
@@ -346,10 +358,11 @@ export class S3Client {
   }
 
   public async listBuckets(): Promise<S3Result<S3Bucket[]>> {
+    let requestUrl: string = '';
     try {
-      const headers = await this.signer.signListBuckets(this.options.endpoint, this.parsedEndpoint.host);
-      const url: string = `${this.parsedEndpoint.protocol}://${this.parsedEndpoint.host}/`;
-      const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
+      const headers = await this.signer.signListBuckets(this.options.endpoint, this.buildAuthority());
+      requestUrl = `${this.parsedEndpoint.protocol}://${this.buildAuthority()}/`;
+      const request = new rcp.Request(requestUrl, 'GET', this.headersToRecord(headers));
 
       const session = this.getSession();
       const response = await session?.fetch(request);
@@ -359,8 +372,9 @@ export class S3Client {
         return S3XmlParser.parseListBuckets(xmlStr);
       });
     } catch (error) {
-      const err = error as Error;
-      hilog.error(DOMAIN, TAG, 'listBuckets error: %{public}s', err.message);
+      const err = error as BusinessError;
+      hilog.error(DOMAIN, TAG, 'listBuckets error: %{public}s, url=%{public}s, code=%{public}d',
+        err.message, requestUrl, err.code);
       const result: S3Result<S3Bucket[]> = {
         success: false,
         statusCode: 500,

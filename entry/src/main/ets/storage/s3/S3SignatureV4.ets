@@ -202,11 +202,7 @@ export class S3SignatureV4 {
     if (slashIndex > 0) {
       host = host.substring(0, slashIndex);
     }
-    // 移除端口部分
-    const colonIndex: number = host.indexOf(':');
-    if (colonIndex > 0) {
-      host = host.substring(0, colonIndex);
-    }
+    // 保留端口部分：SigV4 规范要求非标准端口包含在 Host 头中（自建 S3 网关场景）
 
     let uri: string = '';
     if (pathStyle) {
