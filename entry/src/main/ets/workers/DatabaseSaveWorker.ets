@@ -1,6 +1,6 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { ConflictMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { DatabaseSave } from './DatabaseSave';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
@@ -64,6 +64,19 @@ class DatabaseSaveWorker extends DatabaseSave {
       workerPort.postMessage(message);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postSuccessMessage error:%{public}s', error.message);
+      this.postErrorMessage(error.message);
+    }
+  }
+
+  /**
+   * 发送冲突消息
+   * @param message 冲突信息
+   */
+  postConflictMessage(message: ConflictMessage) {
+    try {
+      workerPort.postMessage(message);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postConflictMessage error:%{public}s', error.message);
       this.postErrorMessage(error.message);
     }
   }

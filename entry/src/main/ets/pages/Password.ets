@@ -605,7 +605,9 @@ export struct Password {
         authType: this.authTypeInfo, // 添加认证类型
         storageType: this.storageType ?? StorageType.LOCAL,
         storageConfig: this.storageConfig ?? {},
-        modifiedTime: successMessage.modifiedTime
+        modifiedTime: successMessage.modifiedTime,
+        version: successMessage.version ?? null,
+        contentHash: successMessage.contentHash ?? null
       })
     });
   }

@@ -7,6 +7,7 @@ export * from './DeviceUtils';
 export * from './DialogWindowHelper';
 export * from './FilenameUtils';
 export * from './FileUtils';
+export * from './HashUtils';
 export * from './IconUtils';
 export * from './ImagePickerUtils';
 export * from './KdbxUtils';

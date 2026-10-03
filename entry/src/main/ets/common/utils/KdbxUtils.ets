@@ -573,11 +573,13 @@ export class KdbxUtils {
 
   /**
    * 保存数据库
-   * @returns 结果信息
+   * @param callback 回调
+   * @param conflictStrategy 冲突处理策略（ConflictStrategy 枚举值），默认 AUTO（冲突时弹框询问用户）
+   * @returns
    */
-  public static saveDatabase(callback?: SaveDatabaseCallback): void {
+  public static saveDatabase(callback?: SaveDatabaseCallback, conflictStrategy?: string): void {
     KdbxUtils.customIconMap.clear();
-    KdbxSaveService.saveDatabase(callback ?? new ToastSaveDatabaseCallback());
+    KdbxSaveService.saveDatabase(callback ?? new ToastSaveDatabaseCallback(), conflictStrategy);
   }
 
   /**

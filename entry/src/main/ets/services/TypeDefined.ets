@@ -121,6 +121,16 @@ export interface DbFileParam extends CredentialsParam {
   modifiedTime: number;
 
   /**
+   * 远端文件版本标识（不透明字符串，来自存储原生能力如 ETag/Last-Modified），用于保存时冲突检测
+   */
+  version?: string | null;
+
+  /**
+   * 远端文件内容 SHA256（十六进制小写），保存时冲突检测的最终裁判
+   */
+  contentHash?: string | null;
+
+  /**
    * 新密码
    */
   newPassword?: string;

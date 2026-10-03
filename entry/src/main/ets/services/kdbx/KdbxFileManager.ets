@@ -1,4 +1,5 @@
-import { FileContentInfo, FileStorageFactory, IFileStorage, FileInfo, StorageConfig, StorageType } from '../../storage';
+import { FileContentInfo, FileStorageFactory, IFileStorage, FileInfo, StorageConfig, StorageType, WriteOption } from '../../storage';
+import { StorageError } from '../../storage/StorageError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {ResourceManager} from '../../common/utils';
 import { LocationInfo } from '../beans/LocationParam';
@@ -71,14 +72,19 @@ export class KdbxFileManager {
    * 保存KDBX文件
    * @param path 文件路径
    * @param content 文件内容
+   * @param option 写入选项，支持条件写入（expectedVersion 不一致时底层抛出 VERSION_CONFLICT）
    * @throws 如果保存失败则抛出异常
    */
-  public async write(path: string, content: ArrayBuffer): Promise<void> {
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     try {
       // 写入文件内容
-      return this.storage.write(path, content);
+      return await this.storage.write(path, content, option);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to save KDBX file: %{public}s', error.message)
+      // 原样上抛，保留 StorageError 的错误码（如 VERSION_CONFLICT）供编排层识别
+      if (error instanceof StorageError) {
+        throw error;
+      }
       throw new Error(error.message);
     }
   }

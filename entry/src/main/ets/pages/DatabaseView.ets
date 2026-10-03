@@ -1533,7 +1533,8 @@ export struct DatabaseView {
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (successMessage: SuccessMessage) => {
         KdbxUtils.arrayBufferToKdbx(successMessage.data, loadParam).then((database: Kdbx) => {
-          FileService.resetDbFileParam(database, successMessage.modifiedTime);
+          FileService.resetDbFileParam(database, successMessage.modifiedTime, successMessage.version ?? null,
+            successMessage.contentHash ?? null);
           this.refreshText = $r('app.string.refreshing_message');
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
           CommonUtils.showToast({ message: $r('app.string.refresh_success') });

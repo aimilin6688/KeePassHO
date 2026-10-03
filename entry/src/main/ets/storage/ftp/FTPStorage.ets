@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { CommonUtils, ResourceManager } from '../../common/utils';
@@ -232,12 +232,15 @@ export class FTPStorage implements IFileStorage {
 
   /**
    * 写入文件内容
+   * @param path 文件路径
+   * @param content 文件内容
+   * @param option 写入选项，传入 expectedVersion 时写前 stat 复核（SFTP stat / FTP MLSD）
    */
-  public write(path: string, content: ArrayBuffer): Promise<void> {
-    return this.serialize(() => this.writeOnce(path, content));
+  public write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
+    return this.serialize(() => this.writeOnce(path, content, option));
   }
 
-  private async writeOnce(path: string, content: ArrayBuffer): Promise<void> {
+  private async writeOnce(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
@@ -250,6 +253,17 @@ export class FTPStorage implements IFileStorage {
         await fs.close(file.fd);
 
         const handler = await this.ensureConnected();
+        // 条件写入：写前复核远端版本（size|mtime 复合），不一致说明已被其他设备修改
+        const expectedVersion: string | null = option?.expectedVersion ?? null;
+        if (expectedVersion !== null) {
+          const remoteInfo = await handler.getFileInfo(fullPath);
+          const currentVersion = `${remoteInfo.size}|${remoteInfo.modifiedTime}`;
+          if (currentVersion !== expectedVersion) {
+            hilog.warn(DOMAIN, TAG, 'Version conflict, path: %{public}s, expected: %{public}s, current: %{public}s',
+              fullPath, expectedVersion, currentVersion);
+            throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Remote file version changed');
+          }
+        }
         await handler.uploadTo(tempFilePath, fullPath);
         await fs.unlink(tempFilePath);
       } catch (uploadError) {
@@ -312,7 +326,8 @@ export class FTPStorage implements IFileStorage {
         modifiedTime: fileInfo.modifiedTime,
         path: fullPath,
         type: fileInfo.isDirectory ? FileType.DIR : FileType.FILE,
-        childrenCount: 0
+        childrenCount: 0,
+        version: `${fileInfo.size}|${fileInfo.modifiedTime}`
       } as FileInfo;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `${this.config?.protocol || 'FTP'} get info error: ${error.message}`);

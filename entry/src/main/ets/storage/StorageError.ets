@@ -26,4 +26,8 @@ export enum StorageErrorCodes {
    * 认证过期（refresh_token 失效），需重新登录授权
    */
   AUTH_EXPIRED = 'AUTH_EXPIRED',
+  /**
+   * 条件写入失败：远端版本与 expectedVersion 不一致（已被其他设备修改）
+   */
+  VERSION_CONFLICT = 'VERSION_CONFLICT',
 }

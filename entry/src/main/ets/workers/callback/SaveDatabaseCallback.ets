@@ -1,4 +1,4 @@
-import { SuccessMessage } from "../WorkerParam";
+import { ConflictMessage, SuccessMessage } from "../WorkerParam";
 
 export interface SaveDatabaseCallback {
   /**
@@ -17,4 +17,10 @@ export interface SaveDatabaseCallback {
    * @param message
    */
   onMessage?: (message: string) => void;
+
+  /**
+   * 检测到远端数据库已被其他设备修改，等待上层决定处理策略（合并/覆盖/重载）
+   * @param message 冲突信息
+   */
+  onConflict?: (message: ConflictMessage) => void;
 }

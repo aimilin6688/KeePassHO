@@ -1,5 +1,5 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
-import { FileInfo, IFileStorage } from '../IFileStorage';
+import { FileInfo, IFileStorage, WriteOption } from '../IFileStorage';
 import { FilenameUtils, FileUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -96,11 +96,12 @@ export class LocalFileStorage implements IFileStorage {
    * 写入文件内容, 写入前根据授权内容判断是否授权或激活授权
    * @param path 文件路径
    * @param content 文件内容
+   * @param option 写入选项，支持条件写入
    * @throws 如果写入失败则抛出异常
    */
-  public async write(path: string, content: ArrayBuffer): Promise<void> {
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     return this.checkFilePermission(path, fileShare.OperationMode.WRITE_MODE).then((result) => {
-      return this.doWrite(path, content);
+      return this.doWrite(path, content, option);
     });
   }
 
@@ -108,18 +109,33 @@ export class LocalFileStorage implements IFileStorage {
    * 写入文件内容
    * @param path 文件路径
    * @param content 文件内容
+   * @param option 写入选项，传入 expectedVersion 时写前复核版本
    * @returns Promise<void>
    */
-  public async doWrite(path: string, content: ArrayBuffer): Promise<void> {
+  public async doWrite(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     try {
-      // 打开文件（如果不存在则创建）
-      const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      const expectedVersion: string | null = option?.expectedVersion ?? null;
+      if (expectedVersion !== null) {
+        const currentInfo: FileInfo = await this.doGetInfo(path);
+        const currentVersion: string | null = currentInfo.version ?? null;
+        if (currentVersion === null || currentVersion !== expectedVersion) {
+          hilog.warn(DOMAIN, TAG, 'Local file version conflict, path: %{public}s, expected: %{public}s, current: %{public}s',
+            path, expectedVersion, currentVersion);
+          throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Local file version changed');
+        }
+      }
+      // 打开文件（如果不存在则创建，TRUNC 清空旧内容，防止新内容比旧内容短时残留脏数据）
+      const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
       // 写入内容
       await fs.write(file.fd, content);
       // 关闭文件
       await fs.close(file.fd);
       return Promise.resolve();
     } catch (error) {
+      // 版本冲突直接透传，保持错误码不被改写
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
       hilog.error(DOMAIN, TAG, 'Failed to write file: %{public}s', error.message)
       throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message);
     }
@@ -171,7 +187,8 @@ export class LocalFileStorage implements IFileStorage {
         modifiedTime: stat.mtime * 1000,
         path: path,
         type: stat.isDirectory() ? FileType.DIR : FileType.FILE,
-        childrenCount: 0
+        childrenCount: 0,
+        version: `${stat.size}|${stat.mtime}`
       } as FileInfo;
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to get file info: %{public}s', error.message)
