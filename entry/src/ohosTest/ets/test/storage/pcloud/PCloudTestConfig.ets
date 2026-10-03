@@ -24,6 +24,16 @@ export class PCloudTestConfig extends TestStorageConfig {
    */
   static readonly PCLOUD_TEST_ACCESS_TOKEN: string = '';
 
+  /**
+   * 是否启用真实 API 用例。
+   * pCloud 为专有云服务，无法本地自建；未配置有效 access_token 时，
+   * 相关真实 API 用例整体不注册（诚实跳过，而非用 mock 数据伪造通过）。
+   * 获取方式见本文件头部注释的 Token Flow 说明。
+   */
+  static isRealApiEnabled(): boolean {
+    return PCloudTestConfig.PCLOUD_TEST_ACCESS_TOKEN.length > 0;
+  }
+
   /** 测试 API 端点 */
   static readonly API_BASE_URL: string = 'https://api.pcloud.com';
 

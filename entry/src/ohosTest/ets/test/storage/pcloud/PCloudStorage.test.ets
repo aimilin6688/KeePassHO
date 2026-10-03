@@ -125,6 +125,11 @@ export default function PCloudStorageTest() {
       });
     });
 
+    // ==================== 真实 API 用例（5-10） ====================
+    // pCloud 为专有云服务，无法本地自建；仅在配置了有效 access_token 时注册，
+    // 未配置时整体不注册（诚实跳过，见 PCloudTestConfig.isRealApiEnabled 与 docs/storage-regression-test.md）
+    if (PCloudTestConfig.isRealApiEnabled()) {
+
     // ==================== 5. 真实 API: listDir ====================
     describe('RealAPIListDir', () => {
       let storage: PCloudStorage;
@@ -267,5 +272,7 @@ export default function PCloudStorageTest() {
         expect(info.size).assertLarger(0);
       });
     });
+
+    } // end isRealApiEnabled
   });
 }

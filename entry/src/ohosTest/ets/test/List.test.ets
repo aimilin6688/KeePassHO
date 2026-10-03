@@ -27,6 +27,7 @@ import HuaweiDriveStorageTest from './storage/huawei/HuaweiDriveStorage.test';
 import HuaweiDriveClientTest from './storage/huawei/HuaweiDriveClient.test';
 import SFTPHandlerTest from './storage/SFTPHandler.test';
 import SFTPStorageSemanticsTest from './storage/SFTPStorageSemantics.test';
+import SFTPStorageRealFileTest from './storage/SFTPStorageRealFile.test';
 
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
@@ -76,6 +77,9 @@ export default function testsuite() {
 
   // SFTP 存储层语义测试（FTPStorage L1 / CacheStorage 装饰器 / RecentFilesService L2）
   SFTPStorageSemanticsTest();
+
+  // SFTP 真实存储操作测试（podman sftp-e2e + rport 隧道，真实 KDBX 文件读写与条件写冲突）
+  SFTPStorageRealFileTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();

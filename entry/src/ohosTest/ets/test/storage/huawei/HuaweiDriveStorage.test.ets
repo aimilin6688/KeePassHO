@@ -10,6 +10,11 @@ const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveStorageTest';
 
 export default function HuaweiDriveStorageTest() {
+  // 华为云盘为专有云服务，无法本地自建；未配置有效凭证时整套真实 API 用例不注册
+  // （诚实跳过，而非用 mock 数据伪造通过，见 docs/storage-regression-test.md）
+  if (!HuaweiDriveTestConfig.isRealApiEnabled()) {
+    return;
+  }
   describe('HuaweiDriveStorage', () => {
     let storage: HuaweiDriveStorage | undefined;
 
