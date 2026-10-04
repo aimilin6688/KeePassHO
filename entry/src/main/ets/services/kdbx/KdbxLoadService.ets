@@ -94,7 +94,7 @@ export default class KdbxLoadService {
    */
   private static handleLoadMessage(data: WorkerMessage, onLoadMessage?: (message: LoadMessage) => void) {
     const loadMessage = data as LoadMessage;
-    hilog.debug(DOMAIN, TAG, 'Received loading message:  %{public}s', ResourceManager.getString(loadMessage.message));
+    hilog.debug(DOMAIN, TAG, 'Received loading message:  %{public}s', ResourceManager.getMessage(loadMessage.message));
     if (onLoadMessage) {
       onLoadMessage(loadMessage);
     }

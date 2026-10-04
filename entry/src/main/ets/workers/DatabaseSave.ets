@@ -37,7 +37,7 @@ export class DatabaseSave {
   public async handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
     try {
       const request = new SaveDatabase(JSON.parse(requestMessage.dbFileParam) as SaveDatabaseDbParam, requestMessage);
-      this.postMessage($r('app.string.loading_key'));
+      this.postMessage('loading_key');
       // 创建凭证
       const credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
       const strategy: string = request.conflictStrategy ?? ConflictStrategy.AUTO;
@@ -88,7 +88,7 @@ export class DatabaseSave {
       hilog.error(DOMAIN, TAG, 'Worker error saving database:%{public}s, stack:%{public}s', error.message, error.stack);
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
         // 重试耗尽仍冲突：远端正被持续写入，提示用户稍后重试，本地修改保留在内存中
-        this.postErrorMessage($r('app.string.save_conflict_retry_exhausted').id);
+        this.postErrorMessage('save_conflict_retry_exhausted');
       } else {
         this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error));
       }
@@ -130,7 +130,7 @@ export class DatabaseSave {
       throw new Error();
     }
     const result = await new KdbxFileManager(request.storageType, request.storageConfig).read(request.filePath);
-    this.postMessage($r('app.string.load_file_success'));
+    this.postMessage('load_file_success');
     return result;
   }
 
@@ -142,7 +142,7 @@ export class DatabaseSave {
    * @throws Error 保存失败
    */
   private async buildSavedContent(request: SaveDatabase, credentials: KdbxCredentials, kdbx?: Kdbx): Promise<ArrayBuffer> {
-    this.postMessage($r('app.string.save_saving'));
+    this.postMessage('save_saving');
     const database: Kdbx = kdbx ? kdbx : await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
     if (request.newPassword) {
       database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
@@ -173,10 +173,10 @@ export class DatabaseSave {
    */
   private async mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo,
     credentials: KdbxCredentials): Promise<ArrayBuffer> {
-    this.postMessage($r('app.string.validating'));
+    this.postMessage('validating');
     // 尝试加载远端数据库（远端凭证已变更时抛出 InvalidKey，由上层统一转为用户提示）
     const remoteKdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
-    this.postMessage($r('app.string.merging_database'));
+    this.postMessage('merging_database');
     // 合并数据库
     const localKdbx: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
     localKdbx.merge(remoteKdbx);
@@ -196,7 +196,7 @@ export class DatabaseSave {
     const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
     try {
       await kdbxFileManager.write(request.filePath, content, option);
-      this.postMessage($r('app.string.save_success'));
+      this.postMessage('save_success');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error save database:%{public}s, stack:%{public}s', error.message, error.stack);
       if (error instanceof Error) {
@@ -230,10 +230,10 @@ export class DatabaseSave {
 
   /**
    * 发送加载消息
-   * @param message 消息
+   * @param message 资源名（如 'save_saving'），由消费方按名本地化
    */
-  postMessage(message: string | Resource) {
-    const msgText = ResourceManager.getString(message);
+  postMessage(message: string) {
+    const msgText = ResourceManager.getMessage(message);
     hilog.info(DOMAIN, TAG, 'Save database message:  %{public}s', msgText);
     if (this.callback && this.callback.onMessage) {
       this.callback.onMessage(msgText);
@@ -242,10 +242,10 @@ export class DatabaseSave {
 
   /**
    * 发送失败消息
-   * @param message 消息（原始文本或资源 ID，由消费方在其所在线程本地化）
+   * @param message 消息（资源名或原始文本，由消费方按名本地化、原文透传）
    */
   postErrorMessage(message: string | number) {
-    const msgText = ResourceManager.getString(message);
+    const msgText = ResourceManager.getMessage(message);
     if (this.callback && this.callback.onError) {
       this.callback.onError(msgText);
     }
