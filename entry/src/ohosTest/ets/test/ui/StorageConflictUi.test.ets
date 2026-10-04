@@ -16,9 +16,8 @@
  *   hdc shell aa test -b com.aimilin.keepassho -m entry_test \
  *     -s unittest OpenHarmonyTestRunner -s class StorageConflictUiTest -s timeout 900000
  *
- * 与 OpenDatabaseUiTest 相同的两个关键设计：
- *   1. 定位一律用控件 id（纯文本断言会被隐藏根栈干扰）
- *   2. 命中控件后校验其 bounds 落在窗口可视区内
+ * 通用 UI 操作（启动 / 查找 / 点击 / 输入 / 等待 / 解锁 / 切库流程）统一封装在
+ * UiTestHelper；本文件只保留存储种子准备、冲突弹框操作与分支断言。
  * 额外注意：EntryEdit 是压在 DatabaseView 之上的 NavDestination，
  * btn_add_fab 在编辑页仍可见，判断"回到数据库列表"必须用编辑页控件消失。
  * 冲突弹框为 promptAction 系统弹框（子窗口），文本匹配失败时回退到
@@ -27,8 +26,7 @@
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { describe, beforeAll, afterAll, it, expect } from '@ohos/hypium';
-import { Component, Driver, ON, On, Rect, UiWindow } from '@kit.TestKit';
-import { abilityDelegatorRegistry } from '@kit.TestKit';
+import { Component, ON, Rect } from '@kit.TestKit';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
@@ -40,12 +38,10 @@ import { WebDAVStorageConfig } from '../../../../main/ets/storage/webdav/WebDAVC
 import { S3TestConfig } from '../storage/s3/S3TestConfig';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { KdbxModeTestHelper } from '../workers/KdbxModeTestHelper';
+import { UiTestHelper } from './UiTestHelper';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'StorageConflictUiTest';
-
-const BUNDLE_NAME: string = 'com.aimilin.keepassho';
-const ABILITY_NAME: string = 'EntryAbility';
 
 /** SFTP（podman sftp-e2e 容器，设备侧 rport 隧道 2223） */
 const SFTP_HOST: string = '127.0.0.1';
@@ -83,26 +79,10 @@ const BRANCH_ABS_Y: Record<string, number> = {
   'reload': 1761
 };
 
-/** 页面切换等待时长（ms） */
-const SHORT_WAIT: number = 1500;
-const NORMAL_WAIT: number = 3000;
-/** 解锁含远端下载，单独放宽 */
-const UNLOCK_WAIT: number = 20000;
-/** 控件查找超时（ms） */
-const FIND_TIMEOUT: number = 8000;
-/** 每个 it 的看门狗上限：IDE 运行不带 -s timeout 时 hypium 默认仅 15s，
- *  长流程用例必然被砍，且僵尸在途调用会引发 uitest 并发冲突；it 第 4 参优先级最高 */
-const IT_TIMEOUT: number = 300000;
 /** 保存触发远端下载后弹框出现的超时（ms） */
 const DIALOG_WAIT: number = 20000;
 /** 合并/覆盖上传、重载下载等远端操作的超时（ms） */
 const REMOTE_OP_WAIT: number = 30000;
-/** 最大返回次数 */
-const MAX_BACK_TIMES: number = 6;
-
-/** 窗口可视区（beforeAll 中填充） */
-let windowRect: Rect = { left: 0, top: 0, right: 0, bottom: 0 };
-let driver: Driver = Driver.create();
 
 /**
  * 每个存储的测试目标
@@ -345,136 +325,25 @@ async function waitSeedOnDisk(sftpPath: string, timeout: number): Promise<boolea
       hilog.warn(DOMAIN, TAG, 'seed file not ready (waited %{public}d ms): %{public}s',
         waited, (err as BusinessError).message);
     }
-    await driver.delayMs(500);
+    await UiTestHelper.delay(500);
   }
   return false;
-}
-
-/**
- * 判断控件 bounds 是否落在窗口可视区内
- */
-function inWindow(r: Rect): boolean {
-  return r.right > r.left && r.bottom > r.top &&
-    r.left >= windowRect.left && r.right <= windowRect.right &&
-    r.top >= windowRect.top && r.bottom <= windowRect.bottom;
-}
-
-/**
- * 在可见控件中查找第一个匹配项
- */
-async function findVisible(on: On): Promise<Component | undefined> {
-  try {
-    const list: Array<Component> = await driver.findComponents(on);
-    for (let i: number = 0; i < list.length; i++) {
-      const r: Rect = await list[i].getBounds();
-      if (inWindow(r)) {
-        return list[i];
-      }
-    }
-  } catch (err) {
-    return undefined;
-  }
-  return undefined;
-}
-
-/**
- * 不做窗口过滤的查找（弹框位于子窗口时使用）
- */
-async function findAnywhere(on: On): Promise<Component | undefined> {
-  try {
-    const list: Array<Component> = await driver.findComponents(on);
-    if (list.length > 0) {
-      return list[0];
-    }
-  } catch (err) {
-    return undefined;
-  }
-  return undefined;
-}
-
-/**
- * 可见控件是否存在
- */
-async function exists(on: On): Promise<boolean> {
-  const found: Component | undefined = await findVisible(on);
-  return found !== undefined;
-}
-
-/**
- * 轮询等待可见控件出现
- */
-async function waitFor(on: On, timeout: number): Promise<boolean> {
-  for (let waited: number = 0; waited <= timeout; waited += 500) {
-    if (await exists(on)) {
-      return true;
-    }
-    await driver.delayMs(500);
-  }
-  return false;
-}
-
-/**
- * 轮询等待可见控件消失
- */
-async function waitGone(on: On, timeout: number): Promise<boolean> {
-  for (let waited: number = 0; waited <= timeout; waited += 500) {
-    if (!await exists(on)) {
-      return true;
-    }
-    await driver.delayMs(500);
-  }
-  return false;
-}
-
-/**
- * 等待可见控件出现并点击
- */
-async function click(on: On, timeout: number): Promise<boolean> {
-  for (let waited: number = 0; waited <= timeout; waited += 500) {
-    const target: Component | undefined = await findVisible(on);
-    if (target !== undefined) {
-      try {
-        await target.click();
-        return true;
-      } catch (err) {
-        hilog.error(DOMAIN, TAG, 'click error: %{public}s', JSON.stringify(err));
-        return false;
-      }
-    }
-    await driver.delayMs(500);
-  }
-  hilog.error(DOMAIN, TAG, 'click timeout, no visible component');
-  return false;
-}
-
-/**
- * 连续返回，直到目标控件消失（用于从编辑页回到数据库列表）
- */
-async function pressBackUntilGone(on: On, maxTimes: number): Promise<boolean> {
-  for (let i: number = 0; i < maxTimes; i++) {
-    if (!await exists(on)) {
-      return true;
-    }
-    await driver.pressBack();
-    await driver.delayMs(SHORT_WAIT);
-  }
-  return !await exists(on);
 }
 
 /**
  * 冲突弹框是否出现（标题文本唯一；弹框可能在子窗口，找不到时放开窗口过滤）
  */
 async function conflictDialogShown(): Promise<boolean> {
-  if (await exists(ON.text(CONFLICT_TITLE_ZH))) {
+  if (await UiTestHelper.existsText(CONFLICT_TITLE_ZH)) {
     return true;
   }
-  if (await exists(ON.text(CONFLICT_TITLE_EN))) {
+  if (await UiTestHelper.existsText(CONFLICT_TITLE_EN)) {
     return true;
   }
-  if (await findAnywhere(ON.text(CONFLICT_TITLE_ZH)) !== undefined) {
+  if (await UiTestHelper.findAnywhere(ON.text(CONFLICT_TITLE_ZH)) !== undefined) {
     return true;
   }
-  if (await findAnywhere(ON.text(CONFLICT_TITLE_EN)) !== undefined) {
+  if (await UiTestHelper.findAnywhere(ON.text(CONFLICT_TITLE_EN)) !== undefined) {
     return true;
   }
   return false;
@@ -485,7 +354,7 @@ async function waitConflictDialog(timeout: number): Promise<boolean> {
     if (await conflictDialogShown()) {
       return true;
     }
-    await driver.delayMs(500);
+    await UiTestHelper.delay(500);
   }
   return false;
 }
@@ -495,7 +364,7 @@ async function conflictDialogAbsent(timeout: number): Promise<boolean> {
     if (!await conflictDialogShown()) {
       return true;
     }
-    await driver.delayMs(500);
+    await UiTestHelper.delay(500);
   }
   return false;
 }
@@ -507,11 +376,11 @@ async function conflictDialogAbsent(timeout: number): Promise<boolean> {
 async function findDialogButton(zhText: string, enText: string): Promise<Component | undefined> {
   const candidates: Array<string> = [zhText, enText];
   for (let c: number = 0; c < candidates.length; c++) {
-    const visible: Component | undefined = await findVisible(ON.text(candidates[c]));
+    const visible: Component | undefined = await UiTestHelper.findVisible(ON.text(candidates[c]));
     if (visible !== undefined) {
       return visible;
     }
-    const anywhere: Component | undefined = await findAnywhere(ON.text(candidates[c]));
+    const anywhere: Component | undefined = await UiTestHelper.findAnywhere(ON.text(candidates[c]));
     if (anywhere !== undefined) {
       return anywhere;
     }
@@ -547,12 +416,13 @@ async function clickConflictBranch(branch: string): Promise<boolean> {
   if (absY === undefined) {
     return false;
   }
-  const x: number = Math.round((windowRect.left + windowRect.right) / 2);
-  const y: number = Math.round(windowRect.top + absY);
+  const rect: Rect = UiTestHelper.getWindowRect();
+  const x: number = Math.round((rect.left + rect.right) / 2);
+  const y: number = Math.round(rect.top + absY);
   try {
-    await driver.click(x, y);
+    await UiTestHelper.getDriver().click(x, y);
     hilog.info(DOMAIN, TAG, 'conflict branch %{public}s clicked by coordinate (%{public}d, %{public}d)',
-      branch, Math.round(x), Math.round(y));
+      branch, x, y);
     return true;
   } catch (err) {
     hilog.error(DOMAIN, TAG, 'coordinate click error: %{public}s', JSON.stringify(err));
@@ -566,7 +436,7 @@ async function clickConflictBranch(branch: string): Promise<boolean> {
  */
 async function dismissConflictDialog(): Promise<boolean> {
   for (let i: number = 0; i < 3; i++) {
-    await driver.pressBack();
+    await UiTestHelper.pressBack();
     if (await conflictDialogAbsent(3000)) {
       return true;
     }
@@ -583,59 +453,51 @@ async function addLocalEntryViaUi(localTitle: string): Promise<boolean> {
   // 菜单展开时 fab 隐藏（visibility Hidden），重试点击不会误关菜单
   let menuOpened: boolean = false;
   for (let i: number = 0; i < 3; i++) {
-    if (await exists(ON.id('btn_add_entry'))) {
+    if (await UiTestHelper.existsId('btn_add_entry')) {
       menuOpened = true;
       break;
     }
-    if (!await click(ON.id('btn_add_fab'), FIND_TIMEOUT)) {
+    if (!await UiTestHelper.clickId('btn_add_fab', UiTestHelper.FIND_TIMEOUT)) {
       hilog.error(DOMAIN, TAG, 'add entry fail: btn_add_fab click, try %{public}d', i);
       continue;
     }
-    if (await waitFor(ON.id('btn_add_entry'), 3000)) {
+    if (await UiTestHelper.waitForId('btn_add_entry', 3000)) {
       menuOpened = true;
       break;
     }
     hilog.info(DOMAIN, TAG, 'fab click no effect, retry %{public}d', i);
-    await driver.delayMs(SHORT_WAIT);
+    await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
   }
   if (!menuOpened) {
     hilog.error(DOMAIN, TAG, 'add entry fail: btn_add_entry not shown after fab clicks');
     return false;
   }
-  if (!await click(ON.id('btn_add_entry'), FIND_TIMEOUT)) {
+  if (!await UiTestHelper.clickId('btn_add_entry', UiTestHelper.FIND_TIMEOUT)) {
     hilog.error(DOMAIN, TAG, 'add entry fail: btn_add_entry click');
     return false;
   }
-  if (!await waitFor(ON.id('input_entry_title'), FIND_TIMEOUT)) {
+  if (!await UiTestHelper.waitForId('input_entry_title', UiTestHelper.FIND_TIMEOUT)) {
     hilog.error(DOMAIN, TAG, 'add entry fail: input_entry_title not shown');
     return false;
   }
-  const input: Component | undefined = await findVisible(ON.id('input_entry_title'));
+  const input: Component | undefined = await UiTestHelper.findById('input_entry_title');
   if (input === undefined) {
     hilog.error(DOMAIN, TAG, 'add entry fail: input_entry_title not visible');
     return false;
   }
-  try {
-    await input.inputText(localTitle);
-  } catch (err) {
-    hilog.error(DOMAIN, TAG, 'input entry title error: %{public}s', JSON.stringify(err));
+  if (!await UiTestHelper.inputText(input, localTitle)) {
+    hilog.error(DOMAIN, TAG, 'input entry title error');
     return false;
   }
-  await driver.delayMs(SHORT_WAIT);
+  await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
   // 保存按钮仅在条目修改后可用，轮询确认可用后再点击
   for (let i: number = 0; i < 3; i++) {
-    const saveBtn: Component | undefined = await findVisible(ON.id('btn_entry_save'));
+    const saveBtn: Component | undefined = await UiTestHelper.findById('btn_entry_save');
     if (saveBtn === undefined) {
-      await driver.delayMs(SHORT_WAIT);
+      await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
       continue;
     }
-    let enabled: boolean = false;
-    try {
-      enabled = await saveBtn.isEnabled();
-    } catch (err) {
-      enabled = false;
-    }
-    if (enabled) {
+    if (await UiTestHelper.isEnabled(saveBtn)) {
       try {
         await saveBtn.click();
         return true;
@@ -644,7 +506,7 @@ async function addLocalEntryViaUi(localTitle: string): Promise<boolean> {
         return false;
       }
     }
-    await driver.delayMs(SHORT_WAIT);
+    await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
   }
   hilog.error(DOMAIN, TAG, 'entry save button not enabled after input');
   return false;
@@ -689,12 +551,12 @@ async function runConflictScenario(target: ConflictTarget, scenario: string,
     if (!result.branchHandled) {
       return result;
     }
-    result.branchHandled = await pressBackUntilGone(ON.id('input_entry_title'), MAX_BACK_TIMES);
+    result.branchHandled = await UiTestHelper.pressBackUntilGoneId('input_entry_title', UiTestHelper.MAX_BACK_TIMES);
     if (!result.branchHandled) {
       return result;
     }
-    result.uiLocalVisible = await waitFor(ON.text(result.localTitle), FIND_TIMEOUT);
-    result.uiRemoteVisible = await exists(ON.text(result.remoteTitle));
+    result.uiLocalVisible = await UiTestHelper.waitForText(result.localTitle, UiTestHelper.FIND_TIMEOUT);
+    result.uiRemoteVisible = await UiTestHelper.existsText(result.remoteTitle);
   } else {
     // 合并/覆盖/重载：点击分支按钮后等待保存/重载完成并返回数据库列表
     result.branchHandled = await clickConflictBranch(branch);
@@ -702,20 +564,20 @@ async function runConflictScenario(target: ConflictTarget, scenario: string,
       return result;
     }
     // 编辑页控件消失 = 保存完成已返回数据库列表（btn_add_fab 在编辑页仍可见，不能作判据）
-    const leftEdit: boolean = await waitGone(ON.id('input_entry_title'), REMOTE_OP_WAIT);
+    const leftEdit: boolean = await UiTestHelper.waitGoneId('input_entry_title', REMOTE_OP_WAIT);
     if (!leftEdit) {
       hilog.error(DOMAIN, TAG, 'entry edit page not left after %{public}s branch', branch);
       return result;
     }
     if (branch === 'merge') {
-      result.uiLocalVisible = await waitFor(ON.text(result.localTitle), FIND_TIMEOUT);
-      result.uiRemoteVisible = await waitFor(ON.text(result.remoteTitle), REMOTE_OP_WAIT);
+      result.uiLocalVisible = await UiTestHelper.waitForText(result.localTitle, UiTestHelper.FIND_TIMEOUT);
+      result.uiRemoteVisible = await UiTestHelper.waitForText(result.remoteTitle, REMOTE_OP_WAIT);
     } else if (branch === 'overwrite') {
-      result.uiLocalVisible = await waitFor(ON.text(result.localTitle), FIND_TIMEOUT);
-      result.uiRemoteVisible = await exists(ON.text(result.remoteTitle));
+      result.uiLocalVisible = await UiTestHelper.waitForText(result.localTitle, UiTestHelper.FIND_TIMEOUT);
+      result.uiRemoteVisible = await UiTestHelper.existsText(result.remoteTitle);
     } else {
-      result.uiRemoteVisible = await waitFor(ON.text(result.remoteTitle), REMOTE_OP_WAIT);
-      result.uiLocalVisible = await exists(ON.text(result.localTitle));
+      result.uiRemoteVisible = await UiTestHelper.waitForText(result.remoteTitle, REMOTE_OP_WAIT);
+      result.uiLocalVisible = await UiTestHelper.existsText(result.localTitle);
     }
   }
 
@@ -728,65 +590,6 @@ async function runConflictScenario(target: ConflictTarget, scenario: string,
     target.label, scenario, String(result.uiLocalVisible), String(result.remoteHasLocal),
     String(result.uiRemoteVisible), String(result.remoteHasRemote), JSON.stringify(titles));
   return result;
-}
-
-/**
- * 在解锁页输入主密码并解锁，校验进入数据库列表且种子条目可见
- */
-async function unlockViaUi(target: ConflictTarget): Promise<boolean> {
-  const input: Component | undefined = await findVisible(ON.id('input_password'));
-  if (input === undefined) {
-    return false;
-  }
-  try {
-    await input.inputText(KdbxModeTestHelper.DB_PASSWORD);
-  } catch (err) {
-    hilog.error(DOMAIN, TAG, 'input password error: %{public}s', JSON.stringify(err));
-    return false;
-  }
-  await driver.delayMs(SHORT_WAIT);
-  // 密码框会拉起系统安全键盘（独立窗口），其遮挡会导致底层控件在控件树中被过滤，
-  // 必须先按 Back 收起键盘再点击解锁（与手工 E2E 流程一致）
-  await driver.pressBack();
-  await driver.delayMs(SHORT_WAIT);
-  if (!await click(ON.id('btn_unlock'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await waitFor(ON.id('btn_add_fab'), UNLOCK_WAIT)) {
-    return false;
-  }
-  return await waitFor(ON.text(target.firstEntryTitle), FIND_TIMEOUT);
-}
-
-/**
- * 切换数据库：锁定 -> 关闭数据库 -> 首页 -> 最近打开 -> 目标文件 -> 解锁
- */
-async function switchDatabaseTo(next: ConflictTarget): Promise<boolean> {
-  if (!await click(ON.id('btn_lock_database'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await waitFor(ON.id('btn_close_database'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await click(ON.id('btn_close_database'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await waitFor(ON.id('btn_recent_files'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await click(ON.id('btn_recent_files'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await waitFor(ON.id('recent_file_item'), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await click(ON.text(next.fileName), FIND_TIMEOUT)) {
-    return false;
-  }
-  if (!await waitFor(ON.id('input_password'), FIND_TIMEOUT)) {
-    return false;
-  }
-  return await unlockViaUi(next);
 }
 
 export default function StorageConflictUiTest(): void {
@@ -815,33 +618,14 @@ export default function StorageConflictUiTest(): void {
       hilog.info(DOMAIN, TAG, 'seed on disk=%{public}s', String(seededToDisk));
 
       // 冷启动应用
-      const delegator: abilityDelegatorRegistry.AbilityDelegator =
-        abilityDelegatorRegistry.getAbilityDelegator();
-      await delegator.startAbility({
-        bundleName: BUNDLE_NAME,
-        abilityName: ABILITY_NAME
-      });
-      driver = Driver.create();
-      await driver.delayMs(NORMAL_WAIT);
-      try {
-        const window: UiWindow = await driver.findWindow({ bundleName: BUNDLE_NAME });
-        windowRect = await window.getBounds();
-      } catch (err) {
-        hilog.error(DOMAIN, TAG, 'get window bounds failed');
-      }
-      hilog.info(DOMAIN, TAG, 'started, window=%{public}s',
-        JSON.stringify({
-          left: windowRect.left, top: windowRect.top,
-          right: windowRect.right, bottom: windowRect.bottom
-        }));
-      await driver.delayMs(SHORT_WAIT);
+      await UiTestHelper.launchApp();
     });
 
     afterAll(async () => {
       // 清理本次运行注入的最近打开记录（直接改写 XML）
       const targets: Array<ConflictTarget> = [sftpTarget, webdavTarget, s3Target];
       await removeSeedFromXml(targets);
-      await driver.delayMs(SHORT_WAIT);
+      await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
       hilog.info(DOMAIN, TAG, 'StorageConflictUiTest finished');
     });
 
@@ -849,13 +633,15 @@ export default function StorageConflictUiTest(): void {
      * 01 冷启动：最近文件为 SFTP 库时自动进入解锁页，解锁进入数据库列表
      */
     it('01_sftp_open_database_after_cold_start', 0, async () => {
-      const onUnlock: boolean = await waitFor(ON.id('input_password'), FIND_TIMEOUT * 2);
-      const unlocked: boolean = onUnlock ? await unlockViaUi(sftpTarget) : false;
+      const onUnlock: boolean = await UiTestHelper.waitForId('input_password', UiTestHelper.FIND_TIMEOUT * 2);
+      const unlocked: boolean = onUnlock
+        ? await UiTestHelper.unlockDatabase(KdbxModeTestHelper.DB_PASSWORD, sftpTarget.firstEntryTitle)
+        : false;
       hilog.info(DOMAIN, TAG, 'sftp open: unlockPage=%{public}s unlocked=%{public}s',
         String(onUnlock), String(unlocked));
       expect(onUnlock).assertTrue();
       expect(unlocked).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 02 SFTP 冲突-合并：列表与远端均同时包含双方条目
@@ -870,7 +656,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 03 SFTP 冲突-覆盖：本地条目保留，远端修改被丢弃
@@ -885,7 +671,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertFalse();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 04 SFTP 冲突-重载：以远端为准，本地修改丢弃且不写远端
@@ -900,7 +686,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 05 SFTP 冲突-取消：弹框关闭后本地条目仍在，远端保持他设备版本
@@ -915,16 +701,17 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 06 切换到 WebDAV 数据库：锁定->关闭->最近打开->解锁
      */
     it('06_switch_to_webdav_and_open', 0, async () => {
-      const switched: boolean = await switchDatabaseTo(webdavTarget);
+      const switched: boolean = await UiTestHelper.openRecentDatabase(webdavTarget.fileName,
+        KdbxModeTestHelper.DB_PASSWORD, webdavTarget.firstEntryTitle);
       hilog.info(DOMAIN, TAG, 'webdav open: switched=%{public}s', String(switched));
       expect(switched).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 07 WebDAV 冲突-合并
@@ -939,7 +726,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 08 WebDAV 冲突-覆盖
@@ -954,7 +741,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertFalse();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 09 WebDAV 冲突-重载
@@ -969,7 +756,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 10 WebDAV 冲突-取消
@@ -984,16 +771,17 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 11 切换到 S3 数据库：锁定->关闭->最近打开->解锁
      */
     it('11_switch_to_s3_and_open', 0, async () => {
-      const switched: boolean = await switchDatabaseTo(s3Target);
+      const switched: boolean = await UiTestHelper.openRecentDatabase(s3Target.fileName,
+        KdbxModeTestHelper.DB_PASSWORD, s3Target.firstEntryTitle);
       hilog.info(DOMAIN, TAG, 's3 open: switched=%{public}s', String(switched));
       expect(switched).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 12 S3 冲突-合并
@@ -1008,7 +796,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 13 S3 冲突-覆盖
@@ -1023,7 +811,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertFalse();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 14 S3 冲突-重载
@@ -1038,7 +826,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
 
     /**
      * 15 S3 冲突-取消
@@ -1053,6 +841,6 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    }, IT_TIMEOUT);
+    }, UiTestHelper.IT_TIMEOUT);
   });
 }
