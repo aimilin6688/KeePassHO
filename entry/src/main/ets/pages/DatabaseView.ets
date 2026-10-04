@@ -1548,10 +1548,10 @@ export struct DatabaseView {
         });
       },
       onLoadMessage: (message: LoadMessage) => {
-        this.refreshText = ResourceManager.getString(message.message);
+        this.refreshText = ResourceManager.getMessage(message.message);
       },
       onErrorMessage: (message: LoadMessage) => {
-        this.refreshText = ResourceManager.getString(message.message);
+        this.refreshText = ResourceManager.getMessage(message.message);
         CommonUtils.showToast({ message: this.refreshText });
         this.isRefreshing = false;
       },

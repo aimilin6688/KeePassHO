@@ -536,13 +536,13 @@ export struct Password {
     let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
-        this.loadingMessage = ResourceManager.getString(message.message);
+        this.loadingMessage = ResourceManager.getMessage(message.message);
       },
       onSuccessMessage: (message: SuccessMessage) => {
         this.handleSuccessMessage(message);
       },
       onErrorMessage: (message: LoadMessage) => {
-        CommonUtils.showToast({ message: ResourceManager.getString(message.message), duration: 3000 });
+        CommonUtils.showToast({ message: ResourceManager.getMessage(message.message), duration: 3000 });
         this.closeLoadingDialog();
       },
       onAllErrors: (error: ErrorEvent) => {

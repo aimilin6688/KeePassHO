@@ -19,19 +19,19 @@ export class DatabaseLoad {
    */
   async handleLoadDatabase(request: LoadDatabase, callback?: KdbxLoadServiceCallback): Promise<void> {
     try {
-      this.postMessage($r('app.string.creating_key'), callback?.onLoadMessage);
+      this.postMessage('creating_key', callback?.onLoadMessage);
       // 创建凭证
       let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
-      this.postMessage($r('app.string.loading_key'), callback?.onLoadMessage);
+      this.postMessage('loading_key', callback?.onLoadMessage);
       // 加载文件内容
       let fileContent: FileContentInfo = await this.loadKdbxFileContent(request);
-      this.postMessage($r('app.string.validating'), callback?.onLoadMessage);
+      this.postMessage('validating', callback?.onLoadMessage);
       // 加载数据库
       let logTime = Date.now();
       let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
       hilog.debug(DOMAIN, TAG, "Load database cost time: %{public}d ms", Date.now() - logTime);
 
-      this.postMessage($r('app.string.loading_complete'), callback?.onLoadMessage);
+      this.postMessage('loading_complete', callback?.onLoadMessage);
       // 记录远端内容哈希与版本，作为后续保存的冲突检测基线
       const contentHash: string = await HashUtils.sha256Hex(fileContent.content);
       this.postSuccessMessage(new SuccessMessage(kdbx, fileContent.modifiedTime, false,
@@ -54,15 +54,15 @@ export class DatabaseLoad {
       throw new Error();
     }
     let result = await new KdbxFileManager(request.storageType, request.storageConfig).read(request.filePath);
-    this.postMessage($r('app.string.load_file_success'));
+    this.postMessage('load_file_success');
     return result;
   }
 
   /**
    * 发送加载消息
-   * @param message 消息
+   * @param message 资源名（如 'loading_key'），由消费方按名本地化
    */
-  postMessage(message: string | Resource, onLoadMessage?: (message: LoadMessage) => void) {
+  postMessage(message: string, onLoadMessage?: (message: LoadMessage) => void) {
     if (onLoadMessage) {
       onLoadMessage(toLoadMessage(message));
     }

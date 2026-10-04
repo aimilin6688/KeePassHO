@@ -176,7 +176,7 @@ export default class KdbxSaveService {
         });
       },
       onErrorMessage: (message: LoadMessage) => {
-        const errorMessage: string = ResourceManager.getString(message.message);
+        const errorMessage: string = ResourceManager.getMessage(message.message);
         if (callback && callback.onError) {
           callback.onError(errorMessage);
         } else {
@@ -326,7 +326,7 @@ export default class KdbxSaveService {
       return;
     }
     if (callback.onMessage) {
-      callback.onMessage(ResourceManager.getString(data.message));
+      callback.onMessage(ResourceManager.getMessage(data.message));
     }
   }
 
@@ -335,7 +335,7 @@ export default class KdbxSaveService {
       return;
     }
     if (callback.onError) {
-      callback.onError(ResourceManager.getString(data.message));
+      callback.onError(ResourceManager.getMessage(data.message));
     }
   }
 }
