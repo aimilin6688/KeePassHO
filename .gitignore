@@ -18,7 +18,6 @@ oh-package-lock.json5
 **/.workbuddy
 **/.claude
 **/.superpowers
-/docs/
 /faultlogger/
 .codegenie
 .deveco
