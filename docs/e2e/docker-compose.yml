@@ -1,0 +1,71 @@
+# E2E / 单元测试真实文件服务器一键编排（S3 / WebDAV / SFTP）
+#
+# 用法：
+#   podman compose up -d      启动（或 docker compose up -d）
+#   podman compose down       停止（命名卷中的测试数据保留）
+#   podman compose down -v    停止并清空全部测试数据（完全重置）
+#
+# 端点（Mac 宿主机视角，与既有测试配置一致）：
+#   S3     http://127.0.0.1:9000    SeaweedFS S3 网关（无 IAM，任意非空 AK/SK 可过签名）
+#   WebDAV http://127.0.0.1:8800    e2e / e2etest123（Basic 认证）
+#   SFTP   127.0.0.1:2222           e2e / e2epass，客户端根路径 /data/（chroot 到 /home/e2e）
+#
+# 模拟器/真机访问经 hdcd rport 反向隧道（设备侧 127.0.0.1）：
+#   2223 -> Mac 2222（SFTP，设备 2222 端口被系统占用故用 2223）
+#   9000 -> Mac 9000（S3）
+#   8800 -> Mac 8800（WebDAV）
+#
+# 注意：
+#   - 向容器投放测试文件勿用 podman cp / exec cp（产生 root 属主文件，SFTP 写入报
+#     Permission denied）；请用 SFTP 客户端上传，或事后 chown 1001:100 修正属主
+#   - SeaweedFS 镜像默认走 docker.1ms.run 国内源，其余设备可按网络情况改为
+#     docker.io/chrislusf/seaweedfs:3.81（MinIO 各渠道均不可用，勿替换为 MinIO）
+
+name: e2e-fileserver
+services:
+  seaweedfs-e2e:
+    image: docker.1ms.run/chrislusf/seaweedfs:3.81
+    container_name: seaweedfs-e2e
+    ports:
+      - "9000:8333" # S3 网关：宿主 9000 -> 容器 8333
+    volumes:
+      - seaweedfs-data:/data
+    # 镜像 ENTRYPOINT 为 /entrypoint.sh（内部 exec weed "$@"），命令直接以 server 开头；
+    # -filer 为 S3 网关硬依赖，缺失会无限等待连接 filer
+    command: >
+      server -dir=/data
+      -master.volumeSizeLimitMB=1024
+      -filer
+      -s3
+      -s3.port=8333
+    restart: unless-stopped
+
+  webdav-e2e:
+    image: docker.io/bytemark/webdav:latest
+    container_name: webdav-e2e
+    ports:
+      - "8800:80"
+    environment:
+      USERNAME: e2e
+      PASSWORD: e2etest123
+      AUTH_TYPE: Basic
+    volumes:
+      - webdav-data:/var/lib/dav
+    restart: unless-stopped
+
+  sftp-e2e:
+    image: docker.io/atmoz/sftp:latest
+    container_name: sftp-e2e
+    ports:
+      - "2222:22"
+    environment:
+      SFTP_USERS: e2e:e2epass:1001 # uid=1001，组 users(gid=100)
+    volumes:
+      - sftp-data:/home/e2e/data
+      - ./sftp/init.sh:/etc/sftp.d/init.sh:ro # 启动时自动建目录/修属主/配空闲断连
+    restart: unless-stopped
+
+volumes:
+  seaweedfs-data:
+  webdav-data:
+  sftp-data:
