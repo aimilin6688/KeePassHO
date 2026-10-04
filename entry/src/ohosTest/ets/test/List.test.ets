@@ -17,6 +17,8 @@ import S3ClientMultipartTest from './storage/s3/S3ClientMultipart.test';
 import S3SignatureV4Test from './storage/s3/S3SignatureV4.test';
 import S3StorageTest from './storage/s3/S3Storage.test';
 import S3XmlParserTest from './storage/s3/S3XmlParser.test';
+// S3 真实集成测试（20MB 分块上传/下载，需真实 S3/MinIO 环境，勿与单元测试混跑）
+import S3StorageIntegrationTest from './storage/s3/S3StorageIntegration.test';
 
 import PCloudClientTest from './storage/pcloud/PCloudClient.test';
 import PCloudConfigTest from './storage/pcloud/PCloudConfig.test';
@@ -67,6 +69,9 @@ export default function testsuite() {
   S3SignatureV4Test();
   S3StorageTest();
   S3XmlParserTest();
+
+  // S3 真实集成测试（需真实 S3/MinIO 环境，建议 -s class S3StorageIntegrationTest 单独运行）
+  S3StorageIntegrationTest();
 
   PCloudClientTest();
   PCloudConfigTest();
