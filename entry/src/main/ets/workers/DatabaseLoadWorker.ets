@@ -11,15 +11,17 @@ const TAG = 'DatabaseLoadWorker';
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
 
-// 监听主线程消息
-workerPort.onmessage = (event: MessageEvents) => {
-  const message = JSON.parse(event.data) as WorkerMessage;
-  hilog.debug(DOMAIN, TAG, 'Load worker receive message type:%{public}s', message.type);
-  if (message.type === MessageType.LOAD_DATABASE) {
-    const request = message as LoadDatabase;
-    new DatabaseLoadWorker().handleLoadDatabase(request);
-  }
-};
+// 监听主线程消息（仅 worker 线程注册；主线程加载本模块时 workerPort 为空，跳过）
+if (workerPort) {
+  workerPort.onmessage = (event: MessageEvents) => {
+    const message = JSON.parse(event.data) as WorkerMessage;
+    hilog.debug(DOMAIN, TAG, 'Load worker receive message type:%{public}s', message.type);
+    if (message.type === MessageType.LOAD_DATABASE) {
+      const request = message as LoadDatabase;
+      new DatabaseLoadWorker().handleLoadDatabase(request);
+    }
+  };
+}
 
 /**
  * 处理数据库加载任务
@@ -41,9 +43,9 @@ export class DatabaseLoadWorker extends DatabaseLoad {
 
   /**
    * 发送失败消息
-   * @param message 消息
+   * @param message 消息（原始文本或资源 ID，由主线程本地化）
    */
-  postErrorMessage(message: string, onErrorMessage?: (message: LoadMessage) => void) {
+  postErrorMessage(message: string | number, onErrorMessage?: (message: LoadMessage) => void) {
     try {
       workerPort.postMessage(toErrorMessage(message));
     } catch (error) {

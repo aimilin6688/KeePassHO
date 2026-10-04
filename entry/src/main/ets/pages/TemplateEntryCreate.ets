@@ -2,6 +2,7 @@
  * 模板创建条目页面
  * 根据选中的模板只显示模板定义的字段
  */
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { Kdbx, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../services/FileService';
@@ -479,7 +480,7 @@ export struct TemplateEntryCreate {
 
       // 保存数据库
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
-      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+      KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
           CommonUtils.showToast($r('app.string.save_success'));
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));

@@ -1,15 +1,17 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { promptAction, ShowDialogSuccessResponse } from '@kit.ArkUI';
-import { Kdbx } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxCustomIcon, KdbxUuid } from 'kdbxweb';
 import { Constants } from '../../common/constants/Constants';
 import { CacheConstants } from '../../storage';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
+import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
 import { ConflictStrategy, SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
+import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import KdbxLoadService from './KdbxLoadService';
 import { ConflictMessage, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
@@ -54,6 +56,50 @@ export default class KdbxSaveService {
       KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp);
     } else {
       new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq);
+    }
+  }
+
+  /**
+   * 保存数据库（UI 便捷入口）：清空自定义图标显示缓存，未指定回调时以 Toast 提示结果
+   * @param callback 回调
+   * @param conflictStrategy 冲突处理策略，默认 AUTO（冲突时弹框询问用户）
+   */
+  public static saveDatabaseFromUi(callback?: SaveDatabaseCallback, conflictStrategy?: string): void {
+    KdbxUtils.clearCustomIconMap();
+    KdbxSaveService.saveDatabase(callback ?? new ToastSaveDatabaseCallback(), conflictStrategy);
+  }
+
+  /**
+   * 添加自定义图标到数据库并保存
+   * @param database 数据库实例
+   * @param base64Images base64编码的图像数据（格式：data:image/png;base64,...)
+   * @param callback 保存回调
+   */
+  public static async addCustomIcon(database: Kdbx, base64Images: string[], callback?: SaveDatabaseCallback): Promise<void> {
+    try {
+      if (!database || !base64Images || base64Images.length === 0) {
+        callback?.onError?.('Invalid database or base64 image');
+        return;
+      }
+      for (const base64Image of base64Images) {
+        // 从base64字符串中提取实际的base64数据部分
+        const base64Data = base64Image.split(',')[1];
+        if (!base64Data) {
+          callback?.onError?.('Invalid base64 image');
+          continue;
+        }
+        // 将base64转换为ArrayBuffer
+        const iconData = ByteUtils.base64ToBytes(base64Data);
+        // 添加自定义图标到数据库
+        database.meta.customIcons.set(KdbxUuid.random().id, { data: iconData } as KdbxCustomIcon);
+      }
+      // 清除缓存，确保新图标可见
+      KdbxUtils.clearCustomIconMap();
+      // 保存数据库
+      KdbxSaveService.saveDatabase(callback ?? new ToastSaveDatabaseCallback());
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Add custom icon error: %{public}s', error);
+      callback?.onError?.(error.message);
     }
   }
 
@@ -164,7 +210,7 @@ export default class KdbxSaveService {
    * @param dbFileParam
    */
   private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback): void {
-    KdbxSaveService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseSaveWorker.ets');
+    KdbxSaveService.databaseWorker = DatabaseWorkerFactory.createSaveWorker();
     try {
       KdbxSaveService.databaseWorker.postMessage(req, [req.data as ArrayBuffer]);
     } catch (err) {

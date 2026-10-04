@@ -88,9 +88,9 @@ export class DatabaseSave {
       hilog.error(DOMAIN, TAG, 'Worker error saving database:%{public}s, stack:%{public}s', error.message, error.stack);
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
         // 重试耗尽仍冲突：远端正被持续写入，提示用户稍后重试，本地修改保留在内存中
-        this.postErrorMessage(ResourceManager.getString($r('app.string.save_conflict_retry_exhausted')));
+        this.postErrorMessage($r('app.string.save_conflict_retry_exhausted').id);
       } else {
-        this.postErrorMessage(KdbxUtils.kdbxErrorMessage(error));
+        this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error));
       }
     }
   }
@@ -242,9 +242,9 @@ export class DatabaseSave {
 
   /**
    * 发送失败消息
-   * @param message 消息
+   * @param message 消息（原始文本或资源 ID，由消费方在其所在线程本地化）
    */
-  postErrorMessage(message: string) {
+  postErrorMessage(message: string | number) {
     const msgText = ResourceManager.getString(message);
     if (this.callback && this.callback.onError) {
       this.callback.onError(msgText);

@@ -1,3 +1,4 @@
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { CommonUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
 import { RecentFilesService } from '../services/RecentFilesService';
@@ -80,7 +81,7 @@ export struct ChangePasswordContent {
     dbFileParam.newKeyLocation = this.keyLocation;
     dbFileParam.notUseKeyFile = this.notUseKeyFile;
     // 更新数据库主密码
-    KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+    KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
       onSuccess: () => {
         this.errorMessage = '';
         this.handlePasswordChange();

@@ -5,7 +5,7 @@ import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import { LoadMessage, SuccessMessage, toLoadMessage } from './WorkerParam';
+import { LoadMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
 import { KdbxUtils, HashUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
@@ -38,7 +38,7 @@ export class DatabaseLoad {
         fileContent.version ?? null, contentHash), callback?.onSuccessMessage);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
-      this.postErrorMessage(KdbxUtils.kdbxErrorMessage(error), callback?.onErrorMessage);
+      this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error), callback?.onErrorMessage);
     }
   }
 
@@ -70,11 +70,11 @@ export class DatabaseLoad {
 
   /**
    * 发送失败消息
-   * @param message 消息
+   * @param message 消息（原始文本或资源 ID，由消费方在其所在线程本地化）
    */
-  postErrorMessage(message: string, onErrorMessage?: (message: LoadMessage) => void) {
+  postErrorMessage(message: string | number, onErrorMessage?: (message: LoadMessage) => void) {
     if (onErrorMessage) {
-      onErrorMessage(toLoadMessage(message));
+      onErrorMessage(toErrorMessage(message));
     }
   }
 

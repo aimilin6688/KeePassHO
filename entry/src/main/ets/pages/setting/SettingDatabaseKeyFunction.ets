@@ -1,3 +1,4 @@
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { ByteUtils, Consts, HeaderConst, Int64, VarDictionary } from 'kdbxweb';
 import { CommonUtils, KdbxUtils, NavigationManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
@@ -124,7 +125,7 @@ export struct SettingDatabaseKeyFunctionContent {
       }
       hilog.debug(DOMAIN, TAG, "saveAlgoParams:%{public}s", JSON.stringify(kdfParameters));
       // 保存数据库
-      KdbxUtils.saveDatabase();
+      KdbxSaveService.saveDatabaseFromUi();
     } catch (error) {
       const errorMsg = KdbxUtils.kdbxErrorMessage(error);
       hilog.error(DOMAIN, TAG, 'Failed to save database algo: %{public}s', errorMsg);
@@ -191,7 +192,7 @@ export struct SettingDatabaseKeyFunctionContent {
           CommonUtils.showToast({ message: $r('app.string.kdbx_upgrade_success') });
         }
       };
-      KdbxUtils.saveDatabase(callback);
+      KdbxSaveService.saveDatabaseFromUi(callback);
     } catch (error) {
       const errorMsg = KdbxUtils.kdbxErrorMessage(error);
       hilog.error(DOMAIN, TAG, 'Failed to upgrade database to KDBX4: %{public}s', errorMsg);

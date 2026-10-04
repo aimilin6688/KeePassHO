@@ -1,3 +1,4 @@
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { IconResource } from '../../services/TypeDefined';
 import { FileService } from '../../services/FileService';
 import { KdbxUtils, IconUtils } from '../../common/utils';
@@ -84,7 +85,7 @@ export struct SettingCustomIconsContent {
           this.selectIcons.forEach((iconId) => {
             kdbx.meta.customIcons.delete(iconId + "");
           });
-          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+          KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
             onSuccess: () => {
               this.icons = IconUtils.getAllIcons(true);
             }
@@ -112,7 +113,7 @@ export struct SettingCustomIconsContent {
         action: () => {
           let kdbx = FileService.getDatabase();
           kdbx.cleanup({ customIcons: true });
-          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+          KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
             onSuccess: () => {
               this.icons = IconUtils.getAllIcons(true);
             }

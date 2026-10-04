@@ -1,3 +1,4 @@
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
@@ -325,7 +326,7 @@ export struct EntryView {
           if (entry) {
             entry.removeHistory(this.selectedHistoryIndex);
             this.selectedHistoryIndex = -1;
-            KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+            KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
                 this.navPathStack.pop();
               }
@@ -354,7 +355,7 @@ export struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.copyFrom(this.entry);
-            KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+            KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
                 this.navPathStack.pop();
               }

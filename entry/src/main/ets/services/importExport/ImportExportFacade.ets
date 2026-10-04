@@ -1,5 +1,6 @@
 // services/importExport/facade/ImportExportFacade.ets
 
+import KdbxSaveService from '../kdbx/KdbxSaveService';
 import { KdbxGroup } from 'kdbxweb';
 import { Result } from './common/Result';
 import { ImportExportErrorCode, ImportError, ExportError } from './common/ImportExportError';
@@ -121,7 +122,7 @@ export class ImportExportFacade {
    */
   private saveDatabase(): Promise<void> {
     return new Promise((resolve, reject) => {
-      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+      KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => resolve(),
         onError: (message: string) => reject(new Error(message))
       }));

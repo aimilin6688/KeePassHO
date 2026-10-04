@@ -4,6 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { CommonUtils, ResourceManager } from '../../common/utils';
 import { DatabaseLoad } from '../../workers/DatabaseLoad';
+import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
 import { Constants } from '../../common/constants/Constants';
 
 const DOMAIN = 0x0000;
@@ -33,7 +34,7 @@ export default class KdbxLoadService {
     KdbxLoadService.stopWorker();
 
     // 创建 Worker
-    KdbxLoadService.databaseWorker = new worker.ThreadWorker('entry/ets/workers/DatabaseLoadWorker.ets');
+    KdbxLoadService.databaseWorker = DatabaseWorkerFactory.createLoadWorker();
     try {
       KdbxLoadService.databaseWorker.postMessage(JSON.stringify(loadParam));
     } catch (e) {

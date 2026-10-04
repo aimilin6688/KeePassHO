@@ -4,7 +4,6 @@ import {
   Kdbx,
   KdbxBinaries,
   KdbxCredentials,
-  KdbxCustomIcon,
   KdbxEntry,
   KdbxEntryField,
   KdbxError,
@@ -21,9 +20,6 @@ import { IconUtils, ResourceManager, StringUtils } from '.';
 import { OtpCompatibilityManager, OtpExtractionResult } from '../../services/otp';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
-import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
-import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxUtils';
@@ -572,14 +568,10 @@ export class KdbxUtils {
   }
 
   /**
-   * 保存数据库
-   * @param callback 回调
-   * @param conflictStrategy 冲突处理策略（ConflictStrategy 枚举值），默认 AUTO（冲突时弹框询问用户）
-   * @returns
+   * 清空自定义图标显示缓存（保存/新增图标后由服务层调用，确保新图标可见）
    */
-  public static saveDatabase(callback?: SaveDatabaseCallback, conflictStrategy?: string): void {
+  public static clearCustomIconMap(): void {
     KdbxUtils.customIconMap.clear();
-    KdbxSaveService.saveDatabase(callback ?? new ToastSaveDatabaseCallback(), conflictStrategy);
   }
 
   /**
@@ -675,40 +667,6 @@ export class KdbxUtils {
   }
 
   /**
-   * 添加自定义图标到数据库
-   * @param database 数据库实例
-   * @param base64Image base64编码的图像数据（格式：data:image/png;base64,...)
-   * @returns 添加的图标ID
-   */
-  public static async addCustomIcon(database: Kdbx, base64Images: string[], callback?: SaveDatabaseCallback) {
-    try {
-      if (!database || !base64Images || base64Images.length == 0) {
-        callback?.onError?.('Invalid database or base64 image');
-        return;
-      }
-      for (const base64Image of base64Images) {
-        // 从base64字符串中提取实际的base64数据部分
-        const base64Data = base64Image.split(',')[1];
-        if (!base64Data) {
-          callback?.onError?.('Invalid base64 image');
-          continue;
-        }
-        // 将base64转换为ArrayBuffer
-        const iconData = ByteUtils.base64ToBytes(base64Data);
-        // 添加自定义图标到数据库
-        database.meta.customIcons.set(KdbxUuid.random().id, { data: iconData } as KdbxCustomIcon);
-      }
-      // 清除缓存，确保新图标可见
-      KdbxUtils.customIconMap.clear();
-      // 保存数据库
-      KdbxUtils.saveDatabase(callback);
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Add custom icon error: %{public}s', error);
-      callback?.onError?.(error.message);
-    }
-  }
-
-  /**
    * 检查TOTP URL是否有效
    * @param totpUrl
    * @returns
@@ -747,9 +705,20 @@ export class KdbxUtils {
   }
 
   public static kdbxErrorMessage(kdbxError: Error): string {
+    return ResourceManager.getString(KdbxUtils.kdbxErrorPayload(kdbxError));
+  }
+
+  /**
+   * 生成 KDBX 错误的原始消息载体（不在当前线程本地化）。
+   * 本地化分支返回资源 ID（数字），其余返回原始错误文本；
+   * Worker 线程无 ResourceManager 上下文，必须传 ID 由主线程本地化。
+   * @param kdbxError 错误对象
+   * @returns 资源 ID（数字）或原始错误文本
+   */
+  public static kdbxErrorPayload(kdbxError: Error): string | number {
     // 先检查是否是网络错误
     if (KdbxUtils.isNetworkError(kdbxError)) {
-      return ResourceManager.getString($r('app.string.network_error'));
+      return $r('app.string.network_error').id;
     }
 
     if (!(kdbxError instanceof KdbxError)) {
@@ -757,23 +726,23 @@ export class KdbxUtils {
     }
     switch (kdbxError.code) {
       case Consts.ErrorCodes.NotImplemented:
-        return ResourceManager.getString($r('app.string.kdbx_error_NotImplemented'));
+        return $r('app.string.kdbx_error_NotImplemented').id;
       case Consts.ErrorCodes.InvalidArg:
-        return ResourceManager.getString($r('app.string.kdbx_error_InvalidArg'));
+        return $r('app.string.kdbx_error_InvalidArg').id;
       case Consts.ErrorCodes.BadSignature:
-        return ResourceManager.getString($r('app.string.kdbx_error_BadSignature'));
+        return $r('app.string.kdbx_error_BadSignature').id;
       case Consts.ErrorCodes.InvalidVersion:
-        return ResourceManager.getString($r('app.string.kdbx_error_InvalidVersion'));
+        return $r('app.string.kdbx_error_InvalidVersion').id;
       case Consts.ErrorCodes.Unsupported:
-        return ResourceManager.getString($r('app.string.kdbx_error_Unsupported'));
+        return $r('app.string.kdbx_error_Unsupported').id;
       case Consts.ErrorCodes.FileCorrupt:
-        return ResourceManager.getString($r('app.string.kdbx_error_FileCorrupt'));
+        return $r('app.string.kdbx_error_FileCorrupt').id;
       case Consts.ErrorCodes.MergeError:
-        return ResourceManager.getString($r('app.string.kdbx_error_MergeError'));
+        return $r('app.string.kdbx_error_MergeError').id;
       case Consts.ErrorCodes.InvalidKey:
-        return ResourceManager.getString($r('app.string.kdbx_error_InvalidKey'));
+        return $r('app.string.kdbx_error_InvalidKey').id;
       case Consts.ErrorCodes.InvalidState:
-        return ResourceManager.getString($r('app.string.kdbx_error_InvalidState'));
+        return $r('app.string.kdbx_error_InvalidState').id;
     }
     return kdbxError.message || kdbxError.toString();
   }

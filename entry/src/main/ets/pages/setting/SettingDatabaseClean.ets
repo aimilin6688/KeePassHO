@@ -1,3 +1,4 @@
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { FileService } from '../../services/FileService';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { CounterComponent, CounterType } from '@kit.ArkUI';
@@ -70,7 +71,7 @@ export struct SettingDatabaseCleanContent {
     try {
       const dbFileParam = FileService.getDbFileParam();
       const result = KdbxUtils.cleanHistoryAndBinaries(dbFileParam.database, this.daysInput);
-      KdbxUtils.saveDatabase();
+      KdbxSaveService.saveDatabaseFromUi();
       if (result.deletedHistoryCount === 0 && result.deletedBinariesCount === 0) {
         CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.Settings_clean_no_record')) });
       } else {

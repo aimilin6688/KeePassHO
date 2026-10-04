@@ -1,3 +1,4 @@
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { CounterComponent, CounterType, PromptAction } from '@kit.ArkUI';
 import { FileService } from '../../services/FileService';
 import { KdbxUtils, CommonUtils, NavigationManager } from '../../common/utils';
@@ -110,7 +111,7 @@ export struct SettingDatabaseMetaContent {
       this.database.header.compression = this.compressionEnabled ? Consts.CompressionAlgorithm.GZip : Consts.CompressionAlgorithm.None;
 
       // 保存数据库
-      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+      KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
           // 通知数据库已更新
           EventBus.emit<void>(EventBus.DATABASE_UPDATE);

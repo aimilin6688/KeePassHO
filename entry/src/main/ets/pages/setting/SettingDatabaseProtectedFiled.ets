@@ -1,3 +1,4 @@
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { KdbxMemoryProtection } from 'kdbxweb';
 import { CommonUtils, KdbxUtils } from '../../common/utils';
 import { FileService } from '../../services/FileService';
@@ -62,7 +63,7 @@ export struct SettingDatabaseProtectedFiledContent {
       dbFileParam.database.meta.memoryProtection = this.protectedField;
       hilog.debug(DOMAIN, TAG, "saveAlgoParams:%{public}s", JSON.stringify(this.protectedField));
       // 保存数据库
-      KdbxUtils.saveDatabase();
+      KdbxSaveService.saveDatabaseFromUi();
     } catch (error) {
       const errorMsg = KdbxUtils.kdbxErrorMessage(error);
       hilog.error(DOMAIN, TAG, 'Failed to save database algo: %{public}s', errorMsg);
