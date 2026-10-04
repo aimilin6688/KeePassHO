@@ -2,16 +2,16 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { common } from '@kit.AbilityKit';
-import { FTPStorage } from '../../../../main/ets/storage/ftp/FTPStorage';
-import { FTPStorageConfig, ProtocolType } from '../../../../main/ets/storage/ftp/FTPConfig';
-import { SftpError, SftpErrorCode } from '../../../../main/ets/storage/ftp/SFTPHandler';
-import { StorageError, StorageErrorCodes } from '../../../../main/ets/storage/StorageError';
-import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
-import { RecentFilesService } from '../../../../main/ets/services/RecentFilesService';
-import { RecentFile } from '../../../../main/ets/services/TypeDefined';
-import { StorageType } from '../../../../main/ets/storage/StorageType';
-import { CacheConstants } from '../../../../main/ets/storage/cache/CacheConstants';
-import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
+import { FTPStorage } from '../../../../../main/ets/storage/ftp/FTPStorage';
+import { FTPStorageConfig, ProtocolType } from '../../../../../main/ets/storage/ftp/FTPConfig';
+import { SftpError, SftpErrorCode } from '../../../../../main/ets/storage/ftp/SFTPHandler';
+import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
+import { KdbxFileManager } from '../../../../../main/ets/services/kdbx/KdbxFileManager';
+import { RecentFilesService } from '../../../../../main/ets/services/RecentFilesService';
+import { RecentFile } from '../../../../../main/ets/services/TypeDefined';
+import { StorageType } from '../../../../../main/ets/storage/StorageType';
+import { CacheConstants } from '../../../../../main/ets/storage/cache/CacheConstants';
+import { CommonUtils } from '../../../../../main/ets/common/utils/CommonUtils';
 
 /**
  * 注入 ApplicationContext（幂等），供 FTPStorage 临时文件与缓存目录使用。

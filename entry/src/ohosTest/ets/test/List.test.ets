@@ -25,9 +25,9 @@ import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
 import HuaweiDriveStorageTest from './storage/huawei/HuaweiDriveStorage.test';
 import HuaweiDriveClientTest from './storage/huawei/HuaweiDriveClient.test';
-import SFTPHandlerTest from './storage/SFTPHandler.test';
-import SFTPStorageSemanticsTest from './storage/SFTPStorageSemantics.test';
-import SFTPStorageRealFileTest from './storage/SFTPStorageRealFile.test';
+import SFTPHandlerTest from './storage/sftp/SFTPHandler.test';
+import SFTPStorageSemanticsTest from './storage/sftp/SFTPStorageSemantics.test';
+import SFTPStorageRealFileTest from './storage/sftp/SFTPStorageRealFile.test';
 
 // 数据库加载/保存双模式单元测试（同步模式 / Worker 异步模式）
 import DatabaseSyncModeTest from './workers/DatabaseSyncMode.test';

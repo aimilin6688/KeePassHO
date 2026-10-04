@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from '@ohos/hypium';
 import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { common } from '@kit.AbilityKit';
-import { FTPStorage } from '../../../../main/ets/storage/ftp/FTPStorage';
-import { FTPStorageConfig, ProtocolType } from '../../../../main/ets/storage/ftp/FTPConfig';
-import { StorageError, StorageErrorCodes } from '../../../../main/ets/storage/StorageError';
-import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
-import { FileInfo } from '../../../../main/ets/storage/IFileStorage';
-import { TestFixtures } from './TestFixtures';
+import { FTPStorage } from '../../../../../main/ets/storage/ftp/FTPStorage';
+import { FTPStorageConfig, ProtocolType } from '../../../../../main/ets/storage/ftp/FTPConfig';
+import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
+import { CommonUtils } from '../../../../../main/ets/common/utils/CommonUtils';
+import { FileInfo } from '../../../../../main/ets/storage/IFileStorage';
+import { TestFixtures } from '../TestFixtures';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;

@@ -7,7 +7,7 @@ import {
   SftpError,
   SftpErrorCode,
   parseSftpErrorCode
-} from '../../../../main/ets/storage/ftp/SFTPHandler';
+} from '../../../../../main/ets/storage/ftp/SFTPHandler';
 
 function makeConfig(): SFTPConfig {
   return {
