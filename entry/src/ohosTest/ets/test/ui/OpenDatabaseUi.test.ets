@@ -43,6 +43,8 @@ const NORMAL_WAIT: number = 3000;
 const UNLOCK_WAIT: number = 15000;
 /** 控件查找超时（ms） */
 const FIND_TIMEOUT: number = 8000;
+/** 每个 it 的看门狗上限：IDE 运行不带 -s timeout 时 hypium 默认仅 15s */
+const IT_TIMEOUT: number = 300000;
 /** 最大返回次数 */
 const MAX_BACK_TIMES: number = 6;
 /** 窗口可视区（beforeAll 中填充） */
@@ -170,7 +172,7 @@ export default function OpenDatabaseUiTest(): void {
       const onUnlock: boolean = await waitFor(ON.id('input_password'), FIND_TIMEOUT);
       hilog.info(DOMAIN, TAG, 'unlock page visible=%{public}s', String(onUnlock));
       expect(onUnlock).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 02 返回首页
@@ -179,7 +181,7 @@ export default function OpenDatabaseUiTest(): void {
       const reached: boolean = await pressBackUntil(ON.id('btn_open_database'), MAX_BACK_TIMES);
       hilog.info(DOMAIN, TAG, 'index page visible=%{public}s', String(reached));
       expect(reached).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 03 首页设置图标 -> 设置页（校验设置页专有菜单项可见）
@@ -192,7 +194,7 @@ export default function OpenDatabaseUiTest(): void {
         String(clicked), String(onSettings));
       expect(clicked).assertTrue();
       expect(onSettings).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 04 设置页「更换数据库」-> 位置选择页
@@ -205,7 +207,7 @@ export default function OpenDatabaseUiTest(): void {
         String(clicked), String(onLocation));
       expect(clicked).assertTrue();
       expect(onLocation).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 05 位置选择页「本地文件」-> 本地文件页
@@ -219,7 +221,7 @@ export default function OpenDatabaseUiTest(): void {
         String(clicked), String(onLocalFile));
       expect(clicked).assertTrue();
       expect(onLocalFile).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 06 返回首页 -> 最近打开的数据库
@@ -252,7 +254,7 @@ export default function OpenDatabaseUiTest(): void {
         String(clicked), String(onRecent));
       expect(clicked).assertTrue();
       expect(onRecent).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 07 最近文件列表选择 test-1.kdbx -> 解锁页
@@ -265,7 +267,7 @@ export default function OpenDatabaseUiTest(): void {
         String(clicked), String(onUnlock));
       expect(clicked).assertTrue();
       expect(onUnlock).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 08 输入密码 1 -> 点击解锁 -> 进入数据库页
@@ -314,7 +316,7 @@ export default function OpenDatabaseUiTest(): void {
       expect(inputOk).assertTrue();
       expect(unlockClicked).assertTrue();
       expect(onDatabase).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 09 读取数据库条目列表并断言非空
@@ -354,6 +356,6 @@ export default function OpenDatabaseUiTest(): void {
       hilog.info(DOMAIN, TAG, 'entry list count=%{public}d', visibleTexts.length);
       hilog.info(DOMAIN, TAG, 'entry list=%{public}s', JSON.stringify(visibleTexts));
       expect(visibleTexts.length > 0).assertTrue();
-    });
+    }, IT_TIMEOUT);
   });
 }
