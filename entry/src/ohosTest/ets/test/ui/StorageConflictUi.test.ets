@@ -90,6 +90,9 @@ const NORMAL_WAIT: number = 3000;
 const UNLOCK_WAIT: number = 20000;
 /** 控件查找超时（ms） */
 const FIND_TIMEOUT: number = 8000;
+/** 每个 it 的看门狗上限：IDE 运行不带 -s timeout 时 hypium 默认仅 15s，
+ *  长流程用例必然被砍，且僵尸在途调用会引发 uitest 并发冲突；it 第 4 参优先级最高 */
+const IT_TIMEOUT: number = 300000;
 /** 保存触发远端下载后弹框出现的超时（ms） */
 const DIALOG_WAIT: number = 20000;
 /** 合并/覆盖上传、重载下载等远端操作的超时（ms） */
@@ -852,7 +855,7 @@ export default function StorageConflictUiTest(): void {
         String(onUnlock), String(unlocked));
       expect(onUnlock).assertTrue();
       expect(unlocked).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 02 SFTP 冲突-合并：列表与远端均同时包含双方条目
@@ -867,7 +870,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 03 SFTP 冲突-覆盖：本地条目保留，远端修改被丢弃
@@ -882,7 +885,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertFalse();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 04 SFTP 冲突-重载：以远端为准，本地修改丢弃且不写远端
@@ -897,7 +900,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 05 SFTP 冲突-取消：弹框关闭后本地条目仍在，远端保持他设备版本
@@ -912,7 +915,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 06 切换到 WebDAV 数据库：锁定->关闭->最近打开->解锁
@@ -921,7 +924,7 @@ export default function StorageConflictUiTest(): void {
       const switched: boolean = await switchDatabaseTo(webdavTarget);
       hilog.info(DOMAIN, TAG, 'webdav open: switched=%{public}s', String(switched));
       expect(switched).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 07 WebDAV 冲突-合并
@@ -936,7 +939,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 08 WebDAV 冲突-覆盖
@@ -951,7 +954,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertFalse();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 09 WebDAV 冲突-重载
@@ -966,7 +969,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 10 WebDAV 冲突-取消
@@ -981,7 +984,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 11 切换到 S3 数据库：锁定->关闭->最近打开->解锁
@@ -990,7 +993,7 @@ export default function StorageConflictUiTest(): void {
       const switched: boolean = await switchDatabaseTo(s3Target);
       hilog.info(DOMAIN, TAG, 's3 open: switched=%{public}s', String(switched));
       expect(switched).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 12 S3 冲突-合并
@@ -1005,7 +1008,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 13 S3 冲突-覆盖
@@ -1020,7 +1023,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertTrue();
       expect(r.remoteHasRemote).assertFalse();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 14 S3 冲突-重载
@@ -1035,7 +1038,7 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertTrue();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
 
     /**
      * 15 S3 冲突-取消
@@ -1050,6 +1053,6 @@ export default function StorageConflictUiTest(): void {
       expect(r.uiRemoteVisible).assertFalse();
       expect(r.remoteHasLocal).assertFalse();
       expect(r.remoteHasRemote).assertTrue();
-    });
+    }, IT_TIMEOUT);
   });
 }
