@@ -1,3 +1,4 @@
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
@@ -456,7 +457,7 @@ export struct EntryEdit {
   private saveDatabase() {
     if (this.database) {
       this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
-      KdbxUtils.saveDatabase({
+      KdbxSaveService.saveDatabaseFromUi({
         onSuccess: () => {
           CommonUtils.showToast($r('app.string.save_success'));
           this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
@@ -710,7 +711,7 @@ export struct EntryEdit {
         const template = this.templateService.saveAsTemplate(this.entry!, this.database!);
         if (template) {
           // 保存数据库
-          KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+          KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
             onSuccess: () => {
               CommonUtils.showToast($r('app.string.template_save_success'));
             },

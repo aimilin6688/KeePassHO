@@ -1,3 +1,4 @@
+import KdbxSaveService from '../../services/kdbx/KdbxSaveService';
 import { KdbxUuid } from 'kdbxweb';
 import { CipherId } from 'kdbxweb/src/main/ets/defs/consts';
 import { CommonUtils, KdbxUtils, NavigationManager, ResourceManager } from '../../common/utils';
@@ -125,7 +126,7 @@ struct SettingDatabaseContent {
   private resetDatabaseAlgorithm(algorithmId: string) {
     FileService.getDatabase().header.dataCipherUuid = new KdbxUuid(algorithmId);
     // 保存数据库
-    KdbxUtils.saveDatabase();
+    KdbxSaveService.saveDatabaseFromUi();
   }
 
   // 加密算法选项

@@ -1,4 +1,5 @@
-import { NavigationManager, WindowService, WindowInfo } from '../common/utils';
+import { NavigationManager } from '../common/utils';
+import { WindowService, WindowInfo } from '../common/utils/WindowService';
 import { NavigationModeType } from '../common/constants/PageConfig';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { hilog } from '@kit.PerformanceAnalysisKit';

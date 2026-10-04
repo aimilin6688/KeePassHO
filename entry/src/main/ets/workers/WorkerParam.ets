@@ -116,6 +116,6 @@ export function toLoadMessage(message: string | Resource): LoadMessage {
   return new LoadMessage(MessageType.MESSAGE, message.id);
 }
 
-export function toErrorMessage(message: string): LoadMessage {
+export function toErrorMessage(message: string | number): LoadMessage {
   return new LoadMessage(MessageType.ERROR, message);
 }

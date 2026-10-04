@@ -1,3 +1,4 @@
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { FileService } from '../services/FileService';
 import { KdbxUtils, ImagePickerUtils, CommonUtils } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -68,7 +69,7 @@ export struct ImageAddComponent {
         return;
       }
       // 添加自定义图标到数据库
-      KdbxUtils.addCustomIcon(FileService.getDatabase(), images, ToastSaveDatabaseCallback.wrap({
+      KdbxSaveService.addCustomIcon(FileService.getDatabase(), images, ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
           this.isUploading = false;
           if (this.onSuccess) {

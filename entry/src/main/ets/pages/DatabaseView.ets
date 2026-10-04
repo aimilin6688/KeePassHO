@@ -1,9 +1,11 @@
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import { DatabaseShowParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
-import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils, WindowService, WindowInfo } from '../common/utils';
+import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
+import { WindowService, WindowInfo } from '../common/utils/WindowService';
 import { PageConstants } from '../common/constants/PageConstants';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { Kdbx, KdbxEntry, KdbxFieldReference, KdbxGroup, KdbxUuid } from 'kdbxweb';
@@ -1561,7 +1563,7 @@ export struct DatabaseView {
    */
   private saveDatabase() {
     if (this.database) {
-      KdbxUtils.saveDatabase(ToastSaveDatabaseCallback.wrap({
+      KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
           this.updateUI();
         }

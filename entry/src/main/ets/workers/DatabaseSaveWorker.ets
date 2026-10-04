@@ -11,15 +11,17 @@ const TAG = 'DatabaseSaveWorker';
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
 
-// 监听主线程消息
-workerPort.onmessage = (event: MessageEvents) => {
-  const message = event.data as WorkerMessage;
-  hilog.debug(DOMAIN, TAG, 'Save worker receive message type:%{public}s', message.type);
-  if (message.type === MessageType.SAVE_DATABASE) {
-    const request = message as SaveDatabaseMessage;
-    new DatabaseSaveWorker().handleSaveDatabase(request);
-  }
-};
+// 监听主线程消息（仅 worker 线程注册；主线程加载本模块时 workerPort 为空，跳过）
+if (workerPort) {
+  workerPort.onmessage = (event: MessageEvents) => {
+    const message = event.data as WorkerMessage;
+    hilog.debug(DOMAIN, TAG, 'Save worker receive message type:%{public}s', message.type);
+    if (message.type === MessageType.SAVE_DATABASE) {
+      const request = message as SaveDatabaseMessage;
+      new DatabaseSaveWorker().handleSaveDatabase(request);
+    }
+  };
+}
 
 /**
  * 保存数据库
@@ -43,15 +45,15 @@ class DatabaseSaveWorker extends DatabaseSave {
   }
 
   /**
-   * 发送加载消息
-   * @param message 消息
+   * 发送失败消息
+   * @param message 消息（原始文本或资源 ID，由主线程本地化）
    */
-  postErrorMessage(message: string) {
+  postErrorMessage(message: string | number) {
     try {
       workerPort.postMessage(toErrorMessage(message));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postErrorMessage error:%{public}s', error.message);
-      CommonUtils.showToast(message);
+      CommonUtils.showToast(String(message));
     }
   }
 
