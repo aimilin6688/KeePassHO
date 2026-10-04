@@ -44,6 +44,7 @@ import SimpleHandlerTest from './importExport/SimpleHandler.test';
 
 // UI 自动化测试（真实操作界面，建议用 -s class 单独运行，勿与单元测试混跑）
 import OpenDatabaseUiTest from './ui/OpenDatabaseUi.test';
+import StorageConflictUiTest from './ui/StorageConflictUi.test';
 
 
 export default function testsuite() {
@@ -101,4 +102,5 @@ export default function testsuite() {
 
   // UI 自动化测试
   OpenDatabaseUiTest();
+  StorageConflictUiTest();
 }
