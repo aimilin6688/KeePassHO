@@ -29,6 +29,10 @@ import SFTPHandlerTest from './storage/SFTPHandler.test';
 import SFTPStorageSemanticsTest from './storage/SFTPStorageSemantics.test';
 import SFTPStorageRealFileTest from './storage/SFTPStorageRealFile.test';
 
+// 数据库加载/保存双模式单元测试（同步模式 / Worker 异步模式）
+import DatabaseSyncModeTest from './workers/DatabaseSyncMode.test';
+import DatabaseWorkerModeTest from './workers/DatabaseWorkerMode.test';
+
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
 import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
@@ -39,7 +43,7 @@ import KdbxExportHandlerTest from './importExport/KdbxExportHandler.test';
 import SimpleHandlerTest from './importExport/SimpleHandler.test';
 
 // UI 自动化测试（真实操作界面，建议用 -s class 单独运行，勿与单元测试混跑）
-import OpenDatabaseUiTest from './ui/OpenDatabaseUiTest';
+import OpenDatabaseUiTest from './ui/OpenDatabaseUi.test';
 
 
 export default function testsuite() {
@@ -80,6 +84,11 @@ export default function testsuite() {
 
   // SFTP 真实存储操作测试（podman sftp-e2e + rport 隧道，真实 KDBX 文件读写与条件写冲突）
   SFTPStorageRealFileTest();
+
+  // 数据库加载/保存双模式测试（同步模式：主线程 DatabaseLoad/DatabaseSave 全链路含冲突矩阵）
+  DatabaseSyncModeTest();
+  // 数据库加载/保存双模式测试（异步模式：真实 ThreadWorker 消息链路 + 边界序列化）
+  DatabaseWorkerModeTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();
