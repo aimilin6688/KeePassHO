@@ -2108,6 +2108,7 @@ export struct DatabaseView {
                     .height(24)
                     .margin({ right: 12 })
                     .fillColor($r('app.color.text_primary'))
+                    .id('btn_lock_database')
                     .onClick(() => {
                       this.lockDatabase();
                     })

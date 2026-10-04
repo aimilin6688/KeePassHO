@@ -936,6 +936,7 @@ export struct EntryEdit {
           .width(48)
           .height(48)
           .margin({ right: 16 })
+          .id('btn_entry_save')
           .borderRadius(20)
           .backgroundColor(Color.Transparent)
           .enabled(!this.isLoading && this.isModified)
@@ -968,6 +969,7 @@ export struct EntryEdit {
                   .padding({ top: 12, bottom: 12 })
                   .fontColor($r('app.color.text_primary'))
                   .borderRadius(8)
+                  .id('input_entry_title')
                   .onChange((value) => {
                     this.title = value;
                     this.checkEntryModified();
