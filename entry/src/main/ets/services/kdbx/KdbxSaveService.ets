@@ -135,6 +135,9 @@ export default class KdbxSaveService {
     }).catch((error: Error) => {
       // 用户关闭弹框：放弃本次保存，本地修改保留在内存中
       hilog.warn(DOMAIN, TAG, 'Conflict dialog dismissed: %{public}s', error?.message);
+      // 刷新列表以反映内存中保留的修改（新增条目在保存前已写入内存库，
+      // 不刷新会导致列表与内存状态不一致，用户退回列表后看不到刚添加的条目）
+      EventBus.emit<void>(EventBus.DATABASE_UPDATE);
     });
   }
 
