@@ -151,7 +151,8 @@ export default function StreamingCryptoTest() {
                             ).then(() => {
                                 return fs.close(file.fd).then(() => {
                                     return readFile(outPath).then((fileDec) => {
-                                        expect(new Uint8Array(fileDec)).assertEqual(new Uint8Array(expectedDec));
+                                        expect(ByteUtils.bytesToHex(new Uint8Array(fileDec)))
+                                            .assertEqual(ByteUtils.bytesToHex(new Uint8Array(expectedDec)));
                                     });
                                 });
                             });
@@ -173,7 +174,7 @@ export default function StreamingCryptoTest() {
             return HmacBlockTransform.encrypt(src.buffer, key).then((expectedEnc) => {
                 // 写明文到文件
                 const inPath = testDir + '/plain-enc.bin';
-                return writeFile(inPath, src.buffer).then(() => {
+                return writeFile(inPath, src.buffer as ArrayBuffer).then(() => {
                     const outPath = testDir + '/enc-from-file.bin';
                     return fs.open(outPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC)
                         .then((outFile) => {
@@ -205,7 +206,7 @@ export default function StreamingCryptoTest() {
             const encPath = testDir + '/roundtrip-enc.bin';
             const decPath = testDir + '/roundtrip-dec.bin';
 
-            return writeFile(inPath, src.buffer).then(() => {
+            return writeFile(inPath, src.buffer as ArrayBuffer).then(() => {
                 return fs.open(encPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC)
                     .then((encFile) => {
                         const noop = (data: Uint8Array): void => {};
@@ -240,7 +241,7 @@ export default function StreamingCryptoTest() {
                 const tampered = new Uint8Array(enc);
                 tampered[0] = tampered[0] ^ 0xff;
                 const encPath = testDir + '/tampered.bin';
-                return writeFile(encPath, tampered.buffer).then(() => {
+                return writeFile(encPath, tampered.buffer as ArrayBuffer).then(() => {
                     return fs.open(encPath, fs.OpenMode.READ_ONLY).then((file) => {
                         const outPath = testDir + '/tampered-out.bin';
                         const noop = (data: Uint8Array): void => {};

@@ -6,11 +6,10 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 
 export default function KdbxLoadFromFileTest() {
     describe('KdbxLoadFromFile', () => {
-        const cryptoEngineArgon2 = kdbxweb.CryptoEngine.argon2;
         let testDir: string;
 
         beforeAll(() => {
-            kdbxweb.CryptoEngine.argon2 = ohosArgon2 as any;
+            kdbxweb.CryptoEngine.setArgon2Impl(ohosArgon2);
             testDir = '/data/storage/el2/base/haps/entry/files/loadfromfile-test';
             try {
                 if (!fs.accessSync(testDir, fs.AccessModeType.EXIST)) {
@@ -57,8 +56,8 @@ export default function KdbxLoadFromFileTest() {
                 const t1Path = testDir + '/demo-entries-t1.tmp';
                 return kdbxweb.Kdbx.loadFromFile(dbPath, cred, { t1Path: t1Path }).then((dbFromFile) => {
                     return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred).then((dbFromBuffer) => {
-                        const fromFileEntries = collectEntryTitlesStatic(dbFromFile);
-                        const fromBufferEntries = collectEntryTitlesStatic(dbFromBuffer);
+                        const fromFileEntries = collectEntryTitles(dbFromFile);
+                        const fromBufferEntries = collectEntryTitles(dbFromBuffer);
                         expect(fromFileEntries.length).assertEqual(fromBufferEntries.length);
                         for (let i = 0; i < fromFileEntries.length; i++) {
                             expect(fromFileEntries[i]).assertEqual(fromBufferEntries[i]);
@@ -127,7 +126,7 @@ export default function KdbxLoadFromFileTest() {
                 kdbxweb.ProtectedValue.fromString('demo'),
                 TestResources.demoKey
             );
-            return kdbxweb.Kdbx.loadFromFile(testDir + '/demo.kdbx', cred, {} as any)
+            return kdbxweb.Kdbx.loadFromFile(testDir + '/demo.kdbx', cred, {})
                 .then(() => {
                     throw new Error('should have thrown');
                 })
@@ -150,30 +149,20 @@ function writeFile(path: string, data: ArrayBuffer): Promise<void> {
     });
 }
 
-function collectEntryTitlesStatic(db: kdbxweb.Kdbx): string[] {
+function appendGroupEntryTitles(group: kdbxweb.KdbxGroup, titles: string[]): void {
+    for (let i = 0; i < group.entries.length; i++) {
+        const title = group.entries[i].fields.get('Title');
+        if (typeof title === 'string') {
+            titles.push(title);
+        }
+    }
+    for (let i = 0; i < group.groups.length; i++) {
+        appendGroupEntryTitles(group.groups[i], titles);
+    }
+}
+
+function collectEntryTitles(db: kdbxweb.Kdbx): string[] {
     const titles: string[] = [];
-    function walk(group: kdbxweb.KdbxGroup) {
-        if (group.entries) {
-            for (const entry of group.entries) {
-                const fields = entry.fields;
-                if (fields) {
-                    const title = fields.get('Title');
-                    if (title) {
-                        titles.push(typeof title === 'string' ? title : String(title));
-                    }
-                }
-            }
-        }
-        if (group.groups) {
-            for (const subGroup of group.groups) {
-                walk(subGroup);
-            }
-        }
-    }
-    if (db.groups) {
-        for (const rootGroup of db.groups) {
-            walk(rootGroup);
-        }
-    }
+    appendGroupEntryTitles(db.getDefaultGroup(), titles);
     return titles;
 }
