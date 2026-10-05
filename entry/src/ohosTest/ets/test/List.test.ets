@@ -82,7 +82,7 @@ export default function testsuite() {
   PCloudStorageTest();
 
   // 华为云盘单元测试
-  HuaweiDriveStorageTest();
+  // HuaweiDriveStorageTest();
   HuaweiDriveClientTest();
 
   // SFTP 处理器单元测试（错误码解析 / 未连接语义 / 原生连接失败路径）

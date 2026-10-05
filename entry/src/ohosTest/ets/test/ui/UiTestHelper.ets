@@ -21,7 +21,7 @@
  */
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { Component, Driver, ON, On, Rect, UiWindow, abilityDelegatorRegistry } from '@kit.TestKit';
+import { Component, Driver, ON, On, Point, Rect, UiWindow, abilityDelegatorRegistry } from '@kit.TestKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'UiTestHelper';
@@ -238,6 +238,33 @@ export class UiTestHelper {
   }
 
   /**
+   * 向安全密码框（InputType.Password）注入文本。
+   * Component.inputText 走「聚焦 -> 光标置尾 -> IME 键入」链路，安全字段上
+   * 文本会被 IME 丢弃（实测 HMKeyboard inputTextLength=0，按钮始终不启用）；
+   * 坐标注入（等价 uitest uiInput inputText x y text）已在手工 E2E 中对
+   * 同一密码框验证有效（docs/ui/uitest-manual-driving-guide.md 阶段 C）。
+   * 注意：坐标点击会拉起系统键盘，调用方点击后续按钮前需 pressBack 收起。
+   */
+  public static async inputTextSecure(target: Component, text: string): Promise<boolean> {
+    try {
+      const r: Rect = await target.getBounds();
+      const p: Point = {
+        x: Math.max(1, Math.round((r.left + r.right) / 2)),
+        y: Math.max(1, Math.round((r.top + r.bottom) / 2))
+      };
+      await UiTestHelper.driver.click(p.x, p.y);
+      await UiTestHelper.driver.delayMs(1200);
+      await UiTestHelper.driver.inputText(p, text);
+      hilog.info(DOMAIN, TAG, 'inputTextSecure at (%{public}d, %{public}d)',
+        p.x, p.y);
+      return true;
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, 'inputTextSecure error: %{public}s', JSON.stringify(err));
+      return false;
+    }
+  }
+
+  /**
    * 控件是否可用（异常按不可用处理）
    */
   public static async isEnabled(target: Component): Promise<boolean> {
@@ -313,6 +340,8 @@ export class UiTestHelper {
 
   /**
    * 解锁页输入主密码并解锁，等待进入数据库列表（btn_add_fab 可见）。
+   * 密码框为 InputType.Password 安全字段，Component.inputText 的 IME 键入
+   * 链路会丢文本，改用坐标注入（inputTextSecure，手工 E2E 验证有效）。
    * 密码框会拉起系统安全键盘（独立窗口），其遮挡会导致底层控件在控件树中被过滤，
    * 必须先按 Back 收起键盘再点击解锁（与手工 E2E 流程一致）。
    * @param verifyText 非空时解锁成功后额外等待该文本可见（如种子条目标题）
@@ -322,7 +351,7 @@ export class UiTestHelper {
     if (input === undefined) {
       return false;
     }
-    if (!await UiTestHelper.inputText(input, password)) {
+    if (!await UiTestHelper.inputTextSecure(input, password)) {
       return false;
     }
     await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);

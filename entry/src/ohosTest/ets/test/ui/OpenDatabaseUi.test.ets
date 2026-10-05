@@ -6,12 +6,18 @@
  *   -> 返回首页 -> 最近打开的数据库 -> 选择 test-1.kdbx
  *   -> 输入密码 1 -> 点击解锁 -> 进入数据库页 -> 读取条目列表
  *
- * 运行方式：
+ * 运行方式（UI 套件不进全量回归，单独运行，且运行前应用必须处于未运行状态：
+ * 先 hdc shell aa force-stop com.aimilin.keepassho 再执行；
+ * 应用残留运行中时 startAbility 仅回前台，不触发 onCreate 预载，种子不生效）：
  *   hdc shell aa test -b com.aimilin.keepassho -m entry_test \
  *     -s unittest OpenHarmonyTestRunner -s class OpenDatabaseUiTest -s timeout 180000
  *
+ * 种子自足（beforeAll 自动完成，卸载重装/清数据后可自愈，无需手工预置）：
+ *   1. 运行时真实加密生成 test-1.kdbx（密码 1，含已知分组）写入应用沙箱 files 目录
+ *   2. 将其最近打开记录置顶写入 recent_files preferences XML（files[0] 为冷启动自动打开目标）
+ *
  * 公共 UI 操作（启动 / 查找 / 点击 / 输入 / 等待 / 解锁流程）统一封装在
- * UiTestHelper，新增 UI 套件直接复用；本文件只保留用例编排与业务断言。
+ * UiTestHelper，最近打开种子注入封装在 UiRecentFilesSeed；本文件只保留用例编排与业务断言。
  *
  * 已知边界：本地文件的最终选取依赖系统 DocumentViewPicker（跨应用），
  * UI 测试覆盖到「拉起系统选择器之前」；随后从「最近打开的数据库」选择
@@ -21,19 +27,69 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { describe, beforeAll, afterAll, it, expect } from '@ohos/hypium';
 import { Component, UIEventObserver } from '@kit.TestKit';
+import { Kdbx, KdbxCredentials, KdbxGroup, ProtectedValue } from 'kdbxweb';
+import fileIo from '@ohos.file.fs';
+import { StorageType } from '../../../../main/ets/storage';
+import { KdbxModeTestHelper } from '../workers/KdbxModeTestHelper';
 import { UiTestHelper } from './UiTestHelper';
+import { upsertRecordToFront, waitSeedOnDisk } from './UiRecentFilesSeed';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'OpenDatabaseUiTest';
 
-/** 测试数据库文件名（已存在于最近打开列表） */
+/** 测试数据库文件名（beforeAll 自动种入应用沙箱与最近打开列表） */
 const DB_FILE_NAME: string = 'test-1.kdbx';
 /** 测试数据库密码 */
 const DB_PASSWORD: string = '1';
+/** 应用沙箱 files 目录（应用进程 filesDir，同 bundle 测试进程可直接读写） */
+const APP_FILES_DIR: string = '/data/storage/el2/base/files';
+/** 测试数据库沙箱完整路径 */
+const DB_FILE_PATH: string = APP_FILES_DIR + '/' + DB_FILE_NAME;
+/** test-1.kdbx 根分组下的已知分组（09 用例断言至少一个可见） */
+const KNOWN_GROUPS: Array<string> = ['测试', '模板', 'Internet', 'f67', '分组2'];
+
+/**
+ * 种子自足：真实加密生成 test-1.kdbx 写入应用沙箱，并将其最近打开记录置顶。
+ * 幂等（文件与记录均覆盖式写入），重复运行安全。
+ */
+async function seedTestDatabase(): Promise<void> {
+  const credentials: KdbxCredentials = new KdbxCredentials(ProtectedValue.fromString(DB_PASSWORD));
+  const database: Kdbx = Kdbx.create(credentials, 'test-1');
+  const rootGroup: KdbxGroup = database.getDefaultGroup();
+  for (let i: number = 0; i < KNOWN_GROUPS.length; i++) {
+    database.createGroup(rootGroup, KNOWN_GROUPS[i]);
+  }
+  const saved: ArrayBuffer = await database.save();
+  try {
+    fileIo.mkdirSync(APP_FILES_DIR, true);
+  } catch (err) {
+    // 目录已存在时忽略
+  }
+  const file: fileIo.File = fileIo.openSync(DB_FILE_PATH,
+    fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC);
+  fileIo.writeSync(file.fd, saved);
+  fileIo.closeSync(file);
+  hilog.info(DOMAIN, TAG, 'seed kdbx written: %{public}s, size=%{public}d', DB_FILE_PATH, saved.byteLength);
+
+  const emptyConfig: Record<string, Object> = {};
+  const record: Record<string, Object> = {
+    'filePath': DB_FILE_PATH,
+    'fileName': DB_FILE_NAME,
+    'storageType': StorageType.LOCAL.toString(),
+    'storageConfig': emptyConfig
+  };
+  await upsertRecordToFront(record);
+  const onDisk: boolean = await waitSeedOnDisk(DB_FILE_PATH, 10000);
+  hilog.info(DOMAIN, TAG, 'recent record seeded, onDisk=%{public}s', String(onDisk));
+}
 
 export default function OpenDatabaseUiTest(): void {
   describe('OpenDatabaseUiTest', () => {
     beforeAll(async () => {
+      // 测试进程上下文注入（kdbxweb 运行时依赖）
+      KdbxModeTestHelper.initContext();
+      // 种子自足：数据库文件 + 最近打开记录置顶
+      await seedTestDatabase();
       await UiTestHelper.launchApp();
     });
 
@@ -148,6 +204,9 @@ export default function OpenDatabaseUiTest(): void {
 
     /**
      * 08 输入密码 1 -> 点击解锁 -> 进入数据库页
+     * 密码框为安全字段：Component.inputText 的 IME 键入链路会丢文本（实测
+     * 按钮不启用），改用坐标注入 inputTextSecure（手工 E2E 验证有效）。
+     * 坐标注入会拉起系统键盘，点击解锁前先按 Back 收起。
      * 同时监听 toast，用于捕获解锁失败时的提示
      */
     it('08_input_password_and_unlock_should_open_database', 0, async () => {
@@ -157,7 +216,10 @@ export default function OpenDatabaseUiTest(): void {
         toastMessages.push(info.text);
       });
 
-      const inputOk: boolean = await UiTestHelper.inputTextById('input_password', DB_PASSWORD);
+      const passwordInput: Component | undefined = await UiTestHelper.findById('input_password');
+      const inputOk: boolean = passwordInput !== undefined ?
+        await UiTestHelper.inputTextSecure(passwordInput, DB_PASSWORD) : false;
+      await UiTestHelper.pressBack();
       await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
 
       // 解锁前确认按钮可用
@@ -182,6 +244,7 @@ export default function OpenDatabaseUiTest(): void {
       }
 
       expect(inputOk).assertTrue();
+      expect(unlockEnabled).assertTrue();
       expect(unlockClicked).assertTrue();
       expect(onDatabase).assertTrue();
     }, UiTestHelper.IT_TIMEOUT);
@@ -194,7 +257,7 @@ export default function OpenDatabaseUiTest(): void {
       expect(onDatabase).assertTrue();
 
       // test-1.kdbx 根分组下的已知分组，断言至少有一个可见
-      const knownGroups: Array<string> = ['测试', '模板', 'Internet', 'f67', '分组2'];
+      const knownGroups: Array<string> = KNOWN_GROUPS;
       const matchedNames: Array<string> = [];
       for (let i: number = 0; i < knownGroups.length; i++) {
         if (await UiTestHelper.existsText(knownGroups[i])) {
