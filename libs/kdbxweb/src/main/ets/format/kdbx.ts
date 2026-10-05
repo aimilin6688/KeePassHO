@@ -149,7 +149,7 @@ export class Kdbx {
     static loadFromFile(
         filePath: string,
         credentials: KdbxCredentials,
-        options?: { preserveXml?: boolean, maxDecompressedBytes?: number, t1Path: string }
+        options?: { preserveXml?: boolean, maxDecompressedBytes?: number, t1Path?: string }
     ): Promise<Kdbx> {
         if (!(credentials instanceof KdbxCredentials)) {
             return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'credentials'));
