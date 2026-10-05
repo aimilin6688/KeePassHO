@@ -206,6 +206,9 @@ ON.text('abc').isAfter(ON.text('def'))
 8. 输入文本含中文/特殊字符时只能走粘贴，`paste` 字段不生效；纯英文且 ≤200 字符才逐字键入。
 9. 窗口最小化、触摸板手势在不支持的设备上抛错误码 `17000005`；表冠抛 `801`。
 10. Git Bash 下取回文件必须 `MSYS_NO_PATHCONV=1` + 相对路径（否则路径被转换报 `operation not permitted`）。
+11. **`Component.inputText()` 对安全密码框（`InputType.Password`）不生效**（2026-10-05 实测）：该 API 走「聚焦 → 注入 keycode 2082（KEYCODE_MOVE_END 光标置尾）→ IME 键入」链路，安全字段上 IME 报 `inputTextLength = 0`，文本被静默丢弃且不抛异常——密码空 → 解锁按钮 `.enabled(false)`。解法：`UiTestHelper.inputTextSecure()`，即坐标注入 `driver.inputText({x, y}, text)`（等价 `uitest uiInput inputText x y text`，对同一密码框实测有效）；坐标注入会拉起键盘，点击后续按钮前先 `pressBack`。
+12. **系统通知授权弹框会遮蔽整个应用**（2026-10-05 实测）：安装后首次解锁触发 `requestEnableNotification`（`SessionNotificationService.ensurePermission`），弹框「允许"KeePassHO"向你发送通知？/ 不允许 / 允许」位于系统子窗口，出现期间 uitest **查不到任何应用组件**（`findComponents` 返回 null），冷启动/解锁后所有等待超时。解法：`UiTestHelper.dismissNotificationDialog()`（跨窗口 `findAnywhere` 找「不允许」点掉）；拒绝一次后本次安装内不再弹出，但卸载重装会复位，套件须常备该逻辑。注意 `hdc uninstall` 会连带清掉应用数据（最近打开记录、沙箱文件），UI 套件依赖种子自足机制补齐。
+13. **hilog 在本模拟器可用**（2026-09-25 实测，勘误：早期版本曾记"模拟器不支持 hilog"）：`hdc shell hilog -r` 清缓冲 → 后台 `hdc shell hilog > 本地文件` → 跑测试 → kill 进程，按 TAG（如 `UiTestHelper`、`OpenDatabaseUiTest`）grep 定位，是 UI 用例失败归因的首选手段。
 
 ---
 

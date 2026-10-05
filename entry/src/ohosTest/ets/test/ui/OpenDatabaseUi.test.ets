@@ -229,6 +229,9 @@ export default function OpenDatabaseUiTest(): void {
         unlockEnabled = await unlockBtn.isEnabled();
       }
       const unlockClicked: boolean = await UiTestHelper.clickId('btn_unlock', UiTestHelper.FIND_TIMEOUT);
+      // 安装后首次解锁会触发系统通知授权弹框，遮挡应用导致组件查询失效，先关闭
+      await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
+      await UiTestHelper.dismissNotificationDialog(4000);
       await UiTestHelper.delay(UiTestHelper.UNLOCK_WAIT);
 
       // 解锁成功标志：数据库主界面的悬浮添加按钮可见
