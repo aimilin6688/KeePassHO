@@ -1,6 +1,7 @@
-import { IFileStorage, FileInfo, FileType } from '../IFileStorage';
+import { IFileStorage, FileInfo, FileType, WriteOption } from '../IFileStorage';
 import { StorageConfig, PageConfig } from '../StorageConfig';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
+import { FileTransfer } from '../FileTransfer';
 import { PCloudClient, PCloudMetadata, PCloudError } from './PCloudClient';
 import { PCloudStorageConfig, PCloudPageConfig } from './PCloudConfig';
 
@@ -27,6 +28,20 @@ export class PCloudStorage implements IFileStorage {
     this.config = config as PCloudStorageConfig;
     this.client = new PCloudClient();
     this.client.setAccessToken(this.config.accessToken);
+  }
+
+  /**
+   * 流式下载到本地文件（pCloud 当前走默认整缓冲；分块下载 API 为 S7 调研项）
+   */
+  async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    return FileTransfer.readToFileDefault(this, path, destPath);
+  }
+
+  /**
+   * 流式从本地文件上传（pCloud upload_write 分块为 S7 调研项，当前走默认整缓冲）
+   */
+  async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
   }
 
   async read(path: string): Promise<ArrayBuffer> {

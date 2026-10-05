@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
   HuaweiDriveClient,
@@ -10,6 +10,7 @@ import {
   HttpResponse
 } from './HuaweiDriveClient';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
+import { FileTransfer } from '../FileTransfer';
 import { HuaweiDrivePageConfig, HuaweiDriveStorageConfig } from './HuaweiDriveConfig';
 import { HuaweiDrivePathCacheData, HuaweiDrivePathCacheEntry, HuaweiDrivePathCacheStore } from './HuaweiDrivePathCacheStore';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
@@ -624,6 +625,20 @@ export class HuaweiDriveStorage implements IFileStorage {
       }
     }
     return false;
+  }
+
+  /**
+   * 流式下载到本地文件（华为云盘当前走默认整缓冲；Range GET 流式下载为 S7 调研项）
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    return FileTransfer.readToFileDefault(this, path, destPath);
+  }
+
+  /**
+   * 流式从本地文件上传（华为云盘断点续传为 S7 调研项，当前走默认整缓冲）
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
   }
 
   /**

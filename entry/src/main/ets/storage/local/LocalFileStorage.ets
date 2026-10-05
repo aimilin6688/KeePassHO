@@ -69,6 +69,21 @@ export class LocalFileStorage implements IFileStorage {
   }
 
   /**
+   * 流式读取文件到本地目标路径（fs 内核拷贝，零用户态整缓冲）
+   * 顺带修复非原子写：destPath 与 path 在不同卷时退化为 read+write
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    await this.checkFilePermission(path, fileShare.OperationMode.READ_MODE);
+    try {
+      await fs.copyFile(path, destPath);
+      return await this.doGetInfo(path);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to copyFile: %{public}s', error.message);
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
+    }
+  }
+
+  /**
    * 读取文件内容
    * @param path 文件路径
    * @returns 结果
@@ -112,8 +127,7 @@ export class LocalFileStorage implements IFileStorage {
    * @param option 写入选项，传入 expectedVersion 时写前复核版本
    * @returns Promise<void>
    */
-  public async doWrite(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
-    try {
+  public async doWrite(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {    try {
       const expectedVersion: string | null = option?.expectedVersion ?? null;
       if (expectedVersion !== null) {
         const currentInfo: FileInfo = await this.doGetInfo(path);
@@ -137,6 +151,51 @@ export class LocalFileStorage implements IFileStorage {
         throw error;
       }
       hilog.error(DOMAIN, TAG, 'Failed to write file: %{public}s', error.message)
+      throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message);
+    }
+  }
+
+  /**
+   * 流式从本地源文件写入：写临时文件 + fsync + 原子 rename 替换
+   * 顺带修复非原子写（崩溃中断不破坏现有文件）
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    await this.checkFilePermission(path, fileShare.OperationMode.WRITE_MODE);
+    const expectedVersion: string | null = option?.expectedVersion ?? null;
+    const tempPath: string = path + '.tmp.' + Date.now();
+    try {
+      // 写前复核版本（与 doWrite 一致）
+      if (expectedVersion !== null) {
+        const currentInfo: FileInfo = await this.doGetInfo(path);
+        const currentVersion: string | null = currentInfo.version ?? null;
+        if (currentVersion === null || currentVersion !== expectedVersion) {
+          hilog.warn(DOMAIN, TAG, 'Local writeFromFile version conflict, expected: %{public}s, current: %{public}s',
+            expectedVersion, currentVersion);
+          throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Local file version changed');
+        }
+      }
+      // 拷贝到临时文件并落盘
+      await fs.copyFile(srcPath, tempPath);
+      const tmpFile = await fs.open(tempPath, fs.OpenMode.READ_ONLY);
+      try {
+        await fs.fsync(tmpFile.fd);
+      } finally {
+        await fs.close(tmpFile.fd);
+      }
+      // 原子替换
+      await fs.rename(tempPath, path);
+      return await this.doGetInfo(path);
+    } catch (error) {
+      // 清理临时文件
+      try {
+        await fs.unlink(tempPath);
+      } catch {
+        // ignore
+      }
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
+      hilog.error(DOMAIN, TAG, 'Failed to writeFromFile: %{public}s', error.message);
       throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message);
     }
   }

@@ -27,6 +27,16 @@ export interface IFileStorage {
   read(path: string): Promise<ArrayBuffer>;
 
   /**
+   * 流式读取文件到本地目标路径（分块下载/复制，避免整缓冲驻留内存）
+   * 默认实现包装 read()（整缓冲）；适配器按需迁移为真正的流式下载
+   * @param path 远端文件路径
+   * @param destPath 本地目标文件路径（调用方负责生命周期）
+   * @return Promise<FileInfo> 远端文件信息（含 version）
+   * @throws 如果读取失败则抛出异常
+   */
+  readToFile(path: string, destPath: string): Promise<FileInfo>;
+
+  /**
    * 写入文件内容
    * @param path 文件路径
    * @param content 文件内容
@@ -34,6 +44,17 @@ export interface IFileStorage {
    * @throws 如果写入失败则抛出异常
    */
   write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void>;
+
+  /**
+   * 流式从本地源文件写入到远端（分块上传/复制，避免整缓冲驻留内存）
+   * 默认实现包装 write()（整缓冲）；适配器按需迁移为真正的流式上传
+   * @param path 远端文件路径
+   * @param srcPath 本地源文件路径
+   * @param option 写入选项，支持条件写入
+   * @return Promise<FileInfo> 写入后的远端文件信息（含 version）
+   * @throws 如果写入失败则抛出异常
+   */
+  writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo>;
 
   /**
    * 检查文件是否存在

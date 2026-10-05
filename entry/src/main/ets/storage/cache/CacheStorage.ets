@@ -2,6 +2,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileInfo, FileType, IFileStorage, StorageConfig, WriteOption } from '../index';
 import { CacheConstants } from './CacheConstants';
+import { FileTransfer } from '../FileTransfer';
 import { ResourceManager } from '../../common/utils';
 import { KdbxError } from 'kdbxweb';
 import { ErrorCodes } from '../../services/error/KeepassHoError';
@@ -107,6 +108,69 @@ export class CacheStorage implements IFileStorage {
 
     // 推送到远端（核心操作，必须成功；版本冲突错误原样上抛由编排层处理）
     await this.decoratedStorage.write(path, content, option);
+  }
+
+  /**
+   * 流式读取到本地文件（S3 保存链路冲突检测使用）
+   * 仅缓存模式：从本地缓存复制到 destPath；正常/强制刷新：委托底层流式下载
+   * @param path 远端路径
+   * @param destPath 本地目标路径
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    if (!CacheConstants.isEnableLocalCache()) {
+      return this.decoratedStorage.readToFile(path, destPath);
+    }
+    const cachePath: string = CacheConstants.getCacheFilePath(path);
+    const onlyUseCache: boolean = CacheConstants.getOnlyCache();
+    const forceRefresh: boolean = CacheConstants.getForceRefresh();
+    if (forceRefresh) {
+      CacheConstants.clearForceRefresh();
+    }
+    // 仅缓存模式：从本地缓存复制（离线可用）
+    if (onlyUseCache && !forceRefresh) {
+      try {
+        await fs.copyFile(cachePath, destPath);
+        return await this.getCacheInfo(cachePath, path);
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, 'readToFile from cache failed: %{public}s', error?.message);
+        throw new Error(ResourceManager.getString($r('app.string.cache_file_not_found')));
+      }
+    }
+    // 正常模式：委托底层流式下载到 destPath
+    return await this.decoratedStorage.readToFile(path, destPath);
+  }
+
+  /**
+   * 流式从本地源文件写入远端
+   * 仅缓存模式：只读拒绝；正常模式：委托底层 + 异步刷新本地缓存
+   * @param path 远端路径
+   * @param srcPath 本地源文件路径
+   * @param option 写入选项
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    if (!CacheConstants.isEnableLocalCache()) {
+      return this.decoratedStorage.writeFromFile(path, srcPath, option);
+    }
+    const cachePath: string = CacheConstants.getCacheFilePath(path);
+    const onlyUseCache: boolean = CacheConstants.getOnlyCache();
+    const forceRefresh: boolean = CacheConstants.getForceRefresh();
+    if (forceRefresh) {
+      CacheConstants.clearForceRefresh();
+    }
+    if (onlyUseCache && !forceRefresh) {
+      throw new KdbxError(ErrorCodes.READ_ONLY, ResourceManager.getString($r('app.string.cache_read_only')));
+    }
+    // 委托底层流式上传
+    const info: FileInfo = await this.decoratedStorage.writeFromFile(path, srcPath, option);
+    // 异步刷新本地缓存（srcPath 即最新内容，直接拷贝到缓存路径）
+    try {
+      const cacheDir: string = CacheConstants.getCacheDir();
+      this.ensureCacheDir(cacheDir);
+      await fs.copyFile(srcPath, cachePath);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'writeFromFile refresh cache failed (transparent): %{public}s', error?.message);
+    }
+    return info;
   }
 
   /**
