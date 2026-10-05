@@ -139,6 +139,33 @@ export class Kdbx {
     }
 
     /**
+     * 从文件流式加载（S4 T0→T1 流式解密管道）
+     * ChaCha20 v4 用 decryptFromFile 逐块流式解密到 t1Path，不持有整缓冲；
+     * AES-CBC v4 / v3 退化为整缓冲读入内存
+     * @param filePath KDBX 文件路径
+     * @param credentials 凭证
+     * @param options preserveXml / maxDecompressedBytes / t1Path（解密后 gz 临时文件，调用方管理）
+     */
+    static loadFromFile(
+        filePath: string,
+        credentials: KdbxCredentials,
+        options?: { preserveXml?: boolean, maxDecompressedBytes?: number, t1Path: string }
+    ): Promise<Kdbx> {
+        if (!(credentials instanceof KdbxCredentials)) {
+            return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'credentials'));
+        }
+        if (!options?.t1Path) {
+            return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 't1Path required'));
+        }
+        const kdbx = new Kdbx();
+        kdbx.credentials = credentials;
+        const format = new KdbxFormat(kdbx);
+        format.preserveXml = options?.preserveXml || false;
+        format.maxDecompressedBytes = options?.maxDecompressedBytes;
+        return format.loadFromFile(filePath, options.t1Path);
+    }
+
+    /**
      * Creates a default group, if it's not yet created
      */
     createDefaultGroup(): void {

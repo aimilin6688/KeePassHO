@@ -1,4 +1,5 @@
 import { gzip, ungzip } from '@ohos/flate2';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { Kdbx } from './kdbx';
 import { CipherId, CompressionAlgorithm, ErrorCodes } from '../defs/consts';
 import { KdbxError } from '../errors/kdbx-error';
@@ -15,6 +16,7 @@ import {
 import { ProtectSaltGenerator } from '../crypto/protect-salt-generator';
 import * as XmlUtils from '../utils/xml-utils';
 import * as HmacBlockTransform from '../crypto/hmac-block-transform';
+import { ChaCha20 } from '../crypto/chacha20';
 import * as HashedBlockTransform from '../crypto/hashed-block-transform';
 import * as CryptoEngine from '../crypto/crypto-engine';
 import * as KeyEncryptorAes from '../crypto/key-encryptor-aes';
@@ -51,6 +53,186 @@ export class KdbxFormat {
                     `bad version: ${this.kdbx.versionMajor}`
                 );
             }
+        });
+    }
+
+    /**
+     * 从文件流式加载（S4 流式解密管道 T0→T1）
+     * 预读 header 到 BinaryStream，ChaCha20 v4 用 decryptFromFile 流式解密到 t1Path，
+     * AES-CBC v4 或 v3 退化为整缓冲（读入内存走 load()）
+     * @param filePath KDBX 文件路径
+     * @param t1Path 解密后 gz 数据的临时文件路径（由调用方管理生命周期）
+     */
+    loadFromFile(filePath: string, t1Path: string): Promise<Kdbx> {
+        return this.kdbx.credentials.ready.then(() => {
+            return fs.open(filePath, fs.OpenMode.READ_ONLY).then((file) => {
+                return this.loadFromFileInner(file.fd, t1Path).then((kdbx) => {
+                    return fs.close(file.fd).then(() => kdbx);
+                });
+            });
+        });
+    }
+
+    private loadFromFileInner(fileFd: number, t1Path: string): Promise<Kdbx> {
+        // 预读 header（256KB 足够任何 KDBX outer header + sha + hmac）
+        const headerBuf = new ArrayBuffer(256 * 1024);
+        return fs.read(fileFd, headerBuf).then((totalRead) => {
+            const stm = new BinaryStream(headerBuf.slice(0, totalRead));
+            this.kdbx.header = KdbxHeader.read(stm, this.ctx);
+            if (this.kdbx.header.versionMajor === 3) {
+                // v3 退化为整缓冲
+                return this.loadFromFileFallbackV3(fileFd, stm, totalRead);
+            } else if (this.kdbx.header.versionMajor === 4) {
+                return this.loadV4FromFile(stm, fileFd, t1Path);
+            } else {
+                throw new KdbxError(
+                    ErrorCodes.InvalidVersion,
+                    `bad version: ${this.kdbx.versionMajor}`
+                );
+            }
+        });
+    }
+
+    /**
+     * v4 流式加载：header 验证 → decryptFromFile 流式解密到 T1 → ungzip → parse
+     * 仅 ChaCha20 支持流式；AES-CBC 退化为整缓冲
+     */
+    private loadV4FromFile(stm: BinaryStream, fileFd: number, t1Path: string): Promise<Kdbx> {
+        return this.getHeaderHash(stm).then((headerSha) => {
+            const expectedHeaderSha = stm.readBytes(headerSha.byteLength);
+            if (!arrayBufferEquals(expectedHeaderSha, headerSha)) {
+                throw new KdbxError(ErrorCodes.FileCorrupt, 'header hash mismatch');
+            }
+            return this.computeKeysV4().then((keys) => {
+                return this.getHeaderHmac(stm, keys.hmacKey).then((headerHmac) => {
+                    const expectedHeaderHmac = stm.readBytes(headerHmac.byteLength);
+                    if (!arrayBufferEquals(expectedHeaderHmac, headerHmac)) {
+                        throw new KdbxError(ErrorCodes.InvalidKey);
+                    }
+
+                    // stm 现在在 header + sha + hmac 后 = 加密数据起始偏移
+                    const dataOffset = stm.pos;
+
+                    // 检查 cipher：仅 ChaCha20 支持流式就地解密
+                    const cipherId = this.kdbx.header.dataCipherUuid;
+                    if (!cipherId || cipherId.toString() !== CipherId.ChaCha20) {
+                        // AES-CBC 或未知：退化为整缓冲
+                        return this.loadV4FromFileFallback(fileFd, dataOffset, keys, stm);
+                    }
+
+                    // ChaCha20 流式解密到 T1 文件
+                    const iv = this.kdbx.header.encryptionIV;
+                    if (!iv) {
+                        throw new KdbxError(ErrorCodes.FileCorrupt, 'no encryption IV');
+                    }
+                    const chaCha = new ChaCha20(new Uint8Array(keys.cipherKey), new Uint8Array(iv));
+                    const decryptBlock = (data: Uint8Array): void => {
+                        chaCha.xorInPlace(data);
+                    };
+
+                    // lseek 到加密数据起始处
+                    fs.lseek(fileFd, dataOffset, 0 /* SEEK_SET */);
+                    return HmacBlockTransform.decryptFromFile(
+                        fileFd, t1Path, keys.hmacKey, decryptBlock
+                    ).then(() => {
+                        zeroBuffer(keys.hmacKey);
+                        zeroBuffer(keys.cipherKey);
+                        // 读 T1 → ungzip → parse
+                        return this.parseDecryptedFile(t1Path);
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * 读解密后的 T1 文件 → ungzip（S5 前整缓冲）→ CP2' → inner header + XML parse
+     */
+    private parseDecryptedFile(t1Path: string): Promise<Kdbx> {
+        return fs.open(t1Path, fs.OpenMode.READ_ONLY).then((file) => {
+            return fs.stat(file.fd).then((stat) => {
+                const buf = new ArrayBuffer(stat.size);
+                return fs.read(file.fd, buf).then(() => {
+                    return fs.close(file.fd).then(() => {
+                        let data: ArrayBuffer = buf;
+                        if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
+                            const date = new Date().getTime();
+                            data = arrayToBuffer(ungzip(new Uint8Array(data)));
+                            console.log("kdbx gunzip (from file) time: " + (new Date().getTime() - date) + "ms");
+                        }
+                        KdbxFormat.assertDecompressedLimit(
+                            data.byteLength, this.maxDecompressedBytes);
+                        const stm = new BinaryStream(arrayToBuffer(data));
+                        this.kdbx.header.readInnerHeader(stm, this.ctx);
+                        data = stm.readBytesToEnd();
+                        const xmlStr = bytesToString(data);
+                        this.kdbx.xml = XmlUtils.parse(xmlStr);
+                        return this.setProtectedValues().then(() => {
+                            return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
+                                this.cleanXml();
+                                return kdbx;
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * AES-CBC v4 退化：lseek 到 dataOffset 读剩余 → 走整缓冲 loadV4
+     */
+    private loadV4FromFileFallback(fileFd: number, dataOffset: number,
+        keys: { hmacKey: ArrayBuffer; cipherKey: ArrayBuffer }, stm: BinaryStream): Promise<Kdbx> {
+        // 读剩余文件到 ArrayBuffer
+        fs.lseek(fileFd, 0, 0);
+        const allBuf = new ArrayBuffer(256 * 1024);
+        return fs.read(fileFd, allBuf).then((n) => {
+            // 重新构造完整 buffer（header 已在 stm 中，需要从文件读全部）
+            // 简化：直接从 dataOffset 读剩余
+            fs.lseek(fileFd, dataOffset, 0);
+            // 估算剩余大小：先 stat
+            return fs.stat(fileFd).then((stat) => {
+                const remainingSize = stat.size - dataOffset;
+                const remainingBuf = new ArrayBuffer(remainingSize);
+                return fs.read(fileFd, remainingBuf).then(() => {
+                    return HmacBlockTransform.decrypt(remainingBuf, keys.hmacKey).then((data) => {
+                        zeroBuffer(keys.hmacKey);
+                        return this.decryptData(data, keys.cipherKey).then((data) => {
+                            zeroBuffer(keys.cipherKey);
+                            if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
+                                data = arrayToBuffer(ungzip(new Uint8Array(data)));
+                            }
+                            KdbxFormat.assertDecompressedLimit(
+                                (data as ArrayBuffer).byteLength, this.maxDecompressedBytes);
+                            const innerStm = new BinaryStream(arrayToBuffer(data));
+                            this.kdbx.header.readInnerHeader(innerStm, this.ctx);
+                            data = innerStm.readBytesToEnd();
+                            const xmlStr = bytesToString(data);
+                            this.kdbx.xml = XmlUtils.parse(xmlStr);
+                            return this.setProtectedValues().then(() => {
+                                return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
+                                    this.cleanXml();
+                                    return kdbx;
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * v3 退化：读入整缓冲走 load()
+     */
+    private loadFromFileFallbackV3(fileFd: number, stm: BinaryStream, headerRead: number): Promise<Kdbx> {
+        return fs.stat(fileFd).then((stat) => {
+            const fullBuf = new ArrayBuffer(stat.size);
+            fs.lseek(fileFd, 0, 0);
+            return fs.read(fileFd, fullBuf).then(() => {
+                return this.load(fullBuf);
+            });
         });
     }
 
