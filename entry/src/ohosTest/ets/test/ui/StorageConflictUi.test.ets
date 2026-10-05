@@ -28,10 +28,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { describe, beforeAll, afterAll, it, expect } from '@ohos/hypium';
 import { Component, ON, Rect } from '@kit.TestKit';
 import { common } from '@kit.AbilityKit';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
-import fileIo from '@ohos.file.fs';
-import util from '@ohos.util';
 import { FileContentInfo, StorageConfig, StorageType } from '../../../../main/ets/storage';
 import { FTPStorageConfig, ProtocolType } from '../../../../main/ets/storage/ftp/FTPConfig';
 import { WebDAVStorageConfig } from '../../../../main/ets/storage/webdav/WebDAVConfig';
@@ -39,6 +36,7 @@ import { S3TestConfig } from '../storage/s3/S3TestConfig';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { KdbxModeTestHelper } from '../workers/KdbxModeTestHelper';
 import { UiTestHelper } from './UiTestHelper';
+import { removeRecordsByPath, waitSeedOnDisk, writeRecentFilesXml } from './UiRecentFilesSeed';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'StorageConflictUiTest';
@@ -55,11 +53,6 @@ const WEBDAV_PASS: string = 'e2etest123';
 
 /** 每次运行的唯一后缀，避免与历史运行遗留文件冲突 */
 const RUN_TAG: string = String(Date.now());
-
-/** 最近打开列表 preferences 文件（应用 UIAbilityContext 实际使用 el4 + per-module 路径，
- *  实测 EntryAbility 读取 dir=/data/storage/el4/base/haps/entry/preferences，见 init 日志） */
-const RECENT_PREF_DIR: string = '/data/storage/el4/base/haps/entry/preferences';
-const RECENT_PREF_FILE: string = RECENT_PREF_DIR + '/recent_files';
 
 /** 冲突弹框文案（zh_CN / base 两语言兜底匹配） */
 const CONFLICT_TITLE_ZH: string = '远端数据库已修改';
@@ -188,17 +181,6 @@ async function readRemoteTitles(target: ConflictTarget): Promise<string[]> {
 }
 
 /**
- * XML 转义（preferences 文件为 XML 存储，值内引号等需转义）
- */
-function xmlEscape(text: string): string {
-  return text.replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-/**
  * 构造单条最近文件记录（纯字面量，规避 preferences API 在测试进程的
  * 401 "context is invalid" 与同进程多实例写入可见性问题，直接落盘 XML）
  */
@@ -238,96 +220,6 @@ function buildSeedRecord(target: ConflictTarget): Record<string, Object> {
     'storageConfig': config
   };
   return record;
-}
-
-/**
- * 直接写 preferences XML 文件（绕开 preferences API 的进程内实例缓存问题：
- * 应用冷启动首次 getPreferencesSync 会从磁盘完整加载该文件）
- */
-async function writeRecentFilesXml(records: Array<Record<string, Object>>): Promise<void> {
-  const json: string = JSON.stringify(records);
-  const xml: string = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<preferences version="1.0"><string key="recent_files_list">' + xmlEscape(json) + '</string></preferences>';
-  // 全新安装时 el4/haps/entry 上级目录均不存在（平时由应用首次写 preferences 时创建），
-  // 单级 mkdir 会 ENOENT，必须递归创建
-  try {
-    fileIo.mkdirSync(RECENT_PREF_DIR, true);
-  } catch (err) {
-    // 目录已存在时忽略
-  }
-  const file: fileIo.File =
-    fileIo.openSync(RECENT_PREF_FILE, fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC);
-  fileIo.writeSync(file.fd, xml);
-  fileIo.closeSync(file);
-  hilog.info(DOMAIN, TAG, 'recent_files xml written to %{public}s, size=%{public}d', RECENT_PREF_FILE, xml.length);
-}
-
-/**
- * 清理种子：从 preferences XML 中移除本次运行的记录
- */
-async function removeSeedFromXml(targets: Array<ConflictTarget>): Promise<void> {
-  try {
-    const stat: fileIo.Stat = fileIo.statSync(RECENT_PREF_FILE);
-    const file: fileIo.File = fileIo.openSync(RECENT_PREF_FILE, fileIo.OpenMode.READ_ONLY);
-    const buf: ArrayBuffer = new ArrayBuffer(stat.size);
-    fileIo.readSync(file.fd, buf);
-    fileIo.closeSync(file);
-    const content: string = new util.TextDecoder('utf-8').decodeToString(new Uint8Array(buf));
-    const start: number = content.indexOf('recent_files_list">') + 'recent_files_list">'.length;
-    const end: number = content.indexOf('</string>');
-    if (start < 'recent_files_list">'.length || end < 0) {
-      return;
-    }
-    const raw: string = content.substring(start, end)
-      .replace(/&quot;/g, '"').replace(/&apos;/g, '\'').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&');
-    const parsed: Object = JSON.parse(raw);
-    const list: Array<Record<string, Object>> = parsed as Array<Record<string, Object>>;
-    const kept: Array<Record<string, Object>> = [];
-    for (let i: number = 0; i < list.length; i++) {
-      const filePath: string = list[i]['filePath'] as string;
-      let isOurs: boolean = false;
-      for (let j: number = 0; j < targets.length; j++) {
-        if (filePath === targets[j].remotePath) {
-          isOurs = true;
-          break;
-        }
-      }
-      if (!isOurs) {
-        kept.push(list[i]);
-      }
-    }
-    await writeRecentFilesXml(kept);
-  } catch (err) {
-    hilog.warn(DOMAIN, TAG, 'cleanup seed fail: %{public}s', (err as BusinessError).message);
-  }
-}
-
-/**
- * 轮询等待最近文件种子真正落盘（写后立即读回校验）
- */
-async function waitSeedOnDisk(sftpPath: string, timeout: number): Promise<boolean> {
-  for (let waited: number = 0; waited <= timeout; waited += 500) {
-    try {
-      const stat: fileIo.Stat = fileIo.statSync(RECENT_PREF_FILE);
-      const file: fileIo.File = fileIo.openSync(RECENT_PREF_FILE, fileIo.OpenMode.READ_ONLY);
-      const buf: ArrayBuffer = new ArrayBuffer(stat.size);
-      fileIo.readSync(file.fd, buf);
-      fileIo.closeSync(file);
-      const content: string = new util.TextDecoder('utf-8').decodeToString(new Uint8Array(buf));
-      if (content.indexOf(sftpPath) >= 0) {
-        hilog.info(DOMAIN, TAG, 'seed file content: %{public}s', content.substring(0, 300));
-        return true;
-      }
-      hilog.warn(DOMAIN, TAG, 'seed not on disk yet (waited %{public}d ms), size=%{public}d',
-        waited, stat.size);
-    } catch (err) {
-      hilog.warn(DOMAIN, TAG, 'seed file not ready (waited %{public}d ms): %{public}s',
-        waited, (err as BusinessError).message);
-    }
-    await UiTestHelper.delay(500);
-  }
-  return false;
 }
 
 /**
@@ -624,7 +516,11 @@ export default function StorageConflictUiTest(): void {
     afterAll(async () => {
       // 清理本次运行注入的最近打开记录（直接改写 XML）
       const targets: Array<ConflictTarget> = [sftpTarget, webdavTarget, s3Target];
-      await removeSeedFromXml(targets);
+      const remotePaths: Array<string> = [];
+      for (let i: number = 0; i < targets.length; i++) {
+        remotePaths.push(targets[i].remotePath);
+      }
+      await removeRecordsByPath(remotePaths);
       await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
       hilog.info(DOMAIN, TAG, 'StorageConflictUiTest finished');
     });
