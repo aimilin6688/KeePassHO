@@ -12,6 +12,7 @@ import { KdbxFormat } from './kdbx-format';
 import { KdbxEntry, KdbxEntryEditState } from './kdbx-entry';
 import { KdbxUuid } from './kdbx-uuid';
 import { KdbxContext } from './kdbx-context';
+import { KdbxSnapshot } from './kdbx-snapshot';
 import { Document, Element , Node} from '@xmldom/xmldom';
 
 export interface KdbxEditState {
@@ -116,6 +117,20 @@ export class Kdbx {
     saveXml(prettyPrint = false, writeBinaries=true): Promise<string> {
         const format = new KdbxFormat(this);
         return format.saveXml(prettyPrint, writeBinaries);
+    }
+
+    /**
+     * Save the db as a KPSN binary snapshot (cross-thread transfer format)
+     */
+    saveSnapshot(): Promise<ArrayBuffer> {
+        return KdbxSnapshot.save(this);
+    }
+
+    /**
+     * Load a db from a KPSN binary snapshot
+     */
+    static loadSnapshot(data: ArrayBuffer, credentials: KdbxCredentials): Promise<Kdbx> {
+        return KdbxSnapshot.load(data, credentials);
     }
 
     /**

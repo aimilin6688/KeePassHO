@@ -63,7 +63,12 @@ class DatabaseSaveWorker extends DatabaseSave {
    */
   postSuccessMessage(message: SuccessMessage) {
     try {
-      workerPort.postMessage(message);
+      // transfer list 零拷贝传输（落盘字节 + isMerge 时的合并模型快照）
+      const transfer: ArrayBuffer[] = [message.data as ArrayBuffer];
+      if (message.snapshot) {
+        transfer.push(message.snapshot);
+      }
+      workerPort.postMessage(message, transfer);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postSuccessMessage error:%{public}s', error.message);
       this.postErrorMessage(error.message);

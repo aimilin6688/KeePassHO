@@ -281,7 +281,9 @@ export default class KdbxSaveService {
     dbFileParam.version = message.version ?? null;
     dbFileParam.contentHash = message.contentHash ?? null;
     if (message.isMerge) {
-      KdbxUtils.arrayBufferToKdbx(message.data, FileService.getDbFileParam()).then(kdbx => {
+      // 合并模型优先用 Worker 回传的 KPSN 快照（免解密重解析），缺失时回退落盘字节
+      const mergedSource: ArrayBuffer = message.snapshot ?? (message.data as ArrayBuffer);
+      KdbxUtils.arrayBufferToKdbx(mergedSource, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
         EventBus.emit<void>(EventBus.DATABASE_RELOAD);
         if (callback && callback.onSuccess) {

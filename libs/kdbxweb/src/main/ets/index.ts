@@ -37,6 +37,7 @@ import {
 import { KdbxFormat } from './format/kdbx-format';
 import { KdbxGroup } from './format/kdbx-group';
 import { KdbxHeader, HeaderConst } from './format/kdbx-header';
+import { KdbxSnapshot } from './format/kdbx-snapshot';
 import {
     KdbxMemoryProtection,
     KdbxMeta,
@@ -91,6 +92,7 @@ export {
     KdbxFormat,
     KdbxGroup,
     KdbxHeader,
+    KdbxSnapshot,
     KdbxMeta,
     KdbxMetaEditState,
     KdbxCustomIcon,

@@ -77,6 +77,11 @@ export class SuccessMessage implements WorkerMessage {
    */
   contentHash?: string | null;
 
+  /**
+   * isMerge 时合并后模型的 KPSN 快照（跨线程直传，主线程免解密重解析）
+   */
+  snapshot?: ArrayBuffer;
+
 
   constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean, version?: string | null, contentHash?: string | null) {
     this.type = MessageType.SUCCESS;

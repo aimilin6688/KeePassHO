@@ -35,6 +35,9 @@ import SFTPStorageRealFileTest from './storage/sftp/SFTPStorageRealFile.test';
 import DatabaseSyncModeTest from './workers/DatabaseSyncMode.test';
 import DatabaseWorkerModeTest from './workers/DatabaseWorkerMode.test';
 
+// KPSN 二进制快照协议单元测试（跨线程传输格式编解码）
+import KdbxSnapshotTest from './kdbx/KdbxSnapshot.test';
+
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
 import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
@@ -95,6 +98,9 @@ export default function testsuite() {
   DatabaseSyncModeTest();
   // 数据库加载/保存双模式测试（异步模式：真实 ThreadWorker 消息链路 + 边界序列化）
   DatabaseWorkerModeTest();
+
+  // KPSN 二进制快照协议测试（saveSnapshot/loadSnapshot 编解码 + 三格式分发）
+  KdbxSnapshotTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();

@@ -92,6 +92,8 @@ hdc shell bm install -p /data/local/tmp/haps
 
 - 2026-10-04：**Tests run: 418, Failure: 0, Error: 0, Pass: 418**（S3Client 20/20、S3Storage 27/27、WebDav 9/9、SFTPStorageRealFile 4/4、S3ClientMultipart 全过；华为/pCloud 真实 API 用例按门控不注册）
 - 用例数相对旧基线（435）变化：华为 18 + pCloud 7 门控移除，WebDav 重写 +6，SFTPStorageRealFile +4
+- 2026-10-05：KPSN 二进制快照协议合入后（`docs/KDBX跨线程数据传输优化设计-二进制快照协议.md` §12）WebDAV 回归复跑：**WebDavTest 9/9**（条件写冲突 VERSION_CONFLICT 用例在内，全过）
+- 2026-10-05：rport 隧道整体重建后（SFTP 设备侧 2223、S3 9000、WebDAV 8800，见 §5），复跑全部 12 个非 UI 存储套件：**Tests run: 111, Pass: 111**（S3ClientTest、S3StorageTest、S3Client_Multipart_Upload/Logic/Integration、S3StorageIntegrationTest 6/6、SFTPHandlerTest、SFTPHandlerConnectTest、SFTPStorageRealFileTest、FTP/Cache/RecentFiles SftpSemanticsTest 全过）；其中 `should_use_regular_upload_below_threshold` 修复了 `new ArrayBuffer(4.9*1024*1024)` 浮点截断与浮点断言不一致的测试缺陷（分配与断言统一取 `Math.floor`）
 
 ## 7. 本轮真实回归修出的产品 bug
 
