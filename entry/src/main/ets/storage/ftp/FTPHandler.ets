@@ -62,7 +62,8 @@ export class FTPHandler implements IFTPHandler {
       this.client = undefined;
     }
     if (this.client === undefined) {
-      this.client = new FTPClient(CommonUtils.getContext(), this.config.timeout);
+      // FTPClient 仅读取 cacheDir 属性；主线程传应用 Context，Worker 线程传注入路径的替身对象
+      this.client = new FTPClient(CommonUtils.getStorageContext(), this.config.timeout);
     }
     await this.client.access({
       host: this.config.host,

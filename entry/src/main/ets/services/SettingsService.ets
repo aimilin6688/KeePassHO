@@ -57,6 +57,10 @@ export class SettingsService {
   public static readonly KEY_SECURITY_FACE_LOGIN_DEFAULT = false;
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.PASSWORD;
+
+  // 数据库大小上限（MB），CP1 守卫：超过该值的数据库文件拒绝加载
+  public static readonly KEY_DATABASE_MAX_SIZE = 'database_max_size';
+  public static readonly KEY_DATABASE_MAX_SIZE_DEFAULT = 512;
   // 显示TOTP设置
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP = "Security_list_show_totp";
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;

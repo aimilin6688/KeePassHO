@@ -581,6 +581,22 @@
       "value": "File does not exist or has been moved"
     },
     {
+      "name": "database_too_large",
+      "value": "Database file exceeds the size limit (512 MB by default) and cannot be loaded on this device"
+    },
+    {
+      "name": "database_decompressed_too_large",
+      "value": "Database content is too large to load into memory on this device"
+    },
+    {
+      "name": "database_not_enough_disk",
+      "value": "Not enough free storage space to load this database. Free up space and try again"
+    },
+    {
+      "name": "storage_upload_too_large",
+      "value": "Database exceeds the 100 MB upload limit of this storage type and cannot be saved"
+    },
+    {
       "name": "all_records_cleared",
       "value": "All records cleared"
     },

@@ -1,9 +1,10 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { Kdbx } from 'kdbxweb';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
+import { CacheConstants } from '../storage/cache/CacheConstants';
 import { CommonUtils, KdbxUtils } from '../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LoadMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { LoadMessage, InitWorkerMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { DatabaseLoad } from './DatabaseLoad';
 
 const DOMAIN = 0x0000;
@@ -16,6 +17,13 @@ if (workerPort) {
   workerPort.onmessage = (event: MessageEvents) => {
     const message = JSON.parse(event.data) as WorkerMessage;
     hilog.debug(DOMAIN, TAG, 'Load worker receive message type:%{public}s', message.type);
+    if (message.type === MessageType.INIT_WORKER) {
+      // 注入主线程沙箱路径与缓存策略快照：Worker 线程无 Context/AppStorage/preferences
+      const init = message as InitWorkerMessage;
+      CommonUtils.setWorkerPaths(init.filesDir, init.cacheDir);
+      CacheConstants.setWorkerCachePolicy(init.enableLocalCache, init.onlyUseCache, init.forceRefresh);
+      return;
+    }
     if (message.type === MessageType.LOAD_DATABASE) {
       const request = message as LoadDatabase;
       new DatabaseLoadWorker().handleLoadDatabase(request);

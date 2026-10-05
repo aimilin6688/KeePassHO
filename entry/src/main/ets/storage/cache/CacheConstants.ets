@@ -28,13 +28,30 @@ export class CacheConstants {
    */
   static readonly FORCE_REFRESH_KEY: string = 'force_refresh';
 
+  // Worker 线程的缓存策略快照（Worker 内无 AppStorage/preferences，
+  // 由主线程在创建 Worker 时注入；undefined 表示主线程环境，走真实数据源）
+  private static workerEnableLocalCache: boolean | undefined = undefined;
+  private static workerOnlyUseCache: boolean | undefined = undefined;
+  private static workerForceRefresh: boolean | undefined = undefined;
+
+  /**
+   * 注入 Worker 线程的缓存策略快照（仅 Worker 的 INIT 消息处理调用；
+   * 主线程不调用，避免快照遮蔽主线程的实时设置）
+   */
+  static setWorkerCachePolicy(enableLocalCache: boolean, onlyUseCache: boolean,
+    forceRefresh: boolean): void {
+    CacheConstants.workerEnableLocalCache = enableLocalCache;
+    CacheConstants.workerOnlyUseCache = onlyUseCache;
+    CacheConstants.workerForceRefresh = forceRefresh;
+  }
+
   /**
    * 获取应用缓存目录
    * @returns 缓存目录路径
    */
   static getCacheDir(): string {
-    const context = CommonUtils.getContext();
-    return context.getApplicationContext().filesDir + '/' + CacheConstants.CACHE_DIR_NAME;
+    // 应用级 files 目录：主线程取自 Context，Worker 线程取注入路径（见 CommonUtils.setWorkerPaths）
+    return CommonUtils.getAppFilesDir() + '/' + CacheConstants.CACHE_DIR_NAME;
   }
 
   /**
@@ -151,8 +168,12 @@ export class CacheConstants {
    * @param onlyCache 是否仅使用缓存
    */
   static setOnlyCache(onlyCache: boolean): void {
-    AppStorage.setOrCreate(CacheConstants.ONLY_CACHE_KEY, onlyCache);
-    hilog.debug(DOMAIN, TAG, `Set only cache: ${onlyCache}`);
+    try {
+      AppStorage.setOrCreate(CacheConstants.ONLY_CACHE_KEY, onlyCache);
+      hilog.debug(DOMAIN, TAG, `Set only cache: ${onlyCache}`);
+    } catch {
+      // Worker 线程无 AppStorage：策略由主线程在创建 Worker 时以快照注入
+    }
   }
 
   /**
@@ -160,7 +181,15 @@ export class CacheConstants {
    * @returns 是否仅使用缓存
    */
   static getOnlyCache(): boolean {
-    return AppStorage.get<boolean>(CacheConstants.ONLY_CACHE_KEY) ?? false;
+    if (CacheConstants.workerOnlyUseCache !== undefined) {
+      return CacheConstants.workerOnlyUseCache;
+    }
+    try {
+      return AppStorage.get<boolean>(CacheConstants.ONLY_CACHE_KEY) ?? false;
+    } catch {
+      // Worker 线程无 AppStorage：默认非仅缓存模式（正常读远端）
+      return false;
+    }
   }
 
   /**
@@ -168,8 +197,12 @@ export class CacheConstants {
    * @param forceRefresh 是否强制刷新
    */
   static setForceRefresh(forceRefresh: boolean): void {
-    AppStorage.setOrCreate(CacheConstants.FORCE_REFRESH_KEY, forceRefresh);
-    hilog.debug(DOMAIN, TAG, `Set force refresh: ${forceRefresh}`);
+    try {
+      AppStorage.setOrCreate(CacheConstants.FORCE_REFRESH_KEY, forceRefresh);
+      hilog.debug(DOMAIN, TAG, `Set force refresh: ${forceRefresh}`);
+    } catch {
+      // Worker 线程无 AppStorage：标志由主线程在创建 Worker 时一次性消费并随快照注入
+    }
   }
 
   /**
@@ -177,15 +210,27 @@ export class CacheConstants {
    * @returns 是否强制刷新
    */
   static getForceRefresh(): boolean {
-    return AppStorage.get<boolean>(CacheConstants.FORCE_REFRESH_KEY) ?? false;
+    if (CacheConstants.workerForceRefresh !== undefined) {
+      return CacheConstants.workerForceRefresh;
+    }
+    try {
+      return AppStorage.get<boolean>(CacheConstants.FORCE_REFRESH_KEY) ?? false;
+    } catch {
+      // Worker 线程无 AppStorage：默认不强制刷新
+      return false;
+    }
   }
 
   /**
    * 清除强制刷新标志
    */
   static clearForceRefresh(): void {
-    AppStorage.setOrCreate(CacheConstants.FORCE_REFRESH_KEY, false);
-    hilog.debug(DOMAIN, TAG, 'Clear force refresh');
+    try {
+      AppStorage.setOrCreate(CacheConstants.FORCE_REFRESH_KEY, false);
+      hilog.debug(DOMAIN, TAG, 'Clear force refresh');
+    } catch {
+      // Worker 线程无 AppStorage：快照标志随 Worker 生命周期结束自动失效
+    }
   }
 
   /**
@@ -193,6 +238,9 @@ export class CacheConstants {
    * @returns
    */
   static isEnableLocalCache(): boolean {
+    if (CacheConstants.workerEnableLocalCache !== undefined) {
+      return CacheConstants.workerEnableLocalCache;
+    }
     return SettingsService.getSync(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT);
   }
 }

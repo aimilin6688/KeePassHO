@@ -71,7 +71,7 @@ export class Kdbx {
     static load(
         data: ArrayBuffer,
         credentials: KdbxCredentials,
-        options?: { preserveXml?: boolean }
+        options?: { preserveXml?: boolean, maxDecompressedBytes?: number }
     ): Promise<Kdbx> {
         if (!(data instanceof ArrayBuffer)) {
             return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'data'));
@@ -83,6 +83,7 @@ export class Kdbx {
         kdbx.credentials = credentials;
         const format = new KdbxFormat(kdbx);
         format.preserveXml = options?.preserveXml || false;
+        format.maxDecompressedBytes = options?.maxDecompressedBytes;
         return format.load(data);
     }
 
@@ -129,8 +130,12 @@ export class Kdbx {
     /**
      * Load a db from a KPSN binary snapshot
      */
-    static loadSnapshot(data: ArrayBuffer, credentials: KdbxCredentials): Promise<Kdbx> {
-        return KdbxSnapshot.load(data, credentials);
+    static loadSnapshot(
+        data: ArrayBuffer,
+        credentials: KdbxCredentials,
+        options?: { maxDecompressedBytes?: number }
+    ): Promise<Kdbx> {
+        return KdbxSnapshot.load(data, credentials, options?.maxDecompressedBytes);
     }
 
     /**

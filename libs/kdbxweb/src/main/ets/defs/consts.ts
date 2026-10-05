@@ -13,7 +13,8 @@ export const ErrorCodes = {
     FileCorrupt: 'FileCorrupt',
     InvalidKey: 'InvalidKey',
     MergeError: 'MergeError',
-    InvalidState: 'InvalidState'
+    InvalidState: 'InvalidState',
+    DecompressedTooLarge: 'DecompressedTooLarge'
 } as const;
 
 export const CompressionAlgorithm = {

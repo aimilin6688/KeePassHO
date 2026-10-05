@@ -6,6 +6,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ConflictMessage, SuccessMessage } from './WorkerParam';
 import { ConflictStrategy, SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
 import { HashUtils, KdbxUtils, ResourceManager } from '../common/utils';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 
@@ -130,6 +131,12 @@ export class DatabaseSave {
       hilog.error(DOMAIN, TAG, 'Worker error saving database: file path is empty');
       throw new Error();
     }
+    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名，由统一错误链路本地化
+    const rejectReason: string | null = await DatabaseLoadGuard.checkBeforeRead(
+      request.storageType, request.storageConfig, request.filePath);
+    if (rejectReason !== null) {
+      throw new Error(rejectReason);
+    }
     const result = await new KdbxFileManager(request.storageType, request.storageConfig).read(request.filePath);
     this.postMessage('load_file_success');
     return result;
@@ -176,7 +183,9 @@ export class DatabaseSave {
     credentials: KdbxCredentials): Promise<Kdbx> {
     this.postMessage('validating');
     // 尝试加载远端数据库（远端凭证已变更时抛出 InvalidKey，由上层统一转为用户提示）
-    const remoteKdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
+    const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
+    const remoteKdbx: Kdbx = await Kdbx.load(fileContent.content, credentials,
+      { maxDecompressedBytes: maxDecompressedBytes });
     this.postMessage('merging_database');
     // 合并数据库
     const localKdbx: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);

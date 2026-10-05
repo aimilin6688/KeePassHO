@@ -2,11 +2,11 @@ export class Constants {
   /**
    * 是否异步保存数据库
    */
-  public static readonly ASYNC_SAVE_DATABASE: boolean = false;
+  public static readonly ASYNC_SAVE_DATABASE: boolean = true;
   /**
    * 是否异步加载数据库
    */
-  public static readonly ASYNC_LOAD_DATABASE: boolean = false;
+  public static readonly ASYNC_LOAD_DATABASE: boolean = true;
 
   /**
    * 应用存储位置信息

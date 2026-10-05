@@ -569,6 +569,22 @@
       "value": "文件不存在"
     },
     {
+      "name": "database_too_large",
+      "value": "数据库文件超过大小上限（默认 512 MB），无法在此设备上加载"
+    },
+    {
+      "name": "database_decompressed_too_large",
+      "value": "数据库内容过大，无法在此设备的内存中加载"
+    },
+    {
+      "name": "database_not_enough_disk",
+      "value": "可用存储空间不足，无法加载该数据库，请清理空间后重试"
+    },
+    {
+      "name": "storage_upload_too_large",
+      "value": "数据库超过该存储类型 100 MB 的上传上限，无法保存"
+    },
+    {
       "name": "all_records_cleared",
       "value": "已清除所有记录"
     },

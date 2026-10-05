@@ -31,11 +31,45 @@ export enum MessageType {
    * 保存时检测到远端已被其他设备修改（冲突）
    */
   CONFLICT = 'CONFLICT',
+
+  /**
+   * Worker 启动初始化：注入主线程沙箱路径（Worker 线程无 Context）
+   */
+  INIT_WORKER = 'INIT_WORKER',
 }
 
 // 定义消息
 export interface WorkerMessage {
   type: MessageType;
+}
+
+/**
+ * Worker 初始化消息：携带主线程沙箱路径与缓存策略快照。
+ * Actor 模型下 Worker 线程与宿主线程内存隔离、无 Context/AppStorage/preferences，
+ * 存储层所需的 filesDir/cacheDir 与缓存策略只能以快照形式注入。
+ */
+export class InitWorkerMessage implements WorkerMessage {
+  type: MessageType;
+  /** 应用级文件目录（ApplicationContext.filesDir） */
+  filesDir: string;
+  /** 应用缓存目录（UIAbilityContext.cacheDir） */
+  cacheDir: string;
+  /** 是否启用本地缓存（SettingsService，主线程真实值快照） */
+  enableLocalCache: boolean;
+  /** 是否仅使用本地缓存（AppStorage，主线程真实值快照） */
+  onlyUseCache: boolean;
+  /** 强制刷新（AppStorage，主线程创建 Worker 时一次性消费） */
+  forceRefresh: boolean;
+
+  constructor(filesDir: string, cacheDir: string, enableLocalCache: boolean,
+    onlyUseCache: boolean, forceRefresh: boolean) {
+    this.type = MessageType.INIT_WORKER;
+    this.filesDir = filesDir;
+    this.cacheDir = cacheDir;
+    this.enableLocalCache = enableLocalCache;
+    this.onlyUseCache = onlyUseCache;
+    this.forceRefresh = forceRefresh;
+  }
 }
 
 

@@ -197,7 +197,7 @@ export class FTPStorage implements IFileStorage {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
-      const tempDir = CommonUtils.getContext().cacheDir;
+      const tempDir = CommonUtils.getCacheDir();
       const tempFilePath = tempDir + '/temp_' + Date.now() + '.tmp';
 
       try {
@@ -244,7 +244,7 @@ export class FTPStorage implements IFileStorage {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
-      const tempDir = CommonUtils.getContext().cacheDir;
+      const tempDir = CommonUtils.getCacheDir();
       const tempFilePath = tempDir + '/temp_upload_' + Date.now() + '.tmp';
 
       try {

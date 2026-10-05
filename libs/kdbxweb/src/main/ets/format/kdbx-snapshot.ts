@@ -129,7 +129,8 @@ export class KdbxSnapshot {
         });
     }
 
-    static load(data: ArrayBuffer, credentials: KdbxCredentials): Promise<Kdbx> {
+    static load(data: ArrayBuffer, credentials: KdbxCredentials,
+        maxDecompressedBytes?: number): Promise<Kdbx> {
         if (!KdbxSnapshot.isSnapshot(data)) {
             return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'data'));
         }
@@ -149,6 +150,12 @@ export class KdbxSnapshot {
                 }
                 const headerLength = stm.getUint32(true);
                 const xmlLength = stm.getUint32(true);
+                if (maxDecompressedBytes !== undefined && xmlLength > maxDecompressedBytes) {
+                    throw new KdbxError(
+                        ErrorCodes.DecompressedTooLarge,
+                        `snapshot xml ${xmlLength} exceeds limit ${maxDecompressedBytes}`
+                    );
+                }
                 const poolCount = stm.getUint32(true);
                 const minPoolBytes = poolCount * POOL_ENTRY_HEADER_LENGTH;
                 if (
