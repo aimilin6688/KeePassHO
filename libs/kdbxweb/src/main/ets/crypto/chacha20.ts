@@ -48,6 +48,21 @@ export class ChaCha20 {
         return out;
     }
 
+    /**
+     * 流式就地解密/加密：用密钥流 XOR data（状态跨块保持，可用于分块文件流式处理）
+     * ChaCha20 加解密对称，同一方法即可
+     */
+    xorInPlace(data: Uint8Array): void {
+        for (let i = 0; i < data.length; i++) {
+            if (this._blockUsed === 64) {
+                this.generateBlock();
+                this._blockUsed = 0;
+            }
+            data[i] ^= this._block[this._blockUsed];
+            this._blockUsed++;
+        }
+    }
+
     private generateBlock(): void {
         const input = this._input;
         const x = this._x;
