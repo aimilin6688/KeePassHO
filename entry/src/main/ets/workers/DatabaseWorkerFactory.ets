@@ -1,6 +1,7 @@
 import { worker } from '@kit.ArkTS';
 import { CommonUtils } from '../common/utils';
 import { CacheConstants } from '../storage/cache/CacheConstants';
+import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 import { InitWorkerMessage } from './WorkerParam';
 
 /**
@@ -38,7 +39,9 @@ export class DatabaseWorkerFactory {
     if (forceRefresh) {
       CacheConstants.clearForceRefresh();
     }
+    // 附件缓存密钥主线程解析（Asset Kit），Worker 线程仅使用注入快照
+    const attachCacheKey: string = AttachmentCacheService.getWorkerKeyBase64();
     return new InitWorkerMessage(CommonUtils.getAppFilesDir(), CommonUtils.getCacheDir(),
-      CacheConstants.isEnableLocalCache(), CacheConstants.getOnlyCache(), forceRefresh);
+      CacheConstants.isEnableLocalCache(), CacheConstants.getOnlyCache(), forceRefresh, attachCacheKey);
   }
 }

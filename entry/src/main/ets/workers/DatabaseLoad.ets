@@ -3,6 +3,7 @@ import { CredentialsService } from '../services/CredentialsService';
 import { FileInfo } from '../storage';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
+import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
@@ -34,9 +35,17 @@ export class DatabaseLoad {
       this.postMessage('validating', callback?.onLoadMessage);
       // 流式解密 T0→T1 → ungzip → parse（ChaCha20 v4 流式，AES-CBC/v3 退化整缓冲）
       const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
+      // S4 附件磁盘化：大附件池转入加密缓存，内存仅保留哈希引用（store 不可用时纯内存模式）
+      const attachmentStore = AttachmentCacheService.getStore();
+      const attachmentsDiskThreshold = AttachmentCacheService.getAttachmentsDiskThreshold();
       let logTime = Date.now();
       let kdbx: Kdbx = await Kdbx.loadFromFile(t0Path, credentials,
-        { maxDecompressedBytes: maxDecompressedBytes, t1Path: t1Path });
+        {
+          maxDecompressedBytes: maxDecompressedBytes,
+          t1Path: t1Path,
+          attachmentStore: attachmentStore,
+          attachmentsDiskThreshold: attachmentsDiskThreshold
+        });
       hilog.debug(DOMAIN, TAG, "Load database (from file) cost time: %{public}d ms", Date.now() - logTime);
 
       this.postMessage('loading_complete', callback?.onLoadMessage);

@@ -23,7 +23,7 @@ export default function WorkerEnvironmentInjectionTest() {
      * InitWorkerMessage 携带路径与缓存策略
      */
     it('InitWorkerMessage carries paths and cache policy', 0, () => {
-      const msg = new InitWorkerMessage('/data/files', '/data/cache', true, false, true);
+      const msg = new InitWorkerMessage('/data/files', '/data/cache', true, false, true, '');
       expect(msg.type).assertEqual(MessageType.INIT_WORKER);
       expect(msg.filesDir).assertEqual('/data/files');
       expect(msg.cacheDir).assertEqual('/data/cache');

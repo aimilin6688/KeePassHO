@@ -60,15 +60,18 @@ export class InitWorkerMessage implements WorkerMessage {
   onlyUseCache: boolean;
   /** 强制刷新（AppStorage，主线程创建 Worker 时一次性消费） */
   forceRefresh: boolean;
+  /** 附件缓存加密密钥（base64，S4 附件磁盘化；空字符串表示禁用） */
+  attachCacheKey: string;
 
   constructor(filesDir: string, cacheDir: string, enableLocalCache: boolean,
-    onlyUseCache: boolean, forceRefresh: boolean) {
+    onlyUseCache: boolean, forceRefresh: boolean, attachCacheKey: string) {
     this.type = MessageType.INIT_WORKER;
     this.filesDir = filesDir;
     this.cacheDir = cacheDir;
     this.enableLocalCache = enableLocalCache;
     this.onlyUseCache = onlyUseCache;
     this.forceRefresh = forceRefresh;
+    this.attachCacheKey = attachCacheKey;
   }
 }
 

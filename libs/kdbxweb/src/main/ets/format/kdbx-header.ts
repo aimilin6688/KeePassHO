@@ -19,6 +19,7 @@ import { base64ToBytes, zeroBuffer } from '../utils/byte-utils';
 import * as CryptoEngine from '../crypto/crypto-engine';
 import { Int64 } from '../utils/int64';
 import { KdbxContext } from './kdbx-context';
+import { KdbxBinaryDiskRef } from './kdbx-binaries';
 import { ProtectedValue } from '../crypto/protected-value';
 
 interface HeaderField {
@@ -299,25 +300,44 @@ export class KdbxHeader {
         ctx.kdbx.binaries.addWithNextId(binary);
     }
 
-    private writeBinary(stm: BinaryStream, ctx: KdbxContext): void {
+    private writeBinary(stm: BinaryStream, ctx: KdbxContext): Promise<void> {
         if (this.versionMajor < 4) {
-            return;
+            return Promise.resolve();
         }
         const binaries = ctx.kdbx.binaries.getAll();
+        let chain: Promise<void> = Promise.resolve();
         for (const binary of binaries) {
-            stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
-            if (binary.value instanceof ProtectedValue) {
-                const binaryData = binary.value.getBinary();
-                this.writeFieldSize(stm, binaryData.byteLength + 1);
-                stm.setUint8(HeaderConst.FlagBinaryProtected);
-                stm.writeBytes(binaryData);
-                zeroBuffer(binaryData);
+            const value = binary.value;
+            if (value instanceof KdbxBinaryDiskRef) {
+                // 磁盘引用：从加密缓存按需读回后写出（S4 附件磁盘化）
+                chain = chain.then(() =>
+                    ctx.kdbx.binaries.readDiskRef(value).then((binaryData) => {
+                        stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
+                        this.writeFieldSize(stm, binaryData.byteLength + 1);
+                        stm.setUint8(value.isProtected ? HeaderConst.FlagBinaryProtected : 0);
+                        stm.writeBytes(binaryData);
+                        zeroBuffer(binaryData);
+                    })
+                );
+            } else if (value instanceof ProtectedValue) {
+                chain = chain.then(() => {
+                    const binaryData = value.getBinary();
+                    stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
+                    this.writeFieldSize(stm, binaryData.byteLength + 1);
+                    stm.setUint8(HeaderConst.FlagBinaryProtected);
+                    stm.writeBytes(binaryData);
+                    zeroBuffer(binaryData);
+                });
             } else {
-                this.writeFieldSize(stm, binary.value.byteLength + 1);
-                stm.setUint8(0);
-                stm.writeBytes(binary.value);
+                chain = chain.then(() => {
+                    stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
+                    this.writeFieldSize(stm, value.byteLength + 1);
+                    stm.setUint8(0);
+                    stm.writeBytes(value);
+                });
             }
         }
+        return chain;
     }
 
     private writeEndOfHeader(stm: BinaryStream): void {
@@ -449,8 +469,8 @@ export class KdbxHeader {
                     if (!ctx) {
                         throw new KdbxError(ErrorCodes.InvalidArg, 'context is not set');
                     }
-                    this.writeBinary(stm, ctx);
-                    break;
+                    // writeBinary 可能需要异步读回磁盘引用附件
+                    return this.writeBinary(stm, ctx);
                 default:
                     throw new KdbxError(
                         ErrorCodes.InvalidArg,
@@ -579,12 +599,18 @@ export class KdbxHeader {
         this.endPos = stm.pos;
     }
 
-    writeInnerHeader(stm: BinaryStream, ctx: KdbxContext): void {
+    /**
+     * 写内层头（v4）。Binary 字段可能携带磁盘引用，需异步从加密缓存读回，
+     * 因此整体为异步链式写出。
+     */
+    writeInnerHeader(stm: BinaryStream, ctx: KdbxContext): Promise<void> {
         this.validateInner();
+        let chain: Promise<void> = Promise.resolve();
         for (let id = 1; id < InnerHeaderFields.length; id++) {
-            this.writeField(stm, id, InnerHeaderFields, ctx);
+            const fieldId = id;
+            chain = chain.then(() => this.writeField(stm, fieldId, InnerHeaderFields, ctx));
         }
-        this.writeField(stm, 0, InnerHeaderFields, ctx);
+        return chain.then(() => this.writeField(stm, 0, InnerHeaderFields, ctx));
     }
 
     generateSalts(): void {

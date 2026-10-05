@@ -1,6 +1,12 @@
 import * as XmlNames from '../defs/xml-names';
 import * as XmlUtils from '../utils/xml-utils';
-import { KdbxBinaries, KdbxBinary, KdbxBinaryWithHash } from './kdbx-binaries';
+import {
+    KdbxBinaries,
+    KdbxBinary,
+    KdbxBinaryDiskRef,
+    KdbxBinaryWithHash
+} from './kdbx-binaries';
+import { AttachmentStore } from '../utils/attachment-store';
 import { KdbxDeletedObject } from './kdbx-deleted-object';
 import { KdbxGroup } from './kdbx-group';
 import { KdbxMeta, KdbxMetaEditState } from './kdbx-meta';
@@ -71,7 +77,12 @@ export class Kdbx {
     static load(
         data: ArrayBuffer,
         credentials: KdbxCredentials,
-        options?: { preserveXml?: boolean, maxDecompressedBytes?: number }
+        options?: {
+            preserveXml?: boolean,
+            maxDecompressedBytes?: number,
+            attachmentStore?: AttachmentStore,
+            attachmentsDiskThreshold?: number
+        }
     ): Promise<Kdbx> {
         if (!(data instanceof ArrayBuffer)) {
             return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'data'));
@@ -81,9 +92,11 @@ export class Kdbx {
         }
         const kdbx = new Kdbx();
         kdbx.credentials = credentials;
+        kdbx.binaries.store = options?.attachmentStore;
         const format = new KdbxFormat(kdbx);
         format.preserveXml = options?.preserveXml || false;
         format.maxDecompressedBytes = options?.maxDecompressedBytes;
+        format.attachmentsDiskThreshold = options?.attachmentsDiskThreshold;
         return format.load(data);
     }
 
@@ -133,9 +146,14 @@ export class Kdbx {
     static loadSnapshot(
         data: ArrayBuffer,
         credentials: KdbxCredentials,
-        options?: { maxDecompressedBytes?: number }
+        options?: { maxDecompressedBytes?: number, attachmentStore?: AttachmentStore }
     ): Promise<Kdbx> {
-        return KdbxSnapshot.load(data, credentials, options?.maxDecompressedBytes);
+        return KdbxSnapshot.load(
+            data,
+            credentials,
+            options?.maxDecompressedBytes,
+            options?.attachmentStore
+        );
     }
 
     /**
@@ -145,11 +163,18 @@ export class Kdbx {
      * @param filePath KDBX 文件路径
      * @param credentials 凭证
      * @param options preserveXml / maxDecompressedBytes / t1Path（解密后 gz 临时文件，调用方管理）
+     *                attachmentStore / attachmentsDiskThreshold（S4 附件磁盘化）
      */
     static loadFromFile(
         filePath: string,
         credentials: KdbxCredentials,
-        options?: { preserveXml?: boolean, maxDecompressedBytes?: number, t1Path?: string }
+        options?: {
+            preserveXml?: boolean,
+            maxDecompressedBytes?: number,
+            t1Path?: string,
+            attachmentStore?: AttachmentStore,
+            attachmentsDiskThreshold?: number
+        }
     ): Promise<Kdbx> {
         if (!(credentials instanceof KdbxCredentials)) {
             return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'credentials'));
@@ -159,9 +184,11 @@ export class Kdbx {
         }
         const kdbx = new Kdbx();
         kdbx.credentials = credentials;
+        kdbx.binaries.store = options?.attachmentStore;
         const format = new KdbxFormat(kdbx);
         format.preserveXml = options?.preserveXml || false;
         format.maxDecompressedBytes = options?.maxDecompressedBytes;
+        format.attachmentsDiskThreshold = options?.attachmentsDiskThreshold;
         return format.loadFromFile(filePath, options.t1Path);
     }
 
@@ -457,6 +484,34 @@ export class Kdbx {
             for (const binary of this.binaries.getAllWithHashes()) {
                 if (!usedBinaries.has(binary.hash)) {
                     this.binaries.deleteWithHash(binary.hash);
+                }
+            }
+        }
+    }
+
+    /**
+     * 附件池与 entry.binaries 的值同步（S4 附件磁盘化）：
+     * 附件池转换为磁盘引用或物化回内存后，entry 仍持有旧的共享值对象，
+     * 需要把每个 entry（含历史记录）的附件值替换为池中的当前值，
+     * 否则内存附件不会被 GC 回收 / 保存语义不一致。
+     */
+    rebindEntryBinaries(): void {
+        const processEntry = (entry: KdbxEntry) => {
+            for (const [key, binary] of entry.binaries) {
+                if (!KdbxBinaries.isKdbxBinaryWithHash(binary)) {
+                    continue;
+                }
+                const value = this.binaries.getValueByHash(binary.hash);
+                if (value !== undefined && value !== binary.value) {
+                    entry.binaries.set(key, { hash: binary.hash, value });
+                }
+            }
+        };
+        for (const item of this.getDefaultGroup().allGroupsAndEntries()) {
+            if (item instanceof KdbxEntry) {
+                processEntry(item);
+                for (const historyEntry of item.history) {
+                    processEntry(historyEntry);
                 }
             }
         }

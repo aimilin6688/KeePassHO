@@ -2,10 +2,15 @@ import { Kdbx } from './kdbx';
 import { KdbxContext } from './kdbx-context';
 import { KdbxCredentials } from './kdbx-credentials';
 import { KdbxHeader } from './kdbx-header';
-import { KdbxBinary, KdbxBinaryWithHash } from './kdbx-binaries';
+import {
+    KdbxBinary,
+    KdbxBinaryDiskRef,
+    KdbxBinaryWithHash
+} from './kdbx-binaries';
 import { ProtectedValue } from '../crypto/protected-value';
 import { KdbxError } from '../errors/kdbx-error';
 import { CrsAlgorithm, ErrorCodes } from '../defs/consts';
+import { AttachmentStore } from '../utils/attachment-store';
 import { BinaryStream } from '../utils/binary-stream';
 import {
     arrayToBuffer,
@@ -20,10 +25,15 @@ const SNAPSHOT_MAGIC_0 = 0x4b; // 'K'
 const SNAPSHOT_MAGIC_1 = 0x50; // 'P'
 const SNAPSHOT_MAGIC_2 = 0x53; // 'S'
 const SNAPSHOT_MAGIC_3 = 0x4e; // 'N'
-const SNAPSHOT_VERSION = 1;
+const SNAPSHOT_VERSION_1 = 1;
+const SNAPSHOT_VERSION_2 = 2;
+const SNAPSHOT_VERSION = SNAPSHOT_VERSION_2;
 const FIXED_HEADER_LENGTH = 18;
 const HASH_LENGTH = 32;
 const POOL_ENTRY_HEADER_LENGTH = 4 + 1 + HASH_LENGTH;
+const FLAG_PROTECTED = 1;
+/** v2：池条目为磁盘引用，只携带 hash+长度，不携带附件字节（P7 治理） */
+const FLAG_STORE_REF = 2;
 
 /**
  * KPSN binary snapshot: in-memory transfer format for passing a database
@@ -31,7 +41,7 @@ const POOL_ENTRY_HEADER_LENGTH = 4 + 1 + HASH_LENGTH;
  *
  * Layout (all integers little-endian):
  *   [0..4)    magic 'KPSN'
- *   [4..6)    format version (uint16)
+ *   [4..6)    format version (uint16, 1 or 2)
  *   [6..10)   header length (uint32)
  *   [10..14)  xml length (uint32)
  *   [14..18)  pool count (uint32)
@@ -39,7 +49,10 @@ const POOL_ENTRY_HEADER_LENGTH = 4 + 1 + HASH_LENGTH;
  *   xml blob: entry tree, attachments as refs only, protected values
  *             as ProtectedInMemPlainXml plaintext (same as saveXml)
  *   pool entries (ordered, index = binary ref):
- *     uint32 dataLength, uint8 flags (bit0 = protected), 32B sha256, data
+ *     uint32 dataLength, uint8 flags, 32B sha256, data
+ *     flags bit0 = protected
+ *     flags bit1 = storeRef (v2): 附件字节留在加密缓存中，
+ *       dataLength 为附件字节长度，条目不携带 data
  */
 export class KdbxSnapshot {
     static isSnapshot(data: ArrayBuffer): boolean {
@@ -82,12 +95,12 @@ export class KdbxSnapshot {
             const xmlData = arrayToBuffer(stringToBytes(xml));
 
             const pool = kdbx.binaries.getAllWithHashes();
-            const payloads: ArrayBuffer[] = [];
+            const payloads: Array<ArrayBuffer | undefined> = [];
             let totalLength = FIXED_HEADER_LENGTH + headerData.byteLength + xmlData.byteLength;
             for (const item of pool) {
-                const payload = KdbxSnapshot.getPoolPayload(item.value);
+                const payload = KdbxSnapshot.getPoolPayload(item.value, kdbx.binaries.store);
                 payloads.push(payload);
-                totalLength += POOL_ENTRY_HEADER_LENGTH + payload.byteLength;
+                totalLength += POOL_ENTRY_HEADER_LENGTH + (payload ? payload.byteLength : 0);
             }
 
             const out = new ArrayBuffer(totalLength);
@@ -115,22 +128,39 @@ export class KdbxSnapshot {
                 if (hashBytes.length !== HASH_LENGTH) {
                     throw new KdbxError(ErrorCodes.FileCorrupt, 'bad binary hash');
                 }
+                const value = pool[i].value;
                 const payload = payloads[i];
-                view.setUint32(pos, payload.byteLength, true);
+                let flags = 0;
+                let dataLength: number;
+                if (payload === undefined) {
+                    // 磁盘引用条目（v2）：不携带附件字节
+                    flags |= FLAG_STORE_REF;
+                    dataLength = (value as KdbxBinaryDiskRef).byteLength;
+                } else {
+                    dataLength = payload.byteLength;
+                }
+                if (value instanceof ProtectedValue) {
+                    flags |= FLAG_PROTECTED;
+                } else if (value instanceof KdbxBinaryDiskRef && value.isProtected) {
+                    flags |= FLAG_PROTECTED;
+                }
+                view.setUint32(pos, dataLength, true);
                 pos += 4;
-                view.setUint8(pos, pool[i].value instanceof ProtectedValue ? 1 : 0);
+                view.setUint8(pos, flags);
                 pos += 1;
                 bytes.set(hashBytes, pos);
                 pos += HASH_LENGTH;
-                bytes.set(new Uint8Array(payload), pos);
-                pos += payload.byteLength;
+                if (payload !== undefined) {
+                    bytes.set(new Uint8Array(payload), pos);
+                    pos += payload.byteLength;
+                }
             }
             return out;
         });
     }
 
     static load(data: ArrayBuffer, credentials: KdbxCredentials,
-        maxDecompressedBytes?: number): Promise<Kdbx> {
+        maxDecompressedBytes?: number, attachmentStore?: AttachmentStore): Promise<Kdbx> {
         if (!KdbxSnapshot.isSnapshot(data)) {
             return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'data'));
         }
@@ -139,13 +169,14 @@ export class KdbxSnapshot {
         }
         const kdbx = new Kdbx();
         kdbx.credentials = credentials;
+        kdbx.binaries.store = attachmentStore;
         const ctx = new KdbxContext({ kdbx });
         return kdbx.credentials.ready.then(() => {
             try {
                 const stm = new BinaryStream(data);
                 stm.readBytes(4);
                 const version = stm.getUint16(true);
-                if (version !== SNAPSHOT_VERSION) {
+                if (version !== SNAPSHOT_VERSION_1 && version !== SNAPSHOT_VERSION_2) {
                     throw new KdbxError(ErrorCodes.InvalidVersion, 'bad snapshot version');
                 }
                 const headerLength = stm.getUint32(true);
@@ -178,10 +209,26 @@ export class KdbxSnapshot {
                     const dataLength = stm.getUint32(true);
                     const flags = stm.getUint8();
                     const hashBytes = stm.readBytes(HASH_LENGTH);
-                    const payload = stm.readBytes(dataLength);
-                    const value: KdbxBinary =
-                        (flags & 1) === 1 ? ProtectedValue.fromBinary(payload) : payload;
-                    pool.push({ hash: bytesToHex(hashBytes), value });
+                    const hash = bytesToHex(hashBytes);
+                    let value: KdbxBinary;
+                    if ((flags & FLAG_STORE_REF) !== 0) {
+                        // v2 磁盘引用：附件字节留在加密缓存，仅在内存保留元信息
+                        if (!attachmentStore) {
+                            throw new KdbxError(
+                                ErrorCodes.InvalidState,
+                                'snapshot has disk-ref attachments but no attachment store'
+                            );
+                        }
+                        value = new KdbxBinaryDiskRef(
+                            hash, dataLength, (flags & FLAG_PROTECTED) !== 0
+                        );
+                    } else {
+                        const payload = stm.readBytes(dataLength);
+                        value = (flags & FLAG_PROTECTED) !== 0
+                            ? ProtectedValue.fromBinary(payload)
+                            : payload;
+                    }
+                    pool.push({ hash, value });
                 }
                 kdbx.binaries.importPool(pool);
 
@@ -200,7 +247,25 @@ export class KdbxSnapshot {
         });
     }
 
-    private static getPoolPayload(value: KdbxBinary): ArrayBuffer {
+    /**
+     * 计算池条目载荷：
+     * - 磁盘引用且 store 可用 → undefined（条目只携带 hash+长度）
+     * - 磁盘引用但 store 缺失 → 拒绝（无法恢复字节）
+     * - 其余 → 序列化字节
+     */
+    private static getPoolPayload(
+        value: KdbxBinary,
+        store: AttachmentStore | undefined
+    ): ArrayBuffer | undefined {
+        if (value instanceof KdbxBinaryDiskRef) {
+            if (!store) {
+                throw new KdbxError(
+                    ErrorCodes.InvalidState,
+                    'disk-ref attachments require an attachment store'
+                );
+            }
+            return undefined;
+        }
         if (value instanceof ProtectedValue) {
             return arrayToBuffer(value.getBinary());
         }

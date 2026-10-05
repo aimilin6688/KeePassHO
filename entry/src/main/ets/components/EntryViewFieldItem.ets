@@ -28,17 +28,21 @@ export class FieldView {
   fileSizeStr: string = '';
   isImageFile: boolean = false;
 
-  constructor(key: string, value: string, isProtected: boolean, isCopy: boolean, binaryFile?: ArrayBuffer) {
+  constructor(key: string, value: string, isProtected: boolean, isCopy: boolean,
+    binaryFile?: ArrayBuffer, fileSize?: number) {
     this.key = key;
     this.value = value;
     this.isProtected = isProtected;
     this.isCopy = isCopy;
     this.showPlanText = !this.isProtected;
-    this.isDownload = binaryFile !== undefined;
+    // 磁盘引用附件：binaryFile 延迟异步回读，先用 fileSize 占位展示
+    this.isDownload = binaryFile !== undefined || fileSize !== undefined;
     this.binaryFile = binaryFile;
     this.isImageFile = this.isDownload && FilenameUtils.isImage(key);
-    if(binaryFile){
+    if (binaryFile) {
       this.fileSizeStr = StringUtils.formatFileSize(binaryFile.byteLength);
+    } else if (fileSize !== undefined) {
+      this.fileSizeStr = StringUtils.formatFileSize(fileSize);
     }
     // TOTP类型
     if (KdbxUtils.isTotpUrl(value)) {
@@ -64,6 +68,8 @@ export struct EntryViewFieldItem {
     builder: ImageViewerDialog({
       binaryFile: this.field?.binaryFile ?? null,
       binaryFileName: this.field?.key ?? '',
+      // 磁盘引用附件异步回读：弹窗打开时才读取当前内容
+      binaryFileProvider: () => this.field?.binaryFile ?? null
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,

@@ -1,8 +1,8 @@
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
-import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, NavigationManager } from '../common/utils';
+import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryDiskRef, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
+import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, NavigationManager, StringUtils } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
@@ -12,7 +12,7 @@ import { common } from '@kit.AbilityKit';
 import { OtpExtractionResult } from '../services/otp';
 import { EventBus } from '../services/EventBus';
 import { SessionManager } from '../services/SessionManager';
-import { emitter } from '@kit.BasicServicesKit';
+import { BusinessError, emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryView';
@@ -244,11 +244,34 @@ export struct EntryView {
     else if (binary instanceof ArrayBuffer) {
       this.fields.push(new FieldView(key, "", false, false, binary));
     }
+    // 磁盘引用（S4 附件磁盘化）：先用元信息占位，内容异步回读
+    else if (binary instanceof KdbxBinaryDiskRef) {
+      const fieldView = new FieldView(key, "", false, false, undefined, binary.byteLength);
+      this.fields.push(fieldView);
+      this.fillDiskRefBinary(fieldView, binary);
+    }
     // hash 值
     else if (KdbxBinaries.isKdbxBinaryWithHash(binary)) {
       let binaryHash: KdbxBinaryWithHash = binary as KdbxBinaryWithHash;
       this.addBinary(key, binaryHash.value);
     }
+  }
+
+  /**
+   * 异步回读磁盘引用附件内容并填充字段（FieldView 为 @Observed，赋值即刷新）
+   */
+  private fillDiskRefBinary(fieldView: FieldView, ref: KdbxBinaryDiskRef) {
+    const database = FileService.getDatabase();
+    if (!database) {
+      return;
+    }
+    database.binaries.readDiskRef(ref).then((bytes: ArrayBuffer) => {
+      fieldView.binaryFile = bytes;
+      fieldView.fileSizeStr = StringUtils.formatFileSize(bytes.byteLength);
+    }).catch((error: BusinessError) => {
+      hilog.error(DOMAIN, TAG, 'read disk-ref attachment failed: %{public}s', `${error?.message ?? error}`);
+      CommonUtils.showToast({ message: $r("app.string.invalid_binary_file"), duration: 2000 });
+    });
   }
 
   /**

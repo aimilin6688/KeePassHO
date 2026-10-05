@@ -6,6 +6,7 @@ import { KdbxError } from '../errors/kdbx-error';
 import { BinaryStream } from '../utils/binary-stream';
 import { KdbxContext } from './kdbx-context';
 import { KdbxHeader } from './kdbx-header';
+import { AttachmentStore } from '../utils/attachment-store';
 import {
     arrayBufferEquals,
     arrayToBuffer,
@@ -33,6 +34,12 @@ export class KdbxFormat {
      * 防止超大 XML 的 DOM/字符串放大导致 OOM；undefined 表示不检查
      */
     maxDecompressedBytes: number | undefined = undefined;
+    /**
+     * S4 附件磁盘化阈值（字节）：v4 加载完成后附件池总量达到该值时，
+     * 附件字节转入 binaries.store 加密缓存，内存仅保留哈希引用。
+     * undefined / 0 表示禁用（纯内存模式）。store 未设置时同样禁用。
+     */
+    attachmentsDiskThreshold: number | undefined = undefined;
 
     constructor(kdbx: Kdbx) {
         this.kdbx = kdbx;
@@ -168,9 +175,11 @@ export class KdbxFormat {
                         const xmlStr = bytesToString(data);
                         this.kdbx.xml = XmlUtils.parse(xmlStr);
                         return this.setProtectedValues().then(() => {
-                            return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
+                            return this.kdbx.loadFromXml(this.ctx).then(() =>
+                                this.postLoadBinaries()
+                            ).then(() => {
                                 this.cleanXml();
-                                return kdbx;
+                                return this.kdbx;
                             });
                         });
                     });
@@ -211,9 +220,11 @@ export class KdbxFormat {
                             const xmlStr = bytesToString(data);
                             this.kdbx.xml = XmlUtils.parse(xmlStr);
                             return this.setProtectedValues().then(() => {
-                                return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
+                                return this.kdbx.loadFromXml(this.ctx).then(() =>
+                                    this.postLoadBinaries()
+                                ).then(() => {
                                     this.cleanXml();
-                                    return kdbx;
+                                    return this.kdbx;
                                 });
                             });
                         });
@@ -281,9 +292,11 @@ export class KdbxFormat {
                                 const xmlStr = bytesToString(data);
                                 this.kdbx.xml = XmlUtils.parse(xmlStr);
                                 return this.setProtectedValues().then(() => {
-                                    return this.kdbx.loadFromXml(this.ctx).then((kdbx) => {
+                                    return this.kdbx.loadFromXml(this.ctx).then(() =>
+                                        this.postLoadBinaries()
+                                    ).then(() => {
                                         this.cleanXml();
-                                        return kdbx;
+                                        return this.kdbx;
                                     });
                                 });
                             });
@@ -306,6 +319,24 @@ export class KdbxFormat {
         }
     }
 
+    /**
+     * S4 附件磁盘化：v4 加载完成后按阈值把附件池转入加密缓存。
+     * store 未设置 / 阈值未配置 / v3 时为 no-op（小库零行为差异）。
+     * 磁盘已存在同哈希附件时直接复用缓存，不重复加密写盘。
+     */
+    private postLoadBinaries(): Promise<void> {
+        const threshold = this.attachmentsDiskThreshold;
+        if (!this.kdbx.binaries.store || !threshold || this.kdbx.versionMajor < 4) {
+            return Promise.resolve();
+        }
+        return this.kdbx.binaries.maybeConvertToDiskRefs(threshold).then((converted) => {
+            if (converted) {
+                // entry.binaries 仍持有旧共享值，替换为磁盘引用后内存附件才可被 GC
+                this.kdbx.rebindEntryBinaries();
+            }
+        });
+    }
+
     loadXml(xmlStr: string): Promise<Kdbx> {
         return this.kdbx.credentials.ready.then(() => {
             this.kdbx.header = KdbxHeader.create();
@@ -324,7 +355,11 @@ export class KdbxFormat {
             this.kdbx.header.generateSalts();
             this.kdbx.header.write(stm);
             if (this.kdbx.versionMajor === 3) {
-                return this.saveV3(stm);
+                // v3 附件池内联写入 Meta，磁盘引用必须先物化回内存
+                return this.kdbx.binaries.materializeDiskRefs().then(() => {
+                    this.kdbx.rebindEntryBinaries();
+                    return this.saveV3(stm);
+                });
             } else if (this.kdbx.versionMajor === 4) {
                 return this.saveV4(stm);
             } else {
@@ -368,29 +403,33 @@ export class KdbxFormat {
                         XmlUtils.updateProtectedValuesSalt(this.kdbx.xml.documentElement, gen);
                         const xml = XmlUtils.serialize(this.kdbx.xml);
                         const innerHeaderStm = new BinaryStream();
-                        this.kdbx.header.writeInnerHeader(innerHeaderStm, this.ctx);
-                        const innerHeaderData = innerHeaderStm.getWrittenBytes();
-                        const xmlData = arrayToBuffer(stringToBytes(xml));
-                        let data = new ArrayBuffer(innerHeaderData.byteLength + xmlData.byteLength);
-                        const dataArr = new Uint8Array(data);
-                        dataArr.set(new Uint8Array(innerHeaderData));
-                        dataArr.set(new Uint8Array(xmlData), innerHeaderData.byteLength);
-                        zeroBuffer(xmlData);
-                        zeroBuffer(innerHeaderData);
-                        if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
-                            const date = new Date().getTime();
-                            data = arrayToBuffer(gzip(new Uint8Array(data)));
-                            console.log("kdbx gzip time: " + (new Date().getTime() - date) + "ms");
-                        }
-                        return this.encryptData(arrayToBuffer(data), keys.cipherKey).then(
-                            (data) => {
-                                zeroBuffer(keys.cipherKey);
-                                return HmacBlockTransform.encrypt(data, keys.hmacKey).then(
+                        // 磁盘引用附件在此从加密缓存按需读回后写出
+                        return this.kdbx.header.writeInnerHeader(innerHeaderStm, this.ctx).then(
+                            () => {
+                                const innerHeaderData = innerHeaderStm.getWrittenBytes();
+                                const xmlData = arrayToBuffer(stringToBytes(xml));
+                                let data = new ArrayBuffer(innerHeaderData.byteLength + xmlData.byteLength);
+                                const dataArr = new Uint8Array(data);
+                                dataArr.set(new Uint8Array(innerHeaderData));
+                                dataArr.set(new Uint8Array(xmlData), innerHeaderData.byteLength);
+                                zeroBuffer(xmlData);
+                                zeroBuffer(innerHeaderData);
+                                if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
+                                    const date = new Date().getTime();
+                                    data = arrayToBuffer(gzip(new Uint8Array(data)));
+                                    console.log("kdbx gzip time: " + (new Date().getTime() - date) + "ms");
+                                }
+                                return this.encryptData(arrayToBuffer(data), keys.cipherKey).then(
                                     (data) => {
-                                        this.cleanXml();
-                                        zeroBuffer(keys.hmacKey);
-                                        stm.writeBytes(data);
-                                        return stm.getWrittenBytes();
+                                        zeroBuffer(keys.cipherKey);
+                                        return HmacBlockTransform.encrypt(data, keys.hmacKey).then(
+                                            (data) => {
+                                                this.cleanXml();
+                                                zeroBuffer(keys.hmacKey);
+                                                stm.writeBytes(data);
+                                                return stm.getWrittenBytes();
+                                            }
+                                        );
                                     }
                                 );
                             }
@@ -403,17 +442,25 @@ export class KdbxFormat {
 
     saveXml(prettyPrint = false, writeBinaries=true): Promise<string> {
         return this.kdbx.credentials.ready.then(() => {
-            this.kdbx.header.generateSalts();
-            this.ctx.exportXml = writeBinaries;
-            this.kdbx.buildXml(this.ctx);
-            if (!this.kdbx.xml) {
-                throw new KdbxError(ErrorCodes.InvalidState, 'no xml');
-            }
-            XmlUtils.unprotectValues(this.kdbx.xml.documentElement);
-            const xml = XmlUtils.serialize(this.kdbx.xml, prettyPrint);
-            XmlUtils.protectUnprotectedValues(this.kdbx.xml.documentElement);
-            this.cleanXml();
-            return xml;
+            // 导出 XML 时附件池以 base64 内联写入 Meta，磁盘引用必须先物化
+            const prepare = writeBinaries
+                ? this.kdbx.binaries.materializeDiskRefs().then(() => {
+                    this.kdbx.rebindEntryBinaries();
+                })
+                : Promise.resolve();
+            return prepare.then(() => {
+                this.kdbx.header.generateSalts();
+                this.ctx.exportXml = writeBinaries;
+                this.kdbx.buildXml(this.ctx);
+                if (!this.kdbx.xml) {
+                    throw new KdbxError(ErrorCodes.InvalidState, 'no xml');
+                }
+                XmlUtils.unprotectValues(this.kdbx.xml.documentElement);
+                const xml = XmlUtils.serialize(this.kdbx.xml, prettyPrint);
+                XmlUtils.protectUnprotectedValues(this.kdbx.xml.documentElement);
+                this.cleanXml();
+                return xml;
+            });
         });
     }
 

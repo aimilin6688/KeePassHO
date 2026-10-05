@@ -22,6 +22,11 @@ export struct ImageViewerDialog {
   @State dialogWidth: string | number = '100%'; // 弹框宽度
   binaryFile: ArrayBuffer | null = null;
   binaryFileName: string = '';
+  /**
+   * 附件内容延迟提供者（S4 磁盘引用附件异步回读场景）：
+   * 弹窗打开时才取值，binaryFile 为空时兜底调用
+   */
+  binaryFileProvider: (() => ArrayBuffer | null) | null = null;
   controller: CustomDialogController;
   private windowHelper: DialogWindowHelper = new DialogWindowHelper();
   private initialScale: number = 1.0;
@@ -55,7 +60,10 @@ export struct ImageViewerDialog {
    * ArrayBuffer → Base64 Data URI
    */
   private async convertToDataUri() {
-    if (!this.binaryFile || this.binaryFile.byteLength <= 0) {
+    // 磁盘引用附件：打开时经 provider 读取最新内容（构造期 binaryFile 可能为空）
+    const binaryFile = this.binaryFile ??
+      (this.binaryFileProvider ? this.binaryFileProvider() : null);
+    if (!binaryFile || binaryFile.byteLength <= 0) {
       this.isLoading = false;
       this.errorMessage = '无效的图片数据';
       return;
@@ -65,7 +73,7 @@ export struct ImageViewerDialog {
       const mimeType = CommonUtils.getMimeTypeFromExtension(this.binaryFileName) || 'image/jpeg';
 
       const base64Helper = new util.Base64Helper();
-      const uint8Array = new Uint8Array(this.binaryFile as ArrayBuffer);
+      const uint8Array = new Uint8Array(binaryFile as ArrayBuffer);
       const base64Str: string = base64Helper.encodeToStringSync(uint8Array);
       this.imageDataUri = `data:${mimeType};base64,${base64Str}`;
     } catch (error) {
