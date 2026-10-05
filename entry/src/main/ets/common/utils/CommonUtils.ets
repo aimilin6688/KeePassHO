@@ -31,6 +31,14 @@ export class CommonUtils {
   }
 
   /**
+   * 供测试清除 Context（模拟 Worker 线程无 Context 环境）
+   * @internal
+   */
+  public static clearContextForTest(): void {
+    CommonUtils.context = null;
+  }
+
+  /**
    * 注入 Worker 线程可用的沙箱路径（由主线程在 Worker 启动时调用；
    * Worker 线程内 CommonUtils.context 恒为 null，只能依赖注入值）
    */
