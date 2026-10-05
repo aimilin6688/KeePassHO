@@ -26,6 +26,11 @@ export class KdbxFormat {
     readonly ctx: KdbxContext;
 
     preserveXml = false;
+    /**
+     * CP2' 模型守卫上限（字节）：解压后载荷超过该值时中止加载，
+     * 防止超大 XML 的 DOM/字符串放大导致 OOM；undefined 表示不检查
+     */
+    maxDecompressedBytes: number | undefined = undefined;
 
     constructor(kdbx: Kdbx) {
         this.kdbx = kdbx;
@@ -51,6 +56,7 @@ export class KdbxFormat {
 
     private loadV3(stm: BinaryStream): Promise<Kdbx> {
         return this.decryptXmlV3(stm).then((xmlStr) => {
+            KdbxFormat.assertDecompressedLimit(xmlStr.length * 2, this.maxDecompressedBytes);
             this.kdbx.xml = XmlUtils.parse(xmlStr);
             return this.setProtectedValues().then(() => {
                 return this.kdbx.loadFromXml(this.ctx).then(() => {
@@ -85,6 +91,8 @@ export class KdbxFormat {
                                     data = arrayToBuffer(ungzip(new Uint8Array(data)));
                                     console.log("kdbx gunzip time: " + (new Date().getTime() - date) + "ms");
                                 }
+                                KdbxFormat.assertDecompressedLimit(
+                                    (data as ArrayBuffer).byteLength, this.maxDecompressedBytes);
                                 stm = new BinaryStream(arrayToBuffer(data));
                                 this.kdbx.header.readInnerHeader(stm, this.ctx);
                                 data = stm.readBytesToEnd();
@@ -102,6 +110,18 @@ export class KdbxFormat {
                 });
             });
         });
+    }
+
+    /**
+     * CP2' 模型守卫：解压后载荷超过上限时抛错中止，避免进入 DOM/字符串放大阶段
+     */
+    private static assertDecompressedLimit(payloadBytes: number, maxDecompressedBytes: number | undefined): void {
+        if (maxDecompressedBytes !== undefined && payloadBytes > maxDecompressedBytes) {
+            throw new KdbxError(
+                ErrorCodes.DecompressedTooLarge,
+                `decompressed payload ${payloadBytes} exceeds limit ${maxDecompressedBytes}`
+            );
+        }
     }
 
     loadXml(xmlStr: string): Promise<Kdbx> {

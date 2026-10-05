@@ -2,7 +2,7 @@ import { FileInfo, FileType, IFileStorage, PageConfig, WriteOption } from '../in
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
-import { StorageError, StorageErrorCodes } from '../StorageError';
+import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
 import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;
@@ -106,6 +106,10 @@ export class WebDAVStorage implements IFileStorage {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
+    }
+    // CP-UP：整缓冲上传超过 http 栈上限必然失败，提前拒绝并给出明确原因
+    if (data.byteLength > HTTP_UPLOAD_MAX_BYTES) {
+      throw new StorageError(StorageErrorCodes.UPLOAD_TOO_LARGE, `${data.byteLength} bytes`);
     }
     const expectedVersion: string | null = option?.expectedVersion ?? null;
     try {

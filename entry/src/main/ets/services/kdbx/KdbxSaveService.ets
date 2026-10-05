@@ -26,6 +26,11 @@ const TAG = 'KdbxSaveService';
  */
 export default class KdbxSaveService {
   private static databaseWorker: worker.ThreadWorker | null = null;
+  /**
+   * 保存互斥链：串行化所有保存请求，防止并发保存时上一个 Worker 被半途 terminate
+   * 导致非原子存储写入残缺文件（设计文档 P4）
+   */
+  private static saveLock: Promise<void> = Promise.resolve();
 
   /**
    * 保存数据库
@@ -40,7 +45,6 @@ export default class KdbxSaveService {
       KdbxSaveService.reloadFromRemote(callback);
       return;
     }
-    // 启用保存线程，保存数据库
     const dbFileParam = FileService.getDbFileParam();
     if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null');
@@ -50,13 +54,32 @@ export default class KdbxSaveService {
       return;
     }
 
-    const saveDatabaseReq = new SaveDatabaseMessage(dbFileParam.database, dbFileParam, strategy);
-    const callbackWarp = KdbxSaveService.callbackWarp(callback);
-    if (Constants.ASYNC_SAVE_DATABASE) {
-      KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp);
-    } else {
-      new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq);
-    }
+    // 保存请求进入互斥链排队：锁内取最新模型构造请求（合并成功会替换模型实例），
+    // 锁在前一次保存终态（成功/失败/冲突）后释放
+    KdbxSaveService.saveLock = KdbxSaveService.saveLock.then(() => {
+      return new Promise<void>((resolve: () => void) => {
+        const currentParam = FileService.getDbFileParam();
+        if (!currentParam.database) {
+          hilog.error(DOMAIN, TAG, 'Database is null in save lock');
+          if (callback && callback.onError) {
+            callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
+          }
+          resolve();
+          return;
+        }
+        const saveDatabaseReq = new SaveDatabaseMessage(currentParam.database, currentParam, strategy);
+        const callbackWarp = KdbxSaveService.callbackWarp(callback, resolve);
+        if (Constants.ASYNC_SAVE_DATABASE) {
+          KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp, resolve);
+        } else {
+          new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq)
+            .catch((error: Error) => {
+              hilog.error(DOMAIN, TAG, 'Save database rejected: %{public}s', error?.message);
+              callbackWarp.onError?.(error?.message ?? 'save failed');
+            });
+        }
+      });
+    });
   }
 
   /**
@@ -190,9 +213,11 @@ export default class KdbxSaveService {
    * 异步方式 - 保存数据库
    * @param req
    * @param callback
+   * @param release 保存互斥锁释放函数（终态回调，异常路径必须调用，否则后续保存永久排队）
    */
-  static async saveDatabaseAsync(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback) {
-    // 释放之前的异步线程
+  static async saveDatabaseAsync(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
+    release?: () => void) {
+    // 释放之前的异步线程（互斥锁保证此时上一个 Worker 已空闲，terminate 仅做清理）
     if (KdbxSaveService.databaseWorker) {
       try {
         KdbxSaveService.databaseWorker.terminate();
@@ -203,8 +228,18 @@ export default class KdbxSaveService {
       hilog.info(DOMAIN, TAG, 'Database save worker terminated');
     }
 
-    req.data = await KdbxUtils.kdbxToArrayBuffer(req.data);
-    KdbxSaveService.saveDatabaseWorker(req, callback);
+    try {
+      req.data = await KdbxUtils.kdbxToArrayBuffer(req.data);
+      KdbxSaveService.saveDatabaseWorker(req, callback, release);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Save database serialize error: %{public}s', error?.message);
+      if (callback && callback.onError) {
+        callback.onError(error?.message ?? 'save failed');
+      } else {
+        CommonUtils.showToast(error?.message ?? 'save failed');
+      }
+      release?.();
+    }
   }
 
   /**
@@ -212,17 +247,20 @@ export default class KdbxSaveService {
    * @param savedDb
    * @param dbFileParam
    */
-  private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback): void {
+  private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
+    release?: () => void): void {
     KdbxSaveService.databaseWorker = DatabaseWorkerFactory.createSaveWorker();
     try {
       KdbxSaveService.databaseWorker.postMessage(req, [req.data as ArrayBuffer]);
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Save database worker error: %{public}s', err.message);
+      KdbxSaveService.databaseWorker = null;
       if (callback && callback.onError) {
         callback.onError(err.message);
       } else {
         CommonUtils.showToast(err.message);
       }
+      release?.();
       return;
     }
     // work 线程中执行
@@ -258,23 +296,28 @@ export default class KdbxSaveService {
       if (callback && callback.onError) {
         callback.onError(err.message);
       }
+      release?.();
     }
   }
 
-  static callbackWarp(callback?: SaveDatabaseCallback): SaveDatabaseCallback {
+  static callbackWarp(callback?: SaveDatabaseCallback, release?: () => void): SaveDatabaseCallback {
     return {
       onSuccess: (message: SuccessMessage) => {
-        KdbxSaveService.handleSuccess(message, callback);
+        KdbxSaveService.handleSuccess(message, callback, release);
       },
-      onError: callback?.onError,
+      onError: (message: string) => {
+        callback?.onError?.(message);
+        release?.();
+      },
       onMessage: callback?.onMessage,
       onConflict: (message: ConflictMessage) => {
         KdbxSaveService.handleConflict(message, callback);
+        release?.();
       }
     }
   }
 
-  static handleSuccess(message: SuccessMessage, callback?: SaveDatabaseCallback) {
+  static handleSuccess(message: SuccessMessage, callback?: SaveDatabaseCallback, release?: () => void) {
     // 数据库保存成功：更新版本基线（modifiedTime + version + contentHash），供下次保存做冲突检测
     const dbFileParam = FileService.getDbFileParam();
     dbFileParam.modifiedTime = message.modifiedTime;
@@ -289,6 +332,7 @@ export default class KdbxSaveService {
         if (callback && callback.onSuccess) {
           callback.onSuccess(message);
         }
+        release?.();
       }).catch((error: Error) => {
         hilog.error(DOMAIN, TAG, 'Save database error: %{public}s, %{public}s', error?.message, error?.stack);
         if (callback && callback.onError) {
@@ -296,12 +340,14 @@ export default class KdbxSaveService {
         } else {
           CommonUtils.showToast(error.message);
         }
+        release?.();
       });
     } else {
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
       if (callback && callback.onSuccess) {
         callback.onSuccess(message);
       }
+      release?.();
     }
   }
 

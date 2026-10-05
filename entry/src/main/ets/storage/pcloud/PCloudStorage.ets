@@ -1,6 +1,6 @@
 import { IFileStorage, FileInfo, FileType } from '../IFileStorage';
 import { StorageConfig, PageConfig } from '../StorageConfig';
-import { StorageError, StorageErrorCodes } from '../StorageError';
+import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
 import { PCloudClient, PCloudMetadata, PCloudError } from './PCloudClient';
 import { PCloudStorageConfig, PCloudPageConfig } from './PCloudConfig';
 
@@ -48,6 +48,11 @@ export class PCloudStorage implements IFileStorage {
   async write(path: string, content: ArrayBuffer): Promise<void> {
     this.ensureReady();
     this.config!.touchActive();
+
+    // CP-UP：整缓冲上传超过 http 栈上限必然失败，提前拒绝并给出明确原因
+    if (content.byteLength > HTTP_UPLOAD_MAX_BYTES) {
+      throw new StorageError(StorageErrorCodes.UPLOAD_TOO_LARGE, `${content.byteLength} bytes`);
+    }
 
     // path 格式: "d{folderId}/{fileName}"
     const lastSlash = path.lastIndexOf('/');

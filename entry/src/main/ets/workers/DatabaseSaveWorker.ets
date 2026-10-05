@@ -1,9 +1,10 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ConflictMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { ConflictMessage, InitWorkerMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { DatabaseSave } from './DatabaseSave';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
+import { CacheConstants } from '../storage/cache/CacheConstants';
 import { CommonUtils } from '../common/utils';
 
 const DOMAIN = 0x0000;
@@ -16,6 +17,13 @@ if (workerPort) {
   workerPort.onmessage = (event: MessageEvents) => {
     const message = event.data as WorkerMessage;
     hilog.debug(DOMAIN, TAG, 'Save worker receive message type:%{public}s', message.type);
+    if (message.type === MessageType.INIT_WORKER) {
+      // 注入主线程沙箱路径与缓存策略快照：Worker 线程无 Context/AppStorage/preferences
+      const init = message as InitWorkerMessage;
+      CommonUtils.setWorkerPaths(init.filesDir, init.cacheDir);
+      CacheConstants.setWorkerCachePolicy(init.enableLocalCache, init.onlyUseCache, init.forceRefresh);
+      return;
+    }
     if (message.type === MessageType.SAVE_DATABASE) {
       const request = message as SaveDatabaseMessage;
       new DatabaseSaveWorker().handleSaveDatabase(request);

@@ -9,6 +9,9 @@ const TAG = 'CommonUtils';
 export class CommonUtils {
   private static context: common.UIAbilityContext | null = null;
   private static uiContext: UIContext | undefined = undefined;
+  // Worker 线程注入的应用沙箱路径（Actor 模型：Worker 无 Context，跨线程仅能传字符串）
+  private static injectedAppFilesDir: string = '';
+  private static injectedCacheDir: string = '';
 
   /**
    * 初始化主题管理器
@@ -25,6 +28,51 @@ export class CommonUtils {
    */
   public static getContext(): common.UIAbilityContext {
     return CommonUtils.context as common.UIAbilityContext;
+  }
+
+  /**
+   * 注入 Worker 线程可用的沙箱路径（由主线程在 Worker 启动时调用；
+   * Worker 线程内 CommonUtils.context 恒为 null，只能依赖注入值）
+   */
+  public static setWorkerPaths(appFilesDir: string, cacheDir: string): void {
+    CommonUtils.injectedAppFilesDir = appFilesDir;
+    CommonUtils.injectedCacheDir = cacheDir;
+  }
+
+  /**
+   * 应用级文件目录（ApplicationContext.filesDir）
+   * 主线程取自 Context；Worker 线程取注入值
+   */
+  public static getAppFilesDir(): string {
+    const ctx = CommonUtils.context;
+    if (ctx !== null) {
+      return ctx.getApplicationContext().filesDir;
+    }
+    return CommonUtils.injectedAppFilesDir;
+  }
+
+  /**
+   * 应用缓存目录（UIAbilityContext.cacheDir）
+   * 主线程取自 Context；Worker 线程取注入值
+   */
+  public static getCacheDir(): string {
+    const ctx = CommonUtils.context;
+    if (ctx !== null) {
+      return ctx.cacheDir;
+    }
+    return CommonUtils.injectedCacheDir;
+  }
+
+  /**
+   * 供 FTPClient 等以 any 接收 Context 的三方库使用的上下文对象：
+   * 主线程返回应用 Context；Worker 线程返回仅含 cacheDir 的等价替身
+   */
+  public static getStorageContext(): common.UIAbilityContext | StorageContextStub {
+    const ctx = CommonUtils.context;
+    if (ctx !== null) {
+      return ctx;
+    }
+    return new StorageContextStub(CommonUtils.injectedCacheDir);
   }
 
   public static getUiContext(): UIContext {
@@ -255,4 +303,16 @@ export class CommonUtils {
 export interface ConfirmCallback {
   onCancel?: () => void;
   onConfirm?: () => void;
+}
+
+/**
+ * Worker 线程的存储层上下文替身：仅携带 cacheDir 路径字符串，
+ * 供只读 cacheDir 属性的三方库（如 basic-ftp 的 FTPClient）在无 Context 的 Worker 中使用
+ */
+export class StorageContextStub {
+  readonly cacheDir: string;
+
+  constructor(cacheDir: string) {
+    this.cacheDir = cacheDir;
+  }
 }

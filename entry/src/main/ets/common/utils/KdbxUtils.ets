@@ -16,6 +16,8 @@ import {
 import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
+import { DatabaseLoadGuard } from '../../services/kdbx/DatabaseLoadGuard';
+import { StorageError, StorageErrorCodes } from '../../storage/StorageError';
 import { SortMode } from '../constants/SortConstants';
 import { IconUtils, ResourceManager, StringUtils } from '.';
 import { OtpCompatibilityManager, OtpExtractionResult } from '../../services/otp';
@@ -314,7 +316,11 @@ export class KdbxUtils {
     if (kdbx instanceof ArrayBuffer) {
       return Promise.resolve(kdbx);
     }
-    return kdbx.saveSnapshot();
+    const startTime = Date.now();
+    return kdbx.saveSnapshot().then((buffer: ArrayBuffer) => {
+      hilog.info(DOMAIN, TAG, 'kdbx to array buffer (KPSN serialize) time: %{public}d ms', Date.now() - startTime);
+      return buffer;
+    });
   }
 
   /**
@@ -331,13 +337,15 @@ export class KdbxUtils {
     if (credentials == undefined) {
       credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
     }
+    // CP2'：解压后载荷上限（进程内缓存，跨线程各自探测一次）
+    const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
     // KPSN 快照（跨线程边界格式）：魔数分发，免解密直接还原模型
     if (KdbxSnapshot.isSnapshot(arrayBuffer)) {
-      return Kdbx.loadSnapshot(arrayBuffer, credentials);
+      return Kdbx.loadSnapshot(arrayBuffer, credentials, { maxDecompressedBytes: maxDecompressedBytes });
     }
     // 尝试用 Kdbx.load() 加载加密的二进制格式
     try {
-      return await Kdbx.load(arrayBuffer, credentials);
+      return await Kdbx.load(arrayBuffer, credentials, { maxDecompressedBytes: maxDecompressedBytes });
     } catch (error) {
       hilog.error(DOMAIN, TAG, `arrayBufferToKdbx error: ${error?.message}, stack: ${error?.stack}`);
       return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
@@ -726,6 +734,11 @@ export class KdbxUtils {
       return $r('app.string.network_error').id;
     }
 
+    // CP-UP：整缓冲上传超限（明确拒绝而非交给 http 栈报 2300023）
+    if (kdbxError instanceof StorageError && kdbxError.code === StorageErrorCodes.UPLOAD_TOO_LARGE) {
+      return $r('app.string.storage_upload_too_large').id;
+    }
+
     if (!(kdbxError instanceof KdbxError)) {
       return kdbxError.message || kdbxError.toString();
     }
@@ -748,6 +761,9 @@ export class KdbxUtils {
         return $r('app.string.kdbx_error_InvalidKey').id;
       case Consts.ErrorCodes.InvalidState:
         return $r('app.string.kdbx_error_InvalidState').id;
+      case Consts.ErrorCodes.DecompressedTooLarge:
+        // CP2'：解压后载荷超限，拒绝加载防止 OOM
+        return $r('app.string.database_decompressed_too_large').id;
     }
     return kdbxError.message || kdbxError.toString();
   }

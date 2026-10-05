@@ -5,6 +5,7 @@ import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
 import { LoadMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
 import { KdbxUtils, HashUtils } from '../common/utils';
 
@@ -26,9 +27,11 @@ export class DatabaseLoad {
       // 加载文件内容
       let fileContent: FileContentInfo = await this.loadKdbxFileContent(request);
       this.postMessage('validating', callback?.onLoadMessage);
-      // 加载数据库
+      // 加载数据库（CP2'：限制解压后载荷大小，防止超大库 OOM）
+      const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
       let logTime = Date.now();
-      let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
+      let kdbx: Kdbx = await Kdbx.load(fileContent.content, credentials,
+        { maxDecompressedBytes: maxDecompressedBytes });
       hilog.debug(DOMAIN, TAG, "Load database cost time: %{public}d ms", Date.now() - logTime);
 
       this.postMessage('loading_complete', callback?.onLoadMessage);
@@ -52,6 +55,12 @@ export class DatabaseLoad {
     if (!request.filePath) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
       throw new Error();
+    }
+    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名，由统一错误链路本地化
+    const rejectReason: string | null = await DatabaseLoadGuard.checkBeforeRead(
+      request.storageType, request.storageConfig, request.filePath);
+    if (rejectReason !== null) {
+      throw new Error(rejectReason);
     }
     let result = await new KdbxFileManager(request.storageType, request.storageConfig).read(request.filePath);
     this.postMessage('load_file_success');
