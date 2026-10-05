@@ -21,6 +21,10 @@ export class HashUtils {
    * @returns 十六进制小写哈希字符串
    */
   public static sha256Hex(data: ArrayBuffer): string {
+    // 空 ArrayBuffer：cryptoFramework 不支持空 update，返回已知空 SHA256
+    if (data.byteLength === 0) {
+      return 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    }
     const md: cryptoFramework.Md = cryptoFramework.createMd('SHA256');
     md.updateSync({ data: new Uint8Array(data) });
     const digest: cryptoFramework.DataBlob = md.digestSync();
@@ -43,6 +47,10 @@ export class HashUtils {
       const chunkSize: number = HashUtils.FILE_HASH_CHUNK_SIZE;
       const buffer: ArrayBuffer = new ArrayBuffer(chunkSize);
       let remaining: number = totalSize;
+      // 空文件：cryptoFramework 不支持空 update，直接返回已知空 SHA256
+      if (totalSize === 0) {
+        return 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+      }
       while (remaining > 0) {
         const readLen: number = Math.min(chunkSize, remaining);
         const bytesRead = await fs.read(file.fd, buffer, { length: readLen });

@@ -34,6 +34,14 @@ import SFTPStorageRealFileTest from './storage/sftp/SFTPStorageRealFile.test';
 // 数据库加载/保存双模式单元测试（同步模式 / Worker 异步模式）
 import DatabaseSyncModeTest from './workers/DatabaseSyncMode.test';
 import DatabaseWorkerModeTest from './workers/DatabaseWorkerMode.test';
+import WorkerEnvironmentInjectionTest from './workers/WorkerEnvironmentInjection.test';
+import DatabaseLoadGuardTest from './services/DatabaseLoadGuard.test';
+import HashUtilsFileTest from './utils/HashUtilsFile.test';
+import FileTransferTest from './storage/FileTransfer.test';
+import LocalStorageStreamingTest from './storage/LocalStorageStreaming.test';
+import CacheStorageStreamingTest from './storage/CacheStorageStreaming.test';
+import KdbxErrorPayloadTest from './kdbx/KdbxErrorPayload.test';
+import UploadTooLargeGuardTest from './storage/UploadTooLargeGuard.test';
 
 // KPSN 二进制快照协议单元测试（跨线程传输格式编解码）
 import KdbxSnapshotTest from './kdbx/KdbxSnapshot.test';
@@ -98,6 +106,30 @@ export default function testsuite() {
   DatabaseSyncModeTest();
   // 数据库加载/保存双模式测试（异步模式：真实 ThreadWorker 消息链路 + 边界序列化）
   DatabaseWorkerModeTest();
+
+  // Worker 环境注入机制测试（INIT_WORKER 消息 + 路径/缓存策略快照）
+  WorkerEnvironmentInjectionTest();
+
+  // 数据库加载守卫测试（CP1 文件大小 / CP-DISK 磁盘余量 / CP2' 解压上限）
+  DatabaseLoadGuardTest();
+
+  // 流式文件哈希测试（sha256HexFile 增量分块 vs 整缓冲一致性）
+  HashUtilsFileTest();
+
+  // FileTransfer 默认实现测试（整缓冲包装 + 文件读写助手）
+  FileTransferTest();
+
+  // LocalStorage 流式传输测试（readToFile/writeFromFile 原子写）
+  LocalStorageStreamingTest();
+
+  // CacheStorage 流式委托测试（readToFile/writeFromFile 委托 + only-cache 模式）
+  CacheStorageStreamingTest();
+
+  // kdbxErrorPayload 新增映射测试（DecompressedTooLarge + UPLOAD_TOO_LARGE）
+  KdbxErrorPayloadTest();
+
+  // CP-UP 上传上限守卫测试
+  UploadTooLargeGuardTest();
 
   // KPSN 二进制快照协议测试（saveSnapshot/loadSnapshot 编解码 + 三格式分发）
   KdbxSnapshotTest();

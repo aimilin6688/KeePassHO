@@ -3,6 +3,7 @@ import ChaCha20Test from './crypto/chacha20.test';
 import CryptoEngineTest from './crypto/crypto-engine.test';
 import HashedBlockTransformTest from './crypto/hashed-block-transform.test';
 import HmacBlockTransformTest from './crypto/hmac-block-transform.test';
+import StreamingCryptoTest from './crypto/streaming-crypto.test';
 import KeyEncryptorAesTest from './crypto/key-encryptor-aes.test';
 import KeyEncryptorKdfTest from './crypto/key-encryptor-kdf.test';
 import ProtectSaltGeneratorTest from './crypto/protected-salt-generator.test';
@@ -14,6 +15,7 @@ import KdbxErrorTest from './errors/kdbx-error.test';
 
 import KdbxMergeTest from './format/kdbx.merge.test';
 import KdbxTest from './format/kdbx.test';
+import KdbxLoadFromFileTest from './format/kdbx-load-from-file.test';
 import KdbxBinariesTest from './format/kdbx-binaries.test';
 import KdbxCredentialsTest from './format/kdbx-credentials.test';
 import KdbxCustomDataTest from './format/kdbx-custom-data.test';
@@ -37,6 +39,7 @@ export default function testsuite() {
   CryptoEngineTest();
   HashedBlockTransformTest();
   HmacBlockTransformTest();
+  StreamingCryptoTest();
   KeyEncryptorAesTest();
   KeyEncryptorKdfTest();
   ProtectSaltGeneratorTest();
@@ -49,6 +52,7 @@ export default function testsuite() {
   // ------- format tests ----------------
   KdbxMergeTest();
   KdbxTest();
+  KdbxLoadFromFileTest();
   KdbxBinariesTest();
   KdbxCredentialsTest();
   KdbxCustomDataTest();
