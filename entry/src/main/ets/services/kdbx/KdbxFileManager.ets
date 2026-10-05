@@ -4,7 +4,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import {ResourceManager} from '../../common/utils';
 import { LocationInfo } from '../beans/LocationParam';
 
-
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';
 
@@ -82,6 +81,45 @@ export class KdbxFileManager {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to save KDBX file: %{public}s', error.message)
       // 原样上抛，保留 StorageError 的错误码（如 VERSION_CONFLICT）供编排层识别
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      throw new Error(error.message);
+    }
+  }
+
+  /**
+   * 流式读取文件到本地目标路径（分块下载/复制，避免整缓冲驻留内存）
+   * @param path 远端文件路径
+   * @param destPath 本地目标文件路径（调用方负责生命周期）
+   * @return Promise<FileInfo> 远端文件信息（含 version）
+   * @throws 如果读取失败则抛出异常
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    try {
+      return await this.storage.readToFile(path, destPath);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to readToFile KDBX: %{public}s', error.message)
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      throw new Error(error.message);
+    }
+  }
+
+  /**
+   * 流式从本地源文件写入远端（分块上传/复制，避免整缓冲驻留内存）
+   * @param path 远端文件路径
+   * @param srcPath 本地源文件路径
+   * @param option 写入选项，支持条件写入
+   * @return Promise<FileInfo> 写入后的远端文件信息
+   * @throws 如果写入失败则抛出异常
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    try {
+      return await this.storage.writeFromFile(path, srcPath, option);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to writeFromFile KDBX: %{public}s', error.message)
       if (error instanceof StorageError) {
         throw error;
       }

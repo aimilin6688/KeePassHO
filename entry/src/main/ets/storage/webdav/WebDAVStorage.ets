@@ -3,6 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
+import { FileTransfer } from '../FileTransfer';
 import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;
@@ -150,6 +151,42 @@ export class WebDAVStorage implements IFileStorage {
         path, expectedVersion, currentVersion);
       throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'WebDAV file version changed');
     }
+  }
+
+  /**
+   * 流式下载到本地文件（rcp.downloadToFile，响应体不驻留内存，修 P8/P9）
+   * @param path 远端路径
+   * @param destPath 本地目标路径
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED,
+        ResourceManager.getString($r('app.string.webdav_not_init')));
+    }
+    try {
+      const result: ResultInfo = await this.client.downloadToFile(path, destPath);
+      if (!result.success) {
+        throw new StorageError(StorageErrorCodes.FILE_READ_ERROR,
+          `${result.message}(${result.statusCode})`);
+      }
+      // 下载完成后取远端 FileInfo（含 ETag 作为 version）
+      return await this.getInfo(path);
+    } catch (error) {
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      hilog.error(DOMAIN, TAG, 'WebDAV readToFile error:%{public}s', error.message);
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
+    }
+  }
+
+  /**
+   * 流式从本地文件上传（WebDAV PUT 整缓冲，受 CP-UP 100MB 上限约束）
+   * 超大文件需分块上传通道（rcps 调研项，见设计文档 §3.2），当前走默认整缓冲实现
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
   }
 
   /**

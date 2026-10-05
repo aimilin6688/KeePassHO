@@ -1,7 +1,8 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OneDriveClient, OneDriveClientOptions } from './OneDriveClient';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
+import { FileTransfer } from '../FileTransfer';
 import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
@@ -149,6 +150,20 @@ export class OneDriveStorage implements IFileStorage {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to update token in preferences: %{public}s', (error as Error).message);
     }
+  }
+
+  /**
+   * 流式下载到本地文件（OneDrive 当前走默认整缓冲；requestInStream 流式下载为 S7 调研项）
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    return FileTransfer.readToFileDefault(this, path, destPath);
+  }
+
+  /**
+   * 流式从本地文件上传（OneDrive Graph upload session 分片上传为 S7 新增项，当前走默认整缓冲）
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
   }
 
   /**

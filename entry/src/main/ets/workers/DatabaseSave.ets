@@ -1,14 +1,17 @@
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
 import { FileContentInfo, WriteOption } from '../storage';
+import { FileTransfer } from '../storage/FileTransfer';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { StorageError, StorageErrorCodes } from '../storage/StorageError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ConflictMessage, SuccessMessage } from './WorkerParam';
 import { ConflictStrategy, SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
-import { HashUtils, KdbxUtils, ResourceManager } from '../common/utils';
+import { CommonUtils, HashUtils, KdbxUtils, ResourceManager } from '../common/utils';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
+import { FileInfo } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseSave';
@@ -33,9 +36,13 @@ export class DatabaseSave {
 
   /**
    * 处理数据库保存任务
+   * S3：远端读取改为流式 readToFile 到临时文件 + 增量 sha256 冲突检测，
+   * 远端未变时整条链路不持有远端内容（修 P9 内存峰值）
    * @param requestMessage 请求
    */
   public async handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
+    // 远端临时文件（ciphertext，可放 cacheDir；finally 清理）
+    const tempPath: string = CommonUtils.getCacheDir() + '/save_remote_' + Date.now() + '.tmp';
     try {
       const request = new SaveDatabase(JSON.parse(requestMessage.dbFileParam) as SaveDatabaseDbParam, requestMessage);
       this.postMessage('loading_key');
@@ -44,13 +51,23 @@ export class DatabaseSave {
       const strategy: string = request.conflictStrategy ?? ConflictStrategy.AUTO;
       let retryCount = 0;
       while (true) {
-        // 加载远端文件内容（每次重试都重新读取，拿到最新事实）
-        const fileContent: FileContentInfo = await this.loadKdbxFileContent(request);
-        const remoteChanged = await DatabaseSave.isRemoteChanged(request, fileContent);
+        // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名
+        const rejectReason: string | null = await DatabaseLoadGuard.checkBeforeRead(
+          request.storageType, request.storageConfig, request.filePath);
+        if (rejectReason !== null) {
+          throw new Error(rejectReason);
+        }
+        // 流式下载到临时文件（不驻留整缓冲，修 P9）
+        const fileInfo: FileInfo = await new KdbxFileManager(request.storageType, request.storageConfig)
+          .readToFile(request.filePath, tempPath);
+        this.postMessage('load_file_success');
+        // 流式增量 sha256（分块喂入，不驻留整缓冲）
+        const remoteHash: string = await HashUtils.sha256HexFile(tempPath);
+        const remoteChanged: boolean = DatabaseSave.isRemoteChanged(request, fileInfo, remoteHash);
         if (!remoteChanged) {
-          // 远端未变：直接保存，条件写入防竞态
+          // 远端未变：直接保存，远端内容不入内存
           const savedDb: ArrayBuffer = await this.buildSavedContent(request, credentials);
-          await this.writeContent(request, savedDb, fileContent.version ?? null);
+          await this.writeContent(request, savedDb, fileInfo.version ?? null);
           await this.postSuccess(request, savedDb, false);
           return;
         }
@@ -63,14 +80,15 @@ export class DatabaseSave {
         }
         if (strategy === ConflictStrategy.AUTO) {
           // 检测到冲突：通知上层（弹框让用户选择），本次不保存
-          this.postConflictMessage(new ConflictMessage(fileContent.modifiedTime, fileContent.version ?? null));
+          this.postConflictMessage(new ConflictMessage(fileInfo.modifiedTime, fileInfo.version ?? null));
           return;
         }
-        // MERGE：合并远端修改后条件写入，写入时版本再变则有界重试
-        const mergedModel: Kdbx = await this.mergeDatabase(request, fileContent, credentials);
+        // MERGE：从临时文件读入内存（S4 前仍整缓冲）→ Kdbx.load → 合并 → 写入
+        const remoteContent: ArrayBuffer = await FileTransfer.readFileToBuffer(tempPath);
+        const mergedModel: Kdbx = await this.mergeDatabase(request, remoteContent, credentials);
         const mergedDb: ArrayBuffer = await this.buildSavedContent(request, credentials, mergedModel);
         try {
-          await this.writeContent(request, mergedDb, fileContent.version ?? null);
+          await this.writeContent(request, mergedDb, fileInfo.version ?? null);
         } catch (error) {
           if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT
             && retryCount < DatabaseSave.MAX_CONFLICT_RETRY) {
@@ -94,52 +112,37 @@ export class DatabaseSave {
       } else {
         this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error));
       }
+    } finally {
+      // 清理远端临时文件（ciphertext，用完即删）
+      try {
+        await fs.unlink(tempPath);
+      } catch {
+        // 文件不存在或清理失败：忽略
+      }
     }
   }
 
   /**
    * 判定远端文件是否已被修改（双基线）
    * 基线A：存储原生版本串（快速路径，可能为 null）
-   * 基线B：内容 SHA256（最终裁判，永远执行）
+   * 基线B：内容 SHA256（最终裁判，永远执行；S3 起由调用方流式计算后传入）
    * @param request 请求
-   * @param fileContent 当前远端文件内容
+   * @param fileInfo 远端文件信息（含 version）
+   * @param remoteHash 远端内容 SHA256（已由调用方流式计算）
    */
-  private static async isRemoteChanged(request: SaveDatabase, fileContent: FileContentInfo): Promise<boolean> {
-    const remoteHash: string = await HashUtils.sha256Hex(fileContent.content);
+  private static isRemoteChanged(request: SaveDatabase, fileInfo: FileInfo, remoteHash: string): boolean {
     const baseHash: string | null = request.baseContentHash ?? null;
     if (baseHash !== null && remoteHash !== baseHash) {
       hilog.info(DOMAIN, TAG, 'Remote content changed: hash mismatch');
       return true;
     }
     const expectedVersion: string | null = request.expectedVersion ?? null;
-    const remoteVersion: string | null = fileContent.version ?? null;
+    const remoteVersion: string | null = fileInfo.version ?? null;
     if (expectedVersion !== null && remoteVersion !== null && expectedVersion !== remoteVersion) {
       hilog.info(DOMAIN, TAG, 'Remote version changed: %{public}s -> %{public}s', expectedVersion, remoteVersion);
       return true;
     }
     return false;
-  }
-
-  /**
-   * 加载文件内容
-   * @param request 请求
-   * @return Promise<FileContentInfo> 文件内容
-   * @throws Error 加载失败
-   */
-  private async loadKdbxFileContent(request: SaveDatabase): Promise<FileContentInfo> {
-    if (!request.filePath) {
-      hilog.error(DOMAIN, TAG, 'Worker error saving database: file path is empty');
-      throw new Error();
-    }
-    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名，由统一错误链路本地化
-    const rejectReason: string | null = await DatabaseLoadGuard.checkBeforeRead(
-      request.storageType, request.storageConfig, request.filePath);
-    if (rejectReason !== null) {
-      throw new Error(rejectReason);
-    }
-    const result = await new KdbxFileManager(request.storageType, request.storageConfig).read(request.filePath);
-    this.postMessage('load_file_success');
-    return result;
   }
 
   /**
@@ -177,14 +180,20 @@ export class DatabaseSave {
    * @param request 请求
    * @param fileContent 远端文件内容
    * @param credentials 凭证
+  /**
+   * 合并数据库：远端修改合并进本地后返回合并模型（由调用方加密保存）
+   * S3 起远端内容由调用方从临时文件读入后传入（S4 流式解密前仍整缓冲）
+   * @param request 请求
+   * @param remoteContent 远端文件内容（ArrayBuffer）
+   * @param credentials 凭证
    * @throws Error 合并失败（远端凭证变更时 Kdbx.load 抛出 InvalidKey）
    */
-  private async mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo,
+  private async mergeDatabase(request: SaveDatabase, remoteContent: ArrayBuffer,
     credentials: KdbxCredentials): Promise<Kdbx> {
     this.postMessage('validating');
     // 尝试加载远端数据库（远端凭证已变更时抛出 InvalidKey，由上层统一转为用户提示）
     const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
-    const remoteKdbx: Kdbx = await Kdbx.load(fileContent.content, credentials,
+    const remoteKdbx: Kdbx = await Kdbx.load(remoteContent, credentials,
       { maxDecompressedBytes: maxDecompressedBytes });
     this.postMessage('merging_database');
     // 合并数据库

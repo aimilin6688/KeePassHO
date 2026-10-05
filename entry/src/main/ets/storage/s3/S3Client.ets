@@ -2,6 +2,7 @@ import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { ByteUtils } from 'kdbxweb';
 import { S3Bucket, S3Object, S3Result, MultipartUploadInit, UploadedPart, MultipartUploadProgress, ProgressCallback, UploadTask, UploadWorkerResult } from './S3Types';
 import { S3SignatureV4 } from './S3SignatureV4';
@@ -1207,6 +1208,107 @@ ${partsXml}
         statusCode: 500,
         message: err.message
       };
+    }
+  }
+
+  /**
+   * 分块 Range GET 下载到本地文件（每块直接落盘，不累积整缓冲，修 P9）
+   * 小文件（≤ chunkSize）退化为单次 getObject 后写文件
+   * @param bucket 桶
+   * @param key 对象 key
+   * @param destPath 本地目标文件路径
+   * @param chunkSize 分块大小（字节），默认 8MB
+   * @param onProgress 进度回调
+   */
+  public async getObjectRangeToFile(
+    bucket: string,
+    key: string,
+    destPath: string,
+    chunkSize: number = S3MultipartConfig.RECOMMENDED_PART_SIZE,
+    onProgress?: ProgressCallback
+  ): Promise<S3Result<void>> {
+    let file: fs.File | null = null;
+    try {
+      // 1. 获取文件大小
+      const headResult = await this.headObject(bucket, key);
+      if (!headResult.success || !headResult.data) {
+        return {
+          success: false,
+          statusCode: headResult.statusCode,
+          message: headResult.message || 'Failed to get object info'
+        };
+      }
+      const totalSize = headResult.data.size;
+
+      // 2. 打开目标文件（创建/截断），逐块 Range GET 追加写入
+      file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      let downloadedBytes = 0;
+
+      if (totalSize <= chunkSize) {
+        // 小文件：单次下载整缓冲后写文件
+        const getResult = await this.getObject(bucket, key);
+        if (!getResult.success || !getResult.data) {
+          return { success: false, statusCode: getResult.statusCode, message: getResult.message };
+        }
+        await fs.write(file.fd, getResult.data);
+        downloadedBytes = totalSize;
+      } else {
+        const totalChunks = Math.ceil(totalSize / chunkSize);
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+          const start = chunkIndex * chunkSize;
+          const end = Math.min(start + chunkSize - 1, totalSize - 1);
+          const rangeHeader = `bytes=${start}-${end}`;
+
+          const headers = await this.signer.signRequest(
+            'GET',
+            this.options.endpoint,
+            bucket,
+            key,
+            this.options.pathStyle,
+            new Map([['range', rangeHeader]])
+          );
+
+          const url = this.buildUrl(bucket, key);
+          const request = new rcp.Request(url, 'GET', this.headersToRecord(headers));
+          const response = await this.getSession()?.fetch(request);
+
+          if (!response || response.statusCode < 200 || response.statusCode >= 300 || !response.body) {
+            return {
+              success: false,
+              statusCode: response?.statusCode || 500,
+              message: `Failed to download chunk ${chunkIndex + 1}`
+            };
+          }
+
+          await fs.write(file.fd, response.body);
+          downloadedBytes += response.body.byteLength;
+
+          if (onProgress) {
+            const progress: MultipartUploadProgress = {
+              uploadedBytes: downloadedBytes,
+              totalBytes: totalSize,
+              currentPart: chunkIndex + 1,
+              totalParts: totalChunks
+            };
+            onProgress(progress);
+          }
+        }
+      }
+
+      await fs.fsync(file.fd);
+      return { success: true, statusCode: 200 };
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'getObjectRangeToFile error: %{public}s', err.message);
+      return { success: false, statusCode: 500, message: err.message };
+    } finally {
+      if (file !== null) {
+        try {
+          await fs.close(file.fd);
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 }

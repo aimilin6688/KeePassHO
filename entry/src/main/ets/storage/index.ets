@@ -1,5 +1,7 @@
 export * from './IFileStorage';
 
+export * from './FileTransfer';
+
 export * from './StorageType';
 
 export * from './FileStorageFactory';

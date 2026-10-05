@@ -1,6 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
 import { StorageError, StorageErrorCodes } from '../StorageError';
+import { FileTransfer } from '../FileTransfer';
 import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
 import { ProgressCallback, MultipartUploadProgress } from './S3Types';
@@ -158,6 +159,35 @@ export class S3Storage implements IFileStorage {
 
       return result.data;
     }
+  }
+
+  /**
+   * 流式下载到本地文件（Range GET 循环直写文件，不累积整缓冲，修 P9）
+   */
+  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    if (!this.client) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
+    }
+    const pathResult: S3PathResult = this.parsePath(path);
+    const result = await this.client.getObjectRangeToFile(
+      pathResult.bucket,
+      pathResult.key,
+      destPath,
+      S3MultipartConfig.RECOMMENDED_PART_SIZE,
+      this.progressCallback
+    );
+    if (!result.success) {
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message);
+    }
+    return await this.getInfo(path);
+  }
+
+  /**
+   * 流式从本地文件上传（S3 当前走默认整缓冲：multipart upload 已具备但需从文件读入内存）
+   * 真正的从文件分片上传（fileIo 分片 → uploadPart）作为后续优化项
+   */
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
   }
 
   public async write(path: string, content: ArrayBuffer): Promise<void> {

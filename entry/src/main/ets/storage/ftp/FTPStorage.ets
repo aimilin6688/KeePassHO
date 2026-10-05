@@ -285,6 +285,68 @@ export class FTPStorage implements IFileStorage {
   }
 
   /**
+   * 流式下载到本地文件（FTP/SFTP socket 直写文件，不驻留整缓冲，修 P9）
+   * 复用底层 handler.downloadFrom 的文件传输能力（basic-ftp 已具备）
+   */
+  public readToFile(path: string, destPath: string): Promise<FileInfo> {
+    return this.serialize(() => this.readToFileOnce(path, destPath));
+  }
+
+  private async readToFileOnce(path: string, destPath: string): Promise<FileInfo> {
+    try {
+      const fullPath = this.getFullPath(path);
+      const handler = await this.ensureConnected();
+      await handler.downloadFrom(fullPath, destPath);
+      // 直接调 getInfoOnce（已在 serialize 队列内，跳过二次排队避免死锁）
+      return await this.getInfoOnce(path);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      hilog.error(DOMAIN, TAG, `${this.config?.protocol || 'FTP'} readToFile error: ${err.message}`);
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, err.message);
+    }
+  }
+
+  /**
+   * 流式从本地文件上传（FTP/SFTP socket 直读文件，不驻留整缓冲）
+   * 复用底层 handler.uploadFrom 的文件传输能力；条件写入复用 writeOnce 的版本复核逻辑
+   */
+  public writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return this.serialize(() => this.writeFromFileOnce(path, srcPath, option));
+  }
+
+  private async writeFromFileOnce(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    const config = this.config;
+    try {
+      const fullPath = this.getFullPath(path);
+      const handler = await this.ensureConnected();
+      // 条件写入：写前复核远端版本（与 writeOnce 一致）
+      const expectedVersion: string | null = option?.expectedVersion ?? null;
+      if (expectedVersion !== null) {
+        const remoteInfo = await handler.getFileInfo(fullPath);
+        const currentVersion = `${remoteInfo.size}|${remoteInfo.modifiedTime}`;
+        if (currentVersion !== expectedVersion) {
+          hilog.warn(DOMAIN, TAG, 'Version conflict, path: %{public}s, expected: %{public}s, current: %{public}s',
+            fullPath, expectedVersion, currentVersion);
+          throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Remote file version changed');
+        }
+      }
+      await handler.uploadTo(srcPath, fullPath);
+      // 上传后取远端 FileInfo（直接调 getInfoOnce 避免二次排队死锁）
+      return await this.getInfoOnce(path);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      hilog.error(DOMAIN, TAG, `${config?.protocol || 'FTP'} writeFromFile error: ${err.message}`);
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, err.message);
+    }
+  }
+
+  /**
    * 检查文件是否存在
    */
   public exists(path: string): Promise<boolean> {

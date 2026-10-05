@@ -368,6 +368,38 @@ export class WebDavClient {
   }
 
   /**
+   * 流式下载文件到本地路径（rcp.downloadToFile，响应体不驻留内存）
+   * @param path 远端路径
+   * @param destPath 本地目标路径
+   * @returns 结果（含 statusCode/headers，body 为空）
+   */
+  public async downloadToFile(path: string, destPath: string): Promise<ResultInfo> {
+    const requestReturn: ResultInfo = new ResultInfo();
+    if (!this.session) {
+      requestReturn.success = false;
+      requestReturn.statusCode = 500;
+      requestReturn.message = ResourceManager.getString($r("app.string.webdav_not_init"));
+      return requestReturn;
+    }
+    try {
+      const resp = await this.session.downloadToFile(path, { kind: 'file', file: destPath } as rcp.DownloadToFile);
+      requestReturn.statusCode = resp?.statusCode ?? 0;
+      requestReturn.headers = resp?.headers;
+      requestReturn.success = resp !== undefined && resp.statusCode >= 200 && resp.statusCode < 300;
+      if (!requestReturn.success) {
+        requestReturn.message = `Download failed: ${requestReturn.statusCode}`;
+      }
+      return requestReturn;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, "downloadToFile error: %{public}s", error.message);
+      requestReturn.success = false;
+      requestReturn.statusCode = 500;
+      requestReturn.message = error.message;
+      return requestReturn;
+    }
+  }
+
+  /**
    * 认证头字符串
    * @returns
    */
