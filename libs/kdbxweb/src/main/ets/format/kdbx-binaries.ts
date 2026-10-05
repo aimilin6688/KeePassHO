@@ -72,6 +72,15 @@ export class KdbxBinaries {
         this._mapByHash.set(binary.hash, binary.value);
     }
 
+    importPool(pool: KdbxBinaryWithHash[]): void {
+        // imports the binary pool from a KPSN snapshot:
+        // pool index is used as binary ref, hashes are pre-computed
+        for (let i = 0; i < pool.length; i++) {
+            this._mapByHash.set(pool[i].hash, pool[i].value);
+            this._idToHash.set(i.toString(), pool[i].hash);
+        }
+    }
+
     deleteWithHash(hash: string): void {
         this._mapByHash.delete(hash);
     }

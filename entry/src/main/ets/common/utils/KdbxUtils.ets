@@ -9,6 +9,7 @@ import {
   KdbxError,
   KdbxGroup,
   KdbxMeta,
+  KdbxSnapshot,
   KdbxUuid,
   ProtectedValue
 } from 'kdbxweb';
@@ -306,14 +307,14 @@ export class KdbxUtils {
   }
 
   /**
-   * 将对象转换为ArrayBuffer
+   * 将对象转换为ArrayBuffer（KPSN 二进制快照：条目树XML仅含附件Ref + 原始二进制附件池 + 文件头）
    * @param kdbx KDBX对象
    */
   public static async kdbxToArrayBuffer(kdbx: Kdbx | ArrayBuffer): Promise<ArrayBuffer> {
     if (kdbx instanceof ArrayBuffer) {
       return Promise.resolve(kdbx);
     }
-    return Promise.resolve(ByteUtils.stringToBuffer(await kdbx.saveXml()));
+    return kdbx.saveSnapshot();
   }
 
   /**
@@ -329,6 +330,10 @@ export class KdbxUtils {
     }
     if (credentials == undefined) {
       credentials = await CredentialsService.createKdbxCredentials(credentialsParam);
+    }
+    // KPSN 快照（跨线程边界格式）：魔数分发，免解密直接还原模型
+    if (KdbxSnapshot.isSnapshot(arrayBuffer)) {
+      return Kdbx.loadSnapshot(arrayBuffer, credentials);
     }
     // 尝试用 Kdbx.load() 加载加密的二进制格式
     try {

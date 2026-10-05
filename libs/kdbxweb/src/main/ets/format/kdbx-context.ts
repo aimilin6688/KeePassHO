@@ -5,10 +5,12 @@ import { Node } from '@xmldom/xmldom';
 export class KdbxContext {
     readonly kdbx: Kdbx;
     exportXml: boolean;
+    snapshot: boolean;
 
     constructor(opts: { kdbx: Kdbx; exportXml?: boolean }) {
         this.kdbx = opts.kdbx;
         this.exportXml = !!opts.exportXml;
+        this.snapshot = false;
     }
 
     setXmlDate(node: Node, dt: Date | undefined): void {

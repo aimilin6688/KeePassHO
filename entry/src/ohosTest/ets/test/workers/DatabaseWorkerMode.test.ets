@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from '@ohos/hypium';
 import { common } from '@kit.AbilityKit';
 import { worker } from '@kit.ArkTS';
-import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, KdbxSnapshot, ProtectedValue } from 'kdbxweb';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { ConflictStrategy } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
 import { StorageType } from '../../../../main/ets/storage';
@@ -42,12 +42,13 @@ export default function DatabaseWorkerModeTest() {
     });
 
     it('worker boundary serialization roundtrip keeps entries', 0, async () => {
-      // 异步模式的跨线程边界：Kdbx 对象 saveXml 序列化为 ArrayBuffer
+      // 异步模式的跨线程边界：Kdbx 对象序列化为 KPSN 二进制快照 ArrayBuffer
       const buffer: ArrayBuffer = await KdbxUtils.kdbxToArrayBuffer(database);
       expect(buffer instanceof ArrayBuffer).assertTrue();
+      expect(KdbxSnapshot.isSnapshot(buffer)).assertTrue();
       expect(buffer.byteLength > 0).assertTrue();
 
-      // 主线程从 ArrayBuffer 还原为 Kdbx 对象（Kdbx.load 失败时回退 loadXml 路径）
+      // 主线程从 ArrayBuffer 还原为 Kdbx 对象（KPSN 快照直达路径）
       const loadParam = KdbxModeTestHelper.makeLoadParam(dbPath, 'db-worker-mode-test.kdbx',
         KdbxModeTestHelper.DB_PASSWORD);
       const restored: Kdbx = await KdbxUtils.arrayBufferToKdbx(buffer, loadParam);
@@ -68,9 +69,10 @@ export default function DatabaseWorkerModeTest() {
         const message: WorkerMessage = await pending;
         expect(message.type).assertEqual(MessageType.SUCCESS);
 
-        // 异步模式：data 为跨线程传输的 ArrayBuffer（XML），非 Kdbx 引用
+        // 异步模式：data 为跨线程传输的 KPSN 快照 ArrayBuffer，非 Kdbx 引用
         const success = message as SuccessMessage;
         expect(success.data instanceof ArrayBuffer).assertTrue();
+        expect(KdbxSnapshot.isSnapshot(success.data as ArrayBuffer)).assertTrue();
 
         // 还原后条目完整
         const restored: Kdbx = await KdbxUtils.arrayBufferToKdbx(success.data as ArrayBuffer, loadParam);
@@ -78,6 +80,8 @@ export default function DatabaseWorkerModeTest() {
         expect(titles.includes('worker-base-entry')).assertTrue();
         // 内容哈希基线随消息回传
         expect(success.contentHash).assertEqual(baseHash);
+        // 非合并保存不附带合并模型快照
+        expect(success.snapshot).assertUndefined();
       } finally {
         w.terminate();
       }
@@ -117,6 +121,8 @@ export default function DatabaseWorkerModeTest() {
         expect(message.type).assertEqual(MessageType.SUCCESS);
         const success = message as SuccessMessage;
         expect(success.isMerge).assertFalse();
+        // 非合并保存不附带合并模型快照
+        expect(success.snapshot).assertUndefined();
         expect((success.version ?? '').includes('|')).assertTrue();
 
         // 文件已被真实写入
@@ -153,6 +159,18 @@ export default function DatabaseWorkerModeTest() {
         expect(message.type).assertEqual(MessageType.SUCCESS);
         const success = message as SuccessMessage;
         expect(success.isMerge).assertTrue();
+
+        // 合并快照回传：isMerge 时附带 KPSN 快照，主线程免解密重解析直接还原合并模型
+        expect(success.snapshot instanceof ArrayBuffer).assertTrue();
+        expect(KdbxSnapshot.isSnapshot(success.snapshot)).assertTrue();
+        if (success.snapshot) {
+          const loadParam = KdbxModeTestHelper.makeLoadParam(dbPath, 'db-worker-mode-test.kdbx',
+            KdbxModeTestHelper.DB_PASSWORD);
+          const mergedModel: Kdbx = await KdbxUtils.arrayBufferToKdbx(success.snapshot, loadParam);
+          const mergedTitles: string[] = KdbxModeTestHelper.collectEntryTitles(mergedModel);
+          expect(mergedTitles.includes('worker-remote-entry')).assertTrue();
+          expect(mergedTitles.includes('worker-merge-entry')).assertTrue();
+        }
 
         // 合并结果已写入文件：双方条目都在
         const fileContent = await fileManager.read(dbPath);

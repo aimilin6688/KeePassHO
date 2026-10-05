@@ -199,8 +199,9 @@ export default function S3StorageIntegrationTest() {
      */
     it('should_use_regular_upload_below_threshold', 0, async () => {
       try {
-        // 4.9MB (just below threshold)
-        const belowThresholdData = new ArrayBuffer(4.9 * 1024 * 1024);
+        // 4.9MB (just below threshold)；ArrayBuffer 构造入参须为整数，取整保证分配与断言一致
+        const belowThresholdSize: number = Math.floor(4.9 * 1024 * 1024);
+        const belowThresholdData = new ArrayBuffer(belowThresholdSize);
         let progressCalled = false;
 
         storage.setProgressCallback((progress: MultipartUploadProgress) => {
@@ -215,7 +216,7 @@ export default function S3StorageIntegrationTest() {
 
         // 验证文件大小
         const result = await storage.read(`/${testBucket}/${testKey}`);
-        expect(result.byteLength).assertEqual(4.9 * 1024 * 1024);
+        expect(result.byteLength).assertEqual(belowThresholdSize);
 
         hilog.info(DOMAIN, TAG, 'Below threshold file test passed');
       } catch (error) {

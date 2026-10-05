@@ -66,7 +66,8 @@ export class DatabaseSave {
           return;
         }
         // MERGE：合并远端修改后条件写入，写入时版本再变则有界重试
-        const mergedDb: ArrayBuffer = await this.mergeDatabase(request, fileContent, credentials);
+        const mergedModel: Kdbx = await this.mergeDatabase(request, fileContent, credentials);
+        const mergedDb: ArrayBuffer = await this.buildSavedContent(request, credentials, mergedModel);
         try {
           await this.writeContent(request, mergedDb, fileContent.version ?? null);
         } catch (error) {
@@ -81,7 +82,7 @@ export class DatabaseSave {
           }
           throw new Error(error.message);
         }
-        await this.postSuccess(request, mergedDb, true);
+        await this.postSuccess(request, mergedDb, true, mergedModel);
         return;
       }
     } catch (error) {
@@ -165,14 +166,14 @@ export class DatabaseSave {
   }
 
   /**
-   * 合并数据库：远端修改合并进本地后构建写入内容
+   * 合并数据库：远端修改合并进本地后返回合并模型（由调用方加密保存）
    * @param request 请求
    * @param fileContent 远端文件内容
    * @param credentials 凭证
    * @throws Error 合并失败（远端凭证变更时 Kdbx.load 抛出 InvalidKey）
    */
   private async mergeDatabase(request: SaveDatabase, fileContent: FileContentInfo,
-    credentials: KdbxCredentials): Promise<ArrayBuffer> {
+    credentials: KdbxCredentials): Promise<Kdbx> {
     this.postMessage('validating');
     // 尝试加载远端数据库（远端凭证已变更时抛出 InvalidKey，由上层统一转为用户提示）
     const remoteKdbx: Kdbx = await Kdbx.load(fileContent.content, credentials);
@@ -180,8 +181,7 @@ export class DatabaseSave {
     // 合并数据库
     const localKdbx: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
     localKdbx.merge(remoteKdbx);
-    // 保存数据库
-    return await this.buildSavedContent(request, credentials, localKdbx);
+    return localKdbx;
   }
 
   /**
@@ -211,14 +211,20 @@ export class DatabaseSave {
    * @param request 请求
    * @param content 写入的数据库内容
    * @param isMerge 是否发生了合并
+   * @param database 合并场景下的合并后模型（随消息以 KPSN 快照回传，主线程免解密重解析）
    */
-  private async postSuccess(request: SaveDatabase, content: ArrayBuffer, isMerge: boolean): Promise<void> {
+  private async postSuccess(request: SaveDatabase, content: ArrayBuffer, isMerge: boolean,
+    database?: Kdbx): Promise<void> {
     const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
     try {
       const fileInfo = await kdbxFileManager.getInfo(request.filePath);
       const contentHash: string = await HashUtils.sha256Hex(content);
-      this.postSuccessMessage(new SuccessMessage(content, fileInfo.modifiedTime, isMerge,
-        fileInfo.version ?? null, contentHash));
+      const message = new SuccessMessage(content, fileInfo.modifiedTime, isMerge,
+        fileInfo.version ?? null, contentHash);
+      if (isMerge && database) {
+        message.snapshot = await database.saveSnapshot();
+      }
+      this.postSuccessMessage(message);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error get file info:%{public}s, stack:%{public}s', error.message, error.stack);
       if (error instanceof Error) {

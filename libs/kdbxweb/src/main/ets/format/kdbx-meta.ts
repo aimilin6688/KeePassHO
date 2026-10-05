@@ -546,7 +546,7 @@ export class KdbxMeta {
         );
         this.writeMemoryProtection(node);
         this.writeCustomIcons(node, ctx);
-        if (ctx.exportXml || ctx.kdbx.versionMajor < 4) {
+        if (!ctx.snapshot && (ctx.exportXml || ctx.kdbx.versionMajor < 4)) {
             this.writeBinaries(node, ctx);
         }
         this.writeCustomData(node, ctx);
