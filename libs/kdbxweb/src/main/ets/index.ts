@@ -17,6 +17,7 @@ import { Kdbx, KdbxEditState } from './format/kdbx';
 import {
     KdbxBinaries,
     KdbxBinary,
+    KdbxBinaryDiskRef,
     KdbxBinaryIn,
     KdbxBinaryOrRef,
     KdbxBinaryRef,
@@ -50,6 +51,7 @@ import { KdbxFieldReference, FieldReference } from './format/kdbx-field-referenc
 
 import { BinaryStream } from './utils/binary-stream';
 import * as ByteUtils from './utils/byte-utils';
+import { AttachmentStore } from './utils/attachment-store';
 import { Int64 } from './utils/int64';
 import { VarDictionary } from './utils/var-dictionary';
 import * as XmlUtils from './utils/xml-utils';
@@ -73,9 +75,11 @@ export {
     KdbxBinaryRef,
     KdbxBinaryRefWithValue,
     KdbxBinaryWithHash,
+    KdbxBinaryDiskRef,
     KdbxBinary,
     KdbxBinaryOrRef,
     KdbxBinaryIn,
+    AttachmentStore,
     KdbxContext,
     KdbxCredentials,
     KdbxCredentials as Credentials,

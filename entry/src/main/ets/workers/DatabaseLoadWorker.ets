@@ -3,6 +3,7 @@ import { Kdbx } from 'kdbxweb';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { CommonUtils, KdbxUtils } from '../common/utils';
+import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { LoadMessage, InitWorkerMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { DatabaseLoad } from './DatabaseLoad';
@@ -22,6 +23,8 @@ if (workerPort) {
       const init = message as InitWorkerMessage;
       CommonUtils.setWorkerPaths(init.filesDir, init.cacheDir);
       CacheConstants.setWorkerCachePolicy(init.enableLocalCache, init.onlyUseCache, init.forceRefresh);
+      // 附件缓存密钥快照（S4 附件磁盘化）：Worker 线程无 Asset Kit 环境
+      AttachmentCacheService.setWorkerKey(init.attachCacheKey);
       return;
     }
     if (message.type === MessageType.LOAD_DATABASE) {

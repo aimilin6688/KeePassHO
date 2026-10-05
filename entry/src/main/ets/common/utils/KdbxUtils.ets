@@ -17,6 +17,7 @@ import { CredentialsService } from '../../services/CredentialsService';
 import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { DatabaseLoadGuard } from '../../services/kdbx/DatabaseLoadGuard';
+import { AttachmentCacheService } from '../../services/kdbx/AttachmentCacheService';
 import { StorageError, StorageErrorCodes } from '../../storage/StorageError';
 import { SortMode } from '../constants/SortConstants';
 import { IconUtils, ResourceManager, StringUtils } from '.';
@@ -341,9 +342,13 @@ export class KdbxUtils {
     const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
     // KPSN 快照（跨线程边界格式）：魔数分发，免解密直接还原模型
     if (KdbxSnapshot.isSnapshot(arrayBuffer)) {
-      return Kdbx.loadSnapshot(arrayBuffer, credentials, { maxDecompressedBytes: maxDecompressedBytes });
+      // v2 快照可能携带磁盘引用附件，主线程 store 必须就绪（不可用时明确报错而非静默损坏）
+      return Kdbx.loadSnapshot(arrayBuffer, credentials, {
+        maxDecompressedBytes: maxDecompressedBytes,
+        attachmentStore: AttachmentCacheService.getStore()
+      });
     }
-    // 尝试用 Kdbx.load() 加载加密的二进制格式
+    // 尝试用 Kdbx.load() 加载加密的二进制格式（合并远端等场景：保持纯内存模式）
     try {
       return await Kdbx.load(arrayBuffer, credentials, { maxDecompressedBytes: maxDecompressedBytes });
     } catch (error) {

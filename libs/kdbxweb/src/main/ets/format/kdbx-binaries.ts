@@ -1,16 +1,41 @@
 import * as CryptoEngine from '../crypto/crypto-engine';
 import { ProtectedValue } from '../crypto/protected-value';
-import { arrayToBuffer, bytesToHex } from '../utils/byte-utils';
+import { ErrorCodes } from '../defs/consts';
+import { KdbxError } from '../errors/kdbx-error';
+import { AttachmentStore } from '../utils/attachment-store';
+import { arrayToBuffer, bytesToHex, zeroBuffer } from '../utils/byte-utils';
 
 export type KdbxBinaryRef = { ref: string };
 export type KdbxBinaryRefWithValue = { ref: string; value: KdbxBinary };
 export type KdbxBinaryWithHash = { hash: string; value: KdbxBinary };
 
-export type KdbxBinary = ProtectedValue | ArrayBuffer;
+/**
+ * 附件磁盘引用（S4 附件磁盘化）：附件字节驻留在 AttachmentStore 加密缓存中，
+ * 内存模型仅保留内容哈希与元信息。
+ */
+export class KdbxBinaryDiskRef {
+    readonly hash: string;
+    readonly byteLength: number;
+    readonly isProtected: boolean;
+
+    constructor(hash: string, byteLength: number, isProtected: boolean) {
+        this.hash = hash;
+        this.byteLength = byteLength;
+        this.isProtected = isProtected;
+    }
+}
+
+export type KdbxBinary = ProtectedValue | ArrayBuffer | KdbxBinaryDiskRef;
 export type KdbxBinaryOrRef = KdbxBinary | KdbxBinaryRef;
 export type KdbxBinaryIn = KdbxBinary | Uint8Array;
 
 export class KdbxBinaries {
+    /**
+     * 附件加密磁盘缓存；未设置时模型保持纯内存模式（小库零行为差异）。
+     * 引用只有经由该 store 才能创建/读取。
+     */
+    store: AttachmentStore | undefined = undefined;
+
     // temporary map used during database loading
     private readonly _mapById = new Map<string, KdbxBinary>();
     // in runtime, entries are addressed by hash
@@ -36,6 +61,8 @@ export class KdbxBinaries {
         let promise;
         if (binary instanceof ProtectedValue) {
             promise = binary.getHash();
+        } else if (binary instanceof KdbxBinaryDiskRef) {
+            promise = Promise.resolve(binary.hash);
         } else {
             binary = arrayToBuffer(binary);
             promise = CryptoEngine.sha256(binary);
@@ -130,5 +157,130 @@ export class KdbxBinaries {
         binary: KdbxBinaryOrRef | KdbxBinaryWithHash | undefined
     ): binary is KdbxBinaryWithHash {
         return !!(binary as KdbxBinaryWithHash)?.hash;
+    }
+
+    hasDiskRefs(): boolean {
+        for (const value of this._mapByHash.values()) {
+            if (value instanceof KdbxBinaryDiskRef) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 附件总字节估算（含 ProtectedValue 盐值开销），用于阈值判断。
+     */
+    private totalMemoryBytes(): number {
+        let total = 0;
+        for (const value of this._mapByHash.values()) {
+            if (value instanceof KdbxBinaryDiskRef) {
+                total += value.byteLength;
+            } else if (value instanceof ProtectedValue) {
+                total += value.value.byteLength + value.salt.byteLength;
+            } else {
+                total += value.byteLength;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * 阈值触发时把附件池转为磁盘引用（S4 附件磁盘化）：
+     * 附件字节写入加密缓存后从内存模型移除，仅保留哈希与元信息。
+     * 缓存命中（磁盘已存在同哈希）直接复用，不重复加密/写盘。
+     * @returns 是否发生了转换
+     */
+    maybeConvertToDiskRefs(thresholdBytes: number): Promise<boolean> {
+        if (!this.store || thresholdBytes <= 0 || this._mapByHash.size === 0) {
+            return Promise.resolve(false);
+        }
+        if (this.totalMemoryBytes() < thresholdBytes) {
+            return Promise.resolve(false);
+        }
+        const entries = [...this._mapByHash];
+        let chain: Promise<void> = Promise.resolve();
+        for (const entry of entries) {
+            const hash = entry[0];
+            const value = entry[1];
+            chain = chain.then(() => {
+                return this.convertOneToDiskRef(hash, value).then((ref) => {
+                    if (ref) {
+                        this._mapByHash.set(hash, ref);
+                    }
+                });
+            });
+        }
+        return chain.then(() => true);
+    }
+
+    private convertOneToDiskRef(
+        hash: string,
+        value: KdbxBinary
+    ): Promise<KdbxBinaryDiskRef | undefined> {
+        const store = this.store;
+        if (!store) {
+            return Promise.resolve(undefined);
+        }
+        if (value instanceof KdbxBinaryDiskRef) {
+            return Promise.resolve(value);
+        }
+        let bytes: ArrayBuffer;
+        let isProtected: boolean;
+        if (value instanceof ProtectedValue) {
+            bytes = arrayToBuffer(value.getBinary());
+            isProtected = true;
+        } else {
+            bytes = value;
+            isProtected = false;
+        }
+        const byteLength = bytes.byteLength;
+        return store.put(hash, bytes).then(() => {
+            if (value instanceof ProtectedValue) {
+                zeroBuffer(bytes);
+            }
+            return new KdbxBinaryDiskRef(hash, byteLength, isProtected);
+        });
+    }
+
+    /**
+     * 把所有磁盘引用物化回内存值（v3 保存 / XML 导出前调用）。
+     */
+    materializeDiskRefs(): Promise<void> {
+        const entries = [...this._mapByHash].filter(
+            (entry) => entry[1] instanceof KdbxBinaryDiskRef
+        );
+        if (entries.length === 0) {
+            return Promise.resolve();
+        }
+        let chain: Promise<void> = Promise.resolve();
+        for (const entry of entries) {
+            const hash = entry[0];
+            const ref = entry[1] as KdbxBinaryDiskRef;
+            chain = chain.then(() => {
+                return this.readDiskRef(ref).then((bytes) => {
+                    const value: KdbxBinary = ref.isProtected
+                        ? ProtectedValue.fromBinary(bytes)
+                        : bytes;
+                    this._mapByHash.set(hash, value);
+                });
+            });
+        }
+        return chain;
+    }
+
+    /**
+     * 从加密缓存读取一个磁盘引用的附件内容。
+     */
+    readDiskRef(ref: KdbxBinaryDiskRef): Promise<ArrayBuffer> {
+        if (!this.store) {
+            return Promise.reject(
+                new KdbxError(
+                    ErrorCodes.InvalidState,
+                    'disk-ref attachments require an attachment store'
+                )
+            );
+        }
+        return this.store.get(ref.hash);
     }
 }

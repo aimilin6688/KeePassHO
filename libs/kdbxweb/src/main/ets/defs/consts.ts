@@ -14,7 +14,8 @@ export const ErrorCodes = {
     InvalidKey: 'InvalidKey',
     MergeError: 'MergeError',
     InvalidState: 'InvalidState',
-    DecompressedTooLarge: 'DecompressedTooLarge'
+    DecompressedTooLarge: 'DecompressedTooLarge',
+    AttachmentStoreError: 'AttachmentStoreError'
 } as const;
 
 export const CompressionAlgorithm = {

@@ -31,6 +31,13 @@ export class CommonUtils {
   }
 
   /**
+   * 当前线程是否持有 Context（主线程 true；Worker 线程 false）
+   */
+  public static hasContext(): boolean {
+    return CommonUtils.context !== null;
+  }
+
+  /**
    * 供测试清除 Context（模拟 Worker 线程无 Context 环境）
    * @internal
    */

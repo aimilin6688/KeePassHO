@@ -6,6 +6,7 @@ import { DatabaseSave } from './DatabaseSave';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { CommonUtils } from '../common/utils';
+import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseSaveWorker';
@@ -22,6 +23,8 @@ if (workerPort) {
       const init = message as InitWorkerMessage;
       CommonUtils.setWorkerPaths(init.filesDir, init.cacheDir);
       CacheConstants.setWorkerCachePolicy(init.enableLocalCache, init.onlyUseCache, init.forceRefresh);
+      // 附件缓存密钥快照（S4 附件磁盘化）：Worker 线程无 Asset Kit 环境
+      AttachmentCacheService.setWorkerKey(init.attachCacheKey);
       return;
     }
     if (message.type === MessageType.SAVE_DATABASE) {

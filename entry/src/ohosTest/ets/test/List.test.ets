@@ -46,6 +46,10 @@ import UploadTooLargeGuardTest from './storage/UploadTooLargeGuard.test';
 // KPSN 二进制快照协议单元测试（跨线程传输格式编解码）
 import KdbxSnapshotTest from './kdbx/KdbxSnapshot.test';
 
+// S4 附件磁盘化单元测试（加密磁盘缓存 / 阈值转换 / 快照 v2 / v3 兼容）
+import AttachmentDiskRefTest from './kdbx/AttachmentDiskRef.test';
+import AttachmentCacheServiceTest from './services/AttachmentCacheService.test';
+
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
 import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
@@ -133,6 +137,12 @@ export default function testsuite() {
 
   // KPSN 二进制快照协议测试（saveSnapshot/loadSnapshot 编解码 + 三格式分发）
   KdbxSnapshotTest();
+
+  // S4 附件磁盘化测试（AttachmentStore 缓存 / 阈值转换 / save/快照/导出保真）
+  AttachmentDiskRefTest();
+
+  // S4 附件缓存服务测试（Asset Kit 密钥 / Worker 注入 / 优雅降级）
+  AttachmentCacheServiceTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();

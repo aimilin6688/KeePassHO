@@ -7,7 +7,7 @@ import { Int64 } from './int64';
 import { KdbxUuid } from '../format/kdbx-uuid';
 import { ProtectedValue } from '../crypto/protected-value';
 import { ProtectSaltGenerator } from '../crypto/protect-salt-generator';
-import { KdbxBinaries, KdbxBinaryOrRef } from '../format/kdbx-binaries';
+import { KdbxBinaries, KdbxBinaryDiskRef, KdbxBinaryOrRef } from '../format/kdbx-binaries';
 import { Document, DOMParser, DOMParserOptions, Element, Node, XMLSerializer } from '@xmldom/xmldom';
 
 
@@ -292,6 +292,9 @@ export function setProtectedBinary(node: Node, binary: KdbxBinaryOrRef): void {
     (<Element> node).setAttribute(XmlNames.Attr.Protected, 'True');
   } else if (KdbxBinaries.isKdbxBinaryRef(binary)) {
     (<Element> node).setAttribute(XmlNames.Attr.Ref, binary.ref);
+  } else if (binary instanceof KdbxBinaryDiskRef) {
+    // 磁盘引用必须先物化（save/saveXml 已保证），到达此处说明上游遗漏
+    throw new KdbxError(ErrorCodes.InvalidState, 'disk binary ref must be materialized before xml write');
   } else {
     setBytes(node, binary);
   }

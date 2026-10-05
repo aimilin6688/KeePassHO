@@ -8,6 +8,24 @@ export class Constants {
    */
   public static readonly ASYNC_LOAD_DATABASE: boolean = true;
 
+  // --------------- S4 附件磁盘化（内容寻址加密缓存） ----------------
+  /**
+   * 附件池总量达到该阈值时转入加密磁盘缓存（字节），低于阈值保持纯内存模式（小库零行为差异）
+   */
+  public static readonly ATTACH_DISK_THRESHOLD_BYTES: number = 16 * 1024 * 1024;
+  /**
+   * 附件加密缓存目录总占用上限（字节），超出按 LRU 清理
+   */
+  public static readonly ATTACH_CACHE_MAX_TOTAL_BYTES: number = 256 * 1024 * 1024;
+  /**
+   * 附件缓存加密密钥的 Asset Kit 别名
+   */
+  public static readonly ATTACH_CACHE_ASSET_ALIAS: string = "keepassho.attach.cache.key";
+  /**
+   * 附件加密缓存目录名（filesDir 下）
+   */
+  public static readonly ATTACH_CACHE_DIR_NAME: string = "attach-cache";
+
   /**
    * 应用存储位置信息
    */
