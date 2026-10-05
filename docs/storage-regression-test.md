@@ -106,3 +106,25 @@ hdc shell bm install -p /data/local/tmp/haps
 ## 8. UI 回归（独立执行）
 
 UI 层冲突弹框三分支（合并/覆盖/重载）E2E 用 uitest 手动驱动，见 `docs/uitest-manual-driving-guide.md`，不在本回归范围内（`-s notClass OpenDatabaseUiTest`）。
+
+【2026-10-05 更新】两个 UI 自动化套件已全绿，纳入 CLI 回归（`OpenDatabaseUiTest` 9/9、`StorageConflictUiTest` 15/15，mac_release 实测）：
+
+```bash
+# 前置：亮屏 + 应用冷停（startAbility 对已运行应用仅回前台，onCreate 预载不会重读种子）
+hdc shell "power-shell wakeup"
+hdc shell "power-shell timeout -o 600000"
+hdc shell aa force-stop com.aimilin.keepassho
+
+# 必须每个套件单独一次 aa test 调用；混跑时第二个套件必挂（应用已被前者拉起）
+hdc shell aa test -b com.aimilin.keepassho -m entry_test -s unittest OpenHarmonyTestRunner \
+  -s class OpenDatabaseUiTest -s timeout 900000
+hdc shell aa force-stop com.aimilin.keepassho
+hdc shell aa test -b com.aimilin.keepassho -m entry_test -s unittest OpenHarmonyTestRunner \
+  -s class StorageConflictUiTest -s timeout 1800000
+```
+
+关键机制（2026-10-05 落地）：
+- **种子自足**：`UiRecentFilesSeed.ets` 直写 preferences XML（绕测试进程 401），OpenDatabaseUiTest 自建 `test-1.kdbx`（密码 `1`，5 个已知分组）+ 最近记录置顶；`hdc uninstall` 清数据后套件仍可自愈。
+- **密码框注入**：`Component.inputText` 对安全字段静默丢文本，`UiTestHelper.inputTextSecure` 改坐标注入（见 ui-testing-guide 坑 11）。
+- **通知弹框**：安装后首次解锁弹系统授权框并遮蔽应用组件，`UiTestHelper.dismissNotificationDialog` 自动点「不允许」（见 ui-testing-guide 坑 12）；拒绝一次后本次安装不再弹。
+- **已知失败根因清单**：混跑不 force-stop（级联挂）、卸载后未重新种子（01/06/07/08/09 挂）、mac_release 旧产物未重建（浮点用例复现）。

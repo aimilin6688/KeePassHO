@@ -8,7 +8,8 @@
  *
  * 分层：
  *   基础原语：launchApp / findVisible / findAnywhere / exists / waitFor / waitGone /
- *             click / inputText / pressBack 系列 / collectVisibleTexts
+ *             click / inputText / pressBack 系列 / collectVisibleTexts /
+ *             dismissNotificationDialog（系统通知授权弹框）
  *   便捷封装：*Id / *Text 变体（id 定位为主，文本匹配兜底）
  *   应用流程：unlockDatabase（解锁页 -> 数据库列表）、openRecentDatabase
  *             （锁定 -> 关闭数据库 -> 最近打开 -> 选择文件 -> 解锁）
@@ -44,6 +45,8 @@ export class UiTestHelper {
   public static readonly IT_TIMEOUT: number = 300000;
   /** 最大返回次数 */
   public static readonly MAX_BACK_TIMES: number = 6;
+  /** 系统通知授权弹框的拒绝按钮候选文案（系统版本措辞可能不同） */
+  private static readonly DIALOG_DENY_TEXTS: Array<string> = ['不允许', '禁止', '暂不'];
 
   private static driver: Driver = Driver.create();
   private static windowRect: Rect = { left: 0, top: 0, right: 0, bottom: 0 };
@@ -80,6 +83,8 @@ export class UiTestHelper {
         right: UiTestHelper.windowRect.right, bottom: UiTestHelper.windowRect.bottom
       }));
     await UiTestHelper.driver.delayMs(UiTestHelper.SHORT_WAIT);
+    // 首次安装后冷启动可能残留/弹出系统通知授权弹框，遮挡应用导致组件查询失效
+    await UiTestHelper.dismissNotificationDialog(2000);
   }
 
   public static async delay(ms: number): Promise<void> {
@@ -265,6 +270,33 @@ export class UiTestHelper {
   }
 
   /**
+   * 关闭系统通知授权弹框（requestEnableNotification 触发，安装后首次解锁必弹）。
+   * 弹框位于系统子窗口，出现期间 uitest 查不到任何应用组件，
+   * 必须点击拒绝按钮关闭后才能继续断言（拒绝一次后本次安装内不再弹出）。
+   * @return true 表示发现并关闭了弹框
+   */
+  public static async dismissNotificationDialog(timeout: number): Promise<boolean> {
+    for (let waited: number = 0; waited <= timeout; waited += POLL_INTERVAL) {
+      for (let i: number = 0; i < UiTestHelper.DIALOG_DENY_TEXTS.length; i++) {
+        const denyText: string = UiTestHelper.DIALOG_DENY_TEXTS[i];
+        const btn: Component | undefined = await UiTestHelper.findAnywhere(ON.text(denyText));
+        if (btn !== undefined) {
+          try {
+            await btn.click();
+            hilog.info(DOMAIN, TAG, 'notification dialog dismissed by click: %{public}s', denyText);
+            await UiTestHelper.driver.delayMs(UiTestHelper.SHORT_WAIT);
+            return true;
+          } catch (err) {
+            hilog.error(DOMAIN, TAG, 'dismiss dialog click error: %{public}s', JSON.stringify(err));
+          }
+        }
+      }
+      await UiTestHelper.driver.delayMs(POLL_INTERVAL);
+    }
+    return false;
+  }
+
+  /**
    * 控件是否可用（异常按不可用处理）
    */
   public static async isEnabled(target: Component): Promise<boolean> {
@@ -360,6 +392,9 @@ export class UiTestHelper {
     if (!await UiTestHelper.clickId('btn_unlock', UiTestHelper.FIND_TIMEOUT)) {
       return false;
     }
+    // 安装后首次解锁会触发系统通知授权弹框（遮挡应用导致组件查询失效），先关闭再等列表页
+    await UiTestHelper.delay(UiTestHelper.SHORT_WAIT);
+    await UiTestHelper.dismissNotificationDialog(4000);
     if (!await UiTestHelper.waitForId('btn_add_fab', UiTestHelper.UNLOCK_WAIT)) {
       return false;
     }
