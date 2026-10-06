@@ -331,7 +331,7 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 | ChaCha20 就地加解密 | ✅ | 命名为 `xorInPlace`（`chacha20.ts:55`），对称同一方法 |
 | 附件磁盘化 | ✅ | 类型含 `KdbxBinaryDiskRef`（设计的 AttachmentRef）双模式；`AttachmentStore` 内容寻址加密缓存（HMAC(storeKey,hash) 文件名，[12B nonce][ChaCha20 密文]）；对外读取收敛为 `binaries.readDiskRef(ref)`；KPSN v2 支持 FLAG_STORE_REF |
 | UI 三处适配 | ✅ | `EntryView.ets:248-275` 异步回填、`EntryEdit.ets:60,241`、`KdbxUtils.ets:346-349,679-685` |
-| 新增附件即写 AS | ❌ | `EntryEdit.ets:857-873` 仍整缓冲入内存（5MB 上限兜底） |
+| 新增附件即写 AS | ✅ | `EntryEdit.addAttachment`：`database.binaries.add(content)` 注册进附件池（保存时 `writeBinaries` 据 `getRefByHash` 写 `<Value Ref="n"/>`，不再 `setBytes` base64 内联进 XML）；`maybeConvertToDiskRefs(ATTACH_DISK_THRESHOLD_BYTES)` + `rebindEntryBinaries` 镜像加载侧磁盘化语义（修原 bug：裸 ArrayBuffer 入 entry.binaries → base64 内联 + 永不磁盘化） |
 | 保存加密侧接线 | ✅ | `saveToFile`（`kdbx-format.ts`）调 `HmacBlockTransform.encryptFromFile`（X2→X3，ChaCha20 `xorInPlace` 作为 encryptBlock，内存窗口=1MB 块）；v3/AES-CBC 回退整缓冲 `save()`；`encryptFromFile` 已接线 |
 
 **S5 流式解压加载侧（✅ 已落地，2026-10-06）**
@@ -369,7 +369,7 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 | 流式 XmlWriter | ❌ | 未实施（§7.3，后续会话）；saveToFile 仍用 xmldom DOM+serialize 产 XML 字符串（峰值③ DOM/字符串未消除） |
 | 会话文件协议 KPSN 退役 | ❌ | KPSN ArrayBuffer 协议仍在生产；无 session-* 目录、无会话密钥包裹、无 24h 清扫；`KdbxSnapshot.test.ets` 仍测 KPSN |
 | MERGE 流式化 | ❌ | 未实施（§7.5，后续会话）；MERGE 路径仍 readFileToBuffer+Kdbx.load 整缓冲 |
-| 新增附件即写 AS | ❌ | `EntryEdit.ets:857` 仍整缓冲入内存（5MB 上限兜底，后续） |
+| 新增附件即写 AS | ✅ | `EntryEdit.addAttachment`：`binaries.add` 注册池（消除 base64 内联）+ `maybeConvertToDiskRefs` 阈值磁盘化 + `rebindEntryBinaries`；测试 `kdbx-attachment-store.test.ets` 增 'add attachment after load registers in pool and disk-refs on save' 用例 |
 
 ## 12. 验收标准汇总
 
