@@ -1,6 +1,6 @@
 # 数据库异步加载、流式解析与大文件 OOM 治理设计
 
-> 状态：实施中 v7（S1-S5 已落地，S6 保存管道流式+XmlWriter+MERGE 流式+附件即写 AS+可观测性打点 已落地（拉取解析器/KPSN 退役未实施），S7 部分落地（S7-b 清扫 + S7-a OneDrive + pCloud/华为下载流式完成，上传流式为调研项），§12 验收测试计划已制定待设备执行，详见 §11.2 实施状态追踪）
+> 状态：实施中 v7（S1-S5 已落地，S6 保存管道流式+XmlWriter+MERGE 流式+附件即写 AS+可观测性打点+流式拉取解析器 已落地（KPSN 退役未实施），S7 部分落地（S7-b 清扫 + S7-a OneDrive + pCloud/华为下载流式完成，上传流式为调研项），§12 验收测试计划已制定待设备执行，详见 §11.2 实施状态追踪）
 > v1：异步开关 + 守卫 + 副本削减（治标：OOM→报错）
 > v2：+ 附件磁盘化（解决附件常驻，但原始文件/解压/XML 仍整缓冲，几百 MB 库瞬时峰值仍 1GB 级）
 > v3：**全链路分块文件管道**——存储 IO、解密、解压、附件、XML 解析/序列化全部流式化，内存峰值与文件大小解耦（本期完整方案）
@@ -265,10 +265,10 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 | S1 | 异步开关 + 保存互斥 + 弹框兜底验证 + 打点 | P1,P3,P4 | 0.5-1 天 | ✅ 已实现（含 §11.1 Worker 环境注入） |
 | S2 | CP1/CP2'/CP-DISK/CP-UP 守卫 + 错误码文案 + 设置项 | P2 安全网 | 1 天 | ✅ 已实现（偏差见 §11.2） |
 | S3 | `IFileStorage.readToFile/writeFromFile` + Local/WebDAV 下载/S3/FTP 适配 + 流式 sha256 冲突检测 | P8,P9 | 2-3 天 | ✅ 存储侧完成（读写双向流化：S3 上传改文件分片 multipart + etag 条件写入；剩 WebDAV 上传/OneDrive/pCloud/华为云盘归 S7，保存链路 writeFromFile 接线归 S6） |
-| S4 | 流式解密管道（HMAC 块文件版 + in-place）+ 附件落盘（AttachmentRef/Store/双模式）+ UI 三处适配 | P5,P6 | 2-3 天 | ✅ 基本实现（saveV4 加密侧仍整缓冲，encryptFromFile 未接线；EntryEdit 新增附件仍入内存） |
-| S5 | NDK zlib 流式 inflate/deflate 模块（含备选 pako 评估）+ 会话包裹 | X 窗口 | 2-3 天 | ✅ 已实现（NDK 原生模块 + T0/T1/T2 加载侧全链路接线 + 6 用例；deflate 保存侧接线随 S6） |
-| S6 | 流式拉取解析器 + XmlWriter + 差分测试开关 + 会话文件协议（KPSN 退役） | P2 主力,P7 | 3-4 天 | 🔄 部分实现（保存管道流式已落地：saveToFile+writeFromFile+encryptFromFile+deflateFile 接线；拉取解析器/XmlWriter/KPSN 退役未实施） |
-| S7 | OneDrive upload session + pCloud/华为云盘调研 + 临时文件生命周期/清扫 + 大文件验收报告 | 收尾 | 1.5-2 天 | 🔄 部分实现（S7-b 临时文件清扫 + S7-a OneDrive upload session 已落地；剩 pCloud/华为云盘流式调研 + 验收报告） |
+| S4 | 流式解密管道（HMAC 块文件版 + in-place）+ 附件落盘（AttachmentRef/Store/双模式）+ UI 三处适配 + 新增附件即写 AS | P5,P6 | 2-3 天 | ✅ 全部实现（saveV4 加密侧 `encryptFromFile` 已随 S6 接线；EntryEdit 新增附件即写 AS 已落地） |
+| S5 | NDK zlib 流式 inflate/deflate 模块（含备选 pako 评估）+ 会话包裹 | X 窗口 | 2-3 天 | ✅ 已实现（NDK 原生模块 + T0/T1/T2 加载侧全链路接线 + 6 用例；deflate 保存侧接线已随 S6 落地） |
+| S6 | 流式拉取解析器 + XmlWriter + 差分测试开关 + 会话文件协议（KPSN 退役） | P2 主力,P7 | 3-4 天 | 🔄 部分实现（保存管道流式 saveToFile+writeFromFile+encryptFromFile+deflateFile 接线；DOM→文件序列化器 serializeToFile；MERGE 流式化 loadFromFile；新增附件即写 AS；**流式拉取解析器已落地**（xml-pull-parser.ts + streamingXmlParse 开关 + 3 差分用例）；KPSN 退役未实施） |
+| S7 | OneDrive upload session + pCloud/华为云盘调研 + 临时文件生命周期/清扫 + 大文件验收报告 | 收尾 | 1.5-2 天 | 🔄 部分实现（S7-b 临时文件清扫 + S7-a OneDrive upload session + pCloud/华为下载流式 已落地；剩 pCloud/华为上传流式 + WebDAV 上传流式 + 验收报告执行） |
 
 合计 **12-17 天**。依赖关系：S4/S5 可并行；S6 依赖 S5（从文件流解析）；每阶段结束跑存储 12 套件 + UI 2 套件 + 该阶段专项用例。
 
@@ -323,7 +323,7 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 | S3 专项测试 | ✅ | `S3ClientMultipart.test.ets` S3Client_Multipart_FromFile 3 用例（1MB 简单 PUT / 6MB multipart 进度单调+逐字节读回 / 恰 5MB 阈值边界）；`S3Storage.test.ets` StreamingAndConditionalWrite 4 用例（writeFromFile 返回 etag 版本+读回一致、小文件简单 PUT、write 匹配 expectedVersion 成功/过期拒绝 VERSION_CONFLICT、writeFromFile 过期拒绝且远端未覆盖）；均注册 List.test.ets |
 | 保存链路写回 | ✅ | `DatabaseSave.writeSavedContent` 流式路径走 `KdbxFileManager.writeFromFile`（分块上传 + WriteOption 条件写），回退路径走 `write`；`postSuccess` 用 `sha256HexFile` 分块哈希落盘文件 |
 
-**S4 流式解密 + 附件磁盘化（✅ 基本完成）**
+**S4 流式解密 + 附件磁盘化（✅ 全部完成）**
 
 | 项 | 状态 | 实现位置 |
 |---|---|---|
@@ -352,20 +352,20 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 
 | 项 | 状态 | 实现位置 |
 |---|---|---|
-| S7-b 临时文件清扫 | ✅ | `TempFileSweeper.ets`：启动 `sweep()` 异步清扫 + onDestroy `sweepSync()` 兜底（挂 `EntryAbility.init/onDestroy`）；覆盖 `load_t0_/load_t1_/load_t2_/save_remote_/save_x1_/save_x2_/save_x3_*.tmp` 全部管道临时前缀；POSIX unlink 活动文件安全（fd 仍有效，不影响进行中任务）；4 用例注册 entry List.test.ets |
+| S7-b 临时文件清扫 | ✅ | `TempFileSweeper.ets`：启动 `sweep()` 异步清扫 + onDestroy `sweepSync()` 兜底（挂 `EntryAbility.init/onDestroy`）；覆盖 `load_t0_/load_t1_/load_t2_/save_remote_/save_x1_/save_x2_/save_x3_/merge_t1_/merge_t2_*.tmp` 全部管道临时前缀；POSIX unlink 活动文件安全（fd 仍有效，不影响进行中任务）；4 用例注册 entry List.test.ets |
 | S7-a OneDrive upload session | ✅ | `OneDriveClient.uploadFromFile`：`createUploadSession`（conflictBehavior=replace）→ 分片 PUT 到预授权 uploadUrl（5MiB=16×320KiB 对齐，Content-Range 头，202 受理/200·201 完成）；分片带 3 次重试（404 会话过期直接失败），失败/短读 `DELETE` 取消会话；<4MB 简单 PUT；`OneDriveStorage.writeFromFile` 接线并返回 getInfo（CP-UP 豁免：内存窗口=单分片）；`OneDriveUploadSession.test.ets` 未初始化拒绝 3 常驻用例 + 真实 Graph API 3 门控用例（令牌缺省不注册），已注册 List.test.ets |
 | pCloud/华为云盘流式调研 | 🔄 | 下载流式已落地（pCloud `downloadFileRangeToFile` CDN Range GET + 华为 `downloadRangeToFile` form=content Range GET，均 8MB 块直写盘 + 首块 200 fallback）；上传流式为调研项（pCloud upload_init/write/finalize + 华为 upload session 需联网核对官方协议） |
 | 大文件验收报告 | 🔄 | `docs/大文件OOM治理验收测试计划.md` 已制定（测试矩阵/生成脚本/hidumper 采样/hilog 打点清单/互操作验证）；§12.6 可观测性打点已落地（DatabaseLoad/DatabaseSave 各阶段 hilog.info 耗时+字节数），待设备执行验收 |
 
-**S6 保存管道流式（🔄 部分实现，2026-10-06）**
+**S6 保存管道流式（🔄 部分实现，2026-10-06；拉取解析器已落地 2026-10-06）**
 
 | 项 | 状态 | 实现位置 |
 |---|---|---|
-| saveToFile 文件版管道 | ✅ | `kdbx.ts:saveToFile/canSaveToFile` + `kdbx-format.ts:saveToFile/saveV4ToFile/writeInnerToFile/checkDiskForStreamDeflate`：v4+ChaCha20 全链路 X1 inner→X2 deflate→X3 kdbx 落盘；buildXml+serialize 产 XML 字节写 X1，`writeInnerHeaderToFile` 流式分块回读磁盘引用附件直写 fd（`AttachmentStore.getToFile`/`binaries.readDiskRefToFile`），GZip 时 `deflateFile`，`encryptFromFile` 产 X3；v3/AES-CBC 回退 `save()` 整缓冲；`checkDiskForStreamDeflate` 磁盘余量守卫 |
+| saveToFile 文件版管道 | ✅ | `kdbx.ts:saveToFile/canSaveToFile` + `kdbx-format.ts:saveToFile/saveV4ToFile/writeInnerToFile/checkDiskForStreamDeflate`：v4+ChaCha20 全链路 X1 inner→X2 deflate→X3 kdbx 落盘；`serializeToFile` DOM→文件 8MB 分块序列化产 XML 写 X1，`writeInnerHeaderToFile` 流式分块回读磁盘引用附件直写 fd（`AttachmentStore.getToFile`/`binaries.readDiskRefToFile`），GZip 时 `deflateFile`，`encryptFromFile` 产 X3；v3/AES-CBC 回退 `save()` 整缓冲；`checkDiskForStreamDeflate` 磁盘余量守卫 |
 | 保存写回 writeFromFile 接线 | ✅ | `DatabaseSave.ets`：`SavedContent` 双形态（filePath/buffer），`buildSavedContent` 据 `canSaveToFile()` 分流，`writeSavedContent` 流式走 `writeFromFile`+WriteOption 条件写、回退走 `write`；`postSuccess` 流式 `sha256HexFile`、回退 `sha256Hex`；非合并 data 传空缓冲（主线程不用） |
 | 临时文件前缀 | ✅ | `TempFileSweeper.PREFIXES` 增 `save_x1_/save_x2_/save_x3_/merge_t1_/merge_t2_`；`DatabaseSave` finally 清理全部管道临时文件 |
 | 专项测试 | ✅ | `kdbx-save-to-file.test.ets` 8 用例（canSaveToFile 判定、saveToFile 产物可加载、与 save 产物模型等价、compression None 往返、磁盘引用附件往返、缺参 InvalidArg、serializeToFile 模型等价+ProtectedValue/附件保真、serializeToFile 特殊字符转义）；`TempFileSweeper.test.ets` 增 save_x1/x2/x3 + merge_t1/t2 前缀断言与清扫用例；`DatabaseSaveStreaming.test.ets` 4 用例（流式无冲突/MERGE/OVERWRITE + AES 回退，含临时文件清理断言）；`kdbx-attachment-store.test.ets` +5 用例（getToFile 等价/大附件/篡改/缺失 + S6-d 新增附件注册池磁盘化） |
-| 流式拉取解析器 | ❌ | 未实施（§7.2，后续会话） |
+| 流式拉取解析器 | ✅ | `utils/xml-pull-parser.ts`：`FileChunkReader`（256KB 块 + UTF-8 跨块边界安全）+ `KdbxXmlPullParser`（手写状态机：元素/属性/自闭合/文本实体/CDATA/注释/声明，跨块缓冲拼接）+ `KdbxModelBuilder`（事件式直接构建模型，镜像 KdbxMeta/Group/Entry/Times/DeletedObject/CustomData 全部 readNode 逻辑；ProtectedValue 边解析边用 ProtectSaltGenerator 取 salt，密钥流状态跨元素保持；entry Binary ref 暂存 pending，文档末 computeHashes 后 resolve）；`KdbxFormat.streamingXmlParse` 开关（默认 false）；`parseInnerFileStreaming` 分流：true 走 `parseXmlStreaming`（不建 DOM），false 走既有 xmldom DOM 路径（差分对照）；`kdbx-xml-pull-parser.test.ets` 3 差分用例（argon2ChaCha fixture + 富特性库 + XML 实体转义），模型 JSON 深比对全绿后 DOM 读取路径退役 |
 | 流式 XmlWriter | ✅ | `xml-utils.ts:serializeToFile`：DOM→文件 8MB 分块序列化器（消除 XML 字符串峰值 ③b + UTF-8 拷贝峰值 ③c；DOM 峰值 ③a 保留，att-500 3MB XML DOM ~15MB 在预算内）；`saveV4ToFile` 接线 `serializeToFile` 替代 `serialize`+`stringToBytes`+`write`；v3/saveXml 仍用 `serialize`（prettyPrint 不需文件版） |
 | 会话文件协议 KPSN 退役 | ❌ | KPSN ArrayBuffer 协议仍在生产；无 session-* 目录、无会话密钥包裹、无 24h 清扫；`KdbxSnapshot.test.ets` 仍测 KPSN |
 | MERGE 流式化 | ✅ | `DatabaseSave.mergeDatabase` 改用 `Kdbx.loadFromFile`（S4/S5 流式解密+解压+附件落盘管道），消除 peak ⑫（远端整缓冲 readFileToBuffer+Kdbx.load）；`merge_t1_/merge_t2_` 临时文件 + TempFileSweeper 覆盖；远端凭证变更仍抛 InvalidKey（错误语义不变） |
