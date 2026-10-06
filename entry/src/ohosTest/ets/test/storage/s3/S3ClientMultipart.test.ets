@@ -5,9 +5,54 @@ import { S3MultipartConfig } from '../../../../../main/ets/storage/s3/S3Config';
 import { S3UploadQueue } from '../../../../../main/ets/storage/s3/S3UploadQueue';
 import { S3TestConfig } from './S3TestConfig';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'S3ClientMultipartTest';
+
+/**
+ * 模式字节（确定性，供写入与读回比对）
+ */
+function expectedPatternByte(index: number): number {
+  return (index * 31 + 7) % 256;
+}
+
+/**
+ * 生成本地模式文件（分块写入约束测试内存）
+ */
+function writePatternFileSync(path: string, size: number): void {
+  const file = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+  const chunkSize = 1024 * 1024;
+  const chunk = new ArrayBuffer(chunkSize);
+  const view = new Uint8Array(chunk);
+  let offset = 0;
+  while (offset < size) {
+    const len = Math.min(chunkSize, size - offset);
+    for (let i = 0; i < len; i++) {
+      view[i] = expectedPatternByte(offset + i);
+    }
+    fs.writeSync(file.fd, len === chunkSize ? chunk : chunk.slice(0, len), { offset: offset });
+    offset += len;
+  }
+  fs.closeSync(file);
+}
+
+/**
+ * 校验缓冲区是否与模式内容逐字节一致
+ */
+function isPatternBuffer(data: ArrayBuffer, expectedSize: number): boolean {
+  if (data.byteLength !== expectedSize) {
+    return false;
+  }
+  const view = new Uint8Array(data);
+  for (let i = 0; i < view.length; i++) {
+    if (view[i] !== expectedPatternByte(i)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export default function S3ClientMultipartTest() {
   describe('S3Client_Multipart_Upload', () => {
@@ -756,6 +801,138 @@ export default function S3ClientMultipartTest() {
         const err = error as Error;
         hilog.error(DOMAIN, TAG, 'Test error: %{public}s', err.message);
         throw new Error(err.message);
+      }
+    });
+  });
+
+  /**
+   * 文件分片上传测试（S3 尾巴：putObjectSmartFromFile 从本地文件分片 multipart）
+   * worker 按任务区间从源文件读取后 uploadPart，与内存版语义一致
+   */
+  describe('S3Client_Multipart_FromFile', () => {
+    let client: S3Client;
+    const testBucket = S3TestConfig.BUCKET;
+
+    beforeEach(() => {
+      const options = S3TestConfig.getClientOptions();
+      client = new S3Client(options);
+    });
+
+    afterEach(() => {
+      if (client) {
+        client.close();
+      }
+    });
+
+    /**
+     * 小文件（< 5MB 阈值）：读入内存单次 PUT，读回逐字节一致
+     */
+    it('should_upload_local_small_file_with_simple_put', 0, async () => {
+      const cacheDir = abilityDelegatorRegistry.getAbilityDelegator().getAppContext().cacheDir;
+      const srcPath = cacheDir + '/s3-from-file-small-' + Date.now() + '.tmp';
+      const fileSize = 1 * 1024 * 1024;
+      const testKey = 'from-file-test/small-' + Date.now() + '.dat';
+      writePatternFileSync(srcPath, fileSize);
+      try {
+        const result = await client.putObjectSmartFromFile(testBucket, testKey, srcPath);
+        expect(result.success).assertTrue();
+
+        const headResult = await client.headObject(testBucket, testKey);
+        expect(headResult.success).assertTrue();
+        expect(headResult.data?.size).assertEqual(fileSize);
+
+        const getResult = await client.getObject(testBucket, testKey);
+        expect(getResult.success).assertTrue();
+        expect(isPatternBuffer(getResult.data ?? new ArrayBuffer(0), fileSize)).assertTrue();
+
+        await client.deleteObject(testBucket, testKey);
+        hilog.info(DOMAIN, TAG, 'Small from-file upload verified and cleaned up');
+      } finally {
+        try {
+          fs.unlinkSync(srcPath);
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    /**
+     * 大文件（6MB → 2 个 5MB 分片）：multipart 文件分片，进度单调且最终完成，读回逐字节一致
+     */
+    it('should_upload_local_file_multipart_from_file', 0, async () => {
+      const cacheDir = abilityDelegatorRegistry.getAbilityDelegator().getAppContext().cacheDir;
+      const srcPath = cacheDir + '/s3-from-file-large-' + Date.now() + '.tmp';
+      const fileSize = 6 * 1024 * 1024;
+      const testKey = 'from-file-test/large-' + Date.now() + '.dat';
+      writePatternFileSync(srcPath, fileSize);
+      try {
+        const progressEvents: MultipartUploadProgress[] = [];
+        const result = await client.putObjectSmartFromFile(testBucket, testKey, srcPath,
+          (progress) => {
+            progressEvents.push(progress);
+          });
+        expect(result.success).assertTrue();
+
+        // 进度事件存在且单调递增
+        expect(progressEvents.length > 0).assertTrue();
+        for (let i = 1; i < progressEvents.length; i++) {
+          expect(progressEvents[i].uploadedBytes)
+            .assertLargerOrEqual(progressEvents[i - 1].uploadedBytes);
+        }
+        const lastProgress = progressEvents[progressEvents.length - 1];
+        expect(lastProgress.uploadedBytes).assertEqual(fileSize);
+        expect(lastProgress.currentPart).assertEqual(lastProgress.totalParts);
+
+        const headResult = await client.headObject(testBucket, testKey);
+        expect(headResult.success).assertTrue();
+        expect(headResult.data?.size).assertEqual(fileSize);
+
+        const getResult = await client.getObject(testBucket, testKey);
+        expect(getResult.success).assertTrue();
+        expect(isPatternBuffer(getResult.data ?? new ArrayBuffer(0), fileSize)).assertTrue();
+
+        await client.deleteObject(testBucket, testKey);
+        hilog.info(DOMAIN, TAG,
+          'Multipart from-file upload verified: parts=%{public}d, size=%{public}d',
+          lastProgress.totalParts, fileSize);
+      } finally {
+        try {
+          fs.unlinkSync(srcPath);
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    /**
+     * 边界（恰好 5MB = 阈值）：走 multipart（1 个分片），读回一致
+     */
+    it('should_upload_exactly_threshold_local_file', 0, async () => {
+      const cacheDir = abilityDelegatorRegistry.getAbilityDelegator().getAppContext().cacheDir;
+      const srcPath = cacheDir + '/s3-from-file-threshold-' + Date.now() + '.tmp';
+      const fileSize = S3MultipartConfig.MULTIPART_THRESHOLD;
+      const testKey = 'from-file-test/threshold-' + Date.now() + '.dat';
+      writePatternFileSync(srcPath, fileSize);
+      try {
+        const result = await client.putObjectSmartFromFile(testBucket, testKey, srcPath);
+        expect(result.success).assertTrue();
+
+        const headResult = await client.headObject(testBucket, testKey);
+        expect(headResult.success).assertTrue();
+        expect(headResult.data?.size).assertEqual(fileSize);
+
+        const getResult = await client.getObject(testBucket, testKey);
+        expect(getResult.success).assertTrue();
+        expect(isPatternBuffer(getResult.data ?? new ArrayBuffer(0), fileSize)).assertTrue();
+
+        await client.deleteObject(testBucket, testKey);
+        hilog.info(DOMAIN, TAG, 'Threshold from-file upload verified and cleaned up');
+      } finally {
+        try {
+          fs.unlinkSync(srcPath);
+        } catch {
+          // ignore
+        }
       }
     });
   });

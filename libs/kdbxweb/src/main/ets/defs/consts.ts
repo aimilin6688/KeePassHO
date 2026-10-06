@@ -15,6 +15,7 @@ export const ErrorCodes = {
     MergeError: 'MergeError',
     InvalidState: 'InvalidState',
     DecompressedTooLarge: 'DecompressedTooLarge',
+    NotEnoughDisk: 'NotEnoughDisk',
     AttachmentStoreError: 'AttachmentStoreError'
 } as const;
 

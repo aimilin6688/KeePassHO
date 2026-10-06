@@ -21,6 +21,25 @@ import { Int64 } from '../utils/int64';
 import { KdbxContext } from './kdbx-context';
 import { KdbxBinaryDiskRef } from './kdbx-binaries';
 import { ProtectedValue } from '../crypto/protected-value';
+import { sha256FileRegion } from '../utils/attachment-store';
+import { fileIo as fs } from '@kit.CoreFileKit';
+
+/**
+ * 读取文件指定区域到新分配的 ArrayBuffer（S5 流式解析辅助）。
+ */
+export function readFileRegion(
+    fileFd: number,
+    offset: number,
+    length: number
+): Promise<ArrayBuffer> {
+    const buf = new ArrayBuffer(length);
+    return fs.read(fileFd, buf, { offset }).then((read) => {
+        if (read !== length) {
+            throw new KdbxError(ErrorCodes.FileCorrupt, 'file region short read');
+        }
+        return buf;
+    });
+}
 
 interface HeaderField {
     name: string;
@@ -349,8 +368,24 @@ export class KdbxHeader {
         const headerId = stm.getUint8();
         const size = this.readFieldSize(stm);
         const bytes = size > 0 ? stm.readBytes(size) : new ArrayBuffer(0);
+        return this.applyField(headerId, bytes, fields, ctx);
+    }
 
+    /**
+     * 处理一个已读出的头部字段。S5：整缓冲 readField 与文件流式
+     * readInnerHeaderFromFile 共用同一套字段解释逻辑。
+     * @returns 是否继续读下一字段（EndOfHeader 返回 false）
+     */
+    private applyField(
+        headerId: number,
+        bytes: ArrayBuffer,
+        fields: HeaderField[],
+        ctx: KdbxContext
+    ): boolean {
         const headerField = fields[headerId];
+        if (!headerField) {
+            throw new KdbxError(ErrorCodes.InvalidArg, `bad header field id: ${headerId}`);
+        }
         switch (headerField.name) {
             case 'EndOfHeader':
             case 'Comment':
@@ -398,6 +433,88 @@ export class KdbxHeader {
                 throw new KdbxError(ErrorCodes.InvalidArg, `bad header field: ${headerField.name}`);
         }
         return headerId !== 0;
+    }
+
+    /**
+     * S5 流式读取 v4 inner header：直接从解压后的 inner 明文文件逐字段解析，
+     * 大 Binary 字段（≥ largeBinaryThreshold 字节且附件缓存可用）不整读入内存：
+     * 先对文件区域算 sha256，再分块搬运进附件加密缓存，模型仅保留
+     * KdbxBinaryDiskRef（设计文档 §2.2 加载管道 / §6 附件落盘）。
+     * @param fileFd inner 明文文件 fd（gzip 解压后的 T2 或未压缩的 T1）
+     * @param ctx KDBX 上下文（附件池挂载点）
+     * @param largeBinaryThreshold Binary 字段流式落盘的最小字节数
+     * @returns XML 区起始偏移
+     */
+    async readInnerHeaderFromFile(
+        fileFd: number,
+        ctx: KdbxContext,
+        largeBinaryThreshold: number
+    ): Promise<number> {
+        let pos = 0;
+        for (;;) {
+            const head = new ArrayBuffer(5);
+            const headRead = await fs.read(fileFd, head, { offset: pos });
+            if (headRead !== 5) {
+                throw new KdbxError(ErrorCodes.FileCorrupt, 'inner header truncated');
+            }
+            const view = new DataView(head);
+            const fieldId = view.getUint8(0);
+            const size = view.getUint32(1, true);
+            pos += 5;
+            if (fieldId === HeaderConst.InnerHeaderBinaryFieldId) {
+                pos = await this.readBinaryFromFile(fileFd, pos, size, ctx, largeBinaryThreshold);
+                continue;
+            }
+            const bytes = size > 0 ? await readFileRegion(fileFd, pos, size) : new ArrayBuffer(0);
+            pos += size;
+            if (!this.applyField(fieldId, bytes, InnerHeaderFields, ctx)) {
+                break;
+            }
+        }
+        this.validateInner();
+        return pos;
+    }
+
+    /**
+     * 流式处理 inner header 的 Binary 字段：data = [flags:1][bytes]。
+     * 大字段分块落盘为 KdbxBinaryDiskRef，小字段保持内存模式（与整缓冲路径一致）。
+     * @returns 消费后的文件偏移
+     */
+    private async readBinaryFromFile(
+        fileFd: number,
+        pos: number,
+        size: number,
+        ctx: KdbxContext,
+        largeBinaryThreshold: number
+    ): Promise<number> {
+        if (size < 1) {
+            throw new KdbxError(ErrorCodes.FileCorrupt, 'bad inner binary size');
+        }
+        const flagsBuf = new ArrayBuffer(1);
+        const flagRead = await fs.read(fileFd, flagsBuf, { offset: pos });
+        if (flagRead !== 1) {
+            throw new KdbxError(ErrorCodes.FileCorrupt, 'inner binary flag truncated');
+        }
+        const isProtected =
+            (new DataView(flagsBuf).getUint8(0) & HeaderConst.FlagBinaryProtected) !== 0;
+        const dataOffset = pos + 1;
+        const dataLength = size - 1;
+        const store = ctx.kdbx.binaries.store;
+        if (store && dataLength >= largeBinaryThreshold) {
+            const hash = await sha256FileRegion(fileFd, dataOffset, dataLength);
+            await store.putFromFileRegion(hash, fileFd, dataOffset, dataLength);
+            ctx.kdbx.binaries.addWithNextId(
+                new KdbxBinaryDiskRef(hash, dataLength, isProtected)
+            );
+        } else {
+            const binaryData =
+                dataLength > 0
+                    ? await readFileRegion(fileFd, dataOffset, dataLength)
+                    : new ArrayBuffer(0);
+            const binary = isProtected ? ProtectedValue.fromBinary(binaryData) : binaryData;
+            ctx.kdbx.binaries.addWithNextId(binary);
+        }
+        return dataOffset + dataLength;
     }
 
     private writeField(

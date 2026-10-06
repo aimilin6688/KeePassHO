@@ -50,6 +50,12 @@ import KdbxSnapshotTest from './kdbx/KdbxSnapshot.test';
 import AttachmentDiskRefTest from './kdbx/AttachmentDiskRef.test';
 import AttachmentCacheServiceTest from './services/AttachmentCacheService.test';
 
+// S7-b 管道临时文件清扫单元测试
+import TempFileSweeperTest from './services/TempFileSweeper.test';
+
+// S7-a OneDrive upload session 单元测试（未初始化拒绝常驻；真实 API 用例按令牌门控注册）
+import OneDriveUploadSessionTest from './storage/onedrive/OneDriveUploadSession.test';
+
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
 import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
@@ -143,6 +149,12 @@ export default function testsuite() {
 
   // S4 附件缓存服务测试（Asset Kit 密钥 / Worker 注入 / 优雅降级）
   AttachmentCacheServiceTest();
+
+  // S7-b 管道临时文件清扫测试（启动清残留 / onDestroy 全清）
+  TempFileSweeperTest();
+
+  // S7-a OneDrive upload session 测试（未初始化拒绝 / 真实 API 用例门控注册）
+  OneDriveUploadSessionTest();
 
   // Import/Export 单元测试
   ImportExportCommonTest();

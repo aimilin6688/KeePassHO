@@ -3,9 +3,26 @@ import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
 import { StringUtils, UrlUtils } from '../../common/utils';
+import { fileIo as fs } from '@kit.CoreFileKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveClient';
+
+/** 小于该阈值走简单上传（整缓冲 PUT，Graph 简单上传推荐 ≤4MB） */
+const UPLOAD_SESSION_SIMPLE_THRESHOLD = 4 * 1024 * 1024;
+/** 分片大小 5MiB = 16 × 320KiB（Graph 要求分片为 320KiB 整数倍，末片除外） */
+const UPLOAD_SESSION_FRAGMENT_SIZE = 5 * 1024 * 1024;
+/** 单分片上传最大重试次数 */
+const UPLOAD_SESSION_MAX_RETRY = 3;
+/** 单分片 PUT 超时（5MB 分片在慢速上行链路下需较长时间） */
+const UPLOAD_SESSION_FRAGMENT_TIMEOUT = 120000;
+
+/**
+ * upload session 创建请求 item（Graph createUploadSession 请求体）
+ */
+interface UploadSessionItem {
+  '@microsoft.graph.conflictBehavior': string;
+}
 
 /**
  * OneDrive资源信息接口
@@ -122,7 +139,9 @@ export enum OneDrivePathType {
   /** 获取文件内容 */
   CONTENT = 'content',
   /** 上传文件 */
-  UPLOAD = 'upload'
+  UPLOAD = 'upload',
+  /** 创建上传会话 */
+  CREATE_UPLOAD_SESSION = 'createUploadSession'
 }
 
 /**
@@ -290,6 +309,9 @@ export class OneDriveClient {
       case OneDrivePathType.UPLOAD:
         // 上传文件：/me/drive/root:/path:/content
         return `/me/drive/root:/${normalizedPath}:/content`;
+      case OneDrivePathType.CREATE_UPLOAD_SESSION:
+        // 创建上传会话：/me/drive/root:/path:/createUploadSession
+        return `/me/drive/root:/${normalizedPath}:/createUploadSession`;
       case OneDrivePathType.INFO:
       default:
       // 获取资源信息：/me/drive/root:/path
@@ -613,6 +635,173 @@ export class OneDriveClient {
     } catch (error) {
       hilog.error(DOMAIN, TAG, `File upload error: path=${path}, error=${(error as Error).message}`);
       return this.convertAxiosError(error as AxiosError);
+    }
+  }
+
+  /**
+   * 创建上传会话（Graph upload session，S7-a）
+   * 大文件分片上传前置步骤，响应体 JSON 含预授权 uploadUrl
+   * @param path 目标文件路径
+   * @returns Promise<HttpResponse> 响应体 JSON 含 uploadUrl
+   */
+  public async createUploadSession(path: string): Promise<HttpResponse> {
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      const apiPath = this.normalizePath(path, OneDrivePathType.CREATE_UPLOAD_SESSION);
+      hilog.info(DOMAIN, TAG, `createUploadSession: path=${path}, apiPath=${apiPath}`);
+      const item: UploadSessionItem = { '@microsoft.graph.conflictBehavior': 'replace' };
+      const body: Record<string, Object> = { 'item': item };
+      const response: AxiosResponse = await this.axiosInstance.post(apiPath, body);
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `createUploadSession error: path=${path}, error=${(error as Error).message}`);
+      return this.convertAxiosError(error as AxiosError);
+    }
+  }
+
+  /**
+   * 上传会话分片：PUT 到预授权 uploadUrl（绝对地址，不带 Authorization）
+   * @param uploadUrl 会话上传地址
+   * @param data 分片数据
+   * @param contentRange Content-Range 头，如 bytes 0-5242879/10485760
+   * @returns Promise<HttpResponse> 202=分片受理，200/201=上传完成（响应体为 driveItem）
+   */
+  private async uploadSessionFragment(uploadUrl: string, data: ArrayBuffer, contentRange: string): Promise<HttpResponse> {
+    try {
+      const fragmentClient = axios.create({ timeout: UPLOAD_SESSION_FRAGMENT_TIMEOUT });
+      const config: AxiosRequestConfig = {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Range': contentRange
+        }
+      };
+      const response: AxiosResponse = await fragmentClient.put(uploadUrl, data, config);
+      return this.convertAxiosResponse(response);
+    } catch (error) {
+      return this.convertAxiosError(error as AxiosError);
+    }
+  }
+
+  /**
+   * 分片上传（带重试）：瞬时失败重试至多 UPLOAD_SESSION_MAX_RETRY 次；
+   * 404 表示会话过期，直接失败由调用方决定是否重建会话（当前简化为整体失败）
+   */
+  private async uploadSessionFragmentWithRetry(uploadUrl: string, data: ArrayBuffer,
+    contentRange: string): Promise<HttpResponse> {
+    for (let attempt = 0; attempt <= UPLOAD_SESSION_MAX_RETRY; attempt++) {
+      const result = await this.uploadSessionFragment(uploadUrl, data, contentRange);
+      if (result.success) {
+        return result;
+      }
+      if (result.statusCode === 404) {
+        hilog.error(DOMAIN, TAG, 'upload session expired (404), aborting');
+        return result;
+      }
+      hilog.warn(DOMAIN, TAG,
+        'fragment failed (status=%{public}d), retry %{public}d/%{public}d', result.statusCode, attempt + 1,
+        UPLOAD_SESSION_MAX_RETRY);
+    }
+    return new HttpResponse(false, 0, 'Fragment upload failed after retries', {});
+  }
+
+  /**
+   * 取消上传会话（best-effort，失败仅记录日志）
+   */
+  private async cancelUploadSession(uploadUrl: string): Promise<void> {
+    try {
+      const fragmentClient = axios.create({ timeout: 30000 });
+      await fragmentClient.delete(uploadUrl);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'cancelUploadSession best-effort: %{public}s', (error as Error).message);
+    }
+  }
+
+  /**
+   * 从本地文件智能上传（S7-a 流式写方向）
+   * 小文件（< 4MB）读入内存简单上传；大文件创建 upload session，
+   * 按分片从源文件区域读取后 PUT，内存窗口 = 单分片（5MB），与文件大小解耦
+   * @param path 目标文件路径
+   * @param srcPath 本地源文件路径
+   * @returns Promise<HttpResponse> 完成响应（末片 200/201 时为 driveItem）
+   */
+  public async uploadFromFile(path: string, srcPath: string): Promise<HttpResponse> {
+    let file: fs.File | null = null;
+    try {
+      file = await fs.open(srcPath, fs.OpenMode.READ_ONLY);
+      const stat = await fs.stat(file.fd);
+      const totalSize = stat.size;
+
+      if (totalSize < UPLOAD_SESSION_SIMPLE_THRESHOLD) {
+        // 小文件：读入内存简单上传
+        const data = new ArrayBuffer(totalSize);
+        await fs.read(file.fd, data);
+        await fs.close(file.fd);
+        file = null;
+        return await this.upload(path, data);
+      }
+
+      const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+      hilog.info(DOMAIN, TAG, `uploadFromFile(session): path=${path}, size=${sizeMB}MB`);
+
+      const sessionResult = await this.createUploadSession(path);
+      if (!sessionResult.success || !sessionResult.body) {
+        return sessionResult;
+      }
+      let uploadUrl = '';
+      try {
+        const sessionJson = ByteUtils.bytesToString(sessionResult.body);
+        const sessionData = JSON.parse(sessionJson) as Record<string, Object>;
+        uploadUrl = this.extractOptionalStringFromObject(sessionData, 'uploadUrl');
+      } catch (e) {
+        return new HttpResponse(false, 0, `Failed to parse upload session: ${(e as Error).message}`, {});
+      }
+      if (!uploadUrl) {
+        return new HttpResponse(false, 0, 'Upload session response missing uploadUrl', {});
+      }
+
+      let offset = 0;
+      let lastFragmentResult: HttpResponse | null = null;
+      while (offset < totalSize) {
+        const fragmentLength = Math.min(UPLOAD_SESSION_FRAGMENT_SIZE, totalSize - offset);
+        const fragment = new ArrayBuffer(fragmentLength);
+        const read = await fs.read(file.fd, fragment, { offset: offset });
+        if (read !== fragmentLength) {
+          await this.cancelUploadSession(uploadUrl);
+          return new HttpResponse(false, 0, `Source file short read: ${read}/${fragmentLength}`, {});
+        }
+        const contentRange = `bytes ${offset}-${offset + fragmentLength - 1}/${totalSize}`;
+        const fragmentResult = await this.uploadSessionFragmentWithRetry(uploadUrl, fragment, contentRange);
+        if (!fragmentResult.success) {
+          await this.cancelUploadSession(uploadUrl);
+          return fragmentResult;
+        }
+        offset += fragmentLength;
+        lastFragmentResult = fragmentResult;
+        hilog.debug(DOMAIN, TAG,
+          'uploadFromFile(session): fragment done, %{public}d/%{public}d, status=%{public}d',
+          offset, totalSize, fragmentResult.statusCode);
+      }
+
+      // 末片受理后 Graph 直接返回 200/201（响应体为 driveItem）；202 表示会话仍缺范围（理论不出现于完整顺序上传）
+      if (lastFragmentResult !== null &&
+        (lastFragmentResult.statusCode === 200 || lastFragmentResult.statusCode === 201)) {
+        return lastFragmentResult;
+      }
+      return new HttpResponse(true, 202, 'Upload session completed', {});
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, `uploadFromFile error: path=${path}, error=${err.message}`);
+      return new HttpResponse(false, 0, err.message, {});
+    } finally {
+      if (file !== null) {
+        try {
+          await fs.close(file.fd);
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 

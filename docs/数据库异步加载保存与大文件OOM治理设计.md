@@ -1,6 +1,6 @@
 # 数据库异步加载、流式解析与大文件 OOM 治理设计
 
-> 状态：设计评审稿 v3
+> 状态：实施中 v4（S1-S5 已落地，S6 未实施，S7 部分落地（S7-b 清扫 + S7-a OneDrive session 完成），详见 §11.2 实施状态追踪）
 > v1：异步开关 + 守卫 + 副本削减（治标：OOM→报错）
 > v2：+ 附件磁盘化（解决附件常驻，但原始文件/解压/XML 仍整缓冲，几百 MB 库瞬时峰值仍 1GB 级）
 > v3：**全链路分块文件管道**——存储 IO、解密、解压、附件、XML 解析/序列化全部流式化，内存峰值与文件大小解耦（本期完整方案）
@@ -260,15 +260,15 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 
 ## 11. 实施阶段（每步独立可交付、可回归）
 
-| 阶段 | 内容 | 修 | 预估 |
-|---|---|---|---|
-| S1 | 异步开关 + 保存互斥 + 弹框兜底验证 + 打点 | P1,P3,P4 | 0.5-1 天 |
-| S2 | CP1/CP2'/CP-DISK/CP-UP 守卫 + 错误码文案 + 设置项 | P2 安全网 | 1 天 |
-| S3 | `IFileStorage.readToFile/writeFromFile` + Local/WebDAV 下载/S3/FTP 适配 + 流式 sha256 冲突检测 | P8,P9 | 2-3 天 |
-| S4 | 流式解密管道（HMAC 块文件版 + in-place）+ 附件落盘（AttachmentRef/Store/双模式）+ UI 三处适配 | P5,P6 | 2-3 天 |
-| S5 | NDK zlib 流式 inflate/deflate 模块（含备选 pako 评估）+ 会话包裹 | X 窗口 | 2-3 天 |
-| S6 | 流式拉取解析器 + XmlWriter + 差分测试开关 + 会话文件协议（KPSN 退役） | P2 主力,P7 | 3-4 天 |
-| S7 | OneDrive upload session + pCloud/华为云盘调研 + 临时文件生命周期/清扫 + 大文件验收报告 | 收尾 | 1.5-2 天 |
+| 阶段 | 内容 | 修 | 预估 | 状态（2026-10-06 核对） |
+|---|---|---|---|---|
+| S1 | 异步开关 + 保存互斥 + 弹框兜底验证 + 打点 | P1,P3,P4 | 0.5-1 天 | ✅ 已实现（含 §11.1 Worker 环境注入） |
+| S2 | CP1/CP2'/CP-DISK/CP-UP 守卫 + 错误码文案 + 设置项 | P2 安全网 | 1 天 | ✅ 已实现（偏差见 §11.2） |
+| S3 | `IFileStorage.readToFile/writeFromFile` + Local/WebDAV 下载/S3/FTP 适配 + 流式 sha256 冲突检测 | P8,P9 | 2-3 天 | ✅ 存储侧完成（读写双向流化：S3 上传改文件分片 multipart + etag 条件写入；剩 WebDAV 上传/OneDrive/pCloud/华为云盘归 S7，保存链路 writeFromFile 接线归 S6） |
+| S4 | 流式解密管道（HMAC 块文件版 + in-place）+ 附件落盘（AttachmentRef/Store/双模式）+ UI 三处适配 | P5,P6 | 2-3 天 | ✅ 基本实现（saveV4 加密侧仍整缓冲，encryptFromFile 未接线；EntryEdit 新增附件仍入内存） |
+| S5 | NDK zlib 流式 inflate/deflate 模块（含备选 pako 评估）+ 会话包裹 | X 窗口 | 2-3 天 | ✅ 已实现（NDK 原生模块 + T0/T1/T2 加载侧全链路接线 + 6 用例；deflate 保存侧接线随 S6） |
+| S6 | 流式拉取解析器 + XmlWriter + 差分测试开关 + 会话文件协议（KPSN 退役） | P2 主力,P7 | 3-4 天 | ❌ 未实施（KPSN 仍在生产） |
+| S7 | OneDrive upload session + pCloud/华为云盘调研 + 临时文件生命周期/清扫 + 大文件验收报告 | 收尾 | 1.5-2 天 | 🔄 部分实现（S7-b 临时文件清扫 + S7-a OneDrive upload session 已落地；剩 pCloud/华为云盘流式调研 + 验收报告） |
 
 合计 **12-17 天**。依赖关系：S4/S5 可并行；S6 依赖 S5（从文件流解析）；每阶段结束跑存储 12 套件 + UI 2 套件 + 该阶段专项用例。
 
@@ -282,6 +282,82 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 - **验证**：StorageConflictUiTest（SFTP/WebDAV/S3 加载保存全链路 Worker 化）15/15 全绿；非 UI 全量 447/447。
 
 该机制是 S3+ 流式管道的前置基础设施（Worker 侧文件 IO 同样依赖注入路径），后续阶段不得绕过 `CommonUtils` 路径助手直接访问 Context。
+
+### 11.2 实施状态追踪（2026-10-06 核对，随实施持续更新）
+
+落地提交：S1+S2 = `f507bd36`（2026-10-05，非 UI 全量 447/447 + StorageConflictUiTest 15/15）。
+
+**S1 异步化（✅ 全部完成）**
+
+| 项 | 状态 | 实现位置 |
+|---|---|---|
+| 双异步开关启用 | ✅ 均为 true | `Constants.ets:5,9` |
+| 保存互斥（Promise 链串行） | ✅ 锁内重取最新模型，全终态路径释放 | `KdbxSaveService.ets:29-33,59-82` |
+| Worker 环境注入（INIT_WORKER） | ✅ 路径/缓存策略/附件密钥三注入 | `DatabaseWorkerFactory.ets:18-47`、`WorkerParam.ets:38,51-76` |
+| Worker 壳处理 INIT | ✅ FIFO 先于任务消息 | `DatabaseLoadWorker.ets:17-35`、`DatabaseSaveWorker.ets:17-35` |
+
+**S2 守卫（✅ 全部完成，与设计有命名/细节偏差）**
+
+| 项 | 状态 | 偏差说明 |
+|---|---|---|
+| CP1 文件大小 | ✅ | 常量名实为设置项 `SettingsService.KEY_DATABASE_MAX_SIZE`（默认 512MB，暂无 UI 入口）；fail-open |
+| CP-DISK 磁盘 | ✅ | `statfs.getFreeSize`，阈值 4×F（未加附件池项）；fail-open |
+| CP2' 模型 | ✅ | 公式 `appMemory × 0.55 ÷ 1.3`；ISIZE 预检已随 S5 落地（`prepareInnerFileStreaming`，守卫错误不回退整缓冲）；kdbxweb 侧 `assertDecompressedLimit` 4 处调用 + 流式 XML 区断言 |
+| CP-UP 上传上限 | ✅ | WebDAV/OneDrive/pCloud/华为云盘 4 处；FTP（文件式上传）与 S3（multipart）合理豁免 |
+| 错误码 i18n | ✅ | base + zh_CN 双语 4 个错误码齐全 |
+
+**S3 流式存储 IO（✅ 存储侧完成；保存链路 writeFromFile 接线随 S6）**
+
+| 项 | 状态 | 实现位置 |
+|---|---|---|
+| `readToFile`/`writeFromFile` 接口 + 默认包装 | ✅ | `IFileStorage.ets:37,57`、`FileTransfer.ets` |
+| Local | ✅ | `fs.copyFile` + 临时文件 `fsync+rename` 原子替换（顺带修复非原子写） |
+| WebDAV 下载 | ✅ | 实际用 `rcp.session.downloadToFile`（响应体不驻内存），非设计的 requestInStream，效果等价 |
+| WebDAV 上传 | ❌ | 整缓冲 PUT，受 CP-UP 100MB 约束（rcps 流式上传仍为调研项） |
+| S3 下载 | ✅ | Range GET 循环 8MB 段（`S3Client.getObjectRangeToFile`） |
+| S3 上传 | ✅ | `S3Client.putObjectSmartFromFile`：小文件单次 PUT，大文件 multipart 由 worker 按任务区间 `fs.read(fd, buf, {offset})` 从源文件分片读取后 uploadPart（内存窗口=单分片，短读走重试）；`S3Storage.writeFromFile` 改走此路径并返回 getInfo；`write` 补 `option` 参数 + HEAD etag 写前复核（不一致抛 VERSION_CONFLICT，对齐 FTP 模式）；`getInfo` 透出 `version=etag`（去引号）激活保存链路基线 A 快速路径 |
+| FTP/SFTP | ✅ | socket 分块读写（SFTP 显式 256KB 循环）；SFTP 无独立类，由 `FTPStorage` 按 protocol 分发 |
+| OneDrive | ✅ | `writeFromFile` 走 Graph upload session（S7-a，见 S7 表）；`write` 仍整缓冲 PUT（CP-UP 100MB 守卫） |
+| pCloud/华为云盘 | ❌ | 均默认整缓冲（S7 调研项） |
+| 流式 sha256 冲突检测 | ✅ | `HashUtils.sha256HexFile`（cryptoFramework Md 4MB 分块 updateSync） |
+| S3 专项测试 | ✅ | `S3ClientMultipart.test.ets` S3Client_Multipart_FromFile 3 用例（1MB 简单 PUT / 6MB multipart 进度单调+逐字节读回 / 恰 5MB 阈值边界）；`S3Storage.test.ets` StreamingAndConditionalWrite 4 用例（writeFromFile 返回 etag 版本+读回一致、小文件简单 PUT、write 匹配 expectedVersion 成功/过期拒绝 VERSION_CONFLICT、writeFromFile 过期拒绝且远端未覆盖）；均注册 List.test.ets |
+| 保存链路写回 | ❌ | `DatabaseSave` 已用 readToFile+流式哈希做冲突检测，但写回仍整缓冲 `write`，`writeFromFile` 无生产调用方 |
+
+**S4 流式解密 + 附件磁盘化（✅ 基本完成）**
+
+| 项 | 状态 | 实现位置 |
+|---|---|---|
+| HMAC 块文件版 | ✅ | `decryptFromFile`/`encryptFromFile`（`hmac-block-transform.ts:127,198`）；原整缓冲接口保留 |
+| ChaCha20 就地加解密 | ✅ | 命名为 `xorInPlace`（`chacha20.ts:55`），对称同一方法 |
+| 附件磁盘化 | ✅ | 类型含 `KdbxBinaryDiskRef`（设计的 AttachmentRef）双模式；`AttachmentStore` 内容寻址加密缓存（HMAC(storeKey,hash) 文件名，[12B nonce][ChaCha20 密文]）；对外读取收敛为 `binaries.readDiskRef(ref)`；KPSN v2 支持 FLAG_STORE_REF |
+| UI 三处适配 | ✅ | `EntryView.ets:248-275` 异步回填、`EntryEdit.ets:60,241`、`KdbxUtils.ets:346-349,679-685` |
+| 新增附件即写 AS | ❌ | `EntryEdit.ets:857-873` 仍整缓冲入内存（5MB 上限兜底） |
+| 保存加密侧接线 | ❌ | `saveV4` 仍整缓冲 `HmacBlockTransform.encrypt`；`encryptFromFile` 已实现有测试但未接线（属 §2.3 保存管道，随 S6 落地） |
+
+**S5 流式解压加载侧（✅ 已落地，2026-10-06）**
+
+| 项 | 状态 | 实现位置 |
+|---|---|---|
+| NDK zlib 流式模块 | ✅ | `libs/kdbxweb/src/main/cpp/zlib_stream.cpp`（inflateInit2(15+32)/deflate 流式分块，native 模块注册） |
+| JS 包装 | ✅ | `zlib-file.ts`：`inflateFile`/`deflateFile`/`readGzipIsize`（文件到文件，内部 1MB 分块） |
+| T2 内部头流式解析 | ✅ | `kdbx-header.ts:readInnerHeaderFromFile`（5 字节字段头循环；Binary 字段 ≥4MB 且 store 可用 → `sha256FileRegion`+`putFromFileRegion` 落盘 `KdbxBinaryDiskRef`，否则内存模式；末尾 validateInner）；抽出 `applyField` 复用整缓冲分支校验 |
+| 附件池文件区域接口 | ✅ | `attachment-store.ts:sha256FileRegion`（4MB 分块 cryptoFramework Md，空区域返回空串 SHA-256 常量）/`putFromFileRegion`（4MB 分块 ChaCha20 → tmp → fsync → rename，已存在 touch 复用） |
+| parseDecryptedFile 流式分发 | ✅ | `kdbx-format.ts`：`prepareInnerFileStreaming`（ISIZE 预检 + `checkDiskForStreamInflate` statfs 预检 fail-open + inflateFile；非 GZip 直用 T1）+ `parseInnerFileStreaming`（xmlLength=stat.size−xmlStart，CP2' 仅约束 XML 区；fd 双路径 close）；仅解压阶段失败回退整缓冲（守卫错误 DecompressedTooLarge/NotEnoughDisk 直接抛出），inner 解析开始后不回退（附件池已部分落盘，重放会状态重复） |
+| Worker T2 接线 | ✅ | `DatabaseLoad.ets`：T2=`load_t2_<ts>.tmp` 传入 `Kdbx.load`，finally 三文件清理；`kdbx.ts` loadFromFile options 增 `t2Path` |
+| 错误映射 | ✅ | `consts.ts` ErrorCodes 增 `NotEnoughDisk`；`KdbxUtils.ets` → `app.string.database_not_enough_disk`（base+zh_CN 既有资源） |
+| 专项测试 | ✅ | `kdbx-streaming-load.test.ets` 6 用例（zlib 往返/ISIZE、T2 与整缓冲等价、≥4MB 附件落盘 disk ref、小附件留内存、未压缩库走 T1、超限拒绝），已注册 List.test.ets；⚠️ 测试库须显式 `dataCipherUuid=ChaCha20`（KdbxHeader.create 默认 AES） |
+| 保存侧 deflate 接线 | ❌ | `deflateFile` 已具备，`saveV4` 仍整缓冲（随 S6 落地） |
+
+**S7（🔄 部分实现）**
+
+| 项 | 状态 | 实现位置 |
+|---|---|---|
+| S7-b 临时文件清扫 | ✅ | `TempFileSweeper.ets`：启动 `sweep()` 异步清扫 + onDestroy `sweepSync()` 兜底（挂 `EntryAbility.init/onDestroy`）；覆盖 `load_t0_/load_t1_/load_t2_/save_remote_*.tmp` 全部管道临时前缀；POSIX unlink 活动文件安全（fd 仍有效，不影响进行中任务）；4 用例注册 entry List.test.ets |
+| S7-a OneDrive upload session | ✅ | `OneDriveClient.uploadFromFile`：`createUploadSession`（conflictBehavior=replace）→ 分片 PUT 到预授权 uploadUrl（5MiB=16×320KiB 对齐，Content-Range 头，202 受理/200·201 完成）；分片带 3 次重试（404 会话过期直接失败），失败/短读 `DELETE` 取消会话；<4MB 简单 PUT；`OneDriveStorage.writeFromFile` 接线并返回 getInfo（CP-UP 豁免：内存窗口=单分片）；`OneDriveUploadSession.test.ets` 未初始化拒绝 3 常驻用例 + 真实 Graph API 3 门控用例（令牌缺省不注册），已注册 List.test.ets |
+| pCloud/华为云盘流式调研 | ❌ | 未实施 |
+| 大文件验收报告 | ❌ | 待 S6 完成后执行（§12 指标） |
+
+**S6（❌ 未实施；KPSN ArrayBuffer 协议仍在生产使用，无 session-* 目录、无会话密钥包裹、无 24h 清扫；`KdbxSnapshot.test.ets` 仍测 KPSN 协议）**
 
 ## 12. 验收标准汇总
 
