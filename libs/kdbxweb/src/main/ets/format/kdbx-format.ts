@@ -25,12 +25,23 @@ import * as KeyEncryptorAes from '../crypto/key-encryptor-aes';
 import * as KeyEncryptorKdf from '../crypto/key-encryptor-kdf';
 import { Int64 } from '../utils/int64';
 import * as ZlibFile from '../utils/zlib-file';
+import {
+    FileChunkReader,
+    KdbxXmlPullParser,
+    KdbxModelBuilder
+} from '../utils/xml-pull-parser';
 
 export class KdbxFormat {
     /** S5：inner Binary 字段超过该值时流式落盘附件缓存，不整读入内存 */
     private static readonly LARGE_BINARY_STREAM_THRESHOLD = 4 * 1024 * 1024;
     /** S5：流式 inflate 前要求的磁盘余量安全垫（T2 写入 + 解析期临时占用） */
     private static readonly STREAM_DISK_MARGIN = 64 * 1024 * 1024;
+    /**
+     * §7.2 流式拉取解析器开关：true 时 parseInnerFileStreaming 走手写状态机
+     * 解析器（不建 DOM），false 时走既有 xmldom DOM 路径（差分测试对照）。
+     * 差分测试全绿后 DOM 路径退役。
+     */
+    static streamingXmlParse: boolean = true;
 
     readonly kdbx: Kdbx;
     readonly ctx: KdbxContext;
@@ -262,18 +273,25 @@ export class KdbxFormat {
                             throw new KdbxError(ErrorCodes.FileCorrupt, 'inner xml region missing');
                         }
                         KdbxFormat.assertDecompressedLimit(xmlLength, this.maxDecompressedBytes);
-                        return readFileRegion(file.fd, xmlStart, xmlLength);
-                    });
-                })
-                .then((xmlBytes) => {
-                    const xmlStr = bytesToString(xmlBytes);
-                    this.kdbx.xml = XmlUtils.parse(xmlStr);
-                    return this.setProtectedValues().then(() => {
-                        return this.kdbx.loadFromXml(this.ctx).then(() =>
-                            this.postLoadBinaries()
-                        ).then(() => {
-                            this.cleanXml();
-                            return this.kdbx;
+                        if (KdbxFormat.streamingXmlParse) {
+                            return this.parseXmlStreaming(file.fd, xmlStart, xmlLength)
+                                .then(() => this.postLoadBinaries())
+                                .then(() => {
+                                    this.cleanXml();
+                                    return this.kdbx;
+                                });
+                        }
+                        return readFileRegion(file.fd, xmlStart, xmlLength).then((xmlBytes) => {
+                            const xmlStr = bytesToString(xmlBytes);
+                            this.kdbx.xml = XmlUtils.parse(xmlStr);
+                            return this.setProtectedValues().then(() => {
+                                return this.kdbx.loadFromXml(this.ctx).then(() =>
+                                    this.postLoadBinaries()
+                                ).then(() => {
+                                    this.cleanXml();
+                                    return this.kdbx;
+                                });
+                            });
                         });
                     });
                 });
@@ -284,6 +302,32 @@ export class KdbxFormat {
                     () => Promise.reject(e)
                 )
             );
+        });
+    }
+
+    /**
+     * §7.2 流式拉取解析器：从文件分块读 XML 区（256KB），手写状态机解析，
+     * 直接构建模型对象，不建 DOM。ProtectedValue 边解析边用 ProtectSaltGenerator
+     * 取 salt（流式 XOR，密钥流状态跨元素保持）。RSS = 模型 + 256KB 窗口。
+     * 文档解析结束后 computeHashes + resolve pending entry binary refs。
+     */
+    private parseXmlStreaming(fd: number, start: number, length: number): Promise<void> {
+        return this.getProtectSaltGenerator().then((gen) => {
+            const builder = new KdbxModelBuilder(this.kdbx, this.ctx, gen);
+            const reader = new FileChunkReader(fd, start, length);
+            const parser = new KdbxXmlPullParser(reader, builder);
+            return parser.parse().then(() => {
+                return this.kdbx.binaries.computeHashes().then(() => {
+                    const pending = builder.pendingEntryBinaries;
+                    for (let i = 0; i < pending.length; i++) {
+                        const p = pending[i];
+                        const found = this.kdbx.binaries.getByRef({ ref: p.ref });
+                        if (found) {
+                            p.entry.binaries.set(p.key, found);
+                        }
+                    }
+                });
+            });
         });
     }
 
