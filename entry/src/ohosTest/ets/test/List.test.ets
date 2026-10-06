@@ -34,6 +34,8 @@ import SFTPStorageRealFileTest from './storage/sftp/SFTPStorageRealFile.test';
 // 数据库加载/保存双模式单元测试（同步模式 / Worker 异步模式）
 import DatabaseSyncModeTest from './workers/DatabaseSyncMode.test';
 import DatabaseWorkerModeTest from './workers/DatabaseWorkerMode.test';
+// S6 保存管道流式路径专项（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
+import DatabaseSaveStreamingTest from './workers/DatabaseSaveStreaming.test';
 import WorkerEnvironmentInjectionTest from './workers/WorkerEnvironmentInjection.test';
 import DatabaseLoadGuardTest from './services/DatabaseLoadGuard.test';
 import HashUtilsFileTest from './utils/HashUtilsFile.test';
@@ -116,6 +118,8 @@ export default function testsuite() {
   DatabaseSyncModeTest();
   // 数据库加载/保存双模式测试（异步模式：真实 ThreadWorker 消息链路 + 边界序列化）
   DatabaseWorkerModeTest();
+  // S6 保存管道流式路径测试（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
+  DatabaseSaveStreamingTest();
 
   // Worker 环境注入机制测试（INIT_WORKER 消息 + 路径/缓存策略快照）
   WorkerEnvironmentInjectionTest();

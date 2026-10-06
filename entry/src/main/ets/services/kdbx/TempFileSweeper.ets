@@ -16,8 +16,14 @@ const TAG = 'TempFileSweeper';
  * 清扫活动文件在 POSIX 语义下安全（fd 仍有效，关闭后空间释放）
  */
 export class TempFileSweeper {
-  /** 管道临时文件前缀：load_t0/t1/t2（解密解压中间态）、save_remote（保存远端副本） */
-  private static readonly PREFIXES: string[] = ['load_t0_', 'load_t1_', 'load_t2_', 'save_remote_'];
+  /**
+   * 管道临时文件前缀：load_t0/t1/t2（解密解压中间态）、save_remote（保存远端副本）、
+   * save_x1/x2/x3（S6 保存管道 inner/deflate/成品中间态）
+   */
+  private static readonly PREFIXES: string[] = [
+    'load_t0_', 'load_t1_', 'load_t2_',
+    'save_remote_', 'save_x1_', 'save_x2_', 'save_x3_'
+  ];
   private static readonly SUFFIX: string = '.tmp';
 
   /**

@@ -13,7 +13,7 @@ import { KdbxMeta, KdbxMetaEditState } from './kdbx-meta';
 import { KdbxCredentials } from './kdbx-credentials';
 import { KdbxHeader } from './kdbx-header';
 import { KdbxError } from '../errors/kdbx-error';
-import { Defaults, ErrorCodes, Icons } from '../defs/consts';
+import { CipherId, Defaults, ErrorCodes, Icons } from '../defs/consts';
 import { KdbxFormat } from './kdbx-format';
 import { KdbxEntry, KdbxEntryEditState } from './kdbx-entry';
 import { KdbxUuid } from './kdbx-uuid';
@@ -123,6 +123,28 @@ export class Kdbx {
     save(): Promise<ArrayBuffer> {
         const format = new KdbxFormat(this);
         return format.save();
+    }
+
+    /**
+     * S6 保存管道文件版（设计文档 §2.3）：v4 + ChaCha20 全链路落盘，
+     * 内存窗口与库大小解耦。调用方需先 canSaveToFile() 判定，不支持则回退 save()。
+     * @param outPath X3 成品 KDBX 文件路径（调用方管理生命周期）
+     * @param options x1Path / x2Path 临时文件路径（调用方管理）
+     */
+    saveToFile(outPath: string, options: { x1Path: string, x2Path: string }): Promise<void> {
+        if (!outPath || !options?.x1Path || !options?.x2Path) {
+            return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'outPath/x1Path/x2Path required'));
+        }
+        const format = new KdbxFormat(this);
+        return format.saveToFile(outPath, options.x1Path, options.x2Path);
+    }
+
+    /**
+     * 是否可走 saveToFile 流式管道（v4 + ChaCha20）；否则调用方回退 save() 整缓冲
+     */
+    canSaveToFile(): boolean {
+        const cipherId = this.header?.dataCipherUuid;
+        return this.versionMajor === 4 && !!cipherId && cipherId.toString() === CipherId.ChaCha20;
     }
 
     /**
