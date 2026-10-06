@@ -1,6 +1,7 @@
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { ByteUtils } from 'kdbxweb';
 
 const DOMAIN = 0x0000;
@@ -217,6 +218,62 @@ export class PCloudClient {
       throw new PCloudError(-1, 'downloadFile: empty response body');
     }
     return body;
+  }
+
+  /**
+   * 流式分块下载文件到本地文件（S7：pCloud CDN 直链支持 Range GET）
+   * 内存窗口 = 单块（8MB），与文件大小解耦；首块若返回 200（Range 不支持）退化为整缓冲
+   * @param fileId 文件 ID
+   * @param destPath 本地目标文件路径（调用方管理生命周期）
+   * @returns 下载字节数
+   */
+  async downloadFileRangeToFile(fileId: string, destPath: string): Promise<number> {
+    if (this.session === null) {
+      throw new Error('PCloudClient session is closed');
+    }
+    const link = await this.getFileLink(fileId);
+    const downloadUrl = link.hosts[0] + link.path;
+    const metadata = await this.stat(fileId);
+    const fileSize = metadata.size ?? 0;
+    if (fileSize === 0) {
+      const empty = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      await fs.close(empty.fd);
+      return 0;
+    }
+    const CHUNK_SIZE = 8 * 1024 * 1024;
+    let downloaded = 0;
+    let firstChunk = true;
+    const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+    try {
+      while (downloaded < fileSize) {
+        const end = Math.min(downloaded + CHUNK_SIZE - 1, fileSize - 1);
+        const headers: Record<string, string> = {};
+        headers['Range'] = `bytes=${downloaded}-${end}`;
+        const req = new rcp.Request(downloadUrl, 'GET', headers);
+        const resp = await this.session.fetch(req);
+        if (firstChunk && resp.statusCode === 200) {
+          if (!resp.body) {
+            throw new PCloudError(-1, 'downloadFileRangeToFile: empty response body');
+          }
+          await fs.write(file.fd, resp.body);
+          downloaded = fileSize;
+          break;
+        }
+        firstChunk = false;
+        if (resp.statusCode !== 206) {
+          throw new PCloudError(resp.statusCode, 'downloadFileRangeToFile: HTTP ' + resp.statusCode);
+        }
+        if (!resp.body) {
+          throw new PCloudError(-1, 'downloadFileRangeToFile: empty body at offset ' + downloaded);
+        }
+        await fs.write(file.fd, resp.body);
+        downloaded += resp.body.byteLength;
+      }
+      await fs.fsync(file.fd);
+    } finally {
+      await fs.close(file.fd);
+    }
+    return downloaded;
   }
 
   /**

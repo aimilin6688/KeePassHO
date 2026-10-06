@@ -31,10 +31,22 @@ export class PCloudStorage implements IFileStorage {
   }
 
   /**
-   * 流式下载到本地文件（pCloud 当前走默认整缓冲；分块下载 API 为 S7 调研项）
+   * 流式分块下载到本地文件（S7：Range GET 循环 8MB 块直写盘，内存与文件大小解耦）
    */
   async readToFile(path: string, destPath: string): Promise<FileInfo> {
-    return FileTransfer.readToFileDefault(this, path, destPath);
+    this.ensureReady();
+    this.config!.touchActive();
+    try {
+      await this.client!.downloadFileRangeToFile(path, destPath);
+      return await this.getInfo(path);
+    } catch (error) {
+      const err = error as Error;
+      this.handlePCloudError(error, 'ReadToFile');
+      throw new StorageError(
+        StorageErrorCodes.FILE_READ_ERROR,
+        'ReadToFile failed: ' + err.message
+      );
+    }
   }
 
   /**
