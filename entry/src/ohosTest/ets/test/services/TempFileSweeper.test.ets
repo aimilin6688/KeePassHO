@@ -33,6 +33,9 @@ export default function TempFileSweeperTest() {
       expect(TempFileSweeper.isPipelineTemp('save_x1_123.tmp')).assertTrue();
       expect(TempFileSweeper.isPipelineTemp('save_x2_123.tmp')).assertTrue();
       expect(TempFileSweeper.isPipelineTemp('save_x3_123.tmp')).assertTrue();
+      // S6 MERGE 流式加载临时文件前缀
+      expect(TempFileSweeper.isPipelineTemp('merge_t1_123.tmp')).assertTrue();
+      expect(TempFileSweeper.isPipelineTemp('merge_t2_123.tmp')).assertTrue();
       // 非管道文件不匹配
       expect(TempFileSweeper.isPipelineTemp('keepme.tmp')).assertFalse();
       expect(TempFileSweeper.isPipelineTemp('other.txt')).assertFalse();

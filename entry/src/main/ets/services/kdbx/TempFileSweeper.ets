@@ -18,11 +18,12 @@ const TAG = 'TempFileSweeper';
 export class TempFileSweeper {
   /**
    * 管道临时文件前缀：load_t0/t1/t2（解密解压中间态）、save_remote（保存远端副本）、
-   * save_x1/x2/x3（S6 保存管道 inner/deflate/成品中间态）
+   * save_x1/x2/x3（S6 保存管道 inner/deflate/成品中间态）、merge_t1/t2（S6 MERGE 流式加载中间态）
    */
   private static readonly PREFIXES: string[] = [
     'load_t0_', 'load_t1_', 'load_t2_',
-    'save_remote_', 'save_x1_', 'save_x2_', 'save_x3_'
+    'save_remote_', 'save_x1_', 'save_x2_', 'save_x3_',
+    'merge_t1_', 'merge_t2_'
   ];
   private static readonly SUFFIX: string = '.tmp';
 

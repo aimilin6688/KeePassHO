@@ -199,5 +199,62 @@ export default function KdbxSaveToFileTest() {
                 }
             );
         });
+
+        /**
+         * S6-f：serializeToFile 产出的 XML 与 serialize 语义等价（Kdbx.load 可解析、模型一致）。
+         * 验证 DOM→文件分块序列化器正确性（转义、自闭合、属性、ProtectedValue base64 文本）。
+         */
+        it('serializeToFile output is parseable and model-equivalent', 0, async () => {
+            const cred = new kdbxweb.KdbxCredentials(kdbxweb.ProtectedValue.fromString('demo'));
+            const db = kdbxweb.Kdbx.create(cred, 'SerializeFileDb');
+            db.header.dataCipherUuid = new kdbxweb.KdbxUuid(kdbxweb.Consts.CipherId.ChaCha20);
+            const entry = db.createEntry(db.getDefaultGroup());
+            entry.fields.set('Title', 'serialize-file-entry');
+            entry.fields.set('Password', kdbxweb.ProtectedValue.fromString('secret-pass-123'));
+            const attach = kdbxweb.ByteUtils.stringToBuffer('serialize-file-attachment');
+            const binary = await db.binaries.add(attach);
+            entry.binaries.set('s.bin', binary);
+
+            // 用 saveToFile（内部走 serializeToFile）产出文件，再 Kdbx.load 读回
+            const outPath = testDir + '/stf-serialize.kdbx';
+            const x1 = testDir + '/stf-serialize-x1.tmp';
+            const x2 = testDir + '/stf-serialize-x2.tmp';
+            await db.saveToFile(outPath, { x1Path: x1, x2Path: x2 });
+            const loaded = await kdbxweb.Kdbx.load(await readFile(outPath), cred);
+
+            // 验证条目、ProtectedValue、附件
+            const loadedEntry = loaded.getDefaultGroup().entries[0];
+            expect(loadedEntry.fields.get('Title')).assertEqual('serialize-file-entry');
+            const pwd = loadedEntry.fields.get('Password');
+            expect(pwd instanceof kdbxweb.ProtectedValue).assertTrue();
+            const pwdVal = pwd as kdbxweb.ProtectedValue;
+            expect(kdbxweb.ByteUtils.bytesToString(pwdVal.getBinary())).assertEqual('secret-pass-123');
+            const pool = loaded.binaries.getAllWithHashes();
+            expect(pool.length).assertEqual(1);
+            expect(kdbxweb.ByteUtils.arrayBufferEquals(binaryBytes(pool[0].value), attach)).assertTrue();
+            cleanup([outPath, x1, x2]);
+        });
+
+        /**
+         * S6-f：serializeToFile 处理特殊字符（<, >, &, "）不损坏 XML
+         */
+        it('serializeToFile escapes special characters correctly', 0, async () => {
+            const cred = new kdbxweb.KdbxCredentials(kdbxweb.ProtectedValue.fromString('demo'));
+            const db = kdbxweb.Kdbx.create(cred, 'EscapeDb');
+            db.header.dataCipherUuid = new kdbxweb.KdbxUuid(kdbxweb.Consts.CipherId.ChaCha20);
+            const entry = db.createEntry(db.getDefaultGroup());
+            entry.fields.set('Title', 'a<b>&c"d\'e>f');
+            entry.fields.set('Notes', 'x&y<z>w"q');
+
+            const outPath = testDir + '/stf-escape.kdbx';
+            const x1 = testDir + '/stf-escape-x1.tmp';
+            const x2 = testDir + '/stf-escape-x2.tmp';
+            await db.saveToFile(outPath, { x1Path: x1, x2Path: x2 });
+            const loaded = await kdbxweb.Kdbx.load(await readFile(outPath), cred);
+            const loadedEntry = loaded.getDefaultGroup().entries[0];
+            expect(loadedEntry.fields.get('Title')).assertEqual('a<b>&c"d\'e>f');
+            expect(loadedEntry.fields.get('Notes')).assertEqual('x&y<z>w"q');
+            cleanup([outPath, x1, x2]);
+        });
     });
 }

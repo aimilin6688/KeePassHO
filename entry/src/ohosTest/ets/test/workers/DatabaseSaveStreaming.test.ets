@@ -59,7 +59,8 @@ function listCachePipelineTemps(): string[] {
   const cacheDir = CommonUtils.getCacheDir();
   const names: string[] = fs.listFileSync(cacheDir);
   return names.filter((n: string) =>
-    n.startsWith('save_x1_') || n.startsWith('save_x2_') || n.startsWith('save_x3_'));
+    n.startsWith('save_x1_') || n.startsWith('save_x2_') || n.startsWith('save_x3_') ||
+    n.startsWith('merge_t1_') || n.startsWith('merge_t2_'));
 }
 
 export default function DatabaseSaveStreamingTest() {

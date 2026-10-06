@@ -9,6 +9,8 @@ import { ProtectedValue } from '../crypto/protected-value';
 import { ProtectSaltGenerator } from '../crypto/protect-salt-generator';
 import { KdbxBinaries, KdbxBinaryDiskRef, KdbxBinaryOrRef } from '../format/kdbx-binaries';
 import { Document, DOMParser, DOMParserOptions, Element, Node, XMLSerializer } from '@xmldom/xmldom';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { stringToBytes } from './byte-utils';
 
 
 const DateRegex = /\.\d\d\d/;
@@ -382,4 +384,94 @@ export function protectPlainValues(node: Node): void {
       node.setAttribute(XmlNames.Attr.Protected, 'True');
     }
   });
+}
+
+/**
+ * XML 文本转义（元素文本：< → &lt; > → &gt; & → &amp;）
+ */
+function escapeText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * XML 属性值转义（< → &lt; > → &gt; & → &amp; " → &quot; ' → &apos;）
+ */
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+/**
+ * DOM→文件分块序列化器（S6-f：消除 XML 字符串峰值 ③b/③c）
+ * 8MB 缓冲 flush，递归遍历 DOM 写 UTF-8 字节到 fd；
+ * 产出与 serialize(doc) 语义等价（Kdbx.load 可解析），非字节相同。
+ * 调用方须先 updateProtectedValuesSalt（ProtectedValue textContent 已设为 base64）。
+ */
+export function serializeToFile(doc: Document, fd: number): Promise<void> {
+  const FLUSH_THRESHOLD = 8 * 1024 * 1024;
+  let pending: string = '';
+
+  const flush = (): Promise<void> => {
+    if (pending.length === 0) {
+      return Promise.resolve();
+    }
+    const bytes = arrayToBuffer(stringToBytes(pending));
+    pending = '';
+    return fs.write(fd, bytes).then(() => undefined);
+  };
+
+  const write = (s: string): Promise<void> => {
+    pending += s;
+    if (pending.length >= FLUSH_THRESHOLD) {
+      return flush();
+    }
+    return Promise.resolve();
+  };
+
+  const serializeNode = (node: Node): Promise<void> => {
+    const nodeType = node.nodeType;
+    // Document node: 序列化子节点
+    if (nodeType === 9 /* DOCUMENT_NODE */) {
+      let chain: Promise<void> = Promise.resolve();
+      for (let i = 0; i < node.childNodes.length; i++) {
+        const child = node.childNodes[i];
+        chain = chain.then(() => serializeNode(child));
+      }
+      return chain;
+    }
+    // Element node
+    if (nodeType === 1 /* ELEMENT_NODE */) {
+      const el = node as Element;
+      let chain: Promise<void> = write('<' + el.tagName);
+      // 属性
+      const attrs = el.attributes;
+      for (let i = 0; i < attrs.length; i++) {
+        const attr = attrs[i];
+        chain = chain.then(() =>
+          write(' ' + attr.name + '="' + escapeAttr(attr.value) + '"'));
+      }
+      const hasChildren = el.childNodes.length > 0;
+      if (!hasChildren) {
+        return chain.then(() => write('/>'));
+      }
+      chain = chain.then(() => write('>'));
+      // 子节点
+      for (let i = 0; i < el.childNodes.length; i++) {
+        const child = el.childNodes[i];
+        chain = chain.then(() => serializeNode(child));
+      }
+      return chain.then(() => write('</' + el.tagName + '>'));
+    }
+    // Text node
+    if (nodeType === 3 /* TEXT_NODE */) {
+      return write(escapeText(node.textContent || ''));
+    }
+    // Comment / other: 跳过（KDBX XML 不含注释）
+    return Promise.resolve();
+  };
+
+  // XML 声明（与 create() 一致）
+  let chain: Promise<void> = write('<?xml version="1.0" encoding="utf-8" standalone="yes"?>');
+  chain = chain.then(() => serializeNode(doc));
+  return chain.then(() => flush());
 }

@@ -1,5 +1,6 @@
 import { gzip, ungzip } from '@ohos/flate2';
 import { fileIo as fs, statfs } from '@kit.CoreFileKit';
+import { Document } from '@xmldom/xmldom';
 import { Kdbx } from './kdbx';
 import { CipherId, CompressionAlgorithm, ErrorCodes } from '../defs/consts';
 import { KdbxError } from '../errors/kdbx-error';
@@ -610,11 +611,9 @@ export class KdbxFormat {
                             throw new KdbxError(ErrorCodes.InvalidState, 'no xml');
                         }
                         XmlUtils.updateProtectedValuesSalt(this.kdbx.xml.documentElement, gen);
-                        const xml = XmlUtils.serialize(this.kdbx.xml);
-                        const xmlData = arrayToBuffer(stringToBytes(xml));
-                        // X1：inner header 流式写出 + XML 字节追加
-                        return this.writeInnerToFile(x1Path, xmlData).then((x1Bytes) => {
-                            zeroBuffer(xmlData);
+                        // S6-f：DOM→文件分块序列化，消除 XML 字符串峰值（③b）+ UTF-8 拷贝峰值（③c）
+                        // DOM 峰值（③a）仍保留，att-500（3MB XML）DOM ~15MB 在预算内
+                        return this.writeInnerToFile(x1Path, this.kdbx.xml).then((x1Bytes) => {
                             // 载荷选择：GZip → deflate 到 X2；None → X1 即载荷
                             let payloadPath = x1Path;
                             let afterDeflate: Promise<void> = Promise.resolve();
@@ -679,15 +678,17 @@ export class KdbxFormat {
     }
 
     /**
-     * 写 X1 inner 明文文件：inner header 流式分块回读附件 + XML 字节追加。
+     * 写 X1 inner 明文文件：inner header 流式分块回读附件 + DOM→文件序列化 XML 追加。
+     * @param x1Path X1 文件路径
+     * @param xmlDoc 已 updateProtectedValuesSalt 的 DOM 文档
      * @returns X1 文件字节数（供 deflate 磁盘守卫估算）
      */
-    private writeInnerToFile(x1Path: string, xmlData: ArrayBuffer): Promise<number> {
+    private writeInnerToFile(x1Path: string, xmlDoc: Document): Promise<number> {
         let x1File: fs.File | null = null;
         return fs.open(x1Path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC).then((x1) => {
             x1File = x1;
             return this.kdbx.header.writeInnerHeaderToFile(x1.fd, this.ctx).then(() =>
-                fs.write(x1.fd, xmlData)
+                XmlUtils.serializeToFile(xmlDoc, x1.fd)
             ).then(() => fs.fsync(x1.fd).then(() =>
                 fs.stat(x1.fd).then((stat) =>
                     fs.close(x1.fd).then(() => stat.size)
