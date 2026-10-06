@@ -60,6 +60,7 @@ export class DatabaseSave {
    */
   public async handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
     const ts: number = Date.now();
+    const t0: number = ts;
     // 远端临时文件（ciphertext，可放 cacheDir；finally 清理）
     const tempPath: string = CommonUtils.getCacheDir() + '/save_remote_' + ts + '.tmp';
     // S6 保存管道临时文件（X1 inner / X2 deflate / X3 成品，调用方管理生命周期）
@@ -81,11 +82,17 @@ export class DatabaseSave {
           throw new Error(rejectReason);
         }
         // 流式下载到临时文件（不驻留整缓冲，修 P9）
+        const tDownload: number = Date.now();
         const fileInfo: FileInfo = await new KdbxFileManager(request.storageType, request.storageConfig)
           .readToFile(request.filePath, tempPath);
+        hilog.info(DOMAIN, TAG, 'save stage download: %{public}d ms, bytes=%{public}d',
+          Date.now() - tDownload, fileInfo.size ?? 0);
         this.postMessage('load_file_success');
         // 流式增量 sha256（分块喂入，不驻留整缓冲）
+        const tHash: number = Date.now();
         const remoteHash: string = await HashUtils.sha256HexFile(tempPath);
+        hilog.info(DOMAIN, TAG, 'save stage sha256: %{public}d ms, bytes=%{public}d',
+          Date.now() - tHash, fileInfo.size ?? 0);
         const remoteChanged: boolean = DatabaseSave.isRemoteChanged(request, fileInfo, remoteHash);
         if (!remoteChanged) {
           // 远端未变：直接保存，远端内容不入内存
@@ -93,6 +100,8 @@ export class DatabaseSave {
             savedPath, x1Path, x2Path);
           await this.writeSavedContent(request, saved, fileInfo.version ?? null);
           await this.postSuccess(request, saved, false);
+          hilog.info(DOMAIN, TAG, 'save total (no-conflict): %{public}d ms, mode=%{public}s',
+            Date.now() - t0, saved.filePath !== null ? 'stream' : 'buffer');
           return;
         }
         if (strategy === ConflictStrategy.OVERWRITE) {
@@ -101,6 +110,8 @@ export class DatabaseSave {
             savedPath, x1Path, x2Path);
           await this.writeSavedContent(request, saved, null);
           await this.postSuccess(request, saved, false);
+          hilog.info(DOMAIN, TAG, 'save total (overwrite): %{public}d ms, mode=%{public}s',
+            Date.now() - t0, saved.filePath !== null ? 'stream' : 'buffer');
           return;
         }
         if (strategy === ConflictStrategy.AUTO) {
@@ -111,8 +122,10 @@ export class DatabaseSave {
         // MERGE：流式加载远端（loadFromFile，不整读远端文件）→ 合并 → 写入
         const mergeT1Path: string = CommonUtils.getCacheDir() + '/merge_t1_' + ts + '.tmp';
         const mergeT2Path: string = CommonUtils.getCacheDir() + '/merge_t2_' + ts + '.tmp';
+        const tMerge: number = Date.now();
         const mergedModel: Kdbx = await this.mergeDatabase(request, tempPath, credentials,
           mergeT1Path, mergeT2Path);
+        hilog.info(DOMAIN, TAG, 'save stage merge-load: %{public}d ms', Date.now() - tMerge);
         const saved: SavedContent = await this.buildSavedContent(request, credentials, mergedModel,
           savedPath, x1Path, x2Path);
         try {
@@ -130,6 +143,8 @@ export class DatabaseSave {
           throw new Error(error.message);
         }
         await this.postSuccess(request, saved, true, mergedModel);
+        hilog.info(DOMAIN, TAG, 'save total (merge): %{public}d ms, mode=%{public}s',
+          Date.now() - t0, saved.filePath !== null ? 'stream' : 'buffer');
         return;
       }
     } catch (error) {
@@ -212,11 +227,11 @@ export class DatabaseSave {
     // v3 / AES-CBC 回退整缓冲 save()
     if (savedPath && x1Path && x2Path && database.canSaveToFile()) {
       await database.saveToFile(savedPath, { x1Path: x1Path, x2Path: x2Path });
-      hilog.debug(DOMAIN, TAG, 'Worker save database to file success, time: %{public}d ms', new Date().getTime() - now);
+      hilog.info(DOMAIN, TAG, 'save stage build(stream): %{public}d ms', new Date().getTime() - now);
       return new SavedContent(savedPath, null);
     }
     const savedDb: ArrayBuffer = await database.save().then(buf => {
-      hilog.debug(DOMAIN, TAG, 'Worker save database success, time: %{public}d ms', new Date().getTime() - now);
+      hilog.info(DOMAIN, TAG, 'save stage build(buffer): %{public}d ms', new Date().getTime() - now);
       return buf;
     });
     return new SavedContent(null, savedDb);
@@ -263,12 +278,14 @@ export class DatabaseSave {
    * @throws Error 写入失败，版本冲突时抛出 StorageError(VERSION_CONFLICT)
    */
   private async writeSavedContent(request: SaveDatabase, saved: SavedContent, expectedVersion: string | null): Promise<void> {
+    const tWrite: number = Date.now();
     if (saved.filePath !== null) {
       const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
       const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
       try {
         await kdbxFileManager.writeFromFile(request.filePath, saved.filePath, option);
         this.postMessage('save_success');
+        hilog.info(DOMAIN, TAG, 'save stage upload(stream): %{public}d ms', Date.now() - tWrite);
       } catch (error) {
         hilog.error(DOMAIN, TAG, 'Worker error save database (writeFromFile):%{public}s, stack:%{public}s', error.message, error.stack);
         if (error instanceof Error) {
@@ -283,6 +300,8 @@ export class DatabaseSave {
       throw new Error('saved content is empty');
     }
     await this.writeContent(request, buffer, expectedVersion);
+    hilog.info(DOMAIN, TAG, 'save stage upload(buffer): %{public}d ms, bytes=%{public}d',
+      Date.now() - tWrite, buffer.byteLength);
   }
 
   /**
