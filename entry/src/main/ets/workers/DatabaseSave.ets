@@ -1,7 +1,6 @@
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
 import { FileContentInfo, WriteOption } from '../storage';
-import { FileTransfer } from '../storage/FileTransfer';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { StorageError, StorageErrorCodes } from '../storage/StorageError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -9,6 +8,8 @@ import { ConflictMessage, SuccessMessage } from './WorkerParam';
 import { ConflictStrategy, SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
+import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
+import { Constants } from '../common/constants/Constants';
 import { CommonUtils, HashUtils, KdbxUtils, ResourceManager } from '../common/utils';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
 import { FileInfo } from '../storage';
@@ -107,9 +108,11 @@ export class DatabaseSave {
           this.postConflictMessage(new ConflictMessage(fileInfo.modifiedTime, fileInfo.version ?? null));
           return;
         }
-        // MERGE：从临时文件读入内存（S4 前仍整缓冲）→ Kdbx.load → 合并 → 写入
-        const remoteContent: ArrayBuffer = await FileTransfer.readFileToBuffer(tempPath);
-        const mergedModel: Kdbx = await this.mergeDatabase(request, remoteContent, credentials);
+        // MERGE：流式加载远端（loadFromFile，不整读远端文件）→ 合并 → 写入
+        const mergeT1Path: string = CommonUtils.getCacheDir() + '/merge_t1_' + ts + '.tmp';
+        const mergeT2Path: string = CommonUtils.getCacheDir() + '/merge_t2_' + ts + '.tmp';
+        const mergedModel: Kdbx = await this.mergeDatabase(request, tempPath, credentials,
+          mergeT1Path, mergeT2Path);
         const saved: SavedContent = await this.buildSavedContent(request, credentials, mergedModel,
           savedPath, x1Path, x2Path);
         try {
@@ -138,8 +141,10 @@ export class DatabaseSave {
         this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error));
       }
     } finally {
-      // 清理管道临时文件（ciphertext + S6 保存中间态，用完即删）
-      const tempFiles: string[] = [tempPath, savedPath, x1Path, x2Path];
+      // 清理管道临时文件（ciphertext + S6 保存中间态 + MERGE 流式加载中间态，用完即删）
+      const tempFiles: string[] = [tempPath, savedPath, x1Path, x2Path,
+        CommonUtils.getCacheDir() + '/merge_t1_' + ts + '.tmp',
+        CommonUtils.getCacheDir() + '/merge_t2_' + ts + '.tmp'];
       for (const p of tempFiles) {
         try {
           await fs.unlink(p);
@@ -218,25 +223,31 @@ export class DatabaseSave {
   }
 
   /**
-   * 合并数据库：远端修改合并进本地后返回合并模型（由调用方加密保存）
+   * 合并数据库：流式加载远端（loadFromFile，不整读远端文件）→ 合并进本地模型
+   * S6 MERGE 流式化：loadFromFile 走 S4/S5 流式解密+解压+附件落盘管道，消除 peak ⑫（远端整缓冲）
    * @param request 请求
-   * @param fileContent 远端文件内容
+   * @param remoteFilePath 远端临时文件路径（已下载到本地）
    * @param credentials 凭证
-  /**
-   * 合并数据库：远端修改合并进本地后返回合并模型（由调用方加密保存）
-   * S3 起远端内容由调用方从临时文件读入后传入（S4 流式解密前仍整缓冲）
-   * @param request 请求
-   * @param remoteContent 远端文件内容（ArrayBuffer）
-   * @param credentials 凭证
-   * @throws Error 合并失败（远端凭证变更时 Kdbx.load 抛出 InvalidKey）
+   * @param t1Path MERGE 流式解密临时文件路径（调用方管理生命周期）
+   * @param t2Path MERGE 流式解压临时文件路径（调用方管理生命周期）
+   * @throws Error 合并失败（远端凭证变更时 loadFromFile 抛出 InvalidKey）
    */
-  private async mergeDatabase(request: SaveDatabase, remoteContent: ArrayBuffer,
-    credentials: KdbxCredentials): Promise<Kdbx> {
+  private async mergeDatabase(request: SaveDatabase, remoteFilePath: string,
+    credentials: KdbxCredentials, t1Path: string, t2Path: string): Promise<Kdbx> {
     this.postMessage('validating');
-    // 尝试加载远端数据库（远端凭证已变更时抛出 InvalidKey，由上层统一转为用户提示）
+    // 流式加载远端数据库（远端凭证已变更时抛出 InvalidKey，由上层统一转为用户提示）
     const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
-    const remoteKdbx: Kdbx = await Kdbx.load(remoteContent, credentials,
-      { maxDecompressedBytes: maxDecompressedBytes });
+    const remoteKdbx: Kdbx = await Kdbx.loadFromFile(remoteFilePath, credentials, {
+      maxDecompressedBytes: maxDecompressedBytes,
+      t1Path: t1Path,
+      t2Path: t2Path,
+      attachmentStore: AttachmentCacheService.getStore(),
+      attachmentsDiskThreshold: Constants.ATTACH_DISK_THRESHOLD_BYTES
+    });
+    // 清理 MERGE 流式加载临时文件（T1/T2）
+    for (const p of [t1Path, t2Path]) {
+      try { await fs.unlink(p); } catch { /* 文件不存在或清理失败：忽略 */ }
+    }
     this.postMessage('merging_database');
     // 合并数据库
     const localKdbx: Kdbx = await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);

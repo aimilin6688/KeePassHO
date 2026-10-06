@@ -363,12 +363,12 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 |---|---|---|
 | saveToFile 文件版管道 | ✅ | `kdbx.ts:saveToFile/canSaveToFile` + `kdbx-format.ts:saveToFile/saveV4ToFile/writeInnerToFile/checkDiskForStreamDeflate`：v4+ChaCha20 全链路 X1 inner→X2 deflate→X3 kdbx 落盘；buildXml+serialize 产 XML 字节写 X1，`writeInnerHeaderToFile` 流式分块回读磁盘引用附件直写 fd（`AttachmentStore.getToFile`/`binaries.readDiskRefToFile`），GZip 时 `deflateFile`，`encryptFromFile` 产 X3；v3/AES-CBC 回退 `save()` 整缓冲；`checkDiskForStreamDeflate` 磁盘余量守卫 |
 | 保存写回 writeFromFile 接线 | ✅ | `DatabaseSave.ets`：`SavedContent` 双形态（filePath/buffer），`buildSavedContent` 据 `canSaveToFile()` 分流，`writeSavedContent` 流式走 `writeFromFile`+WriteOption 条件写、回退走 `write`；`postSuccess` 流式 `sha256HexFile`、回退 `sha256Hex`；非合并 data 传空缓冲（主线程不用） |
-| 临时文件前缀 | ✅ | `TempFileSweeper.PREFIXES` 增 `save_x1_/save_x2_/save_x3_`；`DatabaseSave` finally 清理 4 文件（tempPath+savedPath+x1Path+x2Path） |
-| 专项测试 | ✅ | `kdbx-save-to-file.test.ets` 6 用例（canSaveToFile 判定、saveToFile 产物可加载、与 save 产物模型等价、compression None 往返、磁盘引用附件往返、缺参 InvalidArg），已注册 kdbxweb List.test.ets；`TempFileSweeper.test.ets` 增 save_x1/x2/x3 前缀断言与清扫用例 |
+| 临时文件前缀 | ✅ | `TempFileSweeper.PREFIXES` 增 `save_x1_/save_x2_/save_x3_/merge_t1_/merge_t2_`；`DatabaseSave` finally 清理全部管道临时文件 |
+| 专项测试 | ✅ | `kdbx-save-to-file.test.ets` 8 用例（canSaveToFile 判定、saveToFile 产物可加载、与 save 产物模型等价、compression None 往返、磁盘引用附件往返、缺参 InvalidArg、serializeToFile 模型等价+ProtectedValue/附件保真、serializeToFile 特殊字符转义）；`TempFileSweeper.test.ets` 增 save_x1/x2/x3 + merge_t1/t2 前缀断言与清扫用例；`DatabaseSaveStreaming.test.ets` 4 用例（流式无冲突/MERGE/OVERWRITE + AES 回退，含临时文件清理断言）；`kdbx-attachment-store.test.ets` +5 用例（getToFile 等价/大附件/篡改/缺失 + S6-d 新增附件注册池磁盘化） |
 | 流式拉取解析器 | ❌ | 未实施（§7.2，后续会话） |
-| 流式 XmlWriter | ❌ | 未实施（§7.3，后续会话）；saveToFile 仍用 xmldom DOM+serialize 产 XML 字符串（峰值③ DOM/字符串未消除） |
+| 流式 XmlWriter | ✅ | `xml-utils.ts:serializeToFile`：DOM→文件 8MB 分块序列化器（消除 XML 字符串峰值 ③b + UTF-8 拷贝峰值 ③c；DOM 峰值 ③a 保留，att-500 3MB XML DOM ~15MB 在预算内）；`saveV4ToFile` 接线 `serializeToFile` 替代 `serialize`+`stringToBytes`+`write`；v3/saveXml 仍用 `serialize`（prettyPrint 不需文件版） |
 | 会话文件协议 KPSN 退役 | ❌ | KPSN ArrayBuffer 协议仍在生产；无 session-* 目录、无会话密钥包裹、无 24h 清扫；`KdbxSnapshot.test.ets` 仍测 KPSN |
-| MERGE 流式化 | ❌ | 未实施（§7.5，后续会话）；MERGE 路径仍 readFileToBuffer+Kdbx.load 整缓冲 |
+| MERGE 流式化 | ✅ | `DatabaseSave.mergeDatabase` 改用 `Kdbx.loadFromFile`（S4/S5 流式解密+解压+附件落盘管道），消除 peak ⑫（远端整缓冲 readFileToBuffer+Kdbx.load）；`merge_t1_/merge_t2_` 临时文件 + TempFileSweeper 覆盖；远端凭证变更仍抛 InvalidKey（错误语义不变） |
 | 新增附件即写 AS | ✅ | `EntryEdit.addAttachment`：`binaries.add` 注册池（消除 base64 内联）+ `maybeConvertToDiskRefs` 阈值磁盘化 + `rebindEntryBinaries`；测试 `kdbx-attachment-store.test.ets` 增 'add attachment after load registers in pool and disk-refs on save' 用例 |
 
 ## 12. 验收标准汇总
