@@ -341,9 +341,14 @@ export default function LargeFileAcceptanceTest() {
     }, BIG_TIMEOUT);
 
     it('m0-consumed: session m0 files removed after load', 0, async () => {
+      // 全量混跑时前序套件被 terminate 的 Worker 可能遗留 m0 文件（由清扫负责），
+      // 本用例语义为「本次加载零残留」：只对比本次加载前后的 m0 增量
+      const before = listSessionM0Files();
       const dbPath = await genDb('m0consume', 256 * 1024, 3, 0, 0);
       await loadViaWorker(dbPath, KdbxModeTestHelper.DB_PASSWORD, BIG_TIMEOUT);
-      expect(listSessionM0Files().length === 0).assertTrue();
+      const after = listSessionM0Files();
+      const leftover = after.filter((name) => !before.includes(name));
+      expect(leftover.length === 0).assertTrue();
     }, BIG_TIMEOUT);
 
     it('save-cleanup: worker save leaves no pipeline temps', 0, async () => {

@@ -184,6 +184,6 @@ export default function testsuite() {
   KdbxExportHandlerTest();
 
   // UI 自动化测试
-  // OpenDatabaseUiTest();
-  // StorageConflictUiTest();
+  OpenDatabaseUiTest();
+  StorageConflictUiTest();
 }
