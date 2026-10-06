@@ -18,6 +18,8 @@ import { FileService } from '../../services/FileService';
 import { CredentialsParam } from '../../services/TypeDefined';
 import { DatabaseLoadGuard } from '../../services/kdbx/DatabaseLoadGuard';
 import { AttachmentCacheService } from '../../services/kdbx/AttachmentCacheService';
+import { SessionFileService } from '../../services/kdbx/SessionFileService';
+import { SuccessMessage } from '../../workers/WorkerParam';
 import { StorageError, StorageErrorCodes } from '../../storage/StorageError';
 import { SortMode } from '../constants/SortConstants';
 import { IconUtils, ResourceManager, StringUtils } from '.';
@@ -355,6 +357,27 @@ export class KdbxUtils {
       hilog.error(DOMAIN, TAG, `arrayBufferToKdbx error: ${error?.message}, stack: ${error?.stack}`);
       return Kdbx.loadXml(ByteUtils.bytesToString(arrayBuffer), credentials);
     }
+  }
+
+  /**
+   * 从 Worker 成功消息还原模型（§7.4 会话文件协议）
+   * 优先走 M0 会话文件：解包裹 → KPSN 魔数分发还原 → 删除会话文件；
+   * 无 M0 时回退消息内 data（同步模式直接传 Kdbx 实例 / 历史缓冲）
+   * @param message Worker 成功消息
+   * @param credentialsParam 凭据参数
+   * @param credentials 凭据
+   */
+  public static async successMessageToKdbx(message: SuccessMessage, credentialsParam: CredentialsParam,
+    credentials?: KdbxCredentials): Promise<Kdbx> {
+    if (message.m0Path) {
+      const startTime = Date.now();
+      const bytes: ArrayBuffer = await SessionFileService.unwrapFromFile(message.m0Path);
+      SessionFileService.removeFile(message.m0Path);
+      hilog.info(DOMAIN, TAG, 'm0 unwrap time: %{public}d ms, bytes=%{public}d',
+        Date.now() - startTime, bytes.byteLength);
+      return KdbxUtils.arrayBufferToKdbx(bytes, credentialsParam, credentials);
+    }
+    return KdbxUtils.arrayBufferToKdbx(message.data, credentialsParam, credentials);
   }
 
 

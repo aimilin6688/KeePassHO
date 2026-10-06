@@ -19,6 +19,7 @@ import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 import { SessionManager } from '../services/SessionManager';
 import { CopyEventService } from '../services/CopyEventService';
 import { TempFileSweeper } from '../services/kdbx/TempFileSweeper';
+import { SessionFileService } from '../services/kdbx/SessionFileService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -62,6 +63,8 @@ export default class EntryAbility extends UIAbility {
 
     // S7-b：清扫上次运行的管道临时文件残留（崩溃/被杀遗留），不阻塞启动
     TempFileSweeper.sweep();
+    // §7.4/§8：清扫超期 session-* 会话目录（M0 会话文件），不阻塞启动
+    SessionFileService.sweep();
 
     // 启动关键服务预加载（并行执行，不阻塞主线程）
     this.preloadEssentialServices();
@@ -134,6 +137,8 @@ export default class EntryAbility extends UIAbility {
     DistributedKVService.close();
     // S7-b：退出前同步清扫管道临时文件（进程即将销毁，异步可能来不及执行）
     TempFileSweeper.sweepSync();
+    // §7.4/§8：退出前全清 session-* 会话目录与会话密钥（密钥随进程消亡，残留不可解密）
+    SessionFileService.clearAllSync();
     // 取消订阅崩溃事件
     CrashLogService.getInstance().unsubscribeCrashEvent();
     // 清理会话通知与公共事件订阅

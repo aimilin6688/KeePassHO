@@ -345,6 +345,33 @@ export class PCloudClient {
   }
 
   /**
+   * 流式上传本地文件（S7：pCloud PUT 协议 + rcp UploadFromFile，请求体不驻内存）
+   * PUT /uploadfile?folderid={id}&filename={name}&nopartial=1，请求体即文件数据（全部参数走 URL query）
+   * nopartial=1 保证文件在上传完成前不可见（KDBX 原子保存语义）
+   */
+  async uploadFileFromFile(folderId: string, name: string, srcPath: string): Promise<PCloudMetadata> {
+    if (this.session === null) {
+      throw new Error('PCloudClient session is closed');
+    }
+    const params: Record<string, string> = {};
+    params['folderid'] = folderId;
+    params['filename'] = name;
+    params['nopartial'] = '1';
+    const url = this.buildUrl('/uploadfile', params);
+    const headers: Record<string, string> = {};
+    headers['Content-Type'] = 'application/octet-stream';
+    const req = new rcp.Request(url, 'PUT', headers, new rcp.UploadFromFile(srcPath));
+    const resp = await this.session.fetch(req);
+    const jsonData = this.responseToJson(resp);
+    this.checkResponse(jsonData);
+    const metadata = jsonData['metadata'] as PCloudMetadata[] | undefined;
+    if (metadata && metadata.length > 0) {
+      return metadata[0];
+    }
+    throw new PCloudError(-1, 'uploadFileFromFile: missing metadata in response');
+  }
+
+  /**
    * 创建文件夹
    * GET /createfolder?folderid={id}&name={name}
    */

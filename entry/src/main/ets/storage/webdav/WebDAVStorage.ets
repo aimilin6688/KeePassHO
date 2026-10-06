@@ -3,7 +3,6 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
-import { FileTransfer } from '../FileTransfer';
 import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;
@@ -182,11 +181,35 @@ export class WebDAVStorage implements IFileStorage {
   }
 
   /**
-   * 流式从本地文件上传（WebDAV PUT 整缓冲，受 CP-UP 100MB 上限约束）
-   * 超大文件需分块上传通道（rcps 调研项，见设计文档 §3.2），当前走默认整缓冲实现
+   * 流式从本地文件上传（S7：rcp Request + UploadFromFile，PUT 请求体不驻内存）
+   * 写前复核远端版本（TOCTOU 窗口由上层重试兜底），完成后返回远端 FileInfo
    */
   public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
-    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED,
+        ResourceManager.getString($r('app.string.webdav_not_init')));
+    }
+    const expectedVersion: string | null = option?.expectedVersion ?? null;
+    try {
+      if (expectedVersion !== null) {
+        await this.checkVersionUnchanged(path, expectedVersion);
+      }
+      await this.client.uploadFromFile(path, srcPath);
+      return await this.getInfo(path);
+    } catch (error) {
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
+      let errorMessage: string;
+      if (error instanceof ResultInfo) {
+        errorMessage = `${error.message}(${error.statusCode})`;
+      } else {
+        errorMessage = error.message;
+      }
+      hilog.error(DOMAIN, TAG, 'WebDAV writeFromFile error: %{public}s', errorMessage);
+      throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, errorMessage);
+    }
   }
 
   /**

@@ -20,16 +20,19 @@ export default function WorkerEnvironmentInjectionTest() {
     });
 
     /**
-     * InitWorkerMessage 携带路径与缓存策略
+     * InitWorkerMessage 携带路径、缓存策略与会话密钥/目录
      */
     it('InitWorkerMessage carries paths and cache policy', 0, () => {
-      const msg = new InitWorkerMessage('/data/files', '/data/cache', true, false, true, '');
+      const msg = new InitWorkerMessage('/data/files', '/data/cache', true, false, true, '',
+        'c2Vzc2lvbi1rZXk=', '/data/files/session-test');
       expect(msg.type).assertEqual(MessageType.INIT_WORKER);
       expect(msg.filesDir).assertEqual('/data/files');
       expect(msg.cacheDir).assertEqual('/data/cache');
       expect(msg.enableLocalCache).assertTrue();
       expect(msg.onlyUseCache).assertFalse();
       expect(msg.forceRefresh).assertTrue();
+      expect(msg.sessionKeyBase64).assertEqual('c2Vzc2lvbi1rZXk=');
+      expect(msg.sessionDir).assertEqual('/data/files/session-test');
     });
 
     /**

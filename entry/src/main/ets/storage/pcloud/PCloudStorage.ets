@@ -1,7 +1,6 @@
 import { IFileStorage, FileInfo, FileType, WriteOption } from '../IFileStorage';
 import { StorageConfig, PageConfig } from '../StorageConfig';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
-import { FileTransfer } from '../FileTransfer';
 import { PCloudClient, PCloudMetadata, PCloudError } from './PCloudClient';
 import { PCloudStorageConfig, PCloudPageConfig } from './PCloudConfig';
 
@@ -50,10 +49,36 @@ export class PCloudStorage implements IFileStorage {
   }
 
   /**
-   * 流式从本地文件上传（pCloud upload_write 分块为 S7 调研项，当前走默认整缓冲）
+   * 流式从本地文件上传（S7：pCloud PUT 协议 + rcp UploadFromFile，请求体不驻内存，解除 CP-UP 约束）
    */
   async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
-    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
+    this.ensureReady();
+    this.config!.touchActive();
+
+    // path 格式: "d{folderId}/{fileName}"
+    const lastSlash = path.lastIndexOf('/');
+    if (lastSlash < 0) {
+      throw new StorageError(
+        StorageErrorCodes.FILE_WRITE_ERROR,
+        'Invalid path format, expected "d{folderId}/{fileName}"'
+      );
+    }
+
+    const folderId = path.substring(0, lastSlash);
+    const folderNumericId = folderId.startsWith('d') ? folderId.substring(1) : folderId;
+    const fileName = path.substring(lastSlash + 1);
+
+    try {
+      await this.client!.uploadFileFromFile(folderNumericId, fileName, srcPath);
+      return await this.getInfo(path);
+    } catch (error) {
+      const err = error as Error;
+      this.handlePCloudError(error, 'WriteFromFile');
+      throw new StorageError(
+        StorageErrorCodes.FILE_WRITE_ERROR,
+        'WriteFromFile failed: ' + err.message
+      );
+    }
   }
 
   async read(path: string): Promise<ArrayBuffer> {
