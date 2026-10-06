@@ -75,7 +75,20 @@ export class LocalFileStorage implements IFileStorage {
   public async readToFile(path: string, destPath: string): Promise<FileInfo> {
     await this.checkFilePermission(path, fileShare.OperationMode.READ_MODE);
     try {
-      await fs.copyFile(path, destPath);
+      // file://docs/... URI 经 fs.copyFile(URI, path) 路径解析会 ENOENT（docs FUSE 不被内核拷贝识别）；
+      // 先 fs.open 拿 fd（URI 解析在 open 阶段生效，已由 getInfo 验证可读），再 copyFile(srcFd, destFd)
+      // 做内核态拷贝，兼容 docs URI 与沙箱路径，保留流式零整缓冲优势
+      const srcFile = await fs.open(path, fs.OpenMode.READ_ONLY);
+      try {
+        const destFile = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+        try {
+          await fs.copyFile(srcFile.fd, destFile.fd);
+        } finally {
+          await fs.close(destFile.fd);
+        }
+      } finally {
+        await fs.close(srcFile.fd);
+      }
       return await this.doGetInfo(path);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to copyFile: %{public}s', error.message);
@@ -162,18 +175,43 @@ export class LocalFileStorage implements IFileStorage {
   public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
     await this.checkFilePermission(path, fileShare.OperationMode.WRITE_MODE);
     const expectedVersion: string | null = option?.expectedVersion ?? null;
+    // 写前复核版本（与 doWrite 一致，两条路径共用）
+    if (expectedVersion !== null) {
+      const currentInfo: FileInfo = await this.doGetInfo(path);
+      const currentVersion: string | null = currentInfo.version ?? null;
+      if (currentVersion === null || currentVersion !== expectedVersion) {
+        hilog.warn(DOMAIN, TAG, 'Local writeFromFile version conflict, expected: %{public}s, current: %{public}s',
+          expectedVersion, currentVersion);
+        throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Local file version changed');
+      }
+    }
+    // file://docs/... URI 不支持 sibling temp 文件创建 + rename 原子替换（docs daemon 拒绝非 picked 文件）；
+    // 退化为 fd→fd 直接拷贝（与 doWrite 同为非原子，受 docs URI 限制）
+    if (path.startsWith('file://')) {
+      try {
+        const srcFile = await fs.open(srcPath, fs.OpenMode.READ_ONLY);
+        try {
+          const destFile = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+          try {
+            await fs.copyFile(srcFile.fd, destFile.fd);
+          } finally {
+            await fs.close(destFile.fd);
+          }
+        } finally {
+          await fs.close(srcFile.fd);
+        }
+        return await this.doGetInfo(path);
+      } catch (error) {
+        if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+          throw error;
+        }
+        hilog.error(DOMAIN, TAG, 'Failed to writeFromFile: %{public}s', error.message);
+        throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, error.message);
+      }
+    }
+    // 沙箱路径：写临时文件 + fsync + 原子 rename 替换（崩溃中断不破坏现有文件）
     const tempPath: string = path + '.tmp.' + Date.now();
     try {
-      // 写前复核版本（与 doWrite 一致）
-      if (expectedVersion !== null) {
-        const currentInfo: FileInfo = await this.doGetInfo(path);
-        const currentVersion: string | null = currentInfo.version ?? null;
-        if (currentVersion === null || currentVersion !== expectedVersion) {
-          hilog.warn(DOMAIN, TAG, 'Local writeFromFile version conflict, expected: %{public}s, current: %{public}s',
-            expectedVersion, currentVersion);
-          throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Local file version changed');
-        }
-      }
       // 拷贝到临时文件并落盘
       await fs.copyFile(srcPath, tempPath);
       const tmpFile = await fs.open(tempPath, fs.OpenMode.READ_ONLY);
