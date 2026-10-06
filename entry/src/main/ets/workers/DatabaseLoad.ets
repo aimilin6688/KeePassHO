@@ -27,20 +27,24 @@ export class DatabaseLoad {
     const t0Path: string = CommonUtils.getCacheDir() + '/load_t0_' + Date.now() + '.tmp';
     const t1Path: string = CommonUtils.getCacheDir() + '/load_t1_' + Date.now() + '.tmp';
     const t2Path: string = CommonUtils.getCacheDir() + '/load_t2_' + Date.now() + '.tmp';
+    const tStart: number = Date.now();
     try {
       this.postMessage('creating_key', callback?.onLoadMessage);
       // 创建凭证
       let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
       this.postMessage('loading_key', callback?.onLoadMessage);
       // 读前守卫 + 流式下载到 T0 文件
+      const tDownload: number = Date.now();
       let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
+      hilog.info(DOMAIN, TAG, 'load stage download: %{public}d ms, bytes=%{public}d',
+        Date.now() - tDownload, fileInfo.size ?? 0);
       this.postMessage('validating', callback?.onLoadMessage);
       // 流式解密 T0→T1 → 流式解压 T1→T2 → parse（ChaCha20 v4 流式，AES-CBC/v3 退化整缓冲）
       const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
       // S4 附件磁盘化：大附件池转入加密缓存，内存仅保留哈希引用（store 不可用时纯内存模式）
       const attachmentStore = AttachmentCacheService.getStore();
       const attachmentsDiskThreshold = AttachmentCacheService.getAttachmentsDiskThreshold();
-      let logTime = Date.now();
+      const tParse: number = Date.now();
       let kdbx: Kdbx = await Kdbx.loadFromFile(t0Path, credentials,
         {
           maxDecompressedBytes: maxDecompressedBytes,
@@ -49,11 +53,15 @@ export class DatabaseLoad {
           attachmentStore: attachmentStore,
           attachmentsDiskThreshold: attachmentsDiskThreshold
         });
-      hilog.debug(DOMAIN, TAG, "Load database (from file) cost time: %{public}d ms", Date.now() - logTime);
+      hilog.info(DOMAIN, TAG, 'load stage parse(decrypt+inflate+xml): %{public}d ms', Date.now() - tParse);
 
       this.postMessage('loading_complete', callback?.onLoadMessage);
       // 流式 sha256 冲突检测基线（T0 文件 = 远端原始内容）
+      const tHash: number = Date.now();
       const contentHash: string = await HashUtils.sha256HexFile(t0Path);
+      hilog.info(DOMAIN, TAG, 'load stage sha256: %{public}d ms, bytes=%{public}d',
+        Date.now() - tHash, fileInfo.size ?? 0);
+      hilog.info(DOMAIN, TAG, 'load total: %{public}d ms', Date.now() - tStart);
       this.postSuccessMessage(new SuccessMessage(kdbx, fileInfo.modifiedTime, false,
         fileInfo.version ?? null, contentHash), callback?.onSuccessMessage);
     } catch (error) {

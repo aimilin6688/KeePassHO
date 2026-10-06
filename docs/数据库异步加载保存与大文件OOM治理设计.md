@@ -1,6 +1,6 @@
 # 数据库异步加载、流式解析与大文件 OOM 治理设计
 
-> 状态：实施中 v6（S1-S5 已落地，S6 保存管道流式+XmlWriter+MERGE 流式+附件即写 AS 已落地（拉取解析器/KPSN 退役未实施），S7 部分落地（S7-b 清扫 + S7-a OneDrive + pCloud/华为下载流式完成，上传流式为调研项），详见 §11.2 实施状态追踪）
+> 状态：实施中 v7（S1-S5 已落地，S6 保存管道流式+XmlWriter+MERGE 流式+附件即写 AS+可观测性打点 已落地（拉取解析器/KPSN 退役未实施），S7 部分落地（S7-b 清扫 + S7-a OneDrive + pCloud/华为下载流式完成，上传流式为调研项），§12 验收测试计划已制定待设备执行，详见 §11.2 实施状态追踪）
 > v1：异步开关 + 守卫 + 副本削减（治标：OOM→报错）
 > v2：+ 附件磁盘化（解决附件常驻，但原始文件/解压/XML 仍整缓冲，几百 MB 库瞬时峰值仍 1GB 级）
 > v3：**全链路分块文件管道**——存储 IO、解密、解压、附件、XML 解析/序列化全部流式化，内存峰值与文件大小解耦（本期完整方案）
@@ -355,7 +355,7 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 | S7-b 临时文件清扫 | ✅ | `TempFileSweeper.ets`：启动 `sweep()` 异步清扫 + onDestroy `sweepSync()` 兜底（挂 `EntryAbility.init/onDestroy`）；覆盖 `load_t0_/load_t1_/load_t2_/save_remote_/save_x1_/save_x2_/save_x3_*.tmp` 全部管道临时前缀；POSIX unlink 活动文件安全（fd 仍有效，不影响进行中任务）；4 用例注册 entry List.test.ets |
 | S7-a OneDrive upload session | ✅ | `OneDriveClient.uploadFromFile`：`createUploadSession`（conflictBehavior=replace）→ 分片 PUT 到预授权 uploadUrl（5MiB=16×320KiB 对齐，Content-Range 头，202 受理/200·201 完成）；分片带 3 次重试（404 会话过期直接失败），失败/短读 `DELETE` 取消会话；<4MB 简单 PUT；`OneDriveStorage.writeFromFile` 接线并返回 getInfo（CP-UP 豁免：内存窗口=单分片）；`OneDriveUploadSession.test.ets` 未初始化拒绝 3 常驻用例 + 真实 Graph API 3 门控用例（令牌缺省不注册），已注册 List.test.ets |
 | pCloud/华为云盘流式调研 | 🔄 | 下载流式已落地（pCloud `downloadFileRangeToFile` CDN Range GET + 华为 `downloadRangeToFile` form=content Range GET，均 8MB 块直写盘 + 首块 200 fallback）；上传流式为调研项（pCloud upload_init/write/finalize + 华为 upload session 需联网核对官方协议） |
-| 大文件验收报告 | ❌ | 待 S6 完成后执行（§12 指标） |
+| 大文件验收报告 | 🔄 | `docs/大文件OOM治理验收测试计划.md` 已制定（测试矩阵/生成脚本/hidumper 采样/hilog 打点清单/互操作验证）；§12.6 可观测性打点已落地（DatabaseLoad/DatabaseSave 各阶段 hilog.info 耗时+字节数），待设备执行验收 |
 
 **S6 保存管道流式（🔄 部分实现，2026-10-06）**
 
@@ -378,4 +378,4 @@ xmldom 路径 = 整棵 XML 字符串 X（UTF-16 双倍）+ DOM 节点 2-5×X + �
 3. **稳定性**：全程无 AppFreeze/JsError；所有超限路径（CP1/CP2'/CP-DISK/CP-UP）明确报错零闪退；并发保存/保存中锁定解锁无异常。
 4. **XML 流式**：流式与 DOM 路径差分测试全绿后 DOM 读取退役；v3 格式（base64 附件）大库可加载。
 5. **安全**：会话目录外无明文落盘；锁定/切换/退出后 `session-*` 零残留；杀进程残留下次启动完成清扫且不可解密。
-6. **可观测**：各管道阶段字节数/耗时/窗口占用 hilog 打点齐全，验收数据归档。
+6. **可观测**：各管道阶段字节数/耗时/窗口占用 hilog 打点齐全（§12.6 已落地：`load stage download/parse/sha256/total` + `save stage download/sha256/build/stream|buffer/upload/stream|buffer/merge-load/total`），验收数据归档。详见 `docs/大文件OOM治理验收测试计划.md`。
