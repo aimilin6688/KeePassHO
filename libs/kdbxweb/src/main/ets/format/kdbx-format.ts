@@ -27,8 +27,7 @@ import { Int64 } from '../utils/int64';
 import * as ZlibFile from '../utils/zlib-file';
 import {
     FileChunkReader,
-    KdbxXmlPullParser,
-    KdbxModelBuilder
+    KdbxStreamingXmlLoader
 } from '../utils/xml-pull-parser';
 
 export class KdbxFormat {
@@ -312,23 +311,8 @@ export class KdbxFormat {
      * 文档解析结束后 computeHashes + resolve pending entry binary refs。
      */
     private parseXmlStreaming(fd: number, start: number, length: number): Promise<void> {
-        return this.getProtectSaltGenerator().then((gen) => {
-            const builder = new KdbxModelBuilder(this.kdbx, this.ctx, gen);
-            const reader = new FileChunkReader(fd, start, length);
-            const parser = new KdbxXmlPullParser(reader, builder);
-            return parser.parse().then(() => {
-                return this.kdbx.binaries.computeHashes().then(() => {
-                    const pending = builder.pendingEntryBinaries;
-                    for (let i = 0; i < pending.length; i++) {
-                        const p = pending[i];
-                        const found = this.kdbx.binaries.getByRef({ ref: p.ref });
-                        if (found) {
-                            p.entry.binaries.set(p.key, found);
-                        }
-                    }
-                });
-            });
-        });
+        const reader = new FileChunkReader(fd, start, length);
+        return KdbxStreamingXmlLoader.load(this.kdbx, this.ctx, reader);
     }
 
     /**
