@@ -80,7 +80,7 @@ export default function KdbxHeaderTest() {
             const headerStm = new BinaryStream();
             const innerHeaderStm = new BinaryStream();
             header.write(headerStm);
-            header.writeInnerHeader(innerHeaderStm, new KdbxContext({ kdbx }));
+            await header.writeInnerHeader(innerHeaderStm, new KdbxContext({ kdbx }));
 
             const newKdbx = new Kdbx();
             newKdbx.binaries = new KdbxBinaries();
@@ -203,7 +203,7 @@ export default function KdbxHeaderTest() {
             header.generateSalts();
             let stm = new BinaryStream();
             header.write(stm);
-            header.writeInnerHeader(stm, ctx);
+            await header.writeInnerHeader(stm, ctx);
 
             stm = new BinaryStream(stm.getWrittenBytes());
             const newHeader = KdbxHeader.read(stm, ctx);

@@ -1,7 +1,6 @@
 import { describe, expect, it, beforeAll } from '@ohos/hypium';
 import * as kdbxweb from '../../../../main/ets/index';
 import { ohosArgon2 } from '../../../../main/ets/crypto/argon2-rs';
-import { TestResources } from '../test-support/test-resources';
 import { fileIo as fs } from '@kit.CoreFileKit';
 
 const DATA = kdbxweb.ByteUtils.stringToBuffer('attachment-content-0123456789');
@@ -23,6 +22,55 @@ function binaryBytes(value: kdbxweb.KdbxBinary): ArrayBuffer {
     return value as ArrayBuffer;
 }
 
+/**
+ * 清空目录内全部文件（store 密钥随机化导致文件名跨执行不同，需清理保证用例幂等）
+ */
+function cleanDir(path: string): void {
+    try {
+        const names = fs.listFileSync(path);
+        for (let i = 0; i < names.length; i++) {
+            try {
+                fs.unlinkSync(`${path}/${names[i]}`);
+            } catch (e) {
+                // best effort
+            }
+        }
+    } catch (e) {
+        // 目录不存在
+    }
+}
+
+/**
+ * 独立目录 store：先清理再建目录，保证用例间互不污染且可重复执行
+ */
+function makeStoreAt(dir: string): kdbxweb.AttachmentStore {
+    cleanDir(dir);
+    try {
+        if (!fs.accessSync(dir, fs.AccessModeType.EXIST)) {
+            fs.mkdirSync(dir, true);
+        }
+    } catch (e) {
+        // 目录可能已存在
+    }
+    return new kdbxweb.AttachmentStore(dir, kdbxweb.ByteUtils.randomData(32));
+}
+
+/**
+ * 构造带单个真实附件的 v4 数据库并加密保存。
+ * 注意：demo.kdbx 为 KDBX 3.1，v3 不参与磁盘化，磁盘化用例必须使用 v4 库。
+ */
+async function createV4DatabaseWithAttachment(
+    credentials: kdbxweb.KdbxCredentials,
+    data: ArrayBuffer
+): Promise<ArrayBuffer> {
+    const db = kdbxweb.Kdbx.create(credentials, 'AttachStore');
+    const entry = db.createEntry(db.getDefaultGroup());
+    entry.fields.set('Title', 'has-attachment');
+    const binary = await db.binaries.add(data);
+    entry.binaries.set('demo.bin', binary);
+    return db.save();
+}
+
 export default function KdbxAttachmentStoreTest() {
     describe('KdbxAttachmentStore', () => {
         let testDir: string;
@@ -31,6 +79,8 @@ export default function KdbxAttachmentStoreTest() {
         beforeAll(() => {
             kdbxweb.CryptoEngine.setArgon2Impl(ohosArgon2);
             testDir = '/data/storage/el2/base/haps/entry/files/attach-store-test';
+            // 上次执行的缓存文件（密钥不同、无法复用）先清空，保证用例幂等
+            cleanDir(testDir);
             try {
                 if (!fs.accessSync(testDir, fs.AccessModeType.EXIST)) {
                     fs.mkdirSync(testDir, true);
@@ -71,34 +121,39 @@ export default function KdbxAttachmentStoreTest() {
             });
         });
 
-        it('get with tampered file throws FileCorrupt', 0, () => {
+        it('get with tampered file throws FileCorrupt', 0, async () => {
+            // 独立目录：目录内唯一 .bin 即篡改目标，避免共享目录下 listFileSync 顺序不定选错文件
+            const tamperDir = testDir + '-tamper';
+            const store2 = makeStoreAt(tamperDir);
             const tamperData = kdbxweb.ByteUtils.stringToBuffer('tamper-target-content');
-            return sha256Hex(tamperData).then((realHash) => {
-                return store.put(realHash, tamperData).then(() => {
-                    // 找到缓存文件并篡改一个密文字节
-                    const names = fs.listFileSync(testDir)
-                        .filter((name: string) => name.endsWith('.bin'));
-                    expect(names.length > 0).assertTrue();
-                    const path = testDir + '/' + names[names.length - 1];
-                    const file = fs.openSync(path, fs.OpenMode.READ_WRITE);
-                    try {
-                        const size = fs.statSync(file.fd).size;
-                        const buf = new ArrayBuffer(1);
-                        fs.readSync(file.fd, buf, { offset: Math.floor(size / 2) });
-                        const flip = new Uint8Array(buf);
-                        flip[0] = flip[0] ^ 0xff;
-                        fs.writeSync(file.fd, buf, { offset: Math.floor(size / 2) });
-                    } finally {
-                        fs.closeSync(file);
-                    }
-                    return store.get(realHash).then(() => {
-                        throw new Error('should have thrown FileCorrupt');
-                    }).catch((e: kdbxweb.KdbxError) => {
-                        expect(e instanceof kdbxweb.KdbxError).assertTrue();
-                        expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
-                    });
-                });
-            });
+            const realHash = await sha256Hex(tamperData);
+            await store2.put(realHash, tamperData);
+            // 篡改唯一缓存文件的一个密文字节
+            const names = fs.listFileSync(tamperDir)
+                .filter((name: string) => name.endsWith('.bin'));
+            expect(names.length).assertEqual(1);
+            const path = tamperDir + '/' + names[0];
+            const file = fs.openSync(path, fs.OpenMode.READ_WRITE);
+            try {
+                const size = fs.statSync(file.fd).size;
+                const buf = new ArrayBuffer(1);
+                fs.readSync(file.fd, buf, { offset: Math.floor(size / 2) });
+                const flip = new Uint8Array(buf);
+                flip[0] = flip[0] ^ 0xff;
+                fs.writeSync(file.fd, buf, { offset: Math.floor(size / 2) });
+            } finally {
+                fs.closeSync(file);
+            }
+            let threw = false;
+            try {
+                await store2.get(realHash);
+            } catch (e) {
+                threw = true;
+                expect(e instanceof kdbxweb.KdbxError).assertTrue();
+                expect((e as kdbxweb.KdbxError).code)
+                    .assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
+            }
+            expect(threw).assertTrue();
         });
 
         it('get missing hash rejects', 0, () => {
@@ -136,113 +191,105 @@ export default function KdbxAttachmentStoreTest() {
             });
         });
 
-        it('load with threshold converts attachments to disk refs', 0, () => {
+        it('load with threshold converts attachments to disk refs', 0, async () => {
             const cred = new kdbxweb.KdbxCredentials(
-                kdbxweb.ProtectedValue.fromString('demo'),
-                TestResources.demoKey
+                kdbxweb.ProtectedValue.fromString('demo')
             );
-            return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred, {
+            const dbBuf = await createV4DatabaseWithAttachment(cred, DATA);
+            const db = await kdbxweb.Kdbx.load(dbBuf, cred, {
                 attachmentStore: store,
                 attachmentsDiskThreshold: 1
-            }).then((db) => {
-                const pool = db.binaries.getAllWithHashes();
-                expect(pool.length).assertEqual(1);
-                expect(pool[0].value instanceof kdbxweb.KdbxBinaryDiskRef).assertTrue();
-                const ref = pool[0].value as kdbxweb.KdbxBinaryDiskRef;
-                expect(ref.hash).assertEqual(pool[0].hash);
-                expect(ref.byteLength > 0).assertTrue();
-                // entry.binaries 同步替换为磁盘引用
-                let entryRefCount = 0;
-                for (const item of db.getDefaultGroup().allGroupsAndEntries()) {
-                    if (item instanceof kdbxweb.KdbxEntry) {
-                        for (const value of item.binaries.values()) {
-                            if (kdbxweb.KdbxBinaries.isKdbxBinaryWithHash(value)) {
-                                expect(value.value instanceof kdbxweb.KdbxBinaryDiskRef).assertTrue();
-                                entryRefCount++;
-                            }
+            });
+            const pool = db.binaries.getAllWithHashes();
+            expect(pool.length).assertEqual(1);
+            expect(pool[0].value instanceof kdbxweb.KdbxBinaryDiskRef).assertTrue();
+            const ref = pool[0].value as kdbxweb.KdbxBinaryDiskRef;
+            expect(ref.hash).assertEqual(pool[0].hash);
+            expect(ref.byteLength > 0).assertTrue();
+            // entry.binaries 同步替换为磁盘引用
+            let entryRefCount = 0;
+            for (const item of db.getDefaultGroup().allGroupsAndEntries()) {
+                if (item instanceof kdbxweb.KdbxEntry) {
+                    for (const value of item.binaries.values()) {
+                        if (kdbxweb.KdbxBinaries.isKdbxBinaryWithHash(value)) {
+                            expect(value.value instanceof kdbxweb.KdbxBinaryDiskRef).assertTrue();
+                            entryRefCount++;
                         }
                     }
                 }
-                expect(entryRefCount > 0).assertTrue();
-            });
+            }
+            expect(entryRefCount > 0).assertTrue();
         });
 
-        it('save with disk refs round-trips attachment content', 0, () => {
+        it('save with disk refs round-trips attachment content', 0, async () => {
             const cred = new kdbxweb.KdbxCredentials(
-                kdbxweb.ProtectedValue.fromString('demo'),
-                TestResources.demoKey
+                kdbxweb.ProtectedValue.fromString('demo')
             );
+            const dbBuf = await createV4DatabaseWithAttachment(cred, DATA);
             // 基线：纯内存加载
-            return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred).then((baseline) => {
-                const baselinePool = baseline.binaries.getAllWithHashes();
-                const baselineHash = baselinePool[0].hash;
-                const baselineBytes = binaryBytes(baselinePool[0].value);
-                // 磁盘化加载 → 保存
-                return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred, {
-                    attachmentStore: store,
-                    attachmentsDiskThreshold: 1
-                }).then((db) => {
-                    return db.save().then((saved) => {
-                        // 重新加载（纯内存）验证附件内容保真
-                        return kdbxweb.Kdbx.load(saved, cred).then((reloaded) => {
-                            const pool = reloaded.binaries.getAllWithHashes();
-                            expect(pool.length).assertEqual(1);
-                            expect(pool[0].hash).assertEqual(baselineHash);
-                            const bytes = binaryBytes(pool[0].value);
-                            expect(bytes.byteLength).assertEqual(baselineBytes.byteLength);
-                            expect(kdbxweb.ByteUtils.arrayBufferEquals(bytes, baselineBytes))
-                                .assertTrue();
-                        });
-                    });
-                });
-            });
-        });
-
-        it('snapshot v2 carries disk refs without attachment bytes', 0, () => {
-            const cred = new kdbxweb.KdbxCredentials(
-                kdbxweb.ProtectedValue.fromString('demo'),
-                TestResources.demoKey
-            );
-            return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred, {
+            const baseline = await kdbxweb.Kdbx.load(dbBuf, cred);
+            const baselinePool = baseline.binaries.getAllWithHashes();
+            const baselineHash = baselinePool[0].hash;
+            const baselineBytes = binaryBytes(baselinePool[0].value);
+            // 磁盘化加载 → 保存
+            const db = await kdbxweb.Kdbx.load(dbBuf, cred, {
                 attachmentStore: store,
                 attachmentsDiskThreshold: 1
-            }).then((db) => {
-                return db.saveSnapshot().then((snap) => {
-                    expect(kdbxweb.KdbxSnapshot.isSnapshot(snap)).assertTrue();
-                    // 带 store 恢复：附件为磁盘引用
-                    return kdbxweb.Kdbx.loadSnapshot(snap, cred, { attachmentStore: store })
-                        .then((restored) => {
-                            const pool = restored.binaries.getAllWithHashes();
-                            expect(pool.length).assertEqual(1);
-                            expect(pool[0].value instanceof kdbxweb.KdbxBinaryDiskRef)
-                                .assertTrue();
-                            // 无 store 恢复：明确报错而非静默损坏
-                            return kdbxweb.Kdbx.loadSnapshot(snap, cred).then(() => {
-                                throw new Error('should have thrown');
-                            }).catch((e: kdbxweb.KdbxError) => {
-                                expect(e instanceof kdbxweb.KdbxError).assertTrue();
-                                expect(e.code)
-                                    .assertEqual(kdbxweb.Consts.ErrorCodes.InvalidState);
-                            });
-                        });
-                });
             });
+            const saved = await db.save();
+            // 重新加载（纯内存）验证附件内容保真
+            const reloaded = await kdbxweb.Kdbx.load(saved, cred);
+            const pool = reloaded.binaries.getAllWithHashes();
+            expect(pool.length).assertEqual(1);
+            expect(pool[0].hash).assertEqual(baselineHash);
+            const bytes = binaryBytes(pool[0].value);
+            expect(bytes.byteLength).assertEqual(baselineBytes.byteLength);
+            expect(kdbxweb.ByteUtils.arrayBufferEquals(bytes, baselineBytes)).assertTrue();
         });
 
-        it('saveXml materializes disk refs for export', 0, () => {
+        it('snapshot v2 carries disk refs without attachment bytes', 0, async () => {
             const cred = new kdbxweb.KdbxCredentials(
-                kdbxweb.ProtectedValue.fromString('demo'),
-                TestResources.demoKey
+                kdbxweb.ProtectedValue.fromString('demo')
             );
-            return kdbxweb.Kdbx.load(TestResources.demoKdbx, cred, {
+            const dbBuf = await createV4DatabaseWithAttachment(cred, DATA);
+            const db = await kdbxweb.Kdbx.load(dbBuf, cred, {
                 attachmentStore: store,
                 attachmentsDiskThreshold: 1
-            }).then((db) => {
-                return db.saveXml(true, true).then((xml) => {
-                    expect(xml.length > 0).assertTrue();
-                    expect(xml.includes('KeePassFile')).assertTrue();
-                });
             });
+            const snap = await db.saveSnapshot();
+            expect(kdbxweb.KdbxSnapshot.isSnapshot(snap)).assertTrue();
+            // 带 store 恢复：附件为磁盘引用
+            const restored = await kdbxweb.Kdbx.loadSnapshot(snap, cred, {
+                attachmentStore: store
+            });
+            const pool = restored.binaries.getAllWithHashes();
+            expect(pool.length).assertEqual(1);
+            expect(pool[0].value instanceof kdbxweb.KdbxBinaryDiskRef).assertTrue();
+            // 无 store 恢复：明确报错而非静默损坏
+            let threw = false;
+            try {
+                await kdbxweb.Kdbx.loadSnapshot(snap, cred);
+            } catch (e) {
+                threw = true;
+                expect(e instanceof kdbxweb.KdbxError).assertTrue();
+                expect((e as kdbxweb.KdbxError).code)
+                    .assertEqual(kdbxweb.Consts.ErrorCodes.InvalidState);
+            }
+            expect(threw).assertTrue();
+        });
+
+        it('saveXml materializes disk refs for export', 0, async () => {
+            const cred = new kdbxweb.KdbxCredentials(
+                kdbxweb.ProtectedValue.fromString('demo')
+            );
+            const dbBuf = await createV4DatabaseWithAttachment(cred, DATA);
+            const db = await kdbxweb.Kdbx.load(dbBuf, cred, {
+                attachmentStore: store,
+                attachmentsDiskThreshold: 1
+            });
+            const xml = await db.saveXml(true, true);
+            expect(xml.length > 0).assertTrue();
+            expect(xml.includes('KeePassFile')).assertTrue();
         });
     });
 }
