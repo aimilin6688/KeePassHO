@@ -589,7 +589,7 @@ export struct Password {
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
     let date = new Date().getTime();
-    return KdbxUtils.arrayBufferToKdbx(successMessage.data, {
+    return KdbxUtils.successMessageToKdbx(successMessage, {
       password: this.password,
       authType: this.authTypeInfo,
       keyLocation: this.keyLocation,

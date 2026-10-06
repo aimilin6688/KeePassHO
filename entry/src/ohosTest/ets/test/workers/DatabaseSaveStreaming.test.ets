@@ -9,6 +9,7 @@ import { StorageType } from '../../../../main/ets/storage';
 import { ConflictStrategy } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
 import { ConflictMessage, SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
 import { DatabaseSave } from '../../../../main/ets/workers/DatabaseSave';
+import { SessionFileService } from '../../../../main/ets/services/kdbx/SessionFileService';
 import { SaveDatabaseMessage } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
 import { SyncSaveResult, KdbxModeTestHelper } from './KdbxModeTestHelper';
 import { Consts } from 'kdbxweb';
@@ -139,8 +140,12 @@ export default function DatabaseSaveStreamingTest() {
       const success = result.success as SuccessMessage;
 
       expect(success.isMerge).assertTrue();
-      // 合并快照回传（主线程合并还原用）
-      expect(success.snapshot instanceof ArrayBuffer).assertTrue();
+      // §7.4：合并模型经 M0 会话文件回传（仅路径跨线程，大缓冲不随消息传输）
+      const m0PathStreaming: string | undefined = success.m0Path;
+      expect(typeof m0PathStreaming === 'string' && m0PathStreaming.length > 0).assertTrue();
+      if (m0PathStreaming) {
+        SessionFileService.removeFile(m0PathStreaming);
+      }
 
       // 合并结果写入文件：双方条目都在
       const fileContent = await fileManager.read(dbPath);

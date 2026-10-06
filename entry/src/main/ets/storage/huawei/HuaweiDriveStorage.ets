@@ -10,7 +10,6 @@ import {
   HttpResponse
 } from './HuaweiDriveClient';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
-import { FileTransfer } from '../FileTransfer';
 import { HuaweiDrivePageConfig, HuaweiDriveStorageConfig } from './HuaweiDriveConfig';
 import { HuaweiDrivePathCacheData, HuaweiDrivePathCacheEntry, HuaweiDrivePathCacheStore } from './HuaweiDrivePathCacheStore';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
@@ -661,10 +660,50 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
-   * 流式从本地文件上传（华为云盘断点续传为 S7 调研项，当前走默认整缓冲）
+   * 流式从本地文件上传（S7：rcp Request + UploadFromFile，内容请求体不驻内存，解除 CP-UP 约束）
+   * 逻辑镜像 write()：按路径找现有文件走 updateFromFile，否则解析父目录后 uploadFromFile
    */
   public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
-    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'Huawei Drive not init:%{public}s', JSON.stringify(this.config));
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
+    }
+
+    if (this.config && this.config.isTokenExpired()) {
+      await this.refreshAccessToken();
+    }
+
+    try {
+      const file = await this.findFileByPath(path);
+      let result: HttpResponse;
+
+      if (file) {
+        result = await this.client.updateFromFile(file.id, srcPath);
+      } else {
+        const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+        const segments = normalizedPath.split('/').filter((s: string) => s.length > 0);
+        const fileName = segments.pop() || path;
+        const parentFolderId = segments.length > 0
+          ? await this.resolveOrCreateFolderPath(segments)
+          : await this.resolveRootFolderId();
+        if (!parentFolderId) {
+          return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR,
+            'Failed to resolve parent folder'));
+        }
+        result = await this.client.uploadFromFile(parentFolderId, fileName, srcPath);
+      }
+
+      if (!result.success) {
+        return Promise.reject(new Error(result.message));
+      }
+      return await this.getInfo(path);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Huawei Drive writeFromFile error:%{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
+    }
   }
 
   /**

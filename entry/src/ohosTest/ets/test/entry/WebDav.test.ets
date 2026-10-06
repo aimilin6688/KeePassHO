@@ -6,6 +6,8 @@ import { StorageError, StorageErrorCodes } from '../../../../main/ets/storage/St
 import { FileInfo } from '../../../../main/ets/storage/IFileStorage';
 import { TestFixtures } from '../storage/TestFixtures';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDavTest';
@@ -45,6 +47,23 @@ function appendBytes(source: ArrayBuffer, extra: number): ArrayBuffer {
     view[source.byteLength + i] = 0x0a;
   }
   return modified;
+}
+
+/** 写本地源文件（供 writeFromFile 流式上传用） */
+async function writeLocalFile(path: string, data: ArrayBuffer): Promise<void> {
+  const file = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+  try {
+    await fs.write(file.fd, data);
+    await fs.fsync(file.fd);
+  } finally {
+    await fs.close(file.fd);
+  }
+}
+
+/** 运行时获取测试临时文件路径（appContext.filesDir，沙箱路径随进程变化） */
+function makeLocalTmpPath(prefix: string): string {
+  return abilityDelegatorRegistry.getAbilityDelegator().getAppContext().filesDir
+    + '/' + prefix + Date.now() + '.tmp';
 }
 
 export default function WebDavTest() {
@@ -189,6 +208,78 @@ export default function WebDavTest() {
       // 远端内容仍为新版本（大小 +2），未被陈旧写入覆盖
       const info: FileInfo = await storage.getInfo(path);
       expect(info.size).assertEqual(fixture.byteLength + 2);
+    });
+
+    it('storage writeFromFile streams local file to remote', 0, async () => {
+      const storage = new WebDAVStorage();
+      storage.init(makeStorageConfig());
+      const fixture: ArrayBuffer = await TestFixtures.loadUnitTestKdbx();
+      const path: string = '/e2e-wff-' + Date.now() + '.kdbx';
+      createdPaths.push(path);
+
+      // 写本地源文件
+      const srcPath: string = makeLocalTmpPath('wff-');
+      await writeLocalFile(srcPath, fixture);
+      try {
+        // 流式上传（rcp Request + UploadFromFile）
+        const info: FileInfo = await storage.writeFromFile(path, srcPath);
+
+        expect(info).not().assertUndefined();
+        expect(info.size).assertEqual(fixture.byteLength);
+
+        // 读回远端内容逐字节校验
+        const remote: ArrayBuffer = await storage.read(path);
+        expect(remote.byteLength).assertEqual(fixture.byteLength);
+        expect(TestFixtures.assertKdbxMagic(remote)).assertTrue();
+        const a = new Uint8Array(remote);
+        const b = new Uint8Array(fixture);
+        let mismatch = false;
+        for (let i = 0; i < b.length; i++) {
+          if (a[i] !== b[i]) {
+            mismatch = true;
+            break;
+          }
+        }
+        expect(mismatch).assertFalse();
+      } finally {
+        try { fs.unlinkSync(srcPath); } catch { /* ignore */ }
+      }
+    });
+
+    it('storage writeFromFile with stale version throws VERSION_CONFLICT', 0, async () => {
+      const storage = new WebDAVStorage();
+      storage.init(makeStorageConfig());
+      const fixture: ArrayBuffer = await TestFixtures.loadUnitTestKdbx();
+      const path: string = '/e2e-wff-conflict-' + Date.now() + '.kdbx';
+      createdPaths.push(path);
+
+      const srcPath: string = makeLocalTmpPath('wff-conflict-');
+      await writeLocalFile(srcPath, fixture);
+      try {
+        // 第一版写入并记录版本
+        await storage.write(path, fixture);
+        const staleVersion: string = (await storage.getInfo(path)).version ?? '';
+
+        // 其他设备先写入新版本
+        await storage.write(path, appendBytes(fixture, 2));
+
+        // 基于陈旧版本的流式写入必须以版本冲突失败
+        try {
+          await storage.writeFromFile(path, srcPath, { expectedVersion: staleVersion });
+          expect(false).assertTrue(); // 不应执行到这里
+        } catch (error) {
+          expect(error instanceof StorageError).assertTrue();
+          if (error instanceof StorageError) {
+            expect(error.code).assertEqual(StorageErrorCodes.VERSION_CONFLICT);
+          }
+        }
+
+        // 远端内容未被覆盖
+        const info: FileInfo = await storage.getInfo(path);
+        expect(info.size).assertEqual(fixture.byteLength + 2);
+      } finally {
+        try { fs.unlinkSync(srcPath); } catch { /* ignore */ }
+      }
     });
 
     it('storage getInfo rejects for non-existent file', 0, async () => {

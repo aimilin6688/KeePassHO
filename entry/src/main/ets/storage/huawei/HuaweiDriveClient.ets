@@ -1,5 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
+import { rcp } from '@kit.RemoteCommunicationKit';
 import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
@@ -214,6 +215,10 @@ export class HuaweiDriveClient {
    * OAuth2配置
    */
   private oauth2Config: OAuth2Config | null = null;
+  /**
+   * rcp 会话（S7 流式上传专用，懒创建复用）
+   */
+  private rcpSession: rcp.Session | null = null;
 
   /**
    * 构造函数
@@ -876,6 +881,117 @@ export class HuaweiDriveClient {
     } catch (error) {
       hilog.error(DOMAIN, TAG, `update error: fileId=${fileId}, error=${(error as Error).message}`);
       return this.convertAxiosError(error as AxiosError);
+    }
+  }
+
+  /**
+   * 获取/创建 rcp 会话（S7 流式上传专用，懒创建实例级复用）
+   */
+  private getRcpSession(): rcp.Session {
+    if (!this.rcpSession) {
+      this.rcpSession = rcp.createSession({
+        requestConfiguration: {
+          transfer: {
+            timeout: { connectMs: 30000 }
+          }
+        }
+      });
+    }
+    return this.rcpSession;
+  }
+
+  /**
+   * rcp.Response → HttpResponse 转换（S7 流式上传）
+   */
+  private convertRcpResponse(resp: rcp.Response): HttpResponse {
+    const ok = resp.statusCode >= 200 && resp.statusCode < 300;
+    const headers: Record<string, string> = {};
+    let body: ArrayBuffer | undefined = undefined;
+    const bodyText = resp.toString();
+    if (bodyText) {
+      body = ByteUtils.stringToBytes(bodyText);
+    }
+    return new HttpResponse(ok, resp.statusCode, ok ? 'success' : `HTTP ${resp.statusCode}`, headers, body);
+  }
+
+  /**
+   * 流式更新文件内容（S7：rcp Request + UploadFromFile，PATCH 请求体不驻内存）
+   * 内存窗口 = rcp 内部分块，与文件大小解耦（解除 CP-UP 约束）
+   * @param fileId 文件ID
+   * @param srcPath 本地源文件路径
+   * @returns Promise<HttpResponse> 结果信息
+   */
+  public async updateFromFile(fileId: string, srcPath: string): Promise<HttpResponse> {
+    const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
+      'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
+    const url = `${uploadBase}/files/${fileId}?fields=*&uploadType=content`;
+    const headers: Record<string, string> = {};
+    headers['Content-Type'] = 'application/octet-stream';
+    headers['Authorization'] = `Bearer ${this.config?.accessToken}`;
+    try {
+      hilog.info(DOMAIN, TAG, `updateFromFile: fileId=${fileId}, srcPath=${srcPath}`);
+      const req = new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath));
+      const resp = await this.getRcpSession().fetch(req);
+      const result = this.convertRcpResponse(resp);
+      hilog.info(DOMAIN, TAG, 'updateFromFile result: %{public}s, status=%{public}d', result.message, resp.statusCode);
+      return result;
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `updateFromFile error: fileId=${fileId}, error=${(error as Error).message}`);
+      throw new Error((error as Error).message);
+    }
+  }
+
+  /**
+   * 流式上传新文件（S7）：创建文件元数据（axios 小 JSON）→ PATCH 内容（rcp UploadFromFile 流式）
+   * @param parentFolderId 父文件夹ID
+   * @param fileName 文件名
+   * @param srcPath 本地源文件路径
+   * @returns Promise<HttpResponse> 结果信息
+   */
+  public async uploadFromFile(parentFolderId: string, fileName: string, srcPath: string): Promise<HttpResponse> {
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    try {
+      const createPath = `/files?fields=*`;
+      hilog.info(DOMAIN, TAG, `uploadFromFile: parentFolderId=${parentFolderId}, fileName=${fileName}`);
+
+      interface CreateFileData {
+        fileName: string;
+        mimeType: string;
+        parentFolder: string[];
+      }
+      const createData: CreateFileData = {
+        fileName: fileName,
+        mimeType: 'application/octet-stream',
+        parentFolder: [parentFolderId]
+      };
+
+      const config: AxiosRequestConfig = {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const createResponse: AxiosResponse = await this.axiosInstance.post(createPath, createData, config);
+
+      let responseData: Record<string, Object>;
+      if (typeof createResponse.data === 'string') {
+        responseData = JSON.parse(createResponse.data) as Record<string, Object>;
+      } else {
+        responseData = createResponse.data as Record<string, Object>;
+      }
+      const fileId = responseData.id as string;
+
+      if (!fileId) {
+        return new HttpResponse(false, createResponse.status, 'Created file has no id', {});
+      }
+
+      hilog.info(DOMAIN, TAG, `File created with ID: ${fileId}, now uploading content from file...`);
+      return await this.updateFromFile(fileId, srcPath);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `uploadFromFile error: fileName=${fileName}, error=${(error as Error).message}`);
+      throw new Error((error as Error).message);
     }
   }
 

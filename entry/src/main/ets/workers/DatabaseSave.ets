@@ -9,6 +9,7 @@ import { ConflictStrategy, SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessag
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
 import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
+import { SessionFileService } from '../services/kdbx/SessionFileService';
 import { Constants } from '../common/constants/Constants';
 import { CommonUtils, HashUtils, KdbxUtils, ResourceManager } from '../common/utils';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
@@ -356,7 +357,9 @@ export class DatabaseSave {
       const message = new SuccessMessage(data, fileInfo.modifiedTime, isMerge,
         fileInfo.version ?? null, contentHash);
       if (isMerge && database) {
-        message.snapshot = await database.saveSnapshot();
+        // §7.4：合并模型经会话密钥包裹落盘 M0，仅路径跨线程（KPSN ArrayBuffer 协议退役）
+        const snapshotBytes: ArrayBuffer = await database.saveSnapshot();
+        message.m0Path = await SessionFileService.wrapToFile(snapshotBytes, 'm0_merge_');
       }
       this.postSuccessMessage(message);
     } catch (error) {

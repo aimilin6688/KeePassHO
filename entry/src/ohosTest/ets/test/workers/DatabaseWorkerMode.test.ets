@@ -6,6 +6,7 @@ import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileMana
 import { ConflictStrategy } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
 import { StorageType } from '../../../../main/ets/storage';
 import { KdbxUtils } from '../../../../main/ets/common/utils/KdbxUtils';
+import { SessionFileService } from '../../../../main/ets/services/kdbx/SessionFileService';
 import { ConflictMessage, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../../../main/ets/workers/WorkerParam';
 import { KdbxModeTestHelper } from './KdbxModeTestHelper';
 
@@ -69,19 +70,23 @@ export default function DatabaseWorkerModeTest() {
         const message: WorkerMessage = await pending;
         expect(message.type).assertEqual(MessageType.SUCCESS);
 
-        // 异步模式：data 为跨线程传输的 KPSN 快照 ArrayBuffer，非 Kdbx 引用
+        // 异步模式：§7.4 模型经 M0 会话文件跨线程（data 为空缓冲，仅路径传输）
         const success = message as SuccessMessage;
-        expect(success.data instanceof ArrayBuffer).assertTrue();
-        expect(KdbxSnapshot.isSnapshot(success.data as ArrayBuffer)).assertTrue();
+        const m0PathLoad: string | undefined = success.m0Path;
+        expect(typeof m0PathLoad === 'string' && m0PathLoad.length > 0).assertTrue();
 
-        // 还原后条目完整
-        const restored: Kdbx = await KdbxUtils.arrayBufferToKdbx(success.data as ArrayBuffer, loadParam);
-        const titles: string[] = KdbxModeTestHelper.collectEntryTitles(restored);
-        expect(titles.includes('worker-base-entry')).assertTrue();
-        // 内容哈希基线随消息回传
-        expect(success.contentHash).assertEqual(baseHash);
-        // 非合并保存不附带合并模型快照
-        expect(success.snapshot).assertUndefined();
+        // 解包裹还原后条目完整（主线程与 Worker 共享注入的会话密钥）
+        if (m0PathLoad) {
+          const snapshotBytes: ArrayBuffer = await SessionFileService.unwrapFromFile(m0PathLoad);
+          expect(KdbxSnapshot.isSnapshot(snapshotBytes)).assertTrue();
+          const restored: Kdbx = await KdbxUtils.arrayBufferToKdbx(snapshotBytes, loadParam);
+          const titles: string[] = KdbxModeTestHelper.collectEntryTitles(restored);
+          expect(titles.includes('worker-base-entry')).assertTrue();
+          // 内容哈希基线随消息回传
+          expect(success.contentHash).assertEqual(baseHash);
+          // 消费后删除会话文件
+          SessionFileService.removeFile(m0PathLoad);
+        }
       } finally {
         w.terminate();
       }
@@ -121,8 +126,8 @@ export default function DatabaseWorkerModeTest() {
         expect(message.type).assertEqual(MessageType.SUCCESS);
         const success = message as SuccessMessage;
         expect(success.isMerge).assertFalse();
-        // 非合并保存不附带合并模型快照
-        expect(success.snapshot).assertUndefined();
+        // 非合并保存不附带 M0 会话文件
+        expect(success.m0Path).assertUndefined();
         expect((success.version ?? '').includes('|')).assertTrue();
 
         // 文件已被真实写入
@@ -160,16 +165,19 @@ export default function DatabaseWorkerModeTest() {
         const success = message as SuccessMessage;
         expect(success.isMerge).assertTrue();
 
-        // 合并快照回传：isMerge 时附带 KPSN 快照，主线程免解密重解析直接还原合并模型
-        expect(success.snapshot instanceof ArrayBuffer).assertTrue();
-        expect(KdbxSnapshot.isSnapshot(success.snapshot)).assertTrue();
-        if (success.snapshot) {
+        // §7.4：合并模型经 M0 会话文件回传，解包裹后为合法 KPSN 快照
+        const m0PathMerge: string | undefined = success.m0Path;
+        expect(typeof m0PathMerge === 'string' && m0PathMerge.length > 0).assertTrue();
+        if (m0PathMerge) {
+          const mergedSnapshot: ArrayBuffer = await SessionFileService.unwrapFromFile(m0PathMerge);
+          expect(KdbxSnapshot.isSnapshot(mergedSnapshot)).assertTrue();
           const loadParam = KdbxModeTestHelper.makeLoadParam(dbPath, 'db-worker-mode-test.kdbx',
             KdbxModeTestHelper.DB_PASSWORD);
-          const mergedModel: Kdbx = await KdbxUtils.arrayBufferToKdbx(success.snapshot, loadParam);
+          const mergedModel: Kdbx = await KdbxUtils.arrayBufferToKdbx(mergedSnapshot, loadParam);
           const mergedTitles: string[] = KdbxModeTestHelper.collectEntryTitles(mergedModel);
           expect(mergedTitles.includes('worker-remote-entry')).assertTrue();
           expect(mergedTitles.includes('worker-merge-entry')).assertTrue();
+          SessionFileService.removeFile(m0PathMerge);
         }
 
         // 合并结果已写入文件：双方条目都在

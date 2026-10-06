@@ -436,6 +436,28 @@ export class WebDavClient {
     return rr
   }
 
+  /**
+   * 流式上传本地文件（S7：rcp.Request + UploadFromFile，请求体不驻内存）
+   * PUT 方法 + Basic 认证头；内存窗口 = rcp 内部分块，与文件大小解耦（解除 CP-UP 100MB 约束）
+   * @param remoteUri 远端路径（相对 session baseAddress）
+   * @param srcPath 本地源文件路径
+   * @returns
+   */
+  async uploadFromFile(remoteUri: string, srcPath: string): Promise<ResultInfo> {
+    const headers: Record<string, string> = {};
+    headers['Authorization'] = 'Basic ' + this.getBase64Auth();
+    headers['Content-Type'] = 'application/octet-stream';
+    const req = new rcp.Request(remoteUri, 'PUT', headers, new rcp.UploadFromFile(srcPath));
+    const rr = await this.request(req);
+    if (!rr.success) {
+      hilog.error(DOMAIN, TAG, "uploadFromFile failed, url: %{public}s, statusCode: %{public}d, message: %{public}s",
+        remoteUri, rr.statusCode, rr.message);
+      return Promise.reject(rr);
+    }
+    hilog.info(DOMAIN, TAG, "uploadFromFile success: %{public}s, %{public}d", remoteUri, rr.statusCode);
+    return rr;
+  }
+
 
   /**
    * 使用系统上传方上传

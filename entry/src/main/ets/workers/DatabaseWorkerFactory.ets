@@ -2,6 +2,7 @@ import { worker } from '@kit.ArkTS';
 import { CommonUtils } from '../common/utils';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
+import { SessionFileService } from '../services/kdbx/SessionFileService';
 import { InitWorkerMessage } from './WorkerParam';
 
 /**
@@ -41,7 +42,9 @@ export class DatabaseWorkerFactory {
     }
     // 附件缓存密钥主线程解析（Asset Kit），Worker 线程仅使用注入快照
     const attachCacheKey: string = AttachmentCacheService.getWorkerKeyBase64();
+    // §7.4：会话密钥与会话目录主线程生成，Worker 经注入共享（isolate 静态不共享）
     return new InitWorkerMessage(CommonUtils.getAppFilesDir(), CommonUtils.getCacheDir(),
-      CacheConstants.isEnableLocalCache(), CacheConstants.getOnlyCache(), forceRefresh, attachCacheKey);
+      CacheConstants.isEnableLocalCache(), CacheConstants.getOnlyCache(), forceRefresh, attachCacheKey,
+      SessionFileService.getWorkerKeyBase64(), SessionFileService.getSessionDir());
   }
 }

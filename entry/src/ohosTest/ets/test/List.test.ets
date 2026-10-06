@@ -56,6 +56,9 @@ import AttachmentCacheServiceTest from './services/AttachmentCacheService.test';
 // S7-b 管道临时文件清扫单元测试
 import TempFileSweeperTest from './services/TempFileSweeper.test';
 
+// §7.4 会话文件协议单元测试（M0 包裹/解包裹/清扫）
+import SessionFileServiceTest from './kdbx/SessionFileService.test';
+
 // S7-a OneDrive upload session 单元测试（未初始化拒绝常驻；真实 API 用例按令牌门控注册）
 import OneDriveUploadSessionTest from './storage/onedrive/OneDriveUploadSession.test';
 
@@ -158,6 +161,9 @@ export default function testsuite() {
 
   // S7-b 管道临时文件清扫测试（启动清残留 / onDestroy 全清）
   TempFileSweeperTest();
+
+  // §7.4 会话文件协议测试（包裹往返 / 大缓冲分块 / 清扫）
+  SessionFileServiceTest();
 
   // S7-a OneDrive upload session 测试（未初始化拒绝 / 真实 API 用例门控注册）
   OneDriveUploadSessionTest();

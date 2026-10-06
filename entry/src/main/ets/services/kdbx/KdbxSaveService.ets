@@ -182,7 +182,7 @@ export default class KdbxSaveService {
     const loadParam = LoadDatabase.byDbFileParam(dbFileParam);
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (message: SuccessMessage) => {
-        KdbxUtils.arrayBufferToKdbx(message.data, loadParam).then((database: Kdbx) => {
+        KdbxUtils.successMessageToKdbx(message, loadParam).then((database: Kdbx) => {
           FileService.resetDbFileParam(database, message.modifiedTime, message.version ?? null,
             message.contentHash ?? null);
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
@@ -324,9 +324,8 @@ export default class KdbxSaveService {
     dbFileParam.version = message.version ?? null;
     dbFileParam.contentHash = message.contentHash ?? null;
     if (message.isMerge) {
-      // 合并模型优先用 Worker 回传的 KPSN 快照（免解密重解析），缺失时回退落盘字节
-      const mergedSource: ArrayBuffer = message.snapshot ?? (message.data as ArrayBuffer);
-      KdbxUtils.arrayBufferToKdbx(mergedSource, FileService.getDbFileParam()).then(kdbx => {
+      // §7.4：合并模型走 M0 会话文件解包裹还原（仅路径跨线程），缺失时回退消息内 data
+      KdbxUtils.successMessageToKdbx(message, FileService.getDbFileParam()).then(kdbx => {
         FileService.getDbFileParam().database = kdbx;
         EventBus.emit<void>(EventBus.DATABASE_RELOAD);
         if (callback && callback.onSuccess) {

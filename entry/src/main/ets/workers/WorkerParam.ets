@@ -62,9 +62,14 @@ export class InitWorkerMessage implements WorkerMessage {
   forceRefresh: boolean;
   /** 附件缓存加密密钥（base64，S4 附件磁盘化；空字符串表示禁用） */
   attachCacheKey: string;
+  /** 会话密钥（base64，§7.4 M0 会话文件包裹；主线程与 Worker 共享同一进程级密钥） */
+  sessionKeyBase64: string;
+  /** 会话目录路径（§7.4；Worker 产出的 M0 落在主线程会话目录，便于统一清扫） */
+  sessionDir: string;
 
   constructor(filesDir: string, cacheDir: string, enableLocalCache: boolean,
-    onlyUseCache: boolean, forceRefresh: boolean, attachCacheKey: string) {
+    onlyUseCache: boolean, forceRefresh: boolean, attachCacheKey: string,
+    sessionKeyBase64: string, sessionDir: string) {
     this.type = MessageType.INIT_WORKER;
     this.filesDir = filesDir;
     this.cacheDir = cacheDir;
@@ -72,6 +77,8 @@ export class InitWorkerMessage implements WorkerMessage {
     this.onlyUseCache = onlyUseCache;
     this.forceRefresh = forceRefresh;
     this.attachCacheKey = attachCacheKey;
+    this.sessionKeyBase64 = sessionKeyBase64;
+    this.sessionDir = sessionDir;
   }
 }
 
@@ -115,9 +122,10 @@ export class SuccessMessage implements WorkerMessage {
   contentHash?: string | null;
 
   /**
-   * isMerge 时合并后模型的 KPSN 快照（跨线程直传，主线程免解密重解析）
+   * isMerge 时合并后模型的会话文件路径（§7.4：M0 会话包裹文件，仅路径跨线程）
+   * 主线程解包裹后还原模型；大缓冲不再随消息跨线程
    */
-  snapshot?: ArrayBuffer;
+  m0Path?: string;
 
 
   constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean, version?: string | null, contentHash?: string | null) {
