@@ -364,6 +364,42 @@ export default function KdbxAttachmentStoreTest() {
             expect(kdbxweb.ByteUtils.arrayBufferEquals(bytes, baselineBytes)).assertTrue();
         });
 
+        /**
+         * S6-d：加载后新增附件经 binaries.add 注册进池 + maybeConvertToDiskRefs 磁盘化 +
+         * rebindEntryBinaries，保存时走 Ref（非 base64 内联），重载后附件内容保真。
+         * 镜像 EntryEdit.addAttachment 修复流程（原 bug：裸 ArrayBuffer 入 entry.binaries →
+         * 保存时 setBytes base64 内联进 XML、永不磁盘化）。
+         */
+        it('add attachment after load registers in pool and disk-refs on save', 0, async () => {
+            const cred = new kdbxweb.KdbxCredentials(
+                kdbxweb.ProtectedValue.fromString('demo')
+            );
+            const db = kdbxweb.Kdbx.create(cred, 'AddAttachDb');
+            db.header.dataCipherUuid = new kdbxweb.KdbxUuid(kdbxweb.Consts.CipherId.ChaCha20);
+            const entry = db.createEntry(db.getDefaultGroup());
+            entry.fields.set('Title', 'add-attach');
+            db.binaries.store = store;
+            // 新增附件：binaries.add 注册进池（EntryEdit S6-d 修复路径）
+            const attach = kdbxweb.ByteUtils.stringToBuffer('new-attachment-from-entryedit');
+            const binary = await db.binaries.add(attach);
+            entry.binaries.set('new.bin', binary);
+            // 阈值磁盘化 + rebind（镜像 EntryEdit）
+            const converted = await db.binaries.maybeConvertToDiskRefs(1);
+            expect(converted).assertTrue();
+            db.rebindEntryBinaries();
+            // entry.binaries 已指向 DiskRef（非裸 ArrayBuffer）
+            const entryBinary = entry.binaries.get('new.bin');
+            expect(kdbxweb.KdbxBinaries.isKdbxBinaryWithHash(entryBinary)).assertTrue();
+            const refValue = (entryBinary as kdbxweb.KdbxBinaryWithHash).value;
+            expect(refValue instanceof kdbxweb.KdbxBinaryDiskRef).assertTrue();
+            // 保存（writeBinary 流式回读 DiskRef 写 inner header）→ 重载验证内容保真
+            const saved = await db.save();
+            const reloaded = await kdbxweb.Kdbx.load(saved, cred);
+            const pool = reloaded.binaries.getAllWithHashes();
+            expect(pool.length).assertEqual(1);
+            expect(kdbxweb.ByteUtils.arrayBufferEquals(binaryBytes(pool[0].value), attach)).assertTrue();
+        });
+
         it('snapshot v2 carries disk refs without attachment bytes', 0, async () => {
             const cred = new kdbxweb.KdbxCredentials(
                 kdbxweb.ProtectedValue.fromString('demo')

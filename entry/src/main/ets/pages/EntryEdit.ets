@@ -3,6 +3,7 @@ import { Kdbx, KdbxBinary, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, KdbxUuid, P
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { FileService } from '../services/FileService';
+import { Constants } from '../common/constants/Constants';
 import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
@@ -854,12 +855,19 @@ export struct EntryEdit {
   }
 
   // 添加附件
-  private addAttachment() {
+  // S6-d：注册进 kdbx.binaries 附件池（避免保存时 base64 内联进 XML）+ 阈值磁盘化（镜像加载侧）
+  private async addAttachment() {
     // 附件大小限制：5MB
     const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
-    FileUtils.selectFiles(1).then(result => {
-      for (let file of result) {
+    try {
+      const result = await FileUtils.selectFiles(1);
+      const database = FileService.getInstance().getDbFileParam().database;
+      if (!database) {
+        CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.invalid_database')) });
+        return;
+      }
+      for (const file of result) {
         // 检查文件大小
         const fileSize = file.content.byteLength;
         if (fileSize > MAX_ATTACHMENT_SIZE) {
@@ -870,12 +878,20 @@ export struct EntryEdit {
           });
           continue;
         }
-        this.attachments.set(file.name, file.content);
+        // 注册进附件池：保存时 writeBinaries 据 getRefByHash 写 <Value Ref="n"/>，
+        // 不再走 setBytes base64 内联（修 XML 膨胀 + 永不磁盘化 bug）
+        const binary = await database.binaries.add(file.content);
+        this.attachments.set(file.name, binary);
+      }
+      // 大附件磁盘化（镜像加载侧 maybeConvertToDiskRefs 语义：池总量超阈值时转 DiskRef）
+      const converted = await database.binaries.maybeConvertToDiskRefs(Constants.ATTACH_DISK_THRESHOLD_BYTES);
+      if (converted) {
+        database.rebindEntryBinaries();
       }
       this.isModified = true;
-    }).catch((error: Error) => {
+    } catch (error) {
       CommonUtils.showToast({ message: error.message })
-    });
+    }
   }
 
   // 删除附件
