@@ -101,7 +101,16 @@ function decodeEntities(s: string): string {
         .replace(/&amp;/g, '&');
 }
 
-// ==================== FileChunkReader ====================
+// ==================== ChunkReader 抽象 ====================
+
+/**
+ * 分块读取器接口：KdbxXmlPullParser 的输入源。
+ * 实现方负责按块返回 UTF-8 解码后的字符串，EOF 返回 null。
+ * 跨块 UTF-8 边界处理由实现方负责（复用 findUtf8Boundary）。
+ */
+export interface ChunkReader {
+    readNext(): Promise<string | null>;
+}
 
 function findUtf8Boundary(bytes: Uint8Array): number {
     const len = bytes.length;
@@ -133,7 +142,44 @@ function findUtf8Boundary(bytes: Uint8Array): number {
     return have < expected ? i : len;
 }
 
-export class FileChunkReader {
+interface DecodeResult {
+    text: string | null;
+    newLeftover: Uint8Array;
+}
+
+/**
+ * 将 Uint8Array 按 UTF-8 边界切分、解码、过滤控制字符。
+ * FileChunkReader 和 MemoryChunkReader 共用此逻辑。
+ */
+function decodeUtf8Chunk(
+    bytes: Uint8Array,
+    oldLeftover: Uint8Array,
+    decoder: util.TextDecoder
+): DecodeResult {
+    if (oldLeftover.length > 0) {
+        const merged = new Uint8Array(oldLeftover.length + bytes.length);
+        merged.set(oldLeftover, 0);
+        merged.set(bytes, oldLeftover.length);
+        bytes = merged;
+    }
+    const validEnd = findUtf8Boundary(bytes);
+    let newLeftover = new Uint8Array(0);
+    if (validEnd < bytes.length) {
+        newLeftover = new Uint8Array(bytes.length - validEnd);
+        newLeftover.set(bytes.subarray(validEnd));
+        bytes = bytes.subarray(0, validEnd);
+    }
+    if (bytes.length === 0) {
+        return { text: null, newLeftover };
+    }
+    let str = decoder.decodeToString(bytes);
+    str = str.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F]/g, '');
+    return { text: str, newLeftover };
+}
+
+// ==================== FileChunkReader ====================
+
+export class FileChunkReader implements ChunkReader {
     private readonly fd: number;
     private offset: number;
     private readonly end: number;
@@ -163,27 +209,54 @@ export class FileChunkReader {
         return fs.read(this.fd, buf, { offset: this.offset }).then((n) => {
             this.offset += n;
             let bytes: Uint8Array = n === len ? new Uint8Array(buf) : new Uint8Array(buf, 0, n);
-            if (this.leftover.length > 0) {
-                const merged = new Uint8Array(this.leftover.length + bytes.length);
-                merged.set(this.leftover, 0);
-                merged.set(bytes, this.leftover.length);
-                bytes = merged;
-                this.leftover = new Uint8Array(0);
-            }
-            const validEnd = findUtf8Boundary(bytes);
-            if (validEnd < bytes.length) {
-                const lb = new Uint8Array(bytes.length - validEnd);
-                lb.set(bytes.subarray(validEnd));
-                this.leftover = lb;
-                bytes = bytes.subarray(0, validEnd);
-            }
-            if (bytes.length === 0) {
+            const result = decodeUtf8Chunk(bytes, this.leftover, this.decoder);
+            this.leftover = result.newLeftover;
+            if (result.text === null) {
                 return this.readNext();
             }
-            let str = this.decoder.decodeToString(bytes);
-            str = str.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F]/g, '');
-            return str;
+            return result.text;
         });
+    }
+}
+
+// ==================== MemoryChunkReader ====================
+
+/**
+ * 内存分块读取器：从内存 ArrayBuffer 按块切片喂给 KdbxXmlPullParser。
+ * 用于 KdbxSnapshot.load 等场景（XML 已在内存，无需落盘）。
+ */
+export class MemoryChunkReader implements ChunkReader {
+    private readonly data: Uint8Array;
+    private readonly chunkSize: number;
+    private readonly decoder: util.TextDecoder;
+    private offset: number;
+    private leftover: Uint8Array = new Uint8Array(0);
+
+    constructor(data: ArrayBuffer | Uint8Array, chunkSize?: number) {
+        this.data = data instanceof Uint8Array ? data : new Uint8Array(data);
+        this.chunkSize = chunkSize || (256 * 1024);
+        this.decoder = new util.TextDecoder();
+        this.offset = 0;
+    }
+
+    readNext(): Promise<string | null> {
+        if (this.offset >= this.data.length && this.leftover.length === 0) {
+            return Promise.resolve(null);
+        }
+        const len = Math.min(this.chunkSize, this.data.length - this.offset);
+        if (len <= 0) {
+            const str = this.decoder.decodeToString(this.leftover);
+            this.leftover = new Uint8Array(0);
+            return Promise.resolve(str);
+        }
+        const bytes = this.data.subarray(this.offset, this.offset + len);
+        this.offset += len;
+        const result = decodeUtf8Chunk(bytes, this.leftover, this.decoder);
+        this.leftover = result.newLeftover;
+        if (result.text === null) {
+            return this.readNext();
+        }
+        return Promise.resolve(result.text);
     }
 }
 
@@ -209,13 +282,13 @@ interface XmlHandler {
  * 支持：元素/属性/自闭合/文本实体/CDATA/注释/声明。跨块安全。
  */
 export class KdbxXmlPullParser {
-    private readonly reader: FileChunkReader;
+    private readonly reader: ChunkReader;
     private readonly handler: XmlHandler;
     private pending: string = '';
     private eof: boolean = false;
     private eventQueue: XmlEvent[] = [];
 
-    constructor(reader: FileChunkReader, handler: XmlHandler) {
+    constructor(reader: ChunkReader, handler: XmlHandler) {
         this.reader = reader;
         this.handler = handler;
     }
@@ -486,11 +559,11 @@ interface Frame {
 export class KdbxModelBuilder implements XmlHandler {
     private readonly kdbx: Kdbx;
     private readonly ctx: KdbxContext;
-    private readonly gen: ProtectSaltGenerator;
+    private readonly gen: ProtectSaltGenerator | undefined;
     private readonly stack: Frame[] = [];
     readonly pendingEntryBinaries: { entry: KdbxEntry; key: string; ref: string }[] = [];
 
-    constructor(kdbx: Kdbx, ctx: KdbxContext, gen: ProtectSaltGenerator) {
+    constructor(kdbx: Kdbx, ctx: KdbxContext, gen: ProtectSaltGenerator | undefined) {
         this.kdbx = kdbx;
         this.ctx = ctx;
         this.gen = gen;
@@ -919,6 +992,10 @@ export class KdbxModelBuilder implements XmlHandler {
 
     private readProtectedText(text: string | undefined, attrs: Map<string, string> | undefined): ProtectedValue | string | undefined {
         if (attrs && strToBoolean(attrs.get(XmlNames.Attr.Protected))) {
+            if (!this.gen) {
+                throw new KdbxError(ErrorCodes.InvalidState,
+                    'Protected attribute encountered without ProtectSaltGenerator');
+            }
             const bytes = text ? base64ToBytes(text) : new Uint8Array(0);
             if (bytes.length === 0) {
                 return undefined;
@@ -926,6 +1003,12 @@ export class KdbxModelBuilder implements XmlHandler {
             const value = arrayToBuffer(bytes);
             const salt = this.gen.getSalt(value.byteLength);
             return new ProtectedValue(value, salt);
+        }
+        if (attrs && strToBoolean(attrs.get(XmlNames.Attr.ProtectedInMemPlainXml))) {
+            if (!text) {
+                return undefined;
+            }
+            return ProtectedValue.fromString(text);
         }
         return text ?? undefined;
     }
@@ -939,6 +1022,10 @@ export class KdbxModelBuilder implements XmlHandler {
             return { ref } as KdbxBinaryRef;
         }
         if (strToBoolean(attrs.get(XmlNames.Attr.Protected))) {
+            if (!this.gen) {
+                throw new KdbxError(ErrorCodes.InvalidState,
+                    'Protected attribute encountered without ProtectSaltGenerator');
+            }
             const bytes = text ? base64ToBytes(text) : new Uint8Array(0);
             if (bytes.length === 0) {
                 return undefined;
@@ -946,6 +1033,12 @@ export class KdbxModelBuilder implements XmlHandler {
             const value = arrayToBuffer(bytes);
             const salt = this.gen.getSalt(value.byteLength);
             return new ProtectedValue(value, salt);
+        }
+        if (strToBoolean(attrs.get(XmlNames.Attr.ProtectedInMemPlainXml))) {
+            if (!text) {
+                return undefined;
+            }
+            return ProtectedValue.fromBase64(text);
         }
         if (!text) {
             return undefined;
@@ -1169,5 +1262,52 @@ export class KdbxModelBuilder implements XmlHandler {
 
     private pushLeaf(name: string, attrs?: Map<string, string>): void {
         this.stack.push({ kind: 'leaf', leafName: name, leafText: '', leafAttrs: attrs });
+    }
+}
+
+// ==================== KdbxStreamingXmlLoader（共享流式加载器） ====================
+
+/**
+ * 流式 XML 加载协调器：从 ChunkReader 拉取 XML → KdbxModelBuilder 直接构建模型 →
+ * computeHashes → resolve pending entry binary refs。
+ *
+ * 文件加载（KdbxFormat.parseXmlStreaming）与快照加载（KdbxSnapshot.load）共用此入口，
+ * 避免逻辑重复。ProtectedValue 边解析边加密（ProtectSaltGenerator 流式 XOR），
+ * 无需 DOM 树、无需单独 protectPlainValues 遍历。
+ */
+export class KdbxStreamingXmlLoader {
+    static load(kdbx: Kdbx, ctx: KdbxContext, reader: ChunkReader): Promise<void> {
+        const genPromise = KdbxStreamingXmlLoader.tryCreateSaltGenerator(kdbx);
+        return genPromise.then((gen) => {
+            const builder = new KdbxModelBuilder(kdbx, ctx, gen);
+            const parser = new KdbxXmlPullParser(reader, builder);
+            return parser.parse().then(() => {
+                return kdbx.binaries.computeHashes().then(() => {
+                    const pending = builder.pendingEntryBinaries;
+                    for (let i = 0; i < pending.length; i++) {
+                        const p = pending[i];
+                        const found = kdbx.binaries.getByRef({ ref: p.ref });
+                        if (found) {
+                            p.entry.binaries.set(p.key, found);
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    /**
+     * 创建 ProtectSaltGenerator；header 参数缺失时返回 undefined。
+     * 快照格式（ProtectedInMemPlainXml）不需要 generator，header 中不携带 protectedStreamKey；
+     * 文件格式（Protected）需要 generator，header 必含 protectedStreamKey。
+     */
+    private static tryCreateSaltGenerator(kdbx: Kdbx): Promise<ProtectSaltGenerator | undefined> {
+        if (!kdbx.header.protectedStreamKey || !kdbx.header.crsAlgorithm) {
+            return Promise.resolve(undefined);
+        }
+        return ProtectSaltGenerator.create(
+            kdbx.header.protectedStreamKey,
+            kdbx.header.crsAlgorithm
+        );
     }
 }

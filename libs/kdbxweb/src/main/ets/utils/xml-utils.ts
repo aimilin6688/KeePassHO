@@ -402,6 +402,60 @@ function escapeAttr(s: string): string {
 }
 
 /**
+ * 共享 DOM 遍历序列化：递归遍历节点树，通过同步 append 回调输出 XML 文本。
+ * serializeToStringFast（内存）与 serializeToFile（文件，自维护异步 flush）共用此逻辑。
+ */
+function appendNodeSerialized(node: Node, append: (s: string) => void): void {
+  const nodeType = node.nodeType;
+  // Document node: 序列化子节点
+  if (nodeType === 9 /* DOCUMENT_NODE */) {
+    for (let i = 0; i < node.childNodes.length; i++) {
+      appendNodeSerialized(node.childNodes[i], append);
+    }
+    return;
+  }
+  // Element node
+  if (nodeType === 1 /* ELEMENT_NODE */) {
+    const el = node as Element;
+    append('<' + el.tagName);
+    const attrs = el.attributes;
+    for (let i = 0; i < attrs.length; i++) {
+      const attr = attrs[i];
+      append(' ' + attr.name + '="' + escapeAttr(attr.value) + '"');
+    }
+    const hasChildren = el.childNodes.length > 0;
+    if (!hasChildren) {
+      append('/>');
+      return;
+    }
+    append('>');
+    for (let i = 0; i < el.childNodes.length; i++) {
+      appendNodeSerialized(el.childNodes[i], append);
+    }
+    append('</' + el.tagName + '>');
+    return;
+  }
+  // Text node
+  if (nodeType === 3 /* TEXT_NODE */) {
+    append(escapeText(node.textContent || ''));
+    return;
+  }
+  // Comment / other: 跳过（KDBX XML 不含注释）
+}
+
+/**
+ * DOM→字符串序列化器（内存版，绕开 xmldom XMLSerializer 的纯 JS 递归开销）。
+ * 用 string[] 分块累积 + join，O(n) 拼接；产出与 serialize(doc) 语义等价。
+ * 调用方须先 updateProtectedValuesSalt（ProtectedValue textContent 已设为 base64）。
+ */
+export function serializeToStringFast(doc: Document): string {
+  const chunks: string[] = ['<?xml version="1.0" encoding="utf-8" standalone="yes"?>'];
+  const append = (s: string): void => { chunks.push(s); };
+  appendNodeSerialized(doc, append);
+  return chunks.join('');
+}
+
+/**
  * DOM→文件分块序列化器（S6-f：消除 XML 字符串峰值 ③b/③c）
  * 8MB 缓冲 flush，递归遍历 DOM 写 UTF-8 字节到 fd；
  * 产出与 serialize(doc) 语义等价（Kdbx.load 可解析），非字节相同。

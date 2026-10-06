@@ -15,11 +15,11 @@ import { BinaryStream } from '../utils/binary-stream';
 import {
     arrayToBuffer,
     bytesToHex,
-    bytesToString,
     hexToBytes,
     stringToBytes
 } from '../utils/byte-utils';
 import * as XmlUtils from '../utils/xml-utils';
+import { MemoryChunkReader, KdbxStreamingXmlLoader } from '../utils/xml-pull-parser';
 
 const SNAPSHOT_MAGIC_0 = 0x4b; // 'K'
 const SNAPSHOT_MAGIC_1 = 0x50; // 'P'
@@ -82,7 +82,7 @@ export class KdbxSnapshot {
                 throw new KdbxError(ErrorCodes.InvalidState, 'no xml');
             }
             XmlUtils.unprotectValues(kdbx.xml.documentElement);
-            const xml = XmlUtils.serialize(kdbx.xml);
+            const xml = XmlUtils.serializeToStringFast(kdbx.xml);
             XmlUtils.protectUnprotectedValues(kdbx.xml.documentElement);
             kdbx.xml = undefined;
 
@@ -232,9 +232,8 @@ export class KdbxSnapshot {
                 }
                 kdbx.binaries.importPool(pool);
 
-                kdbx.xml = XmlUtils.parse(bytesToString(xmlData));
-                XmlUtils.protectPlainValues(kdbx.xml.documentElement);
-                return kdbx.loadFromXml(ctx).then(() => {
+                const reader = new MemoryChunkReader(xmlData);
+                return KdbxStreamingXmlLoader.load(kdbx, ctx, reader).then(() => {
                     kdbx.xml = undefined;
                     return kdbx;
                 });
