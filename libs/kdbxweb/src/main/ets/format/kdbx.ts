@@ -157,12 +157,14 @@ export class Kdbx {
     }
 
     /**
-     * 从文件流式加载（S4 T0→T1 流式解密管道）
+     * 从文件流式加载（S4 T0→T1 流式解密管道，S5 T1→T2 流式解压）
      * ChaCha20 v4 用 decryptFromFile 逐块流式解密到 t1Path，不持有整缓冲；
+     * t2Path 提供时进一步流式解压并按文件解析 inner header、大附件落盘；
      * AES-CBC v4 / v3 退化为整缓冲读入内存
      * @param filePath KDBX 文件路径
      * @param credentials 凭证
      * @param options preserveXml / maxDecompressedBytes / t1Path（解密后 gz 临时文件，调用方管理）
+     *                t2Path（解压后 inner 明文临时文件，S5 流式路径，可选）
      *                attachmentStore / attachmentsDiskThreshold（S4 附件磁盘化）
      */
     static loadFromFile(
@@ -172,6 +174,7 @@ export class Kdbx {
             preserveXml?: boolean,
             maxDecompressedBytes?: number,
             t1Path?: string,
+            t2Path?: string,
             attachmentStore?: AttachmentStore,
             attachmentsDiskThreshold?: number
         }
@@ -189,7 +192,7 @@ export class Kdbx {
         format.preserveXml = options?.preserveXml || false;
         format.maxDecompressedBytes = options?.maxDecompressedBytes;
         format.attachmentsDiskThreshold = options?.attachmentsDiskThreshold;
-        return format.loadFromFile(filePath, options.t1Path);
+        return format.loadFromFile(filePath, options.t1Path, options.t2Path);
     }
 
     /**

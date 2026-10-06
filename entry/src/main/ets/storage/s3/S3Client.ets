@@ -1311,4 +1311,209 @@ ${partsXml}
       }
     }
   }
+
+  /**
+   * 从本地文件智能上传（S3 流式写方向，设计文档 S3）
+   * 小文件（< multipartThreshold）读入内存单次 PUT；
+   * 大文件走 multipart：并发 worker 按任务区间从文件分片读取后 uploadPart，
+   * 内存窗口 = 单个分片（5-32MB），与文件大小解耦，不持有整文件缓冲
+   * @param bucket 桶
+   * @param key 对象 key
+   * @param srcPath 本地源文件路径
+   * @param onProgress 进度回调（可选）
+   * @param multipartThreshold 分块阈值（字节），默认 5MB
+   */
+  public async putObjectSmartFromFile(
+    bucket: string,
+    key: string,
+    srcPath: string,
+    onProgress?: ProgressCallback,
+    multipartThreshold: number = S3MultipartConfig.MULTIPART_THRESHOLD
+  ): Promise<S3Result<void>> {
+    let file: fs.File | null = null;
+    try {
+      file = await fs.open(srcPath, fs.OpenMode.READ_ONLY);
+      const stat = await fs.stat(file.fd);
+      const totalSize = stat.size;
+      const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+      hilog.info(DOMAIN, TAG,
+        'putObjectSmartFromFile: bucket=%{public}s, key=%{public}s, size=%{public}s MB', bucket, key, sizeMB);
+
+      if (totalSize < multipartThreshold) {
+        // 小文件：读入内存单次上传
+        const data = new ArrayBuffer(totalSize);
+        await fs.read(file.fd, data);
+        await fs.close(file.fd);
+        file = null;
+        return this.putObject(bucket, key, data);
+      }
+
+      const result = await this.putObjectMultipartFromFileFd(
+        bucket, key, file.fd, totalSize, onProgress);
+      await fs.close(file.fd);
+      file = null;
+      return result;
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'putObjectSmartFromFile error: %{public}s', err.message);
+      return { success: false, statusCode: 500, message: err.message };
+    } finally {
+      if (file !== null) {
+        try {
+          await fs.close(file.fd);
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
+  /**
+   * 文件版 multipart 上传：worker 从文件按区间分片读取后 uploadPart
+   * 队列/重试/进度/abort 语义与内存版 putObjectMultipart 一致
+   */
+  private async putObjectMultipartFromFileFd(
+    bucket: string,
+    key: string,
+    fileFd: number,
+    totalSize: number,
+    onProgress?: ProgressCallback
+  ): Promise<S3Result<void>> {
+    const initResult = await this.createMultipartUpload(bucket, key);
+    if (!initResult.success || !initResult.data) {
+      return {
+        success: false,
+        statusCode: initResult.statusCode,
+        message: initResult.message || 'Failed to initialize multipart upload'
+      };
+    }
+    const uploadId = initResult.data.uploadId;
+
+    try {
+      const partSize = this.calculatePartSize(totalSize);
+      const totalParts = Math.ceil(totalSize / partSize);
+      hilog.info(DOMAIN, TAG,
+        'putObjectMultipartFromFile: totalSize=%{public}d, partSize=%{public}d, totalParts=%{public}d',
+        totalSize, partSize, totalParts);
+
+      const queue = new S3UploadQueue(totalSize, totalParts);
+      for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+        const start = (partNumber - 1) * partSize;
+        const end = Math.min(start + partSize, totalSize);
+        const task: UploadTask = {
+          partNumber: partNumber,
+          start: start,
+          end: end,
+          retryCount: 0
+        };
+        queue.addTask(task);
+      }
+
+      const workers: Promise<UploadWorkerResult>[] = [];
+      for (let i = 0; i < S3MultipartConfig.CONCURRENT_UPLOADS; i++) {
+        workers.push(this.uploadWorkerFromFile(queue, bucket, key, uploadId, fileFd, onProgress));
+      }
+      const results = await Promise.all(workers);
+
+      const allParts: UploadedPart[] = [];
+      let hasError = false;
+      let errorMessage = '';
+      for (const result of results) {
+        if (!result.success) {
+          hasError = true;
+          errorMessage = result.error || 'Unknown error';
+        }
+        allParts.push(...result.parts);
+      }
+
+      if (queue.hasFailedTasks() || hasError) {
+        await this.abortMultipartUpload(bucket, key, uploadId);
+        return {
+          success: false,
+          statusCode: 500,
+          message: errorMessage || `Upload failed with ${queue.getFailedCount()} failed parts`
+        };
+      }
+
+      if (allParts.length !== totalParts) {
+        await this.abortMultipartUpload(bucket, key, uploadId);
+        return {
+          success: false,
+          statusCode: 500,
+          message: `Missing parts: expected ${totalParts}, got ${allParts.length}`
+        };
+      }
+
+      return await this.completeMultipartUpload(bucket, key, uploadId, allParts);
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'putObjectMultipartFromFile exception: %{public}s', err.message);
+      await this.abortMultipartUpload(bucket, key, uploadId);
+      return { success: false, statusCode: 500, message: err.message };
+    }
+  }
+
+  /**
+   * 文件版上传 worker：按任务区间从文件读取分片 → uploadPart
+   * 与内存版 uploadWorker 保持相同的队列消费与重试语义
+   */
+  private async uploadWorkerFromFile(
+    queue: S3UploadQueue,
+    bucket: string,
+    key: string,
+    uploadId: string,
+    fileFd: number,
+    onProgress?: ProgressCallback
+  ): Promise<UploadWorkerResult> {
+    const uploadedParts: UploadedPart[] = [];
+
+    try {
+      while (true) {
+        const task = queue.getNextTask();
+        if (!task) break;
+
+        const partLength = task.end - task.start;
+        const partData = new ArrayBuffer(partLength);
+        const read = await fs.read(fileFd, partData, { offset: task.start });
+        if (read !== partLength) {
+          // 源文件在传输中被截断：按失败处理走重试
+          hilog.warn(DOMAIN, TAG,
+            'uploadWorkerFromFile: part %{public}d short read %{public}d/%{public}d, retrying',
+            task.partNumber, read, partLength);
+          if (!queue.retryTask(task)) {
+            return {
+              success: false,
+              parts: uploadedParts,
+              error: `Part ${task.partNumber} source file short read`
+            };
+          }
+          continue;
+        }
+
+        const partResult = await this.uploadPart(bucket, key, uploadId, task.partNumber, partData);
+
+        if (partResult.success && partResult.data) {
+          queue.markCompleted(partLength);
+          uploadedParts.push(partResult.data);
+          if (onProgress) {
+            onProgress(queue.getProgress());
+          }
+        } else {
+          if (!queue.retryTask(task)) {
+            return {
+              success: false,
+              parts: uploadedParts,
+              error: `Part ${task.partNumber} failed after retries`
+            };
+          }
+        }
+      }
+
+      return { success: true, parts: uploadedParts };
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, 'uploadWorkerFromFile exception: %{public}s', err.message);
+      return { success: false, parts: uploadedParts, error: err.message };
+    }
+  }
 }

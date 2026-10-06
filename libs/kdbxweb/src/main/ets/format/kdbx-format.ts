@@ -1,11 +1,11 @@
 import { gzip, ungzip } from '@ohos/flate2';
-import { fileIo as fs } from '@kit.CoreFileKit';
+import { fileIo as fs, statfs } from '@kit.CoreFileKit';
 import { Kdbx } from './kdbx';
 import { CipherId, CompressionAlgorithm, ErrorCodes } from '../defs/consts';
 import { KdbxError } from '../errors/kdbx-error';
 import { BinaryStream } from '../utils/binary-stream';
 import { KdbxContext } from './kdbx-context';
-import { KdbxHeader } from './kdbx-header';
+import { KdbxHeader, readFileRegion } from './kdbx-header';
 import { AttachmentStore } from '../utils/attachment-store';
 import {
     arrayBufferEquals,
@@ -23,8 +23,14 @@ import * as CryptoEngine from '../crypto/crypto-engine';
 import * as KeyEncryptorAes from '../crypto/key-encryptor-aes';
 import * as KeyEncryptorKdf from '../crypto/key-encryptor-kdf';
 import { Int64 } from '../utils/int64';
+import * as ZlibFile from '../utils/zlib-file';
 
 export class KdbxFormat {
+    /** S5：inner Binary 字段超过该值时流式落盘附件缓存，不整读入内存 */
+    private static readonly LARGE_BINARY_STREAM_THRESHOLD = 4 * 1024 * 1024;
+    /** S5：流式 inflate 前要求的磁盘余量安全垫（T2 写入 + 解析期临时占用） */
+    private static readonly STREAM_DISK_MARGIN = 64 * 1024 * 1024;
+
     readonly kdbx: Kdbx;
     readonly ctx: KdbxContext;
 
@@ -64,23 +70,25 @@ export class KdbxFormat {
     }
 
     /**
-     * 从文件流式加载（S4 流式解密管道 T0→T1）
+     * 从文件流式加载（S4 流式解密管道 T0→T1，S5 流式解压 T1→T2）
      * 预读 header 到 BinaryStream，ChaCha20 v4 用 decryptFromFile 流式解密到 t1Path，
+     * t2Path 提供时走 S5 流式解压 + inner header 文件解析 + 附件落盘；
      * AES-CBC v4 或 v3 退化为整缓冲（读入内存走 load()）
      * @param filePath KDBX 文件路径
      * @param t1Path 解密后 gz 数据的临时文件路径（由调用方管理生命周期）
+     * @param t2Path 解压后 inner 明文的临时文件路径（可选；不提供则整缓冲 ungzip）
      */
-    loadFromFile(filePath: string, t1Path: string): Promise<Kdbx> {
+    loadFromFile(filePath: string, t1Path: string, t2Path?: string): Promise<Kdbx> {
         return this.kdbx.credentials.ready.then(() => {
             return fs.open(filePath, fs.OpenMode.READ_ONLY).then((file) => {
-                return this.loadFromFileInner(file.fd, t1Path).then((kdbx) => {
+                return this.loadFromFileInner(file.fd, t1Path, t2Path).then((kdbx) => {
                     return fs.close(file.fd).then(() => kdbx);
                 });
             });
         });
     }
 
-    private loadFromFileInner(fileFd: number, t1Path: string): Promise<Kdbx> {
+    private loadFromFileInner(fileFd: number, t1Path: string, t2Path?: string): Promise<Kdbx> {
         // 预读 header（256KB 足够任何 KDBX outer header + sha + hmac）
         const headerBuf = new ArrayBuffer(256 * 1024);
         return fs.read(fileFd, headerBuf).then((totalRead) => {
@@ -90,7 +98,7 @@ export class KdbxFormat {
                 // v3 退化为整缓冲
                 return this.loadFromFileFallbackV3(fileFd, stm, totalRead);
             } else if (this.kdbx.header.versionMajor === 4) {
-                return this.loadV4FromFile(stm, fileFd, t1Path);
+                return this.loadV4FromFile(stm, fileFd, t1Path, t2Path);
             } else {
                 throw new KdbxError(
                     ErrorCodes.InvalidVersion,
@@ -104,7 +112,12 @@ export class KdbxFormat {
      * v4 流式加载：header 验证 → decryptFromFile 流式解密到 T1 → ungzip → parse
      * 仅 ChaCha20 支持流式；AES-CBC 退化为整缓冲
      */
-    private loadV4FromFile(stm: BinaryStream, fileFd: number, t1Path: string): Promise<Kdbx> {
+    private loadV4FromFile(
+        stm: BinaryStream,
+        fileFd: number,
+        t1Path: string,
+        t2Path?: string
+    ): Promise<Kdbx> {
         return this.getHeaderHash(stm).then((headerSha) => {
             const expectedHeaderSha = stm.readBytes(headerSha.byteLength);
             if (!arrayBufferEquals(expectedHeaderSha, headerSha)) {
@@ -144,8 +157,8 @@ export class KdbxFormat {
                     ).then(() => {
                         zeroBuffer(keys.hmacKey);
                         zeroBuffer(keys.cipherKey);
-                        // 读 T1 → ungzip → parse
-                        return this.parseDecryptedFile(t1Path);
+                        // 读 T1 → ungzip（S5 流式）/ inner parse
+                        return this.parseDecryptedFile(t1Path, t2Path);
                     });
                 });
             });
@@ -153,9 +166,130 @@ export class KdbxFormat {
     }
 
     /**
-     * 读解密后的 T1 文件 → ungzip（S5 前整缓冲）→ CP2' → inner header + XML parse
+     * 读解密后的 T1 文件 → 解压 → inner header + XML parse。
+     * t2Path 提供时走 S5 流式路径；否则整缓冲 ungzip。
      */
-    private parseDecryptedFile(t1Path: string): Promise<Kdbx> {
+    private parseDecryptedFile(t1Path: string, t2Path?: string): Promise<Kdbx> {
+        if (t2Path === undefined) {
+            return this.parseDecryptedFileBuffered(t1Path);
+        }
+        return this.prepareInnerFileStreaming(t1Path, t2Path).then((innerPath) => {
+            // inner 明文已就绪。此后失败不再回退整缓冲：
+            // inner header 解析会直接向附件池累加、写入 inner 流密钥，
+            // 部分应用后重放整缓冲路径会造成状态重复
+            return this.parseInnerFileStreaming(innerPath);
+        }, (e) => {
+            // 解压阶段失败：守卫拒绝直接抛出；其余（native 损坏/IO 异常）
+            // 回退整缓冲路径，保留原有错误语义与兼容性
+            if (e instanceof KdbxError &&
+                (e.code === ErrorCodes.DecompressedTooLarge ||
+                    e.code === ErrorCodes.NotEnoughDisk)) {
+                throw e;
+            }
+            return this.parseDecryptedFileBuffered(t1Path);
+        });
+    }
+
+    /**
+     * S5 流式解压：gzip 时 ISIZE 磁盘预检 → native zlib 流式 inflate T1→T2
+     * （内存窗口与文件大小解耦）；未压缩时 T1 即 inner 明文。
+     * @returns inner 明文文件路径
+     */
+    private prepareInnerFileStreaming(t1Path: string, t2Path: string): Promise<string> {
+        if (this.kdbx.header.compression !== CompressionAlgorithm.GZip) {
+            return Promise.resolve(t1Path);
+        }
+        return ZlibFile.readGzipIsize(t1Path).then((isize) => {
+            const inflate = (): Promise<void> => {
+                const date = new Date().getTime();
+                return ZlibFile.inflateFile(t1Path, t2Path).then(() => {
+                    console.log(
+                        'kdbx inflate (stream) time: ' + (new Date().getTime() - date) + 'ms'
+                    );
+                });
+            };
+            if (isize === undefined || isize <= 0) {
+                // ISIZE 不可得（截断/极小文件）：fail-open 直接流式解压
+                return inflate().then(() => t2Path);
+            }
+            return KdbxFormat.checkDiskForStreamInflate(t2Path, isize).then(inflate).then(() => {
+                return t2Path;
+            });
+        });
+    }
+
+    /**
+     * 流式 inflate 前的磁盘余量守卫（CP-DISK 在加载管道内的延伸，§9）：
+     * 剩余空间不足以容纳 T2 + 安全垫时以 NotEnoughDisk 中止，
+     * statfs 不可用时 fail-open 交给 inflate 自身的写失败报错。
+     */
+    private static checkDiskForStreamInflate(t2Path: string, isize: number): Promise<void> {
+        const dir = t2Path.substring(0, t2Path.lastIndexOf('/'));
+        return statfs.getFreeSize(dir).then((free) => {
+            if (free < isize + KdbxFormat.STREAM_DISK_MARGIN) {
+                throw new KdbxError(
+                    ErrorCodes.NotEnoughDisk,
+                    `streaming inflate needs ~${isize} bytes, free ${free}`
+                );
+            }
+        }).catch((e) => {
+            if (e instanceof KdbxError) {
+                throw e;
+            }
+            // statfs 失败：fail-open
+        });
+    }
+
+    /**
+     * S5：inner 明文已在文件中（T2 或未压缩 T1）。从文件逐字段解析 inner header，
+     * 大附件分块落盘不进内存；仅 XML 区读入内存并做 CP2' 检查后 DOM parse。
+     * CP2' 在此按 XML 区大小精确判定——附件型大库的附件池不占内存，
+     * 不再受解压总量约束（§10 目标场景）。
+     */
+    private parseInnerFileStreaming(innerPath: string): Promise<Kdbx> {
+        return fs.open(innerPath, fs.OpenMode.READ_ONLY).then((file) => {
+            const parseChain = this.kdbx.header
+                .readInnerHeaderFromFile(
+                    file.fd,
+                    this.ctx,
+                    KdbxFormat.LARGE_BINARY_STREAM_THRESHOLD
+                )
+                .then((xmlStart) => {
+                    return fs.stat(file.fd).then((stat) => {
+                        const xmlLength = stat.size - xmlStart;
+                        if (xmlLength < 0) {
+                            throw new KdbxError(ErrorCodes.FileCorrupt, 'inner xml region missing');
+                        }
+                        KdbxFormat.assertDecompressedLimit(xmlLength, this.maxDecompressedBytes);
+                        return readFileRegion(file.fd, xmlStart, xmlLength);
+                    });
+                })
+                .then((xmlBytes) => {
+                    const xmlStr = bytesToString(xmlBytes);
+                    this.kdbx.xml = XmlUtils.parse(xmlStr);
+                    return this.setProtectedValues().then(() => {
+                        return this.kdbx.loadFromXml(this.ctx).then(() =>
+                            this.postLoadBinaries()
+                        ).then(() => {
+                            this.cleanXml();
+                            return this.kdbx;
+                        });
+                    });
+                });
+            return parseChain.then(
+                (kdbx) => fs.close(file.fd).then(() => kdbx),
+                (e) => fs.close(file.fd).then(
+                    () => Promise.reject(e),
+                    () => Promise.reject(e)
+                )
+            );
+        });
+    }
+
+    /**
+     * 读解密后的 T1 文件 → ungzip（整缓冲）→ CP2' → inner header + XML parse
+     */
+    private parseDecryptedFileBuffered(t1Path: string): Promise<Kdbx> {
         return fs.open(t1Path, fs.OpenMode.READ_ONLY).then((file) => {
             return fs.stat(file.fd).then((stat) => {
                 const buf = new ArrayBuffer(stat.size);

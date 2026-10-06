@@ -769,6 +769,9 @@ export class KdbxUtils {
       case Consts.ErrorCodes.DecompressedTooLarge:
         // CP2'：解压后载荷超限，拒绝加载防止 OOM
         return $r('app.string.database_decompressed_too_large').id;
+      case Consts.ErrorCodes.NotEnoughDisk:
+        // S5：流式解压磁盘余量不足
+        return $r('app.string.database_not_enough_disk').id;
     }
     return kdbxError.message || kdbxError.toString();
   }

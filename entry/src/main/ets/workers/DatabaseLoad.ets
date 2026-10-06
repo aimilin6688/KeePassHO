@@ -16,15 +16,17 @@ const TAG = 'DatabaseLoad';
 
 export class DatabaseLoad {
   /**
-   * 加载数据库
-   * S4：readToFile 流式下载到 T0 文件 → Kdbx.loadFromFile 流式解密 T0→T1 → ungzip → parse
-   * 全程不持有远端内容整缓冲（修 P5/P9）
-   * @param request 请求参数
-   * @param callback 回调
-   */
+    * 加载数据库
+    * S4：readToFile 流式下载到 T0 文件 → Kdbx.loadFromFile 流式解密 T0→T1
+    * S5：T1 native zlib 流式解压到 T2 → inner header 按文件解析，大附件分块落盘
+    * 全程不持有远端内容/解压后载荷整缓冲（修 P5/P9）
+    * @param request 请求参数
+    * @param callback 回调
+    */
   async handleLoadDatabase(request: LoadDatabase, callback?: KdbxLoadServiceCallback): Promise<void> {
     const t0Path: string = CommonUtils.getCacheDir() + '/load_t0_' + Date.now() + '.tmp';
     const t1Path: string = CommonUtils.getCacheDir() + '/load_t1_' + Date.now() + '.tmp';
+    const t2Path: string = CommonUtils.getCacheDir() + '/load_t2_' + Date.now() + '.tmp';
     try {
       this.postMessage('creating_key', callback?.onLoadMessage);
       // 创建凭证
@@ -33,7 +35,7 @@ export class DatabaseLoad {
       // 读前守卫 + 流式下载到 T0 文件
       let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
       this.postMessage('validating', callback?.onLoadMessage);
-      // 流式解密 T0→T1 → ungzip → parse（ChaCha20 v4 流式，AES-CBC/v3 退化整缓冲）
+      // 流式解密 T0→T1 → 流式解压 T1→T2 → parse（ChaCha20 v4 流式，AES-CBC/v3 退化整缓冲）
       const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
       // S4 附件磁盘化：大附件池转入加密缓存，内存仅保留哈希引用（store 不可用时纯内存模式）
       const attachmentStore = AttachmentCacheService.getStore();
@@ -43,6 +45,7 @@ export class DatabaseLoad {
         {
           maxDecompressedBytes: maxDecompressedBytes,
           t1Path: t1Path,
+          t2Path: t2Path,
           attachmentStore: attachmentStore,
           attachmentsDiskThreshold: attachmentsDiskThreshold
         });
@@ -57,7 +60,7 @@ export class DatabaseLoad {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
       this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error), callback?.onErrorMessage);
     } finally {
-      // 清理解密临时文件（T0/T1 用完即删）
+      // 清理解密/解压临时文件（T0/T1/T2 用完即删）
       try {
         await fs.unlink(t0Path);
       } catch {
@@ -65,6 +68,11 @@ export class DatabaseLoad {
       }
       try {
         await fs.unlink(t1Path);
+      } catch {
+        // 文件不存在或清理失败：忽略
+      }
+      try {
+        await fs.unlink(t2Path);
       } catch {
         // 文件不存在或清理失败：忽略
       }

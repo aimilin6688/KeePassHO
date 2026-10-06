@@ -160,10 +160,33 @@ export class OneDriveStorage implements IFileStorage {
   }
 
   /**
-   * 流式从本地文件上传（OneDrive Graph upload session 分片上传为 S7 新增项，当前走默认整缓冲）
+   * 流式从本地文件上传（S7-a：Graph upload session 分片上传）
+   * 小文件（<4MB）简单 PUT；大文件创建会话后按 5MB 分片从源文件区域读取 PUT，
+   * 内存窗口 = 单分片，与文件大小解耦；CP-UP 仅约束整缓冲 write 路径，此路径豁免。
+   * OneDrive 无原生版本串，条件写入不支持（option 忽略），冲突防护依赖上层内容哈希基线
+   * @throws StorageError(FILE_WRITE_ERROR) 上传失败（含会话过期）
    */
   public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
-    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
+    }
+
+    // 检查令牌是否过期
+    if (this.config && this.config.isTokenExpired()) {
+      await this.refreshAccessToken();
+    }
+
+    try {
+      const result = await this.client.uploadFromFile(path, srcPath);
+      if (!result.success) {
+        return Promise.reject(new Error(result.message));
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'OneDrive writeFromFile error:%{public}s', (error as Error).message);
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
+    }
+    return await this.getInfo(path);
   }
 
   /**

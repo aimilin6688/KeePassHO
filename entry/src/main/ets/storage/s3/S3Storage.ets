@@ -1,7 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
 import { StorageError, StorageErrorCodes } from '../StorageError';
-import { FileTransfer } from '../FileTransfer';
 import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
 import { ProgressCallback, MultipartUploadProgress } from './S3Types';
@@ -183,19 +182,66 @@ export class S3Storage implements IFileStorage {
   }
 
   /**
-   * 流式从本地文件上传（S3 当前走默认整缓冲：multipart upload 已具备但需从文件读入内存）
-   * 真正的从文件分片上传（fileIo 分片 → uploadPart）作为后续优化项
+   * 流式从本地文件上传（S3 尾巴，设计文档 S3）
+   * 小文件（< 阈值）读入内存单次 PUT；大文件 multipart：worker 按区间从源文件分片读取后 uploadPart，
+   * 内存窗口 = 单分片（5-32MB），与文件大小解耦，不持有整文件缓冲
+   * @throws StorageError(VERSION_CONFLICT) expectedVersion 与远端 etag 不一致时抛出
    */
   public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
-    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
+    if (!this.client) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
+    }
+    const pathResult: S3PathResult = this.parsePath(path);
+    // 条件写入：写前复核远端 etag
+    await this.checkExpectedVersion(pathResult, option);
+    const result = await this.client.putObjectSmartFromFile(
+      pathResult.bucket,
+      pathResult.key,
+      srcPath,
+      this.progressCallback,
+      S3MultipartConfig.MULTIPART_THRESHOLD
+    );
+    if (!result.success) {
+      hilog.error(DOMAIN, TAG, 'writeFromFile: failed to write file: %{public}s', result.message || 'unknown error');
+      throw new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, result.message);
+    }
+    return await this.getInfo(path);
   }
 
-  public async write(path: string, content: ArrayBuffer): Promise<void> {
+  /**
+   * 条件写入：写前复核远端 etag（S3 version = HEAD etag，由 getInfo 返回）
+   * 远端不存在（新库首存）或 HEAD 失败时放行，由后续写入环节自行报错
+   */
+  private async checkExpectedVersion(pathResult: S3PathResult, option?: WriteOption): Promise<void> {
+    const expectedVersion: string | null = option?.expectedVersion ?? null;
+    if (expectedVersion === null) {
+      return;
+    }
+    const head = await this.client!.headObject(pathResult.bucket, pathResult.key);
+    if (!head.success || !head.data) {
+      return;
+    }
+    if (head.data.etag !== expectedVersion) {
+      hilog.warn(DOMAIN, TAG, 'Version conflict, key: %{public}s, expected: %{public}s, current: %{public}s',
+        pathResult.key, expectedVersion, head.data.etag);
+      throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Remote file version changed');
+    }
+  }
+
+  /**
+   * 写入文件内容（>= 阈值自动 multipart，内存窗口 = 单分片）
+   * @param option 写入选项，传入 expectedVersion 时写前 HEAD 复核 etag
+   * @throws StorageError(VERSION_CONFLICT) etag 不一致时抛出
+   */
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     if (!this.client) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
 
     const pathResult: S3PathResult = this.parsePath(path);
+    // 条件写入：写前复核远端 etag
+    await this.checkExpectedVersion(pathResult, option);
+
     const fileSizeMB = (content.byteLength / (1024 * 1024)).toFixed(2);
     const thresholdMB = (S3MultipartConfig.MULTIPART_THRESHOLD / (1024 * 1024)).toFixed(2);
 
@@ -272,13 +318,14 @@ export class S3Storage implements IFileStorage {
     const result = await this.client.headObject(pathResult.bucket, pathResult.key);
 
     if (result.success && result.data) {
-      // 是文件
+      // 是文件：etag（去引号）作为版本串，供保存链路双基线判定与条件写入
       const info: FileInfo = {
         name: this.getFileName(pathResult.key),
         size: result.data.size,
         modifiedTime: result.data.lastModified,
         path: path,
         type: FileType.FILE,
+        version: result.data.etag,
         childrenCount: 0
       };
       return info;

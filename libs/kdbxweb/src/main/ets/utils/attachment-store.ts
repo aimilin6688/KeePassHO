@@ -1,4 +1,5 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { ChaCha20 } from '../crypto/chacha20';
 import * as CryptoEngine from '../crypto/crypto-engine';
 import { ErrorCodes } from '../defs/consts';
@@ -17,6 +18,41 @@ const HASH_LENGTH = 32;
 const FILE_SUFFIX = '.bin';
 const TMP_SUFFIX = '.tmp';
 const FILENAME_PATTERN = /^[0-9a-f]{64}\.bin$/;
+/** S5 流式搬运分块：附件从源文件区域转储到缓存的窗口大小 */
+const REGION_CHUNK_SIZE = 4 * 1024 * 1024;
+
+/**
+ * 计算文件指定区域的 sha256（S5 流式加载路径）：
+ * 4MB 分块增量喂入 cryptoFramework Md，全程不整读区域内容。
+ * @returns 十六进制哈希
+ */
+export function sha256FileRegion(fileFd: number, offset: number, length: number): Promise<string> {
+    if (length <= 0) {
+        return Promise.resolve(
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        );
+    }
+    const md = cryptoFramework.createMd('SHA256');
+    let chain: Promise<void> = Promise.resolve();
+    let position = offset;
+    let remaining = length;
+    while (remaining > 0) {
+        const readLen = Math.min(remaining, REGION_CHUNK_SIZE);
+        const readAt = position;
+        const buf = new ArrayBuffer(readLen);
+        chain = chain.then(() => {
+            return fs.read(fileFd, buf, { offset: readAt }).then((read) => {
+                if (read !== readLen) {
+                    throw new KdbxError(ErrorCodes.FileCorrupt, 'file region short read');
+                }
+                md.updateSync({ data: new Uint8Array(buf, 0, read) });
+            });
+        });
+        position += readLen;
+        remaining -= readLen;
+    }
+    return chain.then(() => bytesToHex(new Uint8Array(md.digestSync().data)));
+}
 
 /**
  * 内容寻址的附件加密磁盘缓存（S4 附件磁盘化）。
@@ -84,6 +120,25 @@ export class AttachmentStore {
                 }
                 return this.writeEncrypted(path, name, hash, data);
             }).catch(() => this.writeEncrypted(path, name, hash, data));
+        });
+    }
+
+    /**
+     * 流式写入附件缓存（S5）：附件字节仍在源文件（解压后的 T2）的指定区间内，
+     * 4MB 分块读取 → ChaCha20 分块加密 → 临时文件 fsync → rename 到内容寻址路径，
+     * 全程不把附件整读入内存（窗口 = 4MB 分块，设计文档 §6）。
+     * 磁盘已存在同哈希文件时直接复用（仅刷新 LRU 时间）。
+     */
+    putFromFileRegion(hash: string, srcFd: number, offset: number, length: number): Promise<void> {
+        return this.fileName(hash).then((name) => {
+            const path = this.pathOf(name);
+            return fs.access(path).then((exists) => {
+                if (exists) {
+                    this.touch(path);
+                    return;
+                }
+                return this.writeEncryptedRegion(path, name, srcFd, offset, length);
+            }).catch(() => this.writeEncryptedRegion(path, name, srcFd, offset, length));
         });
     }
 
@@ -257,5 +312,78 @@ export class AttachmentStore {
                 `attachment cache write failed: ${e}`
             );
         });
+    }
+
+    private writeEncryptedRegion(
+        path: string,
+        name: string,
+        srcFd: number,
+        offset: number,
+        length: number
+    ): Promise<void> {
+        const nonce = CryptoEngine.random(NONCE_LENGTH);
+        const cipher = new ChaCha20(this.key, nonce);
+        const tmpPath = `${this.dir}/${name}${TMP_SUFFIX}`;
+        let file: fs.File | null = null;
+        return fs.open(
+            tmpPath,
+            fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC
+        ).then((f) => {
+            file = f;
+            return fs.write(f.fd, arrayToBuffer(nonce)).then(() => {
+                return this.copyRegionEncrypted(f.fd, srcFd, offset, length, cipher);
+            }).then(() => fs.fsync(f.fd)).then(() =>
+                fs.close(f.fd).then(() => {
+                    file = null;
+                    return fs.rename(tmpPath, path);
+                })
+            );
+        }).catch((e) => {
+            if (file !== null) {
+                try {
+                    fs.closeSync(file.fd);
+                } catch (ignored) {
+                    // best effort
+                }
+            }
+            try {
+                fs.unlinkSync(tmpPath);
+            } catch (ignored) {
+                // best effort
+            }
+            throw new KdbxError(
+                ErrorCodes.AttachmentStoreError,
+                `attachment cache stream write failed: ${e}`
+            );
+        });
+    }
+
+    private copyRegionEncrypted(
+        destFd: number,
+        srcFd: number,
+        offset: number,
+        length: number,
+        cipher: ChaCha20
+    ): Promise<void> {
+        let chain: Promise<void> = Promise.resolve();
+        let position = offset;
+        let remaining = length;
+        while (remaining > 0) {
+            const readLen = Math.min(remaining, REGION_CHUNK_SIZE);
+            const readAt = position;
+            const buf = new ArrayBuffer(readLen);
+            chain = chain.then(() => {
+                return fs.read(srcFd, buf, { offset: readAt }).then((read) => {
+                    if (read !== readLen) {
+                        throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment region short read');
+                    }
+                    cipher.xorInPlace(new Uint8Array(buf));
+                    return fs.write(destFd, buf);
+                }).then(() => undefined);
+            });
+            position += readLen;
+            remaining -= readLen;
+        }
+        return chain;
     }
 }
