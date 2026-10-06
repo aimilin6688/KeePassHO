@@ -628,10 +628,36 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
-   * 流式下载到本地文件（华为云盘当前走默认整缓冲；Range GET 流式下载为 S7 调研项）
+   * 流式分块下载到本地文件（S7：Range GET 循环 8MB 块直写盘，内存与文件大小解耦）
    */
   public async readToFile(path: string, destPath: string): Promise<FileInfo> {
-    return FileTransfer.readToFileDefault(this, path, destPath);
+    if (!this.client) {
+      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
+    }
+    if (this.config && this.config.isTokenExpired()) {
+      await this.refreshAccessToken();
+    }
+    try {
+      const file = await this.findFileByPath(path);
+      if (!file) {
+        return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, `File not found: ${path}`));
+      }
+      await this.client.downloadRangeToFile(file.id, destPath);
+      return {
+        name: file.fileName,
+        size: file.size,
+        modifiedTime: new Date(file.editedTime).getTime(),
+        path: file.id,
+        type: FileType.FILE,
+        childrenCount: 0
+      };
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Huawei Drive readToFile error: %{public}s', (error as Error).message);
+      if (error instanceof StorageError) {
+        return Promise.reject(error);
+      }
+      return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
+    }
   }
 
   /**

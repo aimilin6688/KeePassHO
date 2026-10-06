@@ -1,4 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
@@ -693,6 +694,66 @@ export class HuaweiDriveClient {
       hilog.error(DOMAIN, TAG, `download error: fileId=${fileId}, error=${(error as Error).message}`);
       return this.convertAxiosError(error as AxiosError);
     }
+  }
+
+  /**
+   * 流式分块下载文件到本地文件（S7：华为 Drive form=content 端点支持 Range GET）
+   * 内存窗口 = 单块（8MB），与文件大小解耦；首块若返回 200（Range 不支持）退化为整缓冲
+   * @param fileId 文件 ID
+   * @param destPath 本地目标文件路径（调用方管理生命周期）
+   * @returns 下载字节数
+   */
+  public async downloadRangeToFile(fileId: string, destPath: string): Promise<number> {
+    if (!this.axiosInstance) {
+      throw new Error('Axios instance not initialized');
+    }
+    // 取文件大小
+    const infoResp = await this.getInfo(fileId);
+    if (!infoResp.success || !infoResp.body) {
+      throw new Error(infoResp.message || 'downloadRangeToFile: failed to get file info');
+    }
+    const infoJson = ByteUtils.bytesToString(infoResp.body);
+    const infoData: Record<string, Object> = JSON.parse(infoJson);
+    const fileSize = Number(infoData['size']) || 0;
+    if (fileSize === 0) {
+      const empty = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      await fs.close(empty.fd);
+      return 0;
+    }
+    const CHUNK_SIZE = 8 * 1024 * 1024;
+    let downloaded = 0;
+    let firstChunk = true;
+    const apiPath = `/files/${fileId}?form=content`;
+    const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+    try {
+      while (downloaded < fileSize) {
+        const end = Math.min(downloaded + CHUNK_SIZE - 1, fileSize - 1);
+        const rangeHeader = `bytes=${downloaded}-${end}`;
+        const config: AxiosRequestConfig = {
+          responseType: 'array_buffer',
+          headers: { 'Range': rangeHeader }
+        };
+        const response: AxiosResponse = await this.axiosInstance.get(apiPath, config);
+        if (firstChunk && response.status === 200) {
+          // Range 不支持：整内容返回，写全部
+          const body = response.data as ArrayBuffer;
+          await fs.write(file.fd, body);
+          downloaded = fileSize;
+          break;
+        }
+        firstChunk = false;
+        if (response.status !== 206) {
+          throw new Error(`downloadRangeToFile: HTTP ${response.status}, expected 206`);
+        }
+        const body = response.data as ArrayBuffer;
+        await fs.write(file.fd, body);
+        downloaded += body.byteLength;
+      }
+      await fs.fsync(file.fd);
+    } finally {
+      await fs.close(file.fd);
+    }
+    return downloaded;
   }
 
   /**
