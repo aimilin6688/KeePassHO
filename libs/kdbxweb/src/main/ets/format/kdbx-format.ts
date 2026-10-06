@@ -574,6 +574,154 @@ export class KdbxFormat {
         });
     }
 
+    /**
+     * S6 保存管道文件版（设计文档 §2.3）：v4 + ChaCha20 时全链路落盘
+     * X1 inner.bin → X2 inner.gz → X3 saved.kdbx，内存窗口与库大小解耦。
+     * v3 / AES-CBC 不支持：抛 InvalidVersion / Unsupported，由调用方回退整缓冲 save()。
+     * @param outPath X3 成品 KDBX 文件路径（调用方管理生命周期）
+     * @param x1Path X1 inner 明文临时文件路径（调用方管理）
+     * @param x2Path X2 inner.gz 临时文件路径（调用方管理；未压缩时未使用）
+     */
+    saveToFile(outPath: string, x1Path: string, x2Path: string): Promise<void> {
+        return this.kdbx.credentials.ready.then(() => {
+            if (this.kdbx.versionMajor !== 4) {
+                throw new KdbxError(ErrorCodes.InvalidVersion, 'saveToFile requires kdbx v4');
+            }
+            const cipherId = this.kdbx.header.dataCipherUuid;
+            if (!cipherId || cipherId.toString() !== CipherId.ChaCha20) {
+                throw new KdbxError(ErrorCodes.Unsupported, 'saveToFile requires ChaCha20 cipher');
+            }
+            const stm = new BinaryStream();
+            this.kdbx.header.generateSalts();
+            this.kdbx.header.write(stm);
+            return this.saveV4ToFile(stm, outPath, x1Path, x2Path);
+        });
+    }
+
+    private saveV4ToFile(stm: BinaryStream, outPath: string, x1Path: string, x2Path: string): Promise<void> {
+        this.kdbx.buildXml(this.ctx);
+        return this.getHeaderHash(stm).then((headerSha) => {
+            stm.writeBytes(headerSha);
+            return this.computeKeysV4().then((keys) => {
+                return this.getHeaderHmac(stm, keys.hmacKey).then((headerHmac) => {
+                    stm.writeBytes(headerHmac);
+                    return this.getProtectSaltGenerator().then((gen) => {
+                        if (!this.kdbx.xml) {
+                            throw new KdbxError(ErrorCodes.InvalidState, 'no xml');
+                        }
+                        XmlUtils.updateProtectedValuesSalt(this.kdbx.xml.documentElement, gen);
+                        const xml = XmlUtils.serialize(this.kdbx.xml);
+                        const xmlData = arrayToBuffer(stringToBytes(xml));
+                        // X1：inner header 流式写出 + XML 字节追加
+                        return this.writeInnerToFile(x1Path, xmlData).then((x1Bytes) => {
+                            zeroBuffer(xmlData);
+                            // 载荷选择：GZip → deflate 到 X2；None → X1 即载荷
+                            let payloadPath = x1Path;
+                            let afterDeflate: Promise<void> = Promise.resolve();
+                            if (this.kdbx.header.compression === CompressionAlgorithm.GZip) {
+                                payloadPath = x2Path;
+                                afterDeflate = KdbxFormat.checkDiskForStreamDeflate(x2Path, x1Bytes).then(() => {
+                                    const date = new Date().getTime();
+                                    return ZlibFile.deflateFile(x1Path, x2Path).then(() => {
+                                        console.log('kdbx deflate (stream) time: ' + (new Date().getTime() - date) + 'ms');
+                                    });
+                                });
+                            }
+                            return afterDeflate.then(() => {
+                                let outFile: fs.File | null = null;
+                                const writeAll: Promise<void> = fs.open(
+                                    outPath,
+                                    fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC
+                                ).then((out) => {
+                                    outFile = out;
+                                    return fs.write(out.fd, stm.getWrittenBytes()).then(() => {
+                                        const iv = this.kdbx.header.encryptionIV;
+                                        if (!iv) {
+                                            throw new KdbxError(ErrorCodes.FileCorrupt, 'no encryption IV');
+                                        }
+                                        const chaCha = new ChaCha20(
+                                            new Uint8Array(keys.cipherKey),
+                                            new Uint8Array(iv)
+                                        );
+                                        const encryptBlock = (data: Uint8Array): void => {
+                                            chaCha.xorInPlace(data);
+                                        };
+                                        return HmacBlockTransform.encryptFromFile(
+                                            payloadPath, out.fd, keys.hmacKey, encryptBlock
+                                        ).then(() => {
+                                            this.cleanXml();
+                                            zeroBuffer(keys.cipherKey);
+                                            zeroBuffer(keys.hmacKey);
+                                        });
+                                    });
+                                }).then(() => undefined);
+                                return writeAll.then(
+                                    () => {
+                                        if (outFile === null) {
+                                            return Promise.resolve();
+                                        }
+                                        return fs.fsync(outFile.fd).then(() => fs.close(outFile.fd));
+                                    },
+                                    (e: Error) => {
+                                        if (outFile !== null) {
+                                            try { fs.closeSync(outFile.fd); } catch (ignored) { /* best effort */ }
+                                        }
+                                        try { fs.unlinkSync(outPath); } catch (ignored) { /* best effort */ }
+                                        throw e;
+                                    }
+                                );
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * 写 X1 inner 明文文件：inner header 流式分块回读附件 + XML 字节追加。
+     * @returns X1 文件字节数（供 deflate 磁盘守卫估算）
+     */
+    private writeInnerToFile(x1Path: string, xmlData: ArrayBuffer): Promise<number> {
+        let x1File: fs.File | null = null;
+        return fs.open(x1Path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC).then((x1) => {
+            x1File = x1;
+            return this.kdbx.header.writeInnerHeaderToFile(x1.fd, this.ctx).then(() =>
+                fs.write(x1.fd, xmlData)
+            ).then(() => fs.fsync(x1.fd).then(() =>
+                fs.stat(x1.fd).then((stat) =>
+                    fs.close(x1.fd).then(() => stat.size)
+                )
+            ));
+        }).catch((e: Error) => {
+            if (x1File !== null) {
+                try { fs.closeSync(x1File.fd); } catch (ignored) { /* best effort */ }
+            }
+            throw e;
+        });
+    }
+
+    /**
+     * 流式 deflate 前磁盘余量守卫（镜像 checkDiskForStreamInflate）：
+     * 剩余空间不足以容纳 X2 + 安全垫时以 NotEnoughDisk 中止，statfs 不可用时 fail-open。
+     */
+    private static checkDiskForStreamDeflate(x2Path: string, estBytes: number): Promise<void> {
+        const dir = x2Path.substring(0, x2Path.lastIndexOf('/'));
+        return statfs.getFreeSize(dir).then((free) => {
+            if (free < estBytes + KdbxFormat.STREAM_DISK_MARGIN) {
+                throw new KdbxError(
+                    ErrorCodes.NotEnoughDisk,
+                    `streaming deflate needs ~${estBytes} bytes, free ${free}`
+                );
+            }
+        }).catch((e) => {
+            if (e instanceof KdbxError) {
+                throw e;
+            }
+            // statfs 失败：fail-open
+        });
+    }
+
     saveXml(prettyPrint = false, writeBinaries=true): Promise<string> {
         return this.kdbx.credentials.ready.then(() => {
             // 导出 XML 时附件池以 base64 内联写入 Meta，磁盘引用必须先物化

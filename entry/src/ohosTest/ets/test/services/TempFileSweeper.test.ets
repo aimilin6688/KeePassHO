@@ -29,6 +29,10 @@ export default function TempFileSweeperTest() {
       expect(TempFileSweeper.isPipelineTemp('load_t1_123.tmp')).assertTrue();
       expect(TempFileSweeper.isPipelineTemp('load_t2_123.tmp')).assertTrue();
       expect(TempFileSweeper.isPipelineTemp('save_remote_123.tmp')).assertTrue();
+      // S6 保存管道临时文件前缀
+      expect(TempFileSweeper.isPipelineTemp('save_x1_123.tmp')).assertTrue();
+      expect(TempFileSweeper.isPipelineTemp('save_x2_123.tmp')).assertTrue();
+      expect(TempFileSweeper.isPipelineTemp('save_x3_123.tmp')).assertTrue();
       // 非管道文件不匹配
       expect(TempFileSweeper.isPipelineTemp('keepme.tmp')).assertFalse();
       expect(TempFileSweeper.isPipelineTemp('other.txt')).assertFalse();
@@ -46,7 +50,10 @@ export default function TempFileSweeperTest() {
         'load_t0_' + ts + '.tmp',
         'load_t1_' + ts + '.tmp',
         'load_t2_' + ts + '.tmp',
-        'save_remote_' + ts + '.tmp'
+        'save_remote_' + ts + '.tmp',
+        'save_x1_' + ts + '.tmp',
+        'save_x2_' + ts + '.tmp',
+        'save_x3_' + ts + '.tmp'
       ];
       const keep: string[] = ['keepme-' + ts + '.tmp', 'keepme-' + ts + '.txt'];
       for (const name of leftovers.concat(keep)) {
@@ -60,7 +67,7 @@ export default function TempFileSweeperTest() {
       for (const name of leftovers) {
         expect(fs.accessSync(cacheDir + '/' + name, fs.AccessModeType.EXIST)).assertFalse();
       }
-      // 至少清掉了本次创建的 4 个
+      // 至少清掉了本次创建的 7 个
       expect(removed >= leftovers.length).assertTrue();
       // 无关文件保留
       for (const name of keep) {

@@ -17,6 +17,23 @@ const DOMAIN = 0x0000;
 const TAG = 'DatabaseSave';
 
 /**
+ * 保存产物（S6 保存管道）：
+ * - 流式路径（v4 + ChaCha20）：filePath 为 X3 落盘路径，buffer 为 null
+ * - 回退路径（v3 / AES-CBC）：buffer 为整缓冲产物，filePath 为 null
+ */
+export class SavedContent {
+  /** 落盘的 KDBX 文件路径（流式路径）；null 表示回退整缓冲 */
+  readonly filePath: string | null;
+  /** 整缓冲产物（回退路径）；null 表示流式路径 */
+  readonly buffer: ArrayBuffer | null;
+
+  constructor(filePath: string | null, buffer: ArrayBuffer | null) {
+    this.filePath = filePath;
+    this.buffer = buffer;
+  }
+}
+
+/**
  * 保存数据库
  * 保存流程：重读远端 -> 双基线判定（版本串 + 内容哈希）-> 未变则条件写入；
  * 已变则按冲突策略处理（AUTO 通知上层选择 / MERGE 合并后条件写入 / OVERWRITE 无条件写入），
@@ -41,8 +58,13 @@ export class DatabaseSave {
    * @param requestMessage 请求
    */
   public async handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
+    const ts: number = Date.now();
     // 远端临时文件（ciphertext，可放 cacheDir；finally 清理）
-    const tempPath: string = CommonUtils.getCacheDir() + '/save_remote_' + Date.now() + '.tmp';
+    const tempPath: string = CommonUtils.getCacheDir() + '/save_remote_' + ts + '.tmp';
+    // S6 保存管道临时文件（X1 inner / X2 deflate / X3 成品，调用方管理生命周期）
+    const savedPath: string = CommonUtils.getCacheDir() + '/save_x3_' + ts + '.tmp';
+    const x1Path: string = CommonUtils.getCacheDir() + '/save_x1_' + ts + '.tmp';
+    const x2Path: string = CommonUtils.getCacheDir() + '/save_x2_' + ts + '.tmp';
     try {
       const request = new SaveDatabase(JSON.parse(requestMessage.dbFileParam) as SaveDatabaseDbParam, requestMessage);
       this.postMessage('loading_key');
@@ -66,16 +88,18 @@ export class DatabaseSave {
         const remoteChanged: boolean = DatabaseSave.isRemoteChanged(request, fileInfo, remoteHash);
         if (!remoteChanged) {
           // 远端未变：直接保存，远端内容不入内存
-          const savedDb: ArrayBuffer = await this.buildSavedContent(request, credentials);
-          await this.writeContent(request, savedDb, fileInfo.version ?? null);
-          await this.postSuccess(request, savedDb, false);
+          const saved: SavedContent = await this.buildSavedContent(request, credentials, undefined,
+            savedPath, x1Path, x2Path);
+          await this.writeSavedContent(request, saved, fileInfo.version ?? null);
+          await this.postSuccess(request, saved, false);
           return;
         }
         if (strategy === ConflictStrategy.OVERWRITE) {
           // 用户已选择覆盖：丢弃远端修改，无条件写入本地内容
-          const savedDb: ArrayBuffer = await this.buildSavedContent(request, credentials);
-          await this.writeContent(request, savedDb, null);
-          await this.postSuccess(request, savedDb, false);
+          const saved: SavedContent = await this.buildSavedContent(request, credentials, undefined,
+            savedPath, x1Path, x2Path);
+          await this.writeSavedContent(request, saved, null);
+          await this.postSuccess(request, saved, false);
           return;
         }
         if (strategy === ConflictStrategy.AUTO) {
@@ -86,9 +110,10 @@ export class DatabaseSave {
         // MERGE：从临时文件读入内存（S4 前仍整缓冲）→ Kdbx.load → 合并 → 写入
         const remoteContent: ArrayBuffer = await FileTransfer.readFileToBuffer(tempPath);
         const mergedModel: Kdbx = await this.mergeDatabase(request, remoteContent, credentials);
-        const mergedDb: ArrayBuffer = await this.buildSavedContent(request, credentials, mergedModel);
+        const saved: SavedContent = await this.buildSavedContent(request, credentials, mergedModel,
+          savedPath, x1Path, x2Path);
         try {
-          await this.writeContent(request, mergedDb, fileInfo.version ?? null);
+          await this.writeSavedContent(request, saved, fileInfo.version ?? null);
         } catch (error) {
           if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT
             && retryCount < DatabaseSave.MAX_CONFLICT_RETRY) {
@@ -101,7 +126,7 @@ export class DatabaseSave {
           }
           throw new Error(error.message);
         }
-        await this.postSuccess(request, mergedDb, true, mergedModel);
+        await this.postSuccess(request, saved, true, mergedModel);
         return;
       }
     } catch (error) {
@@ -113,11 +138,14 @@ export class DatabaseSave {
         this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error));
       }
     } finally {
-      // 清理远端临时文件（ciphertext，用完即删）
-      try {
-        await fs.unlink(tempPath);
-      } catch {
-        // 文件不存在或清理失败：忽略
+      // 清理管道临时文件（ciphertext + S6 保存中间态，用完即删）
+      const tempFiles: string[] = [tempPath, savedPath, x1Path, x2Path];
+      for (const p of tempFiles) {
+        try {
+          await fs.unlink(p);
+        } catch {
+          // 文件不存在或清理失败：忽略
+        }
       }
     }
   }
@@ -147,12 +175,18 @@ export class DatabaseSave {
 
   /**
    * 构建待写入的数据库内容（凭证变更处理 + 加密保存）
+   * S6 保存管道：v4 + ChaCha20 走 saveToFile 文件流式（deflate + encryptFromFile，内存与库大小解耦）；
+   * v3 / AES-CBC 回退 save() 整缓冲。调用方据 SavedContent 选择 writeFromFile / write。
    * @param request 请求
    * @param credentials 凭证
    * @param kdbx 已有数据库对象（合并场景传入），不传则从请求数据反序列化
+   * @param savedPath X3 成品路径（流式路径）
+   * @param x1Path X1 inner 明文路径（流式路径）
+   * @param x2Path X2 inner.gz 路径（流式路径）
    * @throws Error 保存失败
    */
-  private async buildSavedContent(request: SaveDatabase, credentials: KdbxCredentials, kdbx?: Kdbx): Promise<ArrayBuffer> {
+  private async buildSavedContent(request: SaveDatabase, credentials: KdbxCredentials, kdbx?: Kdbx,
+    savedPath?: string, x1Path?: string, x2Path?: string): Promise<SavedContent> {
     this.postMessage('save_saving');
     const database: Kdbx = kdbx ? kdbx : await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
     if (request.newPassword) {
@@ -169,10 +203,18 @@ export class DatabaseSave {
       }
     }
     const now = new Date().getTime();
-    return await database.save().then(savedDb => {
+    // S6 保存管道：v4 + ChaCha20 走文件流式（deflate + encryptFromFile），内存与库大小解耦；
+    // v3 / AES-CBC 回退整缓冲 save()
+    if (savedPath && x1Path && x2Path && database.canSaveToFile()) {
+      await database.saveToFile(savedPath, { x1Path: x1Path, x2Path: x2Path });
+      hilog.debug(DOMAIN, TAG, 'Worker save database to file success, time: %{public}d ms', new Date().getTime() - now);
+      return new SavedContent(savedPath, null);
+    }
+    const savedDb: ArrayBuffer = await database.save().then(buf => {
       hilog.debug(DOMAIN, TAG, 'Worker save database success, time: %{public}d ms', new Date().getTime() - now);
-      return savedDb;
+      return buf;
     });
+    return new SavedContent(null, savedDb);
   }
 
   /**
@@ -203,6 +245,36 @@ export class DatabaseSave {
   }
 
   /**
+   * 写入保存产物：流式路径走 writeFromFile（分块上传），回退路径走 write（整缓冲）
+   * @param request 请求
+   * @param saved 保存产物
+   * @param expectedVersion 期望的远端版本（条件写入），null 表示无条件写入
+   * @throws Error 写入失败，版本冲突时抛出 StorageError(VERSION_CONFLICT)
+   */
+  private async writeSavedContent(request: SaveDatabase, saved: SavedContent, expectedVersion: string | null): Promise<void> {
+    if (saved.filePath !== null) {
+      const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
+      const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
+      try {
+        await kdbxFileManager.writeFromFile(request.filePath, saved.filePath, option);
+        this.postMessage('save_success');
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, 'Worker error save database (writeFromFile):%{public}s, stack:%{public}s', error.message, error.stack);
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error(error.message);
+      }
+      return;
+    }
+    const buffer = saved.buffer;
+    if (buffer === null) {
+      throw new Error('saved content is empty');
+    }
+    await this.writeContent(request, buffer, expectedVersion);
+  }
+
+  /**
    * 写入文件内容
    * @param request 请求
    * @param content 数据库内容
@@ -226,18 +298,32 @@ export class DatabaseSave {
 
   /**
    * 发送成功消息（附带新的版本基线供下次保存使用）
+   * S6：流式路径分块哈希落盘文件 + data 传空缓冲（主线程非合并不用 data）；
+   * 回退路径整缓冲哈希 + data 传真实缓冲。
    * @param request 请求
-   * @param content 写入的数据库内容
+   * @param saved 保存产物
    * @param isMerge 是否发生了合并
    * @param database 合并场景下的合并后模型（随消息以 KPSN 快照回传，主线程免解密重解析）
    */
-  private async postSuccess(request: SaveDatabase, content: ArrayBuffer, isMerge: boolean,
+  private async postSuccess(request: SaveDatabase, saved: SavedContent, isMerge: boolean,
     database?: Kdbx): Promise<void> {
     const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
     try {
       const fileInfo = await kdbxFileManager.getInfo(request.filePath);
-      const contentHash: string = await HashUtils.sha256Hex(content);
-      const message = new SuccessMessage(content, fileInfo.modifiedTime, isMerge,
+      let contentHash: string;
+      let data: ArrayBuffer;
+      if (saved.filePath !== null) {
+        contentHash = await HashUtils.sha256HexFile(saved.filePath);
+        data = new ArrayBuffer(0);
+      } else {
+        const buffer = saved.buffer;
+        if (buffer === null) {
+          throw new Error('saved content is empty');
+        }
+        contentHash = await HashUtils.sha256Hex(buffer);
+        data = buffer;
+      }
+      const message = new SuccessMessage(data, fileInfo.modifiedTime, isMerge,
         fileInfo.version ?? null, contentHash);
       if (isMerge && database) {
         message.snapshot = await database.saveSnapshot();

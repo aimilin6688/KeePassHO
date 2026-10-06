@@ -165,6 +165,123 @@ export default function KdbxAttachmentStoreTest() {
             });
         });
 
+        /**
+         * getToFile 流式回读（S6 保存管道）：与 get 字节输出完全一致
+         */
+        it('getToFile returns same bytes as get', 0, async () => {
+            const realHash = await sha256Hex(DATA);
+            await store.put(realHash, DATA);
+            const expected = await store.get(realHash);
+            // 写到临时文件再读回比较
+            const tmpPath = testDir + '/getToFile-eq.tmp';
+            const file = fs.openSync(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+            try {
+                await store.getToFile(realHash, file.fd);
+            } finally {
+                fs.closeSync(file);
+            }
+            const stat = fs.statSync(tmpPath);
+            const buf = new ArrayBuffer(stat.size);
+            const rf = fs.openSync(tmpPath, fs.OpenMode.READ_ONLY);
+            try {
+                fs.readSync(rf.fd, buf);
+            } finally {
+                fs.closeSync(rf);
+            }
+            expect(buf.byteLength).assertEqual(expected.byteLength);
+            expect(kdbxweb.ByteUtils.arrayBufferEquals(buf, expected)).assertTrue();
+            try { fs.unlinkSync(tmpPath); } catch (e) { /* best effort */ }
+        });
+
+        /**
+         * getToFile 大附件（5MB）流式回读保真
+         */
+        it('getToFile streams large attachment preserving bytes', 0, async () => {
+            const big = kdbxweb.ByteUtils.stringToBuffer('y'.repeat(5 * 1024 * 1024));
+            const realHash = await sha256Hex(big);
+            await store.put(realHash, big);
+            const tmpPath = testDir + '/getToFile-big.tmp';
+            const file = fs.openSync(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+            try {
+                await store.getToFile(realHash, file.fd);
+            } finally {
+                fs.closeSync(file);
+            }
+            const stat = fs.statSync(tmpPath);
+            const buf = new ArrayBuffer(stat.size);
+            const rf = fs.openSync(tmpPath, fs.OpenMode.READ_ONLY);
+            try {
+                fs.readSync(rf.fd, buf);
+            } finally {
+                fs.closeSync(rf);
+            }
+            expect(buf.byteLength).assertEqual(big.byteLength);
+            expect(kdbxweb.ByteUtils.arrayBufferEquals(buf, big)).assertTrue();
+            try { fs.unlinkSync(tmpPath); } catch (e) { /* best effort */ }
+        });
+
+        /**
+         * getToFile 篡改密文 → FileCorrupt（哈希校验失败）
+         */
+        it('getToFile with tampered file throws FileCorrupt', 0, async () => {
+            const tamperDir = testDir + '-tamper-gettofile';
+            const store2 = makeStoreAt(tamperDir);
+            const tamperData = kdbxweb.ByteUtils.stringToBuffer('gettofile-tamper-target');
+            const realHash = await sha256Hex(tamperData);
+            await store2.put(realHash, tamperData);
+            // 篡改唯一缓存文件的密文字节
+            const names = fs.listFileSync(tamperDir)
+                .filter((name: string) => name.endsWith('.bin'));
+            expect(names.length).assertEqual(1);
+            const path = tamperDir + '/' + names[0];
+            const file = fs.openSync(path, fs.OpenMode.READ_WRITE);
+            try {
+                const size = fs.statSync(file.fd).size;
+                const buf = new ArrayBuffer(1);
+                fs.readSync(file.fd, buf, { offset: Math.floor(size / 2) });
+                const flip = new Uint8Array(buf);
+                flip[0] = flip[0] ^ 0xff;
+                fs.writeSync(file.fd, buf, { offset: Math.floor(size / 2) });
+            } finally {
+                fs.closeSync(file);
+            }
+            const tmpPath = testDir + '/getToFile-tamper.tmp';
+            const out = fs.openSync(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+            let threw = false;
+            try {
+                await store2.getToFile(realHash, out.fd);
+            } catch (e) {
+                threw = true;
+                expect(e instanceof kdbxweb.KdbxError).assertTrue();
+                expect((e as kdbxweb.KdbxError).code)
+                    .assertEqual(kdbxweb.Consts.ErrorCodes.FileCorrupt);
+            } finally {
+                fs.closeSync(out);
+            }
+            expect(threw).assertTrue();
+            try { fs.unlinkSync(tmpPath); } catch (e) { /* best effort */ }
+        });
+
+        /**
+         * getToFile 缺失哈希 → AttachmentStoreError
+         */
+        it('getToFile missing hash rejects', 0, () => {
+            const tmpPath = testDir + '/getToFile-missing.tmp';
+            const file = fs.openSync(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+            fs.closeSync(file);
+            const reopen = fs.openSync(tmpPath, fs.OpenMode.READ_WRITE);
+            return store.getToFile('ff'.repeat(32), reopen.fd).then(() => {
+                fs.closeSync(reopen.fd);
+                throw new Error('should have rejected');
+            }).catch((e: kdbxweb.KdbxError) => {
+                fs.closeSync(reopen.fd);
+                expect(e instanceof kdbxweb.KdbxError).assertTrue();
+                expect(e.code).assertEqual(kdbxweb.Consts.ErrorCodes.AttachmentStoreError);
+            }).then(() => {
+                try { fs.unlinkSync(tmpPath); } catch (e) { /* best effort */ }
+            });
+        });
+
         it('sweep removes files beyond budget', 0, () => {
             const store2 = new kdbxweb.AttachmentStore(
                 testDir + '-sweep',

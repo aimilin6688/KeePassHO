@@ -730,6 +730,79 @@ export class KdbxHeader {
         return chain.then(() => this.writeField(stm, 0, InnerHeaderFields, ctx));
     }
 
+    /**
+     * 写内层头到文件 fd（S6 保存管道）：字段顺序与 writeInnerHeader 完全一致；
+     * 磁盘引用附件分块流式回读直写，不再整读入内存。
+     */
+    writeInnerHeaderToFile(outFd: number, ctx: KdbxContext): Promise<void> {
+        this.validateInner();
+        let chain: Promise<void> = Promise.resolve();
+        // InnerRandomStreamID(1) + InnerRandomStreamKey(2)：小同步字段，复用 writeField 到内存 stm 再 flush
+        for (let id = 1; id < InnerHeaderFields.length - 1; id++) {
+            const fieldId = id;
+            chain = chain.then(() => this.writeSmallFieldToFile(outFd, fieldId, InnerHeaderFields));
+        }
+        // Binary(3)：附件字段，磁盘引用流式回读直写
+        chain = chain.then(() => this.writeBinaryToFile(outFd, ctx));
+        // EndOfHeader(0)
+        return chain.then(() => this.writeSmallFieldToFile(outFd, 0, InnerHeaderFields));
+    }
+
+    private writeSmallFieldToFile(outFd: number, id: number, fields: HeaderField[]): Promise<void> {
+        const stm = new BinaryStream();
+        this.writeField(stm, id, fields);
+        return fs.write(outFd, stm.getWrittenBytes()).then(() => undefined);
+    }
+
+    private writeBinaryToFile(outFd: number, ctx: KdbxContext): Promise<void> {
+        if (this.versionMajor < 4) {
+            return Promise.resolve();
+        }
+        const binaries = ctx.kdbx.binaries.getAll();
+        let chain: Promise<void> = Promise.resolve();
+        for (const binary of binaries) {
+            const value = binary.value;
+            if (value instanceof KdbxBinaryDiskRef) {
+                chain = chain.then(() => {
+                    const frame = new ArrayBuffer(1 + 4 + 1);
+                    const stm = new BinaryStream(frame);
+                    stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
+                    stm.setUint32(value.byteLength + 1, true);
+                    stm.setUint8(value.isProtected ? HeaderConst.FlagBinaryProtected : 0);
+                    return fs.write(outFd, frame).then(() =>
+                        ctx.kdbx.binaries.readDiskRefToFile(value, outFd).then(() => undefined)
+                    );
+                });
+            } else if (value instanceof ProtectedValue) {
+                chain = chain.then(() => {
+                    const binaryData = value.getBinary();
+                    const frame = new ArrayBuffer(1 + 4 + 1);
+                    const stm = new BinaryStream(frame);
+                    stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
+                    stm.setUint32(binaryData.byteLength + 1, true);
+                    stm.setUint8(HeaderConst.FlagBinaryProtected);
+                    return fs.write(outFd, frame).then(() =>
+                        fs.write(outFd, binaryData).then(() => {
+                            zeroBuffer(binaryData);
+                        })
+                    );
+                });
+            } else {
+                chain = chain.then(() => {
+                    const frame = new ArrayBuffer(1 + 4 + 1);
+                    const stm = new BinaryStream(frame);
+                    stm.setUint8(HeaderConst.InnerHeaderBinaryFieldId);
+                    stm.setUint32(value.byteLength + 1, true);
+                    stm.setUint8(0);
+                    return fs.write(outFd, frame).then(() =>
+                        fs.write(outFd, value).then(() => undefined)
+                    );
+                });
+            }
+        }
+        return chain;
+    }
+
     generateSalts(): void {
         this.masterSeed = CryptoEngine.random(32);
         if (this.versionMajor < 4) {

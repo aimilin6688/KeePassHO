@@ -17,6 +17,7 @@ import KdbxMergeTest from './format/kdbx.merge.test';
 import KdbxTest from './format/kdbx.test';
 import KdbxLoadFromFileTest from './format/kdbx-load-from-file.test';
 import KdbxStreamingLoadTest from './format/kdbx-streaming-load.test';
+import KdbxSaveToFileTest from './format/kdbx-save-to-file.test';
 import KdbxAttachmentStoreTest from './format/kdbx-attachment-store.test';
 import KdbxBinariesTest from './format/kdbx-binaries.test';
 import KdbxCredentialsTest from './format/kdbx-credentials.test';
@@ -56,6 +57,7 @@ export default function testsuite() {
   KdbxTest();
   KdbxLoadFromFileTest();
   KdbxStreamingLoadTest();
+  KdbxSaveToFileTest();
   KdbxAttachmentStoreTest();
   KdbxBinariesTest();
   KdbxCredentialsTest();

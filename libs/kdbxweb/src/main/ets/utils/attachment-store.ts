@@ -203,6 +203,82 @@ export class AttachmentStore {
     }
 
     /**
+     * 流式读取并解密附件到目标 fd（S6 保存管道）：4MB 分块读密文 → ChaCha20 分块解密 →
+     * 边写边增量 sha256，全程不整读附件（窗口 = 4MB 分块）；结束后校验哈希，不符抛 FileCorrupt。
+     * 与 get() 的字节输出与哈希校验语义完全一致，可互换。
+     */
+    getToFile(hash: string, destFd: number): Promise<void> {
+        return this.fileName(hash).then((name) => {
+            const path = this.pathOf(name);
+            let file: fs.File | null = null;
+            return fs.open(path, fs.OpenMode.READ_ONLY).then((f) => {
+                file = f;
+                return fs.stat(f.fd).then((stat) => {
+                    if (stat.size < NONCE_LENGTH) {
+                        throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache truncated');
+                    }
+                    const md = cryptoFramework.createMd('SHA256');
+                    const nonceBuf = new ArrayBuffer(NONCE_LENGTH);
+                    return fs.read(f.fd, nonceBuf).then((nonceRead) => {
+                        if (nonceRead !== NONCE_LENGTH) {
+                            throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache short read');
+                        }
+                        const cipher = new ChaCha20(this.key, new Uint8Array(nonceBuf));
+                        let chain: Promise<void> = Promise.resolve();
+                        let remaining = stat.size - NONCE_LENGTH;
+                        while (remaining > 0) {
+                            const readLen = Math.min(remaining, REGION_CHUNK_SIZE);
+                            const buf = new ArrayBuffer(readLen);
+                            chain = chain.then(() => {
+                                return fs.read(f.fd, buf).then((read) => {
+                                    if (read !== readLen) {
+                                        throw new KdbxError(
+                                            ErrorCodes.FileCorrupt,
+                                            'attachment cache short read'
+                                        );
+                                    }
+                                    cipher.xorInPlace(new Uint8Array(buf));
+                                    md.updateSync({ data: new Uint8Array(buf, 0, read) });
+                                    return fs.write(destFd, buf).then(() => {
+                                        zeroBuffer(buf);
+                                    });
+                                });
+                            });
+                            remaining -= readLen;
+                        }
+                        return chain.then(() => {
+                            const digest = md.digestSync();
+                            const expected = hexToBytes(hash);
+                            if (!arrayBufferEquals(arrayToBuffer(digest.data), arrayToBuffer(expected))) {
+                                throw new KdbxError(
+                                    ErrorCodes.FileCorrupt,
+                                    'attachment cache hash mismatch'
+                                );
+                            }
+                            this.touch(path);
+                        });
+                    });
+                });
+            }).catch((e) => {
+                if (file !== null) {
+                    try {
+                        fs.closeSync(file.fd);
+                    } catch (ignored) {
+                        // best effort
+                    }
+                }
+                if (e instanceof KdbxError) {
+                    throw e;
+                }
+                throw new KdbxError(
+                    ErrorCodes.AttachmentStoreError,
+                    `attachment cache stream read failed: ${e}`
+                );
+            });
+        });
+    }
+
+    /**
      * 删除单个缓存文件（best effort）。
      */
     remove(hash: string): Promise<void> {

@@ -283,4 +283,20 @@ export class KdbxBinaries {
         }
         return this.store.get(ref.hash);
     }
+
+    /**
+     * 从加密缓存流式读取磁盘引用附件内容到目标 fd（S6 保存管道）：
+     * 4MB 分块解密直写，不整读入内存；哈希校验由 store 保证。
+     */
+    readDiskRefToFile(ref: KdbxBinaryDiskRef, destFd: number): Promise<void> {
+        if (!this.store) {
+            return Promise.reject(
+                new KdbxError(
+                    ErrorCodes.InvalidState,
+                    'disk-ref attachments require an attachment store'
+                )
+            );
+        }
+        return this.store.getToFile(ref.hash, destFd);
+    }
 }
