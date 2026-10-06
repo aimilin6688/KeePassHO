@@ -59,6 +59,9 @@ import TempFileSweeperTest from './services/TempFileSweeper.test';
 // §7.4 会话文件协议单元测试（M0 包裹/解包裹/清扫）
 import SessionFileServiceTest from './kdbx/SessionFileService.test';
 
+// §10/§12 大文件验收测试（att-100/300/500 + text-10k + CP2' + 残留清扫）
+import LargeFileAcceptanceTest from './acceptance/LargeFileAcceptance.test';
+
 // S7-a OneDrive upload session 单元测试（未初始化拒绝常驻；真实 API 用例按令牌门控注册）
 import OneDriveUploadSessionTest from './storage/onedrive/OneDriveUploadSession.test';
 
@@ -164,6 +167,9 @@ export default function testsuite() {
 
   // §7.4 会话文件协议测试（包裹往返 / 大缓冲分块 / 清扫）
   SessionFileServiceTest();
+
+  // §10/§12 大文件验收测试（建议 -s class LargeFileAcceptanceTest 单独运行）
+  LargeFileAcceptanceTest();
 
   // S7-a OneDrive upload session 测试（未初始化拒绝 / 真实 API 用例门控注册）
   OneDriveUploadSessionTest();

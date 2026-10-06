@@ -58,16 +58,17 @@ export class KdbxBinaries {
     }
 
     private static getBinaryHash(binary: KdbxBinaryIn): Promise<string> {
-        let promise;
+        let promise: Promise<string>;
         if (binary instanceof ProtectedValue) {
-            promise = binary.getHash();
+            promise = binary.getHash().then(bytesToHex);
         } else if (binary instanceof KdbxBinaryDiskRef) {
+            // 磁盘引用的 hash 已是 hex 字符串（加载时 sha256FileRegion 产出），不得再次 bytesToHex
             promise = Promise.resolve(binary.hash);
         } else {
-            binary = arrayToBuffer(binary);
-            promise = CryptoEngine.sha256(binary);
+            const buf = arrayToBuffer(binary);
+            promise = CryptoEngine.sha256(buf).then(bytesToHex);
         }
-        return promise.then(bytesToHex);
+        return promise;
     }
 
     add(value: KdbxBinaryIn): Promise<KdbxBinaryWithHash> {
