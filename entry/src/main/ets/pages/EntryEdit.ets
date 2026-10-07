@@ -857,9 +857,6 @@ export struct EntryEdit {
   // 添加附件
   // S6-d：注册进 kdbx.binaries 附件池（避免保存时 base64 内联进 XML）+ 阈值磁盘化（镜像加载侧）
   private async addAttachment() {
-    // 附件大小限制：5MB
-    const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
-
     try {
       const result = await FileUtils.selectFiles(1);
       const database = FileService.getInstance().getDbFileParam().database;
@@ -868,16 +865,6 @@ export struct EntryEdit {
         return;
       }
       for (const file of result) {
-        // 检查文件大小
-        const fileSize = file.content.byteLength;
-        if (fileSize > MAX_ATTACHMENT_SIZE) {
-          const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-          CommonUtils.showToast({
-            message: $r('app.string.attachment_size_exceed_limit', file.name, fileSizeMB, '5'),
-            duration: 3000
-          });
-          continue;
-        }
         // 注册进附件池：保存时 writeBinaries 据 getRefByHash 写 <Value Ref="n"/>，
         // 不再走 setBytes base64 内联（修 XML 膨胀 + 永不磁盘化 bug）
         const binary = await database.binaries.add(file.content);

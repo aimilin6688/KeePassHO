@@ -1345,10 +1345,6 @@
       "value": "Attachment"
     },
     {
-      "name": "attachment_size_exceed_limit",
-      "value": "File \"%s\" size (%s MB) exceeds the limit of %s MB and cannot be added"
-    },
-    {
       "name": "Settings_database_import",
       "value": "Import database"
     },
