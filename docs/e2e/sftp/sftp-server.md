@@ -53,12 +53,14 @@ ClientAliveCountMax 1
 ## 5. 设备访问链路（rport 反向隧道）
 
 ```bash
-hdc rport tcp:2222 tcp:2222        # 注意：本版 hdc 无 add 子命令
+hdc rport tcp:2223 tcp:2222        # 注意：本版 hdc 无 add 子命令；hdc 重启后隧道丢失需重建
 hdc fport ls                        # 确认 [Reverse] 条目
-hdc -t 127.0.0.1:5557 shell "netstat -tln | grep 2222"   # 设备侧应 LISTEN
+hdc shell "netstat -tln | grep 2223"   # 设备侧应 LISTEN
 ```
 
-链路：设备 `127.0.0.1:2222` → hdcd → USB → Mac hdc → Mac `2222` → 容器 sshd。
+链路：设备 `127.0.0.1:2223` → hdcd → USB → Mac hdc → Mac `2222` → 容器 sshd。
+
+测试代码固定使用设备侧端口 `2223`（见 `SFTPStorageRealFile.test.ets` / `StorageConflictUi.test.ets`），不要建立成 `2222→2222`。
 
 ## 6. 常用运维命令
 
