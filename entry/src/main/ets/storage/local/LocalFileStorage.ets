@@ -245,6 +245,16 @@ export class LocalFileStorage implements IFileStorage {
    */
   public async exists(path: string): Promise<boolean> {
     try {
+      // file://docs/... URI 的 docs FUSE 挂载不被 accessSync 路径解析识别（始终返回 false），
+      // URI 解析仅在 fs.open 阶段生效（与 readToFile/doGetInfo 一致）：
+      // 先激活持久化权限，再用 fs.open 探测存在性；沙箱路径仍走 accessSync
+      if (path.startsWith('file://')) {
+        await this.checkFilePermission(path, fileShare.OperationMode.READ_MODE);
+        const file = await fs.open(path, fs.OpenMode.READ_ONLY);
+        await fs.close(file.fd);
+        hilog.info(DOMAIN, TAG, `Check file exist by open: true, path: ${path}`);
+        return true;
+      }
       const result: boolean = fs.accessSync(path, fs.AccessModeType.EXIST);
       hilog.info(DOMAIN, TAG, `Check file exist: ${result}, path: ${path}`);
       return result;

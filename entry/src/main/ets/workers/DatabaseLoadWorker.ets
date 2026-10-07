@@ -85,7 +85,7 @@ export class DatabaseLoadWorker extends DatabaseLoad {
       const snapshotBytes: ArrayBuffer = await KdbxUtils.kdbxToArrayBuffer(message.data as Kdbx);
       message.m0Path = await SessionFileService.wrapToFile(snapshotBytes, 'm0_load_');
       message.data = new ArrayBuffer(0);
-      hilog.debug(DOMAIN, TAG, "Kdbx to m0 session file time: %{public}d ms", Date.now() - logTime);
+      hilog.info(DOMAIN, TAG, "Kdbx to m0 session file time: %{public}d ms", Date.now() - logTime);
       workerPort.postMessage(message);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postSuccessMessage error:%{public}s', error.message);

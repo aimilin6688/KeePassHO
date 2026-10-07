@@ -59,6 +59,9 @@ import TempFileSweeperTest from './services/TempFileSweeper.test';
 // §7.4 会话文件协议单元测试（M0 包裹/解包裹/清扫）
 import SessionFileServiceTest from './kdbx/SessionFileService.test';
 
+// 公共原生 AES-256-GCM 单元测试（seal/open 往返 / 篡改拒绝 / 流式会话等价）
+import AesGcmTest from './kdbx/AesGcm.test';
+
 // §10/§12 大文件验收测试（att-100/300/500 + text-10k + CP2' + 残留清扫）
 import LargeFileAcceptanceTest from './acceptance/LargeFileAcceptance.test';
 
@@ -277,6 +280,9 @@ export default function testsuite() {
 
   // §7.4 会话文件协议测试（包裹往返 / 大缓冲分块 / 清扫）
   SessionFileServiceTest();
+
+  // 公共原生 AES-256-GCM 测试（seal/open 往返 / 篡改拒绝 / 流式会话等价）
+  AesGcmTest();
 
   // §10/§12 大文件验收测试（建议 -s class LargeFileAcceptanceTest 单独运行）
   LargeFileAcceptanceTest();
