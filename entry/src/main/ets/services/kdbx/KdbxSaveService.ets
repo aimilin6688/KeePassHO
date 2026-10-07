@@ -132,6 +132,8 @@ export default class KdbxSaveService {
    * @param callback 原始回调（选择策略后继续保存时复用）
    */
   private static handleConflict(message: ConflictMessage, callback?: SaveDatabaseCallback): void {
+    // 按接口约定先通知调用方冲突已发生（等待上层决定处理策略），再走 AUTO 弹框流程
+    callback?.onConflict?.(message);
     // 关闭保存过程的加载弹框，避免与冲突弹框叠加
     LoadingDialog.hideLoading();
     hilog.info(DOMAIN, TAG, 'Save conflict detected, remoteModifiedTime: %{public}d', message.remoteModifiedTime);
@@ -309,7 +311,9 @@ export default class KdbxSaveService {
         callback?.onError?.(message);
         release?.();
       },
-      onMessage: callback?.onMessage,
+      onMessage: (message: string) => {
+        callback?.onMessage?.(message);
+      },
       onConflict: (message: ConflictMessage) => {
         KdbxSaveService.handleConflict(message, callback);
         release?.();

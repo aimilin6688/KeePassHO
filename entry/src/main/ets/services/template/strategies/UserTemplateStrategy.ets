@@ -234,7 +234,7 @@ export class UserTemplateStrategy implements ITemplateStrategy {
     // 应用标签
     if (opts.copyTags && userTemplate.tags && userTemplate.tags.length > 0) {
       const existingTags = entry.fields.get('Tags');
-      if (!existingTags || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingTags) === '' || opts.overwriteExisting) {
         entry.fields.set('Tags', userTemplate.tags.join(','));
       }
     }
@@ -248,35 +248,35 @@ export class UserTemplateStrategy implements ITemplateStrategy {
     
     if (fields.title !== undefined && fields.title !== '') {
       const existingValue = entry.fields.get('Title');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('Title', fields.title);
       }
     }
     
     if (fields.username !== undefined && fields.username !== '') {
       const existingValue = entry.fields.get('UserName');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('UserName', fields.username);
       }
     }
     
     if (fields.password !== undefined && fields.password !== '') {
       const existingValue = entry.fields.get('Password');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('Password', ProtectedValue.fromString(fields.password));
       }
     }
     
     if (fields.url !== undefined && fields.url !== '') {
       const existingValue = entry.fields.get('URL');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('URL', fields.url);
       }
     }
     
     if (fields.notes !== undefined && fields.notes !== '') {
       const existingValue = entry.fields.get('Notes');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('Notes', fields.notes);
       }
     }
@@ -293,7 +293,7 @@ export class UserTemplateStrategy implements ITemplateStrategy {
     for (let i = 0; i < template.customFields.length; i++) {
       const field = template.customFields[i];
       const existingValue = entry.fields.get(field.key);
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         if (field.isProtected) {
           entry.fields.set(field.key, ProtectedValue.fromString(field.value));
         } else {

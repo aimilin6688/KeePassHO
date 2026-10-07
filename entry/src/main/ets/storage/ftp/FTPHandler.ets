@@ -65,16 +65,23 @@ export class FTPHandler implements IFTPHandler {
       // FTPClient 仅读取 cacheDir 属性；主线程传应用 Context，Worker 线程传注入路径的替身对象
       this.client = new FTPClient(CommonUtils.getStorageContext(), this.config.timeout);
     }
-    await this.client.access({
-      host: this.config.host,
-      port: this.config.port,
-      user: this.config.username,
-      password: this.config.password,
-      secure: this.config.secure
-    });
-    // 连接成功后设置为二进制传输模式
-    // TYPE I: 设置数据传输模式为二进制(图片、视频、压缩文件等)
-    await this.client.send("TYPE I");
+    try {
+      await this.client.access({
+        host: this.config.host,
+        port: this.config.port,
+        user: this.config.username,
+        password: this.config.password,
+        secure: this.config.secure
+      });
+      // 连接成功后设置为二进制传输模式
+      // TYPE I: 设置数据传输模式为二进制(图片、视频、压缩文件等)
+      await this.client.send("TYPE I");
+    } catch (error) {
+      // 连接失败：丢弃半初始化的 client，使 isClosed() 如实反映无连接状态，
+      // 避免调用方误以为连接可用而复用死 client
+      this.client = undefined;
+      throw error as Error;
+    }
     hilog.info(DOMAIN, TAG, 'FTP connected successfully (binary transfer mode, UTF-8 control encoding)');
   }
 

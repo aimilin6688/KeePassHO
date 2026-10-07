@@ -78,6 +78,116 @@ import SimpleHandlerTest from './importExport/SimpleHandler.test';
 import OpenDatabaseUiTest from './ui/OpenDatabaseUi.test';
 import StorageConflictUiTest from './ui/StorageConflictUi.test';
 
+// ===== 新增：common/constants 常量单元测试 =====
+import SortConstantsTest from './constants/SortConstants.test';
+import UIConstantsTest from './constants/UIConstants.test';
+import SettingDialogConstantsTest from './constants/SettingDialogConstants.test';
+import NavigationConstantsTest from './constants/NavigationConstants.test';
+import ThemeConstantsTest from './constants/ThemeConstants.test';
+import PageConfigTest from './constants/PageConfig.test';
+import PageConstantsTest from './constants/PageConstants.test';
+import ConstantsTest from './constants/Constants.test';
+
+// ===== 新增：common/oauth2 OAuth2 框架单元测试 =====
+import OAuth2TypesTest from './oauth2/OAuth2Types.test';
+import OAuth2ErrorTest from './oauth2/OAuth2Error.test';
+import IOAuth2ProviderTest from './oauth2/IOAuth2Provider.test';
+import BaseOAuth2ProviderTest from './oauth2/BaseOAuth2Provider.test';
+import OAuth2TokenStorageServiceTest from './oauth2/OAuth2TokenStorageService.test';
+import OAuth2AuthServiceTest from './oauth2/OAuth2AuthService.test';
+import OAuth2IndexTest from './oauth2/Index.test';
+
+// ===== 新增：common/utils 工具类单元测试 =====
+import StringUtilsTest from './utils/StringUtils.test';
+import UrlUtilsTest from './utils/UrlUtils.test';
+import ErrorUtilsTest from './utils/ErrorUtils.test';
+import NetworkUtilsTest from './utils/NetworkUtils.test';
+import DeviceUtilsTest from './utils/DeviceUtils.test';
+import FileUtilsCommonTest from './utils/FileUtilsCommon.test';
+import CryptoUtilsTest from './utils/CryptoUtils.test';
+import CommonUtilsTest from './utils/CommonUtils.test';
+import AssetUtilsTest from './utils/AssetUtils.test';
+import Sm4UtilsTest from './utils/Sm4Utils.test';
+import ShareUtilsTest from './utils/ShareUtils.test';
+import ClipboardUtilsTest from './utils/ClipboardUtils.test';
+import ResourceUtilsTest from './utils/ResourceUtils.test';
+import ResourceManagerTest from './utils/ResourceManager.test';
+import WindowUtilsTest from './utils/WindowUtils.test';
+import WindowServiceTest from './utils/WindowService.test';
+import NavigationManagerTest from './utils/NavigationManager.test';
+import StorageNavigationTest from './utils/StorageNavigation.test';
+import PageConfigManagerTest from './utils/PageConfigManager.test';
+import IconUtilsTest from './utils/IconUtils.test';
+import ThemeManagerTest from './utils/ThemeManager.test';
+import WebImageDownloaderTest from './utils/WebImageDownloader.test';
+import ImagePickerUtilsTest from './utils/ImagePickerUtils.test';
+import DialogWindowHelperTest from './utils/DialogWindowHelper.test';
+import UIUtilsTest from './utils/UIUtils.test';
+import HashUtilsTest from './utils/HashUtils.test';
+
+// ===== 新增：services 顶层服务单元测试 =====
+import EventBusTest from './services/EventBus.test';
+import SettingsServiceTest from './services/SettingsService.test';
+import AuthServiceTest from './services/AuthService.test';
+import CrashLogServiceTest from './services/CrashLogService.test';
+import SessionManagerTest from './services/SessionManager.test';
+import CredentialsServiceTest from './services/CredentialsService.test';
+import SessionNotificationServiceTest from './services/SessionNotificationService.test';
+import CopyEventServiceTest from './services/CopyEventService.test';
+import FileServiceTest from './services/FileService.test';
+import ScanServiceTest from './services/ScanService.test';
+import DataServiceTest from './services/DataService.test';
+import SupportServiceTest from './services/SupportService.test';
+import LockScreenServiceTest from './services/LockScreenService.test';
+import BasicDataSourceTest from './services/BasicDataSource.test';
+import LocationParamTest from './services/LocationParam.test';
+import KeepassHoErrorTest from './services/KeepassHoError.test';
+
+// ===== 新增：services/template 模板子系统单元测试 =====
+import TemplateTypesTest from './services/template/TemplateTypes.test';
+import TemplateConstantsTest from './services/template/TemplateConstants.test';
+import TemplateBuilderTest from './services/template/TemplateBuilder.test';
+import TemplateFactoryTest from './services/template/TemplateFactory.test';
+import TemplateServiceTest from './services/template/TemplateService.test';
+import ITemplateStrategyTest from './services/template/strategies/ITemplateStrategy.test';
+import UserTemplateStrategyTest from './services/template/strategies/UserTemplateStrategy.test';
+import PresetTemplateStrategyTest from './services/template/strategies/PresetTemplateStrategy.test';
+
+// ===== 新增：services/importExport 编排层单元测试 =====
+import XmlImportHandlerTest from './importExport/XmlImportHandler.test';
+import KeyFileExportHandlerTest from './importExport/KeyFileExportHandler.test';
+import ImportServiceTest from './importExport/ImportService.test';
+import ExportServiceTest from './importExport/ExportService.test';
+import ImportExportFacadeTest from './importExport/ImportExportFacade.test';
+import ImportExportViewModelTest from './importExport/ImportExportViewModel.test';
+import ImportExportIndexTest from './importExport/Index.test';
+
+// ===== 新增：storage 配置/工厂/队列单元测试 =====
+import FileStorageFactoryTest from './storage/FileStorageFactory.test';
+import StorageConfigTest from './storage/StorageConfig.test';
+import StorageTypeTest from './storage/StorageType.test';
+import LocalFileConfigTest from './storage/local/LocalFileConfig.test';
+import CacheConstantsTest from './storage/cache/CacheConstants.test';
+import S3ConfigTest from './storage/s3/S3Config.test';
+import S3TypesTest from './storage/s3/S3Types.test';
+import S3UploadQueueTest from './storage/s3/S3UploadQueue.test';
+import OneDriveConfigTest from './storage/onedrive/OneDriveConfig.test';
+import OneDriveOAuth2ProviderTest from './storage/onedrive/OneDriveOAuth2Provider.test';
+import GoogleOAuth2ProviderTest from './storage/googledrive/GoogleOAuth2Provider.test';
+import HuaweiDriveConfigTest from './storage/huawei/HuaweiDriveConfig.test';
+import HuaweiDriveOAuth2ProviderTest from './storage/huawei/HuaweiDriveOAuth2Provider.test';
+import HuaweiDrivePathCacheStoreTest from './storage/huawei/HuaweiDrivePathCacheStore.test';
+import FTPConfigTest from './storage/ftp/FTPConfig.test';
+import FTPHandlerTest from './storage/ftp/FTPHandler.test';
+import IFTPHandlerTest from './storage/ftp/IFTPHandler.test';
+
+// ===== 新增：services/kdbx 与 workers/callback 单元测试 =====
+import KdbxSaveServiceTest from './kdbx/KdbxSaveService.test';
+import KdbxLoadServiceTest from './kdbx/KdbxLoadService.test';
+import KdbxFileManagerTest from './kdbx/KdbxFileManager.test';
+import SaveDatabaseCallbackTest from './workers/SaveDatabaseCallback.test';
+import ToastSaveDatabaseCallbackTest from './workers/ToastSaveDatabaseCallback.test';
+
 
 export default function testsuite() {
   ActsAbilityTest();
@@ -182,6 +292,116 @@ export default function testsuite() {
   XmlExportHandlerTest();
   BitwardenJsonImportHandlerTest();
   KdbxExportHandlerTest();
+
+  // ===== common/constants =====
+  SortConstantsTest();
+  UIConstantsTest();
+  SettingDialogConstantsTest();
+  NavigationConstantsTest();
+  ThemeConstantsTest();
+  PageConfigTest();
+  PageConstantsTest();
+  ConstantsTest();
+
+  // ===== common/oauth2 =====
+  OAuth2TypesTest();
+  OAuth2ErrorTest();
+  IOAuth2ProviderTest();
+  BaseOAuth2ProviderTest();
+  OAuth2TokenStorageServiceTest();
+  OAuth2AuthServiceTest();
+  OAuth2IndexTest();
+
+  // ===== common/utils =====
+  StringUtilsTest();
+  UrlUtilsTest();
+  ErrorUtilsTest();
+  NetworkUtilsTest();
+  DeviceUtilsTest();
+  FileUtilsCommonTest();
+  CryptoUtilsTest();
+  CommonUtilsTest();
+  AssetUtilsTest();
+  Sm4UtilsTest();
+  ShareUtilsTest();
+  ClipboardUtilsTest();
+  ResourceUtilsTest();
+  ResourceManagerTest();
+  WindowUtilsTest();
+  WindowServiceTest();
+  NavigationManagerTest();
+  StorageNavigationTest();
+  PageConfigManagerTest();
+  IconUtilsTest();
+  ThemeManagerTest();
+  WebImageDownloaderTest();
+  ImagePickerUtilsTest();
+  DialogWindowHelperTest();
+  UIUtilsTest();
+  HashUtilsTest();
+
+  // ===== services 顶层 =====
+  EventBusTest();
+  SettingsServiceTest();
+  AuthServiceTest();
+  CrashLogServiceTest();
+  SessionManagerTest();
+  CredentialsServiceTest();
+  SessionNotificationServiceTest();
+  CopyEventServiceTest();
+  FileServiceTest();
+  ScanServiceTest();
+  DataServiceTest();
+  SupportServiceTest();
+  LockScreenServiceTest();
+  BasicDataSourceTest();
+  LocationParamTest();
+  KeepassHoErrorTest();
+
+  // ===== services/template =====
+  TemplateTypesTest();
+  TemplateConstantsTest();
+  TemplateBuilderTest();
+  TemplateFactoryTest();
+  TemplateServiceTest();
+  ITemplateStrategyTest();
+  UserTemplateStrategyTest();
+  PresetTemplateStrategyTest();
+
+  // ===== services/importExport 编排层 =====
+  XmlImportHandlerTest();
+  KeyFileExportHandlerTest();
+  ImportServiceTest();
+  ExportServiceTest();
+  ImportExportFacadeTest();
+  ImportExportViewModelTest();
+  ImportExportIndexTest();
+
+  // ===== storage 配置/工厂/队列 =====
+  FileStorageFactoryTest();
+  StorageConfigTest();
+  StorageTypeTest();
+  LocalFileConfigTest();
+  CacheConstantsTest();
+  S3ConfigTest();
+  S3TypesTest();
+  S3UploadQueueTest();
+  OneDriveConfigTest();
+  OneDriveOAuth2ProviderTest();
+  GoogleOAuth2ProviderTest();
+  HuaweiDriveConfigTest();
+  HuaweiDriveOAuth2ProviderTest();
+  HuaweiDrivePathCacheStoreTest();
+  FTPConfigTest();
+  FTPHandlerTest();
+  IFTPHandlerTest();
+
+  // ===== services/kdbx 与 workers/callback =====
+  KdbxSaveServiceTest();
+  KdbxLoadServiceTest();
+  KdbxFileManagerTest();
+  SaveDatabaseCallbackTest();
+  ToastSaveDatabaseCallbackTest();
 
   // UI 自动化测试
   // OpenDatabaseUiTest();

@@ -12,7 +12,7 @@ export default function PCloudStorageTest() {
   describe('PCloudStorageTest', () => {
 
     // ==================== 1. PageConfig ====================
-    describe('PageConfig', () => {
+    describe('PCloudPageConfig', () => {
       it('should return correct PCloudPageConfig', 0, () => {
         const storage: PCloudStorage = new PCloudStorage();
         const cfg = storage.getPageConfig();
