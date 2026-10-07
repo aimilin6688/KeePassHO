@@ -329,8 +329,9 @@ export class DatabaseSave {
 
   /**
    * 发送成功消息（附带新的版本基线供下次保存使用）
-   * S6：流式路径分块哈希落盘文件 + data 传空缓冲（主线程非合并不用 data）；
-   * 回退路径整缓冲哈希 + data 传真实缓冲。
+   * S6：流式路径分块哈希落盘文件；回退路径整缓冲哈希。
+   * data 一律传空缓冲：Worker 消息序列化上限 16MB，大缓冲不随消息跨线程
+   * （§7.4；主线程非合并不用 data，合并模型走 m0Path 会话文件还原）
    * @param request 请求
    * @param saved 保存产物
    * @param isMerge 是否发生了合并
@@ -342,18 +343,16 @@ export class DatabaseSave {
     try {
       const fileInfo = await kdbxFileManager.getInfo(request.filePath);
       let contentHash: string;
-      let data: ArrayBuffer;
       if (saved.filePath !== null) {
         contentHash = await HashUtils.sha256HexFile(saved.filePath);
-        data = new ArrayBuffer(0);
       } else {
         const buffer = saved.buffer;
         if (buffer === null) {
           throw new Error('saved content is empty');
         }
         contentHash = await HashUtils.sha256Hex(buffer);
-        data = buffer;
       }
+      const data = new ArrayBuffer(0);
       const message = new SuccessMessage(data, fileInfo.modifiedTime, isMerge,
         fileInfo.version ?? null, contentHash);
       if (isMerge && database) {

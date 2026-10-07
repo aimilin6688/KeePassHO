@@ -346,6 +346,11 @@ export struct EntryEdit {
       } else {
         // 创建新条目
         this.entry = this.database.createEntry(this.parentGroup);
+        // 同步附件到新条目：编辑模式下 this.attachments 是 entry.binaries 的引用，无需同步；
+        // 新建模式下 createEntry 产生空 binaries，必须把页面附件拷入，否则保存时附件引用不会写入数据库
+        this.attachments.forEach((value, key) => {
+          this.entry?.binaries.set(key, value);
+        });
       }
 
       const memoryProtection = this.database.meta.memoryProtection ?? {};
