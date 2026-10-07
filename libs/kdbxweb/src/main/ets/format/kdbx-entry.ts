@@ -159,7 +159,7 @@ export class KdbxEntry {
             if (KdbxBinaries.isKdbxBinaryWithHash(data)) {
                 const binaryRef = ctx.kdbx.binaries.getRefByHash(data.hash);
                 if (!binaryRef) {
-                    return;
+                    continue;
                 }
                 bin = binaryRef;
             } else {
