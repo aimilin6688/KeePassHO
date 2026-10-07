@@ -7,7 +7,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 
 /**
  * §7.4 会话文件协议单元测试：
- * 会话密钥包裹/解包裹往返、分块大缓冲往返、消费后删除、超期目录清扫
+ * 会话密钥包裹/解包裹往返、大缓冲往返、消费后删除、超期目录清扫
  */
 export default function SessionFileServiceTest() {
   describe('SessionFileServiceTest', () => {
@@ -42,7 +42,7 @@ export default function SessionFileServiceTest() {
     });
 
     it('wrap and unwrap handles multi-chunk large buffer', 0, async () => {
-      // >4MB 触发分块密钥流路径（跨块 ChaCha20 状态连续性）
+      // >4MB 大缓冲往返（AES-256-GCM 原生单次加密，无分块路径）
       const size = 4 * 1024 * 1024 + 12345;
       const data = new ArrayBuffer(size);
       const view = new Uint8Array(data);

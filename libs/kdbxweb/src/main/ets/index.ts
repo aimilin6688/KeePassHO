@@ -1,3 +1,4 @@
+import { AesGcm, AesGcmDecryptSession, AesGcmEncryptSession } from './crypto/aes-gcm';
 import { ChaCha20 } from './crypto/chacha20';
 import * as CryptoEngine from './crypto/crypto-engine';
 import * as HashedBlockTransform from './crypto/hashed-block-transform';
@@ -57,6 +58,9 @@ import { VarDictionary } from './utils/var-dictionary';
 import * as XmlUtils from './utils/xml-utils';
 
 export {
+    AesGcm,
+    AesGcmDecryptSession,
+    AesGcmEncryptSession,
     ChaCha20,
     CryptoEngine,
     HashedBlockTransform,

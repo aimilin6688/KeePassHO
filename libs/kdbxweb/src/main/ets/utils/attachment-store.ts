@@ -1,6 +1,6 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { ChaCha20 } from '../crypto/chacha20';
+import { AesGcm, AesGcmEncryptSession } from '../crypto/aes-gcm';
 import * as CryptoEngine from '../crypto/crypto-engine';
 import { ErrorCodes } from '../defs/consts';
 import { KdbxError } from '../errors/kdbx-error';
@@ -20,6 +20,8 @@ const TMP_SUFFIX = '.tmp';
 const FILENAME_PATTERN = /^[0-9a-f]{64}\.bin$/;
 /** S5 流式搬运分块：附件从源文件区域转储到缓存的窗口大小 */
 const REGION_CHUNK_SIZE = 4 * 1024 * 1024;
+/** AES-256-GCM authTag 长度（缓存格式：[12B nonce][密文][16B tag]） */
+const AUTH_TAG_LENGTH = 16;
 
 /**
  * 计算文件指定区域的 sha256（S5 流式加载路径）：
@@ -58,11 +60,13 @@ export function sha256FileRegion(fileFd: number, offset: number, length: number)
  * 内容寻址的附件加密磁盘缓存（S4 附件磁盘化）。
  *
  * 文件名 = HMAC-SHA256(storeKey, contentHash)，与内容哈希单向绑定：
- * 换库/换密钥后旧缓存不可复用；文件内容为 [12B nonce][ChaCha20 密文]，
- * 明文不落盘（§2.1 明文落盘必加密）。
+ * 换库/换密钥后旧缓存不可复用；明文不落盘（§2.1 明文落盘必加密）。
+ * 文件内容为 [12B nonce][AES-256-GCM 密文][16B authTag]
+ * （原生 cryptoFramework 加解密）。
  *
  * put() 在缓存命中（磁盘已存在同哈希文件）时直接复用，不重复序列化/加密/写盘。
- * get() 解密后校验 sha256 与请求哈希一致，防止磁盘损坏静默返回错数据。
+ * get() 解密后校验 sha256 与请求哈希一致（GCM 另有 authTag 校验），
+ * 防止磁盘损坏静默返回错数据。
  */
 export class AttachmentStore {
     private readonly dir: string;
@@ -125,7 +129,7 @@ export class AttachmentStore {
 
     /**
      * 流式写入附件缓存（S5）：附件字节仍在源文件（解压后的 T2）的指定区间内，
-     * 4MB 分块读取 → ChaCha20 分块加密 → 临时文件 fsync → rename 到内容寻址路径，
+     * 4MB 分块读取 → AES-256-GCM 分块加密 → 临时文件 fsync → rename 到内容寻址路径，
      * 全程不把附件整读入内存（窗口 = 4MB 分块，设计文档 §6）。
      * 磁盘已存在同哈希文件时直接复用（仅刷新 LRU 时间）。
      */
@@ -152,7 +156,7 @@ export class AttachmentStore {
             return fs.open(path, fs.OpenMode.READ_ONLY).then((f) => {
                 file = f;
                 return fs.stat(f.fd).then((stat) => {
-                    if (stat.size < NONCE_LENGTH) {
+                    if (stat.size < NONCE_LENGTH + AUTH_TAG_LENGTH) {
                         throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache truncated');
                     }
                     const raw = new ArrayBuffer(stat.size);
@@ -162,12 +166,8 @@ export class AttachmentStore {
                         }
                         return fs.close(f.fd).then(() => {
                             file = null;
-                            const rawBytes = new Uint8Array(raw);
-                            const nonce = rawBytes.slice(0, NONCE_LENGTH);
-                            const cipher = rawBytes.slice(NONCE_LENGTH);
+                            const plain = this.decryptFileBytes(new Uint8Array(raw));
                             zeroBuffer(raw);
-                            new ChaCha20(this.key, nonce).xorInPlace(cipher);
-                            const plain = arrayToBuffer(cipher);
                             return CryptoEngine.sha256(plain).then((digest) => {
                                 const expected = hexToBytes(hash);
                                 if (!arrayBufferEquals(digest, arrayToBuffer(expected))) {
@@ -203,7 +203,7 @@ export class AttachmentStore {
     }
 
     /**
-     * 流式读取并解密附件到目标 fd（S6 保存管道）：4MB 分块读密文 → ChaCha20 分块解密 →
+     * 流式读取并解密附件到目标 fd（S6 保存管道）：4MB 分块读密文 → 分块解密 →
      * 边写边增量 sha256，全程不整读附件（窗口 = 4MB 分块）；结束后校验哈希，不符抛 FileCorrupt。
      * 与 get() 的字节输出与哈希校验语义完全一致，可互换。
      */
@@ -214,49 +214,20 @@ export class AttachmentStore {
             return fs.open(path, fs.OpenMode.READ_ONLY).then((f) => {
                 file = f;
                 return fs.stat(f.fd).then((stat) => {
-                    if (stat.size < NONCE_LENGTH) {
+                    if (stat.size < NONCE_LENGTH + AUTH_TAG_LENGTH) {
                         throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache truncated');
                     }
                     const md = cryptoFramework.createMd('SHA256');
-                    const nonceBuf = new ArrayBuffer(NONCE_LENGTH);
-                    return fs.read(f.fd, nonceBuf).then((nonceRead) => {
-                        if (nonceRead !== NONCE_LENGTH) {
-                            throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache short read');
+                    return this.streamDecryptToFile(f.fd, stat.size, destFd, md).then(() => {
+                        const digest = md.digestSync();
+                        const expected = hexToBytes(hash);
+                        if (!arrayBufferEquals(arrayToBuffer(digest.data), arrayToBuffer(expected))) {
+                            throw new KdbxError(
+                                ErrorCodes.FileCorrupt,
+                                'attachment cache hash mismatch'
+                            );
                         }
-                        const cipher = new ChaCha20(this.key, new Uint8Array(nonceBuf));
-                        let chain: Promise<void> = Promise.resolve();
-                        let remaining = stat.size - NONCE_LENGTH;
-                        while (remaining > 0) {
-                            const readLen = Math.min(remaining, REGION_CHUNK_SIZE);
-                            const buf = new ArrayBuffer(readLen);
-                            chain = chain.then(() => {
-                                return fs.read(f.fd, buf).then((read) => {
-                                    if (read !== readLen) {
-                                        throw new KdbxError(
-                                            ErrorCodes.FileCorrupt,
-                                            'attachment cache short read'
-                                        );
-                                    }
-                                    cipher.xorInPlace(new Uint8Array(buf));
-                                    md.updateSync({ data: new Uint8Array(buf, 0, read) });
-                                    return fs.write(destFd, buf).then(() => {
-                                        zeroBuffer(buf);
-                                    });
-                                });
-                            });
-                            remaining -= readLen;
-                        }
-                        return chain.then(() => {
-                            const digest = md.digestSync();
-                            const expected = hexToBytes(hash);
-                            if (!arrayBufferEquals(arrayToBuffer(digest.data), arrayToBuffer(expected))) {
-                                throw new KdbxError(
-                                    ErrorCodes.FileCorrupt,
-                                    'attachment cache hash mismatch'
-                                );
-                            }
-                            this.touch(path);
-                        });
+                        this.touch(path);
                     });
                 });
             }).catch((e) => {
@@ -274,6 +245,86 @@ export class AttachmentStore {
                     ErrorCodes.AttachmentStoreError,
                     `attachment cache stream read failed: ${e}`
                 );
+            });
+        });
+    }
+
+    /**
+     * 整缓冲解密缓存文件：原生 AES-256-GCM。
+     * 解密失败（authTag 校验不过/布局截断）统一归为 FileCorrupt。
+     */
+    private decryptFileBytes(raw: Uint8Array): ArrayBuffer {
+        try {
+            return arrayToBuffer(AesGcm.open(this.key, raw));
+        } catch (e) {
+            throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache gcm auth failed');
+        }
+    }
+
+    /**
+     * 流式解密缓存文件到目标 fd：[12B nonce][密文][16B tag]。
+     * GCM 需在 init 时提供 authTag，故先定位读首尾的 nonce 与 tag，
+     * 密文区域 4MB 分块解密写入；明文已写出后才做 finalize 校验，
+     * 失败抛 FileCorrupt（与 sha256 后校验的既有语义一致，由调用方处理）。
+     */
+    private streamDecryptToFile(
+        fileFd: number,
+        size: number,
+        destFd: number,
+        md: cryptoFramework.Md
+    ): Promise<void> {
+        const overhead = NONCE_LENGTH + AUTH_TAG_LENGTH;
+        if (size < overhead) {
+            return Promise.reject(new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache truncated'));
+        }
+        const nonceBuf = new ArrayBuffer(NONCE_LENGTH);
+        const tagBuf = new ArrayBuffer(AUTH_TAG_LENGTH);
+        return fs.read(fileFd, nonceBuf, { offset: 0 }).then((nonceRead) => {
+            if (nonceRead !== NONCE_LENGTH) {
+                throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache short read');
+            }
+            return fs.read(fileFd, tagBuf, { offset: size - AUTH_TAG_LENGTH }).then((tagRead) => {
+                if (tagRead !== AUTH_TAG_LENGTH) {
+                    throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment cache short read');
+                }
+                const session = AesGcm.openDecryptSession(
+                    this.key, new Uint8Array(nonceBuf), new Uint8Array(tagBuf)
+                );
+                let chain: Promise<void> = Promise.resolve();
+                let position = NONCE_LENGTH;
+                let remaining = size - overhead;
+                while (remaining > 0) {
+                    const readLen = Math.min(remaining, REGION_CHUNK_SIZE);
+                    const readAt = position;
+                    const buf = new ArrayBuffer(readLen);
+                    chain = chain.then(() => {
+                        return fs.read(fileFd, buf, { offset: readAt }).then((read) => {
+                            if (read !== readLen) {
+                                throw new KdbxError(
+                                    ErrorCodes.FileCorrupt,
+                                    'attachment cache short read'
+                                );
+                            }
+                            const plain = session.update(new Uint8Array(buf));
+                            md.updateSync({ data: plain });
+                            return fs.write(destFd, arrayToBuffer(plain)).then(() => {
+                                zeroBuffer(buf);
+                            });
+                        });
+                    });
+                    position += readLen;
+                    remaining -= readLen;
+                }
+                return chain.then(() => {
+                    try {
+                        session.finalize();
+                    } catch (e) {
+                        throw new KdbxError(
+                            ErrorCodes.FileCorrupt,
+                            'attachment cache gcm auth failed'
+                        );
+                    }
+                });
             });
         });
     }
@@ -347,15 +398,8 @@ export class AttachmentStore {
         hash: string,
         data: ArrayBuffer
     ): Promise<void> {
-        const nonce = CryptoEngine.random(NONCE_LENGTH);
-        // 拷贝后加密，避免改动调用方缓冲
-        const cipher = new Uint8Array(data.slice(0));
-        new ChaCha20(this.key, nonce).xorInPlace(cipher);
-        const out = new ArrayBuffer(NONCE_LENGTH + cipher.byteLength);
-        const outBytes = new Uint8Array(out);
-        outBytes.set(nonce, 0);
-        outBytes.set(cipher, NONCE_LENGTH);
-        zeroBuffer(cipher);
+        // AesGcm.seal 输出 [12B nonce][密文][16B tag]，原生单次加密
+        const sealed = AesGcm.seal(this.key, new Uint8Array(data));
 
         const tmpPath = `${this.dir}/${name}${TMP_SUFFIX}`;
         let file: fs.File | null = null;
@@ -364,7 +408,10 @@ export class AttachmentStore {
             fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC
         ).then((f) => {
             file = f;
-            return fs.write(f.fd, out).then(() => fs.fsync(f.fd)).then(() =>
+            return fs.write(f.fd, sealed.buffer).then(() => {
+                zeroBuffer(sealed);
+                return fs.fsync(f.fd);
+            }).then(() =>
                 fs.close(f.fd).then(() => {
                     file = null;
                     return fs.rename(tmpPath, path);
@@ -397,8 +444,9 @@ export class AttachmentStore {
         offset: number,
         length: number
     ): Promise<void> {
+        // 流式：先写 [12B nonce] 头，再 4MB 分块加密转储，末尾补 16B authTag
         const nonce = CryptoEngine.random(NONCE_LENGTH);
-        const cipher = new ChaCha20(this.key, nonce);
+        const session = AesGcm.openEncryptSession(this.key, nonce);
         const tmpPath = `${this.dir}/${name}${TMP_SUFFIX}`;
         let file: fs.File | null = null;
         return fs.open(
@@ -407,7 +455,10 @@ export class AttachmentStore {
         ).then((f) => {
             file = f;
             return fs.write(f.fd, arrayToBuffer(nonce)).then(() => {
-                return this.copyRegionEncrypted(f.fd, srcFd, offset, length, cipher);
+                return this.copyRegionEncrypted(f.fd, srcFd, offset, length, session);
+            }).then(() => {
+                const tag = session.finalize();
+                return fs.write(f.fd, arrayToBuffer(tag));
             }).then(() => fs.fsync(f.fd)).then(() =>
                 fs.close(f.fd).then(() => {
                     file = null;
@@ -439,7 +490,7 @@ export class AttachmentStore {
         srcFd: number,
         offset: number,
         length: number,
-        cipher: ChaCha20
+        session: AesGcmEncryptSession
     ): Promise<void> {
         let chain: Promise<void> = Promise.resolve();
         let position = offset;
@@ -453,8 +504,8 @@ export class AttachmentStore {
                     if (read !== readLen) {
                         throw new KdbxError(ErrorCodes.FileCorrupt, 'attachment region short read');
                     }
-                    cipher.xorInPlace(new Uint8Array(buf));
-                    return fs.write(destFd, buf);
+                    const cipherChunk = session.update(new Uint8Array(buf));
+                    return fs.write(destFd, arrayToBuffer(cipherChunk));
                 }).then(() => undefined);
             });
             position += readLen;
