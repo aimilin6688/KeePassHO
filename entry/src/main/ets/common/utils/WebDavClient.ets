@@ -9,6 +9,9 @@ import { CertValidationMode } from '../../storage/webdav/WebDAVConfig';
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';
 
+// 连接超时（毫秒）：建连上限，同时作为连接检查类请求的整体上限；读取超时（transferMs）保持 rcp 默认 60s
+const CONNECT_TIMEOUT_MS = 3000;
+
 export interface DavResource {
   // URL地址
   href: string
@@ -116,6 +119,19 @@ export class WebDavClient {
     };
   }
 
+  /**
+   * 连接检查类请求（valid/exists/单文件元数据 PROPFIND）的请求级配置：
+   * 建连与等待响应均以 CONNECT_TIMEOUT_MS 快速失败，不占用读取类请求（下载/上传/目录浏览）的 60s 读取超时
+   */
+  private buildCheckRequestConfiguration(): rcp.Configuration {
+    return {
+      transfer: {
+        timeout: { connectMs: CONNECT_TIMEOUT_MS, transferMs: CONNECT_TIMEOUT_MS }
+      },
+      security: this.buildSecurityConfig()
+    };
+  }
+
   public updateOptions(options: WebDavClientOptions) {
     this.config = options;
     this.close();
@@ -125,7 +141,7 @@ export class WebDavClient {
         headers: { "Accept": "text/plain,application/xml" },
         requestConfiguration: {
           transfer: {
-            timeout: { connectMs: 3000 }
+            timeout: { connectMs: CONNECT_TIMEOUT_MS }
           },
           security: this.buildSecurityConfig()
         }
@@ -251,17 +267,18 @@ export class WebDavClient {
    * @returns
    */
   public async valid(): Promise<ResultInfo> {
-    const req = new rcp.Request('/', "PROPFIND", { "Depth": "0" });
+    const req = new rcp.Request('/', "PROPFIND", { "Depth": "0" }, undefined, {}, {}, this.buildCheckRequestConfiguration());
     return await this.request(req);
   }
 
   /**
    * 读取目录下的所有文件夹
    * filter: 0: 不过滤，1: 只返回文件夹，2: 只返回文件
+   * quickCheck: true 时为连接检查类请求（单文件元数据），按 CONNECT_TIMEOUT_MS 快速失败
    * @param path
    * @returns
    */
-  public async list(path: string = '/', filter: number = 0): Promise<ResultInfo> {
+  public async list(path: string = '/', filter: number = 0, quickCheck: boolean = false): Promise<ResultInfo> {
     const body = `<?xml version="1.0"?>
       <d:propfind xmlns:d="DAV:">
         <d:prop>
@@ -272,7 +289,7 @@ export class WebDavClient {
           <d:getetag/>
         </d:prop>
       </d:propfind>`;
-    const req = new rcp.Request(path, "PROPFIND", { "Depth": "1" }, body);
+    const req = new rcp.Request(path, "PROPFIND", { "Depth": "1" }, body, {}, {}, quickCheck ? this.buildCheckRequestConfiguration() : undefined);
     const rr = await this.request(req);
     if (rr.statusCode === 200) {
       const items = this.parseXml(rr.body ? ByteUtils.bytesToString(rr.body) : "");
@@ -315,7 +332,7 @@ export class WebDavClient {
    */
   public async exists(path: string): Promise<boolean> {
     hilog.info(DOMAIN, TAG, `Query path exists: ${path}`);
-    const req = new rcp.Request(path, "PROPFIND", { "Depth": "0" });
+    const req = new rcp.Request(path, "PROPFIND", { "Depth": "0" }, undefined, {}, {}, this.buildCheckRequestConfiguration());
     const rr = await this.request(req);
     // 不存在
     if (!rr.success) {
@@ -556,6 +573,9 @@ export class WebDavClient {
           return true;
         }
         if (eventType == xml.EventType.START_TAG) {
+          // 进入新元素时清空文本缓存：遇到自闭合空元素（如 Apache mod_dav 的 <g0:displayname/>）时，
+          // END_TAG 处读到的是空串而非上一元素残留文本（如 status "HTTP/1.1 200 OK"），避免名称/大小被污染
+          preText = "";
           if (nodeName === "response") {
             curItem = new WebDavResource();
             return true;
@@ -582,7 +602,12 @@ export class WebDavClient {
             return true;
           }
           if (nodeName === "displayname") {
-            curItem.displayName = preText;
+            // 服务器返回空 displayname（如 Apache 对未请求属性返回空元素/404 propstat）时不采纳，
+            // 保持空串以便 response 结束时走 href 末段兜底
+            const name: string = preText.trim();
+            if (name) {
+              curItem.displayName = name;
+            }
             return true;
           }
           if (nodeName === "collection") {
@@ -590,7 +615,11 @@ export class WebDavClient {
             return true;
           }
           if (nodeName === "getcontentlength") {
-            curItem.contentLength = parseInt(preText);
+            // 集合（目录）的 getcontentlength 为空元素，解析失败时保持 undefined，避免 NaN 透传到 UI
+            const length: number = parseInt(preText);
+            if (!Number.isNaN(length)) {
+              curItem.contentLength = length;
+            }
             return true;
           }
           if (nodeName === "getlastmodified") {
