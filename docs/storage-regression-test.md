@@ -2,7 +2,7 @@
 
 > 范围：`entry/src/ohosTest` 下全部 IFileStorage 实现（Local / WebDAV / SFTP / FTP / S3 / OneDrive / 华为网盘 / pCloud / Cache）的回归测试说明
 > 原则：**全部真实数据文件操作，零 mock**。测试不合适处直接改产品代码或测试代码，不做假通过
-> 服务搭建：`docs/s3/seaweedfs-server.md`、`docs/webdav/webdav-server.md`、`docs/ftp/sftp-server.md`
+> 服务搭建：`docs/e2e/s3/seaweedfs-server.md`、`docs/e2e/webdav/webdav-server.md`、`docs/e2e/sftp/sftp-server.md`
 
 ---
 
@@ -52,8 +52,13 @@ if (XxxTestConfig.isRealApiEnabled()) {
 ## 4. 回归命令
 
 ```bash
-# 前置：服务容器 + rport 隧道就绪（2223/9000/8800）
-hdc fport ls   # 确认三条 [Reverse]
+# 前置 1：服务容器（docs/e2e/e2e-fileserver.sh，即 podman compose -f e2e/docker-compose.yml up -d）
+# 前置 2：rport 反向隧道（hdc 重启/设备重连后会丢失，需重建；本版 hdc 无 add 子命令）
+hdc rport tcp:9000 tcp:9000    # S3：设备 9000 → Mac 9000（SeaweedFS 网关）
+hdc rport tcp:8800 tcp:8800    # WebDAV：设备 8800 → Mac 8800
+hdc rport tcp:2223 tcp:2222    # SFTP：设备 2223 → Mac 2222（容器 sshd 22）
+hdc fport ls                   # 确认三条 [Reverse]
+hdc shell "netstat -tln | grep -E ':(9000|8800|2223)'"   # 设备侧应 LISTEN
 
 # 全量非 UI 回归（排除 UI 套件）
 hdc shell aa test -b com.aimilin.keepassho -m entry_test \
