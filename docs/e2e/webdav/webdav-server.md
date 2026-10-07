@@ -45,7 +45,7 @@ App(设备 127.0.0.1:8800) → hdcd(rport) → Mac 127.0.0.1:8800 → pasta → 
 ```
 
 ```bash
-hdc rport tcp:8800 tcp:8800      # 建立
+hdc rport tcp:8800 tcp:8800      # 建立；hdc 重启/设备重连后隧道丢失需重建
 hdc fport ls                     # 确认 [Reverse] 记录存在
 ```
 
