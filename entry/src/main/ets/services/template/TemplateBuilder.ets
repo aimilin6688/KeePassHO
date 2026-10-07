@@ -24,6 +24,9 @@ export class TemplateBuilder {
     this.parentGroup = group;
     this.meta = meta;
     this.entry = KdbxEntry.create(meta, group);
+    // 与 Kdbx.createEntry 语义一致：条目创建即挂载到分组，
+    // 否则经由 TemplateFactory 创建的条目不会出现在分组中（保存/展示均丢失）
+    group.entries.push(this.entry);
     this.options = {
       overwriteExisting: DEFAULT_APPLY_OPTIONS.overwriteExisting,
       copyTags: DEFAULT_APPLY_OPTIONS.copyTags,
@@ -218,7 +221,9 @@ export class TemplateBuilder {
       const value = source.fields.get(fieldName);
       if (value) {
         const existing = this.entry.fields.get(fieldName);
-        if (!existing || opts.overwriteExisting) {
+        // 新建条目的标准字段已被预置为空串（Password 为 ProtectedValue('')，truthy），
+        // 需按明文判空，否则模板字段永远无法应用到新条目
+        if (KdbxUtils.getValueString(existing) === '' || opts.overwriteExisting) {
           const valueStr = KdbxUtils.getValueString(value);
           if (fieldName === 'Password') {
             this.entry.fields.set(fieldName, ProtectedValue.fromString(valueStr));
@@ -241,7 +246,7 @@ export class TemplateBuilder {
       }
       if (!isStandard && key !== 'Tags') {
         const existing = self.entry.fields.get(key);
-        if (!existing || opts.overwriteExisting) {
+        if (KdbxUtils.getValueString(existing) === '' || opts.overwriteExisting) {
           const valueStr = KdbxUtils.getValueString(value);
           const isProtected = value instanceof ProtectedValue;
           if (isProtected) {
@@ -291,7 +296,7 @@ export class TemplateBuilder {
    */
   buildAndAdd(): KdbxEntry {
     const entry = this.build();
-    // KdbxEntry.create已经将条目添加到分组，所以这里不需要再次添加
+    // 构造器已将条目挂载到分组（与 Kdbx.createEntry 语义一致），这里无需再次添加
     return entry;
   }
 
@@ -300,6 +305,8 @@ export class TemplateBuilder {
    */
   reset(): TemplateBuilder {
     this.entry = KdbxEntry.create(this.meta, this.parentGroup);
+    // 与构造器语义一致：新条目同样挂载到分组
+    this.parentGroup.entries.push(this.entry);
     this.options = {
       overwriteExisting: DEFAULT_APPLY_OPTIONS.overwriteExisting,
       copyTags: DEFAULT_APPLY_OPTIONS.copyTags,

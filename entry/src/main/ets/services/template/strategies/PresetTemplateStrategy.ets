@@ -7,6 +7,7 @@ import { ITemplateStrategy } from './ITemplateStrategy';
 import { IPresetTemplate, ITemplate, DEFAULT_APPLY_OPTIONS, TemplateApplyOptions, isPresetTemplate } from '../TemplateTypes';
 import { TemplateConstants } from '../TemplateConstants';
 import { ResourceManager } from '../../../common/utils';
+import { KdbxUtils } from '../../../common/utils/KdbxUtils';
 
 /**
  * 预置模板策略实现
@@ -49,7 +50,7 @@ export class PresetTemplateStrategy implements ITemplateStrategy {
     // 应用标签
     if (opts.copyTags && preset.tags && preset.tags.length > 0) {
       const existingTags = entry.fields.get('Tags');
-      if (!existingTags || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingTags) === '' || opts.overwriteExisting) {
         entry.fields.set('Tags', preset.tags.join(','));
       }
     }
@@ -63,35 +64,35 @@ export class PresetTemplateStrategy implements ITemplateStrategy {
     
     if (fields.title !== undefined && fields.title !== '') {
       const existingValue = entry.fields.get('Title');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('Title', fields.title);
       }
     }
     
     if (fields.username !== undefined && fields.username !== '') {
       const existingValue = entry.fields.get('UserName');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('UserName', fields.username);
       }
     }
     
     if (fields.password !== undefined && fields.password !== '') {
       const existingValue = entry.fields.get('Password');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('Password', ProtectedValue.fromString(fields.password));
       }
     }
     
     if (fields.url !== undefined && fields.url !== '') {
       const existingValue = entry.fields.get('URL');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('URL', fields.url);
       }
     }
     
     if (fields.notes !== undefined && fields.notes !== '') {
       const existingValue = entry.fields.get('Notes');
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         entry.fields.set('Notes', fields.notes);
       }
     }
@@ -108,7 +109,7 @@ export class PresetTemplateStrategy implements ITemplateStrategy {
     for (let i = 0; i < preset.customFields.length; i++) {
       const field = preset.customFields[i];
       const existingValue = entry.fields.get(field.key);
-      if (!existingValue || opts.overwriteExisting) {
+      if (KdbxUtils.getValueString(existingValue) === '' || opts.overwriteExisting) {
         if (field.isProtected) {
           entry.fields.set(field.key, ProtectedValue.fromString(field.value));
         } else {

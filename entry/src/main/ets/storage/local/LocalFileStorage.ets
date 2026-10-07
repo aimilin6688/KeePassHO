@@ -245,10 +245,9 @@ export class LocalFileStorage implements IFileStorage {
    */
   public async exists(path: string): Promise<boolean> {
     try {
-      // fixme 这里始终返回false ，不确定什么原因
-      let result = fs.accessSync(path, fs.AccessModeType.EXIST);
+      const result: boolean = fs.accessSync(path, fs.AccessModeType.EXIST);
       hilog.info(DOMAIN, TAG, `Check file exist: ${result}, path: ${path}`);
-      return true;
+      return result;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
       return false;

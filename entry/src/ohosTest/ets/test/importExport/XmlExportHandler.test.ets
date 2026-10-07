@@ -14,7 +14,7 @@ import { Kdbx, KdbxCredentials } from 'kdbxweb';
  * 3. 导入导出能够互相验证（导出后重新导入验证数据一致性）
  */
 export default function XmlExportHandlerTest() {
-  describe('XmlImportHandler', () => {
+  describe('XmlExportHandler', () => {
     let handler: XmlImportHandler = new XmlImportHandler();
 
     beforeEach(() => {
@@ -152,7 +152,7 @@ export default function XmlExportHandlerTest() {
     });
   });
 
-  describe('XmlExportHandler', () => {
+  describe('XmlExportHandler_2', () => {
     let handler: XmlExportHandler = new XmlExportHandler();
 
     beforeEach(() => {

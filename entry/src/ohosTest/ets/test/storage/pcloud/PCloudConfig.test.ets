@@ -104,7 +104,7 @@ export default function PCloudConfigTest() {
     /**
      * 测试 PCloudPageConfig 常量
      */
-    describe('PageConfig', () => {
+    describe('PageConfig_2', () => {
       it('should have correct title', 0, () => {
         expect(PCloudPageConfig.title).assertEqual('pCloud');
       });
