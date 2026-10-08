@@ -65,11 +65,13 @@ External Tool 即可：
 |---|---|---|
 | 1 | rport 规则登记在宿主 hdc 服务进程；`hdc kill` / 服务重启 / 设备重连后**注册表清空** | 隧道失效，需重跑脚本（挂在 Before launch 即自动兜底） |
 | 2 | 服务重启后设备侧 hdcd 的监听 socket 可能残留：表面 `LISTEN`，实际**黑洞**（连接被拒绝/超时） | 不能只看 netstat 判"已就绪"。脚本以 **fport ls（注册表）+ netstat（设备侧）双条件**判定；发现"有监听、无注册"即判僵尸 |
-| 3 | 本版本 hdc **没有 `rport rm`**（`fport rm` 只管正向，反向删除报 "ruler is not exist"） | 清理僵尸监听唯一手段是 `hdc killall-sub`（全局清理子服务进程，**异步生效**，需等待数秒）；脚本自动执行并轮询等待 |
+| 3 | 本版本 hdc **没有 `rport rm`**（`fport rm` 只管正向，反向删除报 "ruler is not exist"） | 僵尸监听清理手段：`hdc killall-sub`（全局清理子服务进程，**异步生效**，需等待数秒）；脚本自动执行并轮询等待 |
+| 4 | 设备重连后 hdcd 可能**自行重放**监听（由 hdcd 主进程持有，非子服务）——此时 `killall-sub` 清不掉 | 脚本清理等待超时后仍建失败时，唯一可靠恢复是**重启设备**：`hdc -t <key> shell reboot`（socket 随进程消亡，应用与数据保留），回连后重跑脚本 |
+| 5 | 部分模拟器镜像 `netstat -l` 参数失效（-tln 会列出全部状态） | 脚本判据显式锚定 `LISTEN` 关键字 + 端口后随空白，避免被应用残留的 ESTABLISHED/CLOSE_WAIT 客户端 socket 误判 |
 
 **僵尸监听的典型症状**：脚本未引入前，`hdc rport` 报 `TCP Port listen failed`，
-或 netstat 显示 LISTEN 但测试报 `Connection refused (os error 111)`。
-脚本会自动 `killall-sub` 清理后重建；极端情况下（10s 未清完）按提示重跑脚本或重启模拟器。
+或 netstat 显示 LISTEN 但测试报 `Connection refused (os error 111)`（无监听）或**超时**（僵尸监听：TCP 可建连但转发已死，如 WebDAV list 15s timeout）。
+脚本会自动 `killall-sub` 清理后重建；若命中 #4（killall-sub 无效），按提示重启设备后重跑。
 
 **多设备注意**：两台及以上设备在线时，裸 `hdc rport tcp:9000 tcp:9000` 目标不明确，
 必须 `hdc -t <connect-key> rport ...`（脚本已自动处理）。
