@@ -12,6 +12,7 @@ import { Kdbx } from 'kdbxweb';
 import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
+import { LoadDispatchService } from '../services/kdbx/LoadDispatchService';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { SettingsService, UnlockAuthType } from '../services/SettingsService';
 import { LockScreenService } from '../services/LockScreenService';
@@ -182,6 +183,7 @@ export struct Password {
     this.storageConfig = locationInfo.storageConfig;
     AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
     this.initCacheCheckbox();
+    this.prewarmLoadWorker();
   }
 
   /**
@@ -226,6 +228,19 @@ export struct Password {
     // 是否使用缓存复选框
     this.initCacheCheckbox();
     this.updateButtonState();
+    // 分级加载预热点：大库在用户输密码期间预热常驻 Worker
+    this.prewarmLoadWorker();
+  }
+
+  /**
+   * 分级加载预热点：远端大库（> 主线程阈值）预热常驻加载 Worker
+   * （isolate 模块图 + 存储连接 + 大小探测），小库/本地库不建 Worker
+   */
+  private prewarmLoadWorker(): void {
+    const storageType = this.storageType;
+    if (storageType !== undefined && storageType !== StorageType.LOCAL && this.filePath) {
+      LoadDispatchService.prepare(storageType, this.storageConfig ?? {}, this.filePath);
+    }
   }
 
   // 更新按钮状态

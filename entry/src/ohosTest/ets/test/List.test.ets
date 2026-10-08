@@ -36,6 +36,7 @@ import DatabaseSyncModeTest from './workers/DatabaseSyncMode.test';
 import DatabaseWorkerModeTest from './workers/DatabaseWorkerMode.test';
 // Worker 常驻池化（#3）：缓存策略随任务注入与忙拒绝
 import WorkerPoolPolicyTest from './workers/WorkerPoolPolicy.test';
+import LoadWorkerPrewarmTest from './workers/LoadWorkerPrewarm.test';
 // S6 保存管道流式路径专项（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
 import DatabaseSaveStreamingTest from './workers/DatabaseSaveStreaming.test';
 import DatabaseSaveFastPathTest from './workers/DatabaseSaveFastPath.test';
@@ -245,6 +246,9 @@ export default function testsuite() {
   DatabaseWorkerModeTest();
   // Worker 常驻池化测试（策略随任务注入 + forceRefresh 一次性消费 + 忙拒绝）
   WorkerPoolPolicyTest();
+
+  // PREWARM 预热协议测试（真实 Worker 全链路 + forceRefresh 不消费回归）
+  LoadWorkerPrewarmTest();
   // S6 保存管道流式路径测试（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
   DatabaseSaveStreamingTest();
   // S8 版本预检快速路径测试（能力声明 + 版本一致跳过下载，计数存储观测）
