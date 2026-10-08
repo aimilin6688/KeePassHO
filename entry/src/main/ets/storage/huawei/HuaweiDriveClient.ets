@@ -235,6 +235,12 @@ export class HuaweiDriveClient {
    */
   private rcpSession: rcp.Session | null = null;
   /**
+   * 下载分块最低速率假设（字节/秒）：低于该速率的链路由 30s 下限兜底。
+   * axios timeout 为请求总时长——8MB 分块在 ~260KB/s 弱网需 ~32s，
+   * 实例级 30s 总超时会恰好在块完成前杀掉请求（2300028 Operation timeout 实测根因）
+   */
+  private static readonly DOWNLOAD_MIN_SPEED_BYTES_PER_SEC: number = 64 * 1024;
+  /**
    * content 方式简单上传大小上限（官方文档：超过 20M 的文件用 Files.update.resume 接口）
    */
   private static readonly SIMPLE_UPLOAD_MAX_BYTES: number = 20 * 1024 * 1024;
@@ -707,6 +713,17 @@ export class HuaweiDriveClient {
   }
 
   /**
+   * 计算下载请求超时（毫秒）：axios timeout 为请求总时长，须按传输字节量与
+   * 保守速率下限放大（用户配置的更大 timeout 优先）。
+   * @param bytes 预期传输字节量（分块大小或整文件大小）
+   * @param configTimeout 用户配置的实例级超时（取两者较大值）
+   */
+  static downloadRequestTimeout(bytes: number, configTimeout?: number): number {
+    const bySize = Math.ceil((bytes / HuaweiDriveClient.DOWNLOAD_MIN_SPEED_BYTES_PER_SEC) * 1000);
+    return Math.max(configTimeout ?? 0, 30_000, bySize);
+  }
+
+  /**
    * 下载文件
    * 根据华为云盘 API 文档，下载文件需要使用 form=content 参数
    * @param fileId 文件ID
@@ -722,7 +739,9 @@ export class HuaweiDriveClient {
       hilog.info(DOMAIN, TAG, `download: fileId=${fileId}, apiPath=${apiPath}`);
 
       const config: AxiosRequestConfig = {
-        responseType: 'array_buffer'
+        responseType: 'array_buffer',
+        // 整文件一次传输且大小未知：给足弱网余量（超时是上限非延迟，快链路不受影响）
+        timeout: 300_000
       };
       const response: AxiosResponse = await this.axiosInstance.get(apiPath, config);
       return this.convertAxiosResponse(response);
@@ -775,6 +794,12 @@ export class HuaweiDriveClient {
     }
 
     const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+    // 下载请求超时按传输量放大（闭包外预算，避免可选成员经闭包失去收窄）：
+    // 串行路径可能因 Range 不支持退化为整文件单请求，按 fileSize 计算；并发分块按块大小计算
+    const serialTimeout: number =
+      HuaweiDriveClient.downloadRequestTimeout(fileSize, this.config?.timeout);
+    const chunkTimeout: number =
+      HuaweiDriveClient.downloadRequestTimeout(CHUNK_SIZE, this.config?.timeout);
     try {
       if (chunkRanges.length < PARALLEL_THRESHOLD) {
         // 单块/双块：串行（含首块 200 退化整缓冲的兼容分支）
@@ -784,7 +809,8 @@ export class HuaweiDriveClient {
           const rangeHeader = `bytes=${range[0]}-${range[1]}`;
           const config: AxiosRequestConfig = {
             responseType: 'array_buffer',
-            headers: { 'Range': rangeHeader }
+            headers: { 'Range': rangeHeader },
+            timeout: serialTimeout
           };
           const response: AxiosResponse = await axiosInstance.get(apiPath, config);
           if (firstChunk && response.status === 200) {
@@ -817,7 +843,8 @@ export class HuaweiDriveClient {
         const rangeHeader = `bytes=${range[0]}-${range[1]}`;
         const config: AxiosRequestConfig = {
           responseType: 'array_buffer',
-          headers: { 'Range': rangeHeader }
+          headers: { 'Range': rangeHeader },
+          timeout: chunkTimeout
         };
         const response: AxiosResponse = await axiosInstance.get(apiPath, config);
         if (response.status !== 206) {
