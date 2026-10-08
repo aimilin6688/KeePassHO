@@ -260,6 +260,61 @@ export class MemoryChunkReader implements ChunkReader {
     }
 }
 
+// ==================== SequentialByteReader / 适配器 ====================
+
+/**
+ * 顺序字节读取器：按 n 字节顺序读取，EOF 返回 null。
+ * 由宿主侧（会话文件解包 Reader 等）实现，供 v3 直传容器的
+ * loadFromReader 消费（头部/池引用二进制读 + XML 区字符串读共用同一顺序流）
+ */
+export interface SequentialByteReader {
+    read(n: number): Promise<Uint8Array | null>;
+}
+
+/**
+ * SequentialByteReader → ChunkReader 适配器：按 256KB 从顺序流取字节并
+ * UTF-8 解码（跨块边界安全，复用 decodeUtf8Chunk），限定总字节数（xmlLen）。
+ * M0 v3 主线程消费：会话解包与解析交替进行（块间为真实异步 IO 边界，协作式）
+ */
+export class SequentialReaderChunkReader implements ChunkReader {
+    private readonly reader: SequentialByteReader;
+    private readonly chunkSize: number;
+    private readonly decoder: util.TextDecoder;
+    private remaining: number;
+    private leftover: Uint8Array = new Uint8Array(0);
+
+    constructor(reader: SequentialByteReader, totalLength: number, chunkSize?: number) {
+        this.reader = reader;
+        this.remaining = totalLength;
+        this.chunkSize = chunkSize || (256 * 1024);
+        this.decoder = new util.TextDecoder();
+    }
+
+    readNext(): Promise<string | null> {
+        if (this.remaining <= 0 && this.leftover.length === 0) {
+            return Promise.resolve(null);
+        }
+        if (this.remaining <= 0) {
+            const str = this.decoder.decodeToString(this.leftover);
+            this.leftover = new Uint8Array(0);
+            return Promise.resolve(str);
+        }
+        const len = Math.min(this.chunkSize, this.remaining);
+        return this.reader.read(len).then((bytes) => {
+            if (bytes === null || bytes.length === 0) {
+                throw new KdbxError(ErrorCodes.FileCorrupt, 'sequential reader truncated');
+            }
+            this.remaining -= bytes.length;
+            const result = decodeUtf8Chunk(bytes, this.leftover, this.decoder);
+            this.leftover = result.newLeftover;
+            if (result.text === null) {
+                return this.readNext();
+            }
+            return result.text;
+        });
+    }
+}
+
 // ==================== 事件类型 ====================
 
 interface XmlStartEvent { type: 'start'; name: string; attrs: Map<string, string>; }

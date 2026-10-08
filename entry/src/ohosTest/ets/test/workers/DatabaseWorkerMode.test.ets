@@ -70,22 +70,19 @@ export default function DatabaseWorkerModeTest() {
         const message: WorkerMessage = await pending;
         expect(message.type).assertEqual(MessageType.SUCCESS);
 
-        // 异步模式：§7.4 模型经 M0 会话文件跨线程（data 为空缓冲，仅路径传输）
+        // 异步模式：模型经 M0 会话文件跨线程（data 为空缓冲，仅路径传输）。
+        // 本库为默认 AES 加密 → v3 直传容器 Unsupported 回退全模型 KPSN 路径（legacy 单封）
         const success = message as SuccessMessage;
         const m0PathLoad: string | undefined = success.m0Path;
         expect(typeof m0PathLoad === 'string' && m0PathLoad.length > 0).assertTrue();
 
-        // 解包裹还原后条目完整（主线程与 Worker 共享注入的会话密钥）
+        // 统一消费入口还原（自动识别 SFW1 v3 / legacy KPSN 单封，含会话文件删除）
         if (m0PathLoad) {
-          const snapshotBytes: ArrayBuffer = await SessionFileService.unwrapFromFile(m0PathLoad);
-          expect(KdbxSnapshot.isSnapshot(snapshotBytes)).assertTrue();
-          const restored: Kdbx = await KdbxUtils.arrayBufferToKdbx(snapshotBytes, loadParam);
+          const restored: Kdbx = await KdbxUtils.successMessageToKdbx(success, loadParam);
           const titles: string[] = KdbxModeTestHelper.collectEntryTitles(restored);
           expect(titles.includes('worker-base-entry')).assertTrue();
           // 内容哈希基线随消息回传
           expect(success.contentHash).assertEqual(baseHash);
-          // 消费后删除会话文件
-          SessionFileService.removeFile(m0PathLoad);
         }
       } finally {
         w.terminate();

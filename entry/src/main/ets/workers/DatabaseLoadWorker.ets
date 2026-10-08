@@ -82,6 +82,15 @@ if (workerPort) {
  */
 export class DatabaseLoadWorker extends DatabaseLoad {
   /**
+   * Worker 运输模式启用 M0 v3 直传容器：解密解压后不建模型，
+   * 原始 XML + 头部 + 池引用经 SFW1 流式包裹直传，主线程只解析一次
+   * （非 v4+ChaCha20 由基类回退全模型 KPSN 路径）
+   */
+  protected useContainerTransport(): boolean {
+    return true;
+  }
+
+  /**
    * 预热：在 Worker isolate 内完成存储模块图初始化 + rcp session/TLS 建立，
    * 并以 getInfoOrNull 探测大小回传主线程（写入加载调度缓存）。
    * 失败无害（fire-and-forget，仅日志），不占用 busy 状态
@@ -142,17 +151,20 @@ export class DatabaseLoadWorker extends DatabaseLoad {
 
   /**
    * 发送成功消息
-   * §7.4：模型序列化字节经会话密钥包裹落盘 M0 文件，仅传路径跨线程；
+   * v3 直传快路径：m0Path 已由基类设置（SFW1 流式容器，data 为空缓冲），直接投递；
+   * v1/v2 全模型路径（回退/合并）：模型序列化字节经会话密钥包裹落盘 M0 文件，仅传路径跨线程；
    * 大缓冲不再随消息驻留线程队列（KPSN ArrayBuffer 跨线程协议退役）
    * @param message 消息
    */
   async postSuccessMessage(message: SuccessMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
     try {
-      let logTime = Date.now();
-      const snapshotBytes: ArrayBuffer = await KdbxUtils.kdbxToArrayBuffer(message.data as Kdbx);
-      message.m0Path = await SessionFileService.wrapToFile(snapshotBytes, 'm0_load_');
-      message.data = new ArrayBuffer(0);
-      hilog.info(DOMAIN, TAG, "Kdbx to m0 session file time: %{public}d ms", Date.now() - logTime);
+      if (message.data instanceof Kdbx) {
+        let logTime = Date.now();
+        const snapshotBytes: ArrayBuffer = await KdbxUtils.kdbxToArrayBuffer(message.data as Kdbx);
+        message.m0Path = await SessionFileService.wrapToFile(snapshotBytes, 'm0_load_');
+        message.data = new ArrayBuffer(0);
+        hilog.info(DOMAIN, TAG, "Kdbx to m0 session file time: %{public}d ms", Date.now() - logTime);
+      }
       workerPort.postMessage(message);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postSuccessMessage error:%{public}s', error.message);

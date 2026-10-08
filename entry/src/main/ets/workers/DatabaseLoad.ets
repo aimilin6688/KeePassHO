@@ -1,9 +1,10 @@
-import { Kdbx, KdbxCredentials } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, ErrorCodes, KdbxError } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
 import { FileInfo } from '../storage';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
 import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
+import { SessionFileService, SessionWrapWriter } from '../services/kdbx/SessionFileService';
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
@@ -33,9 +34,9 @@ export class DatabaseLoad {
       // 创建凭证
       let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
       this.postMessage('loading_key', callback?.onLoadMessage);
-    // 读前守卫 + 流式下载到 T0 文件（precheckSize 由调度层解析时跳过重复 getInfo）
-    const tDownload: number = Date.now();
-    let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
+      // 读前守卫 + 流式下载到 T0 文件（precheckSize 由调度层解析时跳过重复 getInfo）
+      const tDownload: number = Date.now();
+      let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
       hilog.info(DOMAIN, TAG, 'load stage download: %{public}d ms, bytes=%{public}d',
         Date.now() - tDownload, fileInfo.size ?? 0);
       this.postMessage('validating', callback?.onLoadMessage);
@@ -44,6 +45,50 @@ export class DatabaseLoad {
       // S4 附件磁盘化：大附件池转入加密缓存，内存仅保留哈希引用（store 不可用时纯内存模式）
       const attachmentStore = AttachmentCacheService.getStore();
       const attachmentsDiskThreshold = AttachmentCacheService.getAttachmentsDiskThreshold();
+
+      // M0 v3 直传快路径（仅 Worker 运输模式启用）：解密解压后不建模型，
+      // 原始 XML + 头部 + 池引用直传容器（SFW1 流式包裹），主线程只解析一次。
+      // 非 v4+ChaCha20 抛 Unsupported → 回退全模型 KPSN 路径；其余错误原样上抛
+      if (this.useContainerTransport()) {
+        const wrapWriter: SessionWrapWriter = await SessionFileService.openWrapStream('m0_load_');
+        try {
+          const tContainer: number = Date.now();
+          await Kdbx.loadToContainerFile(t0Path, credentials, {
+            t1Path: t1Path,
+            t2Path: t2Path,
+            containerWriter: wrapWriter,
+            maxDecompressedBytes: maxDecompressedBytes,
+            attachmentStore: attachmentStore,
+            attachmentsDiskThreshold: attachmentsDiskThreshold
+          });
+          const m0Path: string = await wrapWriter.close();
+          hilog.info(DOMAIN, TAG, 'load stage container(v3 direct): %{public}d ms', Date.now() - tContainer);
+          this.postMessage('loading_complete', callback?.onLoadMessage);
+          // 流式 sha256 冲突检测基线（T0 文件 = 远端原始内容）
+          const tHash: number = Date.now();
+          const contentHash: string = await HashUtils.sha256HexFile(t0Path);
+          hilog.info(DOMAIN, TAG, 'load stage sha256: %{public}d ms, bytes=%{public}d',
+            Date.now() - tHash, fileInfo.size ?? 0);
+          hilog.info(DOMAIN, TAG, 'load total: %{public}d ms', Date.now() - tStart);
+          const containerMessage: SuccessMessage = new SuccessMessage(new ArrayBuffer(0),
+            fileInfo.modifiedTime, false, fileInfo.version ?? null, contentHash);
+          containerMessage.m0Path = m0Path;
+          if (fileInfo.size > 0) {
+            containerMessage.fileSize = fileInfo.size;
+          }
+          this.postSuccessMessage(containerMessage, callback?.onSuccessMessage);
+          return;
+        } catch (error) {
+          // 释放半途包裹文件（残缺不可解包，清扫兜底；Worker 常驻防 fd 泄漏）
+          await wrapWriter.abort();
+          if (error instanceof KdbxError && error.code === ErrorCodes.Unsupported) {
+            hilog.warn(DOMAIN, TAG, 'container fast-path fallback to model path: %{public}s', error.message);
+          } else {
+            throw error as Error;
+          }
+        }
+      }
+
       const tParse: number = Date.now();
       let kdbx: Kdbx = await Kdbx.loadFromFile(t0Path, credentials,
         {
@@ -90,6 +135,14 @@ export class DatabaseLoad {
         // 文件不存在或清理失败：忽略
       }
     }
+  }
+
+  /**
+   * 是否启用 M0 v3 直传容器运输（Worker 模式 true：解密解压后不建模型直传原始 XML；
+   * 主线程同步模式 false：Kdbx 实例直接引用传递，零协议税）
+   */
+  protected useContainerTransport(): boolean {
+    return false;
   }
 
   /**

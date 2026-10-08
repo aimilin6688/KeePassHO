@@ -13,6 +13,7 @@ import * as Consts from './defs/consts';
 import * as XmlNames from './defs/xml-names';
 
 import { KdbxError } from './errors/kdbx-error';
+import { ErrorCodes } from './defs/consts';
 
 import { Kdbx, KdbxEditState } from './format/kdbx';
 import {
@@ -36,7 +37,12 @@ import {
     KdbxEntryEditState,
     KdbxEntryField
 } from './format/kdbx-entry';
-import { KdbxFormat } from './format/kdbx-format';
+import { ContainerChunkWriter, KdbxFormat } from './format/kdbx-format';
+import {
+    SequentialByteReader,
+    SequentialReaderChunkReader
+} from './utils/xml-pull-parser';
+
 import { KdbxGroup } from './format/kdbx-group';
 import { KdbxHeader, HeaderConst } from './format/kdbx-header';
 import { KdbxSnapshot } from './format/kdbx-snapshot';
@@ -73,6 +79,7 @@ export {
     Consts,
     XmlNames,
     KdbxError,
+    ErrorCodes,
     Kdbx,
     KdbxEditState,
     KdbxBinaries,
@@ -99,6 +106,9 @@ export {
     KdbxAutoTypeItem,
     KdbxEntryAutoType,
     KdbxFormat,
+    ContainerChunkWriter,
+    SequentialByteReader,
+    SequentialReaderChunkReader,
     KdbxGroup,
     KdbxHeader,
     KdbxSnapshot,
