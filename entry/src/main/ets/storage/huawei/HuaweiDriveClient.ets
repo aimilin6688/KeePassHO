@@ -200,6 +200,20 @@ export class HttpResponse {
 }
 
 /**
+ * 断点续传会话（Files.update.resume 初始化产物）
+ */
+interface ResumeUploadSession {
+  /**
+   * 续传地址（响应头 Location，含 serverId 与 uploadId），分片 PUT 的目标
+   */
+  location: string;
+  /**
+   * 服务端建议的单个分片大小（字节）
+   */
+  sliceSize: number;
+}
+
+/**
  * 华为云盘客户端类
  * 用于与华为Drive API交互，操作云盘文件
  */
@@ -220,6 +234,22 @@ export class HuaweiDriveClient {
    * rcp 会话（S7 流式上传专用，懒创建复用）
    */
   private rcpSession: rcp.Session | null = null;
+  /**
+   * content 方式简单上传大小上限（官方文档：超过 20M 的文件用 Files.update.resume 接口）
+   */
+  private static readonly SIMPLE_UPLOAD_MAX_BYTES: number = 20 * 1024 * 1024;
+  /**
+   * 单个分片上传大小上限（官方文档：单次上传大小限制为 64M）
+   */
+  private static readonly RESUME_SLICE_MAX_BYTES: number = 64 * 1024 * 1024;
+  /**
+   * 服务端未返回 sliceSize 时的默认分片大小（官方示例为 4M）
+   */
+  private static readonly RESUME_SLICE_DEFAULT_BYTES: number = 4 * 1024 * 1024;
+  /**
+   * 单个分片（含断点查询）最大尝试次数：失败自动重试，重试前重新读取分片
+   */
+  private static readonly RESUME_CHUNK_MAX_ATTEMPTS: number = 3;
 
   /**
    * 构造函数
@@ -877,24 +907,8 @@ export class HuaweiDriveClient {
 
       hilog.info(DOMAIN, TAG, `File created with ID: ${fileId}, now uploading content...`);
 
-      // 第二步：上传文件内容
-      // 使用专门的 upload 端点
-      const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
-        'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
-
-      const uploadConfig: AxiosRequestConfig = {
-        method: 'PATCH',
-        url: `${uploadBase}/files/${fileId}?fields=*&uploadType=content`,
-        data: fileBuffer,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Authorization': `Bearer ${this.config?.accessToken}`
-        },
-        responseType: 'string'
-      };
-
-      const uploadResponse: AxiosResponse = await axios.request(uploadConfig);
-      const result = this.convertAxiosResponse(uploadResponse);
+      // 第二步：上传文件内容（update 内部按大小自动选择 content / resume 断点续传）
+      const result = await this.update(fileId, fileBuffer);
       hilog.info(DOMAIN, TAG, 'upload result: %{public}s', result.message);
       return result;
     } catch (error) {
@@ -905,7 +919,8 @@ export class HuaweiDriveClient {
 
   /**
    * 更新文件内容
-   * 华为云盘更新文件内容需要使用专门的 upload 端点，PATCH 方法
+   * 按文件大小自动选择上传方式（官方文档约束）：
+   * content 方式仅支持 20M 以内；超过 20M 走 Files.update.resume 断点续传分片上传
    * @param fileId 文件ID
    * @param fileBuffer 文件内容
    * @returns Promise<HttpResponse> 结果信息
@@ -915,11 +930,13 @@ export class HuaweiDriveClient {
       throw new Error('Axios instance not initialized');
     }
     try {
+      hilog.info(DOMAIN, TAG, `update: fileId=${fileId}, size: ${fileBuffer.byteLength}`);
+      if (fileBuffer.byteLength > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
+        return await this.updateByResume(fileId, fileBuffer);
+      }
       // 使用专门的 upload 端点
       const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
         'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
-
-      hilog.info(DOMAIN, TAG, `update: fileId=${fileId}, size: ${fileBuffer.byteLength}`);
 
       const config: AxiosRequestConfig = {
         method: 'PATCH',
@@ -939,6 +956,195 @@ export class HuaweiDriveClient {
       hilog.error(DOMAIN, TAG, `update error: fileId=${fileId}, error=${(error as Error).message}`);
       return this.convertAxiosError(error as AxiosError);
     }
+  }
+
+  /**
+   * 断点续传更新文件内容（Files.update.resume + Files.resume 分片 PUT，内存基线为单个分片）
+   * @param fileId 文件ID
+   * @param fileBuffer 文件内容
+   * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
+   */
+  private async updateByResume(fileId: string, fileBuffer: ArrayBuffer): Promise<HttpResponse> {
+    const session = await this.initResumeUpload(fileId, fileBuffer.byteLength);
+    const readChunk = (offset: number, length: number): Promise<ArrayBuffer> => {
+      return Promise.resolve(fileBuffer.slice(offset, offset + length));
+    };
+    return await this.uploadResumeChunks(session.location, fileBuffer.byteLength, session.sliceSize, readChunk);
+  }
+
+  /**
+   * 断点续传初始化（Files.update.resume）
+   * PATCH {uploadBase}/files/{fileId}?uploadType=resume&fields=*，请求头携带总长度；
+   * 响应头 Location 为续传地址，响应体 sliceSize 为服务端建议分片大小
+   * @param fileId 文件ID
+   * @param totalBytes 待上传文件总大小
+   * @returns ResumeUploadSession 续传会话
+   * @throws Error 初始化失败或响应缺少 Location
+   */
+  private async initResumeUpload(fileId: string, totalBytes: number): Promise<ResumeUploadSession> {
+    const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
+      'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
+    hilog.info(DOMAIN, TAG, `initResumeUpload: fileId=${fileId}, totalBytes=${totalBytes}`);
+    const config: AxiosRequestConfig = {
+      method: 'PATCH',
+      url: `${uploadBase}/files/${fileId}?uploadType=resume&fields=*`,
+      // request body 仅支持 json 或为空：发送最小 JSON 对象（PATCH 增量更新不改动元数据），
+      // 规避空 body + Content-Length: 0 触发服务端 500
+      data: '{}',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-Upload-Content-Type': 'application/octet-stream',
+        'X-Upload-Content-Length': `${totalBytes}`,
+        'Authorization': `Bearer ${this.config?.accessToken}`
+      },
+      responseType: 'string'
+    };
+    const response: AxiosResponse = await axios.request(config);
+    // axios 响应头非 Record 类型，须遍历 entries 大小写不敏感提取 Location
+    let location = '';
+    if (response.headers) {
+      const headerEntries = Object.entries(response.headers) as Array<[string, string]>;
+      for (let i = 0; i < headerEntries.length; i++) {
+        if (headerEntries[i][0].toLowerCase() === 'location') {
+          location = `${headerEntries[i][1] ?? ''}`;
+          break;
+        }
+      }
+    }
+    if (!location) {
+      throw new Error(`resume init: missing Location header, status=${response.status}`);
+    }
+    let sliceSize = HuaweiDriveClient.RESUME_SLICE_DEFAULT_BYTES;
+    const rawBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+    try {
+      const parsed = JSON.parse(rawBody) as Record<string, Object>;
+      const rawSliceSize = parsed['sliceSize'];
+      if (typeof rawSliceSize === 'number' && rawSliceSize > 0) {
+        sliceSize = Math.min(rawSliceSize, HuaweiDriveClient.RESUME_SLICE_MAX_BYTES);
+      }
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `resume init: parse sliceSize failed, use default: ${(error as Error).message}`);
+    }
+    return { location: location, sliceSize: sliceSize };
+  }
+
+  /**
+   * 分片循环上传（Files.resume）：PUT 到续传地址，Content-Range: bytes start-end/total；
+   * 308=已接收继续传，200/201=完成；全部分片发送后服务端仍返回 308 时，
+   * 再触发一次空 body PUT（查询断点状态）获取文件元数据。
+   * 单个分片失败自动重试（重试前重新读取分片，规避 http 栈对请求体的瞬时异常）
+   * @param location 续传地址（initResumeUpload 返回的 Location）
+   * @param totalBytes 文件总大小
+   * @param sliceSize 单个分片大小
+   * @param readChunk 分片读取器：从 offset 起读取 length 字节，返回实际内容
+   * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
+   */
+  private async uploadResumeChunks(location: string, totalBytes: number, sliceSize: number,
+    readChunk: (offset: number, length: number) => Promise<ArrayBuffer>): Promise<HttpResponse> {
+    const chunkSize = Math.min(sliceSize, HuaweiDriveClient.RESUME_SLICE_MAX_BYTES);
+    const maxAttempts = HuaweiDriveClient.RESUME_CHUNK_MAX_ATTEMPTS;
+    let offset = 0;
+    while (offset < totalBytes) {
+      const wantLen = Math.min(chunkSize, totalBytes - offset);
+      let chunk = await readChunk(offset, wantLen);
+      let accepted = -1;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const chunkLen = chunk.byteLength;
+        if (chunkLen <= 0) {
+          return new HttpResponse(false, 0, 'resume upload: unexpected empty chunk', {});
+        }
+        const config: AxiosRequestConfig = {
+          method: 'PUT',
+          url: location,
+          data: chunk,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Range': `bytes ${offset}-${offset + chunkLen - 1}/${totalBytes}`,
+            'Authorization': `Bearer ${this.config?.accessToken}`
+          },
+          responseType: 'string',
+          validateStatus: (status: number): boolean => true
+        };
+        try {
+          hilog.info(DOMAIN, TAG, 'resume PUT: offset=%{public}d, len=%{public}d, attempt=%{public}d/%{public}d',
+            offset, chunkLen, attempt, maxAttempts);
+          const response: AxiosResponse = await axios.request(config);
+          if (response.status === 200 || response.status === 201) {
+            return this.resumeResultFromResponse(response, true);
+          }
+          if (response.status !== 308) {
+            hilog.error(DOMAIN, TAG, 'resume PUT rejected: status=%{public}d, offset=%{public}d',
+              response.status, offset);
+            return this.resumeResultFromResponse(response, false);
+          }
+          accepted = chunkLen;
+          break;
+        } catch (error) {
+          hilog.error(DOMAIN, TAG, 'resume PUT attempt %{public}d/%{public}d failed: offset=%{public}d, ' +
+            'len=%{public}d, error=%{public}s', attempt, maxAttempts, offset, chunkLen, (error as Error).message);
+          if (attempt < maxAttempts) {
+            chunk = await readChunk(offset, wantLen);
+          }
+        }
+      }
+      if (accepted < 0) {
+        return new HttpResponse(false, 0,
+          `resume upload: chunk failed after ${maxAttempts} attempts, offset=${offset}`, {});
+      }
+      offset += accepted;
+    }
+    // 全部分片已发送且服务端仍返回 308：按文档以 Content-Length: 0 的空 body PUT 查询断点，获取文件元数据。
+    // 注意：axios 的空请求体（空字符串/零长度 ArrayBuffer）会被 http 栈以 Parameter error 客户端拒绝；
+    // rcp 无 body 时默认不发送 Content-Length 头，须显式携带 Content-Length: 0（服务端以此识别查询模式）
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        hilog.info(DOMAIN, TAG, 'resume query: attempt=%{public}d/%{public}d', attempt, maxAttempts);
+        const queryHeaders: Record<string, string> = {};
+        queryHeaders['Authorization'] = `Bearer ${this.config?.accessToken}`;
+        queryHeaders['Content-Length'] = '0';
+        const queryRequest = new rcp.Request(location, 'PUT', queryHeaders);
+        const queryResponse = await this.getRcpSession().fetch(queryRequest);
+        const queryOk = queryResponse.statusCode === 200 || queryResponse.statusCode === 201;
+        if (!queryOk) {
+          hilog.error(DOMAIN, TAG, 'resume query failed: status=%{public}d, body=%{public}s',
+            queryResponse.statusCode, queryResponse.toString());
+        }
+        return this.convertRcpResponse(queryResponse);
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, 'resume query attempt %{public}d/%{public}d failed: error=%{public}s',
+          attempt, maxAttempts, (error as Error).message);
+      }
+    }
+    return new HttpResponse(false, 0,
+      `resume upload: breakpoint query failed after ${maxAttempts} attempts`, {});
+  }
+
+  /**
+   * 分片响应转 HttpResponse（成功时 body 为文件资源 JSON）
+   * @param response Axios 响应
+   * @param ok 是否成功
+   * @returns HttpResponse
+   */
+  private resumeResultFromResponse(response: AxiosResponse, ok: boolean): HttpResponse {
+    const headers: Record<string, string> = {};
+    if (response.headers) {
+      const headerEntries = Object.entries(response.headers) as Array<[string, string]>;
+      for (let i = 0; i < headerEntries.length; i++) {
+        const key = headerEntries[i][0];
+        const value = headerEntries[i][1];
+        headers[key] = `${value ?? ''}`;
+      }
+    }
+    let body: ArrayBuffer | undefined = undefined;
+    if (response.data instanceof ArrayBuffer) {
+      body = response.data;
+    } else if (typeof response.data === 'string') {
+      body = ByteUtils.stringToBytes(response.data);
+    } else if (response.data) {
+      body = ByteUtils.stringToBytes(JSON.stringify(response.data));
+    }
+    return new HttpResponse(ok, response.status, ok ? 'success' : `HTTP ${response.status}`, headers, body);
   }
 
   /**
@@ -974,6 +1180,7 @@ export class HuaweiDriveClient {
   /**
    * 流式更新文件内容（S7：rcp Request + UploadFromFile，PATCH 请求体不驻内存）
    * 内存窗口 = rcp 内部分块，与文件大小解耦（解除 CP-UP 约束）
+   * 按文件大小自动选择上传方式：content 方式仅支持 20M 以内，超过 20M 走 resume 断点续传分片上传
    * @param fileId 文件ID
    * @param srcPath 本地源文件路径
    * @returns Promise<HttpResponse> 结果信息
@@ -987,6 +1194,9 @@ export class HuaweiDriveClient {
     headers['Authorization'] = `Bearer ${this.config?.accessToken}`;
     try {
       hilog.info(DOMAIN, TAG, `updateFromFile: fileId=${fileId}, srcPath=${srcPath}`);
+      if (fs.statSync(srcPath).size > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
+        return await this.updateFromFileByResume(fileId, srcPath);
+      }
       const req = new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath));
       const resp = await this.getRcpSession().fetch(req);
       const result = this.convertRcpResponse(resp);
@@ -995,6 +1205,29 @@ export class HuaweiDriveClient {
     } catch (error) {
       hilog.error(DOMAIN, TAG, `updateFromFile error: fileId=${fileId}, error=${(error as Error).message}`);
       throw new Error((error as Error).message);
+    }
+  }
+
+  /**
+   * 断点续传流式更新文件内容（Files.update.resume 初始化 + Files.resume 分片 PUT）
+   * 分片按需读自本地文件，内存基线为单个分片大小，与文件总大小解耦
+   * @param fileId 文件ID
+   * @param srcPath 本地源文件路径
+   * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
+   */
+  private async updateFromFileByResume(fileId: string, srcPath: string): Promise<HttpResponse> {
+    const totalBytes = fs.statSync(srcPath).size;
+    const session = await this.initResumeUpload(fileId, totalBytes);
+    const file = fs.openSync(srcPath, fs.OpenMode.READ_ONLY);
+    try {
+      const readChunk = (offset: number, length: number): Promise<ArrayBuffer> => {
+        const buffer = new ArrayBuffer(length);
+        const readLen = fs.readSync(file.fd, buffer, { offset: offset, length: length });
+        return Promise.resolve(readLen === length ? buffer : buffer.slice(0, readLen));
+      };
+      return await this.uploadResumeChunks(session.location, totalBytes, session.sliceSize, readChunk);
+    } finally {
+      fs.closeSync(file.fd);
     }
   }
 
