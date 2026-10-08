@@ -1,6 +1,6 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileInfo, FileType, IFileStorage, StorageConfig, WriteOption } from '../index';
+import { FileInfo, FileType, IFileStorage, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { CacheConstants } from './CacheConstants';
 import { FileTransfer } from '../FileTransfer';
 import { ResourceManager } from '../../common/utils';
@@ -122,10 +122,11 @@ export class CacheStorage implements IFileStorage {
    * 仅缓存模式：从本地缓存复制到 destPath；正常/强制刷新：委托底层流式下载
    * @param path 远端路径
    * @param destPath 本地目标路径
+   * @param onProgress 下载进度回调（可选），仅远端分支透传；本地缓存复制不回调
    */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  public async readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!CacheConstants.isEnableLocalCache()) {
-      return this.decoratedStorage.readToFile(path, destPath);
+      return this.decoratedStorage.readToFile(path, destPath, onProgress);
     }
     const cachePath: string = CacheConstants.getCacheFilePath(path);
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
@@ -144,7 +145,7 @@ export class CacheStorage implements IFileStorage {
       }
     }
     // 正常模式：委托底层流式下载到 destPath
-    return await this.decoratedStorage.readToFile(path, destPath);
+    return await this.decoratedStorage.readToFile(path, destPath, onProgress);
   }
 
   /**
@@ -153,10 +154,12 @@ export class CacheStorage implements IFileStorage {
    * @param path 远端路径
    * @param srcPath 本地源文件路径
    * @param option 写入选项
+   * @param onProgress 上传进度回调（可选），透传给底层远端存储
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!CacheConstants.isEnableLocalCache()) {
-      return this.decoratedStorage.writeFromFile(path, srcPath, option);
+      return this.decoratedStorage.writeFromFile(path, srcPath, option, onProgress);
     }
     const cachePath: string = CacheConstants.getCacheFilePath(path);
     const onlyUseCache: boolean = CacheConstants.getOnlyCache();
@@ -168,7 +171,7 @@ export class CacheStorage implements IFileStorage {
       throw new KdbxError(ErrorCodes.READ_ONLY, ResourceManager.getString($r('app.string.cache_read_only')));
     }
     // 委托底层流式上传
-    const info: FileInfo = await this.decoratedStorage.writeFromFile(path, srcPath, option);
+    const info: FileInfo = await this.decoratedStorage.writeFromFile(path, srcPath, option, onProgress);
     // 异步刷新本地缓存（srcPath 即最新内容，直接拷贝到缓存路径）
     try {
       const cacheDir: string = CacheConstants.getCacheDir();

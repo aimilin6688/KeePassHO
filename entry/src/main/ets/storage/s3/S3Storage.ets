@@ -1,5 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { StorageError, StorageErrorCodes } from '../StorageError';
 import { S3PageConfig, S3StorageConfig } from './S3Config';
 import { S3Client, S3ClientOptionsImpl } from './S3Client';
@@ -81,6 +81,16 @@ export class S3Storage implements IFileStorage {
         timeout: inputConfig['timeout'] as number | undefined
       }
     );
+  }
+
+  /**
+   * 将方向中立的传输进度回调包装为 S3Client 的 MultipartUploadProgress 回调
+   * （S3Client 下载/上传路径复用同一进度结构，uploadedBytes 语义为"已传输字节"）
+   */
+  private wrapProgress(onProgress: TransferProgressCallback): ProgressCallback {
+    return (progress: MultipartUploadProgress): void => {
+      onProgress(progress.uploadedBytes, progress.totalBytes);
+    };
   }
 
   private parsePath(path: string): S3PathResult {
@@ -171,18 +181,21 @@ export class S3Storage implements IFileStorage {
 
   /**
    * 流式下载到本地文件（Range GET 循环直写文件，不累积整缓冲，修 P9）
+   * @param onProgress 下载进度回调（可选）：分块下载每块完成后上报（分块粒度）；
+   *        未传入时回退既有 progressCallback（兼容外部 setProgressCallback 注入）
    */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  public async readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
     const pathResult: S3PathResult = this.parsePath(path);
+    const progress: ProgressCallback | undefined = onProgress ? this.wrapProgress(onProgress) : this.progressCallback;
     const result = await this.client.getObjectRangeToFile(
       pathResult.bucket,
       pathResult.key,
       destPath,
       S3MultipartConfig.RECOMMENDED_PART_SIZE,
-      this.progressCallback
+      progress
     );
     if (!result.success) {
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message);
@@ -194,20 +207,24 @@ export class S3Storage implements IFileStorage {
    * 流式从本地文件上传（S3 尾巴，设计文档 S3）
    * 小文件（< 阈值）读入内存单次 PUT；大文件 multipart：worker 按区间从源文件分片读取后 uploadPart，
    * 内存窗口 = 单分片（5-32MB），与文件大小解耦，不持有整文件缓冲
+   * @param onProgress 上传进度回调（可选）：multipart 按分片上报，小文件单 PUT 无中间事件；
+   *        未传入时回退既有 progressCallback（兼容外部 setProgressCallback 注入）
    * @throws StorageError(VERSION_CONFLICT) expectedVersion 与远端 etag 不一致时抛出
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
     const pathResult: S3PathResult = this.parsePath(path);
     // 条件写入：写前复核远端 etag
     await this.checkExpectedVersion(pathResult, option);
+    const progress: ProgressCallback | undefined = onProgress ? this.wrapProgress(onProgress) : this.progressCallback;
     const result = await this.client.putObjectSmartFromFile(
       pathResult.bucket,
       pathResult.key,
       srcPath,
-      this.progressCallback,
+      progress,
       S3MultipartConfig.MULTIPART_THRESHOLD
     );
     if (!result.success) {

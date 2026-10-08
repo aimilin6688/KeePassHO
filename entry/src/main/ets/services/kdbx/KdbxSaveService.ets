@@ -6,7 +6,7 @@ import { Constants } from '../../common/constants/Constants';
 import { CacheConstants } from '../../storage';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
-import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
+import { LoadingDialog, LoadingState } from '../../components/loading/LoadingDialogUtils';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
@@ -14,7 +14,7 @@ import { ConflictStrategy, SaveDatabaseMessage } from '../../workers/DatabaseSav
 import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import KdbxLoadService from './KdbxLoadService';
-import { ConflictMessage, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
+import { ConflictMessage, LoadMessage, MessageType, ProgressMessage, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
 
 const DOMAIN = 0x0000;
@@ -134,8 +134,10 @@ export default class KdbxSaveService {
   private static handleConflict(message: ConflictMessage, callback?: SaveDatabaseCallback): void {
     // 按接口约定先通知调用方冲突已发生（等待上层决定处理策略），再走 AUTO 弹框流程
     callback?.onConflict?.(message);
-    // 关闭保存过程的加载弹框，避免与冲突弹框叠加
+    // 关闭保存过程的加载弹框与线性进度弹框，避免与冲突弹框叠加
     LoadingDialog.hideLoading();
+    LoadingDialog.hide(LoadingState.LINEAR_PROGRESS).catch(() => {
+    });
     hilog.info(DOMAIN, TAG, 'Save conflict detected, remoteModifiedTime: %{public}d', message.remoteModifiedTime);
     const dialogOptions: promptAction.ShowDialogOptions = {
       title: $r('app.string.save_conflict_title'),
@@ -285,6 +287,9 @@ export default class KdbxSaveService {
         case MessageType.SUCCESS:
           KdbxSaveService.onSuccess(data as SuccessMessage, callback);
           return;
+        case MessageType.PROGRESS:
+          KdbxSaveService.onProgress(data as ProgressMessage, callback);
+          return;
         case MessageType.CONFLICT:
           KdbxSaveService.onConflict(data as ConflictMessage, callback);
           return;
@@ -355,6 +360,9 @@ export default class KdbxSaveService {
       onMessage: (message: string) => {
         callback?.onMessage?.(message);
       },
+      onProgress: (message: ProgressMessage) => {
+        callback?.onProgress?.(message);
+      },
       onConflict: (message: ConflictMessage) => {
         KdbxSaveService.handleConflict(message, callback);
         release?.();
@@ -419,6 +427,15 @@ export default class KdbxSaveService {
     }
     if (callback.onMessage) {
       callback.onMessage(ResourceManager.getMessage(data.message));
+    }
+  }
+
+  static onProgress(data: ProgressMessage, callback?: SaveDatabaseCallback) {
+    if (!callback) {
+      return;
+    }
+    if (callback.onProgress) {
+      callback.onProgress(data);
     }
   }
 

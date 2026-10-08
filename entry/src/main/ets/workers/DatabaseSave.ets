@@ -1,10 +1,11 @@
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
-import { FileContentInfo, WriteOption } from '../storage';
+import { FileContentInfo, TransferProgressCallback, WriteOption } from '../storage';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { StorageError, StorageErrorCodes } from '../storage/StorageError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ConflictMessage, SuccessMessage } from './WorkerParam';
+import { ConflictMessage, ProgressMessage, SuccessMessage } from './WorkerParam';
+import { ProgressThrottler } from './ProgressThrottler';
 import { ConflictStrategy, SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard, GuardCheckResult } from '../services/kdbx/DatabaseLoadGuard';
@@ -335,8 +336,23 @@ export class DatabaseSave {
     const tWrite: number = Date.now();
     if (saved.filePath !== null) {
       const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
+      // 上传进度：成品尺寸已知 → 限频器转 PROGRESS 消息；存储不支持进度能力时无事件，行为不变
+      const uploadTotalBytes: number = DatabaseSave.statFileSize(saved.filePath);
+      const uploadThrottler: ProgressThrottler = new ProgressThrottler(uploadTotalBytes);
+      const onUploadProgress: TransferProgressCallback = (transferredBytes: number, totalBytes: number): void => {
+        const percent: number = uploadThrottler.onProgress(transferredBytes);
+        if (percent >= 0) {
+          this.postProgressMessage(new ProgressMessage(percent, transferredBytes, totalBytes));
+        }
+      };
       try {
-        const writtenInfo: FileInfo = await fileManager.writeFromFile(request.filePath, saved.filePath, option);
+        const writtenInfo: FileInfo = await fileManager.writeFromFile(request.filePath, saved.filePath, option,
+          onUploadProgress);
+        // 上传完成：补发末条 100%（S3 末片事件缺失等场景兜底；已发过 100% 或全程无事件时无操作）
+        const finalPercent: number = uploadThrottler.finish();
+        if (finalPercent >= 0) {
+          this.postProgressMessage(new ProgressMessage(finalPercent, uploadTotalBytes, uploadTotalBytes));
+        }
         this.postMessage('save_success');
         hilog.info(DOMAIN, TAG, 'save stage upload(stream): %{public}d ms', Date.now() - tWrite);
         return writtenInfo;
@@ -428,6 +444,29 @@ export class DatabaseSave {
         throw error;
       }
       throw new Error(error.message);
+    }
+  }
+
+  /**
+   * 读取本地文件尺寸（上传进度分母）；读取失败返回 0（限频器对 0 尺寸永不上报）
+   * @param path 本地文件路径
+   */
+  private static statFileSize(path: string): number {
+    try {
+      return fs.statSync(path).size;
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Stat saved file failed, upload progress disabled: %{public}s', error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * 发送传输进度消息（上传方向）
+   * @param message 进度消息（纯数据，不含文案，由消费方组合展示）
+   */
+  postProgressMessage(message: ProgressMessage) {
+    if (this.callback && this.callback.onProgress) {
+      this.callback.onProgress(message);
     }
   }
 

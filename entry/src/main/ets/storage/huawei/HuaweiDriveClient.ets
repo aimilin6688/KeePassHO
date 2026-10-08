@@ -7,6 +7,7 @@ import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
 import { StringUtils, UrlUtils } from '../../common/utils';
+import { TransferProgressCallback } from '../index';
 
 const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveClient';
@@ -215,6 +216,30 @@ interface ResumeUploadSession {
 }
 
 /**
+ * 文件级下载进度聚合器：多个分块（串行/并行交错）写入的字节数累加后统一上报
+ * dataReceive 热路径仅做加法+回调（限频由上层 DatabaseLoad 的 ProgressThrottler 承担）；
+ * JS 单线程事件循环下并行分块无需加锁
+ */
+export class DownloadProgressAggregator {
+  private readonly totalBytes: number;
+  private readonly onProgress: TransferProgressCallback;
+  private transferred: number = 0;
+
+  constructor(totalBytes: number, onProgress: TransferProgressCallback) {
+    this.totalBytes = totalBytes;
+    this.onProgress = onProgress;
+  }
+
+  /**
+   * 累加新写入字节数并上报 (transferredBytes, totalBytes)
+   */
+  add(bytes: number): void {
+    this.transferred += bytes;
+    this.onProgress(this.transferred, this.totalBytes);
+  }
+}
+
+/**
  * 单块流式下载写盘器（弱网诊断）
  * dataReceive 网络包按分块起始偏移直写文件（分块间互不重叠，单块内顺序追加），
  * 跟踪已收字节数、写盘错误与最近网络包时间（停滞看门狗依据）；
@@ -227,6 +252,7 @@ class ChunkDownloadWriter {
   private readonly chunkIndex: number;
   private readonly chunkCount: number;
   private readonly expectedSize: number;
+  private readonly progress: DownloadProgressAggregator | undefined;
   private lastProgressLogTime: number = 0;
   private lastLoggedPercent: number = -1;
   /**
@@ -242,12 +268,14 @@ class ChunkDownloadWriter {
    */
   lastDataTime: number = Date.now();
 
-  constructor(fd: number, rangeStart: number, expectedSize: number, chunkIndex: number, chunkCount: number) {
+  constructor(fd: number, rangeStart: number, expectedSize: number, chunkIndex: number, chunkCount: number,
+    progress?: DownloadProgressAggregator) {
     this.fd = fd;
     this.rangeStart = rangeStart;
     this.expectedSize = expectedSize;
     this.chunkIndex = chunkIndex;
     this.chunkCount = chunkCount;
+    this.progress = progress;
   }
 
   /**
@@ -262,6 +290,7 @@ class ChunkDownloadWriter {
     try {
       fs.writeSync(this.fd, data, { offset: this.rangeStart + this.received });
       this.received += data.byteLength;
+      this.progress?.add(data.byteLength);
       this.logProgress();
     } catch (error) {
       this.writeError = `write file failed at offset ${this.rangeStart + this.received}: ${(error as Error).message}`;
@@ -882,9 +911,11 @@ export class HuaweiDriveClient {
    * @param fileId 文件 ID
    * @param destPath 本地目标文件路径（调用方管理生命周期）
    * @param knownSize 已知文件大小（findFileByPath 已取得时透传，免内部二次 getInfo；缺省时自行 getInfo）
+   * @param onProgress 下载进度回调（可选）：分块写盘字节实时累加上报，未传入时行为不变
    * @returns 下载字节数
    */
-  public async downloadRangeToFile(fileId: string, destPath: string, knownSize?: number): Promise<number> {
+  public async downloadRangeToFile(fileId: string, destPath: string, knownSize?: number,
+    onProgress?: TransferProgressCallback): Promise<number> {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
@@ -904,13 +935,17 @@ export class HuaweiDriveClient {
 
     const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
     const startTime = Date.now();
+    // 进度聚合器：未提供回调时不构造（零开销），提供时分块写盘路径实时累加
+    const progress: DownloadProgressAggregator | undefined = onProgress
+      ? new DownloadProgressAggregator(fileSize, onProgress)
+      : undefined;
     try {
       const url = `${config.apiBaseUrl.replace(/\/+$/, '')}/files/${fileId}?form=content`;
       let downloaded: number;
       if (chunkRanges.length < HuaweiDriveClient.DOWNLOAD_PARALLEL_THRESHOLD) {
-        downloaded = await this.downloadChunksSerial(config, url, fileSize, chunkRanges, file);
+        downloaded = await this.downloadChunksSerial(config, url, fileSize, chunkRanges, file, progress);
       } else {
-        await this.downloadChunksParallel(config, url, fileSize, chunkRanges, file);
+        await this.downloadChunksParallel(config, url, fileSize, chunkRanges, file, progress);
         downloaded = fileSize;
       }
       await fs.fsync(file.fd);
@@ -954,10 +989,10 @@ export class HuaweiDriveClient {
    * @returns 下载字节数
    */
   private async downloadChunksSerial(config: HuaweiDriveClientOptions, url: string, fileSize: number,
-    chunkRanges: Array<number[]>, file: fs.File): Promise<number> {
+    chunkRanges: Array<number[]>, file: fs.File, progress?: DownloadProgressAggregator): Promise<number> {
     let downloaded = 0;
     for (let i = 0; i < chunkRanges.length; i++) {
-      downloaded += await this.downloadChunk(config, url, chunkRanges, i, file, i === 0, fileSize);
+      downloaded += await this.downloadChunk(config, url, chunkRanges, i, file, i === 0, fileSize, progress);
       if (downloaded >= fileSize) {
         break;
       }
@@ -970,13 +1005,13 @@ export class HuaweiDriveClient {
    * 任一分块失败即停止后续批次，统一抛错
    */
   private async downloadChunksParallel(config: HuaweiDriveClientOptions, url: string, fileSize: number,
-    chunkRanges: Array<number[]>, file: fs.File): Promise<void> {
+    chunkRanges: Array<number[]>, file: fs.File, progress?: DownloadProgressAggregator): Promise<void> {
     // 失败标记用 string（闭包内赋值，Error|null 的收窄对编译器不可靠）
     let failedMessage: string = '';
     for (let i = 0; i < chunkRanges.length && failedMessage === ''; i += HuaweiDriveClient.DOWNLOAD_PARALLELISM) {
       const batch: Array<Promise<void>> = [];
       for (let j = i; j < Math.min(i + HuaweiDriveClient.DOWNLOAD_PARALLELISM, chunkRanges.length); j++) {
-        const task: Promise<void> = this.downloadChunk(config, url, chunkRanges, j, file, false, fileSize)
+        const task: Promise<void> = this.downloadChunk(config, url, chunkRanges, j, file, false, fileSize, progress)
           .then((_bytes: number): void => {
           })
           .catch((error: BusinessError): void => {
@@ -998,14 +1033,15 @@ export class HuaweiDriveClient {
    * @returns 实际写入字节数；首块响应 200（Range 不支持）时返回整文件字节数
    */
   private async downloadChunk(config: HuaweiDriveClientOptions, url: string, chunkRanges: Array<number[]>,
-    chunkIndex: number, file: fs.File, allowWholeFile: boolean, fileSize: number): Promise<number> {
+    chunkIndex: number, file: fs.File, allowWholeFile: boolean, fileSize: number,
+    progress?: DownloadProgressAggregator): Promise<number> {
     const range: Array<number> = chunkRanges[chunkIndex];
     const expected: number = range[1] - range[0] + 1;
     const rangeHeader = `bytes=${range[0]}-${range[1]}`;
     const chunkCount: number = chunkRanges.length;
     const chunkStart = Date.now();
     const httpRequest = http.createHttp();
-    const writer = new ChunkDownloadWriter(file.fd, range[0], expected, chunkIndex, chunkCount);
+    const writer = new ChunkDownloadWriter(file.fd, range[0], expected, chunkIndex, chunkCount, progress);
     try {
       hilog.info(DOMAIN, TAG, 'download chunk %{public}d/%{public}d start: range=%{public}s',
         chunkIndex + 1, chunkCount, rangeHeader);
@@ -1286,10 +1322,12 @@ export class HuaweiDriveClient {
    * @param totalBytes 文件总大小
    * @param sliceSize 单个分片大小
    * @param readChunk 分片读取器：从 offset 起读取 length 字节，返回实际内容
+   * @param onProgress 上传进度回调（可选）：每个分片被服务端确认（308/200）后按确认字节上报
    * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
    */
   private async uploadResumeChunks(location: string, totalBytes: number, sliceSize: number,
-    readChunk: (offset: number, length: number) => Promise<ArrayBuffer>): Promise<HttpResponse> {
+    readChunk: (offset: number, length: number) => Promise<ArrayBuffer>,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     const chunkSize = Math.min(sliceSize, HuaweiDriveClient.RESUME_SLICE_MAX_BYTES);
     const maxAttempts = HuaweiDriveClient.RESUME_CHUNK_MAX_ATTEMPTS;
     let offset = 0;
@@ -1319,6 +1357,8 @@ export class HuaweiDriveClient {
             offset, chunkLen, attempt, maxAttempts);
           const response: AxiosResponse = await axios.request(config);
           if (response.status === 200 || response.status === 201) {
+            // 末片确认即完成：成功返回前补发终值（此分支不会经过下方 offset += accepted）
+            onProgress?.(offset + chunkLen, totalBytes);
             return this.resumeResultFromResponse(response, true);
           }
           if (response.status !== 308) {
@@ -1341,6 +1381,8 @@ export class HuaweiDriveClient {
           `resume upload: chunk failed after ${maxAttempts} attempts, offset=${offset}`, {});
       }
       offset += accepted;
+      // 分片被服务端确认（308）：按确认偏移上报进度（重试路径不会重复累加）
+      onProgress?.(offset, totalBytes);
     }
     // 全部分片已发送且服务端仍返回 308：按文档以 Content-Length: 0 的空 body PUT 查询断点，获取文件元数据。
     // 注意：axios 的空请求体（空字符串/零长度 ArrayBuffer）会被 http 栈以 Parameter error 客户端拒绝；
@@ -1431,9 +1473,13 @@ export class HuaweiDriveClient {
    * 按文件大小自动选择上传方式：content 方式仅支持 20M 以内，超过 20M 走 resume 断点续传分片上传
    * @param fileId 文件ID
    * @param srcPath 本地源文件路径
+   * @param onProgress 上传进度回调（可选）：>20MB 走续传按片字节精确上报；
+   *        ≤20MB 单次 PUT 尝试 rcp tracing onUploadProgress（对文件体未验证），
+   *        并以首条 0% 与成功末条 100% 粗粒度兜底，未传入时行为不变
    * @returns Promise<HttpResponse> 结果信息
    */
-  public async updateFromFile(fileId: string, srcPath: string): Promise<HttpResponse> {
+  public async updateFromFile(fileId: string, srcPath: string,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
       'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
     const url = `${uploadBase}/files/${fileId}?fields=*&uploadType=content`;
@@ -1442,12 +1488,19 @@ export class HuaweiDriveClient {
     headers['Authorization'] = `Bearer ${this.config?.accessToken}`;
     try {
       hilog.info(DOMAIN, TAG, `updateFromFile: fileId=${fileId}, srcPath=${srcPath}`);
-      if (fs.statSync(srcPath).size > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
-        return await this.updateFromFileByResume(fileId, srcPath);
+      const totalBytes = fs.statSync(srcPath).size;
+      if (totalBytes > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
+        return await this.updateFromFileByResume(fileId, srcPath, onProgress);
       }
-      const req = new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath));
+      // 首条 0%：UI 尽快从无状态 loading 切换为确定性进度（准备上传）
+      onProgress?.(0, totalBytes);
+      const req = HuaweiDriveClient.buildSimpleUploadRequest(url, headers, srcPath, onProgress);
       const resp = await this.getRcpSession().fetch(req);
       const result = this.convertRcpResponse(resp);
+      // 末条 100% 兜底：rcp 对 UploadFromFile 文件体的 onUploadProgress 若未触发，仍保证终值可达
+      if (onProgress && result.success) {
+        onProgress(totalBytes, totalBytes);
+      }
       hilog.info(DOMAIN, TAG, 'updateFromFile result: %{public}s, status=%{public}d', result.message, resp.statusCode);
       return result;
     } catch (error) {
@@ -1457,13 +1510,39 @@ export class HuaweiDriveClient {
   }
 
   /**
+   * 构造 ≤20MB 单次上传请求；提供进度回调时挂 rcp tracing onUploadProgress
+   * @param url 上传地址
+   * @param headers 请求头
+   * @param srcPath 本地源文件路径
+   * @param onProgress 上传进度回调（可选）
+   */
+  private static buildSimpleUploadRequest(url: string, headers: Record<string, string>, srcPath: string,
+    onProgress?: TransferProgressCallback): rcp.Request {
+    if (!onProgress) {
+      return new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath));
+    }
+    const configuration: rcp.Configuration = {
+      tracing: {
+        httpEventsHandler: {
+          onUploadProgress: (totalSize: number, transferredSize: number): void => {
+            onProgress(transferredSize, totalSize);
+          }
+        }
+      }
+    };
+    return new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath), undefined, undefined, configuration);
+  }
+
+  /**
    * 断点续传流式更新文件内容（Files.update.resume 初始化 + Files.resume 分片 PUT）
    * 分片按需读自本地文件，内存基线为单个分片大小，与文件总大小解耦
    * @param fileId 文件ID
    * @param srcPath 本地源文件路径
+   * @param onProgress 上传进度回调（可选），透传给分片循环按片上报
    * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
    */
-  private async updateFromFileByResume(fileId: string, srcPath: string): Promise<HttpResponse> {
+  private async updateFromFileByResume(fileId: string, srcPath: string,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     const totalBytes = fs.statSync(srcPath).size;
     const session = await this.initResumeUpload(fileId, totalBytes);
     const file = fs.openSync(srcPath, fs.OpenMode.READ_ONLY);
@@ -1473,7 +1552,7 @@ export class HuaweiDriveClient {
         const readLen = fs.readSync(file.fd, buffer, { offset: offset, length: length });
         return Promise.resolve(readLen === length ? buffer : buffer.slice(0, readLen));
       };
-      return await this.uploadResumeChunks(session.location, totalBytes, session.sliceSize, readChunk);
+      return await this.uploadResumeChunks(session.location, totalBytes, session.sliceSize, readChunk, onProgress);
     } finally {
       fs.closeSync(file.fd);
     }
@@ -1484,9 +1563,11 @@ export class HuaweiDriveClient {
    * @param parentFolderId 父文件夹ID
    * @param fileName 文件名
    * @param srcPath 本地源文件路径
+   * @param onProgress 上传进度回调（可选），透传给内容上传阶段
    * @returns Promise<HttpResponse> 结果信息
    */
-  public async uploadFromFile(parentFolderId: string, fileName: string, srcPath: string): Promise<HttpResponse> {
+  public async uploadFromFile(parentFolderId: string, fileName: string, srcPath: string,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
@@ -1526,7 +1607,7 @@ export class HuaweiDriveClient {
       }
 
       hilog.info(DOMAIN, TAG, `File created with ID: ${fileId}, now uploading content from file...`);
-      return await this.updateFromFile(fileId, srcPath);
+      return await this.updateFromFile(fileId, srcPath, onProgress);
     } catch (error) {
       hilog.error(DOMAIN, TAG, `uploadFromFile error: fileName=${fileName}, error=${(error as Error).message}`);
       throw new Error((error as Error).message);

@@ -31,10 +31,11 @@ export interface IFileStorage {
    * 默认实现包装 read()（整缓冲）；适配器按需迁移为真正的流式下载
    * @param path 远端文件路径
    * @param destPath 本地目标文件路径（调用方负责生命周期）
+   * @param onProgress 下载进度回调（可选，opt-in 能力）；未实现/未传入时不影响读取语义
    * @return Promise<FileInfo> 远端文件信息（含 version）
    * @throws 如果读取失败则抛出异常
    */
-  readToFile(path: string, destPath: string): Promise<FileInfo>;
+  readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo>;
 
   /**
    * 写入文件内容
@@ -51,10 +52,11 @@ export interface IFileStorage {
    * @param path 远端文件路径
    * @param srcPath 本地源文件路径
    * @param option 写入选项，支持条件写入
+   * @param onProgress 上传进度回调（可选，opt-in 能力）；未实现/未传入时不影响写入语义
    * @return Promise<FileInfo> 写入后的远端文件信息（含 version）
    * @throws 如果写入失败则抛出异常
    */
-  writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo>;
+  writeFromFile(path: string, srcPath: string, option?: WriteOption, onProgress?: TransferProgressCallback): Promise<FileInfo>;
 
   /**
    * 检查文件是否存在
@@ -98,6 +100,15 @@ export interface IFileStorage {
    */
   supportsVersionFastPath?(): boolean;
 }
+
+/**
+ * 传输进度回调（方向中立：下载已接收字节 / 上传已发送字节）
+ * 仅在流式 readToFile/writeFromFile 链路中作为可选能力透传；
+ * 未实现/未传入时存储行为完全不变
+ * @param transferredBytes 已传输字节（下载=已接收，上传=已确认）
+ * @param totalBytes 总字节
+ */
+export type TransferProgressCallback = (transferredBytes: number, totalBytes: number) => void;
 
 /**
  * 写入选项

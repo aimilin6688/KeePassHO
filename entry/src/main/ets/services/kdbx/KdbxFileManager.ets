@@ -1,4 +1,4 @@
-import { FileContentInfo, FileStorageFactory, IFileStorage, FileInfo, StorageConfig, StorageType, WriteOption } from '../../storage';
+import { FileContentInfo, FileStorageFactory, IFileStorage, FileInfo, StorageConfig, StorageType, TransferProgressCallback, WriteOption } from '../../storage';
 import { StorageError } from '../../storage/StorageError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {ResourceManager} from '../../common/utils';
@@ -92,12 +92,13 @@ export class KdbxFileManager {
    * 流式读取文件到本地目标路径（分块下载/复制，避免整缓冲驻留内存）
    * @param path 远端文件路径
    * @param destPath 本地目标文件路径（调用方负责生命周期）
+   * @param onProgress 下载进度回调（可选），底层存储未实现进度能力时不生效
    * @return Promise<FileInfo> 远端文件信息（含 version）
    * @throws 如果读取失败则抛出异常
    */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  public async readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo> {
     try {
-      return await this.storage.readToFile(path, destPath);
+      return await this.storage.readToFile(path, destPath, onProgress);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to readToFile KDBX: %{public}s', error.message)
       if (error instanceof StorageError) {
@@ -112,12 +113,13 @@ export class KdbxFileManager {
    * @param path 远端文件路径
    * @param srcPath 本地源文件路径
    * @param option 写入选项，支持条件写入
+   * @param onProgress 上传进度回调（可选），底层存储未实现进度能力时不生效
    * @return Promise<FileInfo> 写入后的远端文件信息
    * @throws 如果写入失败则抛出异常
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption, onProgress?: TransferProgressCallback): Promise<FileInfo> {
     try {
-      return await this.storage.writeFromFile(path, srcPath, option);
+      return await this.storage.writeFromFile(path, srcPath, option, onProgress);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to writeFromFile KDBX: %{public}s', error.message)
       if (error instanceof StorageError) {

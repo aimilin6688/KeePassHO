@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
+import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
   HuaweiDriveClient,
@@ -736,8 +736,11 @@ export class HuaweiDriveStorage implements IFileStorage {
 
   /**
    * 流式分块下载到本地文件（S7：Range GET 循环 8MB 块直写盘，内存与文件大小解耦）
+   * @param path 远端文件路径
+   * @param destPath 本地目标文件路径
+   * @param onProgress 下载进度回调（可选），分块写盘字节实时上报
    */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  public async readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
     }
@@ -748,7 +751,7 @@ export class HuaweiDriveStorage implements IFileStorage {
         return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, `File not found: ${path}`));
       }
       // size 透传：findFileByPath 已取得文件大小，免 downloadRangeToFile 内部二次 getInfo
-      await this.client.downloadRangeToFile(file.id, destPath, file.size);
+      await this.client.downloadRangeToFile(file.id, destPath, file.size, onProgress);
       return {
         name: file.fileName,
         size: file.size,
@@ -770,8 +773,13 @@ export class HuaweiDriveStorage implements IFileStorage {
   /**
    * 流式从本地文件上传（S7：rcp Request + UploadFromFile，内容请求体不驻内存，解除 CP-UP 约束）
    * 逻辑镜像 write()：按路径找现有文件走 updateFromFile，否则解析父目录后 uploadFromFile
+   * @param path 远端文件路径
+   * @param srcPath 本地源文件路径
+   * @param option 写入选项，支持条件写入
+   * @param onProgress 上传进度回调（可选）：>20MB 续传按片字节精确上报，≤20MB 单次 PUT 粗粒度兜底
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
@@ -787,7 +795,7 @@ export class HuaweiDriveStorage implements IFileStorage {
       if (file) {
         // 条件写入写前复核（WriteOption 契约）：不一致抛 VERSION_CONFLICT，零额外请求
         this.ensureVersionMatch(file, expectedVersion);
-        result = await this.client.updateFromFile(file.id, srcPath);
+        result = await this.client.updateFromFile(file.id, srcPath, onProgress);
       } else {
         const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
         const segments = normalizedPath.split('/').filter((s: string) => s.length > 0);
@@ -799,7 +807,7 @@ export class HuaweiDriveStorage implements IFileStorage {
           return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR,
             'Failed to resolve parent folder'));
         }
-        result = await this.client.uploadFromFile(parentFolderId, fileName, srcPath);
+        result = await this.client.uploadFromFile(parentFolderId, fileName, srcPath, onProgress);
       }
 
       if (!result.success) {

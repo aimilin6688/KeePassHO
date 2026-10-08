@@ -17,7 +17,7 @@ import { SupportService } from '../services/SupportService';
 import { EventBus } from '../services/EventBus';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
+import { LoadMessage, ProgressMessage, SuccessMessage } from '../workers/WorkerParam';
 import { TotpPreviewComponent } from '../components/TotpPreviewComponent';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
@@ -1549,6 +1549,16 @@ export struct DatabaseView {
       },
       onLoadMessage: (message: LoadMessage) => {
         this.refreshText = ResourceManager.getMessage(message.message);
+      },
+      onProgressMessage: (message: ProgressMessage) => {
+        // 下载进度：阶段文案 + 字节明细（尺寸未知时仅百分比）
+        const stage: string = ResourceManager.getMessage('downloading');
+        if (message.totalBytes > 0) {
+          this.refreshText =
+            `${stage} ${StringUtils.formatFileSize(message.transferredBytes)} / ${StringUtils.formatFileSize(message.totalBytes)}`;
+        } else {
+          this.refreshText = `${stage} ${message.percent}%`;
+        }
       },
       onErrorMessage: (message: LoadMessage) => {
         this.refreshText = ResourceManager.getMessage(message.message);

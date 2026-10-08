@@ -27,6 +27,7 @@ import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
 import HuaweiDriveStorageTest from './storage/huawei/HuaweiDriveStorage.test';
 import HuaweiDriveClientTest from './storage/huawei/HuaweiDriveClient.test';
+import DownloadProgressAggregatorTest from './storage/huawei/DownloadProgressAggregator.test';
 import SFTPHandlerTest from './storage/sftp/SFTPHandler.test';
 import SFTPStorageSemanticsTest from './storage/sftp/SFTPStorageSemantics.test';
 import SFTPStorageRealFileTest from './storage/sftp/SFTPStorageRealFile.test';
@@ -42,6 +43,10 @@ import DatabaseSaveStreamingTest from './workers/DatabaseSaveStreaming.test';
 import DatabaseSaveFastPathTest from './workers/DatabaseSaveFastPath.test';
 import StreamingXmlParserTest from './workers/StreamingXmlParser.test';
 import WorkerEnvironmentInjectionTest from './workers/WorkerEnvironmentInjection.test';
+// 传输进度条（双向）：限频器 / 进度消息 / 基类分发
+import ProgressThrottlerTest from './workers/ProgressThrottler.test';
+import ProgressMessageTest from './workers/ProgressMessage.test';
+import ProgressDispatchTest from './workers/ProgressDispatch.test';
 import DatabaseLoadGuardTest from './services/DatabaseLoadGuard.test';
 import LoadDispatchServiceTest from './services/LoadDispatchService.test';
 import HashUtilsFileTest from './utils/HashUtilsFile.test';
@@ -232,6 +237,8 @@ export default function testsuite() {
   // 华为云盘：契约纯函数用例常驻注册；真实 API 用例由 isRealApiEnabled 门控自跳过
   HuaweiDriveStorageTest();
   HuaweiDriveClientTest();
+  // 华为云盘下载进度聚合器测试
+  DownloadProgressAggregatorTest();
 
   // SFTP 处理器单元测试（错误码解析 / 未连接语义 / 原生连接失败路径）
   SFTPHandlerTest();
@@ -262,6 +269,11 @@ export default function testsuite() {
 
   // Worker 环境注入机制测试（INIT_WORKER 消息 + 路径/缓存策略快照）
   WorkerEnvironmentInjectionTest();
+
+  // 传输进度条（双向）测试（限频器 / 进度消息 / 基类分发）
+  ProgressThrottlerTest();
+  ProgressMessageTest();
+  ProgressDispatchTest();
 
   // 数据库加载守卫测试（CP1 文件大小 / CP-DISK 磁盘余量 / CP2' 解压上限）
   DatabaseLoadGuardTest();

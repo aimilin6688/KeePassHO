@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from '@ohos/hypium';
 import { ToastSaveDatabaseCallback } from '../../../../main/ets/workers/callback/ToastSaveDatabaseCallback';
 import { SaveDatabaseCallback } from '../../../../main/ets/workers/callback/SaveDatabaseCallback';
-import { ConflictMessage, SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
+import { ConflictMessage, ProgressMessage, SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
 import { KdbxModeTestHelper } from '../workers/KdbxModeTestHelper';
 
 /**
@@ -15,6 +15,8 @@ class InnerCallback implements SaveDatabaseCallback {
   public lastSuccessMessage: SuccessMessage | null = null;
   public lastErrorMessage: string = '';
   public lastMessageString: string = '';
+  public progressCount: number = 0;
+  public lastProgressMessage: ProgressMessage | null = null;
 
   onSuccess(message: SuccessMessage): void {
     this.successCount++;
@@ -33,6 +35,11 @@ class InnerCallback implements SaveDatabaseCallback {
 
   onConflict(message: ConflictMessage): void {
     this.conflictCount++;
+  }
+
+  onProgress(message: ProgressMessage): void {
+    this.progressCount++;
+    this.lastProgressMessage = message;
   }
 }
 
@@ -233,6 +240,88 @@ export default function ToastSaveDatabaseCallbackTest() {
       cb.onSuccess(message);
 
       expect(inner.lastSuccessMessage!.isMerge).assertTrue();
+    });
+
+    it('onProgress without inner callback does not throw', 0, () => {
+      const cb = new ToastSaveDatabaseCallback();
+      const progress = new ProgressMessage(30, 300, 1000);
+      let threw = false;
+      try {
+        cb.onProgress(progress);
+      } catch (e) {
+        threw = true;
+      }
+      expect(threw).assertFalse();
+    });
+
+    it('onProgress forwards to inner callback', 0, () => {
+      const inner = new InnerCallback();
+      const cb = new ToastSaveDatabaseCallback(inner);
+      const progress = new ProgressMessage(50, 500, 1000);
+
+      cb.onProgress(progress);
+
+      expect(inner.progressCount).assertEqual(1);
+      expect(inner.lastProgressMessage !== null).assertTrue();
+      expect(inner.lastProgressMessage!.percent).assertEqual(50);
+      expect(inner.lastProgressMessage!.transferredBytes).assertEqual(500);
+      expect(inner.lastProgressMessage!.totalBytes).assertEqual(1000);
+    });
+
+    it('multiple onProgress events forward each time', 0, () => {
+      const inner = new InnerCallback();
+      const cb = new ToastSaveDatabaseCallback(inner);
+
+      cb.onProgress(new ProgressMessage(0, 0, 1000));
+      cb.onProgress(new ProgressMessage(25, 250, 1000));
+      cb.onProgress(new ProgressMessage(100, 1000, 1000));
+
+      expect(inner.progressCount).assertEqual(3);
+      expect(inner.lastProgressMessage!.percent).assertEqual(100);
+    });
+
+    it('onMessage after onProgress resets stage without throw', 0, () => {
+      const inner = new InnerCallback();
+      const cb = new ToastSaveDatabaseCallback(inner);
+
+      cb.onProgress(new ProgressMessage(10, 100, 1000));
+      cb.onMessage('stage change');
+
+      expect(inner.progressCount).assertEqual(1);
+      expect(inner.messageCount).assertEqual(1);
+      expect(inner.lastMessageString).assertEqual('stage change');
+    });
+
+    it('onSuccess after onProgress hides progress HUD without throw', 0, () => {
+      const inner = new InnerCallback();
+      const cb = new ToastSaveDatabaseCallback(inner);
+
+      cb.onProgress(new ProgressMessage(90, 900, 1000));
+      cb.onSuccess(new SuccessMessage(new ArrayBuffer(0), 1, false, null, null));
+
+      expect(inner.progressCount).assertEqual(1);
+      expect(inner.successCount).assertEqual(1);
+    });
+
+    it('onError after onProgress hides progress HUD without throw', 0, () => {
+      const inner = new InnerCallback();
+      const cb = new ToastSaveDatabaseCallback(inner);
+
+      cb.onProgress(new ProgressMessage(40, 400, 1000));
+      cb.onError('upload failed');
+
+      expect(inner.progressCount).assertEqual(1);
+      expect(inner.errorCount).assertEqual(1);
+    });
+
+    it('static wrap forwards onProgress to inner callback', 0, () => {
+      const inner = new InnerCallback();
+      const wrapped = ToastSaveDatabaseCallback.wrap(inner);
+
+      wrapped.onProgress?.(new ProgressMessage(75, 750, 1000));
+
+      expect(inner.progressCount).assertEqual(1);
+      expect(inner.lastProgressMessage!.percent).assertEqual(75);
     });
 
     it('implements SaveDatabaseCallback interface', 0, () => {

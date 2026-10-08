@@ -8,7 +8,7 @@ import { SessionFileService } from '../services/kdbx/SessionFileService';
 import { FileInfo } from '../storage';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LoadMessage, InitWorkerMessage, MessageType, PrewarmMessage, PrewarmResultMessage, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { LoadMessage, InitWorkerMessage, MessageType, PrewarmMessage, PrewarmResultMessage, ProgressMessage, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { DatabaseLoad } from './DatabaseLoad';
 
 const DOMAIN = 0x0000;
@@ -147,6 +147,18 @@ export class DatabaseLoadWorker extends DatabaseLoad {
       }
     }
 
+  }
+
+  /**
+   * 发送传输进度消息（Worker 运输：纯数据结构化克隆直达主线程，失败无害仅日志）
+   * @param message 进度消息
+   */
+  postProgressMessage(message: ProgressMessage, onProgressMessage?: (message: ProgressMessage) => void) {
+    try {
+      workerPort.postMessage(message);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postProgressMessage error:%{public}s', error.message);
+    }
   }
 
   /**

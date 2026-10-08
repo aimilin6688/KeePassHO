@@ -10,7 +10,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard, GuardCheckResult } from '../services/kdbx/DatabaseLoadGuard';
 import { CommonUtils, HashUtils, KdbxUtils } from '../common/utils';
-import { LoadMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
+import { LoadMessage, ProgressMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
+import { ProgressThrottler } from './ProgressThrottler';
+import { TransferProgressCallback } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoad';
@@ -34,9 +36,27 @@ export class DatabaseLoad {
       // 创建凭证
       let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
       this.postMessage('loading_key', callback?.onLoadMessage);
+      // 下载阶段文案（进度条标签），随后的 PROGRESS 消息只更新数字
+      this.postMessage('downloading', callback?.onLoadMessage);
       // 读前守卫 + 流式下载到 T0 文件（precheckSize 由调度层解析时跳过重复 getInfo）
       const tDownload: number = Date.now();
-      let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
+      // 下载进度：存储层字节真值 → 限频器 → PROGRESS 消息（Worker 模式覆写 postProgressMessage 走 workerPort）；
+      // 限频器急切创建（const 规避闭包懒赋值的流分析陷阱），总字节由首个存储层事件注入
+      const progressThrottler: ProgressThrottler = new ProgressThrottler();
+      const onDownloadProgress: TransferProgressCallback = (transferredBytes: number, totalBytes: number): void => {
+        const percent: number = progressThrottler.onProgress(transferredBytes, totalBytes);
+        if (percent >= 0) {
+          this.postProgressMessage(new ProgressMessage(percent, transferredBytes, totalBytes),
+            callback?.onProgressMessage);
+        }
+      };
+      let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path, onDownloadProgress);
+      // 下载完成：补发末条 100%（throttler 内部去重；全程无事件时无操作，避免假 100%）
+      const finalPercent: number = progressThrottler.finish();
+      if (finalPercent >= 0) {
+        this.postProgressMessage(new ProgressMessage(finalPercent, fileInfo.size, fileInfo.size),
+          callback?.onProgressMessage);
+      }
       hilog.info(DOMAIN, TAG, 'load stage download: %{public}d ms, bytes=%{public}d',
         Date.now() - tDownload, fileInfo.size ?? 0);
       this.postMessage('validating', callback?.onLoadMessage);
@@ -149,10 +169,12 @@ export class DatabaseLoad {
    * 流式下载到本地文件（S4：readToFile 替代 read 整缓冲）
    * @param request 请求
    * @param destPath 本地目标文件路径
+   * @param onProgress 下载进度回调（可选），底层存储未实现进度能力时不生效
    * @return Promise<FileInfo> 远端文件信息
    * @throws Error 加载失败
    */
-  async loadKdbxFileToFile(request: LoadDatabase, destPath: string): Promise<FileInfo> {
+  async loadKdbxFileToFile(request: LoadDatabase, destPath: string,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!request.filePath) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
       throw new Error();
@@ -166,7 +188,7 @@ export class DatabaseLoad {
     if (guard.rejectReason !== null) {
       throw new Error(guard.rejectReason);
     }
-    const fileInfo: FileInfo = await fileManager.readToFile(request.filePath, destPath);
+    const fileInfo: FileInfo = await fileManager.readToFile(request.filePath, destPath, onProgress);
     this.postMessage('load_file_success');
     return fileInfo;
   }
@@ -198,6 +220,17 @@ export class DatabaseLoad {
   postSuccessMessage(message: SuccessMessage, onSuccessMessage?: (message: SuccessMessage) => void) {
     if (onSuccessMessage) {
       onSuccessMessage(message);
+    }
+  }
+
+  /**
+   * 发送传输进度消息（下载方向）
+   * @param message 进度消息（纯数据，不含文案）
+   * @param onProgressMessage 进度回调（主线程直开模式传入；Worker 模式覆写为 workerPort 传递）
+   */
+  postProgressMessage(message: ProgressMessage, onProgressMessage?: (message: ProgressMessage) => void) {
+    if (onProgressMessage) {
+      onProgressMessage(message);
     }
   }
 }

@@ -653,6 +653,10 @@
       "value": "Loading file..."
     },
     {
+      "name": "downloading",
+      "value": "Downloading database..."
+    },
+    {
       "name": "EntryEdit_invalid_db_or_group",
       "value": "Invalid database or group information"
     },

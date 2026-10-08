@@ -1,6 +1,6 @@
 import { MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ConflictMessage, InitWorkerMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { ConflictMessage, InitWorkerMessage, ProgressMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { DatabaseSave } from './DatabaseSave';
 import { SaveDatabaseCallback } from './callback/SaveDatabaseCallback';
@@ -85,6 +85,19 @@ class DatabaseSaveWorker extends DatabaseSave {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postMessage error:%{public}s', error.message);
       this.postErrorMessage(error.message);
+    }
+  }
+
+  /**
+   * 发送传输进度消息
+   * @param message 进度消息（纯数据，主线程不本地化）
+   */
+  postProgressMessage(message: ProgressMessage) {
+    try {
+      workerPort.postMessage(message);
+    } catch (error) {
+      // 进度消息发送失败仅记录：进度是附属信息，不得中断保存流程
+      hilog.error(DOMAIN, TAG, 'postProgressMessage error:%{public}s', error.message);
     }
   }
 

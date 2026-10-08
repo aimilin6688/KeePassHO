@@ -6,7 +6,7 @@ import KdbxSaveService from '../../../../main/ets/services/kdbx/KdbxSaveService'
 import { SaveDatabaseCallback } from '../../../../main/ets/workers/callback/SaveDatabaseCallback';
 import { ToastSaveDatabaseCallback } from '../../../../main/ets/workers/callback/ToastSaveDatabaseCallback';
 import { ConflictStrategy, SaveDatabaseMessage } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
-import { ConflictMessage, LoadMessage, MessageType, SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
+import { ConflictMessage, LoadMessage, MessageType, ProgressMessage, SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
 import { FileService } from '../../../../main/ets/services/FileService';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { StorageType } from '../../../../main/ets/storage';
@@ -27,6 +27,8 @@ class SaveCallbackTracker implements SaveDatabaseCallback {
   public lastMessageString: string = '';
   public lastSuccessMessage: SuccessMessage | null = null;
   public lastConflictMessage: ConflictMessage | null = null;
+  public progressCount: number = 0;
+  public lastProgressMessage: ProgressMessage | null = null;
 
   onSuccess(message: SuccessMessage): void {
     this.successCount++;
@@ -46,6 +48,11 @@ class SaveCallbackTracker implements SaveDatabaseCallback {
   onConflict(message: ConflictMessage): void {
     this.conflictCount++;
     this.lastConflictMessage = message;
+  }
+
+  onProgress(message: ProgressMessage): void {
+    this.progressCount++;
+    this.lastProgressMessage = message;
   }
 }
 
@@ -237,6 +244,41 @@ export default function KdbxSaveServiceTest() {
       expect(threw).assertFalse();
     });
 
+    it('onProgress dispatches to callback.onProgress', 0, () => {
+      const tracker = new SaveCallbackTracker();
+      const progress = new ProgressMessage(60, 600, 1000);
+      KdbxSaveService.onProgress(progress, tracker);
+      expect(tracker.progressCount).assertEqual(1);
+      expect(tracker.lastProgressMessage !== null).assertTrue();
+      expect(tracker.lastProgressMessage!.percent).assertEqual(60);
+      expect(tracker.lastProgressMessage!.transferredBytes).assertEqual(600);
+    });
+
+    it('onProgress without callback is a no-op', 0, () => {
+      let threw = false;
+      try {
+        KdbxSaveService.onProgress(new ProgressMessage(1, 10, 100), undefined);
+      } catch (e) {
+        threw = true;
+      }
+      expect(threw).assertFalse();
+    });
+
+    it('onProgress with legacy callback missing onProgress is a no-op', 0, () => {
+      // 旧格式回调（未实现 onProgress 可选成员）不受影响
+      const legacy: SaveDatabaseCallback = {
+        onSuccess: (_message: SuccessMessage): void => {
+        }
+      };
+      let threw = false;
+      try {
+        KdbxSaveService.onProgress(new ProgressMessage(1, 10, 100), legacy);
+      } catch (e) {
+        threw = true;
+      }
+      expect(threw).assertFalse();
+    });
+
     it('onError dispatches to callback.onError', 0, () => {
       const tracker = new SaveCallbackTracker();
       const loadMessage = new LoadMessage(MessageType.ERROR, 'test_error');
@@ -275,6 +317,18 @@ export default function KdbxSaveServiceTest() {
       wrapped.onMessage?.('warp-message');
       expect(tracker.messageCount).assertEqual(1);
       expect(tracker.lastMessageString).assertEqual('warp-message');
+      expect(released).assertFalse();
+    });
+
+    it('callbackWarp onProgress passes through without release', 0, () => {
+      const tracker = new SaveCallbackTracker();
+      let released = false;
+      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      wrapped.onProgress?.(new ProgressMessage(33, 330, 1000));
+      expect(tracker.progressCount).assertEqual(1);
+      expect(tracker.lastProgressMessage !== null).assertTrue();
+      expect(tracker.lastProgressMessage!.percent).assertEqual(33);
+      // 进度为非终态消息，不释放保存互斥锁
       expect(released).assertFalse();
     });
 

@@ -1,4 +1,4 @@
-import { ConflictMessage, SuccessMessage } from "../WorkerParam";
+import { ConflictMessage, ProgressMessage, SuccessMessage } from "../WorkerParam";
 
 export interface SaveDatabaseCallback {
   /**
@@ -17,6 +17,12 @@ export interface SaveDatabaseCallback {
    * @param message
    */
   onMessage?: (message: string) => void;
+
+  /**
+   * 传输进度（上传方向，限频后最坏 2 条/秒）
+   * @param message 进度消息（percent 0~100 + 字节明细）
+   */
+  onProgress?: (message: ProgressMessage) => void;
 
   /**
    * 检测到远端数据库已被其他设备修改，等待上层决定处理策略（合并/覆盖/重载）

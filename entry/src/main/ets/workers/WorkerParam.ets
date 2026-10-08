@@ -48,6 +48,11 @@ export enum MessageType {
    * 预热结果（Worker → 主线程）：探测到的文件大小回填加载调度缓存
    */
   PREWARM_RESULT = 'PREWARM_RESULT',
+
+  /**
+   * 传输进度（Worker → 主线程）：下载/上传字节进度，加载与保存共用
+   */
+  PROGRESS = 'PROGRESS',
 }
 
 // 定义消息
@@ -119,6 +124,28 @@ export class LoadMessage implements WorkerMessage {
   constructor(type: MessageType, message: string | number) {
     this.type = type;
     this.message = message;
+  }
+}
+
+/**
+ * 传输进度消息（Worker → 主线程，加载/保存共用）
+ * 纯数据类（结构化克隆安全），不携带文案——阶段文案仍走 MESSAGE 事件，
+ * 由 UI 侧组合"阶段文本 + 百分比/字节明细"展示
+ */
+export class ProgressMessage implements WorkerMessage {
+  type: MessageType;
+  /** 进度百分比（0-100，floor，上限 100） */
+  percent: number;
+  /** 已传输字节（下载=已接收，上传=已确认） */
+  transferredBytes: number;
+  /** 总字节 */
+  totalBytes: number;
+
+  constructor(percent: number, transferredBytes: number, totalBytes: number) {
+    this.type = MessageType.PROGRESS;
+    this.percent = percent;
+    this.transferredBytes = transferredBytes;
+    this.totalBytes = totalBytes;
   }
 }
 

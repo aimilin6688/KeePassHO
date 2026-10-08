@@ -641,6 +641,10 @@
       "value": "加载内容..."
     },
     {
+      "name": "downloading",
+      "value": "正在下载数据库..."
+    },
+    {
       "name": "EntryEdit_invalid_db_or_group",
       "value": "无效的数据库或分组信息"
     },
