@@ -27,9 +27,13 @@ export class Constants {
    */
   public static readonly ATTACH_CACHE_ASSET_ALIAS: string = "keepassho.attach.cache.key";
   /**
-   * 附件加密缓存目录名（filesDir 下）
+   * 附件缓存目录名（filesDir 下）
    */
   public static readonly ATTACH_CACHE_DIR_NAME: string = "attach-cache";
+  /**
+   * 编辑条目时单次最多可选附件数
+   */
+  public static readonly ATTACH_SELECT_MAX_COUNT: number = 9;
 
   /**
    * 应用存储位置信息
