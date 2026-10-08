@@ -175,9 +175,27 @@ export class KdbxFileManager {
   }
 
   /**
+   * 获取文件信息；确定不存在返回 null，无法判定（网络错误等）上抛
+   * 优先使用存储的可选 getInfoOrNull 能力；未实现时回退 exists + getInfo
+   * @param filePath 文件路径
+   * @return Promise<FileInfo | null> 文件信息，确定不存在时为 null
+   */
+  public async getInfoOrNull(filePath: string): Promise<FileInfo | null> {
+    const probed: FileInfo | null | undefined = await this.storage.getInfoOrNull?.(filePath);
+    if (probed !== undefined) {
+      return probed;
+    }
+    const existed: boolean = await this.storage.exists(filePath);
+    if (!existed) {
+      return null;
+    }
+    return await this.storage.getInfo(filePath);
+  }
+
+  /**
    * 检查文件是否存在
    * @param filePath 文件路径
-   * @return Promise<boolean> 文件是否存在
+   * @return boolean 文件是否存在
    */
   public async exists(filePath: string): Promise<boolean> {
     return this.storage.exists(filePath);

@@ -11,7 +11,8 @@ import { SettingsService } from './SettingsService';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { SyncSettingsService } from './store/SyncSettingsService';
 import { DistributedKVService } from './store/DistributedKVService';
-import { CacheConstants, StorageType } from '../storage';
+import { CacheConstants, FileInfo, StorageConfig, StorageType } from '../storage';
+import { LoadDispatchCache } from './kdbx/LoadDispatchCache';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFilesService';
@@ -275,13 +276,32 @@ export class RecentFilesService {
   }
 
   /**
-   * 检查文件是否存在
+   * 检查文件是否存在（探测结果含大小，写入加载调度缓存）
    * @param recentFile 最近文件记录
    * @returns true=存在，false=不存在
    * @throws 当无法判定（token 失效、网络错误、权限错误等）时抛出异常，调用方应保留文件记录
    */
   public async checkFileExists(recentFile: RecentFile): Promise<boolean> {
-    return new KdbxFileManager(recentFile.storageType, recentFile.storageConfig).exists(recentFile.filePath);
+    const info: FileInfo | null = await RecentFilesService.probeFileInfo(
+      recentFile.storageType, recentFile.storageConfig, recentFile.filePath);
+    return info !== null;
+  }
+
+  /**
+   * 探测远端文件信息（存在性 + 大小）：一次请求同时产出，大小写入加载调度缓存
+   * @param storageType 存储类型
+   * @param storageConfig 存储配置
+   * @param filePath 文件路径
+   * @returns FileInfo：存在；null：确定不存在
+   * @throws 无法判定时上抛（由调用方决定保留记录）
+   */
+  public static async probeFileInfo(storageType: StorageType, storageConfig: StorageConfig,
+    filePath: string): Promise<FileInfo | null> {
+    const info: FileInfo | null = await new KdbxFileManager(storageType, storageConfig).getInfoOrNull(filePath);
+    if (info !== null && info.size > 0) {
+      LoadDispatchCache.put(filePath, info.size);
+    }
+    return info;
   }
 
   /**

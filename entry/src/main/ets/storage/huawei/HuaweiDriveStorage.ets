@@ -914,12 +914,12 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
-   * 检查文件是否存在
+   * 获取文件信息；路径未找到返回 null，令牌/网络等错误上抛（无法判定）
    * @param path 文件路径
-   * @returns Promise<boolean> 文件是否存在
+   * @returns Promise<FileInfo | null> 文件信息，确定不存在时为 null
    * @throws StorageError 如果检查失败则抛出异常
    */
-  public async exists(path: string): Promise<boolean> {
+  public async getInfoOrNull(path: string): Promise<FileInfo | null> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
@@ -928,14 +928,29 @@ export class HuaweiDriveStorage implements IFileStorage {
     // 检查令牌是否过期
     await this.ensureValidToken();
 
-    // 根目录：通过 getInfo('root') 验证连通性，成功即存在
+    // 根目录：通过 getInfo('root') 验证连通性（与 exists 根分支同语义）
     const normalizedForRoot = path.startsWith('/') ? path.substring(1) : path;
     if (!normalizedForRoot) {
       try {
         const rootResp = await this.client.getInfo('root');
-        return rootResp.success;
+        if (!rootResp.success || !rootResp.body) {
+          return null;
+        }
+        const rootJson = ByteUtils.bytesToString(rootResp.body);
+        const rootData: Record<string, Object> = JSON.parse(rootJson);
+        const rootFile = this.client.parseFile(rootData);
+        const rootInfo: FileInfo = {
+          name: rootFile.fileName || 'root',
+          size: rootFile.size,
+          modifiedTime: new Date(rootFile.editedTime).getTime(),
+          path: rootFile.id || 'root',
+          type: FileType.DIR,
+          childrenCount: 0,
+          version: HuaweiDriveStorage.buildVersion(rootFile)
+        };
+        return rootInfo;
       } catch (error) {
-        hilog.error(DOMAIN, TAG, 'Huawei Drive exists root error: %{public}s', (error as Error).message);
+        hilog.error(DOMAIN, TAG, 'Huawei Drive getInfoOrNull root error: %{public}s', (error as Error).message);
         if (error instanceof StorageError) {
           return Promise.reject(error);
         }
@@ -945,15 +960,37 @@ export class HuaweiDriveStorage implements IFileStorage {
 
     try {
       const file = await this.findFileByPath(path);
-      return file !== null;
+      if (!file) {
+        return null;
+      }
+      const info: FileInfo = {
+        name: file.fileName,
+        size: file.size,
+        modifiedTime: new Date(file.editedTime).getTime(),
+        path: file.id,
+        type: file.mimeType === HUAWEI_DRIVE_FOLDER_MIME_TYPE ? FileType.DIR : FileType.FILE,
+        childrenCount: 0,
+        version: HuaweiDriveStorage.buildVersion(file)
+      };
+      return info;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Huawei Drive exists error: %{public}s', (error as Error).message);
+      hilog.error(DOMAIN, TAG, 'Huawei Drive getInfoOrNull error: %{public}s', (error as Error).message);
       // 保留原始 StorageError（如 AUTH_EXPIRED），避免丢失错误码导致上层误判为文件不存在
       if (error instanceof StorageError) {
         return Promise.reject(error);
       }
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
     }
+  }
+
+  /**
+   * 检查文件是否存在
+   * @param path 文件路径
+   * @returns Promise<boolean> 文件是否存在
+   * @throws StorageError 如果检查失败则抛出异常
+   */
+  public async exists(path: string): Promise<boolean> {
+    return (await this.getInfoOrNull(path)) !== null;
   }
 
   /**

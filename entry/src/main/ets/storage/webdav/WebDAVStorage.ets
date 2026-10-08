@@ -213,19 +213,29 @@ export class WebDAVStorage implements IFileStorage {
   }
 
   /**
+   * 获取文件信息；404 返回 null，其他错误上抛（无法判定）
+   * @param path 远端路径
+   * @return Promise<FileInfo | null> 文件信息，确定不存在时为 null
+   */
+  public async getInfoOrNull(path: string): Promise<FileInfo | null> {
+    hilog.info(DOMAIN, TAG, `Query path exists: ${path}`);
+    try {
+      return await this.getInfo(path);
+    } catch (error) {
+      if (error instanceof WebDAVError && error.code === 404) {
+        return null;
+      }
+      throw error as Error;
+    }
+  }
+
+  /**
    * 检查文件是否存在
    * @param path
    * @returns
    */
   public async exists(path: string): Promise<boolean> {
-    return this.getInfo(path).then((fileInfo) => {
-      return fileInfo != null;
-    }).catch((error: Error) => {
-      if (error instanceof WebDAVError && error.code === 404) {
-        return false;
-      }
-      return Promise.reject(error);
-    });
+    return (await this.getInfoOrNull(path)) !== null;
   }
 
   /**
