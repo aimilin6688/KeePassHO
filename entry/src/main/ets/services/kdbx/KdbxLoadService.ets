@@ -9,6 +9,7 @@ import { Constants } from '../../common/constants/Constants';
 import { CacheConstants } from '../../storage/cache/CacheConstants';
 import { StorageConfig, StorageType } from '../../storage';
 import { LoadDispatchCache } from './LoadDispatchCache';
+import { LoadDispatchService } from './LoadDispatchService';
 
 const DOMAIN = 0x0000;
 const TAG = 'KdbxLoadService';
@@ -26,14 +27,65 @@ export default class KdbxLoadService {
   private static workerGeneration: number = 0;
 
   /**
-   * 加载数据库
+   * 加载数据库（三入口统一：Password 主打开 / DatabaseView 刷新 / KdbxSaveService 合并重载）
+   * 分级调度（SIZE_DISPATCH_LOAD = true）：小库（≤ SYNC_LOAD_MAX_BYTES）主线程直开，
+   * 大库/未知走 Worker；总开关关闭时保持"恒 Worker"现状
    */
   public static loadDatabase(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback): void {
-    if (Constants.ASYNC_LOAD_DATABASE) {
-      KdbxLoadService.asyncLoadDatabase(loadParam, callback);
-    } else {
+    if (!Constants.ASYNC_LOAD_DATABASE) {
       new DatabaseLoad().handleLoadDatabase(loadParam, callback);
+      return;
     }
+    if (!Constants.SIZE_DISPATCH_LOAD) {
+      KdbxLoadService.asyncLoadDatabase(loadParam, callback);
+      return;
+    }
+    KdbxLoadService.dispatchAndLoad(loadParam, callback);
+  }
+
+  /**
+   * 尺寸解析 → 路由：小库主线程直开（Kdbx 实例直接引用传递，零协议税）；
+   * 大库/未知走 Worker。precheckSize 随参数透传供守卫去重；
+   * 成功回调统一回填调度缓存（fileSize 回传）
+   */
+  private static dispatchAndLoad(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback): void {
+    const wrapped: KdbxLoadServiceCallback = {
+      onLoadMessage: callback?.onLoadMessage,
+      onSuccessMessage: (message: SuccessMessage) => {
+        if (message.fileSize !== undefined && message.fileSize > 0) {
+          LoadDispatchCache.put(loadParam.filePath, message.fileSize);
+        }
+        callback?.onSuccessMessage?.(message);
+      },
+      onErrorMessage: callback?.onErrorMessage,
+      onAllErrors: callback?.onAllErrors,
+      onexit: callback?.onexit
+    };
+    LoadDispatchService.resolveSize(loadParam.filePath, loadParam.storageType, loadParam.storageConfig)
+      .then((size: number | undefined) => {
+        const tDispatch: number = Date.now();
+        if (size !== undefined && size > 0) {
+          loadParam.precheckSize = size;
+          if (size <= Constants.SYNC_LOAD_MAX_BYTES) {
+            hilog.info(DOMAIN, TAG, 'dispatch: main thread, size=%{public}d: %{public}s',
+              size, loadParam.filePath);
+            new DatabaseLoad().handleLoadDatabase(loadParam, wrapped);
+          } else {
+            hilog.info(DOMAIN, TAG, 'dispatch: worker, size=%{public}d: %{public}s',
+              size, loadParam.filePath);
+            KdbxLoadService.asyncLoadDatabase(loadParam, wrapped);
+          }
+        } else {
+          hilog.info(DOMAIN, TAG, 'dispatch: worker, size=unknown: %{public}s', loadParam.filePath);
+          KdbxLoadService.asyncLoadDatabase(loadParam, wrapped);
+        }
+        hilog.info(DOMAIN, TAG, 'dispatch resolve: %{public}d ms', Date.now() - tDispatch);
+      })
+      .catch(() => {
+        // 解析异常：保守走 Worker（不劣于现状）
+        hilog.warn(DOMAIN, TAG, 'dispatch resolve failed, fallback to worker');
+        KdbxLoadService.asyncLoadDatabase(loadParam, wrapped);
+      });
   }
 
   /**

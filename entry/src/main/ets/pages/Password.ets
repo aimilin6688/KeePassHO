@@ -577,7 +577,7 @@ export struct Password {
    */
   private handleSuccessMessage(successMessage: SuccessMessage) {
     this.init();
-    this.putFileToRecentFile();
+    this.putFileToRecentFile(successMessage);
     this.setFileParam(successMessage).then(() => {
       this.loadingMessage = ResourceManager.getString($r('app.string.open_success'));
       // 清空本页所在的导航栈（移除 Password 自身及其下方残留页面），
@@ -638,8 +638,9 @@ export struct Password {
 
   /**
    * 文件打开成功，保存到最近访问列表中
+   * @param successMessage 加载成功消息（fileSize 持久化为分级调度快照）
    */
-  private putFileToRecentFile() {
+  private putFileToRecentFile(successMessage?: SuccessMessage) {
     // 最近打开的文件
     let recentFile = {
       filePath: this.filePath,
@@ -647,7 +648,9 @@ export struct Password {
       storageType: this.storageType ?? StorageType.LOCAL,
       authType: this.authTypeInfo,
       keyLocation: this.keyLocation,
-      storageConfig: this.storageConfig ?? {}
+      storageConfig: this.storageConfig ?? {},
+      fileSize: (successMessage?.fileSize !== undefined && successMessage.fileSize > 0)
+        ? successMessage.fileSize : undefined
     } as RecentFile;
     hilog.info(DOMAIN, TAG, '%{public}s', `Put database file to recent file list: ${this.filePath}`)
     // 如果开启指纹登录

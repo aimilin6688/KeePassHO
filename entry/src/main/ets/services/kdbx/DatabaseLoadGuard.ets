@@ -38,22 +38,29 @@ export class DatabaseLoadGuard {
   /**
    * CP1 + CP-DISK：读取前检查文件大小与本地磁盘余量
    * 接收调用方已创建的 KdbxFileManager（单 manager 贯穿一次操作，避免每阶段重复 init 存储、重复刷新令牌）；
-   * 预检的 getInfo 结果随 GuardCheckResult 返回，调用方可复用（版本预检 / 下载基线），不产生额外请求
+   * 预检的 getInfo 结果随 GuardCheckResult 返回，调用方可复用（版本预检 / 下载基线），不产生额外请求；
+   * precheckSize 提供时（调度层已探测，>0）跳过 getInfo 直接复用该值，消除重复元数据请求
    * @param fileManager 已完成 init 的文件管理器
    * @param filePath 文件路径
+   * @param precheckSize 调度层已解析的文件大小（字节，可选）
    * @returns GuardCheckResult（rejectReason 为 null 表示放行）
    */
-  public static async checkBeforeRead(fileManager: KdbxFileManager, filePath: string): Promise<GuardCheckResult> {
+  public static async checkBeforeRead(fileManager: KdbxFileManager, filePath: string,
+    precheckSize?: number): Promise<GuardCheckResult> {
     const result: GuardCheckResult = new GuardCheckResult();
     let fileSize: number = -1;
-    try {
-      const fileInfo = await fileManager.getInfo(filePath);
-      result.fileInfo = fileInfo;
-      fileSize = fileInfo.size;
-    } catch (error) {
-      // 取不到文件信息（远端不支持 / 网络失败）：放行，由真实读取流程报错
-      hilog.warn(DOMAIN, TAG, 'checkBeforeRead get file info failed: %{public}s', error.message);
-      return result;
+    if (precheckSize !== undefined && precheckSize > 0) {
+      fileSize = precheckSize;
+    } else {
+      try {
+        const fileInfo = await fileManager.getInfo(filePath);
+        result.fileInfo = fileInfo;
+        fileSize = fileInfo.size;
+      } catch (error) {
+        // 取不到文件信息（远端不支持 / 网络失败）：放行，由真实读取流程报错
+        hilog.warn(DOMAIN, TAG, 'checkBeforeRead get file info failed: %{public}s', error.message);
+        return result;
+      }
     }
     if (fileSize <= 0) {
       return result;

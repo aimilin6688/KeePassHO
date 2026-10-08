@@ -376,6 +376,12 @@ export interface RecentFile {
    * 搜索历史
    */
   searchHistory?: Array<string>;
+
+  /**
+   * 上次成功打开时的压缩后文件大小（字节，分级加载调度持久化快照；
+   * 仅作调度参考，过期误判由加载守卫兜底）
+   */
+  fileSize?: number;
 }
 
 /**

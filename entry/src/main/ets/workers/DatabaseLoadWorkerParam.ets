@@ -40,6 +40,10 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
   enableLocalCache?: boolean;
   onlyUseCache?: boolean;
   forceRefresh?: boolean;
+  /**
+   * 调度层已解析的文件大小（字节，>0 有效）：守卫 CP1/CP-DISK 直接复用，跳过重复 getInfo
+   */
+  precheckSize?: number;
 
   constructor(filePath: string, fileName: string, password: string, authType: AuthTypeInfo,
     keyLocation?: LocationInfo, storageType?: StorageType, storageConfig?: StorageConfig, asyncLoad?: boolean) {

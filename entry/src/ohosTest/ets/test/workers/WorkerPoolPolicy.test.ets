@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from '@ohos/hypium';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@ohos/hypium';
 import { common } from '@kit.AbilityKit';
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
@@ -84,6 +84,15 @@ export default function WorkerPoolPolicyTest() {
       // 重置 AppStorage 策略，保证用例间互不粘连
       CacheConstants.setOnlyCache(false);
       CacheConstants.clearForceRefresh();
+      // 本套件专测 Worker 路径：分级调度下强制两个测试库走 Worker（种入超阈值大小）；
+      // 每个用例后重播种——加载成功的真实大小回填会覆盖种入值，导致后续用例误走主线程
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath2);
+    });
+
+    afterEach(() => {
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath2);
     });
 
     afterAll(() => {
@@ -200,7 +209,9 @@ export default function WorkerPoolPolicyTest() {
       expect(first.type).assertEqual(MessageType.SUCCESS);
 
       // 第二次：不 stopWorker，必须走复用分支（旧行为每操作 terminate 重建，
-      // 从未覆盖该路径；复用失败会在 postMessage/回包上暴露）
+      // 从未覆盖该路径；复用失败会在 postMessage/回包上暴露）。
+      // 重播种：首次加载的真实大小回填会覆盖种入值
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
       const second = await withTimeout(new Promise<SuccessMessage>((resolve, reject) => {
         KdbxLoadService.loadDatabase(loadParam, {
           onSuccessMessage: (msg: SuccessMessage) => { resolve(msg); },
@@ -353,7 +364,9 @@ export default function WorkerPoolPolicyTest() {
       // 不重置则旧 Worker 以 K1 包裹 M0、主线程以 K2 解包裹，GCM 校验必失败）
       KdbxLoadService.stopWorker();
 
-      // 恢复后首次加载：懒重建 Worker 注入新密钥 K2，M0 包裹/解包裹恢复一致
+      // 恢复后首次加载：懒重建 Worker 注入新密钥 K2，M0 包裹/解包裹恢复一致。
+      // 重播种：首次加载的真实大小回填会覆盖种入值
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
       const second = await withTimeout(new Promise<SuccessMessage>((resolve, reject) => {
         KdbxLoadService.loadDatabase(loadParam, {
           onSuccessMessage: (msg: SuccessMessage) => { resolve(msg); },
