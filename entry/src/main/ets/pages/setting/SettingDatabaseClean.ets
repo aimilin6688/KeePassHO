@@ -125,8 +125,8 @@ export struct SettingDatabaseCleanContent {
               Row() {
                 CounterComponent({
                   options: {
-                    type: CounterType.INLINE,
-                    inlineOptions: {
+                    type: CounterType.COMPACT,
+                    numberOptions: {
                       min: 0,
                       value: this.daysInput,
                       max: 9999,
