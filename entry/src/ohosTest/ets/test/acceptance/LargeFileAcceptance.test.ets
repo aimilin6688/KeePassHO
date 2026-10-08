@@ -143,10 +143,8 @@ async function loadViaWorker(dbPath: string, password: string, timeoutMs: number
     if (!m0Path) {
       throw new Error('no m0 path');
     }
-    const bytes: ArrayBuffer = await SessionFileService.unwrapFromFile(m0Path);
-    SessionFileService.removeFile(m0Path);
-    return await KdbxUtils.arrayBufferToKdbx(bytes,
-      KdbxModeTestHelper.makeLoadParam(dbPath, 'a.kdbx', password));
+    // 统一消费入口：自动识别 SFW1 v3 直传容器 / legacy KPSN 单封（含会话文件删除）
+    return await KdbxUtils.successMessageToKdbx(success, loadParam);
   } finally {
     w.terminate();
   }

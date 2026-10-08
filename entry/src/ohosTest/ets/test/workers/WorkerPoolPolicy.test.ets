@@ -349,13 +349,12 @@ export default function WorkerPoolPolicyTest() {
       }), TEST_TIMEOUT_MS);
       expect(first.type).assertEqual(MessageType.SUCCESS);
 
-      // 主线程解包裹（K1）：模型可还原
+      // 主线程解包裹（K1）：模型可还原（统一消费入口，自动识别包裹格式）
       const m0PathFirst: string | undefined = first.m0Path;
       expect(typeof m0PathFirst === 'string' && m0PathFirst.length > 0).assertTrue();
       if (m0PathFirst) {
-        const snapshotFirst: ArrayBuffer = await SessionFileService.unwrapFromFile(m0PathFirst);
-        expect(KdbxSnapshot.isSnapshot(snapshotFirst)).assertTrue();
-        SessionFileService.removeFile(m0PathFirst);
+        const restoredFirst: Kdbx = await KdbxUtils.successMessageToKdbx(first, loadParam);
+        expect(KdbxModeTestHelper.collectEntryTitles(restoredFirst).includes('pool-policy-entry')).assertTrue();
       }
 
       // 模拟 onDestroy：全清会话目录并作废主线程会话密钥（下次取用时换发 K2）
@@ -378,12 +377,9 @@ export default function WorkerPoolPolicyTest() {
       const m0PathSecond: string | undefined = second.m0Path;
       expect(typeof m0PathSecond === 'string' && m0PathSecond.length > 0).assertTrue();
       if (m0PathSecond) {
-        const snapshotSecond: ArrayBuffer = await SessionFileService.unwrapFromFile(m0PathSecond);
-        expect(KdbxSnapshot.isSnapshot(snapshotSecond)).assertTrue();
-        const restored: Kdbx = await KdbxUtils.arrayBufferToKdbx(snapshotSecond, loadParam);
+        const restored: Kdbx = await KdbxUtils.successMessageToKdbx(second, loadParam);
         const titles: string[] = KdbxModeTestHelper.collectEntryTitles(restored);
         expect(titles.includes('pool-policy-entry')).assertTrue();
-        SessionFileService.removeFile(m0PathSecond);
       }
 
       KdbxLoadService.stopWorker();

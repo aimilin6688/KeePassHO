@@ -14,7 +14,7 @@ import { KdbxCredentials } from './kdbx-credentials';
 import { KdbxHeader } from './kdbx-header';
 import { KdbxError } from '../errors/kdbx-error';
 import { CipherId, Defaults, ErrorCodes, Icons } from '../defs/consts';
-import { KdbxFormat } from './kdbx-format';
+import { KdbxFormat, ContainerChunkWriter } from './kdbx-format';
 import { KdbxEntry, KdbxEntryEditState } from './kdbx-entry';
 import { KdbxUuid } from './kdbx-uuid';
 import { KdbxContext } from './kdbx-context';
@@ -215,6 +215,39 @@ export class Kdbx {
         format.maxDecompressedBytes = options?.maxDecompressedBytes;
         format.attachmentsDiskThreshold = options?.attachmentsDiskThreshold;
         return format.loadFromFile(filePath, options.t1Path, options.t2Path);
+    }
+
+    /**
+     * v3 直传容器产出（Worker 快路径，M0 直传改造）：
+     * 流式解密/解压 + inner header 解析后不构建模型，直接把
+     * 容器前缀 + 原始 XML 区写入 containerWriter（会话密钥分块包裹流）。
+     * 主线程以 KdbxSnapshot.loadFromReader 协作解析，模型只构建一次。
+     * 仅 v4 + ChaCha20；其余格式抛 Unsupported（调用方回退全模型路径）
+     */
+    static loadToContainerFile(
+        filePath: string,
+        credentials: KdbxCredentials,
+        options: {
+            t1Path: string,
+            t2Path: string,
+            containerWriter: ContainerChunkWriter,
+            maxDecompressedBytes?: number,
+            attachmentStore?: AttachmentStore,
+            attachmentsDiskThreshold?: number
+        }
+    ): Promise<void> {
+        if (!(credentials instanceof KdbxCredentials)) {
+            return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'credentials'));
+        }
+        const kdbx = new Kdbx();
+        kdbx.credentials = credentials;
+        kdbx.binaries.store = options?.attachmentStore;
+        const format = new KdbxFormat(kdbx);
+        format.maxDecompressedBytes = options?.maxDecompressedBytes;
+        format.attachmentsDiskThreshold = options?.attachmentsDiskThreshold;
+        return format.loadToContainerFile(
+            filePath, options.t1Path, options.t2Path, options.containerWriter
+        );
     }
 
     /**

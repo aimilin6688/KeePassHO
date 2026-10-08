@@ -29,6 +29,15 @@ import {
     FileChunkReader,
     KdbxStreamingXmlLoader
 } from '../utils/xml-pull-parser';
+import { KdbxSnapshot } from './kdbx-snapshot';
+
+/**
+ * 容器分块写出器：v3 直传容器产出侧的宿主注入接口
+ * （Worker 侧为会话密钥分块包裹流，测试可为内存收集器）
+ */
+export interface ContainerChunkWriter {
+    writeChunk(data: Uint8Array): Promise<void>;
+}
 
 export class KdbxFormat {
     /** S5：inner Binary 字段超过该值时流式落盘附件缓存，不整读入内存 */
@@ -96,6 +105,161 @@ export class KdbxFormat {
                     return fs.close(file.fd).then(() => kdbx);
                 });
             });
+        });
+    }
+
+    /**
+     * v3 直传容器产出（M0 直传，Worker 快路径）：T0 → 流式解密 T1 → 流式解压 T2 →
+     * inner header 文件解析（附件落盘）→ v3 容器前缀（内存构建）→
+     * XML 区从 inner 文件分块流式拷入 containerWriter——全程不构建模型、
+     * 不 materialize 整段 XML（消除跨线程双重构建）。
+     * 仅 v4 + ChaCha20 支持；其余格式抛 Unsupported（调用方回退全模型 KPSN 路径）。
+     * 守卫拒绝（DecompressedTooLarge/NotEnoughDisk）与真实加载错误（InvalidKey/FileCorrupt）
+     * 原样上抛；解压阶段非守卫失败映射为 Unsupported 交由调用方回退（保留旧行为可恢复性）
+     * @param filePath KDBX 文件路径
+     * @param t1Path 解密后 gz 临时文件路径
+     * @param t2Path 解压后 inner 明文临时文件路径
+     * @param containerWriter 容器分块写出器（宿主注入，如会话密钥分块包裹流）
+     */
+    loadToContainerFile(
+        filePath: string,
+        t1Path: string,
+        t2Path: string,
+        containerWriter: ContainerChunkWriter
+    ): Promise<void> {
+        return this.kdbx.credentials.ready.then(() => {
+            return fs.open(filePath, fs.OpenMode.READ_ONLY).then((file) => {
+                return this.loadToContainerFileInner(file.fd, t1Path, t2Path, containerWriter).then(
+                    () => fs.close(file.fd),
+                    (e) => fs.close(file.fd).then(
+                        () => Promise.reject(e),
+                        () => Promise.reject(e)
+                    )
+                );
+            });
+        });
+    }
+
+    private loadToContainerFileInner(
+        fileFd: number,
+        t1Path: string,
+        t2Path: string,
+        containerWriter: ContainerChunkWriter
+    ): Promise<void> {
+        // 预读 header（与 loadFromFileInner 同源）
+        const headerBuf = new ArrayBuffer(256 * 1024);
+        return fs.read(fileFd, headerBuf).then((totalRead) => {
+            const stm = new BinaryStream(headerBuf.slice(0, totalRead));
+            this.kdbx.header = KdbxHeader.read(stm, this.ctx);
+            if (this.kdbx.header.versionMajor !== 4) {
+                throw new KdbxError(ErrorCodes.Unsupported, 'container fast-path requires kdbx v4');
+            }
+            return this.getHeaderHash(stm).then((headerSha) => {
+                const expectedHeaderSha = stm.readBytes(headerSha.byteLength);
+                if (!arrayBufferEquals(expectedHeaderSha, headerSha)) {
+                    throw new KdbxError(ErrorCodes.FileCorrupt, 'header hash mismatch');
+                }
+                return this.computeKeysV4().then((keys) => {
+                    return this.getHeaderHmac(stm, keys.hmacKey).then((headerHmac) => {
+                        const expectedHeaderHmac = stm.readBytes(headerHmac.byteLength);
+                        if (!arrayBufferEquals(expectedHeaderHmac, headerHmac)) {
+                            throw new KdbxError(ErrorCodes.InvalidKey);
+                        }
+                        const dataOffset = stm.pos;
+                        const cipherId = this.kdbx.header.dataCipherUuid;
+                        if (!cipherId || cipherId.toString() !== CipherId.ChaCha20) {
+                            throw new KdbxError(
+                                ErrorCodes.Unsupported,
+                                'container fast-path requires ChaCha20'
+                            );
+                        }
+                        const iv = this.kdbx.header.encryptionIV;
+                        if (!iv) {
+                            throw new KdbxError(ErrorCodes.FileCorrupt, 'no encryption IV');
+                        }
+                        const chaCha = new ChaCha20(new Uint8Array(keys.cipherKey), new Uint8Array(iv));
+                        const decryptBlock = (data: Uint8Array): void => {
+                            chaCha.xorInPlace(data);
+                        };
+                        fs.lseek(fileFd, dataOffset, 0 /* SEEK_SET */);
+                        return HmacBlockTransform.decryptFromFile(
+                            fileFd, t1Path, keys.hmacKey, decryptBlock
+                        ).then(() => {
+                            zeroBuffer(keys.hmacKey);
+                            zeroBuffer(keys.cipherKey);
+                            // 解压阶段：守卫拒绝直接抛；非守卫失败映射 Unsupported（调用方回退全模型路径）
+                            return this.prepareInnerFileStreaming(t1Path, t2Path).then(
+                                (innerPath) => this.writeContainerFromInnerFile(innerPath, containerWriter),
+                                (e) => {
+                                    if (e instanceof KdbxError &&
+                                        (e.code === ErrorCodes.DecompressedTooLarge ||
+                                            e.code === ErrorCodes.NotEnoughDisk)) {
+                                        throw e;
+                                    }
+                                    throw new KdbxError(
+                                        ErrorCodes.Unsupported,
+                                        `container fast-path inflate failed: ${e}`
+                                    );
+                                }
+                            );
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * inner 明文文件 → v3 容器：inner header 逐字段（附件落盘/入池）→
+     * computeHashes → 容器前缀（内存）→ XML 区 4MB 分块流式拷贝
+     */
+    private writeContainerFromInnerFile(
+        innerPath: string,
+        containerWriter: ContainerChunkWriter
+    ): Promise<void> {
+        return fs.open(innerPath, fs.OpenMode.READ_ONLY).then((file) => {
+            const chain = this.kdbx.header
+                .readInnerHeaderFromFile(
+                    file.fd,
+                    this.ctx,
+                    KdbxFormat.LARGE_BINARY_STREAM_THRESHOLD
+                )
+                .then((xmlStart) => fs.stat(file.fd).then((stat) => {
+                    const xmlLength = stat.size - xmlStart;
+                    if (xmlLength < 0) {
+                        throw new KdbxError(ErrorCodes.FileCorrupt, 'inner xml region missing');
+                    }
+                    KdbxFormat.assertDecompressedLimit(xmlLength, this.maxDecompressedBytes);
+                    return this.kdbx.binaries.computeHashes().then(() => {
+                        const prefix = KdbxSnapshot.buildV3ContainerPrefix(this.kdbx, true, xmlLength);
+                        return containerWriter.writeChunk(prefix).then(() => {
+                            const COPY_CHUNK = 4 * 1024 * 1024;
+                            let offset = xmlStart;
+                            const copyNext = (): Promise<void> => {
+                                if (offset >= stat.size) {
+                                    return Promise.resolve();
+                                }
+                                const len = Math.min(COPY_CHUNK, stat.size - offset);
+                                const buf = new ArrayBuffer(len);
+                                return fs.read(file.fd, buf, { offset }).then((got) => {
+                                    const view = got === len
+                                        ? new Uint8Array(buf)
+                                        : new Uint8Array(buf, 0, got);
+                                    offset += got;
+                                    return containerWriter.writeChunk(view).then(copyNext);
+                                });
+                            };
+                            return copyNext();
+                        });
+                    });
+                }));
+            return chain.then(
+                () => fs.close(file.fd),
+                (e) => fs.close(file.fd).then(
+                    () => Promise.reject(e),
+                    () => Promise.reject(e)
+                )
+            );
         });
     }
 

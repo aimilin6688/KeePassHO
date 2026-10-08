@@ -360,8 +360,10 @@ export class KdbxUtils {
   }
 
   /**
-   * 从 Worker 成功消息还原模型（§7.4 会话文件协议）
-   * 优先走 M0 会话文件：解包裹 → KPSN 魔数分发还原 → 删除会话文件；
+   * 从 Worker 成功消息还原模型（§7.4 会话文件协议 + M0 v3 直传容器）
+   * 自动识别包裹格式：SFW1 分块流 = v3 直传容器（原始 inner XML + 头部 + 池引用），
+   * 边解包边协作解析（256KB 块间真实 IO 边界，模型只构建一次）；
+   * legacy 单封 = v1/v2 KPSN 快照，整缓冲还原；
    * 无 M0 时回退消息内 data（同步模式直接传 Kdbx 实例 / 历史缓冲）
    * @param message Worker 成功消息
    * @param credentialsParam 凭据参数
@@ -371,11 +373,32 @@ export class KdbxUtils {
     credentials?: KdbxCredentials): Promise<Kdbx> {
     if (message.m0Path) {
       const startTime = Date.now();
-      const bytes: ArrayBuffer = await SessionFileService.unwrapFromFile(message.m0Path);
-      SessionFileService.removeFile(message.m0Path);
-      hilog.info(DOMAIN, TAG, 'm0 unwrap time: %{public}d ms, bytes=%{public}d',
-        Date.now() - startTime, bytes.byteLength);
-      return KdbxUtils.arrayBufferToKdbx(bytes, credentialsParam, credentials);
+      const reader = await SessionFileService.openUnwrapReader(message.m0Path);
+      try {
+        let kdbx: Kdbx;
+        if (reader.isStreaming) {
+          // v3 直传容器：协作式解析（解包 4MB 块 + 拉取解析 256KB 块交替进行）
+          let creds = credentials;
+          if (creds === undefined) {
+            creds = await CredentialsService.createKdbxCredentials(credentialsParam);
+          }
+          const maxDecompressedBytes: number = await DatabaseLoadGuard.getMaxDecompressedBytes();
+          kdbx = await KdbxSnapshot.loadFromReader(reader, creds, {
+            maxDecompressedBytes: maxDecompressedBytes,
+            attachmentStore: AttachmentCacheService.getStore()
+          });
+        } else {
+          // legacy 单封（v1/v2 KPSN 快照 / 合并产物）：整缓冲还原
+          const bytes: ArrayBuffer = ByteUtils.bytesToBuffer(await reader.readAll());
+          kdbx = await KdbxUtils.arrayBufferToKdbx(bytes, credentialsParam, credentials);
+        }
+        hilog.info(DOMAIN, TAG, 'm0 consume: %{public}d ms, streaming=%{public}s',
+          Date.now() - startTime, reader.isStreaming);
+        return kdbx;
+      } finally {
+        reader.close();
+        SessionFileService.removeFile(message.m0Path);
+      }
     }
     return KdbxUtils.arrayBufferToKdbx(message.data, credentialsParam, credentials);
   }
