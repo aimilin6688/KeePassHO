@@ -460,10 +460,24 @@ export function serializeToStringFast(doc: Document): string {
  * 8MB 缓冲 flush，递归遍历 DOM 写 UTF-8 字节到 fd；
  * 产出与 serialize(doc) 语义等价（Kdbx.load 可解析），非字节相同。
  * 调用方须先 updateProtectedValuesSalt（ProtectedValue textContent 已设为 base64）。
+ * @param doc DOM 文档
+ * @param fd 目标文件描述符
+ * @param yieldBetweenFlushes 每次 flush 后强制宏任务让出（setTimeout(0)，供主线程
+ *        协作式渲染；Worker 侧保持 false 免付无谓延迟。当前调用点均在保存 Worker，
+ *        供二期 X0 直传（主线程产 XML）启用）
  */
-export function serializeToFile(doc: Document, fd: number): Promise<void> {
+export function serializeToFile(doc: Document, fd: number, yieldBetweenFlushes = false): Promise<void> {
   const FLUSH_THRESHOLD = 8 * 1024 * 1024;
   let pending: string = '';
+
+  const yieldToEventLoop = (): Promise<void> => {
+    if (!yieldBetweenFlushes) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve: () => void) => {
+      setTimeout(resolve, 0);
+    });
+  };
 
   const flush = (): Promise<void> => {
     if (pending.length === 0) {
@@ -471,7 +485,7 @@ export function serializeToFile(doc: Document, fd: number): Promise<void> {
     }
     const bytes = arrayToBuffer(stringToBytes(pending));
     pending = '';
-    return fs.write(fd, bytes).then(() => undefined);
+    return fs.write(fd, bytes).then(() => yieldToEventLoop());
   };
 
   const write = (s: string): Promise<void> => {
