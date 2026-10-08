@@ -43,6 +43,15 @@ export class S3Storage implements IFileStorage {
     return S3PageConfig;
   }
 
+  /**
+   * 版本快速路径 opt-in：version 为 S3 etag（服务端内容哈希，内容变必变），
+   * write/writeFromFile 已履约 expectedVersion 条件写入（HEAD etag 写前复核），
+   * 版本相等即可跳过全量下载 + 内容哈希校验
+   */
+  public supportsVersionFastPath(): boolean {
+    return true;
+  }
+
   public init(config: StorageConfig): void {
     this.config = this.parseConfig(config);
     const options: S3ClientOptionsImpl = new S3ClientOptionsImpl(

@@ -5,6 +5,7 @@ import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileMana
 import { ConflictStrategy } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
 import { StorageType } from '../../../../main/ets/storage';
 import { SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
+import { HashUtils } from '../../../../main/ets/common/utils/HashUtils';
 import { KdbxModeTestHelper, SyncSaveResult } from './KdbxModeTestHelper';
 
 const DOMAIN = 0x0000;
@@ -92,8 +93,10 @@ export default function DatabaseSyncModeTest() {
       expect(success.isMerge).assertFalse();
       // LocalFileStorage 版本语义为 size|mtime 复合串
       expect((success.version ?? '').includes('|')).assertTrue();
-      // 新基线 = 写入内容的 SHA256
-      expect(success.contentHash).assertEqual(await KdbxModeTestHelper.sha256Hex(success.data as ArrayBuffer));
+      // S6 语义：data 一律传空缓冲（§7.4，大缓冲不跨线程）
+      expect((success.data as ArrayBuffer).byteLength).assertEqual(0);
+      // 新基线 = 落盘文件内容的 SHA256（postSuccess buffer 路径 contentHash = sha256Hex(saved.buffer)，buffer 即写盘内容）
+      expect(success.contentHash).assertEqual(await HashUtils.sha256HexFile(dbPath));
 
       // 文件已被真实写入：读回解密验证新条目
       const fileContent = await fileManager.read(dbPath);

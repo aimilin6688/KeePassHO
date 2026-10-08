@@ -7,7 +7,7 @@ import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService'
 import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
+import { DatabaseLoadGuard, GuardCheckResult } from '../services/kdbx/DatabaseLoadGuard';
 import { CommonUtils, HashUtils, KdbxUtils } from '../common/utils';
 import { LoadMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
 
@@ -99,14 +99,14 @@ export class DatabaseLoad {
       hilog.error(DOMAIN, TAG, 'Worker error loading database: file path is empty');
       throw new Error();
     }
+    // 单 manager 贯穿守卫与下载：一次 init 存储、令牌刷新结果随 config 原地传递
+    const fileManager: KdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
     // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名
-    const rejectReason: string | null = await DatabaseLoadGuard.checkBeforeRead(
-      request.storageType, request.storageConfig, request.filePath);
-    if (rejectReason !== null) {
-      throw new Error(rejectReason);
+    const guard: GuardCheckResult = await DatabaseLoadGuard.checkBeforeRead(fileManager, request.filePath);
+    if (guard.rejectReason !== null) {
+      throw new Error(guard.rejectReason);
     }
-    const fileInfo: FileInfo = await new KdbxFileManager(request.storageType, request.storageConfig)
-      .readToFile(request.filePath, destPath);
+    const fileInfo: FileInfo = await fileManager.readToFile(request.filePath, destPath);
     this.postMessage('load_file_success');
     return fileInfo;
   }

@@ -1,12 +1,12 @@
 import { afterAll, afterEachIt, beforeAll, beforeEachIt, describe, expect, it } from '@ohos/hypium';
 import { common } from '@kit.AbilityKit';
-import preferences from '@ohos.data.preferences';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { TestContextHelper } from '../TestContextHelper';
 import { OAuth2TokenStorageService, OAuth2TokenStorageConfig } from '../../../../main/ets/common/oauth2/OAuth2TokenStorageService';
 import { OAuth2Provider, OAuth2Token } from '../../../../main/ets/common/oauth2/OAuth2Types';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
 
-const PREFERENCES_NAME = 'oauth2_tokens';
+const STORE_FILE = 'oauth2_tokens.json';
 const KEY_A = 'test_token_key_a';
 const KEY_B = 'test_token_key_b';
 const KEY_CORRUPT = 'test_token_key_corrupt';
@@ -39,10 +39,39 @@ function makeToken(accessToken: string): OAuth2Token {
   return token;
 }
 
+/**
+ * 直接向文件后端注入原始值（绕过加密/序列化），并重置单例使下次读取从文件水合
+ */
 async function writeRawValue(key: string, value: string): Promise<void> {
-  const prefs = await preferences.getPreferences(CommonUtils.getContext(), PREFERENCES_NAME);
-  await prefs.put(key, value);
-  await prefs.flush();
+  const storePath = CommonUtils.getAppFilesDir() + '/' + STORE_FILE;
+  const record: Record<string, string> = {};
+  if (fs.accessSync(storePath, fs.AccessModeType.EXIST)) {
+    const text = fs.readTextSync(storePath);
+    if (text) {
+      const raw = JSON.parse(text) as Record<string, Object>;
+      const tokensObj = raw['tokens'];
+      if (tokensObj && typeof tokensObj === 'object' && !Array.isArray(tokensObj)) {
+        const existing = tokensObj as Record<string, string>;
+        const keys: string[] = Object.keys(existing);
+        for (const k of keys) {
+          const v: Object | undefined = existing[k];
+          if (typeof v === 'string') {
+            record[k] = v;
+          }
+        }
+      }
+    }
+  }
+  record[key] = value;
+  const tmpPath = storePath + '.test-tmp';
+  const file = await fs.open(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+  try {
+    await fs.write(file.fd, JSON.stringify({ v: 1, tokens: record }));
+  } finally {
+    await fs.close(file.fd);
+  }
+  await fs.rename(tmpPath, storePath);
+  OAuth2TokenStorageService.resetForTest();
 }
 
 async function cleanupKeys(): Promise<void> {
@@ -216,6 +245,85 @@ export default function OAuth2TokenStorageServiceTest() {
         await service.clearAllTokens();
         expect(await service.hasToken({ provider: OAuth2Provider.GITHUB, tokenKey: KEY_A })).assertFalse();
         expect(await service.hasToken({ provider: OAuth2Provider.BAIDU_NETDISK })).assertFalse();
+      });
+    });
+
+    describe('FileBackendPersistence', () => {
+      it('persists tokens to file store and survives instance reset (process restart simulation)', 0, async () => {
+        const service = OAuth2TokenStorageService.getInstance();
+        await service.saveToken(makeToken('restart_acc'), { provider: OAuth2Provider.GITHUB, tokenKey: KEY_A, encrypt: false });
+
+        // 模拟进程重启：单例重置后应从文件重新水合
+        OAuth2TokenStorageService.resetForTest();
+        const fresh = OAuth2TokenStorageService.getInstance();
+        const loaded = await fresh.loadToken({ provider: OAuth2Provider.GITHUB, tokenKey: KEY_A, encrypt: false });
+        expect(loaded).not().assertNull();
+        expect(loaded!.accessToken).assertEqual('restart_acc');
+        expect(loaded!.refreshToken).assertEqual('refresh_restart_acc');
+      });
+
+      it('corrupt file content degrades to empty store instead of throwing', 0, async () => {
+        const storePath = CommonUtils.getAppFilesDir() + '/' + STORE_FILE;
+        // 备份当前文件内容，测试后恢复
+        let backup: string | null = null;
+        if (fs.accessSync(storePath, fs.AccessModeType.EXIST)) {
+          backup = fs.readTextSync(storePath);
+        }
+        try {
+          const tmpPath = storePath + '.corrupt-tmp';
+          const file = await fs.open(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+          try {
+            await fs.write(file.fd, 'not-a-json-file{{{');
+          } finally {
+            await fs.close(file.fd);
+          }
+          await fs.rename(tmpPath, storePath);
+
+          OAuth2TokenStorageService.resetForTest();
+          const fresh = OAuth2TokenStorageService.getInstance();
+          // fail-open：读损坏文件降级为空表，不抛异常
+          expect(await fresh.hasToken({ provider: OAuth2Provider.GITHUB, tokenKey: KEY_A })).assertFalse();
+          const loaded = await fresh.loadToken({ provider: OAuth2Provider.GITHUB, tokenKey: KEY_A, encrypt: false });
+          expect(loaded).assertNull();
+        } finally {
+          // 恢复备份（或清除损坏文件）
+          const restorePath = storePath + '.restore-tmp';
+          const file = await fs.open(restorePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+          try {
+            await fs.write(file.fd, backup ?? '');
+          } finally {
+            await fs.close(file.fd);
+          }
+          await fs.rename(restorePath, storePath);
+          OAuth2TokenStorageService.resetForTest();
+        }
+      });
+    });
+
+    describe('WorkerMode', () => {
+      it('save and load work without Context (worker environment simulation)', 0, async () => {
+        // 模拟 Worker：清除 Context + 注入沙箱路径（§11.1 注入协议）
+        const originalContext = CommonUtils.getContext();
+        const filesDir = CommonUtils.getAppFilesDir();
+        const cacheDir = CommonUtils.getCacheDir();
+        CommonUtils.clearContextForTest();
+        CommonUtils.setWorkerPaths(filesDir, cacheDir);
+        try {
+          OAuth2TokenStorageService.resetForTest();
+          const service = OAuth2TokenStorageService.getInstance();
+          // Worker 内保存（模拟刷新后持久化）
+          await service.saveToken(makeToken('worker_acc'), { provider: OAuth2Provider.HUAWEI_DRIVE, encrypt: false });
+          // 跨"进程重启"读取
+          OAuth2TokenStorageService.resetForTest();
+          const fresh = OAuth2TokenStorageService.getInstance();
+          const loaded = await fresh.loadToken({ provider: OAuth2Provider.HUAWEI_DRIVE, encrypt: false });
+          expect(loaded).not().assertNull();
+          expect(loaded!.accessToken).assertEqual('worker_acc');
+          await fresh.deleteToken({ provider: OAuth2Provider.HUAWEI_DRIVE });
+        } finally {
+          CommonUtils.init(originalContext);
+          OAuth2TokenStorageService.resetForTest();
+        }
       });
     });
   });

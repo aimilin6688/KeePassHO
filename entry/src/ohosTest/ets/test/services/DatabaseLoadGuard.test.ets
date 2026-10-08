@@ -3,6 +3,7 @@ import { common } from '@kit.AbilityKit';
 import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { DatabaseLoadGuard } from '../../../../main/ets/services/kdbx/DatabaseLoadGuard';
+import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
 import { StorageType } from '../../../../main/ets/storage';
 
@@ -26,7 +27,7 @@ export default function DatabaseLoadGuardTest() {
     });
 
     /**
-     * CP1 文件大小守卫：小文件放行
+     * CP1 文件大小守卫：小文件放行（守卫预检顺带返回 FileInfo）
      */
     it('CP1 small file passes', 0, async () => {
       const filePath = testDir + '/small.kdbx';
@@ -35,8 +36,13 @@ export default function DatabaseLoadGuardTest() {
       await fs.write(file.fd, buf);
       await fs.close(file.fd);
 
-      const result = await DatabaseLoadGuard.checkBeforeRead(StorageType.LOCAL, undefined, filePath);
-      expect(result).assertNull();
+      const result = await DatabaseLoadGuard.checkBeforeRead(
+        new KdbxFileManager(StorageType.LOCAL), filePath);
+      expect(result.rejectReason).assertNull();
+      expect(result.fileInfo).not().assertNull();
+      if (result.fileInfo !== null) {
+        expect(result.fileInfo.size).assertEqual(1024);
+      }
     });
 
     /**
@@ -49,17 +55,19 @@ export default function DatabaseLoadGuardTest() {
       await fs.write(file.fd, buf);
       await fs.close(file.fd);
 
-      const result = await DatabaseLoadGuard.checkBeforeRead(StorageType.LOCAL, undefined, filePath);
-      expect(result).assertNull();
+      const result = await DatabaseLoadGuard.checkBeforeRead(
+        new KdbxFileManager(StorageType.LOCAL), filePath);
+      expect(result.rejectReason).assertNull();
     });
 
     /**
-     * getInfo 失败（文件不存在）时 fail-open 放行
+     * getInfo 失败（文件不存在）时 fail-open 放行，fileInfo 为 null
      */
     it('checkBeforeRead fail-open when getInfo fails', 0, async () => {
-      const result = await DatabaseLoadGuard.checkBeforeRead(StorageType.LOCAL, undefined,
+      const result = await DatabaseLoadGuard.checkBeforeRead(new KdbxFileManager(StorageType.LOCAL),
         testDir + '/nonexistent.kdbx');
-      expect(result).assertNull();
+      expect(result.rejectReason).assertNull();
+      expect(result.fileInfo).assertNull();
     });
 
     /**

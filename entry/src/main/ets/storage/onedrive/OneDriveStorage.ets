@@ -31,6 +31,12 @@ export class OneDriveStorage implements IFileStorage {
   private oauth2Config: OAuth2Config | undefined;
 
   /**
+   * 进行中的刷新 Promise（并发去重，避免多个操作同时刷新）
+   * 刷新完成（成功或失败）后置空
+   */
+  private refreshingPromise: Promise<void> | null = null;
+
+  /**
    * 构造函数
    * @param config OneDrive存储配置
    */
@@ -103,7 +109,48 @@ export class OneDriveStorage implements IFileStorage {
   }
 
   /**
-   * 刷新访问令牌
+   * 确保访问令牌有效（令牌生命周期归共享 token store 管理，不依赖单次操作的配置快照）
+   * 1. 配置快照内 token 仍有效：直接返回（零开销）
+   * 2. 快照已过期：先读共享 token store（文件后端，Worker 内同样可用，承载上次刷新落盘的新 token），
+   *    账号一致（refreshToken 相同）且未过期 → 应用到当前实例，免刷新
+   * 3. store 也无可用 token：真正刷新（单飞）→ 成功后经 notifyTokenUpdated 持久化回 store
+   * 注意：OneDrive 刷新可能轮换 refresh_token，store 内 token 与配置快照的 refreshToken 不一致时
+   * 视为账号变化/轮换失配，仍走配置快照刷新（与既有行为一致，不降低安全性）
+   */
+  private async ensureValidToken(): Promise<void> {
+    if (!this.client || !this.config) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized');
+    }
+    if (!this.config.isTokenExpired()) {
+      return;
+    }
+    const config = this.config;
+    const client = this.client;
+    try {
+      const stored: OAuth2Token | null = await OAuth2TokenStorageService.getInstance()
+        .loadToken({ provider: OAuth2Provider.ONEDRIVE, encrypt: true });
+      if (stored && stored.accessToken && stored.expiresAt
+        && stored.refreshToken === config.getRefreshTokenText()
+        && stored.expiresAt > Date.now() + 5 * 60 * 1000) {
+        config.setAccessToken(stored.accessToken);
+        if (stored.refreshToken) {
+          config.setRefreshToken(stored.refreshToken);
+        }
+        config.setExpiresAt(stored.expiresAt);
+        client.updateAccessToken(stored.accessToken);
+        hilog.info(DOMAIN, TAG, 'Applied stored access token, expires at: %{public}s',
+          stored.expiresAt?.toString());
+        return;
+      }
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Load stored token failed, fallback to refresh: %{public}s',
+        (error as Error).message);
+    }
+    await this.refreshAccessToken();
+  }
+
+  /**
+   * 刷新访问令牌（并发去重：多个操作同时触发刷新时复用同一个 Promise）
    * @returns Promise<void>
    * @throws StorageError
    */
@@ -112,6 +159,27 @@ export class OneDriveStorage implements IFileStorage {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized');
     }
 
+    // 并发去重：已有刷新在进行中，复用该 Promise
+    if (this.refreshingPromise) {
+      hilog.debug(DOMAIN, TAG, 'refreshAccessToken: another refresh in progress, waiting for it');
+      return this.refreshingPromise;
+    }
+
+    this.refreshingPromise = this.doRefreshAccessToken();
+    try {
+      await this.refreshingPromise;
+    } finally {
+      this.refreshingPromise = null;
+    }
+  }
+
+  /**
+   * 实际执行刷新逻辑
+   */
+  private async doRefreshAccessToken(): Promise<void> {
+    if (!this.client || !this.config) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized');
+    }
     try {
       const token = await this.client.refreshToken(this.config.getRefreshTokenText());
       this.config.setAccessToken(token.accessToken);
@@ -122,10 +190,10 @@ export class OneDriveStorage implements IFileStorage {
         this.config.setExpiresAt(token.expiresAt);
       }
       this.client.updateAccessToken(token.accessToken);
-      
+
       // 发送令牌更新事件
       await this.notifyTokenUpdated(token);
-      
+
       hilog.info(DOMAIN, TAG, 'Access token refreshed successfully');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to refresh access token: %{public}s', (error as Error).message);
@@ -174,9 +242,7 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       const expectedVersion: string | null = option?.expectedVersion ?? null;
@@ -249,9 +315,7 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       const result = await this.client.get(path);
@@ -285,9 +349,7 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       // 条件写入：写前复核远端版本，不一致抛出版本冲突由上层重试/合并兜底
@@ -322,9 +384,7 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     const result = await this.client.getInfo(path);
     // 如果成功，文件存在
@@ -353,9 +413,7 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     const result = await this.client.getInfo(path);
     if (result.success && result.body) {
@@ -389,9 +447,7 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     const result = await this.client.list(path, 0);
     if (result.success && result.body) {

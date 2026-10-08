@@ -54,6 +54,8 @@ if (XxxTestConfig.isRealApiEnabled()) {
 ```bash
 # 前置 1：服务容器（docs/e2e/e2e-fileserver.sh，即 podman compose -f e2e/docker-compose.yml up -d）
 # 前置 2：rport 反向隧道（hdc 重启/设备重连后会丢失，需重建；本版 hdc 无 add 子命令）
+# ↑ 两条前置已脚本化，一条命令自动就绪（幂等、多设备、含僵尸监听清理）：
+sh docs/e2e/e2e-tunnels.sh        # 详见 docs/e2e/e2e-tunnels.md（含 DevEco Studio 自动挂钩）
 hdc rport tcp:9000 tcp:9000    # S3：设备 9000 → Mac 9000（SeaweedFS 网关）
 hdc rport tcp:8800 tcp:8800    # WebDAV：设备 8800 → Mac 8800
 hdc rport tcp:2223 tcp:2222    # SFTP：设备 2223 → Mac 2222（容器 sshd 22）

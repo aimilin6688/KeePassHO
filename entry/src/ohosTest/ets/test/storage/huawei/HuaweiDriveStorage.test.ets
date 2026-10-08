@@ -1,15 +1,54 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { HuaweiDriveStorage } from '../../../../../main/ets/storage/huawei/HuaweiDriveStorage';
 import { HuaweiDriveStorageConfig } from '../../../../../main/ets/storage/huawei/HuaweiDriveConfig';
+import { HuaweiDriveFile, HuaweiDriveClient } from '../../../../../main/ets/storage/huawei/HuaweiDriveClient';
 import { HuaweiDriveTestConfig, TestHuaweiDriveStorageConfig } from './HuaweiDriveTestConfig';
-import { FileInfo, FileType } from '../../../../../main/ets/storage/IFileStorage';
+import { FileInfo, FileType, WriteOption } from '../../../../../main/ets/storage/IFileStorage';
+import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
 
 const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveStorageTest';
 
+function makeDriveFile(id: string, size: number, editedTime: string): HuaweiDriveFile {
+  return {
+    id: id,
+    fileName: 'a.kdbx',
+    mimeType: 'application/octet-stream',
+    size: size,
+    createdTime: '2026-10-08T00:00:00Z',
+    editedTime: editedTime,
+    parentFolder: []
+  };
+}
+
 export default function HuaweiDriveStorageTest() {
+  // 契约层纯函数用例：不依赖真实 API，始终注册
+  describe('HuaweiDriveStorageContract', () => {
+    it('buildVersion composes id:size:editedTime fingerprint', 0, () => {
+      const file: HuaweiDriveFile = makeDriveFile('f1', 123, '2026-10-08T10:00:00Z');
+      expect(HuaweiDriveStorage.buildVersion(file)).assertEqual('f1:123:2026-10-08T10:00:00Z');
+    });
+
+    it('buildVersion changes when content size or editedTime changes', 0, () => {
+      const v1: string = HuaweiDriveStorage.buildVersion(makeDriveFile('f1', 100, 't1'));
+      const v2: string = HuaweiDriveStorage.buildVersion(makeDriveFile('f1', 101, 't1'));
+      const v3: string = HuaweiDriveStorage.buildVersion(makeDriveFile('f1', 100, 't2'));
+      const v4: string = HuaweiDriveStorage.buildVersion(makeDriveFile('f2', 100, 't1'));
+      expect(v1 !== v2).assertTrue();
+      expect(v1 !== v3).assertTrue();
+      expect(v1 !== v4).assertTrue();
+    });
+
+    it('supportsVersionFastPath opts in (version fingerprint + conditional write both ready)', 0, () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      expect(storage.supportsVersionFastPath()).assertTrue();
+    });
+  });
+
   // 华为云盘为专有云服务，无法本地自建；未配置有效凭证时整套真实 API 用例不注册
   // （诚实跳过，而非用 mock 数据伪造通过，见 docs/storage-regression-test.md）
   if (!HuaweiDriveTestConfig.isRealApiEnabled()) {
@@ -347,5 +386,97 @@ export default function HuaweiDriveStorageTest() {
         expect(err).not().assertUndefined();
       }
     });
+
+    /**
+     * 契约履约：getInfo 透出 version 指纹（id:size:editedTime）
+     */
+    it('should_expose_version_fingerprint_in_get_info', 0, async () => {
+      if (!storage) { expect(false).assertTrue(); return; }
+      const encoder: util.TextEncoder = new util.TextEncoder();
+      const data: Uint8Array = encoder.encodeInto('version fingerprint probe');
+      const testFileName: string = `test-version-${Date.now()}.txt`;
+      await storage.write(testFileName, data.buffer as ArrayBuffer);
+
+      const info: FileInfo = await storage.getInfo(testFileName);
+      expect(info.version).not().assertNull();
+      // 指纹以 fileId 开头（getInfo.path 即 fileId）
+      expect(info.version!.startsWith(info.path + ':')).assertTrue();
+      // 指纹含 size
+      expect(info.version!.includes(`:${info.size}:`)).assertTrue();
+    });
+
+    /**
+     * 契约履约：条件写（expectedVersion 匹配时成功，过期时抛 VERSION_CONFLICT 且远端不被覆盖）
+     */
+    it('should_reject_stale_expected_version_and_keep_remote_intact', 0, async () => {
+      if (!storage) { expect(false).assertTrue(); return; }
+      const encoder: util.TextEncoder = new util.TextEncoder();
+      const remoteData: Uint8Array = encoder.encodeInto('remote-truth-content');
+      const testFileName: string = `test-conditional-${Date.now()}.txt`;
+      await storage.write(testFileName, remoteData.buffer as ArrayBuffer);
+
+      const info: FileInfo = await storage.getInfo(testFileName);
+      const currentVersion: string = info.version ?? '';
+
+      // 匹配版本：条件写成功
+      const newData: Uint8Array = encoder.encodeInto('local-new-content');
+      const matchOption: WriteOption = { expectedVersion: currentVersion };
+      await storage.write(testFileName, newData.buffer as ArrayBuffer, matchOption);
+
+      // 过期版本：抛 VERSION_CONFLICT，远端内容保持为上一步写入值
+      const staleOption: WriteOption = { expectedVersion: 'stale:1:old' };
+      const conflictData: Uint8Array = encoder.encodeInto('must-not-land');
+      let conflicted: boolean = false;
+      try {
+        await storage.write(testFileName, conflictData.buffer as ArrayBuffer, staleOption);
+      } catch (error) {
+        const storageError = error as StorageError;
+        conflicted = storageError.code === StorageErrorCodes.VERSION_CONFLICT;
+      }
+      expect(conflicted).assertTrue();
+
+      const readBack: ArrayBuffer = await storage.read(testFileName);
+      const decoder: util.TextDecoder = new util.TextDecoder();
+      const content: string = decoder.decodeToString(new Uint8Array(readBack));
+      expect(content).assertEqual('local-new-content');
+    });
+
+    /**
+     * 契约履约：writeFromFile 条件写（过期版本抛 VERSION_CONFLICT，远端不被覆盖）
+     */
+    it('should_reject_stale_expected_version_in_writeFromFile', 0, async () => {
+      if (!storage) { expect(false).assertTrue(); return; }
+      const encoder: util.TextEncoder = new util.TextEncoder();
+      const remoteData: Uint8Array = encoder.encodeInto('remote-truth-content-wf');
+      const testFileName: string = `test-conditional-wf-${Date.now()}.txt`;
+      await storage.write(testFileName, remoteData.buffer as ArrayBuffer);
+      const info: FileInfo = await storage.getInfo(testFileName);
+
+      // 本地源文件
+      const srcPath = getTestFilesDir() + `/cond-wf-${Date.now()}.tmp`;
+      const file = await fs.open(srcPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      await fs.write(file.fd, encoder.encodeInto('streamed-must-not-land'));
+      await fs.close(file.fd);
+
+      let conflicted: boolean = false;
+      try {
+        await storage.writeFromFile(testFileName, srcPath, { expectedVersion: 'stale:1:old' });
+      } catch (error) {
+        const storageError = error as StorageError;
+        conflicted = storageError.code === StorageErrorCodes.VERSION_CONFLICT;
+      }
+      try { await fs.unlink(srcPath); } catch { /* best effort */ }
+      expect(conflicted).assertTrue();
+
+      const readBack: ArrayBuffer = await storage.read(testFileName);
+      const decoder: util.TextDecoder = new util.TextDecoder();
+      expect(decoder.decodeToString(new Uint8Array(readBack))).assertEqual('remote-truth-content-wf');
+      // 顺带验证 info.version 格式
+      expect(info.version).not().assertNull();
+    });
   });
+}
+
+function getTestFilesDir(): string {
+  return abilityDelegatorRegistry.getAbilityDelegator().getAppContext().filesDir;
 }

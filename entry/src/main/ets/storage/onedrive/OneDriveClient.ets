@@ -821,7 +821,9 @@ export class OneDriveClient {
       const name = this.extractOptionalStringFromObject(data, 'name');
       const size = this.extractOptionalNumberFromObject(data, 'size') || 0;
       const lastModified = this.extractOptionalStringFromObject(data, 'lastModifiedDateTime');
-      const eTag = this.extractOptionalStringFromObject(data, 'eTag');
+      const eTagRaw = this.extractOptionalStringFromObject(data, 'eTag');
+      // Graph 未返回 eTag 时保持 undefined（缺失 ≠ 空串，对齐可选字段语义）
+      const eTag: string | undefined = eTagRaw.length > 0 ? eTagRaw : undefined;
       const path = this.extractPath(data);
       const downloadUrl = this.extractOptionalStringFromObject(data, '@microsoft.graph.downloadUrl');
 
@@ -855,7 +857,7 @@ export class OneDriveClient {
         lastModified: this.extractOptionalStringFromObject(data, 'lastModifiedDateTime') || '',
         path: this.extractPath(data) || '',
         childrenCount: 0,
-        eTag: this.extractOptionalStringFromObject(data, 'eTag')
+        eTag: this.extractOptionalStringFromObject(data, 'eTag') || undefined
       };
     }
   }

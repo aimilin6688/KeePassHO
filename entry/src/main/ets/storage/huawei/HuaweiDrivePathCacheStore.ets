@@ -1,4 +1,5 @@
 import preferences from '@ohos.data.preferences';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { util } from '@kit.ArkTS';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -10,12 +11,16 @@ const DOMAIN = 0x0000;
 const TAG = 'HuaweiDrivePathCacheStore';
 
 /**
- * 独立 preferences 文件名
+ * 持久化文件名（filesDir 下 JSON 文件）
  * 不复用主设置存储（SettingsService），避免缓存写入触发分布式同步与观察者通知
  */
-const STORE_NAME = 'huawei_drive_path_cache';
+const FILE_NAME = 'huawei_drive_path_cache.json';
 /**
- * 缓存数据键
+ * 旧 preferences 后端文件名（主线程一次性迁移用）
+ */
+const LEGACY_PREFERENCES_NAME = 'huawei_drive_path_cache';
+/**
+ * 缓存数据键（旧 preferences 后端键名，迁移时读取）
  */
 const KEY_PATH_CACHE = 'path_id_cache';
 /**
@@ -71,30 +76,33 @@ interface PathCacheRaw {
 
 /**
  * 华为云盘 路径→fileId 缓存的磁盘持久化存储
- * 独立 preferences 文件，冷启动时水合到 HuaweiDriveStorage 的静态缓存，
- * 避免每次启动都通过逐级 list 下钻解析路径
+ * 后端为 filesDir 下 JSON 文件：Worker 线程无 Context/preferences（设计文档 §11.1），
+ * 文件后端经注入路径在主线程与 Worker 通用，修复 Worker 内"水合/落盘失败 → 每次操作重新逐级下钻"的问题。
+ * 冷启动时水合到 HuaweiDriveStorage 的静态缓存，避免每次启动都通过逐级 list 下钻解析路径；
+ * 主线程首次访问时一次性迁移旧 preferences 数据。
  */
 export class HuaweiDrivePathCacheStore {
-  private static store: preferences.Preferences | null = null;
-  private static opening: Promise<preferences.Preferences> | null = null;
+  /**
+   * 持久化文件路径（懒取：主线程取自 Context，Worker 取注入路径）
+   */
+  private static cachedFilePath: string = '';
+  /**
+   * 旧 preferences 迁移完成标记（仅主线程，一次即可）
+   */
+  private static migrated: boolean = false;
+  /**
+   * 写链：串行化文件写入，避免并发丢失更新
+   */
+  private static writeChain: Promise<void> = Promise.resolve();
 
   /**
-   * 惰性打开独立 preferences 文件（单飞，避免并发重复打开）
+   * 持久化文件路径
    */
-  private static async getStore(): Promise<preferences.Preferences> {
-    if (HuaweiDrivePathCacheStore.store) {
-      return HuaweiDrivePathCacheStore.store;
+  private static getFilePath(): string {
+    if (!HuaweiDrivePathCacheStore.cachedFilePath) {
+      HuaweiDrivePathCacheStore.cachedFilePath = CommonUtils.getAppFilesDir() + '/' + FILE_NAME;
     }
-    if (HuaweiDrivePathCacheStore.opening) {
-      return HuaweiDrivePathCacheStore.opening;
-    }
-    HuaweiDrivePathCacheStore.opening = preferences.getPreferences(CommonUtils.getContext(), STORE_NAME)
-      .then((opened: preferences.Preferences) => {
-        HuaweiDrivePathCacheStore.store = opened;
-        HuaweiDrivePathCacheStore.opening = null;
-        return opened;
-      });
-    return HuaweiDrivePathCacheStore.opening;
+    return HuaweiDrivePathCacheStore.cachedFilePath;
   }
 
   /**
@@ -120,12 +128,15 @@ export class HuaweiDrivePathCacheStore {
    */
   public static async load(): Promise<HuaweiDrivePathCacheData | null> {
     try {
-      const store = await HuaweiDrivePathCacheStore.getStore();
-      const value: preferences.ValueType = store.getSync(KEY_PATH_CACHE, '');
-      if (typeof value !== 'string' || !value) {
+      await HuaweiDrivePathCacheStore.migrateLegacyOnce();
+      if (!fs.accessSync(HuaweiDrivePathCacheStore.getFilePath(), fs.AccessModeType.EXIST)) {
         return null;
       }
-      return HuaweiDrivePathCacheStore.parse(value);
+      const jsonStr: string = fs.readTextSync(HuaweiDrivePathCacheStore.getFilePath());
+      if (!jsonStr) {
+        return null;
+      }
+      return HuaweiDrivePathCacheStore.parse(jsonStr);
     } catch (error) {
       hilog.warn(DOMAIN, TAG, 'Load path cache failed: %{public}s', (error as Error).message);
       return null;
@@ -133,22 +144,32 @@ export class HuaweiDrivePathCacheStore {
   }
 
   /**
-   * 保存缓存（序列化 + put + flush 落盘），失败仅告警不影响主流程
+   * 保存缓存（序列化 + 临时文件 rename 原子落盘），失败仅告警不影响主流程
    */
   public static async save(data: HuaweiDrivePathCacheData): Promise<void> {
-    try {
-      const store = await HuaweiDrivePathCacheStore.getStore();
+    const write: () => Promise<void> = async (): Promise<void> => {
       const raw: PathCacheRaw = {
         v: CACHE_VERSION,
         owner: data.owner,
         rootId: data.rootId,
         entries: data.entries
       };
-      await store.put(KEY_PATH_CACHE, JSON.stringify(raw));
-      await store.flush();
-    } catch (error) {
-      hilog.warn(DOMAIN, TAG, 'Save path cache failed: %{public}s', (error as Error).message);
-    }
+      const jsonStr: string = JSON.stringify(raw);
+      const tmpPath: string = HuaweiDrivePathCacheStore.getFilePath() + '.tmp';
+      const file = await fs.open(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      try {
+        await fs.write(file.fd, jsonStr);
+        await fs.fsync(file.fd);
+      } finally {
+        await fs.close(file.fd);
+      }
+      await fs.rename(tmpPath, HuaweiDrivePathCacheStore.getFilePath());
+    };
+    HuaweiDrivePathCacheStore.writeChain = HuaweiDrivePathCacheStore.writeChain.then(write)
+      .catch((error: BusinessError) => {
+        hilog.warn(DOMAIN, TAG, 'Save path cache failed: %{public}s', error.message);
+      });
+    return HuaweiDrivePathCacheStore.writeChain;
   }
 
   /**
@@ -156,11 +177,51 @@ export class HuaweiDrivePathCacheStore {
    */
   public static async clear(): Promise<void> {
     try {
-      const store = await HuaweiDrivePathCacheStore.getStore();
-      await store.delete(KEY_PATH_CACHE);
-      await store.flush();
+      if (fs.accessSync(HuaweiDrivePathCacheStore.getFilePath(), fs.AccessModeType.EXIST)) {
+        await fs.unlink(HuaweiDrivePathCacheStore.getFilePath());
+      }
+      // 旧 preferences 残留一并清理（仅主线程可达）
+      if (CommonUtils.hasContext()) {
+        try {
+          const legacy = await preferences.getPreferences(CommonUtils.getContext(),
+            LEGACY_PREFERENCES_NAME);
+          await legacy.delete(KEY_PATH_CACHE);
+          await legacy.flush();
+        } catch {
+          // 旧数据不存在：忽略
+        }
+      }
     } catch (error) {
       hilog.warn(DOMAIN, TAG, 'Clear path cache failed: %{public}s', (error as Error).message);
+    }
+  }
+
+  /**
+   * 主线程一次性迁移旧 preferences 后端数据（Worker 无 Context，跳过）
+   * 文件侧已有数据时跳过（文件为新后端的最新状态）
+   */
+  private static async migrateLegacyOnce(): Promise<void> {
+    if (HuaweiDrivePathCacheStore.migrated || !CommonUtils.hasContext()) {
+      return;
+    }
+    HuaweiDrivePathCacheStore.migrated = true;
+    try {
+      if (fs.accessSync(HuaweiDrivePathCacheStore.getFilePath(), fs.AccessModeType.EXIST)) {
+        return;
+      }
+      const legacy = await preferences.getPreferences(CommonUtils.getContext(),
+        LEGACY_PREFERENCES_NAME);
+      const value: preferences.ValueType = legacy.getSync(KEY_PATH_CACHE, '');
+      if (typeof value !== 'string' || !value) {
+        return;
+      }
+      const data: HuaweiDrivePathCacheData | null = HuaweiDrivePathCacheStore.parse(value);
+      if (data) {
+        await HuaweiDrivePathCacheStore.save(data);
+        hilog.info(DOMAIN, TAG, 'Legacy preferences path cache migrated to file store');
+      }
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Migrate legacy path cache failed: %{public}s', (error as Error).message);
     }
   }
 

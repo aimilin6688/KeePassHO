@@ -1,6 +1,6 @@
 import ActsAbilityTest from './ActsAbility.test';
 import KdbxErrorTest from './kdbx/error/KdbxError.test';
-import WebDavTest from './entry/WebDav.test';
+import WebDavTest from './storage/webdav/WebDav.test';
 import TotpServiceTest from './services/TotpService.test';
 import FileUtilsTest from './utils/FileUtils.test';
 import RecentFilesServiceTest from './services/RecentFilesService.test';
@@ -38,6 +38,7 @@ import DatabaseWorkerModeTest from './workers/DatabaseWorkerMode.test';
 import WorkerPoolPolicyTest from './workers/WorkerPoolPolicy.test';
 // S6 保存管道流式路径专项（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
 import DatabaseSaveStreamingTest from './workers/DatabaseSaveStreaming.test';
+import DatabaseSaveFastPathTest from './workers/DatabaseSaveFastPath.test';
 import StreamingXmlParserTest from './workers/StreamingXmlParser.test';
 import WorkerEnvironmentInjectionTest from './workers/WorkerEnvironmentInjection.test';
 import DatabaseLoadGuardTest from './services/DatabaseLoadGuard.test';
@@ -224,7 +225,8 @@ export default function testsuite() {
   PCloudStorageTest();
 
   // 华为云盘单元测试
-  // HuaweiDriveStorageTest();
+  // 华为云盘：契约纯函数用例常驻注册；真实 API 用例由 isRealApiEnabled 门控自跳过
+  HuaweiDriveStorageTest();
   HuaweiDriveClientTest();
 
   // SFTP 处理器单元测试（错误码解析 / 未连接语义 / 原生连接失败路径）
@@ -244,6 +246,8 @@ export default function testsuite() {
   WorkerPoolPolicyTest();
   // S6 保存管道流式路径测试（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
   DatabaseSaveStreamingTest();
+  // S8 版本预检快速路径测试（能力声明 + 版本一致跳过下载，计数存储观测）
+  DatabaseSaveFastPathTest();
   StreamingXmlParserTest();
 
   // Worker 环境注入机制测试（INIT_WORKER 消息 + 路径/缓存策略快照）

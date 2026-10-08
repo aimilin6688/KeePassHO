@@ -164,5 +164,28 @@ export default function HuaweiDrivePathCacheStoreTest() {
         expect(loaded).assertNull();
       });
     });
+
+    describe('worker_mode_file_backend', () => {
+      it('save and load work without Context (worker environment simulation)', 0, async () => {
+        // 模拟 Worker：清除 Context + 注入沙箱路径（§11.1 注入协议）
+        // 文件后端设计目标：Worker 内路径缓存可水合/落盘，不再出现 preferences "context is invalid"
+        const originalContext = CommonUtils.getContext();
+        const filesDir = CommonUtils.getAppFilesDir();
+        const cacheDir = CommonUtils.getCacheDir();
+        CommonUtils.clearContextForTest();
+        CommonUtils.setWorkerPaths(filesDir, cacheDir);
+        try {
+          await HuaweiDrivePathCacheStore.clear();
+          await HuaweiDrivePathCacheStore.save(makeData('owner-worker'));
+          const loaded: HuaweiDrivePathCacheData | null = await HuaweiDrivePathCacheStore.load();
+          expect(loaded).not().assertNull();
+          expect(loaded!.owner).assertEqual('owner-worker');
+          expect(loaded!.entries.length).assertEqual(2);
+        } finally {
+          CommonUtils.init(originalContext);
+          await HuaweiDrivePathCacheStore.clear();
+        }
+      });
+    });
   });
 }
