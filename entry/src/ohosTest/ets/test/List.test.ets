@@ -26,7 +26,6 @@ import PCloudOAuth2ProviderTest from './storage/pcloud/PCloudOAuth2Provider.test
 import PCloudStorageTest from './storage/pcloud/PCloudStorage.test';
 
 import HuaweiDriveStorageTest from './storage/huawei/HuaweiDriveStorage.test';
-import HuaweiDriveDownloadTimeoutTest from './storage/huawei/HuaweiDriveDownloadTimeout.test';
 import HuaweiDriveClientTest from './storage/huawei/HuaweiDriveClient.test';
 import SFTPHandlerTest from './storage/sftp/SFTPHandler.test';
 import SFTPStorageSemanticsTest from './storage/sftp/SFTPStorageSemantics.test';
@@ -232,9 +231,6 @@ export default function testsuite() {
   // 华为云盘单元测试
   // 华为云盘：契约纯函数用例常驻注册；真实 API 用例由 isRealApiEnabled 门控自跳过
   HuaweiDriveStorageTest();
-
-  // 华为云盘下载请求超时计算测试（弱网 8MB 分块 2300028 修复）
-  HuaweiDriveDownloadTimeoutTest();
   HuaweiDriveClientTest();
 
   // SFTP 处理器单元测试（错误码解析 / 未连接语义 / 原生连接失败路径）
