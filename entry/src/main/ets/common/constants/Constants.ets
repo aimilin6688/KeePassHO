@@ -13,6 +13,13 @@ export class Constants {
    */
   public static readonly POOL_DATABASE_WORKER: boolean = true;
 
+  /**
+   * 分级加载调度阈值（字节）：压缩后 KDBX 大小 ≤ 该值的库走主线程直开
+   * （零协议税/零 isolate 开销），超过或大小未知走 Worker。详见
+   * docs/数据库分级加载与M0直传改造设计.md §3
+   */
+  public static readonly SYNC_LOAD_MAX_BYTES: number = 4 * 1024 * 1024;
+
   // --------------- S4 附件磁盘化（内容寻址加密缓存） ----------------
   /**
    * 附件池总量达到该阈值时转入加密磁盘缓存（字节），低于阈值保持纯内存模式（小库零行为差异）

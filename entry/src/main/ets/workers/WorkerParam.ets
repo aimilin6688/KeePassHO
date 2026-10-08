@@ -4,6 +4,7 @@
 
 import { Kdbx } from "kdbxweb";
 import { OAuth2Provider } from '../common/oauth2/OAuth2Types';
+import { StorageConfig, StorageType } from '../storage';
 
 export enum MessageType {
   /**
@@ -37,6 +38,16 @@ export enum MessageType {
    * Worker 启动初始化：注入主线程沙箱路径（Worker 线程无 Context）
    */
   INIT_WORKER = 'INIT_WORKER',
+
+  /**
+   * 预热请求（主线程 → Worker）：页面展示期建立 isolate 模块图 + 存储连接 + 探测大小
+   */
+  PREWARM = 'PREWARM',
+
+  /**
+   * 预热结果（Worker → 主线程）：探测到的文件大小回填加载调度缓存
+   */
+  PREWARM_RESULT = 'PREWARM_RESULT',
 }
 
 // 定义消息
@@ -209,6 +220,50 @@ export class ConflictMessage implements WorkerMessage {
     this.type = MessageType.CONFLICT;
     this.remoteModifiedTime = remoteModifiedTime;
     this.remoteVersion = remoteVersion;
+  }
+}
+
+/**
+ * 预热请求：仅元数据三要素，绝不携带密码/密钥（攻击面最小化）；
+ * 不注入缓存策略（避免消费 forceRefresh 一次性标志，预热用 Worker 当前快照即可）
+ */
+export class PrewarmMessage implements WorkerMessage {
+  type: MessageType;
+  /** 文件路径 */
+  filePath: string;
+  /** 存储类型 */
+  storageType: StorageType;
+  /** 存储配置 */
+  storageConfig: StorageConfig;
+
+  constructor(filePath: string, storageType: StorageType, storageConfig: StorageConfig) {
+    this.type = MessageType.PREWARM;
+    this.filePath = filePath;
+    this.storageType = storageType;
+    this.storageConfig = storageConfig;
+  }
+}
+
+/**
+ * 预热结果：探测成功携带 size（>0）；探测失败仅携带 error（主线程仅记日志）
+ */
+export class PrewarmResultMessage implements WorkerMessage {
+  type: MessageType;
+  /** 文件路径 */
+  filePath: string;
+  /** 探测到的大小（字节），失败或未知时 undefined */
+  size?: number;
+  /** 远端版本标识（不透明字符串） */
+  version?: string | null;
+  /** 失败原因（仅日志用途） */
+  error?: string;
+
+  constructor(filePath: string, size?: number, version?: string | null, error?: string) {
+    this.type = MessageType.PREWARM_RESULT;
+    this.filePath = filePath;
+    this.size = size;
+    this.version = version ?? null;
+    this.error = error;
   }
 }
 

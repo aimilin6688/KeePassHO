@@ -5,8 +5,10 @@ import { CacheConstants } from '../storage/cache/CacheConstants';
 import { CommonUtils, KdbxUtils } from '../common/utils';
 import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 import { SessionFileService } from '../services/kdbx/SessionFileService';
+import { FileInfo } from '../storage';
+import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LoadMessage, InitWorkerMessage, MessageType, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
+import { LoadMessage, InitWorkerMessage, MessageType, PrewarmMessage, PrewarmResultMessage, SuccessMessage, toErrorMessage, toLoadMessage, WorkerMessage } from './WorkerParam';
 import { DatabaseLoad } from './DatabaseLoad';
 
 const DOMAIN = 0x0000;
@@ -48,6 +50,13 @@ if (workerPort) {
       SessionFileService.setWorkerSession(init.sessionKeyBase64, init.sessionDir);
       return;
     }
+    if (message.type === MessageType.PREWARM) {
+      // 预热：不走 taskChain（fire-and-forget，只读元数据操作），
+      // 避免预热请求悬挂时阻塞后续真实加载任务；与加载任务共用同一存储实例（同配置复用连接）
+      const prewarm = message as PrewarmMessage;
+      new DatabaseLoadWorker().handlePrewarm(prewarm);
+      return;
+    }
     if (message.type === MessageType.LOAD_DATABASE) {
       const request = message as LoadDatabase;
       // 策略在任务实际执行前一刻生效（而非消息到达时），保证串行任务各自策略正确
@@ -72,6 +81,34 @@ if (workerPort) {
  * @param request 请求
  */
 export class DatabaseLoadWorker extends DatabaseLoad {
+  /**
+   * 预热：在 Worker isolate 内完成存储模块图初始化 + rcp session/TLS 建立，
+   * 并以 getInfoOrNull 探测大小回传主线程（写入加载调度缓存）。
+   * 失败无害（fire-and-forget，仅日志），不占用 busy 状态
+   * @param request 预热请求（仅元数据，无凭证）
+   */
+  async handlePrewarm(request: PrewarmMessage): Promise<void> {
+    const tStart: number = Date.now();
+    const result: PrewarmResultMessage = new PrewarmResultMessage(request.filePath);
+    try {
+      const manager: KdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
+      const info: FileInfo | null = await manager.getInfoOrNull(request.filePath);
+      if (info !== null) {
+        result.size = info.size;
+        result.version = info.version ?? null;
+      }
+    } catch (error) {
+      result.error = (error as Error).message;
+    }
+    hilog.info(DOMAIN, TAG, 'prewarm done: file=%{public}s size=%{public}d error=%{public}s, %{public}d ms',
+      request.filePath, result.size ?? -1, result.error ?? 'none', Date.now() - tStart);
+    try {
+      workerPort.postMessage(result);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'postPrewarmResult error:%{public}s', error.message);
+    }
+  }
+
   /**
    * 发送加载消息
    * @param message 消息

@@ -22,6 +22,7 @@ import { TempFileSweeper } from '../services/kdbx/TempFileSweeper';
 import { SessionFileService } from '../services/kdbx/SessionFileService';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
+import { LoadDispatchService } from '../services/kdbx/LoadDispatchService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -108,6 +109,8 @@ export default class EntryAbility extends UIAbility {
       if (recentFile) {
         AppStorage.setOrCreate(Constants.APP_STORAGE_PRELOAD_RECENT_FILE, recentFile);
         hilog.info(DOMAIN, TAG, 'Preload recent file success: %{public}s', recentFile.filePath);
+        // 分级加载预热点：大库（> 主线程阈值）预热常驻 Worker（probeFileInfo 已写入调度缓存的大小）
+        LoadDispatchService.prepare(recentFile.storageType, recentFile.storageConfig, recentFile.filePath);
       }
 
       // 5. 标记预加载完成
