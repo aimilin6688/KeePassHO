@@ -2,6 +2,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { rcp } from '@kit.RemoteCommunicationKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { http } from '@kit.NetworkKit';
 import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
@@ -214,6 +215,77 @@ interface ResumeUploadSession {
 }
 
 /**
+ * 单块流式下载写盘器（弱网诊断）
+ * dataReceive 网络包按分块起始偏移直写文件（分块间互不重叠，单块内顺序追加），
+ * 跟踪已收字节数、写盘错误与最近网络包时间（停滞看门狗依据）；
+ * 进度由实收字节驱动限频打印（间隔 ≥2s 或进度增幅 ≥10% 一条）
+ * 注：dataReceiveProgress 事件在 requestInStream 场景实测不触发，故不依赖该事件
+ */
+class ChunkDownloadWriter {
+  private readonly fd: number;
+  private readonly rangeStart: number;
+  private readonly chunkIndex: number;
+  private readonly chunkCount: number;
+  private readonly expectedSize: number;
+  private lastProgressLogTime: number = 0;
+  private lastLoggedPercent: number = -1;
+  /**
+   * 已接收（并写入）字节数
+   */
+  received: number = 0;
+  /**
+   * 写盘错误描述（非空表示写盘失败，后续数据丢弃，请求结束后统一抛错）
+   */
+  writeError: string = '';
+  /**
+   * 最近一个网络包到达时间戳（任何 dataReceive 包都会重置，停滞看门狗据此判定连接是否存活）
+   */
+  lastDataTime: number = Date.now();
+
+  constructor(fd: number, rangeStart: number, expectedSize: number, chunkIndex: number, chunkCount: number) {
+    this.fd = fd;
+    this.rangeStart = rangeStart;
+    this.expectedSize = expectedSize;
+    this.chunkIndex = chunkIndex;
+    this.chunkCount = chunkCount;
+  }
+
+  /**
+   * dataReceive 回调：网络包写入文件偏移并打印进度
+   */
+  writeChunkData(data: ArrayBuffer): void {
+    this.lastDataTime = Date.now();
+    if (this.writeError !== '') {
+      // 写盘已失败：丢弃后续数据，请求结束后统一抛错
+      return;
+    }
+    try {
+      fs.writeSync(this.fd, data, { offset: this.rangeStart + this.received });
+      this.received += data.byteLength;
+      this.logProgress();
+    } catch (error) {
+      this.writeError = `write file failed at offset ${this.rangeStart + this.received}: ${(error as Error).message}`;
+      hilog.error(DOMAIN, TAG, 'download chunk %{public}d write error: %{public}s', this.chunkIndex + 1, this.writeError);
+    }
+  }
+
+  /**
+   * 限频打印字节级下载进度（百分比相对分块期望字节数；整内容回退时可能大于 100%，本身即是诊断信号）
+   */
+  private logProgress(): void {
+    const now = Date.now();
+    const percent = this.expectedSize > 0 ? Math.floor(this.received * 100 / this.expectedSize) : -1;
+    if (now - this.lastProgressLogTime >= 2000 || percent - this.lastLoggedPercent >= 10) {
+      this.lastProgressLogTime = now;
+      this.lastLoggedPercent = percent;
+      hilog.info(DOMAIN, TAG,
+        'download progress: chunk %{public}d/%{public}d, %{public}d/%{public}d bytes (%{public}d%%)',
+        this.chunkIndex + 1, this.chunkCount, this.received, this.expectedSize, percent);
+    }
+  }
+}
+
+/**
  * 华为云盘客户端类
  * 用于与华为Drive API交互，操作云盘文件
  */
@@ -250,6 +322,27 @@ export class HuaweiDriveClient {
    * 单个分片（含断点查询）最大尝试次数：失败自动重试，重试前重新读取分片
    */
   private static readonly RESUME_CHUNK_MAX_ATTEMPTS: number = 3;
+  /**
+   * 流式下载分块大小（Range GET 请求粒度）
+   */
+  private static readonly DOWNLOAD_CHUNK_SIZE: number = 8 * 1024 * 1024;
+  /**
+   * 并发下载分块数阈值：分块数低于该值走串行路径，避免并发开销
+   */
+  private static readonly DOWNLOAD_PARALLEL_THRESHOLD: number = 2;
+  /**
+   * 并发下载路数（连接窗口 = 并发数 × 分块大小）
+   */
+  private static readonly DOWNLOAD_PARALLELISM: number = 3;
+  /**
+   * 下载停滞判定时长：连续无任何网络包超过该值视为连接已静默断开，中止请求防挂死；
+   * 慢速涓流不受影响（任何 dataReceive 包都会重置计时）
+   */
+  private static readonly DOWNLOAD_STALL_TIMEOUT_MS: number = 60000;
+  /**
+   * 下载停滞看门狗检查间隔
+   */
+  private static readonly DOWNLOAD_STALL_CHECK_INTERVAL_MS: number = 5000;
 
   /**
    * 构造函数
@@ -733,9 +826,59 @@ export class HuaweiDriveClient {
   }
 
   /**
+   * 将 http 栈错误码转换为可读原因（2300000 + libcurl 错误码，弱网诊断用）
+   * 2300018：对端（网关/CDN/NAT）在 body 传完前关闭连接，收到的字节数不足 Content-Length
+   * @param code http 栈回调错误码（0 表示非网络错误）
+   * @returns 可读原因描述
+   */
+  private static describeHttpErrorCode(code: number): string {
+    if (code === 2300018) {
+      return 'connection closed by peer before full body received (partial file, common on weak network)';
+    }
+    if (code === 2300028) {
+      return 'operation timed out';
+    }
+    if (code === 2300056) {
+      return 'failure receiving network data';
+    }
+    if (code === 2300007) {
+      return 'failed to connect to host';
+    }
+    if (code === 2300006) {
+      return 'could not resolve host';
+    }
+    if (code === 2300035) {
+      return 'SSL/TLS connect error';
+    }
+    return 'see error detail';
+  }
+
+  /**
+   * 错误详情文本：http 栈错误（BusinessError）序列化保留 extendInfo 诊断字段；本地错误仅取 message
+   */
+  private static chunkErrorDetail(error: BusinessError): string {
+    return typeof error.code === 'number' ? JSON.stringify(error) : error.message;
+  }
+
+  /**
+   * 打印分块下载失败详情：失败分块、Range、已收/期望字节数、耗时、错误码与可读原因
+   */
+  private static logChunkFailure(chunkIndex: number, chunkCount: number, rangeHeader: string,
+    received: number, expected: number, elapsedMs: number, error: BusinessError): void {
+    const errorCode: number = typeof error.code === 'number' ? error.code : 0;
+    hilog.error(DOMAIN, TAG,
+      'download chunk %{public}d/%{public}d failed: range=%{public}s, received=%{public}d/%{public}d bytes, elapsed=%{public}dms, code=%{public}d, cause=%{public}s',
+      chunkIndex + 1, chunkCount, rangeHeader, received, expected, elapsedMs, errorCode,
+      HuaweiDriveClient.describeHttpErrorCode(errorCode));
+    hilog.error(DOMAIN, TAG, 'download chunk error detail: %{public}s',
+      HuaweiDriveClient.chunkErrorDetail(error));
+  }
+
+  /**
    * 流式分块下载文件到本地文件（S7：华为 Drive form=content 端点支持 Range GET）
-   * 内存窗口 = 单块（8MB），与文件大小解耦；首块若返回 200（Range 不支持）退化为整缓冲
-   * 分块按 2-4 路并发请求（串行写盘保证顺序），避免单连接限速拉长下载耗时
+   * requestInStream + dataReceive 网络包直写盘：内存窗口 = 单个网络包，与文件/分块大小解耦；
+   * 首块若返回 200（Range 不支持）退化为整内容；分块数少走串行，多块按并发窗口下载（各块独立偏移写盘）
+   * 弱网诊断：按块打印字节级下载进度，失败时记录失败分块、已收/期望字节数、耗时、错误码与可读原因
    * @param fileId 文件 ID
    * @param destPath 本地目标文件路径（调用方管理生命周期）
    * @param knownSize 已知文件大小（findFileByPath 已取得时透传，免内部二次 getInfo；缺省时自行 getInfo）
@@ -745,106 +888,211 @@ export class HuaweiDriveClient {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
-    // 闭包内使用本地引用：避免可选成员经闭包后失去空值收窄
-    const axiosInstance: AxiosInstance = this.axiosInstance;
-    // 取文件大小（已透传时跳过，消除一次冗余 getInfo）
-    let fileSize: number = knownSize ?? 0;
-    if (!knownSize || knownSize <= 0) {
-      const infoResp = await this.getInfo(fileId);
-      if (!infoResp.success || !infoResp.body) {
-        throw new Error(infoResp.message || 'downloadRangeToFile: failed to get file info');
-      }
-      const infoJson = ByteUtils.bytesToString(infoResp.body);
-      const infoData: Record<string, Object> = JSON.parse(infoJson);
-      fileSize = Number(infoData['size']) || 0;
+    const config: HuaweiDriveClientOptions | null = this.config;
+    if (!config) {
+      throw new Error('Client config not initialized');
     }
+    const fileSize: number = await this.resolveDownloadFileSize(fileId, knownSize);
     if (fileSize === 0) {
       const empty = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
       await fs.close(empty.fd);
       return 0;
     }
-    const CHUNK_SIZE = 8 * 1024 * 1024;
-    // 并发下载的分块窗口（小文件单块直接走串行路径，避免并发开销）
-    const PARALLEL_THRESHOLD = 2;
-    const apiPath = `/files/${fileId}?form=content`;
-
-    // 切分分块
-    const chunkRanges: Array<number[]> = [];
-    for (let start = 0; start < fileSize; start += CHUNK_SIZE) {
-      chunkRanges.push([start, Math.min(start + CHUNK_SIZE - 1, fileSize - 1)]);
-    }
+    const chunkRanges: Array<number[]> = HuaweiDriveClient.buildChunkRanges(fileSize);
+    hilog.info(DOMAIN, TAG, 'download start: fileId=%{public}s, fileSize=%{public}d, chunks=%{public}d, chunkSize=%{public}d',
+      fileId, fileSize, chunkRanges.length, HuaweiDriveClient.DOWNLOAD_CHUNK_SIZE);
 
     const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+    const startTime = Date.now();
     try {
-      if (chunkRanges.length < PARALLEL_THRESHOLD) {
-        // 单块/双块：串行（含首块 200 退化整缓冲的兼容分支）
-        let firstChunk = true;
-        let downloaded = 0;
-        for (const range of chunkRanges) {
-          const rangeHeader = `bytes=${range[0]}-${range[1]}`;
-          const config: AxiosRequestConfig = {
-            responseType: 'array_buffer',
-            headers: { 'Range': rangeHeader }
-          };
-          const response: AxiosResponse = await axiosInstance.get(apiPath, config);
-          if (firstChunk && response.status === 200) {
-            // Range 不支持：整内容返回，写全部
-            const body = response.data as ArrayBuffer;
-            await fs.write(file.fd, body);
-            downloaded = fileSize;
-            break;
-          }
-          firstChunk = false;
-          if (response.status !== 206) {
-            throw new Error(`downloadRangeToFile: HTTP ${response.status}, expected 206`);
-          }
-          const body = response.data as ArrayBuffer;
-          await fs.write(file.fd, body);
-          downloaded += body.byteLength;
-        }
-        await fs.fsync(file.fd);
-        return downloaded;
+      const url = `${config.apiBaseUrl.replace(/\/+$/, '')}/files/${fileId}?form=content`;
+      let downloaded: number;
+      if (chunkRanges.length < HuaweiDriveClient.DOWNLOAD_PARALLEL_THRESHOLD) {
+        downloaded = await this.downloadChunksSerial(config, url, fileSize, chunkRanges, file);
+      } else {
+        await this.downloadChunksParallel(config, url, fileSize, chunkRanges, file);
+        downloaded = fileSize;
       }
+      await fs.fsync(file.fd);
+      hilog.info(DOMAIN, TAG, 'download complete: fileId=%{public}s, %{public}d bytes, %{public}d chunks, elapsed=%{public}dms',
+        fileId, downloaded, chunkRanges.length, Date.now() - startTime);
+      return downloaded;
+    } finally {
+      await fs.close(file.fd);
+    }
+  }
 
-      // 多块：并发请求（窗口 = 并发数 × 块大小），逐块按偏移写盘保证顺序无关
-      const PARALLELISM = 3;
-      // 失败标记用 string（闭包内赋值，Error|null 的收窄对编译器不可靠）
-      let failedMessage: string = '';
-      const writeChunk = async (range: Array<number>): Promise<void> => {
-        if (failedMessage !== '') {
-          return;
-        }
-        const rangeHeader = `bytes=${range[0]}-${range[1]}`;
-        const config: AxiosRequestConfig = {
-          responseType: 'array_buffer',
-          headers: { 'Range': rangeHeader }
-        };
-        const response: AxiosResponse = await axiosInstance.get(apiPath, config);
-        if (response.status !== 206) {
-          throw new Error(`downloadRangeToFile: HTTP ${response.status}, expected 206`);
-        }
-        const body = response.data as ArrayBuffer;
-        await fs.write(file.fd, body, { offset: range[0] });
-      };
-      for (let i = 0; i < chunkRanges.length && failedMessage === ''; i += PARALLELISM) {
-        const batch: Array<Promise<void>> = [];
-        for (let j = i; j < Math.min(i + PARALLELISM, chunkRanges.length); j++) {
-          const task: Promise<void> = writeChunk(chunkRanges[j]).catch((error: BusinessError) => {
+  /**
+   * 解析下载文件大小（已透传时直接返回，缺省时 getInfo 查询，消除一次冗余请求）
+   */
+  private async resolveDownloadFileSize(fileId: string, knownSize?: number): Promise<number> {
+    if (knownSize && knownSize > 0) {
+      return knownSize;
+    }
+    const infoResp = await this.getInfo(fileId);
+    if (!infoResp.success || !infoResp.body) {
+      throw new Error(infoResp.message || 'downloadRangeToFile: failed to get file info');
+    }
+    const infoJson = ByteUtils.bytesToString(infoResp.body);
+    const infoData: Record<string, Object> = JSON.parse(infoJson);
+    return Number(infoData['size']) || 0;
+  }
+
+  /**
+   * 切分下载分块（DOWNLOAD_CHUNK_SIZE/块，最后一块为余量）
+   */
+  private static buildChunkRanges(fileSize: number): Array<number[]> {
+    const chunkRanges: Array<number[]> = [];
+    for (let start = 0; start < fileSize; start += HuaweiDriveClient.DOWNLOAD_CHUNK_SIZE) {
+      chunkRanges.push([start, Math.min(start + HuaweiDriveClient.DOWNLOAD_CHUNK_SIZE - 1, fileSize - 1)]);
+    }
+    return chunkRanges;
+  }
+
+  /**
+   * 串行分块下载（单块/双块路径；首块兼容 200 整内容返回）
+   * @returns 下载字节数
+   */
+  private async downloadChunksSerial(config: HuaweiDriveClientOptions, url: string, fileSize: number,
+    chunkRanges: Array<number[]>, file: fs.File): Promise<number> {
+    let downloaded = 0;
+    for (let i = 0; i < chunkRanges.length; i++) {
+      downloaded += await this.downloadChunk(config, url, chunkRanges, i, file, i === 0, fileSize);
+      if (downloaded >= fileSize) {
+        break;
+      }
+    }
+    return downloaded;
+  }
+
+  /**
+   * 并发分块下载（窗口 = 并发数 × 块大小，逐块独立偏移写盘保证顺序无关）
+   * 任一分块失败即停止后续批次，统一抛错
+   */
+  private async downloadChunksParallel(config: HuaweiDriveClientOptions, url: string, fileSize: number,
+    chunkRanges: Array<number[]>, file: fs.File): Promise<void> {
+    // 失败标记用 string（闭包内赋值，Error|null 的收窄对编译器不可靠）
+    let failedMessage: string = '';
+    for (let i = 0; i < chunkRanges.length && failedMessage === ''; i += HuaweiDriveClient.DOWNLOAD_PARALLELISM) {
+      const batch: Array<Promise<void>> = [];
+      for (let j = i; j < Math.min(i + HuaweiDriveClient.DOWNLOAD_PARALLELISM, chunkRanges.length); j++) {
+        const task: Promise<void> = this.downloadChunk(config, url, chunkRanges, j, file, false, fileSize)
+          .then((_bytes: number): void => {
+          })
+          .catch((error: BusinessError): void => {
             if (failedMessage === '') {
               failedMessage = error.message ?? 'parallel chunk download failed';
             }
           });
-          batch.push(task);
+        batch.push(task);
+      }
+      await Promise.all(batch);
+    }
+    if (failedMessage !== '') {
+      throw new Error(failedMessage);
+    }
+  }
+
+  /**
+   * 单块流式下载（requestInStream + dataReceive 网络包直写盘）
+   * @returns 实际写入字节数；首块响应 200（Range 不支持）时返回整文件字节数
+   */
+  private async downloadChunk(config: HuaweiDriveClientOptions, url: string, chunkRanges: Array<number[]>,
+    chunkIndex: number, file: fs.File, allowWholeFile: boolean, fileSize: number): Promise<number> {
+    const range: Array<number> = chunkRanges[chunkIndex];
+    const expected: number = range[1] - range[0] + 1;
+    const rangeHeader = `bytes=${range[0]}-${range[1]}`;
+    const chunkCount: number = chunkRanges.length;
+    const chunkStart = Date.now();
+    const httpRequest = http.createHttp();
+    const writer = new ChunkDownloadWriter(file.fd, range[0], expected, chunkIndex, chunkCount);
+    try {
+      hilog.info(DOMAIN, TAG, 'download chunk %{public}d/%{public}d start: range=%{public}s',
+        chunkIndex + 1, chunkCount, rangeHeader);
+      httpRequest.on('dataReceive', (data: ArrayBuffer) => {
+        writer.writeChunkData(data);
+      });
+      const statusCode: number = await HuaweiDriveClient.requestChunkStatus(httpRequest, config, url, rangeHeader, writer);
+      if (writer.writeError !== '') {
+        throw new Error(writer.writeError);
+      }
+      if (statusCode === 200 && allowWholeFile) {
+        // Range 不支持：整内容返回（首块从 0 写入即完整文件）
+        hilog.warn(DOMAIN, TAG,
+          'download chunk %{public}d: server ignored Range, whole file received=%{public}d, elapsed=%{public}dms',
+          chunkIndex + 1, writer.received, Date.now() - chunkStart);
+        if (writer.received !== fileSize) {
+          throw new Error(`downloadRangeToFile: whole-file fallback incomplete, received ${writer.received}, expected ${fileSize}, status ${statusCode}`);
         }
-        await Promise.all(batch);
+        return writer.received;
       }
-      if (failedMessage !== '') {
-        throw new Error(failedMessage);
-      }
-      await fs.fsync(file.fd);
-      return fileSize;
+      HuaweiDriveClient.validateChunkResponse(statusCode, writer.received, expected, chunkIndex, chunkCount);
+      hilog.info(DOMAIN, TAG, 'download chunk %{public}d/%{public}d done: %{public}d bytes, elapsed=%{public}dms',
+        chunkIndex + 1, chunkCount, writer.received, Date.now() - chunkStart);
+      return writer.received;
+    } catch (error) {
+      const err = error as BusinessError;
+      HuaweiDriveClient.logChunkFailure(chunkIndex, chunkCount, rangeHeader, writer.received, expected,
+        Date.now() - chunkStart, err);
+      throw new Error(`download chunk ${chunkIndex + 1}/${chunkCount} failed (${rangeHeader}): ${HuaweiDriveClient.chunkErrorDetail(err)}`);
     } finally {
-      await fs.close(file.fd);
+      httpRequest.off('dataReceive');
+      httpRequest.destroy();
+    }
+  }
+
+  /**
+   * 发起单块 Range GET（requestInStream 流式响应），等待响应状态码
+   * readTimeout 置 0（不限时）：requestInStream 的 readTimeout 是整体传输时长上限而非空闲超时，
+   * 30s 级配置会把弱网慢速传输（8MB 分块需数分钟）整体误杀（错误码 2300028）；
+   * 挂死防护改由停滞看门狗承担：连续 DOWNLOAD_STALL_TIMEOUT_MS 无任何网络包即中止请求
+   */
+  private static requestChunkStatus(httpRequest: http.HttpRequest, config: HuaweiDriveClientOptions,
+    url: string, rangeHeader: string, writer: ChunkDownloadWriter): Promise<number> {
+    const chunkHeader: Record<string, string> = {
+      'Authorization': `Bearer ${config.accessToken}`,
+      'Range': rangeHeader
+    };
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET,
+      header: chunkHeader,
+      readTimeout: 0,
+      maxLimit: -1
+    };
+    return new Promise<number>((resolve, reject) => {
+      let watchdogTimerId = -1;
+      httpRequest.requestInStream(url, requestOptions, (error: BusinessError, code: number) => {
+        if (watchdogTimerId !== -1) {
+          clearInterval(watchdogTimerId);
+        }
+        if (error) {
+          reject(error);
+        } else {
+          resolve(code);
+        }
+      });
+      // 停滞看门狗：不限整体时长后，静默断连（无 FIN/RST）会使请求无限挂起，
+      // 周期检查距最近一个网络包的间隔，超时即携带已收字节数 reject 并销毁请求
+      watchdogTimerId = setInterval(() => {
+        if (Date.now() - writer.lastDataTime >= HuaweiDriveClient.DOWNLOAD_STALL_TIMEOUT_MS) {
+          clearInterval(watchdogTimerId);
+          reject(new Error(`download stalled: no data received for ${HuaweiDriveClient.DOWNLOAD_STALL_TIMEOUT_MS}ms, received ${writer.received} bytes`));
+          httpRequest.destroy();
+        }
+      }, HuaweiDriveClient.DOWNLOAD_STALL_CHECK_INTERVAL_MS);
+    });
+  }
+
+  /**
+   * 校验单块响应：期望 206 且实收字节数与分块一致
+   */
+  private static validateChunkResponse(statusCode: number, received: number, expected: number,
+    chunkIndex: number, chunkCount: number): void {
+    if (statusCode !== 206) {
+      throw new Error(`downloadRangeToFile: HTTP ${statusCode}, expected 206, received ${received} bytes`);
+    }
+    if (received !== expected) {
+      throw new Error(`downloadRangeToFile: chunk ${chunkIndex + 1}/${chunkCount} incomplete, received ${received} of ${expected} bytes, status ${statusCode}`);
     }
   }
 
