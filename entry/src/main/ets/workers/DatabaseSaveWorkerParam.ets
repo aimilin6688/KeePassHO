@@ -2,7 +2,7 @@ import { Kdbx } from 'kdbxweb';
 import { LocationInfo } from '../services/beans/LocationParam';
 import { StorageConfig, StorageType } from '../storage';
 import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
-import { MessageType, WorkerMessage } from './WorkerParam';
+import { CachePolicyCarrier, MessageType, WorkerMessage } from './WorkerParam';
 
 
 /**
@@ -27,13 +27,19 @@ export enum ConflictStrategy {
   RELOAD = 'RELOAD',
 }
 
-export class SaveDatabaseMessage implements WorkerMessage {
+export class SaveDatabaseMessage implements WorkerMessage, CachePolicyCarrier {
   type: MessageType;
   /**
    * 数据库文件
    */
   data: ArrayBuffer | Kdbx;
   dbFileParam: string;
+  /**
+   * 缓存策略随任务注入（Worker 常驻池化 #3：结构化克隆通道，不进 dbFileParam JSON 载荷）
+   */
+  enableLocalCache?: boolean;
+  onlyUseCache?: boolean;
+  forceRefresh?: boolean;
 
   constructor(data: ArrayBuffer | Kdbx, dbFileParam: DbFileParam, conflictStrategy?: string) {
     this.type = MessageType.SAVE_DATABASE;

@@ -7,6 +7,11 @@ export class Constants {
    * 是否异步加载数据库
    */
   public static readonly ASYNC_LOAD_DATABASE: boolean = true;
+  /**
+   * 数据库 Worker 常驻池化（性能优化 #3）：true 时加载/保存 Worker 进程级常驻复用，
+   * 消除每操作 isolate 冷启动（估 50-200ms）；false 时恢复每操作 terminate + 重建旧行为
+   */
+  public static readonly POOL_DATABASE_WORKER: boolean = true;
 
   // --------------- S4 附件磁盘化（内容寻址加密缓存） ----------------
   /**

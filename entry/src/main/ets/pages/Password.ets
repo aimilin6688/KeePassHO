@@ -163,8 +163,9 @@ export struct Password {
 
   aboutToDisappear() {
     // 安全措施: 页面销毁时清除敏感数据
+    // 注意：不再 stopWorker——常驻池化下 Worker 进程级复用，
+    // 解锁跳转即销毁会使池化失效（loading 弹框关闭由三终态回调覆盖）
     this.clearSensitiveData();
-    KdbxLoadService.stopWorker();
   }
 
   /**

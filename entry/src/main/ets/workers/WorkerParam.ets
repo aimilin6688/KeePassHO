@@ -3,6 +3,7 @@
  */
 
 import { Kdbx } from "kdbxweb";
+import { OAuth2Provider } from '../common/oauth2/OAuth2Types';
 
 export enum MessageType {
   /**
@@ -41,6 +42,22 @@ export enum MessageType {
 // 定义消息
 export interface WorkerMessage {
   type: MessageType;
+}
+
+/**
+ * 缓存策略随任务注入协议（Worker 常驻池化 #3）。
+ * 常驻模式下 INIT 快照会过期（用户中途改设置 / forceRefresh 一次性语义），
+ * volatile 策略随每条任务消息走，路径/密钥仍保持 INIT 一次注入。
+ * 未经 DatabaseWorkerFactory.attachCachePolicy 注入的旧格式消息三字段保持
+ * undefined，Worker 壳不覆盖 INIT 快照（兼容测试直连构造）。
+ */
+export interface CachePolicyCarrier {
+  /** 是否启用本地缓存（主线程实时值快照） */
+  enableLocalCache?: boolean;
+  /** 是否仅使用本地缓存（主线程实时值快照） */
+  onlyUseCache?: boolean;
+  /** 强制刷新（一次性标志，主线程 attach 时就地消费） */
+  forceRefresh?: boolean;
 }
 
 /**
@@ -94,6 +111,36 @@ export class LoadMessage implements WorkerMessage {
   }
 }
 
+/**
+ * OAuth2 令牌快照（Worker → 主线程单向回传）
+ * Worker 线程无 Context/preferences，刷新后的令牌无法就地持久化（§11.1）；
+ * 保存成功时把最新令牌随 SuccessMessage 带回，由主线程更新内存配置并加密落盘
+ */
+export class TokenSnapshot {
+  /** OAuth2 提供者 */
+  provider: OAuth2Provider;
+  /** 访问令牌（明文，仅跨线程消息内传输） */
+  accessToken: string;
+  /** 刷新令牌（明文） */
+  refreshToken: string;
+  /** 过期时间（时间戳，毫秒） */
+  expiresAt: number;
+  /** 令牌类型（如 Bearer） */
+  tokenType?: string;
+  /** 授权范围 */
+  scope?: string;
+
+  constructor(provider: OAuth2Provider, accessToken: string, refreshToken: string,
+    expiresAt: number, tokenType?: string, scope?: string) {
+    this.provider = provider;
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.expiresAt = expiresAt;
+    this.tokenType = tokenType;
+    this.scope = scope;
+  }
+}
+
 // 成功消息
 export class SuccessMessage implements WorkerMessage {
   type: MessageType;
@@ -126,6 +173,12 @@ export class SuccessMessage implements WorkerMessage {
    * 主线程解包裹后还原模型；大缓冲不再随消息跨线程
    */
   m0Path?: string;
+
+  /**
+   * Worker 刷新后的 OAuth2 令牌快照（仅在本次保存周期内发生过刷新时携带），
+   * 主线程收到后更新内存配置并加密持久化；无令牌刷新的存储为 null
+   */
+  tokenSnapshot?: TokenSnapshot | null;
 
 
   constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean, version?: string | null, contentHash?: string | null) {

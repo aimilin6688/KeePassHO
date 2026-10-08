@@ -14,6 +14,24 @@ const TAG = 'DatabaseLoadWorker';
 // 初始化 worker
 const workerPort: ThreadWorkerGlobalScope = worker.workerPort;
 
+// 常驻壳任务串行链（Worker 常驻池化 #3）：常驻 isolate 复用后消息不再被
+// "每操作重建" 隔断，两条任务消息可能先后到达同一 isolate；
+// 以 Promise 链串联任务执行，防消息交错（与主线程 busy 拒绝双保险）
+let taskChain: Promise<void> = Promise.resolve();
+
+/**
+ * 每任务缓存策略：任务消息附带非 undefined 策略字段时覆盖 INIT 快照
+ * （常驻模式下 INIT 快照过期）；旧格式消息（无策略字段）保持 INIT 快照不变
+ */
+function applyTaskCachePolicy(carrier: LoadDatabase): void {
+  if (carrier.enableLocalCache === undefined && carrier.onlyUseCache === undefined
+    && carrier.forceRefresh === undefined) {
+    return;
+  }
+  CacheConstants.setWorkerCachePolicy(carrier.enableLocalCache ?? CacheConstants.isEnableLocalCache(),
+    carrier.onlyUseCache ?? CacheConstants.getOnlyCache(), carrier.forceRefresh ?? false);
+}
+
 // 监听主线程消息（仅 worker 线程注册；主线程加载本模块时 workerPort 为空，跳过）
 if (workerPort) {
   workerPort.onmessage = (event: MessageEvents) => {
@@ -32,7 +50,19 @@ if (workerPort) {
     }
     if (message.type === MessageType.LOAD_DATABASE) {
       const request = message as LoadDatabase;
-      new DatabaseLoadWorker().handleLoadDatabase(request);
+      // 策略在任务实际执行前一刻生效（而非消息到达时），保证串行任务各自策略正确
+      taskChain = taskChain.then(() => {
+        applyTaskCachePolicy(request);
+        return new DatabaseLoadWorker().handleLoadDatabase(request);
+      }).catch((error: Error) => {
+        // 兜底：handleLoadDatabase 正常不会 reject；此处向主线程回错，避免在途回调悬挂
+        hilog.error(DOMAIN, TAG, 'Load task chain error: %{public}s', error?.message ?? 'unknown');
+        try {
+          workerPort.postMessage(toErrorMessage(error?.message ?? 'load failed'));
+        } catch (postError) {
+          hilog.error(DOMAIN, TAG, 'Post chain error failed: %{public}s', postError.message);
+        }
+      });
     }
   };
 }

@@ -20,6 +20,8 @@ import { SessionManager } from '../services/SessionManager';
 import { CopyEventService } from '../services/CopyEventService';
 import { TempFileSweeper } from '../services/kdbx/TempFileSweeper';
 import { SessionFileService } from '../services/kdbx/SessionFileService';
+import KdbxLoadService from '../services/kdbx/KdbxLoadService';
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility';
@@ -42,8 +44,22 @@ export default class EntryAbility extends UIAbility {
     this.createUrl = want.uri;
     // 将 context 存入 AppStorage 供其他组件使用
     AppStorage.setOrCreate('context', this.context);
+    // 软件恢复兜底：同进程内 Ability 销毁重建（应用恢复场景）时，静态服务仍持有
+    // 上一生命周期的常驻数据库 Worker，其会话密钥/沙箱路径快照已随上次 onDestroy
+    // 失效（SessionFileService 全清后主线程换发新密钥），继续复用会导致 M0 会话文件
+    // 包裹/解包裹密钥不符而加载/保存失败。此处重置 Worker 池，下次操作以新快照重建；
+    // 冷启动（进程全新）时无 Worker，为空操作。
+    this.resetPersistentWorkers();
     // 初始化核心服务 + 并行预加载
     this.init();
+  }
+
+  /**
+   * 重置常驻数据库 Worker 池（终止加载/保存 Worker 并清空引用，下次操作懒重建）
+   */
+  private resetPersistentWorkers(): void {
+    KdbxLoadService.stopWorker();
+    KdbxSaveService.stopWorker();
   }
 
   /**
@@ -135,6 +151,10 @@ export default class EntryAbility extends UIAbility {
     EntryAbility.instance = null;
     FileService.close();
     DistributedKVService.close();
+    // 常驻池化：终止数据库 Worker——进程可能驻留后台，及时释放 isolate 内存；
+    // 在途保存由 onexit 兜底释放互斥锁（防 saveLock 永久排队）；
+    // 同进程 Ability 重建（软件恢复）时由 onCreate 重置池并按新会话密钥重建
+    this.resetPersistentWorkers();
     // S7-b：退出前同步清扫管道临时文件（进程即将销毁，异步可能来不及执行）
     TempFileSweeper.sweepSync();
     // §7.4/§8：退出前全清 session-* 会话目录与会话密钥（密钥随进程消亡，残留不可解密）

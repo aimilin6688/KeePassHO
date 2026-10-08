@@ -485,6 +485,10 @@
       "value": "无效的数据库"
     },
     {
+      "name": "worker_busy",
+      "value": "数据库操作进行中，请稍后再试"
+    },
+    {
       "name": "loading_message",
       "value": "正在加载..."
     },
