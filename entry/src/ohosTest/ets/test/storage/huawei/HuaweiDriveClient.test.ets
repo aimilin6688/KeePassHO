@@ -2,11 +2,18 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { HuaweiDriveClient, HuaweiDriveClientOptions, HuaweiDriveFile, HttpResponse } from '../../../../../main/ets/storage/huawei/HuaweiDriveClient';
 import { HuaweiDriveTestConfig } from './HuaweiDriveTestConfig';
 import { util } from '@kit.ArkTS';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { HuaweiDriveOAuth2Provider } from '../../../../../main/ets/storage/huawei/HuaweiDriveOAuth2Provider';
 import { OAuth2AuthRequest, OAuth2RefreshRequest } from '../../../../../main/ets/common/oauth2/OAuth2Types';
 
 const DOMAIN = 0x0000;
 const TAG = 'HuaweiDriveClientTest';
+
+// resume 大文件用例总大小：>20M 且非分片大小整数倍（确保末尾存在不足一片的分片）
+const RESUME_TEST_TOTAL_BYTES: number = 21 * 1024 * 1024 + 12345;
+// 内容填充模式取模基数（素数，避免短周期掩盖分片错位）
+const RESUME_TEST_PATTERN_MOD: number = 251;
 
 // 辅助函数：将 ArrayBuffer 转换为字符串
 function arrayBufferToString(buffer: ArrayBuffer): string {
@@ -20,6 +27,86 @@ function stringToArrayBuffer(str: string): ArrayBuffer {
   const textEncoder = new util.TextEncoder();
   const uint8Array = textEncoder.encodeInto(str);
   return uint8Array.buffer;
+}
+
+// 辅助函数：生成确定性字节模式缓冲区（第 i 字节 = i % 251），用于分片上传完整性校验
+function createPatternBuffer(totalBytes: number): ArrayBuffer {
+  const buffer = new ArrayBuffer(totalBytes);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < view.length; i++) {
+    view[i] = i % RESUME_TEST_PATTERN_MOD;
+  }
+  return buffer;
+}
+
+// 辅助函数：抽样校验字节模式（含总长度 + 分片边界附近偏移）
+function verifyPattern(buffer: ArrayBuffer, totalBytes: number, samples: number[]): boolean {
+  const view = new Uint8Array(buffer);
+  if (view.length !== totalBytes) {
+    console.error('Pattern verify: length mismatch, expected=%{public}d actual=%{public}d', totalBytes, view.length);
+    return false;
+  }
+  for (let i = 0; i < samples.length; i++) {
+    const offset = samples[i];
+    if (offset < 0 || offset >= totalBytes) {
+      continue;
+    }
+    if (view[offset] !== offset % RESUME_TEST_PATTERN_MOD) {
+      console.error('Pattern verify: mismatch at offset %{public}d, expected=%{public}d actual=%{public}d',
+        offset, offset % RESUME_TEST_PATTERN_MOD, view[offset]);
+      return false;
+    }
+  }
+  return true;
+}
+
+// 辅助函数：构建抽样偏移（首尾、中点、4M 分片边界前后各一字节）
+function buildSampleOffsets(totalBytes: number): number[] {
+  const samples: number[] = [0, 1, totalBytes - 1, totalBytes >> 1];
+  const boundary = 4 * 1024 * 1024;
+  for (let k = 1; k * boundary < totalBytes; k++) {
+    samples.push(k * boundary - 1);
+    samples.push(k * boundary);
+    samples.push(k * boundary + 1);
+  }
+  return samples;
+}
+
+// 辅助函数：将字节模式分块写入本地文件（模拟真实大文件落盘）
+function writePatternFile(path: string, totalBytes: number): void {
+  const file = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+  try {
+    const chunkSize = 1024 * 1024;
+    let written = 0;
+    while (written < totalBytes) {
+      const len = Math.min(chunkSize, totalBytes - written);
+      const chunk = new ArrayBuffer(len);
+      const view = new Uint8Array(chunk);
+      for (let i = 0; i < len; i++) {
+        view[i] = (written + i) % RESUME_TEST_PATTERN_MOD;
+      }
+      fs.writeSync(file.fd, chunk);
+      written += len;
+    }
+  } finally {
+    fs.closeSync(file.fd);
+  }
+}
+
+// 辅助函数：从 HttpResponse.body 解析文件资源（body 缺失时抛错，避免非空断言）
+function parseFileResponse(client: HuaweiDriveClient, response: HttpResponse): HuaweiDriveFile {
+  if (!response.body) {
+    throw new Error(`response has no body, status=${response.statusCode}, message=${response.message}`);
+  }
+  return client.parseFile(JSON.parse(arrayBufferToString(response.body)) as Record<string, Object>);
+}
+
+// 辅助函数：取回响应体（body 缺失时抛错，避免非空断言）
+function requireBody(response: HttpResponse): ArrayBuffer {
+  if (!response.body) {
+    throw new Error(`response has no body, status=${response.statusCode}, message=${response.message}`);
+  }
+  return response.body;
 }
 
 export default function HuaweiDriveClientTest() {
@@ -522,6 +609,191 @@ export default function HuaweiDriveClientTest() {
         expect(err).not().assertUndefined();
       }
     });
+
+    /**
+     * 测试小文件更新（≤20M content 简单上传方式回归）
+     * 步骤：创建文件 → update 小内容 → 下载校验内容一致 → 删除清理
+     */
+    it('should_update_small_file_via_content_mode', 0, async () => {
+      try {
+        // 创建占位文件
+        const uploadResponse: HttpResponse = await client.upload(
+          'root', `test-content-update-${Date.now()}.txt`, stringToArrayBuffer('placeholder'));
+        expect(uploadResponse.success).assertTrue();
+        const createdFile: HuaweiDriveFile =
+          parseFileResponse(client, uploadResponse);
+
+        // 小内容更新（≤20M 走 content 方式）
+        const updatedContent = 'updated small content ' + Date.now();
+        const updateResponse: HttpResponse =
+          await client.update(createdFile.id, stringToArrayBuffer(updatedContent));
+        console.log('Small update response: status=%{public}d, message=%{public}s',
+          updateResponse.statusCode, updateResponse.message);
+        expect(updateResponse.success).assertTrue();
+
+        // 下载校验内容一致
+        const downloadResponse: HttpResponse = await client.download(createdFile.id);
+        expect(downloadResponse.success).assertTrue();
+        expect(downloadResponse.body).not().assertUndefined();
+        expect(arrayBufferToString(requireBody(downloadResponse))).assertEqual(updatedContent);
+
+        // 清理
+        await client.delete(createdFile.id);
+      } catch (error) {
+        const err = error as Error;
+        console.error('Small content update error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    // ==================== resume 断点续传用例（>20M，流量较大） ====================
+    if (HuaweiDriveTestConfig.isResumeUploadTestEnabled()) {
+
+    /**
+     * 测试大文件更新走 resume 断点续传（官方约束：content 方式仅支持 20M 以内）
+     * 步骤：创建占位文件 → update 21M+ 模式数据（触发 resume 分片）→
+     * getInfo 校验远端 size → 下载抽样校验字节模式（含分片边界）→ 删除清理
+     * 注意：用例耗时较长，运行时建议调大 -s timeout
+     */
+    it('should_update_large_file_via_resume_mode', 0, async () => {
+      try {
+        const totalBytes = RESUME_TEST_TOTAL_BYTES;
+        const bigData = createPatternBuffer(totalBytes);
+        const sampleOffsets = buildSampleOffsets(totalBytes);
+
+        // 创建占位文件
+        const uploadResponse: HttpResponse = await client.upload(
+          'root', `test-resume-update-${Date.now()}.txt`, stringToArrayBuffer('placeholder'));
+        expect(uploadResponse.success).assertTrue();
+        const createdFile: HuaweiDriveFile =
+          parseFileResponse(client, uploadResponse);
+
+        // 大内容更新（>20M 触发 Files.update.resume 分片上传）
+        const updateResponse: HttpResponse = await client.update(createdFile.id, bigData);
+        console.log('Resume update response: status=%{public}d, message=%{public}s',
+          updateResponse.statusCode, updateResponse.message);
+        expect(updateResponse.success).assertTrue();
+
+        // 校验远端文件 size
+        const infoResponse: HttpResponse = await client.getInfo(createdFile.id);
+        expect(infoResponse.success).assertTrue();
+        const remoteFile: HuaweiDriveFile =
+          parseFileResponse(client, infoResponse);
+        console.log('Remote size=%{public}d, expected=%{public}d', remoteFile.size, totalBytes);
+        expect(remoteFile.size).assertEqual(totalBytes);
+
+        // 下载抽样校验（总长度 + 分片边界附近字节模式）
+        const downloadResponse: HttpResponse = await client.download(createdFile.id);
+        expect(downloadResponse.success).assertTrue();
+        expect(downloadResponse.body).not().assertUndefined();
+        expect(verifyPattern(requireBody(downloadResponse), totalBytes, sampleOffsets)).assertTrue();
+
+        // 清理
+        await client.delete(createdFile.id);
+      } catch (error) {
+        const err = error as Error;
+        console.error('Resume update error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    /**
+     * 测试大文件 updateFromFile 流式断点续传（分片按需读自本地文件，内存基线为单个分片）
+     * 步骤：本地写入 21M+ 模式临时文件 → 创建占位文件 → updateFromFile →
+     * getInfo 校验 size → 下载抽样校验 → 删除远端文件并清理本地临时文件
+     */
+    it('should_update_large_file_from_local_via_resume_mode', 0, async () => {
+      try {
+        const totalBytes = RESUME_TEST_TOTAL_BYTES;
+        const appContext = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+        const tempPath = `${appContext.cacheDir}/test-resume-file-${Date.now()}.bin`;
+        writePatternFile(tempPath, totalBytes);
+
+        try {
+          // 创建占位文件
+          const uploadResponse: HttpResponse = await client.upload(
+            'root', `test-resume-from-file-${Date.now()}.txt`, stringToArrayBuffer('placeholder'));
+          expect(uploadResponse.success).assertTrue();
+          const createdFile: HuaweiDriveFile =
+            parseFileResponse(client, uploadResponse);
+
+          // 流式更新（>20M 触发 resume 分片，分片读自本地文件）
+          const updateResponse: HttpResponse = await client.updateFromFile(createdFile.id, tempPath);
+          console.log('Resume updateFromFile response: status=%{public}d, message=%{public}s',
+            updateResponse.statusCode, updateResponse.message);
+          expect(updateResponse.success).assertTrue();
+
+          // 校验远端文件 size
+          const infoResponse: HttpResponse = await client.getInfo(createdFile.id);
+          expect(infoResponse.success).assertTrue();
+          const remoteFile: HuaweiDriveFile =
+            parseFileResponse(client, infoResponse);
+          console.log('Remote size=%{public}d, expected=%{public}d', remoteFile.size, totalBytes);
+          expect(remoteFile.size).assertEqual(totalBytes);
+
+          // 下载抽样校验
+          const downloadResponse: HttpResponse = await client.download(createdFile.id);
+          expect(downloadResponse.success).assertTrue();
+          expect(downloadResponse.body).not().assertUndefined();
+          expect(verifyPattern(requireBody(downloadResponse), totalBytes, buildSampleOffsets(totalBytes))).assertTrue();
+
+          // 清理远端
+          await client.delete(createdFile.id);
+        } finally {
+          // 清理本地临时文件
+          try {
+            fs.unlinkSync(tempPath);
+          } catch (e) {
+            console.warn('Cleanup temp file failed: %{public}s', (e as Error).message);
+          }
+        }
+      } catch (error) {
+        const err = error as Error;
+        console.error('Resume updateFromFile error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    /**
+     * 测试新建大文件上传（upload 内部委托 update 按大小自动选择 resume）
+     * 步骤：upload 直接携带 21M+ 内容 → getInfo 校验 size → 下载抽样校验 → 删除清理
+     */
+    it('should_upload_large_new_file_via_resume_mode', 0, async () => {
+      try {
+        const totalBytes = RESUME_TEST_TOTAL_BYTES;
+        const bigData = createPatternBuffer(totalBytes);
+
+        // 新建文件并上传大内容
+        const uploadResponse: HttpResponse = await client.upload(
+          'root', `test-resume-upload-new-${Date.now()}.txt`, bigData);
+        console.log('Resume upload response: status=%{public}d, message=%{public}s',
+          uploadResponse.statusCode, uploadResponse.message);
+        expect(uploadResponse.success).assertTrue();
+        const createdFile: HuaweiDriveFile =
+          parseFileResponse(client, uploadResponse);
+
+        // 校验远端 size + 下载抽样
+        const infoResponse: HttpResponse = await client.getInfo(createdFile.id);
+        expect(infoResponse.success).assertTrue();
+        const remoteFile: HuaweiDriveFile =
+          parseFileResponse(client, infoResponse);
+        expect(remoteFile.size).assertEqual(totalBytes);
+
+        const downloadResponse: HttpResponse = await client.download(createdFile.id);
+        expect(downloadResponse.success).assertTrue();
+        expect(downloadResponse.body).not().assertUndefined();
+        expect(verifyPattern(requireBody(downloadResponse), totalBytes, buildSampleOffsets(totalBytes))).assertTrue();
+
+        // 清理
+        await client.delete(createdFile.id);
+      } catch (error) {
+        const err = error as Error;
+        console.error('Resume upload new file error: %{public}s', err.message);
+        throw new Error(err.message);
+      }
+    });
+
+    } // end isResumeUploadTestEnabled
 
     } // end isRealApiEnabled
   });

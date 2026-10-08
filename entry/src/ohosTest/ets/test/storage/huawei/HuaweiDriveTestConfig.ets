@@ -68,6 +68,19 @@ export class HuaweiDriveTestConfig {
   }
 
   /**
+   * 是否启用 resume 断点续传大文件用例（>20M 上传，单次全量运行约产生 60M+ 流量）。
+   * 依赖真实凭证（isRealApiEnabled）；无需大流量回归时可置 false 跳过。
+   */
+  static readonly ENABLE_RESUME_UPLOAD_TESTS: boolean = true;
+
+  /**
+   * resume 断点续传用例是否注册：需同时配置有效凭证且显式启用大文件用例
+   */
+  static isResumeUploadTestEnabled(): boolean {
+    return HuaweiDriveTestConfig.isRealApiEnabled() && HuaweiDriveTestConfig.ENABLE_RESUME_UPLOAD_TESTS;
+  }
+
+  /**
    * 测试用文件ID
    */
   static readonly TEST_FILE_ID: string = '';
