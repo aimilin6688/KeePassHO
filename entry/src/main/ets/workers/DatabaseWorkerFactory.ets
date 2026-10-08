@@ -3,7 +3,7 @@ import { CommonUtils } from '../common/utils';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 import { SessionFileService } from '../services/kdbx/SessionFileService';
-import { InitWorkerMessage } from './WorkerParam';
+import { CachePolicyCarrier, InitWorkerMessage } from './WorkerParam';
 
 /**
  * 数据库 Worker 工厂。
@@ -46,5 +46,23 @@ export class DatabaseWorkerFactory {
     return new InitWorkerMessage(CommonUtils.getAppFilesDir(), CommonUtils.getCacheDir(),
       CacheConstants.isEnableLocalCache(), CacheConstants.getOnlyCache(), forceRefresh, attachCacheKey,
       SessionFileService.getWorkerKeyBase64(), SessionFileService.getSessionDir());
+  }
+
+  /**
+   * 任务消息附带缓存策略快照（Worker 常驻池化 #3）。
+   * 常驻模式下 INIT 快照会过期，volatile 策略随每条任务消息走：
+   * 主线程读取当前策略并就地消费一次性 forceRefresh 标志（读 + clear），
+   * 写入消息三字段；服务层在 postMessage 前调用（须先于 Worker 创建，
+   * 使任务消息的 forceRefresh 覆盖 INIT 快照中被消费的值）。
+   * 未调用本方法的旧格式消息三字段保持 undefined，Worker 壳不覆盖 INIT 快照。
+   */
+  public static attachCachePolicy(msg: CachePolicyCarrier): void {
+    const forceRefresh: boolean = CacheConstants.getForceRefresh();
+    if (forceRefresh) {
+      CacheConstants.clearForceRefresh();
+    }
+    msg.enableLocalCache = CacheConstants.isEnableLocalCache();
+    msg.onlyUseCache = CacheConstants.getOnlyCache();
+    msg.forceRefresh = forceRefresh;
   }
 }

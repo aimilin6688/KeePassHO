@@ -497,6 +497,10 @@
       "value": "Invalid database"
     },
     {
+      "name": "worker_busy",
+      "value": "A database operation is in progress, please try again later"
+    },
+    {
       "name": "loading_message",
       "value": "Loading..."
     },

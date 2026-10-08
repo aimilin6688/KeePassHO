@@ -59,7 +59,7 @@ export class DatabaseSave {
    * 远端未变时整条链路不持有远端内容（修 P9 内存峰值）
    * @param requestMessage 请求
    */
-  public async handleSaveDatabase(requestMessage: SaveDatabaseMessage) {
+  public async handleSaveDatabase(requestMessage: SaveDatabaseMessage): Promise<void> {
     const ts: number = Date.now();
     const t0: number = ts;
     // 远端临时文件（ciphertext，可放 cacheDir；finally 清理）

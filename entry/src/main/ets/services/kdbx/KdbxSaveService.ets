@@ -213,14 +213,16 @@ export default class KdbxSaveService {
 
   /**
    * 异步方式 - 保存数据库
+   * 常驻池化（POOL_DATABASE_WORKER = true）：复用常驻 Worker；
+   * false 时保留旧行为（每操作 terminate + 重建）
    * @param req
    * @param callback
    * @param release 保存互斥锁释放函数（终态回调，异常路径必须调用，否则后续保存永久排队）
    */
   static async saveDatabaseAsync(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
     release?: () => void) {
-    // 释放之前的异步线程（互斥锁保证此时上一个 Worker 已空闲，terminate 仅做清理）
-    if (KdbxSaveService.databaseWorker) {
+    // 旧行为：释放之前的异步线程（互斥锁保证此时上一个 Worker 已空闲，terminate 仅做清理）
+    if (!Constants.POOL_DATABASE_WORKER && KdbxSaveService.databaseWorker) {
       try {
         KdbxSaveService.databaseWorker.terminate();
       } catch (error) {
@@ -229,6 +231,10 @@ export default class KdbxSaveService {
       KdbxSaveService.databaseWorker = null;
       hilog.info(DOMAIN, TAG, 'Database save worker terminated');
     }
+
+    // 缓存策略随任务注入（常驻模式下 INIT 快照会过期；须先于 Worker 创建，
+    // 使任务消息携带的 forceRefresh 覆盖 INIT 快照中被消费的值）
+    DatabaseWorkerFactory.attachCachePolicy(req);
 
     try {
       req.data = await KdbxUtils.kdbxToArrayBuffer(req.data);
@@ -251,7 +257,10 @@ export default class KdbxSaveService {
    */
   private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
     release?: () => void): void {
-    KdbxSaveService.databaseWorker = DatabaseWorkerFactory.createSaveWorker();
+    // 懒创建常驻 Worker（旧行为下上方已置空，必新建；互斥链保证无并发保存）
+    if (KdbxSaveService.databaseWorker === null) {
+      KdbxSaveService.databaseWorker = DatabaseWorkerFactory.createSaveWorker();
+    }
     try {
       KdbxSaveService.databaseWorker.postMessage(req, [req.data as ArrayBuffer]);
     } catch (err) {
@@ -295,10 +304,42 @@ export default class KdbxSaveService {
 
       // 打印错误日志
       hilog.error(DOMAIN, TAG, 'Save database error: %{public}s', err.message);
+      // 常驻 isolate 异常：终止并置空引用，下次操作重建（崩溃自愈）
+      try {
+        KdbxSaveService.databaseWorker?.terminate();
+      } catch (e) {
+        hilog.warn(DOMAIN, TAG, 'Terminate broken save worker error: %{public}s', e.message);
+      }
+      KdbxSaveService.databaseWorker = null;
       if (callback && callback.onError) {
         callback.onError(err.message);
       }
       release?.();
+    }
+
+    // 注册onexit回调：Worker 销毁时释放互斥锁，防止常驻 Worker 被外部终止
+    // （应用恢复重置 / 紧急清理）时 saveLock 永久排队
+    KdbxSaveService.databaseWorker.onexit = (code: number) => {
+      hilog.info(DOMAIN, TAG, 'Database save worker exit: %{public}d', code);
+      KdbxSaveService.databaseWorker = null;
+      release?.();
+    }
+  }
+
+  /**
+   * 终止常驻保存 Worker。
+   * 常驻池化下不再被业务例行调用，仅供紧急清理 / 应用恢复（Ability 重建）
+   * 时重置 Worker 池使用；在途保存由 onexit 兜底释放互斥锁。
+   */
+  public static stopWorker(): void {
+    if (KdbxSaveService.databaseWorker) {
+      try {
+        KdbxSaveService.databaseWorker.terminate();
+      } catch (error) {
+        hilog.warn(DOMAIN, TAG, 'Save database worker terminate error: %{public}s', error.message);
+      }
+      KdbxSaveService.databaseWorker = null;
+      hilog.info(DOMAIN, TAG, 'Database save worker terminated');
     }
   }
 

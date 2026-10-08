@@ -1,10 +1,10 @@
 import { LocationInfo } from '../services/beans/LocationParam';
 import { StorageConfig, StorageType } from '../storage';
 import { AuthTypeInfo, CredentialsParam, DbFileParam } from '../services/TypeDefined';
-import { MessageType, WorkerMessage } from './WorkerParam';
+import { CachePolicyCarrier, MessageType, WorkerMessage } from './WorkerParam';
 
 // 定义数据库加载请求
-export class LoadDatabase implements WorkerMessage, CredentialsParam {
+export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolicyCarrier {
   type: MessageType;
   /**
    * 文件路径
@@ -34,6 +34,12 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam {
    * 存储配置信息
    */
   storageConfig: StorageConfig;
+  /**
+   * 缓存策略随任务注入（Worker 常驻池化 #3：JSON 通道，undefined 字段序列化时自动丢弃）
+   */
+  enableLocalCache?: boolean;
+  onlyUseCache?: boolean;
+  forceRefresh?: boolean;
 
   constructor(filePath: string, fileName: string, password: string, authType: AuthTypeInfo,
     keyLocation?: LocationInfo, storageType?: StorageType, storageConfig?: StorageConfig, asyncLoad?: boolean) {
