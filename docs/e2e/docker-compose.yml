@@ -18,8 +18,10 @@
 # 注意：
 #   - 向容器投放测试文件勿用 podman cp / exec cp（产生 root 属主文件，SFTP 写入报
 #     Permission denied）；请用 SFTP 客户端上传，或事后 chown 1001:100 修正属主
-#   - SeaweedFS 镜像默认走 docker.1ms.run 国内源，其余设备可按网络情况改为
-#     docker.io/chrislusf/seaweedfs:3.81（MinIO 各渠道均不可用，勿替换为 MinIO）
+#   - 三个镜像统一走 docker.1ms.run 国内源：本机（Windows）直连 docker.io 会
+#     i/o timeout（实测 docker.1ms.run 返回 401 可达，registry-1.docker.io 不可达）；
+#     可直连的设备把前缀换回 docker.io/<原路径> 即可，三个服务保持一致
+#   - MinIO 各渠道均不可用，勿替换为 MinIO
 
 name: e2e-fileserver
 services:
@@ -41,7 +43,7 @@ services:
     restart: unless-stopped
 
   webdav-e2e:
-    image: docker.io/bytemark/webdav:latest
+    image: docker.1ms.run/bytemark/webdav:latest
     container_name: webdav-e2e
     ports:
       - "8800:80"
@@ -54,7 +56,7 @@ services:
     restart: unless-stopped
 
   sftp-e2e:
-    image: docker.io/atmoz/sftp:latest
+    image: docker.1ms.run/atmoz/sftp:latest
     container_name: sftp-e2e
     ports:
       - "2222:22"
