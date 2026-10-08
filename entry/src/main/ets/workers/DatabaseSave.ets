@@ -7,7 +7,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ConflictMessage, SuccessMessage } from './WorkerParam';
 import { ConflictStrategy, SaveDatabase, SaveDatabaseDbParam, SaveDatabaseMessage } from './DatabaseSaveWorkerParam';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
-import { DatabaseLoadGuard } from '../services/kdbx/DatabaseLoadGuard';
+import { DatabaseLoadGuard, GuardCheckResult } from '../services/kdbx/DatabaseLoadGuard';
 import { AttachmentCacheService } from '../services/kdbx/AttachmentCacheService';
 import { SessionFileService } from '../services/kdbx/SessionFileService';
 import { Constants } from '../common/constants/Constants';
@@ -73,34 +73,82 @@ export class DatabaseSave {
       this.postMessage('loading_key');
       // 创建凭证
       const credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
+      // 单 manager 贯穿守卫/下载/写入/postSuccess：一次 init 存储、令牌刷新结果随 config 原地传递
+      const fileManager: KdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
       const strategy: string = request.conflictStrategy ?? ConflictStrategy.AUTO;
       let retryCount = 0;
+      // 守卫只跑一次：MERGE 写冲突重试时跳过（文件已在本操作内通过 CP1/CP-DISK，重跑无意义）
+      let guardChecked = false;
       while (true) {
-        // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名
-        const rejectReason: string | null = await DatabaseLoadGuard.checkBeforeRead(
-          request.storageType, request.storageConfig, request.filePath);
-        if (rejectReason !== null) {
-          throw new Error(rejectReason);
+        // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名；
+        // 预检 getInfo 结果随 GuardCheckResult 返回（版本预检快速路径复用，不产生额外请求）
+        let guardInfo: FileInfo | null = null;
+        if (!guardChecked) {
+          const guard: GuardCheckResult = await DatabaseLoadGuard.checkBeforeRead(fileManager, request.filePath);
+          if (guard.rejectReason !== null) {
+            throw new Error(guard.rejectReason);
+          }
+          guardInfo = guard.fileInfo;
+          guardChecked = true;
         }
-        // 流式下载到临时文件（不驻留整缓冲，修 P9）
-        const tDownload: number = Date.now();
-        const fileInfo: FileInfo = await new KdbxFileManager(request.storageType, request.storageConfig)
-          .readToFile(request.filePath, tempPath);
-        hilog.info(DOMAIN, TAG, 'save stage download: %{public}d ms, bytes=%{public}d',
-          Date.now() - tDownload, fileInfo.size ?? 0);
-        this.postMessage('load_file_success');
-        // 流式增量 sha256（分块喂入，不驻留整缓冲）
-        const tHash: number = Date.now();
-        const remoteHash: string = await HashUtils.sha256HexFile(tempPath);
-        hilog.info(DOMAIN, TAG, 'save stage sha256: %{public}d ms, bytes=%{public}d',
-          Date.now() - tHash, fileInfo.size ?? 0);
-        const remoteChanged: boolean = DatabaseSave.isRemoteChanged(request, fileInfo, remoteHash);
+
+        // 版本预检快速路径（能力协商，编排层零 provider 分支）：
+        // 存储声明 version 可信 且 守卫预检版本与基线一致 → 跳过全量下载 + sha256 校验，
+        // 直接条件写入；写前复核（WriteOption 契约）兜底预检与写入之间的远端并发修改
+        const expectedVersion: string | null = request.expectedVersion ?? null;
+        const fastPathHit: boolean = guardInfo !== null
+          && expectedVersion !== null
+          && guardInfo.version !== null && guardInfo.version !== undefined
+          && guardInfo.version === expectedVersion
+          && fileManager.supportsVersionFastPath();
+
+        let fileInfo: FileInfo;
+        let remoteChanged: boolean = false;
+        if (fastPathHit && guardInfo !== null) {
+          fileInfo = guardInfo;
+          hilog.info(DOMAIN, TAG, 'save fast-path: hit (version matched, skip download+sha256)');
+          this.postMessage('load_file_success');
+        } else {
+          if (guardInfo !== null) {
+            hilog.info(DOMAIN, TAG, 'save fast-path: miss (version=%{public}s, expected=%{public}s)',
+              guardInfo.version ?? 'null', expectedVersion ?? 'null');
+          }
+          // 流式下载到临时文件（不驻留整缓冲，修 P9）
+          const tDownload: number = Date.now();
+          fileInfo = await fileManager.readToFile(request.filePath, tempPath);
+          hilog.info(DOMAIN, TAG, 'save stage download: %{public}d ms, bytes=%{public}d',
+            Date.now() - tDownload, fileInfo.size ?? 0);
+          this.postMessage('load_file_success');
+          // 流式增量 sha256（分块喂入，不驻留整缓冲）
+          const tHash: number = Date.now();
+          const remoteHash: string = await HashUtils.sha256HexFile(tempPath);
+          hilog.info(DOMAIN, TAG, 'save stage sha256: %{public}d ms, bytes=%{public}d',
+            Date.now() - tHash, fileInfo.size ?? 0);
+          remoteChanged = DatabaseSave.isRemoteChanged(request, fileInfo, remoteHash);
+        }
         if (!remoteChanged) {
           // 远端未变：直接保存，远端内容不入内存
           const saved: SavedContent = await this.buildSavedContent(request, credentials, undefined,
             savedPath, x1Path, x2Path);
-          await this.writeSavedContent(request, saved, fileInfo.version ?? null);
-          await this.postSuccess(request, saved, false);
+          let writtenInfo: FileInfo | null;
+          try {
+            writtenInfo = await this.writeSavedContent(request, saved, fileInfo.version ?? null, fileManager);
+          } catch (error) {
+            // 预检/下载与写入窗口内远端被并发修改（快速路径下窗口略增大）：
+            // 重回循环按策略分发（AUTO 弹框 / MERGE 重新合并 / OVERWRITE 无条件写），而非直接报冲突耗尽
+            if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT
+              && retryCount < DatabaseSave.MAX_CONFLICT_RETRY) {
+              retryCount++;
+              hilog.warn(DOMAIN, TAG, 'No-conflict write conflict, re-dispatch by strategy, retry: %{public}d/%{public}d',
+                retryCount, DatabaseSave.MAX_CONFLICT_RETRY);
+              continue;
+            }
+            if (error instanceof Error) {
+              throw error;
+            }
+            throw new Error(error.message);
+          }
+          await this.postSuccess(request, saved, false, fileManager, writtenInfo);
           hilog.info(DOMAIN, TAG, 'save total (no-conflict): %{public}d ms, mode=%{public}s',
             Date.now() - t0, saved.filePath !== null ? 'stream' : 'buffer');
           return;
@@ -109,8 +157,8 @@ export class DatabaseSave {
           // 用户已选择覆盖：丢弃远端修改，无条件写入本地内容
           const saved: SavedContent = await this.buildSavedContent(request, credentials, undefined,
             savedPath, x1Path, x2Path);
-          await this.writeSavedContent(request, saved, null);
-          await this.postSuccess(request, saved, false);
+          const writtenInfo: FileInfo | null = await this.writeSavedContent(request, saved, null, fileManager);
+          await this.postSuccess(request, saved, false, fileManager, writtenInfo);
           hilog.info(DOMAIN, TAG, 'save total (overwrite): %{public}d ms, mode=%{public}s',
             Date.now() - t0, saved.filePath !== null ? 'stream' : 'buffer');
           return;
@@ -129,8 +177,9 @@ export class DatabaseSave {
         hilog.info(DOMAIN, TAG, 'save stage merge-load: %{public}d ms', Date.now() - tMerge);
         const saved: SavedContent = await this.buildSavedContent(request, credentials, mergedModel,
           savedPath, x1Path, x2Path);
+        let writtenInfo: FileInfo | null;
         try {
-          await this.writeSavedContent(request, saved, fileInfo.version ?? null);
+          writtenInfo = await this.writeSavedContent(request, saved, fileInfo.version ?? null, fileManager);
         } catch (error) {
           if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT
             && retryCount < DatabaseSave.MAX_CONFLICT_RETRY) {
@@ -143,7 +192,7 @@ export class DatabaseSave {
           }
           throw new Error(error.message);
         }
-        await this.postSuccess(request, saved, true, mergedModel);
+        await this.postSuccess(request, saved, true, fileManager, writtenInfo, mergedModel);
         hilog.info(DOMAIN, TAG, 'save total (merge): %{public}d ms, mode=%{public}s',
           Date.now() - t0, saved.filePath !== null ? 'stream' : 'buffer');
         return;
@@ -276,17 +325,21 @@ export class DatabaseSave {
    * @param request 请求
    * @param saved 保存产物
    * @param expectedVersion 期望的远端版本（条件写入），null 表示无条件写入
+   * @param fileManager 贯穿本次操作的文件管理器
+   * @returns 流式路径返回写入后的远端 FileInfo（writeFromFile 契约产物，含新版本基线）；
+   *          回退路径 write 契约无返回值，返回 null
    * @throws Error 写入失败，版本冲突时抛出 StorageError(VERSION_CONFLICT)
    */
-  private async writeSavedContent(request: SaveDatabase, saved: SavedContent, expectedVersion: string | null): Promise<void> {
+  private async writeSavedContent(request: SaveDatabase, saved: SavedContent, expectedVersion: string | null,
+    fileManager: KdbxFileManager): Promise<FileInfo | null> {
     const tWrite: number = Date.now();
     if (saved.filePath !== null) {
-      const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
       const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
       try {
-        await kdbxFileManager.writeFromFile(request.filePath, saved.filePath, option);
+        const writtenInfo: FileInfo = await fileManager.writeFromFile(request.filePath, saved.filePath, option);
         this.postMessage('save_success');
         hilog.info(DOMAIN, TAG, 'save stage upload(stream): %{public}d ms', Date.now() - tWrite);
+        return writtenInfo;
       } catch (error) {
         hilog.error(DOMAIN, TAG, 'Worker error save database (writeFromFile):%{public}s, stack:%{public}s', error.message, error.stack);
         if (error instanceof Error) {
@@ -294,15 +347,15 @@ export class DatabaseSave {
         }
         throw new Error(error.message);
       }
-      return;
     }
     const buffer = saved.buffer;
     if (buffer === null) {
       throw new Error('saved content is empty');
     }
-    await this.writeContent(request, buffer, expectedVersion);
+    await this.writeContent(request, buffer, expectedVersion, fileManager);
     hilog.info(DOMAIN, TAG, 'save stage upload(buffer): %{public}d ms, bytes=%{public}d',
       Date.now() - tWrite, buffer.byteLength);
+    return null;
   }
 
   /**
@@ -310,13 +363,14 @@ export class DatabaseSave {
    * @param request 请求
    * @param content 数据库内容
    * @param expectedVersion 期望的远端版本（条件写入），null 表示无条件写入
+   * @param fileManager 贯穿本次操作的文件管理器
    * @throws Error 写入失败，版本冲突时抛出 StorageError(VERSION_CONFLICT)
    */
-  private async writeContent(request: SaveDatabase, content: ArrayBuffer, expectedVersion: string | null): Promise<void> {
-    const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
+  private async writeContent(request: SaveDatabase, content: ArrayBuffer, expectedVersion: string | null,
+    fileManager: KdbxFileManager): Promise<void> {
     const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
     try {
-      await kdbxFileManager.write(request.filePath, content, option);
+      await fileManager.write(request.filePath, content, option);
       this.postMessage('save_success');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error save database:%{public}s, stack:%{public}s', error.message, error.stack);
@@ -335,13 +389,20 @@ export class DatabaseSave {
    * @param request 请求
    * @param saved 保存产物
    * @param isMerge 是否发生了合并
+   * @param fileManager 贯穿本次操作的文件管理器
+   * @param writtenInfo 流式写入已返回的远端 FileInfo（免 getInfo 复用）；null 时回退 getInfo 获取
    * @param database 合并场景下的合并后模型（随消息以 KPSN 快照回传，主线程免解密重解析）
    */
   private async postSuccess(request: SaveDatabase, saved: SavedContent, isMerge: boolean,
-    database?: Kdbx): Promise<void> {
-    const kdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
+    fileManager: KdbxFileManager, writtenInfo?: FileInfo | null, database?: Kdbx): Promise<void> {
     try {
-      const fileInfo = await kdbxFileManager.getInfo(request.filePath);
+      // 流式路径 writeFromFile 已返回写入后的 FileInfo（含新版本基线），不再重复 getInfo
+      let fileInfo: FileInfo;
+      if (writtenInfo !== null && writtenInfo !== undefined) {
+        fileInfo = writtenInfo;
+      } else {
+        fileInfo = await fileManager.getInfo(request.filePath);
+      }
       let contentHash: string;
       if (saved.filePath !== null) {
         contentHash = await HashUtils.sha256HexFile(saved.filePath);

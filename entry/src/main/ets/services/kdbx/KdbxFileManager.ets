@@ -167,6 +167,14 @@ export class KdbxFileManager {
   }
 
   /**
+   * 底层存储是否声明版本标识可信（保存链路版本预检快速路径）
+   * 接口能力协商透传：由具体存储实现 opt-in，编排层不含 provider 分支
+   */
+  public supportsVersionFastPath(): boolean {
+    return this.storage.supportsVersionFastPath?.() === true;
+  }
+
+  /**
    * 检查文件是否存在
    * @param filePath 文件路径
    * @return Promise<boolean> 文件是否存在

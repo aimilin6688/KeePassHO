@@ -78,6 +78,16 @@ export interface IFileStorage {
    * @throws 如果获取失败则抛出异常
    */
   listDir(path: string): Promise<Array<FileInfo>>;
+
+  /**
+   * 声明本存储的 FileInfo.version 是否可信可用于保存链路的版本预检快速路径
+   * （版本相等即可跳过"全量下载 + 内容哈希"的冲突校验，配合条件写入写前复核兜底）。
+   * 可选能力成员：未实现视为 false（保持全量校验语义，行为不变）。
+   * 由具体存储实现自行 opt-in（能力协商），编排层不含任何 provider 分支；
+   * 返回 true 的实现须同时保证：version 随内容变化（不同内容必产生不同 version）
+   * 且 write/writeFromFile 履约 expectedVersion 条件写入。
+   */
+  supportsVersionFastPath?(): boolean;
 }
 
 /**

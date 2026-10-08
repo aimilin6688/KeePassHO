@@ -130,13 +130,14 @@ export default function OneDriveUploadSessionTest() {
 
     it('parseResource extracts eTag for version baseline', 0, () => {
       const client = new OneDriveClient();
+      const fileFacet: Record<string, Object> = {};
       const data: Record<string, Object> = {
         'id': 'item-123',
         'name': 'test.kdbx',
         'size': 1024,
         'lastModifiedDateTime': '2026-10-08T00:00:00Z',
         'eTag': '"{item-123}, 1"',
-        'file': {}
+        'file': fileFacet
       };
       const resource = client.parseResource(data);
       expect(resource.type).assertEqual('file');
@@ -145,11 +146,12 @@ export default function OneDriveUploadSessionTest() {
 
     it('parseResource leaves eTag undefined when Graph omits it', 0, () => {
       const client = new OneDriveClient();
+      const folderFacet: Record<string, Object> = { 'childCount': 3 };
       const data: Record<string, Object> = {
         'id': 'folder-1',
         'name': 'docs',
         'lastModifiedDateTime': '2026-10-08T00:00:00Z',
-        'folder': { 'childCount': 3 }
+        'folder': folderFacet
       };
       const resource = client.parseResource(data);
       expect(resource.type).assertEqual('folder');
@@ -260,7 +262,7 @@ export default function OneDriveUploadSessionTest() {
         await storage.write(path, content, { expectedVersion: info.version });
 
         // 陈旧版本 → 写前复核拒绝
-        let caughtCode: number = -1;
+        let caughtCode: string = '';
         try {
           await storage.write(path, content, { expectedVersion: 'stale-version' });
         } catch (error) {
@@ -288,7 +290,7 @@ export default function OneDriveUploadSessionTest() {
           expect(written.version).not().assertNull();
 
           // 陈旧版本 → 写前复核拒绝
-          let caughtCode: number = -1;
+          let caughtCode: string = '';
           try {
             await storage.writeFromFile(path, srcPath, { expectedVersion: 'stale-version' });
           } catch (error) {

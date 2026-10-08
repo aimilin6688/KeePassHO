@@ -1,13 +1,23 @@
 import { statfs } from '@kit.CoreFileKit';
 import { appManager } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageConfig, StorageType } from '../../storage';
+import { FileInfo } from '../../storage';
 import { KdbxFileManager } from './KdbxFileManager';
 import { SettingsService } from '../SettingsService';
 import { CommonUtils } from '../../common/utils';
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseLoadGuard';
+
+/**
+ * 读前守卫结果
+ */
+export class GuardCheckResult {
+  /** 拒绝原因的资源名（由消费方按名本地化），null 表示放行 */
+  rejectReason: string | null = null;
+  /** 预检顺带获取的远端文件信息；探测失败或大小无效时为 null（供调用方复用，避免重复 getInfo） */
+  fileInfo: FileInfo | null = null;
+}
 
 /**
  * 数据库加载守卫（设计文档 CP1 / CP-DISK / CP2'）
@@ -27,31 +37,34 @@ export class DatabaseLoadGuard {
 
   /**
    * CP1 + CP-DISK：读取前检查文件大小与本地磁盘余量
-   * @param storageType 存储类型
-   * @param storageConfig 存储配置
+   * 接收调用方已创建的 KdbxFileManager（单 manager 贯穿一次操作，避免每阶段重复 init 存储、重复刷新令牌）；
+   * 预检的 getInfo 结果随 GuardCheckResult 返回，调用方可复用（版本预检 / 下载基线），不产生额外请求
+   * @param fileManager 已完成 init 的文件管理器
    * @param filePath 文件路径
-   * @returns 拒绝原因的资源名（由消费方按名本地化），null 表示放行
+   * @returns GuardCheckResult（rejectReason 为 null 表示放行）
    */
-  public static async checkBeforeRead(storageType: StorageType, storageConfig: StorageConfig | undefined,
-    filePath: string): Promise<string | null> {
+  public static async checkBeforeRead(fileManager: KdbxFileManager, filePath: string): Promise<GuardCheckResult> {
+    const result: GuardCheckResult = new GuardCheckResult();
     let fileSize: number = -1;
     try {
-      const fileInfo = await new KdbxFileManager(storageType, storageConfig).getInfo(filePath);
+      const fileInfo = await fileManager.getInfo(filePath);
+      result.fileInfo = fileInfo;
       fileSize = fileInfo.size;
     } catch (error) {
       // 取不到文件信息（远端不支持 / 网络失败）：放行，由真实读取流程报错
       hilog.warn(DOMAIN, TAG, 'checkBeforeRead get file info failed: %{public}s', error.message);
-      return null;
+      return result;
     }
     if (fileSize <= 0) {
-      return null;
+      return result;
     }
     // CP1：文件大小上限
     const maxFileSizeMb: number = SettingsService.getSync<number>(SettingsService.KEY_DATABASE_MAX_SIZE,
       SettingsService.KEY_DATABASE_MAX_SIZE_DEFAULT);
     if (fileSize > maxFileSizeMb * 1024 * 1024) {
       hilog.warn(DOMAIN, TAG, 'CP1 reject: file %{public}d bytes > limit %{public}d MB', fileSize, maxFileSizeMb);
-      return 'database_too_large';
+      result.rejectReason = 'database_too_large';
+      return result;
     }
     // CP-DISK：本地磁盘余量检查（含本地文件，保存前解压/导出都需要本地空间）
     try {
@@ -59,12 +72,13 @@ export class DatabaseLoadGuard {
       if (freeBytes < fileSize * DatabaseLoadGuard.DISK_FREE_FACTOR) {
         hilog.warn(DOMAIN, TAG, 'CP-DISK reject: free %{public}d < %{public}d x file %{public}d',
           freeBytes, DatabaseLoadGuard.DISK_FREE_FACTOR, fileSize);
-        return 'database_not_enough_disk';
+        result.rejectReason = 'database_not_enough_disk';
+        return result;
       }
     } catch (error) {
       hilog.warn(DOMAIN, TAG, 'checkBeforeRead statfs failed (fail-open): %{public}s', error.message);
     }
-    return null;
+    return result;
   }
 
   /**

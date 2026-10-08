@@ -102,6 +102,15 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
+   * 版本快速路径 opt-in：id:size:editedTime 复合指纹随内容变化（KDBX 每次写入 IV/nonce 变化），
+   * write/writeFromFile 已履约 expectedVersion 条件写入（写前复核），
+   * 版本相等即可跳过全量下载 + 内容哈希校验
+   */
+  public supportsVersionFastPath(): boolean {
+    return true;
+  }
+
+  /**
    * 初始化存储配置
    * @param config 华为云盘存储配置
    */
@@ -268,6 +277,43 @@ export class HuaweiDriveStorage implements IFileStorage {
 
       throw new StorageError(StorageErrorCodes.CONNECT_ERROR, errMsg);
     }
+  }
+
+  /**
+   * 确保访问令牌有效（令牌生命周期归共享 token store 管理，不依赖单次操作的配置快照）
+   * 1. 配置快照内 token 仍有效：直接返回（零开销）
+   * 2. 快照已过期：先读共享 token store（文件后端，Worker 内同样可用，承载上次刷新落盘的新 token），
+   *    账号一致（refreshToken 相同，华为刷新响应不轮换 refresh_token）且未过期 → 应用到当前实例，免刷新
+   * 3. store 也无可用 token：真正刷新（单飞）→ 成功后经 notifyTokenUpdated 持久化回 store
+   * 修复：Worker 内刷新结果此前无法落盘（preferences 无 Context），导致每个操作重复刷新令牌
+   */
+  private async ensureValidToken(): Promise<void> {
+    if (!this.client || !this.config) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized');
+    }
+    if (!this.config.isTokenExpired()) {
+      return;
+    }
+    const config = this.config;
+    const client = this.client;
+    try {
+      const stored: OAuth2Token | null = await OAuth2TokenStorageService.getInstance()
+        .loadToken({ provider: OAuth2Provider.HUAWEI_DRIVE, encrypt: true });
+      if (stored && stored.accessToken && stored.expiresAt
+        && stored.refreshToken === config.getRefreshTokenText()
+        && stored.expiresAt > Date.now() + 5 * 60 * 1000) {
+        config.setAccessToken(stored.accessToken);
+        config.setExpiresAt(stored.expiresAt);
+        client.updateAccessToken(stored.accessToken);
+        hilog.info(DOMAIN, TAG, 'Applied stored access token, expires at: %{public}s',
+          stored.expiresAt?.toString());
+        return;
+      }
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Load stored token failed, fallback to refresh: %{public}s',
+        (error as Error).message);
+    }
+    await this.refreshAccessToken();
   }
 
   /**
@@ -627,28 +673,90 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
+   * 版本指纹（FileInfo.version 契约：不透明字符串，仅用于相等比较，不可解析内容）
+   * id:size:editedTime 复合串：id 稳定、size 随内容变化、editedTime 为服务端最后编辑时间；
+   * 镜像 pCloud buildVersion / Local size|mtime 模式，激活保存链路版本基线与条件写入
+   */
+  public static buildVersion(file: HuaweiDriveFile): string {
+    return `${file.id}:${file.size}:${file.editedTime}`;
+  }
+
+  /**
+   * 条件写入写前复核（WriteOption 契约：不支持服务端原子条件写的存储在写入前重新获取版本比对）
+   * findFileByPath 已解析出远端最新文件对象，此处比对零额外请求；
+   * 不一致抛出 VERSION_CONFLICT，由上层冲突流程（AUTO 弹框 / MERGE / 重试）接管
+   * @param file findFileByPath 解析出的远端当前文件
+   * @param expectedVersion 期望版本（null 表示无条件写入，放行）
+   */
+  private ensureVersionMatch(file: HuaweiDriveFile, expectedVersion: string | null): void {
+    if (expectedVersion === null) {
+      return;
+    }
+    const currentVersion: string = HuaweiDriveStorage.buildVersion(file);
+    if (currentVersion !== expectedVersion) {
+      hilog.warn(DOMAIN, TAG, 'Huawei Drive version conflict, expected: %{public}s, current: %{public}s',
+        expectedVersion, currentVersion);
+      throw new StorageError(StorageErrorCodes.VERSION_CONFLICT,
+        `Version conflict: expected ${expectedVersion}, current ${currentVersion}`);
+    }
+  }
+
+  /**
+   * 从写入响应体（PATCH files/{id}?fields=* 返回的文件资源 JSON）构造 FileInfo，
+   * 免去写后再 getInfo 的一次请求；解析失败返回 null（调用方回退 getInfo）
+   */
+  private fileInfoFromResponse(result: HttpResponse, fallbackName: string): FileInfo | null {
+    try {
+      if (!result.success || !result.body) {
+        return null;
+      }
+      const jsonStr = ByteUtils.bytesToString(result.body);
+      if (!jsonStr) {
+        return null;
+      }
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const file = this.client?.parseFile(data);
+      if (!file || !file.id) {
+        return null;
+      }
+      return {
+        name: file.fileName || fallbackName,
+        size: file.size,
+        modifiedTime: new Date(file.editedTime).getTime(),
+        path: file.id,
+        type: FileType.FILE,
+        childrenCount: 0,
+        version: HuaweiDriveStorage.buildVersion(file)
+      };
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Parse write response failed: %{public}s', (error as Error).message);
+      return null;
+    }
+  }
+
+  /**
    * 流式分块下载到本地文件（S7：Range GET 循环 8MB 块直写盘，内存与文件大小解耦）
    */
   public async readToFile(path: string, destPath: string): Promise<FileInfo> {
     if (!this.client) {
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
     }
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
     try {
       const file = await this.findFileByPath(path);
       if (!file) {
         return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, `File not found: ${path}`));
       }
-      await this.client.downloadRangeToFile(file.id, destPath);
+      // size 透传：findFileByPath 已取得文件大小，免 downloadRangeToFile 内部二次 getInfo
+      await this.client.downloadRangeToFile(file.id, destPath, file.size);
       return {
         name: file.fileName,
         size: file.size,
         modifiedTime: new Date(file.editedTime).getTime(),
         path: file.id,
         type: FileType.FILE,
-        childrenCount: 0
+        childrenCount: 0,
+        version: HuaweiDriveStorage.buildVersion(file)
       };
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive readToFile error: %{public}s', (error as Error).message);
@@ -669,15 +777,16 @@ export class HuaweiDriveStorage implements IFileStorage {
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
     }
 
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
+      const expectedVersion: string | null = option?.expectedVersion ?? null;
       const file = await this.findFileByPath(path);
       let result: HttpResponse;
 
       if (file) {
+        // 条件写入写前复核（WriteOption 契约）：不一致抛 VERSION_CONFLICT，零额外请求
+        this.ensureVersionMatch(file, expectedVersion);
         result = await this.client.updateFromFile(file.id, srcPath);
       } else {
         const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
@@ -695,6 +804,11 @@ export class HuaweiDriveStorage implements IFileStorage {
 
       if (!result.success) {
         return Promise.reject(new Error(result.message));
+      }
+      // 写入响应（PATCH fields=*）即含最新文件资源，免写后再 getInfo；解析失败回退 getInfo
+      const writtenInfo: FileInfo | null = this.fileInfoFromResponse(result, path);
+      if (writtenInfo !== null) {
+        return writtenInfo;
       }
       return await this.getInfo(path);
     } catch (error) {
@@ -719,9 +833,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       const file = await this.findFileByPath(path);
@@ -746,10 +858,11 @@ export class HuaweiDriveStorage implements IFileStorage {
    * 写入文件内容
    * @param path 文件路径
    * @param data 文件内容
+   * @param option 写入选项，支持条件写入（expectedVersion 不一致抛 VERSION_CONFLICT）
    * @returns Promise<void>
    * @throws StorageError 如果写入失败
    */
-  public async write(path: string, data: ArrayBuffer): Promise<void> {
+  public async write(path: string, data: ArrayBuffer, option?: WriteOption): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
@@ -761,9 +874,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       // 按路径查找现有文件，找到则更新，找不到则创建
@@ -771,6 +882,8 @@ export class HuaweiDriveStorage implements IFileStorage {
       let result: HttpResponse;
 
       if (file) {
+        // 条件写入写前复核（WriteOption 契约）：不一致抛 VERSION_CONFLICT，零额外请求
+        this.ensureVersionMatch(file, option?.expectedVersion ?? null);
         // 更新现有文件
         result = await this.client.update(file.id, data);
       } else {
@@ -813,9 +926,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     // 根目录：通过 getInfo('root') 验证连通性，成功即存在
     const normalizedForRoot = path.startsWith('/') ? path.substring(1) : path;
@@ -858,9 +969,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       // 根目录：直接通过 getInfo('root') 获取根文件夹信息
@@ -879,7 +988,8 @@ export class HuaweiDriveStorage implements IFileStorage {
           modifiedTime: new Date(rootFile.editedTime).getTime(),
           path: rootFile.id || 'root',
           type: FileType.DIR,
-          childrenCount: 0
+          childrenCount: 0,
+          version: HuaweiDriveStorage.buildVersion(rootFile)
         };
       }
 
@@ -893,7 +1003,8 @@ export class HuaweiDriveStorage implements IFileStorage {
         modifiedTime: new Date(file.editedTime).getTime(),
         path: file.id,
         type: file.mimeType === HUAWEI_DRIVE_FOLDER_MIME_TYPE ? FileType.DIR : FileType.FILE,
-        childrenCount: 0
+        childrenCount: 0,
+        version: HuaweiDriveStorage.buildVersion(file)
       };
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive getInfo error: %{public}s', (error as Error).message);
@@ -917,9 +1028,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     // 确保磁盘持久化缓存已水合（单飞），冷启动首次解析即可命中
     await HuaweiDriveStorage.ensureHydrated();
@@ -975,7 +1084,8 @@ export class HuaweiDriveStorage implements IFileStorage {
         modifiedTime: new Date(file.editedTime).getTime(),
         path: itemPath,
         type: file.mimeType === HUAWEI_DRIVE_FOLDER_MIME_TYPE ? FileType.DIR : FileType.FILE,
-        childrenCount: 0
+        childrenCount: 0,
+        version: HuaweiDriveStorage.buildVersion(file)
       });
     }
 
@@ -1011,9 +1121,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       const result = await this.client.getAbout();
@@ -1044,9 +1152,7 @@ export class HuaweiDriveStorage implements IFileStorage {
     }
 
     // 检查令牌是否过期
-    if (this.config && this.config.isTokenExpired()) {
-      await this.refreshAccessToken();
-    }
+    await this.ensureValidToken();
 
     try {
       const file = await this.findFileByPath(path);

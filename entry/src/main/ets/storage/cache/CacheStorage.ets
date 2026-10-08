@@ -23,10 +23,17 @@ export class CacheStorage implements IFileStorage {
 
   /**
    * 获取页面配置
-   * @returns 页面配置
+   * @returns PageConfig 页面配置
    */
   public getPageConfig() {
     return this.decoratedStorage.getPageConfig();
+  }
+
+  /**
+   * 版本快速路径能力协商（透传底层实现，缓存装饰不改变语义）
+   */
+  public supportsVersionFastPath(): boolean {
+    return this.decoratedStorage.supportsVersionFastPath?.() === true;
   }
 
   /**

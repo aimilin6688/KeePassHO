@@ -218,10 +218,10 @@ export default function DatabaseSaveStreamingTest() {
       expect(result.success !== null).assertTrue();
       const success = result.success as SuccessMessage;
 
-      // 回退路径 data 为真实缓冲（非空）
-      expect((success.data as ArrayBuffer).byteLength > 0).assertTrue();
-      // contentHash 与 data 的哈希一致（回退路径用 sha256Hex）
-      expect(success.contentHash).assertEqual(await HashUtils.sha256Hex(success.data as ArrayBuffer));
+      // S6 语义：data 一律传空缓冲（§7.4，大缓冲不跨线程）
+      expect((success.data as ArrayBuffer).byteLength).assertEqual(0);
+      // contentHash 与落盘文件一致（回退路径 contentHash = sha256Hex(saved.buffer)，buffer 即写盘内容）
+      expect(success.contentHash).assertEqual(await HashUtils.sha256HexFile(aesPath));
 
       // 文件写入验证
       const fileContent = await fileManager.read(aesPath);

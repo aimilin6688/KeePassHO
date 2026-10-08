@@ -1,6 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { rcp } from '@kit.RemoteCommunicationKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
@@ -704,61 +705,117 @@ export class HuaweiDriveClient {
   /**
    * 流式分块下载文件到本地文件（S7：华为 Drive form=content 端点支持 Range GET）
    * 内存窗口 = 单块（8MB），与文件大小解耦；首块若返回 200（Range 不支持）退化为整缓冲
+   * 分块按 2-4 路并发请求（串行写盘保证顺序），避免单连接限速拉长下载耗时
    * @param fileId 文件 ID
    * @param destPath 本地目标文件路径（调用方管理生命周期）
+   * @param knownSize 已知文件大小（findFileByPath 已取得时透传，免内部二次 getInfo；缺省时自行 getInfo）
    * @returns 下载字节数
    */
-  public async downloadRangeToFile(fileId: string, destPath: string): Promise<number> {
+  public async downloadRangeToFile(fileId: string, destPath: string, knownSize?: number): Promise<number> {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
-    // 取文件大小
-    const infoResp = await this.getInfo(fileId);
-    if (!infoResp.success || !infoResp.body) {
-      throw new Error(infoResp.message || 'downloadRangeToFile: failed to get file info');
+    // 闭包内使用本地引用：避免可选成员经闭包后失去空值收窄
+    const axiosInstance: AxiosInstance = this.axiosInstance;
+    // 取文件大小（已透传时跳过，消除一次冗余 getInfo）
+    let fileSize: number = knownSize ?? 0;
+    if (!knownSize || knownSize <= 0) {
+      const infoResp = await this.getInfo(fileId);
+      if (!infoResp.success || !infoResp.body) {
+        throw new Error(infoResp.message || 'downloadRangeToFile: failed to get file info');
+      }
+      const infoJson = ByteUtils.bytesToString(infoResp.body);
+      const infoData: Record<string, Object> = JSON.parse(infoJson);
+      fileSize = Number(infoData['size']) || 0;
     }
-    const infoJson = ByteUtils.bytesToString(infoResp.body);
-    const infoData: Record<string, Object> = JSON.parse(infoJson);
-    const fileSize = Number(infoData['size']) || 0;
     if (fileSize === 0) {
       const empty = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
       await fs.close(empty.fd);
       return 0;
     }
     const CHUNK_SIZE = 8 * 1024 * 1024;
-    let downloaded = 0;
-    let firstChunk = true;
+    // 并发下载的分块窗口（小文件单块直接走串行路径，避免并发开销）
+    const PARALLEL_THRESHOLD = 2;
     const apiPath = `/files/${fileId}?form=content`;
+
+    // 切分分块
+    const chunkRanges: Array<number[]> = [];
+    for (let start = 0; start < fileSize; start += CHUNK_SIZE) {
+      chunkRanges.push([start, Math.min(start + CHUNK_SIZE - 1, fileSize - 1)]);
+    }
+
     const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
     try {
-      while (downloaded < fileSize) {
-        const end = Math.min(downloaded + CHUNK_SIZE - 1, fileSize - 1);
-        const rangeHeader = `bytes=${downloaded}-${end}`;
+      if (chunkRanges.length < PARALLEL_THRESHOLD) {
+        // 单块/双块：串行（含首块 200 退化整缓冲的兼容分支）
+        let firstChunk = true;
+        let downloaded = 0;
+        for (const range of chunkRanges) {
+          const rangeHeader = `bytes=${range[0]}-${range[1]}`;
+          const config: AxiosRequestConfig = {
+            responseType: 'array_buffer',
+            headers: { 'Range': rangeHeader }
+          };
+          const response: AxiosResponse = await axiosInstance.get(apiPath, config);
+          if (firstChunk && response.status === 200) {
+            // Range 不支持：整内容返回，写全部
+            const body = response.data as ArrayBuffer;
+            await fs.write(file.fd, body);
+            downloaded = fileSize;
+            break;
+          }
+          firstChunk = false;
+          if (response.status !== 206) {
+            throw new Error(`downloadRangeToFile: HTTP ${response.status}, expected 206`);
+          }
+          const body = response.data as ArrayBuffer;
+          await fs.write(file.fd, body);
+          downloaded += body.byteLength;
+        }
+        await fs.fsync(file.fd);
+        return downloaded;
+      }
+
+      // 多块：并发请求（窗口 = 并发数 × 块大小），逐块按偏移写盘保证顺序无关
+      const PARALLELISM = 3;
+      // 失败标记用 string（闭包内赋值，Error|null 的收窄对编译器不可靠）
+      let failedMessage: string = '';
+      const writeChunk = async (range: Array<number>): Promise<void> => {
+        if (failedMessage !== '') {
+          return;
+        }
+        const rangeHeader = `bytes=${range[0]}-${range[1]}`;
         const config: AxiosRequestConfig = {
           responseType: 'array_buffer',
           headers: { 'Range': rangeHeader }
         };
-        const response: AxiosResponse = await this.axiosInstance.get(apiPath, config);
-        if (firstChunk && response.status === 200) {
-          // Range 不支持：整内容返回，写全部
-          const body = response.data as ArrayBuffer;
-          await fs.write(file.fd, body);
-          downloaded = fileSize;
-          break;
-        }
-        firstChunk = false;
+        const response: AxiosResponse = await axiosInstance.get(apiPath, config);
         if (response.status !== 206) {
           throw new Error(`downloadRangeToFile: HTTP ${response.status}, expected 206`);
         }
         const body = response.data as ArrayBuffer;
-        await fs.write(file.fd, body);
-        downloaded += body.byteLength;
+        await fs.write(file.fd, body, { offset: range[0] });
+      };
+      for (let i = 0; i < chunkRanges.length && failedMessage === ''; i += PARALLELISM) {
+        const batch: Array<Promise<void>> = [];
+        for (let j = i; j < Math.min(i + PARALLELISM, chunkRanges.length); j++) {
+          const task: Promise<void> = writeChunk(chunkRanges[j]).catch((error: BusinessError) => {
+            if (failedMessage === '') {
+              failedMessage = error.message ?? 'parallel chunk download failed';
+            }
+          });
+          batch.push(task);
+        }
+        await Promise.all(batch);
+      }
+      if (failedMessage !== '') {
+        throw new Error(failedMessage);
       }
       await fs.fsync(file.fd);
+      return fileSize;
     } finally {
       await fs.close(file.fd);
     }
-    return downloaded;
   }
 
   /**
