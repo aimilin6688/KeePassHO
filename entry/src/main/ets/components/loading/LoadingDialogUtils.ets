@@ -109,6 +109,20 @@ export class LoadingDialogUtils {
   }
 
   /**
+   * 显示线性进度 hud（数据库下载/上传等传输进度）
+   * @param value 可不传
+   * @param progress 取值 0 ~ 100
+   */
+  async showLinearProgress(value: ResourceStr | LoadingSettings = '', progress: number = 0): Promise<void> {
+    let options = new LoadingActionOptions(LoadingState.LINEAR_PROGRESS, value, progress)
+    if (PromptActionUtils.existsCustomDialog(LoadingState.LINEAR_PROGRESS)) {
+      return this.updateDialog(options)
+    } else {
+      return await this.showDialog(options)
+    }
+  }
+
+  /**
    * 隐藏 hud
    */
   async hide(dialogId?: string): Promise<void> {
@@ -118,7 +132,7 @@ export class LoadingDialogUtils {
   /////////////////////////////////  privates  /////////////////////////////////
   private async showDialog(options: LoadingActionOptions): Promise<void> {
     let settings: LoadingSettings = ResourceUtils.isResourceStr(options.value) ? {} : options.value as LoadingSettings;
-    if (options.dialogId == LoadingState.PROGRESS) {
+    if (options.dialogId == LoadingState.PROGRESS || options.dialogId == LoadingState.LINEAR_PROGRESS) {
       settings.transition = TransitionEffect.IDENTITY
     } else {
       await this.hide(options.dialogId);

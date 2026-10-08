@@ -11,6 +11,7 @@ export enum LoadingState {
   WARN = 'warn',
   TOAST = 'toast',
   PROGRESS = 'progress',
+  LINEAR_PROGRESS = 'linear_progress',
 }
 
 export class LoadingActionOptions extends PromptActionBean {
@@ -108,7 +109,25 @@ struct LoadingDialogView {
           .height(48)
         }
 
-        if (this.msg != '') {
+        if (this.state == LoadingState.LINEAR_PROGRESS) {
+          // 线性进度（传输类）：文案在上，进度条在下，撑满胶囊
+          Column({ space: 8 }) {
+            if (this.msg != '') {
+              Text(this.msg)
+                .fontColor(this.settings?.textColor ?? loadingDialogGlobalSettings.textColor)
+                .fontSize(this.settings?.fontSize ?? loadingDialogGlobalSettings.fontSize)
+            }
+            Progress({ value: this.progress, total: 100, type: ProgressType.Linear })
+              .width('100%')
+              .style({
+                strokeWidth: 6,
+                enableSmoothEffect: true
+              })
+              .color(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
+              .backgroundColor(loadingDialogGlobalSettings.backgroundColor)
+          }
+          .constraintSize({ minWidth: 160 })
+        } else if (this.msg != '') {
           if (this.iconState.includes(this.state)) {
             Blank().width(10);
           }

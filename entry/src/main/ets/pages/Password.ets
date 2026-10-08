@@ -7,10 +7,10 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { CommonUtils, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, StringUtils, WindowUtils } from '../common/utils';
 import { Kdbx } from 'kdbxweb';
-import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
-import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
+import { LoadProgressDialog } from '../components/LoadProgressDialog';
+import { LoadMessage, ProgressMessage, SuccessMessage } from '../workers/WorkerParam';
 import KdbxLoadService from '../services/kdbx/KdbxLoadService';
 import { LoadDispatchService } from '../services/kdbx/LoadDispatchService';
 import { FocusController } from '@ohos.arkui.UIContext';
@@ -61,6 +61,9 @@ export struct Password {
   @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   @State showCacheCheckbox: boolean = false; // 是否显示缓存复选框
   @State onlyUseCache: boolean = false; // 是否仅使用本地缓存
+  // 下载数据库进度（-1 表示当前阶段无进度）
+  @State progressPercent: number = -1;
+  @State progressDetail: string = '';
   private filePath: string = '';
   private storageType: StorageType | undefined = undefined;
   private storageConfig: StorageConfig | undefined = undefined;
@@ -75,10 +78,12 @@ export struct Password {
   private shouldStartAuth: boolean = false;
   // 标记是否应该保留密码（用于选择密钥文件等场景）
   private shouldPreservePassword: boolean = false;
-  // 带内容的进度弹框
+  // 带内容的进度弹框（下载数据库阶段带线性进度条）
   private loadingDialogController: CustomDialogController = new CustomDialogController({
-    builder: ContextLoadingDialog({
+    builder: LoadProgressDialog({
       loadingMessage: this.loadingMessage,
+      progressPercent: this.progressPercent,
+      progressDetail: this.progressDetail
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
@@ -496,7 +501,16 @@ export struct Password {
   private openLoadingDialog() {
     this.isLoading = true;
     this.updateButtonState(); // 更新按钮状态
+    this.resetProgressState();
     this.loadingDialogController.open();
+  }
+
+  /**
+   * 重置传输进度状态（每次加载开始时清零）
+   */
+  private resetProgressState() {
+    this.progressPercent = -1;
+    this.progressDetail = '';
   }
 
   /**
@@ -553,6 +567,14 @@ export struct Password {
     KdbxLoadService.loadDatabase(loadDatabase, {
       onLoadMessage: (message: LoadMessage) => {
         this.loadingMessage = ResourceManager.getMessage(message.message);
+        this.resetProgressState();
+      },
+      onProgressMessage: (message: ProgressMessage) => {
+        this.progressPercent = message.percent;
+        if (message.totalBytes > 0) {
+          this.progressDetail =
+            `${StringUtils.formatFileSize(message.transferredBytes)} / ${StringUtils.formatFileSize(message.totalBytes)}`;
+        }
       },
       onSuccessMessage: (message: SuccessMessage) => {
         this.handleSuccessMessage(message);

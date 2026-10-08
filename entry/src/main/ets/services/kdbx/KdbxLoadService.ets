@@ -1,7 +1,7 @@
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { LoadMessage, MessageType, PrewarmMessage, PrewarmResultMessage, SuccessMessage, toErrorMessage, WorkerMessage } from '../../workers/WorkerParam';
+import { LoadMessage, MessageType, ProgressMessage, PrewarmMessage, PrewarmResultMessage, SuccessMessage, toErrorMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { CommonUtils, ResourceManager } from '../../common/utils';
 import { DatabaseLoad } from '../../workers/DatabaseLoad';
 import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
@@ -57,6 +57,7 @@ export default class KdbxLoadService {
         }
         callback?.onSuccessMessage?.(message);
       },
+      onProgressMessage: callback?.onProgressMessage,
       onErrorMessage: callback?.onErrorMessage,
       onAllErrors: callback?.onAllErrors,
       onexit: callback?.onexit
@@ -167,6 +168,10 @@ export default class KdbxLoadService {
         // 提示消息
         case MessageType.MESSAGE:
           KdbxLoadService.handleLoadMessage(data, KdbxLoadService.currentCallback?.onLoadMessage);
+          return;
+        // 传输进度（下载）：与 MESSAGE 同款扇出语义（currentCallback 随任务覆盖，天然防串扰）
+        case MessageType.PROGRESS:
+          KdbxLoadService.handleProgressMessage(data, KdbxLoadService.currentCallback?.onProgressMessage);
           return;
         case MessageType.SUCCESS:
           // 任务终态：释放忙标志，Worker 保留复用；
@@ -290,6 +295,18 @@ export default class KdbxLoadService {
   }
 
   /**
+   * 处理来自线程的传输进度消息（下载字节进度，纯数据不含文案）
+   * @param data 进度消息
+   * @param onProgressMessage 进度回调
+   */
+  private static handleProgressMessage(data: WorkerMessage, onProgressMessage?: (message: ProgressMessage) => void) {
+    const progressMessage = data as ProgressMessage;
+    if (onProgressMessage) {
+      onProgressMessage(progressMessage);
+    }
+  }
+
+  /**
    * 处理来自线程的成功消息
    * @param data
    * @param onSuccessMessage
@@ -353,6 +370,11 @@ export interface KdbxLoadServiceCallback {
    * 加载进度消息
    */
   onLoadMessage?: (message: LoadMessage) => void;
+
+  /**
+   * 传输进度消息（下载字节进度，限频后 ≥500ms/条；存储不支持进度时不会触发）
+   */
+  onProgressMessage?: (message: ProgressMessage) => void;
 
   /**
    * 加载成功消息
