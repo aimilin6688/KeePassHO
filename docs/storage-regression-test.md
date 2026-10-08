@@ -101,6 +101,7 @@ hdc shell bm install -p /data/local/tmp/haps
 - 用例数相对旧基线（435）变化：华为 18 + pCloud 7 门控移除，WebDav 重写 +6，SFTPStorageRealFile +4
 - 2026-10-05：KPSN 二进制快照协议合入后（`docs/KDBX跨线程数据传输优化设计-二进制快照协议.md` §12）WebDAV 回归复跑：**WebDavTest 9/9**（条件写冲突 VERSION_CONFLICT 用例在内，全过）
 - 2026-10-05：rport 隧道整体重建后（SFTP 设备侧 2223、S3 9000、WebDAV 8800，见 §5），复跑全部 12 个非 UI 存储套件：**Tests run: 111, Pass: 111**（S3ClientTest、S3StorageTest、S3Client_Multipart_Upload/Logic/Integration、S3StorageIntegrationTest 6/6、SFTPHandlerTest、SFTPHandlerConnectTest、SFTPStorageRealFileTest、FTP/Cache/RecentFiles SftpSemanticsTest 全过）；其中 `should_use_regular_upload_below_threshold` 修复了 `new ArrayBuffer(4.9*1024*1024)` 浮点截断与浮点断言不一致的测试缺陷（分配与断言统一取 `Math.floor`）
+- 2026-10-08：S8 保存链路提速与接口履约治理（`docs/云存储保存链路提速与接口履约治理设计.md`）合入后全量非 UI 回归（模拟器 5557）：**Tests run: 2096, Failure: 0, Error: 0, Pass: 2096**；顺带修正三个存量失败（S6 空缓冲语义下 `DatabaseSyncMode` contentHash 断言、`DatabaseSaveStreaming` AES 回退 data 断言未随 e2a32656 更新；OneDrive `parseResource` 缺失 eTag 应为 undefined 而非空串）；隧道自动化脚本 `docs/e2e/e2e-tunnels.sh` 落地（僵尸监听清理，见 `docs/e2e/e2e-tunnels.md`）
 
 ## 7. 本轮真实回归修出的产品 bug
 
