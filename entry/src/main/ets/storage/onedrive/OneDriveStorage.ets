@@ -163,7 +163,8 @@ export class OneDriveStorage implements IFileStorage {
    * 流式从本地文件上传（S7-a：Graph upload session 分片上传）
    * 小文件（<4MB）简单 PUT；大文件创建会话后按 5MB 分片从源文件区域读取 PUT，
    * 内存窗口 = 单分片，与文件大小解耦；CP-UP 仅约束整缓冲 write 路径，此路径豁免。
-   * OneDrive 无原生版本串，条件写入不支持（option 忽略），冲突防护依赖上层内容哈希基线
+   * 条件写入：传入 expectedVersion 时写前复核远端 eTag 版本，不一致抛出版本冲突
+   * @throws StorageError(VERSION_CONFLICT) 远端版本与期望不一致
    * @throws StorageError(FILE_WRITE_ERROR) 上传失败（含会话过期）
    */
   public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
@@ -178,15 +179,61 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     try {
+      const expectedVersion: string | null = option?.expectedVersion ?? null;
+      if (expectedVersion !== null) {
+        await this.checkVersionUnchanged(path, expectedVersion);
+      }
       const result = await this.client.uploadFromFile(path, srcPath);
       if (!result.success) {
         return Promise.reject(new Error(result.message));
       }
     } catch (error) {
+      // 版本冲突直接透传，保持错误码不被改写
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
       hilog.error(DOMAIN, TAG, 'OneDrive writeFromFile error:%{public}s', (error as Error).message);
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
     }
     return await this.getInfo(path);
+  }
+
+  /**
+   * 条件写入：写前复核远端版本（Graph eTag 复合串），不一致抛出版本冲突
+   * 远端不存在（新库首存）或探测失败时放行，由后续上传环节自行报错（对齐 S3 语义）
+   * @param path 文件路径
+   * @param expectedVersion 期望的远端版本
+   * @throws StorageError(VERSION_CONFLICT) 版本不一致时抛出
+   */
+  private async checkVersionUnchanged(path: string, expectedVersion: string): Promise<void> {
+    try {
+      const currentInfo: FileInfo = await this.getInfo(path);
+      const currentVersion: string | null = currentInfo.version ?? null;
+      if (currentVersion !== expectedVersion) {
+        hilog.warn(DOMAIN, TAG, 'OneDrive version conflict, path: %{public}s, expected: %{public}s, current: %{public}s',
+          path, expectedVersion, currentVersion);
+        throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'OneDrive file version changed');
+      }
+    } catch (error) {
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
+      // 远端不存在或探测失败：放行（fail-open），由上传环节自行报错
+    }
+  }
+
+  /**
+   * 构建不透明版本标识：Graph eTag 与 Last-Modified 复合串
+   * 两者皆空返回 null（由上层内容哈希兜底）
+   * @param eTag Graph driveItem eTag
+   * @param lastModified 最后修改时间字符串
+   */
+  private static buildVersion(eTag: string | undefined, lastModified: string): string | null {
+    const normalizedEtag: string = eTag ?? '';
+    if (!normalizedEtag && !lastModified) {
+      return null;
+    }
+    return `${normalizedEtag}|${lastModified}`;
   }
 
   /**
@@ -222,10 +269,11 @@ export class OneDriveStorage implements IFileStorage {
    * 写入文件内容
    * @param path 文件路径
    * @param data 文件内容
+   * @param option 写入选项，传入 expectedVersion 时写前复核远端 eTag 版本（条件写入）
    * @returns Promise<void>
    * @throws StorageError 如果写入失败
    */
-  public async write(path: string, data: ArrayBuffer): Promise<void> {
+  public async write(path: string, data: ArrayBuffer, option?: WriteOption): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
@@ -242,11 +290,20 @@ export class OneDriveStorage implements IFileStorage {
     }
 
     try {
+      // 条件写入：写前复核远端版本，不一致抛出版本冲突由上层重试/合并兜底
+      const expectedVersion: string | null = option?.expectedVersion ?? null;
+      if (expectedVersion !== null) {
+        await this.checkVersionUnchanged(path, expectedVersion);
+      }
       const result = await this.client.upload(path, data);
       if (!result.success) {
         return Promise.reject(new Error(result.message));
       }
     } catch (error) {
+      // 版本冲突直接透传，保持错误码不被改写
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
       hilog.error(DOMAIN, TAG, 'OneDrive writeFile error:%{public}s', (error as Error).message);
       return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR, (error as Error).message));
     }
@@ -311,7 +368,8 @@ export class OneDriveStorage implements IFileStorage {
         modifiedTime: new Date(resource.lastModified).getTime(),
         path: resource.path,
         type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
-        childrenCount: resource.childrenCount || 0
+        childrenCount: resource.childrenCount || 0,
+        version: OneDriveStorage.buildVersion(resource.eTag, resource.lastModified)
       };
     } else {
       throw new Error(result.message);
@@ -353,7 +411,8 @@ export class OneDriveStorage implements IFileStorage {
           modifiedTime: new Date(resource.lastModified).getTime(),
           path: resource.path,
           type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
-          childrenCount: resource.childrenCount || 0
+          childrenCount: resource.childrenCount || 0,
+          version: OneDriveStorage.buildVersion(resource.eTag, resource.lastModified)
         });
       }
 

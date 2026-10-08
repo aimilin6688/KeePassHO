@@ -6,7 +6,9 @@ import axios from '@ohos/axios';
 import { ByteUtils } from 'kdbxweb';
 import { OneDriveClient, OneDriveClientOptions } from '../../../../../main/ets/storage/onedrive/OneDriveClient';
 import { OneDriveStorage } from '../../../../../main/ets/storage/onedrive/OneDriveStorage';
+import { OneDriveStorageConfig } from '../../../../../main/ets/storage/onedrive/OneDriveConfig';
 import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
+import { FileInfo } from '../../../../../main/ets/storage/IFileStorage';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveUploadSessionTest';
@@ -125,6 +127,34 @@ export default function OneDriveUploadSessionTest() {
         expect(storageError.code).assertEqual(StorageErrorCodes.CLIENT_UNDEFINED);
       }
     });
+
+    it('parseResource extracts eTag for version baseline', 0, () => {
+      const client = new OneDriveClient();
+      const data: Record<string, Object> = {
+        'id': 'item-123',
+        'name': 'test.kdbx',
+        'size': 1024,
+        'lastModifiedDateTime': '2026-10-08T00:00:00Z',
+        'eTag': '"{item-123}, 1"',
+        'file': {}
+      };
+      const resource = client.parseResource(data);
+      expect(resource.type).assertEqual('file');
+      expect(resource.eTag).assertEqual('"{item-123}, 1"');
+    });
+
+    it('parseResource leaves eTag undefined when Graph omits it', 0, () => {
+      const client = new OneDriveClient();
+      const data: Record<string, Object> = {
+        'id': 'folder-1',
+        'name': 'docs',
+        'lastModifiedDateTime': '2026-10-08T00:00:00Z',
+        'folder': { 'childCount': 3 }
+      };
+      const resource = client.parseResource(data);
+      expect(resource.type).assertEqual('folder');
+      expect(resource.eTag).assertUndefined();
+    });
   });
 
   // 真实 Graph API 用例：未配置令牌时整体不注册（诚实跳过，见 OneDriveTestConfig.isRealApiEnabled）
@@ -200,6 +230,71 @@ export default function OneDriveUploadSessionTest() {
           expect(download.success).assertTrue();
           expect(isPatternBuffer(download.body ?? new ArrayBuffer(0), size)).assertTrue();
           hilog.info(DOMAIN, TAG, 'Upload session round-trip verified: %{public}s, size=%{public}d', path, size);
+        } finally {
+          try {
+            fs.unlinkSync(srcPath);
+          } catch {
+            // ignore
+          }
+        }
+      });
+    });
+
+    // 存储层版本基线与条件写入（FileInfo.version = eTag|lastModified 复合串）
+    describe('OneDriveConditionalWrite_RealApi', () => {
+      it('getInfo returns version and write honors expectedVersion', 0, async () => {
+        const config = new OneDriveStorageConfig(OneDriveTestConfig.ACCESS_TOKEN, '',
+          Date.now() + 3600 * 1000);
+        const storage = new OneDriveStorage(config);
+        const path = OneDriveTestConfig.TEST_FOLDER + '/cond-' + Date.now() + '.dat';
+        const content = new ArrayBuffer(16);
+
+        // 创建文件
+        await storage.write(path, content);
+
+        // getInfo 透出 version 基线（eTag 复合串）
+        const info: FileInfo = await storage.getInfo(path);
+        expect(info.version).not().assertNull();
+
+        // 匹配版本 → 写前复核通过，写入成功
+        await storage.write(path, content, { expectedVersion: info.version });
+
+        // 陈旧版本 → 写前复核拒绝
+        let caughtCode: number = -1;
+        try {
+          await storage.write(path, content, { expectedVersion: 'stale-version' });
+        } catch (error) {
+          caughtCode = (error as StorageError).code;
+        }
+        expect(caughtCode).assertEqual(StorageErrorCodes.VERSION_CONFLICT);
+      });
+
+      it('writeFromFile honors expectedVersion', 0, async () => {
+        const config = new OneDriveStorageConfig(OneDriveTestConfig.ACCESS_TOKEN, '',
+          Date.now() + 3600 * 1000);
+        const storage = new OneDriveStorage(config);
+        const path = OneDriveTestConfig.TEST_FOLDER + '/cond-f-' + Date.now() + '.dat';
+        const cacheDir = abilityDelegatorRegistry.getAbilityDelegator().getAppContext().cacheDir;
+        const srcPath = cacheDir + '/onedrive-cond-' + Date.now() + '.tmp';
+        writePatternFileSync(srcPath, 1024);
+        try {
+          // 创建远端文件并取得版本基线
+          await storage.write(path, new ArrayBuffer(16));
+          const info: FileInfo = await storage.getInfo(path);
+          expect(info.version).not().assertNull();
+
+          // 匹配版本 → 流式写入成功且返回新版本
+          const written: FileInfo = await storage.writeFromFile(path, srcPath, { expectedVersion: info.version });
+          expect(written.version).not().assertNull();
+
+          // 陈旧版本 → 写前复核拒绝
+          let caughtCode: number = -1;
+          try {
+            await storage.writeFromFile(path, srcPath, { expectedVersion: 'stale-version' });
+          } catch (error) {
+            caughtCode = (error as StorageError).code;
+          }
+          expect(caughtCode).assertEqual(StorageErrorCodes.VERSION_CONFLICT);
         } finally {
           try {
             fs.unlinkSync(srcPath);

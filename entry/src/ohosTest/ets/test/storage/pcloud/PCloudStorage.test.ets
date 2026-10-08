@@ -7,6 +7,8 @@ import { StorageType } from '../../../../../main/ets/storage/StorageType';
 import { PCloudTestConfig } from './PCloudTestConfig';
 import { StorageConfig } from '../../../../../main/ets/storage/StorageConfig';
 import { util } from '@kit.ArkTS';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
 
 export default function PCloudStorageTest() {
   describe('PCloudStorageTest', () => {
@@ -270,6 +272,71 @@ export default function PCloudStorageTest() {
         expect(info.name).assertEqual(testName);
         expect(info.type).assertEqual(FileType.FILE);
         expect(info.size).assertLarger(0);
+      });
+    });
+
+    // ==================== 11. 真实 API: 版本基线与条件写入 ====================
+    // 版本指纹 = fileid:hash:size:modified 复合串（对齐 HuaweiDrive versionFingerprint 语义）
+    describe('RealAPIConditionalWrite', () => {
+      let storage: PCloudStorage;
+
+      beforeEach(() => {
+        storage = new PCloudStorage();
+        storage.init(PCloudTestConfig.createStorageConfig() as StorageConfig);
+      });
+
+      it('write with stale expectedVersion rejects with VERSION_CONFLICT', 0, async () => {
+        const encoder: util.TextEncoder = new util.TextEncoder();
+        const testName: string = 'pcond-' + Date.now() + '.txt';
+        const testPath: string = PCloudTestConfig.ROOT_FOLDER_ID + '/' + testName;
+        // 先创建远端文件
+        await storage.write(testPath, encoder.encodeInto('cond test').buffer as ArrayBuffer);
+        // 文件已存在：任意陈旧版本串都应触发写前复核拒绝
+        try {
+          await storage.write(testPath, encoder.encodeInto('cond test 2').buffer as ArrayBuffer,
+            { expectedVersion: 'stale-version' });
+          expect(true).assertFalse();
+        } catch (error) {
+          const e = error as StorageError;
+          expect(e.code).assertEqual(StorageErrorCodes.VERSION_CONFLICT);
+        }
+      });
+
+      it('write with expectedVersion for new file fails open', 0, async () => {
+        const encoder: util.TextEncoder = new util.TextEncoder();
+        const testName: string = 'pcond-new-' + Date.now() + '.txt';
+        const testPath: string = PCloudTestConfig.ROOT_FOLDER_ID + '/' + testName;
+        // 新库首存：远端文件不存在 → 放行（fail-open，对齐 S3 语义），写入成功
+        await storage.write(testPath, encoder.encodeInto('new file').buffer as ArrayBuffer,
+          { expectedVersion: 'whatever' });
+      });
+
+      it('writeFromFile with stale expectedVersion rejects with VERSION_CONFLICT', 0, async () => {
+        const encoder: util.TextEncoder = new util.TextEncoder();
+        const testName: string = 'pcond-f-' + Date.now() + '.txt';
+        const testPath: string = PCloudTestConfig.ROOT_FOLDER_ID + '/' + testName;
+        const cacheDir = abilityDelegatorRegistry.getAbilityDelegator().getAppContext().cacheDir;
+        const srcPath = cacheDir + '/pcloud-cond-' + Date.now() + '.tmp';
+        const file = fs.openSync(srcPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+        fs.writeSync(file.fd, encoder.encodeInto('from file 2').buffer as ArrayBuffer);
+        fs.closeSync(file);
+        try {
+          // 先创建远端文件
+          await storage.write(testPath, encoder.encodeInto('from file').buffer as ArrayBuffer);
+          try {
+            await storage.writeFromFile(testPath, srcPath, { expectedVersion: 'stale-version' });
+            expect(true).assertFalse();
+          } catch (error) {
+            const e = error as StorageError;
+            expect(e.code).assertEqual(StorageErrorCodes.VERSION_CONFLICT);
+          }
+        } finally {
+          try {
+            fs.unlinkSync(srcPath);
+          } catch {
+            // ignore
+          }
+        }
       });
     });
 
