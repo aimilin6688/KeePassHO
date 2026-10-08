@@ -158,23 +158,30 @@ export class PCloudStorage implements IFileStorage {
     }
   }
 
-  async exists(path: string): Promise<boolean> {
+  /**
+   * 获取文件信息；明确不存在（PCLOUD_ERROR_NOT_FOUND）返回 null，其他错误上抛
+   */
+  async getInfoOrNull(path: string): Promise<FileInfo | null> {
     this.ensureReady();
     this.config!.touchActive();
 
     try {
-      await this.client!.stat(path);
-      return true;
+      const meta = await this.client!.stat(path);
+      return this.metadataToFileInfo(meta, path);
     } catch (error) {
       if (error instanceof PCloudError && error.code === PCLOUD_ERROR_NOT_FOUND) {
-        return false;
+        return null;
       }
-      this.handlePCloudError(error, 'Exists');
+      this.handlePCloudError(error, 'GetInfoOrNull');
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('Unknown error in exists');
+      throw new Error('Unknown error in getInfoOrNull');
     }
+  }
+
+  async exists(path: string): Promise<boolean> {
+    return (await this.getInfoOrNull(path)) !== null;
   }
 
   async getInfo(path: string): Promise<FileInfo> {

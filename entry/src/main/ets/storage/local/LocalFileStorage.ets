@@ -239,29 +239,26 @@ export class LocalFileStorage implements IFileStorage {
   }
 
   /**
+   * 获取文件信息；确定不存在时返回 null（本地无"无法判定"歧义，探测失败视为不存在）
+   * @param path 文件路径
+   * @return Promise<FileInfo | null> 文件信息，不存在时为 null
+   */
+  public async getInfoOrNull(path: string): Promise<FileInfo | null> {
+    try {
+      return await this.getInfo(path);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
    * 检查文件是否存在
    * @param path 文件路径
    * @return Promise<boolean> 文件是否存在
    */
   public async exists(path: string): Promise<boolean> {
-    try {
-      // file://docs/... URI 的 docs FUSE 挂载不被 accessSync 路径解析识别（始终返回 false），
-      // URI 解析仅在 fs.open 阶段生效（与 readToFile/doGetInfo 一致）：
-      // 先激活持久化权限，再用 fs.open 探测存在性；沙箱路径仍走 accessSync
-      if (path.startsWith('file://')) {
-        await this.checkFilePermission(path, fileShare.OperationMode.READ_MODE);
-        const file = await fs.open(path, fs.OpenMode.READ_ONLY);
-        await fs.close(file.fd);
-        hilog.info(DOMAIN, TAG, `Check file exist by open: true, path: ${path}`);
-        return true;
-      }
-      const result: boolean = fs.accessSync(path, fs.AccessModeType.EXIST);
-      hilog.info(DOMAIN, TAG, `Check file exist: ${result}, path: ${path}`);
-      return result;
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
-      return false;
-    }
+    return (await this.getInfoOrNull(path)) !== null;
   }
 
   /**

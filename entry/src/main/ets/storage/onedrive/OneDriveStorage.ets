@@ -372,12 +372,12 @@ export class OneDriveStorage implements IFileStorage {
   }
 
   /**
-   * 检查文件是否存在
+   * 获取文件信息；404 返回 null，其他错误上抛（无法判定）
    * @param path 文件路径
-   * @returns Promise<boolean> 文件是否存在
+   * @returns Promise<FileInfo | null> 文件信息，确定不存在时为 null
    * @throws StorageError 如果检查失败则抛出异常
    */
-  public async exists(path: string): Promise<boolean> {
+  public async getInfoOrNull(path: string): Promise<FileInfo | null> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
@@ -387,17 +387,38 @@ export class OneDriveStorage implements IFileStorage {
     await this.ensureValidToken();
 
     const result = await this.client.getInfo(path);
-    // 如果成功，文件存在
-    if (result.success) {
-      return true;
+    if (result.success && result.body) {
+      const jsonStr = ByteUtils.bytesToString(result.body);
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const resource = this.client.parseResource(data);
+      const info: FileInfo = {
+        name: resource.name,
+        size: resource.size,
+        modifiedTime: new Date(resource.lastModified).getTime(),
+        path: resource.path,
+        type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
+        childrenCount: resource.childrenCount || 0,
+        version: OneDriveStorage.buildVersion(resource.eTag, resource.lastModified)
+      };
+      return info;
     }
-    // 如果失败但状态码是404，文件不存在
+    // 状态码 404：文件不存在
     if (result.statusCode === 404) {
-      return false;
+      return null;
     }
     // 其他错误，抛出异常
-    hilog.error(DOMAIN, TAG, 'OneDrive exists error: status=%{public}d, message=%{public}s', result.statusCode, result.message);
+    hilog.error(DOMAIN, TAG, 'OneDrive getInfoOrNull error: status=%{public}d, message=%{public}s', result.statusCode, result.message);
     return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message));
+  }
+
+  /**
+   * 检查文件是否存在
+   * @param path 文件路径
+   * @returns Promise<boolean> 文件是否存在
+   * @throws StorageError 如果检查失败则抛出异常
+   */
+  public async exists(path: string): Promise<boolean> {
+    return (await this.getInfoOrNull(path)) !== null;
   }
 
   /**

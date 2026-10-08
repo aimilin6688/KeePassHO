@@ -46,6 +46,7 @@ import HashUtilsFileTest from './utils/HashUtilsFile.test';
 import FileTransferTest from './storage/FileTransfer.test';
 import LocalStorageStreamingTest from './storage/LocalStorageStreaming.test';
 import CacheStorageStreamingTest from './storage/CacheStorageStreaming.test';
+import GetInfoOrNullTest from './storage/GetInfoOrNull.test';
 import KdbxErrorPayloadTest from './kdbx/KdbxErrorPayload.test';
 import UploadTooLargeGuardTest from './storage/UploadTooLargeGuard.test';
 
@@ -267,6 +268,9 @@ export default function testsuite() {
 
   // CacheStorage 流式委托测试（readToFile/writeFromFile 委托 + only-cache 模式）
   CacheStorageStreamingTest();
+
+  // getInfoOrNull（存在性+大小一次返回）测试（LOCAL/WebDAV/能力回退/CacheStorage 策略/调度缓存）
+  GetInfoOrNullTest();
 
   // kdbxErrorPayload 新增映射测试（DecompressedTooLarge + UPLOAD_TOO_LARGE）
   KdbxErrorPayloadTest();

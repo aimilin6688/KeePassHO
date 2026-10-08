@@ -275,32 +275,64 @@ export class S3Storage implements IFileStorage {
     hilog.info(DOMAIN, TAG, 'write: successfully wrote file to S3');
   }
 
-  public async exists(path: string): Promise<boolean> {
+  /**
+   * 获取文件信息；确定不存在（非文件且非目录前缀）时返回 null，网络等错误上抛
+   * @param path 文件路径
+   * @return Promise<FileInfo | null> 文件信息，确定不存在时为 null
+   */
+  public async getInfoOrNull(path: string): Promise<FileInfo | null> {
     if (!this.client) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
 
-    try {
-      const pathResult: S3PathResult = this.parsePath(path);
+    const pathResult: S3PathResult = this.parsePath(path);
 
-      // 空路径或只有 bucket 的路径视为存在
-      if (!pathResult.key || pathResult.key.length === 0) {
-        return true;
-      }
-
-      // 先检查是否是文件
-      const result = await this.client.headObject(pathResult.bucket, pathResult.key);
-      if (result.success) {
-        return true;
-      }
-
-      // 再检查是否是目录
-      const prefix: string = pathResult.key.endsWith('/') ? pathResult.key : pathResult.key + '/';
-      const listResult = await this.client.listObjects(pathResult.bucket, prefix);
-      return listResult.success && listResult.data !== undefined && listResult.data.length > 0;
-    } catch {
-      return false;
+    // 空路径或只有 bucket 的路径视为目录（存在，无大小）
+    if (!pathResult.key || pathResult.key.length === 0) {
+      const rootInfo: FileInfo = {
+        name: pathResult.bucket,
+        size: 0,
+        modifiedTime: 0,
+        path: path,
+        type: FileType.DIR,
+        childrenCount: 0
+      };
+      return rootInfo;
     }
+
+    const result = await this.client.headObject(pathResult.bucket, pathResult.key);
+    if (result.success && result.data) {
+      const info: FileInfo = {
+        name: this.getFileName(pathResult.key),
+        size: result.data.size,
+        modifiedTime: result.data.lastModified,
+        path: path,
+        type: FileType.FILE,
+        version: result.data.etag,
+        childrenCount: 0
+      };
+      return info;
+    }
+
+    const prefix: string = pathResult.key.endsWith('/') ? pathResult.key : pathResult.key + '/';
+    const listResult = await this.client.listObjects(pathResult.bucket, prefix);
+    if (listResult.success && listResult.data && listResult.data.length > 0) {
+      const dirInfo: FileInfo = {
+        name: this.getFileName(pathResult.key),
+        size: 0,
+        modifiedTime: 0,
+        path: path,
+        type: FileType.DIR,
+        childrenCount: listResult.data.length
+      };
+      return dirInfo;
+    }
+
+    return null;
+  }
+
+  public async exists(path: string): Promise<boolean> {
+    return (await this.getInfoOrNull(path)) !== null;
   }
 
   public async getInfo(path: string): Promise<FileInfo> {

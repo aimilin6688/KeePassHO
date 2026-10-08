@@ -370,6 +370,60 @@ export class FTPStorage implements IFileStorage {
   }
 
   /**
+   * 获取文件信息；确定不存在时返回 null，无法判定（网络/权限等）时上抛。
+   * FTP 走 "File not found" 消息标记；SFTP 标记缺失时以 exists 复核（handler 内部语义判定）
+   */
+  public getInfoOrNull(path: string): Promise<FileInfo | null> {
+    return this.serialize(() => this.getInfoOrNullOnce(path));
+  }
+
+  private async getInfoOrNullOnce(path: string): Promise<FileInfo | null> {
+    const handler = await this.ensureConnected();
+    const fullPath = this.getFullPath(path);
+    try {
+      const fileInfo = await handler.getFileInfo(fullPath);
+      const info: FileInfo = {
+        name: fileInfo.name,
+        size: fileInfo.size,
+        modifiedTime: fileInfo.modifiedTime,
+        path: fullPath,
+        type: fileInfo.isDirectory ? FileType.DIR : FileType.FILE,
+        childrenCount: 0,
+        version: `${fileInfo.size}|${fileInfo.modifiedTime}`
+      };
+      return info;
+    } catch (error) {
+      if (FTPStorage.isFileNotFoundMarker(error)) {
+        return null;
+      }
+      // SFTP 的 stat 错误不含 "File not found" 标记：以 exists 复核（内部按协议语义判定）
+      try {
+        const existed = await handler.exists(fullPath);
+        if (!existed) {
+          return null;
+        }
+      } catch {
+        // 复核失败：按原始错误上抛
+      }
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, err.message);
+    }
+  }
+
+  private static isFileNotFoundMarker(error: Object): boolean {
+    if (error instanceof StorageError) {
+      return (error as StorageError).message.includes('File not found');
+    }
+    if (error instanceof Error) {
+      return error.message.includes('File not found');
+    }
+    return false;
+  }
+
+  /**
    * 获取文件信息
    */
   public getInfo(path: string): Promise<FileInfo> {

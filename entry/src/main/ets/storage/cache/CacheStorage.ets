@@ -181,6 +181,67 @@ export class CacheStorage implements IFileStorage {
   }
 
   /**
+   * 获取文件信息；确定不存在时返回 null，无法判定时抛异常
+   * 策略与 exists 镜像：禁缓存透传远端；仅缓存/强制刷新按策略走缓存或远端；
+   * 正常模式远端失败回退缓存副本（离线可用语义不变）
+   * @param path 文件路径
+   * @returns Promise<FileInfo | null> 文件信息，确定不存在时为 null
+   */
+  public async getInfoOrNull(path: string): Promise<FileInfo | null> {
+    // 如果禁用本地缓存
+    if (!CacheConstants.isEnableLocalCache()) {
+      return await this.probeDecorated(path);
+    }
+
+    const cachePath: string = CacheConstants.getCacheFilePath(path);
+    const onlyUseCache: boolean = CacheConstants.getOnlyCache();
+    const forceRefresh: boolean = CacheConstants.getForceRefresh();
+
+    // 如果强制刷新，清除强制刷新标志
+    if (forceRefresh) {
+      CacheConstants.clearForceRefresh();
+    }
+
+    // 仅使用本地缓存模式：缓存副本存在返回信息，miss 视为不存在（离线不可打开）
+    if (onlyUseCache && !forceRefresh) {
+      try {
+        return await this.getCacheInfo(cachePath, path);
+      } catch (error) {
+        hilog.debug(DOMAIN, TAG, 'getInfoOrNull cache miss: %{public}s', cachePath);
+        return null;
+      }
+    }
+
+    // 正常模式：优先远端，失败回退缓存副本（与 exists 离线回退语义一致；
+    // 无缓存副本时上抛原始错误，保留"无法判定"语义，由调用方决定保留记录）
+    try {
+      return await this.probeDecorated(path);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'getInfoOrNull remote failed, fallback to cache: %{public}s', error?.message);
+      try {
+        return await this.getCacheInfo(cachePath, path);
+      } catch {
+        throw error as Error;
+      }
+    } 
+  }
+
+  /**
+   * 探测被装饰存储：优先可选 getInfoOrNull 能力，未实现时回退 exists + getInfo
+   */
+  private async probeDecorated(path: string): Promise<FileInfo | null> {
+    const probed: FileInfo | null | undefined = await this.decoratedStorage.getInfoOrNull?.(path);
+    if (probed !== undefined) {
+      return probed;
+    }
+    const existed: boolean = await this.decoratedStorage.exists(path);
+    if (!existed) {
+      return null;
+    }
+    return await this.decoratedStorage.getInfo(path);
+  }
+
+  /**
    * 检查文件是否存在
    * 优先检查本地缓存
    * @param path 文件路径
