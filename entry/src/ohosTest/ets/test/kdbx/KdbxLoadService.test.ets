@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from '@ohos/hypium';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@ohos/hypium';
 import { common } from '@kit.AbilityKit';
 import { ErrorEvent } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
@@ -51,6 +51,13 @@ export default function KdbxLoadServiceTest() {
       const initialContent: ArrayBuffer = await database.save();
       await fileManager.write(dbPath, initialContent);
       baseHash = await KdbxModeTestHelper.sha256Hex(initialContent);
+      // 本套件专测 Worker 路径：分级调度下强制 dbPath 走 Worker（种入超阈值大小）；
+      // 每个用例后重播种——加载成功的真实大小回填会覆盖种入值，导致后续用例误走主线程
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
+    });
+
+    afterEach(() => {
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
     });
 
     afterAll(() => {

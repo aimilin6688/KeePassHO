@@ -113,7 +113,9 @@ export default function LoadWorkerPrewarmTest() {
     });
 
     it('load succeeds on prewarmed worker (onmessage fan-out refactor)', 0, async () => {
-      // Worker 已由前序用例预热（常驻复用）；预热结果消息与加载任务消息经同一 onmessage 扇出
+      // Worker 已由前序用例预热（常驻复用）；预热结果消息与加载任务消息经同一 onmessage 扇出。
+      // 分级调度下强制本库走 Worker 路径（种入超阈值大小），断言 M0 会话文件路径回传
+      KdbxModeTestHelper.forceWorkerDispatch(dbPath);
       const loadParam = KdbxModeTestHelper.makeLoadParam(dbPath, 'prewarm-db.kdbx', KdbxModeTestHelper.DB_PASSWORD);
       const done: Promise<SuccessMessage | LoadMessage> = new Promise((resolve: (value: SuccessMessage | LoadMessage) => void) => {
         const callback: KdbxLoadServiceCallback = {

@@ -33,9 +33,9 @@ export class DatabaseLoad {
       // 创建凭证
       let credentials: KdbxCredentials = await CredentialsService.createKdbxCredentials(request);
       this.postMessage('loading_key', callback?.onLoadMessage);
-      // 读前守卫 + 流式下载到 T0 文件
-      const tDownload: number = Date.now();
-      let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
+    // 读前守卫 + 流式下载到 T0 文件（precheckSize 由调度层解析时跳过重复 getInfo）
+    const tDownload: number = Date.now();
+    let fileInfo: FileInfo = await this.loadKdbxFileToFile(request, t0Path);
       hilog.info(DOMAIN, TAG, 'load stage download: %{public}d ms, bytes=%{public}d',
         Date.now() - tDownload, fileInfo.size ?? 0);
       this.postMessage('validating', callback?.onLoadMessage);
@@ -62,8 +62,13 @@ export class DatabaseLoad {
       hilog.info(DOMAIN, TAG, 'load stage sha256: %{public}d ms, bytes=%{public}d',
         Date.now() - tHash, fileInfo.size ?? 0);
       hilog.info(DOMAIN, TAG, 'load total: %{public}d ms', Date.now() - tStart);
-      this.postSuccessMessage(new SuccessMessage(kdbx, fileInfo.modifiedTime, false,
-        fileInfo.version ?? null, contentHash), callback?.onSuccessMessage);
+      const successMessage: SuccessMessage = new SuccessMessage(kdbx, fileInfo.modifiedTime, false,
+        fileInfo.version ?? null, contentHash);
+      // 分级加载调度：压缩后大小随消息回传，主线程回填调度缓存与最近文件记录
+      if (fileInfo.size > 0) {
+        successMessage.fileSize = fileInfo.size;
+      }
+      this.postSuccessMessage(successMessage, callback?.onSuccessMessage);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error loading database:%{public}s, stack:%{public}s', error.message, error.stack);
       this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error), callback?.onErrorMessage);
@@ -101,8 +106,10 @@ export class DatabaseLoad {
     }
     // 单 manager 贯穿守卫与下载：一次 init 存储、令牌刷新结果随 config 原地传递
     const fileManager: KdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
-    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名
-    const guard: GuardCheckResult = await DatabaseLoadGuard.checkBeforeRead(fileManager, request.filePath);
+    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名；
+    // precheckSize 已知时守卫复用该值，跳过重复 getInfo
+    const guard: GuardCheckResult = await DatabaseLoadGuard.checkBeforeRead(fileManager, request.filePath,
+      request.precheckSize);
     if (guard.rejectReason !== null) {
       throw new Error(guard.rejectReason);
     }

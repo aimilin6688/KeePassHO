@@ -20,6 +20,11 @@ export class Constants {
    */
   public static readonly SYNC_LOAD_MAX_BYTES: number = 4 * 1024 * 1024;
 
+  /**
+   * 分级加载调度总开关（kill switch）：false 时恢复"恒 Worker"现状行为
+   */
+  public static readonly SIZE_DISPATCH_LOAD: boolean = true;
+
   // --------------- S4 附件磁盘化（内容寻址加密缓存） ----------------
   /**
    * 附件池总量达到该阈值时转入加密磁盘缓存（字节），低于阈值保持纯内存模式（小库零行为差异）

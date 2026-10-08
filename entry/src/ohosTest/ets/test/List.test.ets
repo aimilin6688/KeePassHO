@@ -43,6 +43,7 @@ import DatabaseSaveFastPathTest from './workers/DatabaseSaveFastPath.test';
 import StreamingXmlParserTest from './workers/StreamingXmlParser.test';
 import WorkerEnvironmentInjectionTest from './workers/WorkerEnvironmentInjection.test';
 import DatabaseLoadGuardTest from './services/DatabaseLoadGuard.test';
+import LoadDispatchServiceTest from './services/LoadDispatchService.test';
 import HashUtilsFileTest from './utils/HashUtilsFile.test';
 import FileTransferTest from './storage/FileTransfer.test';
 import LocalStorageStreamingTest from './storage/LocalStorageStreaming.test';
@@ -249,6 +250,9 @@ export default function testsuite() {
 
   // PREWARM 预热协议测试（真实 Worker 全链路 + forceRefresh 不消费回归）
   LoadWorkerPrewarmTest();
+
+  // 分级加载调度测试（resolveSize 解析链 + 主线程/Worker 路由 + 守卫 precheckSize 去重）
+  LoadDispatchServiceTest();
   // S6 保存管道流式路径测试（ChaCha20 v4 → saveToFile + writeFromFile，对照 AES 回退）
   DatabaseSaveStreamingTest();
   // S8 版本预检快速路径测试（能力声明 + 版本一致跳过下载，计数存储观测）

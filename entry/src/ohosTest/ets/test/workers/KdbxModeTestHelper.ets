@@ -14,6 +14,8 @@ import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
 import { HashUtils } from '../../../../main/ets/common/utils/HashUtils';
 import { ConflictMessage, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../../../main/ets/workers/WorkerParam';
 import { DatabaseWorkerFactory } from '../../../../main/ets/workers/DatabaseWorkerFactory';
+import { LoadDispatchCache } from '../../../../main/ets/services/kdbx/LoadDispatchCache';
+import { Constants } from '../../../../main/ets/common/constants/Constants';
 // 副作用引入 worker 壳：ohosTest 构建仅编译被引用文件，必须 import 才能将壳文件编入 entry_test abc。
 // 主线程加载时壳内 workerPort 为空，顶层注册自动跳过（不影响 worker 线程行为）。
 import '../../../../main/ets/workers/DatabaseLoadWorker.ets';
@@ -92,6 +94,15 @@ export class KdbxModeTestHelper {
     for (let i = 0; i < group.groups.length; i++) {
       KdbxModeTestHelper.collectGroupTitles(group.groups[i], titles);
     }
+  }
+
+  /**
+   * 分级加载调度下强制指定文件走 Worker 路径（Worker 专测用例适配）：
+   * 向调度缓存种入超阈值大小——resolveSize 命中缓存优先级①，
+   * 守卫以 precheckSize 复用该值跳过 getInfo，不影响真实文件读取
+   */
+  public static forceWorkerDispatch(filePath: string): void {
+    LoadDispatchCache.put(filePath, Constants.SYNC_LOAD_MAX_BYTES + 1);
   }
 
   /**

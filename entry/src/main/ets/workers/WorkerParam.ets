@@ -191,6 +191,12 @@ export class SuccessMessage implements WorkerMessage {
    */
   tokenSnapshot?: TokenSnapshot | null;
 
+  /**
+   * 加载文件的压缩后大小（字节，来自 readToFile 的 FileInfo）；
+   * 主线程收到后回填加载调度缓存与最近文件记录（下次分级调度零网络决策）
+   */
+  fileSize?: number;
+
 
   constructor(data: ArrayBuffer | Kdbx, modifiedTime: number, isMerge?: boolean, version?: string | null, contentHash?: string | null) {
     this.type = MessageType.SUCCESS;
