@@ -3,6 +3,10 @@ import { StorageConfig, PageConfig } from '../StorageConfig';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
 import { PCloudClient, PCloudMetadata, PCloudError } from './PCloudClient';
 import { PCloudStorageConfig, PCloudPageConfig } from './PCloudConfig';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+const TAG = 'PCloudStorage';
 
 const PCLOUD_ERROR_NEED_LOGIN = 1000;
 const PCLOUD_ERROR_NOT_FOUND = 2005;
@@ -50,6 +54,9 @@ export class PCloudStorage implements IFileStorage {
 
   /**
    * 流式从本地文件上传（S7：pCloud PUT 协议 + rcp UploadFromFile，请求体不驻内存，解除 CP-UP 约束）
+   * 条件写入：传入 expectedVersion 时写前复核远端版本，不一致抛出版本冲突
+   * @throws StorageError(VERSION_CONFLICT) 远端版本与期望不一致
+   * @throws StorageError(FILE_WRITE_ERROR) 上传失败
    */
   async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
     this.ensureReady();
@@ -69,9 +76,15 @@ export class PCloudStorage implements IFileStorage {
     const fileName = path.substring(lastSlash + 1);
 
     try {
+      // 条件写入：写前复核远端版本，不一致抛出版本冲突
+      await this.checkExpectedVersion(folderNumericId, fileName, option);
       await this.client!.uploadFileFromFile(folderNumericId, fileName, srcPath);
       return await this.getInfo(path);
     } catch (error) {
+      // 版本冲突直接透传，保持错误码不被改写
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
       const err = error as Error;
       this.handlePCloudError(error, 'WriteFromFile');
       throw new StorageError(
@@ -97,7 +110,15 @@ export class PCloudStorage implements IFileStorage {
     }
   }
 
-  async write(path: string, content: ArrayBuffer): Promise<void> {
+  /**
+   * 写入文件内容
+   * 条件写入：传入 expectedVersion 时写前复核远端版本，不一致抛出版本冲突
+   * @param path 文件路径
+   * @param content 文件内容
+   * @param option 写入选项（条件写入）
+   * @throws StorageError(VERSION_CONFLICT) 远端版本与期望不一致
+   */
+  async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
     this.ensureReady();
     this.config!.touchActive();
 
@@ -120,8 +141,14 @@ export class PCloudStorage implements IFileStorage {
     const fileName = path.substring(lastSlash + 1);
 
     try {
+      // 条件写入：写前复核远端版本，不一致抛出版本冲突
+      await this.checkExpectedVersion(folderNumericId, fileName, option);
       await this.client!.uploadFile(folderNumericId, fileName, content);
     } catch (error) {
+      // 版本冲突直接透传，保持错误码不被改写
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
       const err = error as Error;
       this.handlePCloudError(error, 'Write');
       throw new StorageError(
@@ -202,8 +229,57 @@ export class PCloudStorage implements IFileStorage {
       modifiedTime: new Date(meta.modified).getTime(),
       path: resourceId,
       type: meta.isfolder ? FileType.DIR : FileType.FILE,
-      childrenCount: childrenCount
+      childrenCount: childrenCount,
+      version: PCloudStorage.buildVersion(meta)
     };
+  }
+
+  /**
+   * 构建不透明版本标识（基线A）：fileid + hash + size + modified 复合串
+   * 内容更新必然改变 hash/modified/size 中至少一项，同一内容重复探测结果稳定
+   * @param meta pCloud 文件/文件夹元数据
+   */
+  private static buildVersion(meta: PCloudMetadata): string {
+    const id: number = meta.fileid ?? meta.folderid ?? 0;
+    const hash: number = meta.hash ?? 0;
+    const size: number = meta.size ?? 0;
+    return `${id}:${hash}:${size}:${meta.modified}`;
+  }
+
+  /**
+   * 条件写入：写前复核远端版本（目录列表按文件名定位当前元数据），不一致抛出版本冲突
+   * 远端文件不存在（新库首存）或列表失败时放行，由后续上传环节自行报错（对齐 S3 语义）
+   * @param folderNumericId 目标文件夹数字 ID
+   * @param fileName 文件名
+   * @param option 写入选项
+   * @throws StorageError(VERSION_CONFLICT) 版本不一致时抛出
+   */
+  private async checkExpectedVersion(folderNumericId: string, fileName: string, option?: WriteOption): Promise<void> {
+    const expectedVersion: string | null = option?.expectedVersion ?? null;
+    if (expectedVersion === null) {
+      return;
+    }
+    try {
+      const items: PCloudMetadata[] = await this.client!.listFolder(folderNumericId);
+      for (const item of items) {
+        if (!item.isfolder && item.name === fileName) {
+          const currentVersion: string = PCloudStorage.buildVersion(item);
+          if (currentVersion !== expectedVersion) {
+            hilog.warn(DOMAIN, TAG,
+              'pCloud version conflict, folder: %{public}s, file: %{public}s, expected: %{public}s, current: %{public}s',
+              folderNumericId, fileName, expectedVersion, currentVersion);
+            throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Remote file version changed');
+          }
+          return;
+        }
+      }
+      // 目标文件不存在（新库首存）：放行
+    } catch (error) {
+      if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
+        throw error;
+      }
+      // 列表失败（含远端不存在）：放行（fail-open），由上传环节自行报错
+    }
   }
 
   /**

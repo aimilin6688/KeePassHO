@@ -54,6 +54,11 @@ export interface OneDriveResource {
   lastModified: string;
 
   /**
+   * 资源 eTag（Graph driveItem eTag，内容/元数据更新即变化，映射为 FileInfo.version）
+   */
+  eTag?: string;
+
+  /**
    * 资源路径
    */
   path: string;
@@ -816,6 +821,7 @@ export class OneDriveClient {
       const name = this.extractOptionalStringFromObject(data, 'name');
       const size = this.extractOptionalNumberFromObject(data, 'size') || 0;
       const lastModified = this.extractOptionalStringFromObject(data, 'lastModifiedDateTime');
+      const eTag = this.extractOptionalStringFromObject(data, 'eTag');
       const path = this.extractPath(data);
       const downloadUrl = this.extractOptionalStringFromObject(data, '@microsoft.graph.downloadUrl');
 
@@ -835,7 +841,8 @@ export class OneDriveClient {
         path: path || '',
         downloadUrl: downloadUrl,
         childrenCount: childrenCount,
-        mimeType: mimeType
+        mimeType: mimeType,
+        eTag: eTag
       };
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to parse resource: ${(error as Error).message}, data: ${JSON.stringify(data)}`);
@@ -847,7 +854,8 @@ export class OneDriveClient {
         size: this.extractOptionalNumberFromObject(data, 'size') || 0,
         lastModified: this.extractOptionalStringFromObject(data, 'lastModifiedDateTime') || '',
         path: this.extractPath(data) || '',
-        childrenCount: 0
+        childrenCount: 0,
+        eTag: this.extractOptionalStringFromObject(data, 'eTag')
       };
     }
   }
