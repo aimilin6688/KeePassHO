@@ -859,11 +859,11 @@ export struct EntryEdit {
     }
   }
 
-  // 添加附件
+  // 添加附件（单次最多选择 ATTACH_SELECT_MAX_COUNT 个）
   // S6-d：注册进 kdbx.binaries 附件池（避免保存时 base64 内联进 XML）+ 阈值磁盘化（镜像加载侧）
   private async addAttachment() {
     try {
-      const result = await FileUtils.selectFiles(1);
+      const result = await FileUtils.selectFiles(Constants.ATTACH_SELECT_MAX_COUNT);
       const database = FileService.getInstance().getDbFileParam().database;
       if (!database) {
         CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.invalid_database')) });
@@ -873,7 +873,8 @@ export struct EntryEdit {
         // 注册进附件池：保存时 writeBinaries 据 getRefByHash 写 <Value Ref="n"/>，
         // 不再走 setBytes base64 内联（修 XML 膨胀 + 永不磁盘化 bug）
         const binary = await database.binaries.add(file.content);
-        this.attachments.set(file.name, binary);
+        const name = this.uniqueAttachmentName(file.name);
+        this.attachments.set(name, binary);
       }
       // 大附件磁盘化（镜像加载侧 maybeConvertToDiskRefs 语义：池总量超阈值时转 DiskRef）
       const converted = await database.binaries.maybeConvertToDiskRefs(Constants.ATTACH_DISK_THRESHOLD_BYTES);
@@ -890,6 +891,23 @@ export struct EntryEdit {
   private deleteAttachment(key: string) {
     this.attachments.delete(key);
     this.isModified = true;
+  }
+
+  // 重名处理：附件名已存在（含同批次内重名）时在扩展名前追加 (n)，避免 Map 键覆盖丢失文件
+  private uniqueAttachmentName(name: string): string {
+    if (!this.attachments.has(name)) {
+      return name;
+    }
+    const lastDotIndex = name.lastIndexOf('.');
+    const base = lastDotIndex === -1 ? name : name.substring(0, lastDotIndex);
+    const ext = lastDotIndex === -1 ? '' : name.substring(lastDotIndex);
+    for (let i = 1; i <= 1000; i++) {
+      const candidate = `${base} (${i})${ext}`;
+      if (!this.attachments.has(candidate)) {
+        return candidate;
+      }
+    }
+    return `${base}_${Date.now()}${ext}`;
   }
 
   build() {
