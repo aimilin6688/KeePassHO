@@ -63,6 +63,7 @@ export struct EntryEdit {
   private database: Kdbx | null = null;
   private parentGroup: KdbxGroup | undefined = undefined;
   private entry: KdbxEntry | null = null;
+  private originalBinaries: Map<string, KdbxBinary | KdbxBinaryWithHash> = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
   private standardFields: Array<string> =
     [KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD, KdbxUtils.FIELD_URL, KdbxUtils.FIELD_NOTES];
   private promptAction = this.getUIContext().getPromptAction();
@@ -231,6 +232,12 @@ export struct EntryEdit {
         // 加载附件
         this.attachments = this.entry.binaries;
 
+        // 保存原始附件快照，用于 pushHistory 前还原 entry.binaries
+        this.originalBinaries = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
+        this.entry.binaries.forEach((value: KdbxBinary | KdbxBinaryWithHash, key: string) => {
+          this.originalBinaries.set(key, value);
+        });
+
         // 检验是否修改了
         this.isModified = false;
       } else {
@@ -326,6 +333,7 @@ export struct EntryEdit {
         // 添加到历史记录中
         this.pushEntryToHistory();
         LoadingDialog.showLoading(ResourceManager.getString($r('app.string.load_save_history')));
+
         // 清除旧的自定义字段（除了标准字段外的所有字段）
         this.entry.fields.forEach((value, key) => {
           if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD,
@@ -391,6 +399,14 @@ export struct EntryEdit {
     if (!this.database || !this.entry) {
       return;
     }
+    // 还原 entry.binaries 到原始状态，确保历史快照不含编辑期新增/删除的附件
+    const currentBinaries: Map<string, KdbxBinary | KdbxBinaryWithHash> = new Map(this.attachments);
+    const entryBinaries = this.entry.binaries;
+    entryBinaries.clear();
+    this.originalBinaries.forEach((value: KdbxBinary | KdbxBinaryWithHash, key: string) => {
+      entryBinaries.set(key, value);
+    });
+
     // 限制历史条目格式
     const historyMaxItems = this.database.meta.historyMaxItems;
     if (historyMaxItems && historyMaxItems > 0 && this.entry.history.length >= historyMaxItems) {
@@ -401,6 +417,12 @@ export struct EntryEdit {
 
     // 添加到历史记录中
     this.entry.pushHistory();
+
+    // 恢复 entry.binaries 为编辑后的最新附件
+    entryBinaries.clear();
+    currentBinaries.forEach((value: KdbxBinary | KdbxBinaryWithHash, key: string) => {
+      entryBinaries.set(key, value);
+    });
   }
 
   /**
