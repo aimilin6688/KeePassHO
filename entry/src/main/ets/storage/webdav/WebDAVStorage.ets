@@ -112,7 +112,8 @@ export class WebDAVStorage extends BaseFileStorage {
     }
   }
 
-  public async write(path: string, data: ArrayBuffer, option?: WriteOption): Promise<void> {
+  public async write(path: string, data: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, ResourceManager.getString($r('app.string.webdav_not_init'))));
@@ -127,7 +128,12 @@ export class WebDAVStorage extends BaseFileStorage {
       if (expectedVersion !== null) {
         await this.checkVersionUnchanged(path, expectedVersion);
       }
-      await this.client.upload(path, data);
+      // rcp onUploadProgress 回调形参为 (totalSize, transferredSize)，与 TransferProgressCallback 相反
+      const progressAdapter: ((totalSize: number, transferredSize: number) => void) | undefined =
+        onProgress ? (totalSize: number, transferredSize: number): void => {
+          onProgress(transferredSize, totalSize);
+        } : undefined;
+      await this.client.upload(path, data, progressAdapter);
     } catch (error) {
       // 版本冲突直接透传，保持错误码不被改写
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
@@ -166,15 +172,22 @@ export class WebDAVStorage extends BaseFileStorage {
    * 流式下载到本地文件（rcp.downloadToFile，响应体不驻留内存，修 P8/P9）
    * @param path 远端路径
    * @param destPath 本地目标路径
+   * @param onProgress 下载进度回调（可选）：rcp onDownloadProgress 字节级透传
    */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  public async readToFile(path: string, destPath: string,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED,
         ResourceManager.getString($r('app.string.webdav_not_init')));
     }
     try {
-      const result: ResultInfo = await this.client.downloadToFile(path, destPath);
+      // rcp onDownloadProgress 回调形参为 (totalSize, transferredSize)，与 TransferProgressCallback 相反
+      const progressAdapter: ((totalSize: number, transferredSize: number) => void) | undefined =
+        onProgress ? (totalSize: number, transferredSize: number): void => {
+          onProgress(transferredSize, totalSize);
+        } : undefined;
+      const result: ResultInfo = await this.client.downloadToFile(path, destPath, progressAdapter);
       if (!result.success) {
         throw new StorageError(StorageErrorCodes.FILE_READ_ERROR,
           `${result.message}(${result.statusCode})`);
