@@ -30,6 +30,7 @@ interface PromptActionInfo {
   dialogId: string
   componentContent: ComponentContent<object>,
   dialogController: promptAction.DialogController
+  openPromise: Promise<void>
 }
 
 let promptActionInfos: PromptActionInfo[] = [];
@@ -75,17 +76,19 @@ export class PromptActionUtils {
         }
       }
       const dialogController = new promptAction.DialogController();
-      promptActionInfos.push({
-        dialogId: value.params.dialogId,
-        componentContent: componentContent,
-        dialogController: dialogController
-
-      })
-      return uiPromptAction.openCustomDialogWithController(componentContent, dialogController, options).catch((error: Error) => {
+      // 打开完成 promise 随信息登记：closeCustomDialog 需等待其完成，防 close 先于 open 到达的竞态
+      const openPromise: Promise<void> = uiPromptAction.openCustomDialogWithController(componentContent, dialogController, options).catch((error: Error) => {
         hilog.error(DOMAIN, TAG, ` openCustomDialog dialogId: ${value.params.dialogId}, error = ${JSON.stringify(error)}`);
         PromptActionUtils.removeDialogInfo(value.params.dialogId);
         return Promise.reject(error);
       });
+      promptActionInfos.push({
+        dialogId: value.params.dialogId,
+        componentContent: componentContent,
+        dialogController: dialogController,
+        openPromise: openPromise
+      })
+      return openPromise;
     } catch (error) {
       hilog.error(DOMAIN, TAG, ` openCustomDialog dialogId: ${value.params.dialogId}, error = ${JSON.stringify(error)}`)
       return Promise.reject(error);
@@ -106,9 +109,12 @@ export class PromptActionUtils {
         info = promptActionInfos.length > 0 ? promptActionInfos[promptActionInfos.length - 1] : undefined
       }
       if (!info) {
-        hilog.debug(DOMAIN, TAG, `closeCustomDialog ${dialogId} is not found`)
+        hilog.debug(DOMAIN, TAG, `closeCustomDialog ${dialogId} is not found`);
         return;
       }
+      // 等待打开完成后再关闭：快任务（小文件下载）中 close 可能先于 open 完成到达，
+      // 双通道 close 均会失败且异常被上层吞掉，弹窗随后完成打开将永久悬挂
+      await info.openPromise.catch(() => {});
       // 通过控制器关闭弹窗
       try {
         info.dialogController.close();
