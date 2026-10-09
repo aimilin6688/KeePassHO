@@ -7,6 +7,7 @@ import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } 
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
 import { ByteUtils } from 'kdbxweb';
 import BuildProfile from 'BuildProfile';
+import { rcp } from '@kit.RemoteCommunicationKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveStorage';
@@ -221,6 +222,74 @@ export class OneDriveStorage extends BaseFileStorage {
   }
 
   /**
+   * 声明本存储的 FileInfo.version 可信用于保存/加载链路的版本预检快速路径
+   * OneDrive version = eTag|lastModified 复合串（Graph driveItem 内容/元数据更新即变化），
+   * 条件写入已履约（checkVersionUnchanged 写前复核），可安全跳过全量下载+sha256
+   */
+  public supportsVersionFastPath(): boolean {
+    return true;
+  }
+
+  /**
+   * 流式下载到本地文件（Graph @microsoft.graph.downloadUrl + rcp.downloadToFile）
+   * 先 getInfo 取预授权下载 URL，再用 rcp 流式下载到目标文件（响应体不驻留内存），
+   * 进度回调经 rcp onDownloadProgress 字节级透传
+   * @param path 远端文件路径
+   * @param destPath 本地目标文件路径
+   * @param onProgress 下载进度回调（可选）：rcp onDownloadProgress 字节级透传
+   * @return Promise<FileInfo> 远端文件信息（含 version）
+   */
+  public async readToFile(path: string, destPath: string,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
+    if (!this.client) {
+      hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized');
+    }
+
+    await this.ensureValidToken();
+
+    try {
+      const downloadUrl: string = await this.getDownloadUrl(path);
+      const progressAdapter: ((totalSize: number, transferredSize: number) => void) | undefined =
+        onProgress ? (totalSize: number, transferredSize: number): void => {
+          onProgress(transferredSize, totalSize);
+        } : undefined;
+      await OneDriveClient.downloadByUrlToFile(downloadUrl, destPath, progressAdapter);
+      return await this.getInfo(path);
+    } catch (error) {
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      hilog.error(DOMAIN, TAG, 'OneDrive readToFile error:%{public}s', (error as Error).message);
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message);
+    }
+  }
+
+  /**
+   * 获取 Graph 预授权下载 URL（@microsoft.graph.downloadUrl）
+   * 先请求 driveItem（含 downloadUrl 字段），解析出临时下载地址
+   * @param path 文件路径
+   * @returns 预授权下载 URL
+   */
+  private async getDownloadUrl(path: string): Promise<string> {
+    if (!this.client) {
+      throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized');
+    }
+    const result = await this.client.getInfo(path);
+    if (result.success && result.body) {
+      const jsonStr = ByteUtils.bytesToString(result.body);
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const downloadUrl: string = this.client.extractOptionalStringFromObject(data, '@microsoft.graph.downloadUrl');
+      if (downloadUrl) {
+        return downloadUrl;
+      }
+      throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, 'Download URL not found in driveItem response');
+    }
+    throw new StorageError(StorageErrorCodes.FILE_READ_ERROR,
+      result.message || `Failed to get file info for download: ${result.statusCode}`);
+  }
+
+  /**
    * 流式从本地文件上传（S7-a：Graph upload session 分片上传）
    * 小文件（<4MB）简单 PUT；大文件创建会话后按 5MB 分片从源文件区域读取 PUT，
    * 内存窗口 = 单分片，与文件大小解耦；CP-UP 仅约束整缓冲 write 路径，此路径豁免。
@@ -332,32 +401,33 @@ export class OneDriveStorage extends BaseFileStorage {
    * @returns Promise<void>
    * @throws StorageError 如果写入失败
    */
-  public async write(path: string, data: ArrayBuffer, option?: WriteOption): Promise<void> {
+  public async write(path: string, data: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
     }
 
-    // CP-UP：整缓冲上传超过 http 栈上限必然失败，提前拒绝并给出明确原因
     if (data.byteLength > HTTP_UPLOAD_MAX_BYTES) {
       throw new StorageError(StorageErrorCodes.UPLOAD_TOO_LARGE, `${data.byteLength} bytes`);
     }
 
-    // 检查令牌是否过期
     await this.ensureValidToken();
 
     try {
-      // 条件写入：写前复核远端版本，不一致抛出版本冲突由上层重试/合并兜底
       const expectedVersion: string | null = option?.expectedVersion ?? null;
       if (expectedVersion !== null) {
         await this.checkVersionUnchanged(path, expectedVersion);
       }
-      const result = await this.client.upload(path, data);
+      const uploadProgress: ((transferredBytes: number, totalBytes: number) => void) | undefined =
+        onProgress ? (transferredBytes: number, totalBytes: number): void => {
+          onProgress(transferredBytes, totalBytes);
+        } : undefined;
+      const result = await this.client.upload(path, data, uploadProgress);
       if (!result.success) {
         return Promise.reject(new Error(result.message));
       }
     } catch (error) {
-      // 版本冲突直接透传，保持错误码不被改写
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
         throw error;
       }

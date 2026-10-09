@@ -4,6 +4,7 @@ import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
 import { StringUtils, UrlUtils } from '../../common/utils';
 import { fileIo as fs } from '@kit.CoreFileKit';
+import { rcp } from '@kit.RemoteCommunicationKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveClient';
@@ -348,7 +349,7 @@ export class OneDriveClient {
    * @param key 键
    * @returns 字符串值或undefined
    */
-  private extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string {
+  public extractOptionalStringFromObject(obj: Record<string, Object>, key: string): string {
     const value = obj[key];
     if (value !== undefined && value !== null && typeof value === 'string') {
       return value;
@@ -487,6 +488,27 @@ export class OneDriveClient {
     return new KdbxError(r_code, r_message);
   }
 
+  private convertRcpResponse(response: rcp.Response): HttpResponse {
+    const headers: Record<string, string> = {};
+    if (response.headers) {
+      const keys = Object.keys(response.headers);
+      for (let i = 0; i < keys.length; i++) {
+        const name = keys[i];
+        const values = response.headers[name];
+        if (values && values.length > 0) {
+          headers[name] = values[0];
+        }
+      }
+    }
+    return new HttpResponse(
+      response.statusCode >= 200 && response.statusCode < 300,
+      response.statusCode,
+      response.reasonPhrase ?? '',
+      headers,
+      response.body ?? undefined
+    );
+  }
+
   /**
    * 刷新访问令牌
    * @param refreshToken 刷新令牌
@@ -620,26 +642,40 @@ export class OneDriveClient {
    * @param fileBuffer 文件内容
    * @returns Promise<HttpResponse> 结果信息
    */
-  public async upload(path: string, fileBuffer: ArrayBuffer): Promise<HttpResponse> {
-    if (!this.axiosInstance) {
-      throw new Error('Axios instance not initialized');
+  public async upload(path: string, fileBuffer: ArrayBuffer,
+    onProgress?: (transferredBytes: number, totalBytes: number) => void): Promise<HttpResponse> {
+    if (!this.config) {
+      throw new Error('OneDriveClient not initialized');
     }
     try {
-      // 使用 normalizePath 构建正确的 API 路径
       const apiPath = this.normalizePath(path, OneDrivePathType.UPLOAD);
-      hilog.info(DOMAIN, TAG, `File upload: path=${path}, apiPath=${apiPath}, size: ${fileBuffer.byteLength}`);
-      const config: AxiosRequestConfig = {
-        headers: {
-          'Content-Type': 'application/octet-stream'
-        }
+      const url = this.config.apiBaseUrl + apiPath;
+      hilog.info(DOMAIN, TAG, `File upload: path=${path}, size: ${fileBuffer.byteLength}`);
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${this.config.accessToken}`,
+        'Content-Type': 'application/octet-stream'
       };
-      const response: AxiosResponse = await this.axiosInstance.put(apiPath, fileBuffer, config);
-      const result = this.convertAxiosResponse(response);
-      hilog.info(DOMAIN, TAG, 'File upload result: %{public}s', result.message);
-      return result;
+      const httpEventsHandler: rcp.HttpEventsHandler = {
+        onUploadProgress: onProgress
+          ? (totalSize: number, transferredSize: number): void => {
+            onProgress(transferredSize, totalSize);
+          }
+          : undefined
+      };
+      const req = new rcp.Request(url, 'PUT', headers, fileBuffer, {}, {},
+        { tracing: { httpEventsHandler: httpEventsHandler } });
+      const session = rcp.createSession();
+      try {
+        const response = await session.fetch(req);
+        const result = this.convertRcpResponse(response);
+        hilog.info(DOMAIN, TAG, 'File upload result: status=%{public}d', result.statusCode);
+        return result;
+      } finally {
+        session.close();
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, `File upload error: path=${path}, error=${(error as Error).message}`);
-      return this.convertAxiosError(error as AxiosError);
+      return new HttpResponse(false, 0, (error as Error).message, {});
     }
   }
 
@@ -741,12 +777,12 @@ export class OneDriveClient {
       const totalSize = stat.size;
 
       if (totalSize < UPLOAD_SESSION_SIMPLE_THRESHOLD) {
-        // 小文件：读入内存简单上传
         const data = new ArrayBuffer(totalSize);
         await fs.read(file.fd, data);
         await fs.close(file.fd);
         file = null;
-        return await this.upload(path, data);
+        const result = await this.upload(path, data, onProgress);
+        return result;
       }
 
       const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
@@ -812,6 +848,56 @@ export class OneDriveClient {
           // ignore
         }
       }
+    }
+  }
+
+  /**
+   * 流式下载预授权 URL 到本地文件（rcp.downloadToFile，响应体不驻留内存）
+   * Graph @microsoft.graph.downloadUrl 是预签名临时 URL（含认证），无需 Authorization 头
+   * @param downloadUrl Graph 预授权下载地址
+   * @param destPath 本地目标路径
+   * @param progressCallback 下载进度回调（可选）：rcp onDownloadProgress (totalSize, transferredSize) 透传
+   */
+  public static async downloadByUrlToFile(downloadUrl: string, destPath: string,
+    progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<void> {
+    if (progressCallback) {
+      const cb: (totalSize: number, transferredSize: number) => void = progressCallback;
+      let progressSession: rcp.Session | null = null;
+      try {
+        progressSession = rcp.createSession({
+          requestConfiguration: {
+            tracing: {
+              httpEventsHandler: {
+                onDownloadProgress: (totalSize: number, transferredSize: number): void => {
+                  cb(totalSize, transferredSize);
+                }
+              }
+            }
+          }
+        });
+        await progressSession.downloadToFile(downloadUrl,
+          { kind: 'file', file: destPath } as rcp.DownloadToFile);
+        return;
+      } catch (error) {
+        const err: Error = error instanceof Error ? error : new Error(String(error));
+        hilog.error(DOMAIN, TAG, 'downloadByUrlToFile(with progress) error: %{public}s', err.message);
+        throw err;
+      } finally {
+        progressSession?.close();
+      }
+    }
+    try {
+      const session: rcp.Session = rcp.createSession();
+      try {
+        await session.downloadToFile(downloadUrl,
+          { kind: 'file', file: destPath } as rcp.DownloadToFile);
+      } finally {
+        session.close();
+      }
+    } catch (error) {
+      const err: Error = error instanceof Error ? error : new Error(String(error));
+      hilog.error(DOMAIN, TAG, 'downloadByUrlToFile error: %{public}s', err.message);
+      throw err;
     }
   }
 
