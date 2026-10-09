@@ -12,6 +12,16 @@ import { rcp } from '@kit.RemoteCommunicationKit';
 const DOMAIN = 0x0000;
 const TAG = 'OneDriveStorage';
 
+class UploadResponseCache {
+  path: string;
+  info: FileInfo;
+
+  constructor(path: string, info: FileInfo) {
+    this.path = path;
+    this.info = info;
+  }
+}
+
 /**
  * OneDrive存储实现类
  * 实现IFileStorage接口，提供OneDrive文件存储服务
@@ -35,6 +45,13 @@ export class OneDriveStorage extends BaseFileStorage {
    * 刷新完成（成功或失败）后置空
    */
   private refreshingPromise: Promise<void> | null = null;
+
+  /**
+   * 上传响应缓存条目：write() 完成后解析 driveItem 缓存 FileInfo，
+   * 后续 getInfoOrNull 命中时免网络请求，消除 postSuccess 额外 getInfo 延迟
+   * 一次消费：getInfoOrNull 取出后清空
+   */
+  private cachedUploadInfo: UploadResponseCache | null = null;
 
   /**
    * 构造函数
@@ -317,6 +334,10 @@ export class OneDriveStorage extends BaseFileStorage {
       if (!result.success) {
         return Promise.reject(new Error(result.message));
       }
+      const infoFromResponse: FileInfo | null = this.parseUploadResponse(path, result.body);
+      if (infoFromResponse !== null) {
+        return infoFromResponse;
+      }
     } catch (error) {
       // 版本冲突直接透传，保持错误码不被改写
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
@@ -364,6 +385,49 @@ export class OneDriveStorage extends BaseFileStorage {
       return null;
     }
     return `${normalizedEtag}|${lastModified}`;
+  }
+
+  /**
+   * 从上传响应体解析 driveItem → FileInfo（Graph PUT /content 返回 driveItem JSON）
+   * 解析失败返回 null，调用方回落 getInfo
+   * @param path 文件路径（用于 FileInfo.path）
+   * @param body 上传响应体
+   */
+  private parseUploadResponse(path: string, body: ArrayBuffer | undefined): FileInfo | null {
+    if (!body || !this.client) {
+      return null;
+    }
+    try {
+      const jsonStr = ByteUtils.bytesToString(body);
+      const data: Record<string, Object> = JSON.parse(jsonStr);
+      const resource = this.client.parseResource(data);
+      return {
+        name: resource.name,
+        size: resource.size,
+        modifiedTime: new Date(resource.lastModified).getTime(),
+        path: resource.path,
+        type: FileType.FILE,
+        childrenCount: 0,
+        version: OneDriveStorage.buildVersion(resource.eTag, resource.lastModified)
+      };
+    } catch (e) {
+      hilog.warn(DOMAIN, TAG, 'Failed to parse upload response, fallback to getInfo: %{public}s',
+        (e as Error).message);
+      return null;
+    }
+  }
+
+  /**
+   * 缓存上传响应的 FileInfo，供后续 getInfoOrNull 免网络请求
+   * @param path 文件路径
+   * @param body 上传响应体
+   */
+  private cacheUploadResponse(path: string, body: ArrayBuffer | undefined): void {
+    const info: FileInfo | null = this.parseUploadResponse(path, body);
+    if (info !== null) {
+      this.cachedUploadInfo = new UploadResponseCache(path, info);
+      hilog.info(DOMAIN, TAG, 'Cached upload response for path=%{public}s', path);
+    }
   }
 
   /**
@@ -427,6 +491,7 @@ export class OneDriveStorage extends BaseFileStorage {
       if (!result.success) {
         return Promise.reject(new Error(result.message));
       }
+      this.cacheUploadResponse(path, result.body);
     } catch (error) {
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {
         throw error;
@@ -446,6 +511,13 @@ export class OneDriveStorage extends BaseFileStorage {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
+    }
+
+    if (this.cachedUploadInfo !== null && this.cachedUploadInfo.path === path) {
+      const cached: UploadResponseCache = this.cachedUploadInfo;
+      this.cachedUploadInfo = null;
+      hilog.info(DOMAIN, TAG, 'getInfoOrNull: cache hit for path=%{public}s', path);
+      return cached.info;
     }
 
     // 检查令牌是否过期
