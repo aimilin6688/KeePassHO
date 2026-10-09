@@ -2,6 +2,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CommonUtils } from '../../common/utils/CommonUtils';
 import { SettingsService } from '../../services/SettingsService';
+import { CacheMetaService } from './CacheMetaService';
 
 const DOMAIN = 0x0000;
 const TAG = 'CacheConstants';
@@ -120,6 +121,8 @@ export class CacheConstants {
     } catch (error) {
       hilog.error(DOMAIN, TAG, `Failed to delete cache: ${cachePath}, error: ${(error as Error).message}`);
     }
+    // 版本元数据一并删除（只删缓存文件会留下孤儿 meta；缓存仍在时 meta 无版本事实反而是安全的 miss）
+    await CacheMetaService.deleteMeta(originalPath);
   }
 
   /**

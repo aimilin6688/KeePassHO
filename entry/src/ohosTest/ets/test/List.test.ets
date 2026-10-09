@@ -53,6 +53,10 @@ import HashUtilsFileTest from './utils/HashUtilsFile.test';
 import FileTransferTest from './storage/FileTransfer.test';
 import LocalStorageStreamingTest from './storage/LocalStorageStreaming.test';
 import CacheStorageStreamingTest from './storage/CacheStorageStreaming.test';
+// L9 加载链路版本快速路径：缓存元数据 sidecar / 回填与命中判定 / DatabaseLoad 编排
+import CacheMetaServiceTest from './storage/cache/CacheMetaService.test';
+import CacheStorageVersionMetaTest from './storage/cache/CacheStorageVersionMeta.test';
+import DatabaseLoadFastPathTest from './workers/DatabaseLoadFastPath.test';
 import GetInfoOrNullTest from './storage/GetInfoOrNull.test';
 import KdbxErrorPayloadTest from './kdbx/KdbxErrorPayload.test';
 import UploadTooLargeGuardTest from './storage/UploadTooLargeGuard.test';
@@ -289,6 +293,15 @@ export default function testsuite() {
 
   // CacheStorage 流式委托测试（readToFile/writeFromFile 委托 + only-cache 模式）
   CacheStorageStreamingTest();
+
+  // 缓存元数据 sidecar 测试（写读删往返 / 缺失与损坏容错 / 路径规则）
+  CacheMetaServiceTest();
+
+  // 缓存回填 + 版本快速路径判定测试（P2/P3.2/P4/P5：回填 meta、命中/未命中矩阵、清理无孤儿）
+  CacheStorageVersionMetaTest();
+
+  // 加载链路版本快速路径测试（命中零下载 / 远端已变 miss / force_refresh 必下载）
+  DatabaseLoadFastPathTest();
 
   // getInfoOrNull（存在性+大小一次返回）测试（LOCAL/WebDAV/能力回退/CacheStorage 策略/调度缓存）
   GetInfoOrNullTest();

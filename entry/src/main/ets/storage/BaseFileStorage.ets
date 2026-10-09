@@ -116,4 +116,14 @@ export abstract class BaseFileStorage implements IFileStorage {
   public supportsVersionFastPath(): boolean {
     return false;
   }
+
+  /**
+   * 版本快速路径（加载链路）默认不参与（默认 false → miss → 调用方走 readToFile 全量读取）。
+   * 仅 CacheStorage 装饰器覆写；LOCAL 等不经缓存装饰的存储天然无需该能力。
+   * @return Promise<boolean> 恒 false（未命中）
+   */
+  public readCacheToFile(path: string, destPath: string, expectedVersion: string,
+    expectedSize: number): Promise<boolean> {
+    return Promise.resolve(false);
+  }
 }
