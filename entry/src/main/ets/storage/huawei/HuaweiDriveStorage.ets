@@ -871,7 +871,8 @@ export class HuaweiDriveStorage extends BaseFileStorage {
    * @returns Promise<void>
    * @throws StorageError 如果写入失败
    */
-  public async write(path: string, data: ArrayBuffer, option?: WriteOption): Promise<void> {
+  public async write(path: string, data: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'Huawei Drive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
@@ -894,7 +895,7 @@ export class HuaweiDriveStorage extends BaseFileStorage {
         // 条件写入写前复核（WriteOption 契约）：不一致抛 VERSION_CONFLICT，零额外请求
         this.ensureVersionMatch(file, option?.expectedVersion ?? null);
         // 更新现有文件
-        result = await this.client.update(file.id, data);
+        result = await this.client.update(file.id, data, onProgress);
       } else {
         // 创建新文件：解析父目录路径，逐级查找/创建文件夹，再上传到末级目录
         const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
@@ -907,7 +908,7 @@ export class HuaweiDriveStorage extends BaseFileStorage {
           return Promise.reject(new StorageError(StorageErrorCodes.FILE_WRITE_ERROR,
             'Failed to resolve parent folder'));
         }
-        result = await this.client.upload(parentFolderId, fileName, data);
+        result = await this.client.upload(parentFolderId, fileName, data, onProgress);
       }
 
       if (!result.success) {
