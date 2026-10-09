@@ -26,6 +26,15 @@ export class WebDAVStorage extends BaseFileStorage {
     return WebDAVPageConfig;
   }
 
+  /**
+   * 版本快速路径 opt-in：version 为 `etag|lastModified` 复合串（弱 ETag 时以 lastModified 为主），
+   * write/writeFromFile 已履约 expectedVersion 条件写入（写前复核 + VERSION_CONFLICT）。
+   * 加载侧额外叠加 size 双比对（编排层契约），误判窗口收敛为"同秒 + 同尺寸两次修改"。
+   */
+  public supportsVersionFastPath(): boolean {
+    return true;
+  }
+
   public init(config: WebDAVStorageConfig) {
     const parsedConfig = this.parseConfig(config);
     // 配置相同，复用现有连接，避免 close 导致进行中的请求被取消
