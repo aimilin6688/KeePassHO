@@ -126,6 +126,7 @@ export struct DatabaseView {
   });
   private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
+  private breadcrumbScroller: Scroller = new Scroller();
   private clearHistoryUrlPage: Array<string> = ["Password"];
   private windowClass: window.Window | undefined = undefined; // 窗口实例
   private dialogController: CustomDialogController = new CustomDialogController({
@@ -667,14 +668,13 @@ export struct DatabaseView {
     const path: NavigationPathItem[] = [];
     let current: KdbxGroup | undefined = group;
 
-    // 从当前分组向上遍历到根分组
     while (current) {
-      const groupName = current.name; // 直接使用 name 属性
-      const nameStr = groupName || ''; // 处理 undefined 情况
+      const groupName = current.name;
+      const nameStr = groupName || '';
 
-      // 如果是根分组（没有父分组），显示为 '/'
       if (!current.parentGroup) {
-        path.unshift({ id: current.uuid.id, name: '/' });
+        const rootName = nameStr || this.database?.meta.name || 'Root';
+        path.unshift({ id: current.uuid.id, name: rootName });
       } else {
         path.unshift({ id: current.uuid.id, name: nameStr });
       }
@@ -684,6 +684,10 @@ export struct DatabaseView {
 
     this.navigationPath = path;
     hilog.debug(DOMAIN, TAG, `Breadcrumb updated: ${path.length} levels`);
+
+    setTimeout(() => {
+      this.breadcrumbScroller.scrollEdge(Edge.End);
+    }, 50);
   }
 
   /**
@@ -2169,7 +2173,7 @@ export struct DatabaseView {
         // 顶部面包屑导航条（进入布局流，内容区自动下移，不遮挡条目）
         if (this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.TOP
           && !this.moveParam && !this.isSelectionMode) {
-          Scroll() {
+          Scroll(this.breadcrumbScroller) {
             Row() {
               ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
                 Row() {
@@ -2723,7 +2727,7 @@ export struct DatabaseView {
 
       // 底部面包屑导航条（绝对定位浮层，贴容器底部上方 36vp，不影响内容区起点）
       if (this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM) {
-        Scroll() {
+        Scroll(this.breadcrumbScroller) {
           Row() {
             ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
               Row() {
