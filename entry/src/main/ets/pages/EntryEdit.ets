@@ -396,6 +396,7 @@ export struct EntryEdit {
     if (historyMaxItems && historyMaxItems > 0 && this.entry.history.length >= historyMaxItems) {
       const deleteCount = this.entry.history.length - historyMaxItems + 1;
       this.entry.removeHistory(0, deleteCount);
+      KdbxUtils.cleanupOrphanedBinaries(this.database);
     }
     // TODO 限制历史条目总大小
 
@@ -864,6 +865,9 @@ export struct EntryEdit {
   // 删除附件
   private deleteAttachment(key: string) {
     this.attachments.delete(key);
+    if (this.database) {
+      KdbxUtils.cleanupOrphanedBinaries(this.database);
+    }
     this.isModified = true;
   }
 

@@ -465,6 +465,12 @@ export struct DatabaseView {
   /**
    * 重新加载数据库信息
    */
+  private getGroupTitle(group: KdbxGroup | undefined): ResourceStr {
+    if (!group) return '';
+    if (!group.parentGroup) return this.database?.meta.name || 'Root';
+    return KdbxUtils.getFieldName(group.name) || '';
+  }
+
   private reloadDatabase() {
     hilog.debug(DOMAIN, TAG, 'Receive reload database event');
     this.loadDatabase().then(() => {
@@ -479,7 +485,6 @@ export struct DatabaseView {
   private loadDatabase(): Promise<void> {
     // 获取从Password页面传递的参数
     const params = FileService.getDbFileParam();
-    this.titleName = params.fileName ?? '';
     this.database = params.database ?? null;
     this.filePath = params.filePath ?? '';
 
@@ -564,27 +569,27 @@ export struct DatabaseView {
         const savedGroup = this.database.getGroup(this.currentGroupId);
         if (savedGroup) {
           this.currentGroup = savedGroup;
-          this.titleName = KdbxUtils.getFieldName(savedGroup.name) || '';
+          this.titleName = this.getGroupTitle(savedGroup);
           this.showBack = savedGroup.parentGroup !== undefined &&
             savedGroup.uuid.id !== this.database.getDefaultGroup()?.uuid.id;
           hilog.info(DOMAIN, TAG, 'Restored group from saved state: %{public}s', this.currentGroupId);
         } else {
           // 保存的分组ID无效，使用根分组
           this.currentGroup = this.database.getDefaultGroup();
-          this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
+          this.titleName = this.getGroupTitle(this.currentGroup);
           this.showBack = false;
           this.currentGroupId = '';
         }
       } else if (dbShowParam && dbShowParam.groupId) {
         this.currentGroup = this.database.getGroup(dbShowParam.groupId);
-        this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
+        this.titleName = this.getGroupTitle(this.currentGroup);
         this.showBack = true;
         // 保存分组ID
         this.currentGroupId = this.currentGroup?.uuid.id || '';
       } else {
         // 获取根分组下的所有子分组
         this.currentGroup = this.database.getDefaultGroup();
-        this.titleName = KdbxUtils.getFieldName(this.currentGroup?.name) || '';
+        this.titleName = this.getGroupTitle(this.currentGroup);
         this.showBack = false;
         // 清空保存的分组ID
         this.currentGroupId = '';
@@ -629,7 +634,7 @@ export struct DatabaseView {
   private navigateToGroup(group: KdbxGroup, updateBreadcrumb: boolean = true) {
     hilog.info(DOMAIN, TAG, `Navigate to group: ${group.uuid.id}`);
     this.currentGroup = group;
-    this.titleName = KdbxUtils.getFieldName(group.name) || '';
+    this.titleName = this.getGroupTitle(group);
 
     // 判断是否为根分组（没有父分组）
     const isRootGroup = !group.parentGroup;
@@ -709,7 +714,7 @@ export struct DatabaseView {
       if (savedGroup && this.currentGroup?.uuid.id !== this.currentGroupId) {
         hilog.info(DOMAIN, TAG, 'Restoring group from saved state: %{public}s', this.currentGroupId);
         this.currentGroup = savedGroup;
-        this.titleName = KdbxUtils.getFieldName(savedGroup.name) || '';
+        this.titleName = this.getGroupTitle(savedGroup);
         this.showBack = savedGroup.parentGroup !== undefined &&
           savedGroup.uuid.id !== this.database.getDefaultGroup()?.uuid.id;
         this.items = [...savedGroup.groups, ...savedGroup.entries];
@@ -732,7 +737,7 @@ export struct DatabaseView {
       const isRootGroup = !parentGroup.parentGroup || parentGroup.uuid.id === this.database?.getDefaultGroup()?.uuid.id;
 
       this.currentGroup = parentGroup;
-      this.titleName = KdbxUtils.getFieldName(parentGroup.name) || '';
+      this.titleName = this.getGroupTitle(parentGroup);
       this.showBack = !isRootGroup;
       // 保存分组ID以支持状态恢复
       this.currentGroupId = parentGroup.uuid.id;
@@ -747,7 +752,7 @@ export struct DatabaseView {
       const rootGroup = this.database?.getDefaultGroup();
       if (rootGroup) {
         this.currentGroup = rootGroup;
-        this.titleName = KdbxUtils.getFieldName(rootGroup.name) || '';
+        this.titleName = this.getGroupTitle(rootGroup);
         this.showBack = false;
         this.currentGroupId = '';
         this.items = [...rootGroup.groups, ...rootGroup.entries];
@@ -1285,16 +1290,26 @@ export struct DatabaseView {
     const entries = this.getSelectedEntries();
     const groups = this.getSelectedGroups();
     
-    // 删除所有选中的条目
+    // 检查是否存在永久删除（已在回收站中的项将被永久删除）
+    let hasPermanentDelete = false;
     entries.forEach(entry => {
+      if (this.database!.isInRecycleBin(entry)) {
+        hasPermanentDelete = true;
+      }
       this.database!.remove(entry);
     });
-    
-    // 删除所有选中的分组
     groups.forEach(group => {
+      if (this.database!.isInRecycleBin(group)) {
+        hasPermanentDelete = true;
+      }
       this.database!.remove(group);
     });
-    
+
+    // 永久删除时清理孤儿附件
+    if (hasPermanentDelete) {
+      KdbxUtils.cleanupOrphanedBinaries(this.database!);
+    }
+
     // 保存数据库
     this.saveDatabase();
     
@@ -1319,8 +1334,9 @@ export struct DatabaseView {
 
     const deleteObj = item;
     const deleteUuid = item.uuid.id;
+    const isPermanentDelete = this.database.isInRecycleBin(deleteObj);
 
-    const msg = this.database.isInRecycleBin(deleteObj) ? $r("app.string.dialog_delete_confirm_message_in_recycle_bin") : $r("app.string.dialog_delete_confirm_message");
+    const msg = isPermanentDelete ? $r("app.string.dialog_delete_confirm_message_in_recycle_bin") : $r("app.string.dialog_delete_confirm_message");
 
     this.getUIContext().showAlertDialog({
       title: $r("app.string.dialog_confirm_title"),
@@ -1336,6 +1352,11 @@ export struct DatabaseView {
           if (deleteObj && this.database) {
             // 从数据库中删除
             this.database.remove(deleteObj);
+
+            // 永久删除时清理孤儿附件
+            if (isPermanentDelete) {
+              KdbxUtils.cleanupOrphanedBinaries(this.database);
+            }
 
             // 从 items 数组中移除（通过 UUID 匹配）
             const itemsIndex = this.items.findIndex(i => i.uuid.id === deleteUuid);

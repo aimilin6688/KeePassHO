@@ -348,6 +348,7 @@ export struct EntryView {
           let entry = KdbxUtils.getEntry(this.database, this.groupId, this.entryId);
           if (entry) {
             entry.removeHistory(this.selectedHistoryIndex);
+            KdbxUtils.cleanupOrphanedBinaries(this.database);
             this.selectedHistoryIndex = -1;
             KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
               onSuccess: () => {
