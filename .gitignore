@@ -23,3 +23,4 @@ oh-package-lock.json5
 .deveco
 .cache
 /libs/sftp/libs/*/libsftp_ohos.so
+.opencode

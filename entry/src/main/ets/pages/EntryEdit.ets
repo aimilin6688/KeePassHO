@@ -4,7 +4,8 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { FileService } from '../services/FileService';
 import { Constants } from '../common/constants/Constants';
-import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, StringUtils, WindowUtils } from '../common/utils';
+import { ProgressMessage } from '../workers/WorkerParam';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
@@ -478,6 +479,12 @@ export struct EntryEdit {
         },
         onMessage: (message) => {
           this.loadingMessage = message;
+        },
+        onProgress: (message: ProgressMessage) => {
+          const baseText: string = StringUtils.removeTrailingProgress(this.loadingMessage);
+          if(baseText){
+            this.loadingMessage = `${baseText} ${message.percent}%`;
+          }
         },
         onError: (error) => {
           this.handleSaveError(error);

@@ -42,9 +42,11 @@ export interface IFileStorage {
    * @param path 文件路径
    * @param content 文件内容
    * @param option 写入选项，传入 expectedVersion 时支持条件写入（写入前校验远端版本，不一致抛出 VERSION_CONFLICT）
+   * @param onProgress 上传进度回调（可选，opt-in 能力）；未实现/未传入时不影响写入语义
    * @throws 如果写入失败则抛出异常
    */
-  write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void>;
+  write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void>;
 
   /**
    * 流式从本地源文件写入到远端（分块上传/复制，避免整缓冲驻留内存）

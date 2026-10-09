@@ -6,12 +6,56 @@ import { CacheStorage } from '../../../../main/ets/storage/cache/CacheStorage';
 import { LocalFileStorage } from '../../../../main/ets/storage/local/LocalFileStorage';
 import { CacheConstants } from '../../../../main/ets/storage/cache/CacheConstants';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
-import { StorageType, WriteOption } from '../../../../main/ets/storage';
+import { FileTransfer } from '../../../../main/ets/storage/FileTransfer';
+import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, StorageType, WriteOption } from '../../../../main/ets/storage';
 
 function initTestContext(): common.Context {
   const appContext = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
   CommonUtils.init(appContext as common.UIAbilityContext);
   return appContext;
+}
+
+/**
+ * 进度透传桩存储：write() 模拟两段上传进度（50% → 100%）后完成
+ */
+class ProgressStubStorage implements IFileStorage {
+  writeCalls = 0;
+  lastWritePath = '';
+
+  getPageConfig(): PageConfig {
+    return {} as PageConfig;
+  }
+  init(config: StorageConfig): void {}
+  async read(path: string): Promise<ArrayBuffer> { return new ArrayBuffer(0); }
+  async write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: (transferredBytes: number, totalBytes: number) => void): Promise<void> {
+    this.writeCalls++;
+    this.lastWritePath = path;
+    if (onProgress) {
+      onProgress(5, 10);
+      onProgress(10, 10);
+    }
+  }
+  async exists(path: string): Promise<boolean> { return true; }
+  async getInfo(path: string): Promise<FileInfo> {
+    return {
+      name: 'stub.bin',
+      size: 10,
+      modifiedTime: Date.now(),
+      path: path,
+      type: FileType.FILE,
+      childrenCount: 0,
+      version: 'stub-version'
+    } as FileInfo;
+  }
+  async getInfoOrNull(path: string): Promise<FileInfo | null> { return this.getInfo(path); }
+  async listDir(path: string): Promise<FileInfo[]> { return []; }
+  async readToFile(path: string, destPath: string): Promise<FileInfo> {
+    return FileTransfer.readToFileDefault(this, path, destPath);
+  }
+  async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+    return FileTransfer.writeFromFileDefault(this, path, srcPath, option);
+  }
 }
 
 /**
@@ -146,6 +190,33 @@ export default function CacheStorageStreamingTest() {
       } finally {
         CacheConstants.setWorkerCachePolicy(true, false, false);
       }
+    });
+
+    /**
+     * write 将上传进度回调透传给底层存储（正常模式：缓存异步写 + 远端推送）
+     */
+    it('write forwards onProgress to decorated storage', 0, async () => {
+      const stub = new ProgressStubStorage();
+      const stubCache = new CacheStorage(stub);
+      const remotePath = testDir + '/progress-passthrough.kdbx';
+      const data = new ArrayBuffer(10);
+
+      const transferredList: number[] = [];
+      const totalList: number[] = [];
+      await stubCache.write(remotePath, data, undefined,
+        (transferredBytes: number, totalBytes: number): void => {
+          transferredList.push(transferredBytes);
+          totalList.push(totalBytes);
+        });
+
+      // 底层 write 调用一次，进度事件两段完整透传
+      expect(stub.writeCalls).assertEqual(1);
+      expect(stub.lastWritePath).assertEqual(remotePath);
+      expect(transferredList.length).assertEqual(2);
+      expect(transferredList[0]).assertEqual(5);
+      expect(transferredList[1]).assertEqual(10);
+      expect(totalList[0]).assertEqual(10);
+      expect(totalList[1]).assertEqual(10);
     });
   });
 }

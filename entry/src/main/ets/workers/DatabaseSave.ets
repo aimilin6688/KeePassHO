@@ -368,7 +368,21 @@ export class DatabaseSave {
     if (buffer === null) {
       throw new Error('saved content is empty');
     }
-    await this.writeContent(request, buffer, expectedVersion, fileManager);
+    // 上传进度：整缓冲尺寸已知 → 限频器转 PROGRESS 消息；存储不支持进度能力时无事件，行为不变
+    const uploadTotalBytes: number = buffer.byteLength;
+    const uploadThrottler: ProgressThrottler = new ProgressThrottler(uploadTotalBytes);
+    const onUploadProgress: TransferProgressCallback = (transferredBytes: number, totalBytes: number): void => {
+      const percent: number = uploadThrottler.onProgress(transferredBytes);
+      if (percent >= 0) {
+        this.postProgressMessage(new ProgressMessage(percent, transferredBytes, totalBytes));
+      }
+    };
+    await this.writeContent(request, buffer, expectedVersion, fileManager, onUploadProgress);
+    // 上传完成：补发末条 100%（分片末片事件缺失等场景兜底；已发过 100% 或全程无事件时无操作）
+    const finalPercent: number = uploadThrottler.finish();
+    if (finalPercent >= 0) {
+      this.postProgressMessage(new ProgressMessage(finalPercent, uploadTotalBytes, uploadTotalBytes));
+    }
     hilog.info(DOMAIN, TAG, 'save stage upload(buffer): %{public}d ms, bytes=%{public}d',
       Date.now() - tWrite, buffer.byteLength);
     return null;
@@ -380,13 +394,14 @@ export class DatabaseSave {
    * @param content 数据库内容
    * @param expectedVersion 期望的远端版本（条件写入），null 表示无条件写入
    * @param fileManager 贯穿本次操作的文件管理器
+   * @param onProgress 上传进度回调（可选），透传给底层存储
    * @throws Error 写入失败，版本冲突时抛出 StorageError(VERSION_CONFLICT)
    */
   private async writeContent(request: SaveDatabase, content: ArrayBuffer, expectedVersion: string | null,
-    fileManager: KdbxFileManager): Promise<void> {
+    fileManager: KdbxFileManager, onProgress?: TransferProgressCallback): Promise<void> {
     const option: WriteOption | undefined = expectedVersion !== null ? { expectedVersion: expectedVersion } : undefined;
     try {
-      await fileManager.write(request.filePath, content, option);
+      await fileManager.write(request.filePath, content, option, onProgress);
       this.postMessage('save_success');
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Worker error save database:%{public}s, stack:%{public}s', error.message, error.stack);

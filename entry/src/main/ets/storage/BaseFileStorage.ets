@@ -41,9 +41,11 @@ export abstract class BaseFileStorage implements IFileStorage {
    * @param path 文件路径
    * @param content 文件内容
    * @param option 写入选项，支持条件写入（expectedVersion 不一致抛出 VERSION_CONFLICT）
+   * @param onProgress 上传进度回调（可选，opt-in 能力）；实现不产生进度事件时行为不变
    * @throws 如果写入失败则抛出异常
    */
-  abstract write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void>;
+  abstract write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void>;
 
   /**
    * 获取文件信息；文件确定不存在时返回 null，无法判定（网络错误、令牌失效等）时抛异常。

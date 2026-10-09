@@ -668,11 +668,31 @@ export default function HuaweiDriveClientTest() {
         const createdFile: HuaweiDriveFile =
           parseFileResponse(client, uploadResponse);
 
-        // 大内容更新（>20M 触发 Files.update.resume 分片上传）
-        const updateResponse: HttpResponse = await client.update(createdFile.id, bigData);
+        // 大内容更新（>20M 触发 Files.update.resume 分片上传），收集分片确认进度事件
+        const transferredList: number[] = [];
+        const totalList: number[] = [];
+        const updateResponse: HttpResponse = await client.update(createdFile.id, bigData,
+          (transferredBytes: number, totalBytes: number): void => {
+            transferredList.push(transferredBytes);
+            totalList.push(totalBytes);
+          });
         console.log('Resume update response: status=%{public}d, message=%{public}s',
           updateResponse.statusCode, updateResponse.message);
         expect(updateResponse.success).assertTrue();
+
+        // 每个分片被服务端确认后上报：至少一条事件、末条为全量、已传字节单调不减
+        expect(transferredList.length).assertLarger(0);
+        const lastUpdateIndex: number = transferredList.length - 1;
+        expect(transferredList[lastUpdateIndex]).assertEqual(totalBytes);
+        expect(totalList[lastUpdateIndex]).assertEqual(totalBytes);
+        let updateMonotonic: boolean = true;
+        for (let i = 1; i < transferredList.length; i++) {
+          if (transferredList[i] < transferredList[i - 1]) {
+            updateMonotonic = false;
+            break;
+          }
+        }
+        expect(updateMonotonic).assertTrue();
 
         // 校验远端文件 size
         const infoResponse: HttpResponse = await client.getInfo(createdFile.id);
@@ -763,12 +783,32 @@ export default function HuaweiDriveClientTest() {
         const totalBytes = RESUME_TEST_TOTAL_BYTES;
         const bigData = createPatternBuffer(totalBytes);
 
-        // 新建文件并上传大内容
+        // 新建文件并上传大内容（upload 内部委托 update 走 resume），收集分片确认进度事件
+        const transferredList: number[] = [];
+        const totalList: number[] = [];
         const uploadResponse: HttpResponse = await client.upload(
-          'root', `test-resume-upload-new-${Date.now()}.txt`, bigData);
+          'root', `test-resume-upload-new-${Date.now()}.txt`, bigData,
+          (transferredBytes: number, totalBytes: number): void => {
+            transferredList.push(transferredBytes);
+            totalList.push(totalBytes);
+          });
         console.log('Resume upload response: status=%{public}d, message=%{public}s',
           uploadResponse.statusCode, uploadResponse.message);
         expect(uploadResponse.success).assertTrue();
+
+        // 分片确认进度透传链路（upload → update → updateByResume → uploadResumeChunks）
+        expect(transferredList.length).assertLarger(0);
+        const lastUploadIndex: number = transferredList.length - 1;
+        expect(transferredList[lastUploadIndex]).assertEqual(totalBytes);
+        expect(totalList[lastUploadIndex]).assertEqual(totalBytes);
+        let uploadMonotonic: boolean = true;
+        for (let i = 1; i < transferredList.length; i++) {
+          if (transferredList[i] < transferredList[i - 1]) {
+            uploadMonotonic = false;
+            break;
+          }
+        }
+        expect(uploadMonotonic).assertTrue();
         const createdFile: HuaweiDriveFile =
           parseFileResponse(client, uploadResponse);
 

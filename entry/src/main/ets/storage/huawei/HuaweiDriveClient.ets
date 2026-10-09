@@ -5,7 +5,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { http } from '@kit.NetworkKit';
 import { ByteUtils, KdbxError } from 'kdbxweb';
 import { OAuth2Config, OAuth2Token } from '../../common/oauth2/OAuth2Types';
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
+import axios, { AxiosError, AxiosInstance, AxiosProgressEvent, AxiosRequestConfig, AxiosResponse } from '@ohos/axios';
 import { StringUtils, UrlUtils } from '../../common/utils';
 import { TransferProgressCallback } from '../index';
 
@@ -291,7 +291,9 @@ class ChunkDownloadWriter {
       fs.writeSync(this.fd, data, { offset: this.rangeStart + this.received });
       this.received += data.byteLength;
       this.progress?.add(data.byteLength);
-      this.logProgress();
+      if(hilog.isLoggable(DOMAIN, TAG, hilog.LogLevel.DEBUG)){
+        this.logProgress();
+      }
     } catch (error) {
       this.writeError = `write file failed at offset ${this.rangeStart + this.received}: ${(error as Error).message}`;
       hilog.error(DOMAIN, TAG, 'download chunk %{public}d write error: %{public}s', this.chunkIndex + 1, this.writeError);
@@ -1137,13 +1139,15 @@ export class HuaweiDriveClient {
    * 华为云盘上传文件需要两步：
    * 1. 创建文件元数据
    * 2. 上传文件内容（需要使用专门的 upload 端点）
-   * 当前实现：先创建文件，然后通过 update 方法上传内容
-   * @param parentFolderId 父文件夹ID
-   * @param fileName 文件名
-   * @param fileBuffer 文件内容
-   * @returns Promise<HttpResponse> 结果信息
-   */
-  public async upload(parentFolderId: string, fileName: string, fileBuffer: ArrayBuffer): Promise<HttpResponse> {
+    * 当前实现：先创建文件，然后通过 update 方法上传内容
+    * @param parentFolderId 父文件夹ID
+    * @param fileName 文件名
+    * @param fileBuffer 文件内容
+    * @param onProgress 上传进度回调（可选）：透传给 update 按上传方式上报
+    * @returns Promise<HttpResponse> 结果信息
+    */
+  public async upload(parentFolderId: string, fileName: string, fileBuffer: ArrayBuffer,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
@@ -1192,7 +1196,7 @@ export class HuaweiDriveClient {
       hilog.info(DOMAIN, TAG, `File created with ID: ${fileId}, now uploading content...`);
 
       // 第二步：上传文件内容（update 内部按大小自动选择 content / resume 断点续传）
-      const result = await this.update(fileId, fileBuffer);
+      const result = await this.update(fileId, fileBuffer, onProgress);
       hilog.info(DOMAIN, TAG, 'upload result: %{public}s', result.message);
       return result;
     } catch (error) {
@@ -1202,21 +1206,24 @@ export class HuaweiDriveClient {
   }
 
   /**
-   * 更新文件内容
-   * 按文件大小自动选择上传方式（官方文档约束）：
-   * content 方式仅支持 20M 以内；超过 20M 走 Files.update.resume 断点续传分片上传
-   * @param fileId 文件ID
-   * @param fileBuffer 文件内容
-   * @returns Promise<HttpResponse> 结果信息
-   */
-  public async update(fileId: string, fileBuffer: ArrayBuffer): Promise<HttpResponse> {
+    * 更新文件内容
+    * 按文件大小自动选择上传方式（官方文档约束）：
+    * content 方式仅支持 20M 以内；超过 20M 走 Files.update.resume 断点续传分片上传
+    * @param fileId 文件ID
+    * @param fileBuffer 文件内容
+    * @param onProgress 上传进度回调（可选）：content 方式按 axios 上传字节上报；
+    *        resume 方式每个分片被服务端确认后按确认字节上报
+    * @returns Promise<HttpResponse> 结果信息
+    */
+  public async update(fileId: string, fileBuffer: ArrayBuffer,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     if (!this.axiosInstance) {
       throw new Error('Axios instance not initialized');
     }
     try {
       hilog.info(DOMAIN, TAG, `update: fileId=${fileId}, size: ${fileBuffer.byteLength}`);
       if (fileBuffer.byteLength > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
-        return await this.updateByResume(fileId, fileBuffer);
+        return await this.updateByResume(fileId, fileBuffer, onProgress);
       }
       // 使用专门的 upload 端点
       const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
@@ -1230,7 +1237,10 @@ export class HuaweiDriveClient {
           'Content-Type': 'application/octet-stream',
           'Authorization': `Bearer ${this.config?.accessToken}`
         },
-        responseType: 'string'
+        responseType: 'string',
+        onUploadProgress: (progressEvent: AxiosProgressEvent): void => {
+          onProgress?.(progressEvent.loaded, fileBuffer.byteLength);
+        }
       };
       const response: AxiosResponse = await axios.request(config);
       const result = this.convertAxiosResponse(response);
@@ -1243,17 +1253,20 @@ export class HuaweiDriveClient {
   }
 
   /**
-   * 断点续传更新文件内容（Files.update.resume + Files.resume 分片 PUT，内存基线为单个分片）
-   * @param fileId 文件ID
-   * @param fileBuffer 文件内容
-   * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
-   */
-  private async updateByResume(fileId: string, fileBuffer: ArrayBuffer): Promise<HttpResponse> {
+    * 断点续传更新文件内容（Files.update.resume + Files.resume 分片 PUT，内存基线为单个分片）
+    * @param fileId 文件ID
+    * @param fileBuffer 文件内容
+    * @param onProgress 上传进度回调（可选）：透传给分片循环按确认字节上报
+    * @returns Promise<HttpResponse> 结果信息（成功时 body 为文件资源 JSON）
+    */
+  private async updateByResume(fileId: string, fileBuffer: ArrayBuffer,
+    onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     const session = await this.initResumeUpload(fileId, fileBuffer.byteLength);
     const readChunk = (offset: number, length: number): Promise<ArrayBuffer> => {
       return Promise.resolve(fileBuffer.slice(offset, offset + length));
     };
-    return await this.uploadResumeChunks(session.location, fileBuffer.byteLength, session.sliceSize, readChunk);
+    return await this.uploadResumeChunks(session.location, fileBuffer.byteLength, session.sliceSize, readChunk,
+      onProgress);
   }
 
   /**

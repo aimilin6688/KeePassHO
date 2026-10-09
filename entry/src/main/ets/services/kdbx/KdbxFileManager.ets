@@ -72,12 +72,14 @@ export class KdbxFileManager {
    * @param path 文件路径
    * @param content 文件内容
    * @param option 写入选项，支持条件写入（expectedVersion 不一致时底层抛出 VERSION_CONFLICT）
+   * @param onProgress 上传进度回调（可选），透传给底层存储；存储不支持进度能力时无事件
    * @throws 如果保存失败则抛出异常
    */
-  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     try {
       // 写入文件内容
-      return await this.storage.write(path, content, option);
+      return await this.storage.write(path, content, option, onProgress);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to save KDBX file: %{public}s', error.message)
       // 原样上抛，保留 StorageError 的错误码（如 VERSION_CONFLICT）供编排层识别

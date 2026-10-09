@@ -90,10 +90,11 @@ export class CacheStorage extends BaseFileStorage {
    * @param option 写入选项，透传给底层远端存储（条件写入）
    * @throws 如果写入失败则抛出异常
    */
-  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     // 如果禁用本地缓存
     if(!CacheConstants.isEnableLocalCache()){
-      return this.decoratedStorage.write(path, content, option);
+      return this.decoratedStorage.write(path, content, option, onProgress);
     }
 
     const cachePath: string = CacheConstants.getCacheFilePath(path);
@@ -115,7 +116,7 @@ export class CacheStorage extends BaseFileStorage {
     this.writeToCacheAsync(cachePath, content);
 
     // 推送到远端（核心操作，必须成功；版本冲突错误原样上抛由编排层处理）
-    await this.decoratedStorage.write(path, content, option);
+    await this.decoratedStorage.write(path, content, option, onProgress);
   }
 
   /**

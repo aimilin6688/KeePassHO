@@ -85,6 +85,23 @@ export class StringUtils {
   }
 
   /**
+   * 移除字符串结尾已追加的传输进度（" 50%" 或 " 1.0 KB / 2.0 KB"）
+   * 用于进度文案刷新时先剥离上一次的进度，再拼接本次进度，避免进度不断累积
+   * @param str 原始文案
+   * @returns 去掉结尾进度后的文案
+   */
+  public static removeTrailingProgress(str: string): string {
+    if (!str) {
+      return '';
+    }
+    // 字节明细：" 1.0 KB / 2.0 KB"
+    const byteDetail = /\s*\d+(?:\.\d+)?\s*(?:B|KB|MB|GB)\s*\/\s*\d+(?:\.\d+)?\s*(?:B|KB|MB|GB)\s*$/i;
+    // 百分比：" 50%"
+    const percent = /\s*\d+(?:\.\d+)?\s*%\s*$/;
+    return str.replace(byteDetail, '').replace(percent, '');
+  }
+
+  /**
    * 格式化文件大小
    * @param size 文件大小（字节）
    * @returns 格式化后的字符串，如 "1.5 KB"
