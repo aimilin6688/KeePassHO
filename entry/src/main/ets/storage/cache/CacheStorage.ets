@@ -2,6 +2,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BaseFileStorage, FileInfo, FileType, IFileStorage, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { CacheConstants } from './CacheConstants';
+import { CacheMeta, CacheMetaService } from './CacheMetaService';
 import { FileTransfer } from '../FileTransfer';
 import { ResourceManager } from '../../common/utils';
 import { KdbxError } from 'kdbxweb';
@@ -147,7 +148,51 @@ export class CacheStorage extends BaseFileStorage {
       }
     }
     // 正常模式：委托底层流式下载到 destPath
-    return await this.decoratedStorage.readToFile(path, destPath, onProgress);
+    const info: FileInfo = await this.decoratedStorage.readToFile(path, destPath, onProgress);
+    // 回填缓存 + 版本元数据（加载链路版本快速路径的事实来源）。
+    // 必须 await：destPath 是调用方临时文件（T0），编排层 finally 会删除，异步拷贝会与删除竞态。
+    // version 来源零成本——装饰层 readToFile 的返回 FileInfo 本就带 version，无新增请求。
+    await this.refreshCache(path, destPath, info, 'readToFile');
+    return info;
+  }
+
+  /**
+   * 版本快速路径（加载链路）：本地缓存元数据与远端版本+尺寸一致时，把缓存内容复制到 destPath，
+   * 让调用方跳过全量下载；任一条件不满足返回 false（miss），由调用方回落 readToFile。
+   * 仅缓存装饰器实现，决策本身由编排层发起（避免装饰器内自做 getInfo 产生重复元数据请求）。
+   * @param path 远端路径
+   * @param destPath 本地目标路径
+   * @param expectedVersion 远端当前版本（守卫 getInfo 取得的事实）
+   * @param expectedSize 远端当前大小（版本之外的第二道防线）
+   * @return 命中返回 true（destPath 已写入缓存内容），否则 false
+   */
+  public async readCacheToFile(path: string, destPath: string, expectedVersion: string,
+    expectedSize: number): Promise<boolean> {
+    if (!CacheConstants.isEnableLocalCache()) {
+      return false; // 关闭本地缓存：装饰器透明，走远端
+    }
+    if (CacheConstants.getOnlyCache()) {
+      return false; // 仅缓存模式：由 readToFile 的仅缓存分支负责
+    }
+    if (CacheConstants.getForceRefresh()) {
+      // 消费一次性标志：快速路径跳过了 readToFile，不清会把 force 泄漏给下一次操作
+      CacheConstants.clearForceRefresh();
+      return false;
+    }
+    const meta: CacheMeta | null = CacheMetaService.readMeta(path);
+    if (meta === null || meta.version === null
+      || meta.version !== expectedVersion || meta.size !== expectedSize) {
+      return false;
+    }
+    const cachePath: string = CacheConstants.getCacheFilePath(path);
+    try {
+      await fs.copyFile(cachePath, destPath); // 缓存被删/损坏 → 抛错 → miss → 走下载
+      hilog.info(DOMAIN, TAG, 'readCacheToFile hit: %{public}s', path);
+      return true;
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'readCacheToFile copy failed (miss): %{public}s', error?.message);
+      return false;
+    }
   }
 
   /**
@@ -174,15 +219,33 @@ export class CacheStorage extends BaseFileStorage {
     }
     // 委托底层流式上传
     const info: FileInfo = await this.decoratedStorage.writeFromFile(path, srcPath, option, onProgress);
-    // 异步刷新本地缓存（srcPath 即最新内容，直接拷贝到缓存路径）
+    // 刷新本地缓存 + 回写元数据（writtenInfo.version 即保存后远端事实，零额外请求）：
+    // 保存后立刻再次解锁可直接命中加载快速路径
+    await this.refreshCache(path, srcPath, info, 'writeFromFile');
+    return info;
+  }
+
+  /**
+   * 刷新缓存文件并回写版本元数据（best-effort：失败仅记日志，主链路不受影响）
+   * @param path 远端路径
+   * @param srcPath 本地最新内容文件路径
+   * @param info 远端文件信息（version 事实来源）
+   * @param scene 日志场景标识（下载回填 / 保存回写）
+   */
+  private async refreshCache(path: string, srcPath: string, info: FileInfo, scene: string): Promise<void> {
     try {
       const cacheDir: string = CacheConstants.getCacheDir();
       this.ensureCacheDir(cacheDir);
-      await fs.copyFile(srcPath, cachePath);
+      await fs.copyFile(srcPath, CacheConstants.getCacheFilePath(path));
+      await CacheMetaService.writeMeta(path, {
+        version: info.version ?? null,
+        size: info.size,
+        modifiedTime: info.modifiedTime,
+        savedAt: Date.now()
+      });
     } catch (error) {
-      hilog.warn(DOMAIN, TAG, 'writeFromFile refresh cache failed (transparent): %{public}s', error?.message);
+      hilog.warn(DOMAIN, TAG, '%{public}s refresh cache failed (transparent): %{public}s', scene, error?.message);
     }
-    return info;
   }
 
   /**

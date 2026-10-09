@@ -179,6 +179,20 @@ export class KdbxFileManager {
   }
 
   /**
+   * 版本快速路径（加载链路）：远端版本与本地缓存元数据一致时把缓存内容复制到 destPath
+   * 能力协商透传：仅缓存装饰器实现，其余存储返回 false（未命中 → 调用方走 readToFile）
+   * @param path 远端文件路径
+   * @param destPath 本地目标路径
+   * @param expectedVersion 远端当前版本
+   * @param expectedSize 远端当前大小
+   * @return Promise<boolean> true 命中（跳过下载），false 未命中
+   */
+  public async readCacheToFile(path: string, destPath: string, expectedVersion: string,
+    expectedSize: number): Promise<boolean> {
+    return this.storage.readCacheToFile?.(path, destPath, expectedVersion, expectedSize) ?? false;
+  }
+
+  /**
    * 获取文件信息；确定不存在返回 null，无法判定（网络错误等）上抛
    * @param filePath 文件路径
    * @return Promise<FileInfo | null> 文件信息，确定不存在时为 null
