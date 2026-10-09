@@ -101,6 +101,21 @@ export interface IFileStorage {
    * 且 write/writeFromFile 履约 expectedVersion 条件写入。
    */
   supportsVersionFastPath?(): boolean;
+
+  /**
+   * 版本快速路径（加载链路）：本地缓存元数据与远端版本+尺寸一致时，把缓存内容复制到 destPath，
+   * 返回 true（命中），调用方据此跳过全量下载；否则返回 false（miss），调用方回落 readToFile。
+   * 可选能力成员：仅 CacheStorage 装饰器实现，其余实现视为 false（LOCAL 天然无需缓存快速路径）。
+   * 命中前提（实现方保证）：本地缓存开关开启、非 only_use_cache、非 force_refresh（命中判定时消费一次性标志）、
+   * 缓存元数据存在且 version 与 size 同时匹配、缓存文件本地拷贝成功。
+   * @param path 远端路径
+   * @param destPath 本地目标路径
+   * @param expectedVersion 远端当前版本（调用方由守卫 getInfo 取得的事实）
+   * @param expectedSize 远端当前大小（版本之外的第二道防线）
+   * @return Promise<boolean> true 表示命中（destPath 已就绪），false 表示未命中
+   */
+  readCacheToFile?(path: string, destPath: string, expectedVersion: string,
+    expectedSize: number): Promise<boolean>;
 }
 
 /**

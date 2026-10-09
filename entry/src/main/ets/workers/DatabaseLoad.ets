@@ -9,6 +9,8 @@ import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard, GuardCheckResult } from '../services/kdbx/DatabaseLoadGuard';
+import { CacheConstants } from '../storage/cache/CacheConstants';
+import { CacheMetaService } from '../storage/cache/CacheMetaService';
 import { CommonUtils, HashUtils, KdbxUtils } from '../common/utils';
 import { LoadMessage, ProgressMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
 import { ProgressThrottler } from './ProgressThrottler';
@@ -181,15 +183,40 @@ export class DatabaseLoad {
     }
     // 单 manager 贯穿守卫与下载：一次 init 存储、令牌刷新结果随 config 原地传递
     const fileManager: KdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
-    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名；
-    // precheckSize 已知时守卫复用该值，跳过重复 getInfo
+    // 版本快速路径候选（纯本地 fs 判定，零网络）：非强制刷新 + 存储声明版本可信 + 缓存元数据存在。
+    // force_refresh 必须在守卫之前读取：守卫的 getInfo 会就地消费该一次性标志，
+    // 若等到 readCacheToFile 再判，标志已被消费，下拉刷新会错误命中缓存（serve 旧内容）
+    const fastCandidate: boolean = !CacheConstants.getForceRefresh()
+      && fileManager.supportsVersionFastPath()
+      && CacheMetaService.readMeta(request.filePath) !== null;
+    // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名。
+    // 候选时让位 precheckSize，强制 getInfo 取远端 version（1 次元数据请求换跳过全量 GET）；
+    // 非候选保持现状优化（precheckSize 已知则跳过 getInfo）
     const guard: GuardCheckResult = await DatabaseLoadGuard.checkBeforeRead(fileManager, request.filePath,
-      request.precheckSize);
+      fastCandidate ? undefined : request.precheckSize);
     if (guard.rejectReason !== null) {
       throw new Error(guard.rejectReason);
     }
-    const fileInfo: FileInfo = await fileManager.readToFile(request.filePath, destPath, onProgress);
-    this.postMessage('load_file_success');
+    // 版本预检快速路径（镜像 DatabaseSave 保存侧）：远端版本+尺寸与缓存元数据一致 →
+    // 本地拷贝替代全量下载，远端事实（version/modifiedTime/size）作为冲突检测基线
+    let fileInfo: FileInfo | undefined = undefined;
+    const guardInfo: FileInfo | null = guard.fileInfo;
+    if (fastCandidate && guardInfo !== null && guardInfo.version !== null && guardInfo.version !== undefined) {
+      const hit: boolean = await fileManager.readCacheToFile(request.filePath, destPath,
+        guardInfo.version, guardInfo.size);
+      if (hit) {
+        fileInfo = guardInfo;
+        hilog.info(DOMAIN, TAG, 'load fast-path: hit (version matched, skip download)');
+        this.postMessage('load_file_success');
+      } else {
+        hilog.info(DOMAIN, TAG, 'load fast-path: miss (version=%{public}s)', guardInfo.version);
+      }
+    }
+    if (fileInfo === undefined) {
+      // 未命中：现状全量下载（下载完成后缓存 + 元数据由 CacheStorage 回填，供下次命中）
+      fileInfo = await fileManager.readToFile(request.filePath, destPath, onProgress);
+      this.postMessage('load_file_success');
+    }
     return fileInfo;
   }
 
