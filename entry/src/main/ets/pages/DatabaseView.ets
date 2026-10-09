@@ -1524,7 +1524,10 @@ export struct DatabaseView {
   }
 
   /**
-   * 重新加载数据库（强制与远端合并）
+   * 下拉刷新（与远端比对，不一致才下载）
+   * 先置 force_refresh 忽略"仅使用本地缓存"，再走版本快速路径：
+   * 远端 version+size 与本地缓存元数据一致 → 直接复用本地副本（零下载）；
+   * 不一致才全量下载。语义仍是"拉最新"，只是内容未变时不再重复传输
    */
   private refreshDatabase() {
     this.isRefreshing = true;
