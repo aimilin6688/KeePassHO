@@ -2,6 +2,7 @@ import { rcp } from '@kit.RemoteCommunicationKit';
 import { util, xml } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError, request } from '@kit.BasicServicesKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { ByteUtils } from 'kdbxweb';
 import { CommonUtils, ResourceManager, StringUtils } from '.';
 import { CertValidationMode } from '../../storage/webdav/WebDAVConfig';
@@ -456,23 +457,62 @@ export class WebDavClient {
   /**
    * 流式上传本地文件（S7：rcp.Request + UploadFromFile，请求体不驻内存）
    * PUT 方法 + Basic 认证头；内存窗口 = rcp 内部分块，与文件大小解耦（解除 CP-UP 100MB 约束）
+   * 进度说明：tracing 的 onUploadProgress 对文件请求体不触发，改用 rcp.ReadFile 适配器——
+   * RCP 按内部块大小回调 read 拉取数据，每次拉取即上报真实已读字节（transferred 单调递增至 totalSize）
    * @param remoteUri 远端路径（相对 session baseAddress）
    * @param srcPath 本地源文件路径
+   * @param progressCallback 上传进度回调（可选）：(totalSize, transferredSize)
    * @returns
    */
-  async uploadFromFile(remoteUri: string, srcPath: string): Promise<ResultInfo> {
+  async uploadFromFile(remoteUri: string, srcPath: string,
+    progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
     const headers: Record<string, string> = {};
     headers['Authorization'] = 'Basic ' + this.getBase64Auth();
     headers['Content-Type'] = 'application/octet-stream';
-    const req = new rcp.Request(remoteUri, 'PUT', headers, new rcp.UploadFromFile(srcPath));
-    const rr = await this.request(req);
-    if (!rr.success) {
-      hilog.error(DOMAIN, TAG, "uploadFromFile failed, url: %{public}s, statusCode: %{public}d, message: %{public}s",
-        remoteUri, rr.statusCode, rr.message);
-      return Promise.reject(rr);
+
+    let file: fs.File | null = null;
+    let uploadedBytes: number = 0;
+    let totalBytes: number = 0;
+    let srcEof: boolean = false;
+    const readFileAdapter: rcp.ReadFile = {
+      read: async (buffer: ArrayBuffer): Promise<number> => {
+        if (srcEof || file === null) {
+          return 0;
+        }
+        const readBytes: number = fs.readSync(file.fd, buffer);
+        if (readBytes <= 0) {
+          srcEof = true;
+          return 0;
+        }
+        uploadedBytes += readBytes;
+        if (progressCallback) {
+          progressCallback(totalBytes, uploadedBytes);
+        }
+        return readBytes;
+      }
+    };
+
+    try {
+      totalBytes = fs.statSync(srcPath).size;
+      file = fs.openSync(srcPath, fs.OpenMode.READ_ONLY);
+      const req = new rcp.Request(remoteUri, 'PUT', headers, new rcp.UploadFromFile(readFileAdapter));
+      const rr = await this.request(req);
+      if (!rr.success) {
+        hilog.error(DOMAIN, TAG, "uploadFromFile failed, url: %{public}s, statusCode: %{public}d, message: %{public}s",
+          remoteUri, rr.statusCode, rr.message);
+        return Promise.reject(rr);
+      }
+      hilog.info(DOMAIN, TAG, "uploadFromFile success: %{public}s, %{public}d", remoteUri, rr.statusCode);
+      return rr;
+    } finally {
+      if (file !== null) {
+        try {
+          fs.closeSync(file);
+        } catch {
+          // 关闭失败忽略
+        }
+      }
     }
-    hilog.info(DOMAIN, TAG, "uploadFromFile success: %{public}s, %{public}d", remoteUri, rr.statusCode);
-    return rr;
   }
 
 
