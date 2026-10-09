@@ -648,7 +648,6 @@ export class KdbxUtils {
   public static cleanHistoryAndBinaries(database: Kdbx, days: number): CleanResult {
     const cutoff = Date.now() - days * 86400000;
     let deletedHistoryCount: number = 0;
-    let deletedBinariesCount: number = 0;
 
     hilog.debug(DOMAIN, TAG, 'cleanHistoryAndBinaries: start, days=%{public}d, cutoff=%{public}s, cutoffDate=%{public}s',
       days, cutoff.toString(), new Date(cutoff).toISOString());
@@ -688,29 +687,8 @@ export class KdbxUtils {
     hilog.debug(DOMAIN, TAG, 'cleanHistory: done, processedEntries=%{public}d, deletedHistoryCount=%{public}d',
       processedEntryCount, deletedHistoryCount);
 
-    // 2. 孤儿附件清理：扫描当前版本+剩余历史版本的 binaries 引用集合，删除全局 binaries 中无引用的附件
-    const usedHashes: Set<string> = new Set<string>();
-    for (const item of rootGroup.allGroupsAndEntries()) {
-      if (item instanceof KdbxEntry) {
-        const entry: KdbxEntry = item;
-        KdbxUtils.collectUsedBinaryHashes(entry, usedHashes);
-        for (const historyEntry of entry.history) {
-          KdbxUtils.collectUsedBinaryHashes(historyEntry, usedHashes);
-        }
-      }
-    }
-
-    const allBinaries = database.binaries.getAllWithHashes();
-    hilog.debug(DOMAIN, TAG, 'cleanBinaries: totalBinaries=%{public}d, usedBinaries=%{public}d, orphanBinaries=%{public}d',
-      allBinaries.length, usedHashes.size, allBinaries.length - usedHashes.size);
-    for (const binary of allBinaries) {
-      if (!usedHashes.has(binary.hash)) {
-        hilog.debug(DOMAIN, TAG, 'cleanBinaries: delete orphan binary, hash=%{public}s', binary.hash);
-        database.binaries.deleteWithHash(binary.hash);
-        deletedBinariesCount++;
-      }
-    }
-    hilog.debug(DOMAIN, TAG, 'cleanBinaries: done, deletedBinariesCount=%{public}d', deletedBinariesCount);
+    // 2. 孤儿附件清理
+    const deletedBinariesCount = KdbxUtils.cleanupOrphanedBinaries(database);
 
     hilog.debug(DOMAIN, TAG, 'cleanHistoryAndBinaries: finish, deletedHistory=%{public}d, deletedBinaries=%{public}d',
       deletedHistoryCount, deletedBinariesCount);
@@ -728,6 +706,40 @@ export class KdbxUtils {
         usedHashes.add(value.hash);
       }
     }
+  }
+
+  /**
+   * 清理孤儿附件：扫描数据库中所有条目（含历史版本）的 binaries 引用，
+   * 删除全局 binaries 池中无任何条目引用的附件。
+   * 适用于条目永久删除、历史版本删除、附件从条目中移除后调用。
+   * @param database 已打开的数据库实例
+   * @returns 被清理的孤儿附件数量
+   */
+  public static cleanupOrphanedBinaries(database: Kdbx): number {
+    const usedHashes: Set<string> = new Set<string>();
+    const rootGroup = database.getDefaultGroup();
+    for (const item of rootGroup.allGroupsAndEntries()) {
+      if (item instanceof KdbxEntry) {
+        KdbxUtils.collectUsedBinaryHashes(item, usedHashes);
+        for (const historyEntry of item.history) {
+          KdbxUtils.collectUsedBinaryHashes(historyEntry, usedHashes);
+        }
+      }
+    }
+
+    let deletedCount: number = 0;
+    const allBinaries = database.binaries.getAllWithHashes();
+    for (const binary of allBinaries) {
+      if (!usedHashes.has(binary.hash)) {
+        hilog.debug(DOMAIN, TAG, 'cleanupOrphanedBinaries: delete orphan binary, hash=%{public}s', binary.hash);
+        database.binaries.deleteWithHash(binary.hash);
+        deletedCount++;
+      }
+    }
+    if (deletedCount > 0) {
+      hilog.info(DOMAIN, TAG, 'cleanupOrphanedBinaries: deletedCount=%{public}d', deletedCount);
+    }
+    return deletedCount;
   }
 
   /**
