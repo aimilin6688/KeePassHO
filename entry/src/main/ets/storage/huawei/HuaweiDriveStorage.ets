@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
   HuaweiDriveClient,
@@ -34,7 +34,7 @@ const PATH_CACHE_PERSIST_DELAY = 500;
  * 华为云盘存储实现类
  * 实现IFileStorage接口，提供华为云盘文件存储服务
  */
-export class HuaweiDriveStorage implements IFileStorage {
+export class HuaweiDriveStorage extends BaseFileStorage {
   /**
    * 存储配置
    */
@@ -88,6 +88,7 @@ export class HuaweiDriveStorage implements IFileStorage {
    * @param config 华为云盘存储配置
    */
   constructor(config?: HuaweiDriveStorageConfig) {
+    super();
     if (config) {
       this.init(config);
     }
@@ -992,73 +993,11 @@ export class HuaweiDriveStorage implements IFileStorage {
   }
 
   /**
-   * 检查文件是否存在
-   * @param path 文件路径
-   * @returns Promise<boolean> 文件是否存在
-   * @throws StorageError 如果检查失败则抛出异常
-   */
-  public async exists(path: string): Promise<boolean> {
-    return (await this.getInfoOrNull(path)) !== null;
-  }
-
-  /**
-   * 获取文件信息
+   * 获取文件信息（基类派生：getInfoOrNull 为 null 时抛 FILE_INFO_ERROR）
    * @param path 文件路径
    * @returns Promise<FileInfo> 文件信息
    * @throws StorageError 如果获取失败则抛出异常
    */
-  public async getInfo(path: string): Promise<FileInfo> {
-    if (!this.client) {
-      hilog.error(DOMAIN, TAG, 'Huawei Drive not init:%{public}s', JSON.stringify(this.config));
-      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'Huawei Drive not initialized'));
-    }
-
-    // 检查令牌是否过期
-    await this.ensureValidToken();
-
-    try {
-      // 根目录：直接通过 getInfo('root') 获取根文件夹信息
-      const normalizedForRoot = path.startsWith('/') ? path.substring(1) : path;
-      if (!normalizedForRoot) {
-        const rootResp = await this.client.getInfo('root');
-        if (!rootResp.success || !rootResp.body) {
-          throw new Error(rootResp.message || `Failed to get root info`);
-        }
-        const rootJson = ByteUtils.bytesToString(rootResp.body);
-        const rootData: Record<string, Object> = JSON.parse(rootJson);
-        const rootFile = this.client.parseFile(rootData);
-        return {
-          name: rootFile.fileName || 'root',
-          size: rootFile.size,
-          modifiedTime: new Date(rootFile.editedTime).getTime(),
-          path: rootFile.id || 'root',
-          type: FileType.DIR,
-          childrenCount: 0,
-          version: HuaweiDriveStorage.buildVersion(rootFile)
-        };
-      }
-
-      const file = await this.findFileByPath(path);
-      if (!file) {
-        throw new Error(`File not found: ${path}`);
-      }
-      return {
-        name: file.fileName,
-        size: file.size,
-        modifiedTime: new Date(file.editedTime).getTime(),
-        path: file.id,
-        type: file.mimeType === HUAWEI_DRIVE_FOLDER_MIME_TYPE ? FileType.DIR : FileType.FILE,
-        childrenCount: 0,
-        version: HuaweiDriveStorage.buildVersion(file)
-      };
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Huawei Drive getInfo error: %{public}s', (error as Error).message);
-      if (error instanceof StorageError) {
-        return Promise.reject(error);
-      }
-      return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message));
-    }
-  }
 
   /**
    * 获取目录内容

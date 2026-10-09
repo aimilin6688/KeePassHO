@@ -30,6 +30,9 @@ class StubFileStorage implements IFileStorage {
   getInfo(_path: string): Promise<FileInfo> {
     return Promise.reject(new Error('not implemented'));
   }
+  getInfoOrNull(_path: string): Promise<FileInfo | null> {
+    return Promise.resolve(null);
+  }
   listDir(_path: string): Promise<Array<FileInfo>> {
     return Promise.resolve([]);
   }
