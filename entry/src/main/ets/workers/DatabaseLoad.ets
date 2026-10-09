@@ -9,7 +9,6 @@ import { LoadDatabase } from './DatabaseLoadWorkerParam';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { DatabaseLoadGuard, GuardCheckResult } from '../services/kdbx/DatabaseLoadGuard';
-import { CacheConstants } from '../storage/cache/CacheConstants';
 import { CacheMetaService } from '../storage/cache/CacheMetaService';
 import { CommonUtils, HashUtils, KdbxUtils } from '../common/utils';
 import { LoadMessage, ProgressMessage, SuccessMessage, toErrorMessage, toLoadMessage } from './WorkerParam';
@@ -183,11 +182,12 @@ export class DatabaseLoad {
     }
     // 单 manager 贯穿守卫与下载：一次 init 存储、令牌刷新结果随 config 原地传递
     const fileManager: KdbxFileManager = new KdbxFileManager(request.storageType, request.storageConfig);
-    // 版本快速路径候选（纯本地 fs 判定，零网络）：非强制刷新 + 存储声明版本可信 + 缓存元数据存在。
-    // force_refresh 必须在守卫之前读取：守卫的 getInfo 会就地消费该一次性标志，
-    // 若等到 readCacheToFile 再判，标志已被消费，下拉刷新会错误命中缓存（serve 旧内容）
-    const fastCandidate: boolean = !CacheConstants.getForceRefresh()
-      && fileManager.supportsVersionFastPath()
+    // 版本快速路径候选（纯本地 fs 判定，零网络）：存储声明版本可信 + 缓存元数据存在。
+    // force_refresh 不再一票否决：下拉刷新/冲突重载同样先比对（1 次轻量 getInfo），
+    // 远端版本+尺寸与缓存元数据一致 → 本地副本替代全量下载，不一致才走网络。
+    // 候选时让位 precheckSize，强制 getInfo 取远端 version（1 次元数据请求换跳过全量 GET）；
+    // 非候选保持现状优化（precheckSize 已知则跳过 getInfo）
+    const fastCandidate: boolean = fileManager.supportsVersionFastPath()
       && CacheMetaService.readMeta(request.filePath) !== null;
     // 读前守卫（CP1 文件大小 / CP-DISK 磁盘余量）：拒绝时抛资源名。
     // 候选时让位 precheckSize，强制 getInfo 取远端 version（1 次元数据请求换跳过全量 GET）；

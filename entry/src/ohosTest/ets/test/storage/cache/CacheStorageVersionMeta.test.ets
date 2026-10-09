@@ -122,13 +122,30 @@ export default function CacheStorageVersionMetaTest() {
     });
 
     /**
-     * force_refresh（下拉刷新 / 冲突重载）：即使版本一致也 miss，必走远端
+     * force_refresh（下拉刷新 / 冲突重载）：同样先比对 —— 版本+尺寸一致则命中本地副本，
+     * 省掉全量下载；语义仍是"拉最新"，内容未变时无需重复传输
      */
-    it('readCacheToFile misses on force refresh', 0, async () => {
+    it('readCacheToFile hits on force refresh when version matches', 0, async () => {
       CacheConstants.setWorkerCachePolicy(true, false, true);
       try {
         const dest: string = testDir + '/dest-force.kdbx';
         const hit: boolean = await cacheStorage.readCacheToFile(remotePath, dest, remoteVersion, remoteSize);
+        expect(hit).assertTrue();
+        expect(JSON.stringify(await readBytes(dest)))
+          .assertEqual(JSON.stringify(await readBytes(remotePath)));
+      } finally {
+        CacheConstants.setWorkerCachePolicy(true, false, false);
+      }
+    });
+
+    /**
+     * force_refresh 且远端已变（版本不一致）→ miss，回落 readToFile 全量下载
+     */
+    it('readCacheToFile misses on force refresh when version changed', 0, async () => {
+      CacheConstants.setWorkerCachePolicy(true, false, true);
+      try {
+        const dest: string = testDir + '/dest-force-changed.kdbx';
+        const hit: boolean = await cacheStorage.readCacheToFile(remotePath, dest, remoteVersion + '-changed', remoteSize);
         expect(hit).assertFalse();
       } finally {
         CacheConstants.setWorkerCachePolicy(true, false, false);

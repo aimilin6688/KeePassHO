@@ -174,16 +174,16 @@ export class CacheStorage extends BaseFileStorage {
     if (CacheConstants.getOnlyCache()) {
       return false; // 仅缓存模式：由 readToFile 的仅缓存分支负责
     }
-    if (CacheConstants.getForceRefresh()) {
-      // 消费一次性标志：快速路径跳过了 readToFile，不清会把 force 泄漏给下一次操作
-      CacheConstants.clearForceRefresh();
-      return false;
-    }
+    // 强制刷新（下拉刷新 / 冲突重载）不再直接放弃比对：远端版本+尺寸与缓存元数据一致时，
+    // 本地副本即远端事实，用副本替代全量下载；不一致才回落 readToFile 走网络。
+    // 一次性标志只在命中时就地消费（快速路径跳过了 readToFile，不清会泄漏给下一次操作）；
+    // miss 时保留该标志，交给 readToFile 用于突破仅缓存模式
     const meta: CacheMeta | null = CacheMetaService.readMeta(path);
     if (meta === null || meta.version === null
       || meta.version !== expectedVersion || meta.size !== expectedSize) {
       return false;
     }
+    CacheConstants.clearForceRefresh();
     const cachePath: string = CacheConstants.getCacheFilePath(path);
     try {
       await fs.copyFile(cachePath, destPath); // 缓存被删/损坏 → 抛错 → miss → 走下载
