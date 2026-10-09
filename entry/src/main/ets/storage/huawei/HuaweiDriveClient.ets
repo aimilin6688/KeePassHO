@@ -1201,7 +1201,10 @@ export class HuaweiDriveClient {
       return result;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `upload error: fileName=${fileName}, error=${(error as Error).message}`);
-      return this.convertAxiosError(error as AxiosError);
+      if (error instanceof AxiosError) {
+        return this.convertAxiosError(error);
+      }
+      return new HttpResponse(false, 0, (error as Error).message, {});
     }
   }
 
@@ -1217,38 +1220,29 @@ export class HuaweiDriveClient {
     */
   public async update(fileId: string, fileBuffer: ArrayBuffer,
     onProgress?: TransferProgressCallback): Promise<HttpResponse> {
-    if (!this.axiosInstance) {
-      throw new Error('Axios instance not initialized');
-    }
     try {
       hilog.info(DOMAIN, TAG, `update: fileId=${fileId}, size: ${fileBuffer.byteLength}`);
       if (fileBuffer.byteLength > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
         return await this.updateByResume(fileId, fileBuffer, onProgress);
       }
-      // 使用专门的 upload 端点
       const uploadBase = this.config?.apiBaseUrl?.replace('/drive/v1', '/upload/drive/v1') ||
         'https://driveapis.cloud.huawei.com.cn/upload/drive/v1';
-
-      const config: AxiosRequestConfig = {
-        method: 'PATCH',
-        url: `${uploadBase}/files/${fileId}?fields=*&uploadType=content`,
-        data: fileBuffer,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Authorization': `Bearer ${this.config?.accessToken}`
-        },
-        responseType: 'string',
-        onUploadProgress: (progressEvent: AxiosProgressEvent): void => {
-          onProgress?.(progressEvent.loaded, fileBuffer.byteLength);
-        }
-      };
-      const response: AxiosResponse = await axios.request(config);
-      const result = this.convertAxiosResponse(response);
-      hilog.info(DOMAIN, TAG, 'update result: %{public}s', result.message);
+      const url = `${uploadBase}/files/${fileId}?fields=*&uploadType=content`;
+      onProgress?.(0, fileBuffer.byteLength);
+      const headers: Record<string, string> = {};
+      headers['Content-Type'] = 'application/octet-stream';
+      headers['Authorization'] = `Bearer ${this.config?.accessToken}`;
+      const req = HuaweiDriveClient.buildBufferUploadRequest(url, headers, fileBuffer, onProgress);
+      const resp = await this.getRcpSession().fetch(req);
+      const result = this.convertRcpResponse(resp);
+      if (onProgress && result.success) {
+        onProgress(fileBuffer.byteLength, fileBuffer.byteLength);
+      }
+      hilog.info(DOMAIN, TAG, 'update result: %{public}s, status=%{public}d', result.message, resp.statusCode);
       return result;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `update error: fileId=${fileId}, error=${(error as Error).message}`);
-      return this.convertAxiosError(error as AxiosError);
+      throw new Error((error as Error).message);
     }
   }
 
@@ -1343,6 +1337,7 @@ export class HuaweiDriveClient {
     onProgress?: TransferProgressCallback): Promise<HttpResponse> {
     const chunkSize = Math.min(sliceSize, HuaweiDriveClient.RESUME_SLICE_MAX_BYTES);
     const maxAttempts = HuaweiDriveClient.RESUME_CHUNK_MAX_ATTEMPTS;
+    const session = this.getRcpSession();
     let offset = 0;
     while (offset < totalBytes) {
       const wantLen = Math.min(chunkSize, totalBytes - offset);
@@ -1353,31 +1348,31 @@ export class HuaweiDriveClient {
         if (chunkLen <= 0) {
           return new HttpResponse(false, 0, 'resume upload: unexpected empty chunk', {});
         }
-        const config: AxiosRequestConfig = {
-          method: 'PUT',
-          url: location,
-          data: chunk,
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Content-Range': `bytes ${offset}-${offset + chunkLen - 1}/${totalBytes}`,
-            'Authorization': `Bearer ${this.config?.accessToken}`
-          },
-          responseType: 'string',
-          validateStatus: (status: number): boolean => true
-        };
+        const headers: Record<string, string> = {};
+        headers['Content-Type'] = 'application/octet-stream';
+        headers['Content-Range'] = `bytes ${offset}-${offset + chunkLen - 1}/${totalBytes}`;
+        headers['Authorization'] = `Bearer ${this.config?.accessToken}`;
+        const chunkOnProgress: TransferProgressCallback | undefined = onProgress
+          ? (transferred: number, _total: number): void => {
+              onProgress(offset + transferred, totalBytes);
+            }
+          : undefined;
+        const req = HuaweiDriveClient.buildBufferUploadRequest(location, headers, chunk, chunkOnProgress, 'PUT');
         try {
           hilog.info(DOMAIN, TAG, 'resume PUT: offset=%{public}d, len=%{public}d, attempt=%{public}d/%{public}d',
             offset, chunkLen, attempt, maxAttempts);
-          const response: AxiosResponse = await axios.request(config);
-          if (response.status === 200 || response.status === 201) {
-            // 末片确认即完成：成功返回前补发终值（此分支不会经过下方 offset += accepted）
-            onProgress?.(offset + chunkLen, totalBytes);
-            return this.resumeResultFromResponse(response, true);
+          const resp = await session.fetch(req);
+          const statusCode = resp.statusCode;
+          if (statusCode === 200 || statusCode === 201) {
+            if (onProgress) {
+              onProgress(offset + chunkLen, totalBytes);
+            }
+            return this.convertRcpResponse(resp);
           }
-          if (response.status !== 308) {
+          if (statusCode !== 308) {
             hilog.error(DOMAIN, TAG, 'resume PUT rejected: status=%{public}d, offset=%{public}d',
-              response.status, offset);
-            return this.resumeResultFromResponse(response, false);
+              statusCode, offset);
+            return this.convertRcpResponse(resp);
           }
           accepted = chunkLen;
           break;
@@ -1394,12 +1389,10 @@ export class HuaweiDriveClient {
           `resume upload: chunk failed after ${maxAttempts} attempts, offset=${offset}`, {});
       }
       offset += accepted;
-      // 分片被服务端确认（308）：按确认偏移上报进度（重试路径不会重复累加）
-      onProgress?.(offset, totalBytes);
+      if (onProgress) {
+        onProgress(offset, totalBytes);
+      }
     }
-    // 全部分片已发送且服务端仍返回 308：按文档以 Content-Length: 0 的空 body PUT 查询断点，获取文件元数据。
-    // 注意：axios 的空请求体（空字符串/零长度 ArrayBuffer）会被 http 栈以 Parameter error 客户端拒绝；
-    // rcp 无 body 时默认不发送 Content-Length 头，须显式携带 Content-Length: 0（服务端以此识别查询模式）
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         hilog.info(DOMAIN, TAG, 'resume query: attempt=%{public}d/%{public}d', attempt, maxAttempts);
@@ -1407,7 +1400,7 @@ export class HuaweiDriveClient {
         queryHeaders['Authorization'] = `Bearer ${this.config?.accessToken}`;
         queryHeaders['Content-Length'] = '0';
         const queryRequest = new rcp.Request(location, 'PUT', queryHeaders);
-        const queryResponse = await this.getRcpSession().fetch(queryRequest);
+        const queryResponse = await session.fetch(queryRequest);
         const queryOk = queryResponse.statusCode === 200 || queryResponse.statusCode === 201;
         if (!queryOk) {
           hilog.error(DOMAIN, TAG, 'resume query failed: status=%{public}d, body=%{public}s',
@@ -1421,33 +1414,6 @@ export class HuaweiDriveClient {
     }
     return new HttpResponse(false, 0,
       `resume upload: breakpoint query failed after ${maxAttempts} attempts`, {});
-  }
-
-  /**
-   * 分片响应转 HttpResponse（成功时 body 为文件资源 JSON）
-   * @param response Axios 响应
-   * @param ok 是否成功
-   * @returns HttpResponse
-   */
-  private resumeResultFromResponse(response: AxiosResponse, ok: boolean): HttpResponse {
-    const headers: Record<string, string> = {};
-    if (response.headers) {
-      const headerEntries = Object.entries(response.headers) as Array<[string, string]>;
-      for (let i = 0; i < headerEntries.length; i++) {
-        const key = headerEntries[i][0];
-        const value = headerEntries[i][1];
-        headers[key] = `${value ?? ''}`;
-      }
-    }
-    let body: ArrayBuffer | undefined = undefined;
-    if (response.data instanceof ArrayBuffer) {
-      body = response.data;
-    } else if (typeof response.data === 'string') {
-      body = ByteUtils.stringToBytes(response.data);
-    } else if (response.data) {
-      body = ByteUtils.stringToBytes(JSON.stringify(response.data));
-    }
-    return new HttpResponse(ok, response.status, ok ? 'success' : `HTTP ${response.status}`, headers, body);
   }
 
   /**
@@ -1505,12 +1471,21 @@ export class HuaweiDriveClient {
       if (totalBytes > HuaweiDriveClient.SIMPLE_UPLOAD_MAX_BYTES) {
         return await this.updateFromFileByResume(fileId, srcPath, onProgress);
       }
-      // 首条 0%：UI 尽快从无状态 loading 切换为确定性进度（准备上传）
       onProgress?.(0, totalBytes);
-      const req = HuaweiDriveClient.buildSimpleUploadRequest(url, headers, srcPath, onProgress);
+      const file = fs.openSync(srcPath, fs.OpenMode.READ_ONLY);
+      let fileBuffer: ArrayBuffer;
+      try {
+        fileBuffer = new ArrayBuffer(totalBytes);
+        const readLen = fs.readSync(file.fd, fileBuffer);
+        if (readLen < totalBytes) {
+          fileBuffer = fileBuffer.slice(0, readLen);
+        }
+      } finally {
+        fs.closeSync(file.fd);
+      }
+      const req = HuaweiDriveClient.buildBufferUploadRequest(url, headers, fileBuffer, onProgress);
       const resp = await this.getRcpSession().fetch(req);
       const result = this.convertRcpResponse(resp);
-      // 末条 100% 兜底：rcp 对 UploadFromFile 文件体的 onUploadProgress 若未触发，仍保证终值可达
       if (onProgress && result.success) {
         onProgress(totalBytes, totalBytes);
       }
@@ -1522,17 +1497,10 @@ export class HuaweiDriveClient {
     }
   }
 
-  /**
-   * 构造 ≤20MB 单次上传请求；提供进度回调时挂 rcp tracing onUploadProgress
-   * @param url 上传地址
-   * @param headers 请求头
-   * @param srcPath 本地源文件路径
-   * @param onProgress 上传进度回调（可选）
-   */
-  private static buildSimpleUploadRequest(url: string, headers: Record<string, string>, srcPath: string,
-    onProgress?: TransferProgressCallback): rcp.Request {
+  private static buildBufferUploadRequest(url: string, headers: Record<string, string>, fileBuffer: ArrayBuffer,
+    onProgress?: TransferProgressCallback, method: string = 'PATCH'): rcp.Request {
     if (!onProgress) {
-      return new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath));
+      return new rcp.Request(url, method, headers, fileBuffer);
     }
     const configuration: rcp.Configuration = {
       tracing: {
@@ -1543,7 +1511,7 @@ export class HuaweiDriveClient {
         }
       }
     };
-    return new rcp.Request(url, 'PATCH', headers, new rcp.UploadFromFile(srcPath), undefined, undefined, configuration);
+    return new rcp.Request(url, method, headers, fileBuffer, undefined, undefined, configuration);
   }
 
   /**
