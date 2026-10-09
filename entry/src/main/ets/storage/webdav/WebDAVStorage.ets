@@ -1,4 +1,4 @@
-import { BaseFileStorage, FileInfo, FileType, PageConfig, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
@@ -184,8 +184,10 @@ export class WebDAVStorage extends BaseFileStorage {
   /**
    * 流式从本地文件上传（S7：rcp Request + UploadFromFile，PUT 请求体不驻内存）
    * 写前复核远端版本（TOCTOU 窗口由上层重试兜底），完成后返回远端 FileInfo
+   * @param onProgress 上传进度回调（可选）：rcp onUploadProgress 字节级透传
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'WebDAV not init:%{public}s', JSON.stringify(this.config));
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED,
@@ -196,7 +198,11 @@ export class WebDAVStorage extends BaseFileStorage {
       if (expectedVersion !== null) {
         await this.checkVersionUnchanged(path, expectedVersion);
       }
-      await this.client.uploadFromFile(path, srcPath);
+      const progressAdapter: ((totalSize: number, transferredSize: number) => void) | undefined =
+        onProgress ? (totalSize: number, transferredSize: number): void => {
+          onProgress(transferredSize, totalSize);
+        } : undefined;
+      await this.client.uploadFromFile(path, srcPath, progressAdapter);
       return await this.getInfo(path);
     } catch (error) {
       if (error instanceof StorageError && error.code === StorageErrorCodes.VERSION_CONFLICT) {

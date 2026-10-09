@@ -729,9 +729,11 @@ export class OneDriveClient {
    * 按分片从源文件区域读取后 PUT，内存窗口 = 单分片（5MB），与文件大小解耦
    * @param path 目标文件路径
    * @param srcPath 本地源文件路径
+   * @param onProgress 上传进度回调（可选）：每分片完成上报（transferredBytes, totalBytes）；小文件简单上传无中间事件
    * @returns Promise<HttpResponse> 完成响应（末片 200/201 时为 driveItem）
    */
-  public async uploadFromFile(path: string, srcPath: string): Promise<HttpResponse> {
+  public async uploadFromFile(path: string, srcPath: string,
+    onProgress?: (transferredBytes: number, totalBytes: number) => void): Promise<HttpResponse> {
     let file: fs.File | null = null;
     try {
       file = await fs.open(srcPath, fs.OpenMode.READ_ONLY);
@@ -784,6 +786,9 @@ export class OneDriveClient {
         }
         offset += fragmentLength;
         lastFragmentResult = fragmentResult;
+        if (onProgress) {
+          onProgress(offset, totalSize);
+        }
         hilog.debug(DOMAIN, TAG,
           'uploadFromFile(session): fragment done, %{public}d/%{public}d, status=%{public}d',
           offset, totalSize, fragmentResult.statusCode);

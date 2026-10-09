@@ -246,6 +246,46 @@ export default function WebDavTest() {
       }
     });
 
+    it('storage writeFromFile reports upload progress events', 0, async () => {
+      const storage = new WebDAVStorage();
+      storage.init(makeStorageConfig());
+      // 4MB 合成载荷：保证 rcp 上传有可观测的字节进度（小文件可能只有完成事件）
+      const payload: ArrayBuffer = new ArrayBuffer(4 * 1024 * 1024);
+      const path: string = '/e2e-wff-prog-' + Date.now() + '.kdbx';
+      createdPaths.push(path);
+
+      const srcPath: string = makeLocalTmpPath('wff-prog-');
+      await writeLocalFile(srcPath, payload);
+      try {
+        const transferredList: number[] = [];
+        const totalList: number[] = [];
+        const info: FileInfo = await storage.writeFromFile(path, srcPath, undefined,
+          (transferredBytes: number, totalBytes: number): void => {
+            transferredList.push(transferredBytes);
+            totalList.push(totalBytes);
+          });
+
+        expect(info.size).assertEqual(payload.byteLength);
+        // rcp onUploadProgress 对 UploadFromFile 请求体生效：至少一条进度事件
+        expect(transferredList.length).assertLarger(0);
+        // 末条事件应为全量送达，总量与载荷一致
+        const lastIndex: number = transferredList.length - 1;
+        expect(transferredList[lastIndex]).assertEqual(payload.byteLength);
+        expect(totalList[lastIndex]).assertEqual(payload.byteLength);
+        // 已传字节单调不减
+        let monotonic: boolean = true;
+        for (let i = 1; i < transferredList.length; i++) {
+          if (transferredList[i] < transferredList[i - 1]) {
+            monotonic = false;
+            break;
+          }
+        }
+        expect(monotonic).assertTrue();
+      } finally {
+        try { fs.unlinkSync(srcPath); } catch { /* ignore */ }
+      }
+    });
+
     it('storage writeFromFile with stale version throws VERSION_CONFLICT', 0, async () => {
       const storage = new WebDAVStorage();
       storage.init(makeStorageConfig());

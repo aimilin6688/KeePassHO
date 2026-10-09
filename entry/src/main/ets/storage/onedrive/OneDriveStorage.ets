@@ -1,4 +1,4 @@
-import { BaseFileStorage, FileInfo, FileType, PageConfig, StorageConfig, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OneDriveClient, OneDriveClientOptions } from './OneDriveClient';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
@@ -225,10 +225,12 @@ export class OneDriveStorage extends BaseFileStorage {
    * 小文件（<4MB）简单 PUT；大文件创建会话后按 5MB 分片从源文件区域读取 PUT，
    * 内存窗口 = 单分片，与文件大小解耦；CP-UP 仅约束整缓冲 write 路径，此路径豁免。
    * 条件写入：传入 expectedVersion 时写前复核远端 eTag 版本，不一致抛出版本冲突
+   * @param onProgress 上传进度回调（可选）：分片粒度上报（transferredBytes, totalBytes）
    * @throws StorageError(VERSION_CONFLICT) 远端版本与期望不一致
    * @throws StorageError(FILE_WRITE_ERROR) 上传失败（含会话过期）
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     if (!this.client) {
       hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
       return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
@@ -242,7 +244,7 @@ export class OneDriveStorage extends BaseFileStorage {
       if (expectedVersion !== null) {
         await this.checkVersionUnchanged(path, expectedVersion);
       }
-      const result = await this.client.uploadFromFile(path, srcPath);
+      const result = await this.client.uploadFromFile(path, srcPath, onProgress);
       if (!result.success) {
         return Promise.reject(new Error(result.message));
       }
