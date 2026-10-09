@@ -25,6 +25,26 @@ sh docs/e2e/e2e-tunnels.sh
 3. 以"主机注册表 + 设备侧监听"双条件判定隧道状态，只补缺失的；
 4. 检测并自动清理僵尸监听（§3），建立后逐条复核，失败项汇总并以非零码退出。
 
+## 1.1 Windows（PowerShell）用户
+
+仓库同时提供 PowerShell 版本 `docs/e2e/e2e-tunnels.ps1`（与 sh 版逻辑一致，已处理真机
+connect-key 含冒号、PowerShell 字符串解析、UTF-8 BOM 等差异），在 Windows PowerShell 5.1+ 直接运行：
+
+```powershell
+# 全量（所有已连接设备）
+.\docs\e2e\e2e-tunnels.ps1
+# 仅针对某台真机（网络调试 connect-key，如 192.168.3.6:42755；USB 直连则为设备串号）
+.\docs\e2e\e2e-tunnels.ps1 -Target 192.168.3.6:42755
+# 宿主容器未启动时自动拉起（依赖 .\docs\e2e\e2e-fileserver.ps1，优先 podman 其次 docker）
+.\docs\e2e\e2e-tunnels.ps1 -Containers
+# 强制清理重建
+.\docs\e2e\e2e-tunnels.ps1 -Reset
+```
+
+> 真机通过 USB/网络调试连接后，`hdc list targets` 显示的 connect-key（如 `192.168.3.6:42755`
+> 或 USB 串号）直接作为 `-Target` 传入即可。脚本会自动在 `C:\Program Files\Huawei\DevEco Studio\...`
+> 及常见 SDK 路径下定位 `hdc.exe`，无需手动加入 PATH（也可通过环境变量 `HDC` 显式指定）。
+
 ## 2. DevEco Studio 自动挂钩（点运行测试时自动建隧道）
 
 DevEco Studio（IntelliJ 内核）的 Run Configuration 支持 Before launch 任务，把脚本挂为
