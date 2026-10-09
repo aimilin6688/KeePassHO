@@ -55,12 +55,6 @@ export struct Settings {
       title: $r('app.string.Settings_application'),
       isPageRoute: true
     },
-    {
-      id: 'recentFiles',
-      name: PageConstants.PAGE_RECENT_FILES,
-      title: $r('app.string.recent_files'),
-      isPageRoute: true
-    },
   ];
 
   onColorModeChange(): void {
@@ -285,6 +279,24 @@ export struct Settings {
           .onClick(() => {
             DataService.selectKdbx();
             this.pushPageOnce(PageConstants.PAGE_SELECT_LOCATION);
+          })
+
+          // 最近打开
+          ListItem() {
+            Row() {
+              Text($r('app.string.recent_files'))
+                .fontSize(16)
+                .flexGrow(1)
+              Image($r('app.media.ic_arrow_right'))
+                .width(24)
+                .height(24)
+                .fillColor($r('app.color.text_primary'))
+            }
+            .width('100%')
+            .padding(16)
+          }
+          .onClick(() => {
+            this.pushPageOnce(PageConstants.PAGE_RECENT_FILES);
           })
         }
         .margin({ top: 12, bottom: 12 })
