@@ -11,29 +11,15 @@ export struct LoadProgressDialog {
   @Link progressPercent: number;
   /** 传输字节明细（如 "12 MB / 45 MB"）；空串隐藏 */
   @Link progressDetail: string;
-  @State dialogWidth: string | number = '100%'; // 弹框宽度
+  @State dialogWidth: string | number = '340'; // 弹框宽度
   private controller: CustomDialogController;
   private windowHelper: DialogWindowHelper = new DialogWindowHelper();
 
   aboutToAppear() {
-    // 注册窗口大小变化监听
-    this.windowHelper.register(this.getUIContext(), () => {
-      this.updateDialogWidth();
-    });
-    // 计算弹框宽度
-    this.updateDialogWidth();
   }
 
   aboutToDisappear() {
     this.windowHelper.unregister();
-  }
-
-  /**
-   * 更新弹框宽度
-   */
-  private updateDialogWidth(): void {
-    const widthConfig = UIUtils.calculateDialogWidth(this.getUIContext(), this.windowHelper.windowWidth);
-    this.dialogWidth = widthConfig.width;
   }
 
   build() {
