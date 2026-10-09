@@ -389,24 +389,58 @@ export class WebDavClient {
    * 流式下载文件到本地路径（rcp.downloadToFile，响应体不驻留内存）
    * @param path 远端路径
    * @param destPath 本地目标路径
+   * @param progressCallback 下载进度回调（可选）：rcp onDownloadProgress (totalSize, transferredSize) 透传；
+   *        无回调时走共享 session；有回调时创建一次性 session（downloadToFile 无请求级配置入口，
+   *        进度只能经 session 级 tracing 下发），复用 baseAddress/鉴权/超时配置，用后即关
    * @returns 结果（含 statusCode/headers，body 为空）
    */
-  public async downloadToFile(path: string, destPath: string): Promise<ResultInfo> {
+  public async downloadToFile(path: string, destPath: string,
+    progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
     const requestReturn: ResultInfo = new ResultInfo();
-    if (!this.session) {
+    if (!this.session || !this.config) {
       requestReturn.success = false;
       requestReturn.statusCode = 500;
       requestReturn.message = ResourceManager.getString($r("app.string.webdav_not_init"));
       return requestReturn;
     }
+    if (progressCallback) {
+      // const 快照规避闭包内可变参数的窄化丢失（ArkTS 流分析）
+      const cb: (totalSize: number, transferredSize: number) => void = progressCallback;
+      let progressSession: rcp.Session | null = null;
+      try {
+        progressSession = rcp.createSession({
+          baseAddress: this.config.url,
+          headers: { "Accept": "text/plain,application/xml" },
+          requestConfiguration: {
+            transfer: {
+              timeout: { connectMs: CONNECT_TIMEOUT_MS }
+            },
+            security: this.buildSecurityConfig(),
+            tracing: {
+              httpEventsHandler: {
+                onDownloadProgress: (totalSize: number, transferredSize: number): void => {
+                  cb(totalSize, transferredSize);
+                }
+              }
+            }
+          }
+        });
+        const resp = await progressSession.downloadToFile(path, { kind: 'file', file: destPath } as rcp.DownloadToFile);
+        this.fillDownloadResult(requestReturn, resp);
+        return requestReturn;
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, "downloadToFile error: %{public}s", error.message);
+        requestReturn.success = false;
+        requestReturn.statusCode = 500;
+        requestReturn.message = error.message;
+        return requestReturn;
+      } finally {
+        progressSession?.close();
+      }
+    }
     try {
       const resp = await this.session.downloadToFile(path, { kind: 'file', file: destPath } as rcp.DownloadToFile);
-      requestReturn.statusCode = resp?.statusCode ?? 0;
-      requestReturn.headers = resp?.headers;
-      requestReturn.success = resp !== undefined && resp.statusCode >= 200 && resp.statusCode < 300;
-      if (!requestReturn.success) {
-        requestReturn.message = `Download failed: ${requestReturn.statusCode}`;
-      }
+      this.fillDownloadResult(requestReturn, resp);
       return requestReturn;
     } catch (error) {
       hilog.error(DOMAIN, TAG, "downloadToFile error: %{public}s", error.message);
@@ -414,6 +448,18 @@ export class WebDavClient {
       requestReturn.statusCode = 500;
       requestReturn.message = error.message;
       return requestReturn;
+    }
+  }
+
+  /**
+   * 填充下载响应结果（downloadToFile 两个分支共用）
+   */
+  private fillDownloadResult(requestReturn: ResultInfo, resp: rcp.Response | undefined): void {
+    requestReturn.statusCode = resp?.statusCode ?? 0;
+    requestReturn.headers = resp?.headers ?? {};
+    requestReturn.success = resp !== undefined && resp.statusCode >= 200 && resp.statusCode < 300;
+    if (!requestReturn.success) {
+      requestReturn.message = `Download failed: ${requestReturn.statusCode}`;
     }
   }
 

@@ -642,7 +642,7 @@
     },
     {
       "name": "downloading",
-      "value": "正在下载数据库..."
+      "value": "正在下载..."
     },
     {
       "name": "EntryEdit_invalid_db_or_group",

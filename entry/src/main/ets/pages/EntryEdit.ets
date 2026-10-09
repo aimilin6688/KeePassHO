@@ -4,13 +4,12 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { FileService } from '../services/FileService';
 import { Constants } from '../common/constants/Constants';
-import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, StringUtils, WindowUtils } from '../common/utils';
-import { ProgressMessage } from '../workers/WorkerParam';
+import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
-import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
+import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { TotpConfigDialog } from '../components/TotpConfigDialog';
 import { TemplateService } from '../services/template/TemplateService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
@@ -58,7 +57,6 @@ export struct EntryEdit {
   @State tags: string = ''; // 标签，以逗号分隔
   @State expiryTime: Date | undefined = undefined; // 过期时间
   @State isExpiryEnabled: boolean | null | undefined = undefined; // 是否启用过期时间
-  @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   @State attachments: Map<string, KdbxBinary | KdbxBinaryWithHash> = new Map<string, KdbxBinary | KdbxBinaryWithHash>();
   @State fgColor: string | undefined = undefined; // 前景色
   @State bgColor: string | undefined = undefined; // 背景色
@@ -108,15 +106,6 @@ export struct EntryEdit {
         this.password = password;
         this.checkEntryModified();
       }
-    }),
-    alignment: DialogAlignment.Bottom,
-    customStyle: true,
-    autoCancel: false
-  });
-  // 带内容的进度弹框
-  private loadingDialogController: CustomDialogController = new CustomDialogController({
-    builder: ContextLoadingDialog({
-      loadingMessage: this.loadingMessage,
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
@@ -330,13 +319,13 @@ export struct EntryEdit {
       return;
     }
     this.isLoading = true;
-    this.loadingDialogController.open();
+    LoadingDialog.showLoading(ResourceManager.getString($r('app.string.load_save_database')));
 
     try {
       if (this.isEditMode && this.entry) {
         // 添加到历史记录中
         this.pushEntryToHistory();
-        this.loadingMessage = ResourceManager.getString($r('app.string.load_save_history'));
+        LoadingDialog.showLoading(ResourceManager.getString($r('app.string.load_save_history')));
         // 清除旧的自定义字段（除了标准字段外的所有字段）
         this.entry.fields.forEach((value, key) => {
           if (![KdbxUtils.FIELD_TITLE, KdbxUtils.FIELD_USERNAME, KdbxUtils.FIELD_PASSWORD,
@@ -391,7 +380,7 @@ export struct EntryEdit {
         duration: 2000
       });
       this.isLoading = false;
-      this.loadingDialogController.close();
+      LoadingDialog.hideLoading();
     }
   }
 
@@ -463,45 +452,23 @@ export struct EntryEdit {
    */
   private saveDatabase() {
     if (this.database) {
-      this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
-      KdbxSaveService.saveDatabaseFromUi({
+      LoadingDialog.showLoading(ResourceManager.getString($r('app.string.load_save_database')));
+      KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
-          CommonUtils.showToast($r('app.string.save_success'));
-          this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           // 发送数据库更新事件，通知其他页面刷新
           EventBus.emit<void>(EventBus.DATABASE_UPDATE);
           let timeOut = setTimeout(() => {
             this.isLoading = false;
-            this.loadingDialogController.close();
             this.navPathStack.pop();
             clearTimeout(timeOut);
           }, 150);
         },
-        onMessage: (message) => {
-          this.loadingMessage = message;
-        },
-        onProgress: (message: ProgressMessage) => {
-          const baseText: string = StringUtils.removeTrailingProgress(this.loadingMessage);
-          if(baseText){
-            this.loadingMessage = `${baseText} ${message.percent}%`;
-          }
-        },
-        onError: (error) => {
-          this.handleSaveError(error);
+        onError: (error: string) => {
+          hilog.error(DOMAIN, TAG, 'Failed to save database: %{public}s', error);
+          this.isLoading = false;
         }
-      });
+      }));
     }
-  }
-
-  /**
-   * 处理保存错误
-   * @param error 错误信息
-   */
-  private handleSaveError(error: string) {
-    hilog.error(DOMAIN, TAG, '%{public}s', `Failed to save database: ${error}`);
-    CommonUtils.showToast({ message: $r('app.string.save_failed_message', error) });
-    this.isLoading = false;
-    this.loadingDialogController.close();
   }
 
   /**

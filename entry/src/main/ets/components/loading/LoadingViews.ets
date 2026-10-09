@@ -110,12 +110,13 @@ struct LoadingDialogView {
         }
 
         if (this.state == LoadingState.LINEAR_PROGRESS) {
-          // 线性进度（传输类）：文案在上，进度条在下，撑满胶囊
+          // 线性进度（传输类）：文案在上，进度条在下；列宽固定，避免进度条 100% 宽度把胶囊撑满屏
           Column({ space: 8 }) {
             if (this.msg != '') {
               Text(this.msg)
                 .fontColor(this.settings?.textColor ?? loadingDialogGlobalSettings.textColor)
                 .fontSize(this.settings?.fontSize ?? loadingDialogGlobalSettings.fontSize)
+                .textAlign(TextAlign.Center)
             }
             Progress({ value: this.progress, total: 100, type: ProgressType.Linear })
               .width('100%')
@@ -126,7 +127,7 @@ struct LoadingDialogView {
               .color(this.settings?.tintColor ?? loadingDialogGlobalSettings.tintColor)
               .backgroundColor(loadingDialogGlobalSettings.backgroundColor)
           }
-          .constraintSize({ minWidth: 160 })
+          .width(240)
         } else if (this.msg != '') {
           if (this.iconState.includes(this.state)) {
             Blank().width(10);

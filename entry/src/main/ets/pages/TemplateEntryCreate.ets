@@ -10,7 +10,7 @@ import { CommonUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, 
 import { Icons } from '../services/TypeDefined';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
 import { PasswordGeneratorDialog } from '../components/PasswordGeneratorDialog';
-import { ContextLoadingDialog } from '../components/ContextLoadingDialog';
+import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { ColorEditDialog, ColorPickerResult } from '../components/ColorPickerDialog';
 import { ITemplate, IPresetTemplate, IUserTemplate, ITemplateField, isPresetTemplate } from '../services/template/TemplateTypes';
 import { TemplateService } from '../services/template/TemplateService';
@@ -60,7 +60,6 @@ export struct TemplateEntryCreate {
   @State isLoading: boolean = false;
   @State isModified: boolean = false;
   @State fieldDataList: TemplateFieldData[] = [];
-  @State loadingMessage: string = ResourceManager.getString($r('app.string.loading_message'));
   @State fgColor: string | undefined = undefined; // 前景色
   @State bgColor: string | undefined = undefined; // 背景色
 
@@ -113,16 +112,6 @@ export struct TemplateEntryCreate {
     autoCancel: false
   });
 
-  // 带内容的进度弹框
-  private loadingDialogController: CustomDialogController = new CustomDialogController({
-    builder: ContextLoadingDialog({
-      loadingMessage: this.loadingMessage,
-    }),
-    alignment: DialogAlignment.Bottom,
-    customStyle: true,
-    autoCancel: false
-  });
-  
   // 颜色选择器弹框
   colorPickerController: CustomDialogController = new CustomDialogController({
     builder: ColorEditDialog({
@@ -424,7 +413,7 @@ export struct TemplateEntryCreate {
     }
 
     this.isLoading = true;
-    this.loadingDialogController.open();
+    LoadingDialog.showLoading(ResourceManager.getString($r('app.string.load_save_database')));
 
     try {
       // 创建新条目
@@ -479,25 +468,16 @@ export struct TemplateEntryCreate {
       entry.times.update();
 
       // 保存数据库
-      this.loadingMessage = ResourceManager.getString($r('app.string.load_save_database'));
       KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
         onSuccess: () => {
-          CommonUtils.showToast($r('app.string.save_success'));
-          this.loadingMessage = ResourceManager.getString($r("app.string.save_success"));
           setTimeout(() => {
             this.isLoading = false;
-            this.loadingDialogController.close();
             this.navPathStack.pop();
           }, 150);
         },
-        onMessage: (message: string) => {
-          this.loadingMessage = message;
-        },
         onError: (error: string) => {
           hilog.error(DOMAIN, TAG, 'Failed to save database: %{public}s', error);
-          CommonUtils.showToast({ message: $r('app.string.save_failed_message', error) });
           this.isLoading = false;
-          this.loadingDialogController.close();
         }
       }));
     } catch (error) {
@@ -507,7 +487,7 @@ export struct TemplateEntryCreate {
         duration: 2000
       });
       this.isLoading = false;
-      this.loadingDialogController.close();
+      LoadingDialog.hideLoading();
     }
   }
 
