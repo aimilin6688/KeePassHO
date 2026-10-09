@@ -1,6 +1,6 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileInfo, FileType, IFileStorage, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, IFileStorage, StorageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { CacheConstants } from './CacheConstants';
 import { FileTransfer } from '../FileTransfer';
 import { ResourceManager } from '../../common/utils';
@@ -14,10 +14,11 @@ const TAG = 'CacheStorage';
  * 缓存存储装饰器
  * 为远程存储添加本地缓存功能
  */
-export class CacheStorage implements IFileStorage {
+export class CacheStorage extends BaseFileStorage {
   private readonly decoratedStorage: IFileStorage;
 
   constructor(decoratedStorage: IFileStorage) {
+    super();
     this.decoratedStorage = decoratedStorage;
   }
 
@@ -230,18 +231,10 @@ export class CacheStorage implements IFileStorage {
   }
 
   /**
-   * 探测被装饰存储：优先可选 getInfoOrNull 能力，未实现时回退 exists + getInfo
+   * 探测被装饰存储（getInfoOrNull 为接口契约成员，直接透传）
    */
   private async probeDecorated(path: string): Promise<FileInfo | null> {
-    const probed: FileInfo | null | undefined = await this.decoratedStorage.getInfoOrNull?.(path);
-    if (probed !== undefined) {
-      return probed;
-    }
-    const existed: boolean = await this.decoratedStorage.exists(path);
-    if (!existed) {
-      return null;
-    }
-    return await this.decoratedStorage.getInfo(path);
+    return await this.decoratedStorage.getInfoOrNull(path);
   }
 
   /**

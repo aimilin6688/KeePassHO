@@ -1,8 +1,7 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, StorageConfig, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, StorageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OneDriveClient, OneDriveClientOptions } from './OneDriveClient';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
-import { FileTransfer } from '../FileTransfer';
 import { OneDrivePageConfig, OneDriveStorageConfig } from './OneDriveConfig';
 import { OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import { OneDriveOAuth2Config } from './OneDriveOAuth2Provider';
@@ -16,7 +15,7 @@ const TAG = 'OneDriveStorage';
  * OneDrive存储实现类
  * 实现IFileStorage接口，提供OneDrive文件存储服务
  */
-export class OneDriveStorage implements IFileStorage {
+export class OneDriveStorage extends BaseFileStorage {
   /**
    * 存储配置
    */
@@ -41,6 +40,7 @@ export class OneDriveStorage implements IFileStorage {
    * @param config OneDrive存储配置
    */
   constructor(config?: OneDriveStorageConfig) {
+    super();
     if (config) {
       this.init(config);
     }
@@ -218,13 +218,6 @@ export class OneDriveStorage implements IFileStorage {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to update token in preferences: %{public}s', (error as Error).message);
     }
-  }
-
-  /**
-   * 流式下载到本地文件（OneDrive 当前走默认整缓冲；requestInStream 流式下载为 S7 调研项）
-   */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
-    return FileTransfer.readToFileDefault(this, path, destPath);
   }
 
   /**
@@ -409,50 +402,6 @@ export class OneDriveStorage implements IFileStorage {
     // 其他错误，抛出异常
     hilog.error(DOMAIN, TAG, 'OneDrive getInfoOrNull error: status=%{public}d, message=%{public}s', result.statusCode, result.message);
     return Promise.reject(new StorageError(StorageErrorCodes.FILE_READ_ERROR, result.message));
-  }
-
-  /**
-   * 检查文件是否存在
-   * @param path 文件路径
-   * @returns Promise<boolean> 文件是否存在
-   * @throws StorageError 如果检查失败则抛出异常
-   */
-  public async exists(path: string): Promise<boolean> {
-    return (await this.getInfoOrNull(path)) !== null;
-  }
-
-  /**
-   * 获取文件信息
-   * @param path 文件路径
-   * @returns Promise<FileInfo> 文件信息
-   * @throws StorageError 如果获取失败则抛出异常
-   */
-  public async getInfo(path: string): Promise<FileInfo> {
-    if (!this.client) {
-      hilog.error(DOMAIN, TAG, 'OneDrive not init:%{public}s', JSON.stringify(this.config));
-      return Promise.reject(new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'OneDrive not initialized'));
-    }
-
-    // 检查令牌是否过期
-    await this.ensureValidToken();
-
-    const result = await this.client.getInfo(path);
-    if (result.success && result.body) {
-      const jsonStr = ByteUtils.bytesToString(result.body);
-      const data: Record<string, Object> = JSON.parse(jsonStr);
-      const resource = this.client.parseResource(data);
-      return {
-        name: resource.name,
-        size: resource.size,
-        modifiedTime: new Date(resource.lastModified).getTime(),
-        path: resource.path,
-        type: resource.type === 'folder' ? FileType.DIR : FileType.FILE,
-        childrenCount: resource.childrenCount || 0,
-        version: OneDriveStorage.buildVersion(resource.eTag, resource.lastModified)
-      };
-    } else {
-      throw new Error(result.message);
-    }
   }
 
   /**

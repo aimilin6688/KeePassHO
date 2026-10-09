@@ -1,5 +1,6 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
-import { FileInfo, IFileStorage, WriteOption } from '../IFileStorage';
+import { FileInfo, WriteOption } from '../IFileStorage';
+import { BaseFileStorage } from '../BaseFileStorage';
 import { FilenameUtils, FileUtils } from '../../common/utils';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -15,7 +16,7 @@ const TAG = 'LocalFileStorage';
  * 本地文件存储实现
  * 使用鸿蒙系统的文件API实现本地文件的读写操作
  */
-export class LocalFileStorage implements IFileStorage {
+export class LocalFileStorage extends BaseFileStorage {
   /**
    * 获取页面配置
    * @returns
@@ -250,15 +251,6 @@ export class LocalFileStorage implements IFileStorage {
       hilog.error(DOMAIN, TAG, `file not exist! ${path} msg: ${error.message}`);
       return null;
     }
-  }
-
-  /**
-   * 检查文件是否存在
-   * @param path 文件路径
-   * @return Promise<boolean> 文件是否存在
-   */
-  public async exists(path: string): Promise<boolean> {
-    return (await this.getInfoOrNull(path)) !== null;
   }
 
   /**

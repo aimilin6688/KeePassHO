@@ -50,6 +50,9 @@ class StubStorage implements IFileStorage {
       version: 'stub-version'
     } as FileInfo;
   }
+  async getInfoOrNull(path: string): Promise<FileInfo | null> {
+    return this.getInfo(path);
+  }
   async listDir(path: string): Promise<FileInfo[]> { return []; }
   async readToFile(path: string, destPath: string): Promise<FileInfo> {
     return FileTransfer.readToFileDefault(this, path, destPath);

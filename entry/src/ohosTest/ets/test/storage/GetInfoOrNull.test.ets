@@ -18,7 +18,7 @@ import { LoadDispatchCache } from '../../../../main/ets/services/kdbx/LoadDispat
 import { RecentFilesService } from '../../../../main/ets/services/RecentFilesService';
 
 /**
- * 不实现可选 getInfoOrNull 能力的桩存储：验证调用方回退 exists + getInfo
+ * 探测桩存储：getInfoOrNull 由 getInfo 派生（FILE_INFO_ERROR 映射为 null，其余上抛）
  */
 class StubNoProbeStorage implements IFileStorage {
   public existPath: string = '/stub-exist.kdbx';
@@ -73,13 +73,25 @@ class StubNoProbeStorage implements IFileStorage {
     return Promise.resolve(info);
   }
 
+  async getInfoOrNull(path: string): Promise<FileInfo | null> {
+    try {
+      return await this.getInfo(path);
+    } catch (error) {
+      const err = error as StorageError;
+      if (err.code === StorageErrorCodes.FILE_INFO_ERROR) {
+        return null;
+      }
+      throw err;
+    }
+  }
+
   listDir(path: string): Promise<FileInfo[]> {
     return Promise.resolve([]);
   }
 }
 
 /**
- * 实现可选 getInfoOrNull 能力的桩存储：验证装饰器透传
+ * 实现独立 getInfoOrNull 探测的桩存储：验证装饰器透传
  */
 class StubProbeCapableStorage extends StubNoProbeStorage {
   public missingPath: string = '/stub-missing.kdbx';
@@ -105,7 +117,7 @@ async function writeTestFile(path: string, size: number): Promise<void> {
  * getInfoOrNull（存在性 + 大小一次返回）单元测试：
  * - LOCAL 真实文件：info / null / exists 委托
  * - WebDAV 未初始化：无法判定错误上抛（不映射为 null/false）
- * - KdbxFileManager 能力回退（exists + getInfo）
+ * - KdbxFileManager 存储探测直连
  * - CacheStorage 策略镜像（透传 / 回退 / 远端失败回缓存 / 仅缓存命中与 miss）
  * - RecentFilesService.probeFileInfo 大小写入 LoadDispatchCache
  */
@@ -185,7 +197,7 @@ export default function GetInfoOrNullTest() {
 
     // -------- KdbxFileManager 能力回退 --------
 
-    it('KdbxFileManager falls back to exists+getInfo when storage lacks capability', 0, async () => {
+    it('KdbxFileManager getInfoOrNull uses storage probe directly', 0, async () => {
       const factory = FileStorageFactory.getInstance();
       const original = factory.getStorageMap().get(StorageType.LOCAL);
       factory.registerStorage(StorageType.LOCAL, new StubNoProbeStorage());
@@ -220,7 +232,7 @@ export default function GetInfoOrNullTest() {
       expect(missing).assertNull();
     });
 
-    it('CacheStorage getInfoOrNull falls back when decorated lacks capability', 0, async () => {
+    it('CacheStorage getInfoOrNull passes through decorated probe', 0, async () => {
       const cacheStorage = new CacheStorage(new StubNoProbeStorage());
       const info = await cacheStorage.getInfoOrNull('/stub-exist.kdbx');
       expect(info !== null).assertTrue();

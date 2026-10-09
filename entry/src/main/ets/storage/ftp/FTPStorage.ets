@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { CommonUtils, ResourceManager } from '../../common/utils';
@@ -15,13 +15,14 @@ const TAG = 'FTPStorage';
  * FTP存储实现类
  * 作为FTP和SFTP的统一接口，根据配置选择合适的处理器
  */
-export class FTPStorage implements IFileStorage {
+export class FTPStorage extends BaseFileStorage {
   private config: FTPStorageConfig | undefined;
   private handler: IFTPHandler | undefined;
   private pendingClose: Promise<void> | undefined;
   private opQueue: Promise<void> = Promise.resolve();
 
   constructor(config?: FTPStorageConfig) {
+    super();
     if (config) {
       this.init(config);
     }
@@ -425,32 +426,30 @@ export class FTPStorage implements IFileStorage {
 
   /**
    * 获取文件信息
+   * 复用 getInfoOrNullOnce 单一探测（serialize 包裹保持连接串行；null 映射为 FILE_INFO_ERROR）
    */
   public getInfo(path: string): Promise<FileInfo> {
     return this.serialize(() => this.getInfoOnce(path));
   }
 
+  /**
+   * 获取文件信息（serialize 队列内直调版）：null 映射为 FILE_INFO_ERROR；
+   * 连接失败等裸错误补包装为 FILE_INFO_ERROR（保持旧 getInfoOnce 契约，含 sftp 码标记）
+   */
   private async getInfoOnce(path: string): Promise<FileInfo> {
     try {
-      const handler = await this.ensureConnected();
-      const fullPath = this.getFullPath(path);
-      const fileInfo = await handler.getFileInfo(fullPath);
-
-      return {
-        name: fileInfo.name,
-        size: fileInfo.size,
-        modifiedTime: fileInfo.modifiedTime,
-        path: fullPath,
-        type: fileInfo.isDirectory ? FileType.DIR : FileType.FILE,
-        childrenCount: 0,
-        version: `${fileInfo.size}|${fileInfo.modifiedTime}`
-      } as FileInfo;
+      const info: FileInfo | null = await this.getInfoOrNullOnce(path);
+      if (info === null) {
+        throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, 'File not found: ' + path);
+      }
+      return info;
     } catch (error) {
       hilog.error(DOMAIN, TAG, `${this.config?.protocol || 'FTP'} get info error: ${error.message}`);
       if (error instanceof StorageError) {
         throw error;
       }
-      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, error.message);
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, err.message);
     }
   }
 

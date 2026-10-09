@@ -1,4 +1,4 @@
-import { FileInfo, FileType, IFileStorage, PageConfig, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
 import { ResourceManager } from '../../common/utils'
@@ -11,11 +11,12 @@ const TAG = 'WebDAVStorage';
 /**
  * WebDAV存储实现类
  */
-export class WebDAVStorage implements IFileStorage {
+export class WebDAVStorage extends BaseFileStorage {
   private config: WebDAVStorageConfig | undefined;
   private client: WebDavClient | undefined;
 
   constructor(config?: WebDAVStorageConfig) {
+    super();
     if (config) {
       this.init(config);
     }
@@ -227,15 +228,6 @@ export class WebDAVStorage implements IFileStorage {
       }
       throw error as Error;
     }
-  }
-
-  /**
-   * 检查文件是否存在
-   * @param path
-   * @returns
-   */
-  public async exists(path: string): Promise<boolean> {
-    return (await this.getInfoOrNull(path)) !== null;
   }
 
   /**

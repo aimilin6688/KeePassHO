@@ -67,12 +67,12 @@ export interface IFileStorage {
 
   /**
    * 获取文件信息；文件确定不存在时返回 null，无法判定（网络错误、令牌失效等）时抛异常。
-   * 可选能力：未实现的存储由调用方回退 exists()/getInfo()。
+   * 契约成员：所有实现必须提供（继承 BaseFileStorage 时为抽象原语，exists/getInfo 由基类派生）。
    * 语义约束：必须与 getInfo 同源（同一次请求形态），禁止把一切异常映射为 null。
    * @param path 文件路径
    * @return Promise<FileInfo | null> 文件信息，确定不存在时为 null
    */
-  getInfoOrNull?(path: string): Promise<FileInfo | null>;
+  getInfoOrNull(path: string): Promise<FileInfo | null>;
 
   /**
    * 获取文件信息

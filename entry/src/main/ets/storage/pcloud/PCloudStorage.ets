@@ -1,4 +1,5 @@
-import { IFileStorage, FileInfo, FileType, WriteOption } from '../IFileStorage';
+import { FileInfo, FileType, WriteOption } from '../IFileStorage';
+import { BaseFileStorage } from '../BaseFileStorage';
 import { StorageConfig, PageConfig } from '../StorageConfig';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
 import { PCloudClient, PCloudMetadata, PCloudError } from './PCloudClient';
@@ -19,7 +20,7 @@ const PCLOUD_ERROR_NOT_FOUND = 2005;
  * - 文件：f{fileid}（如 "f1729212"）
  * - 写入路径：d{folderId}/{fileName}（如 "d230807/myfile.kdbx"）
  */
-export class PCloudStorage implements IFileStorage {
+export class PCloudStorage extends BaseFileStorage {
   private config: PCloudStorageConfig | null = null;
   private client: PCloudClient | null = null;
 
@@ -180,26 +181,9 @@ export class PCloudStorage implements IFileStorage {
     }
   }
 
-  async exists(path: string): Promise<boolean> {
-    return (await this.getInfoOrNull(path)) !== null;
-  }
-
-  async getInfo(path: string): Promise<FileInfo> {
-    this.ensureReady();
-    this.config!.touchActive();
-
-    try {
-      const meta = await this.client!.stat(path);
-      return this.metadataToFileInfo(meta, path);
-    } catch (error) {
-      const err = error as Error;
-      this.handlePCloudError(error, 'GetInfo');
-      throw new StorageError(
-        StorageErrorCodes.FILE_INFO_ERROR,
-        'Get info failed: ' + err.message
-      );
-    }
-  }
+  /**
+   * 获取文件信息（基类派生：getInfoOrNull 为 null 时抛 FILE_INFO_ERROR）
+   */
 
   async listDir(path: string): Promise<FileInfo[]> {
     this.ensureReady();
