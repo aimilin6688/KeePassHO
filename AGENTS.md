@@ -28,6 +28,8 @@ All commands use `hvigorw` as the build orchestrator. Build products are signing
 
 After every task's `devecocli build` succeeds, ALWAYS automatically deploy the app to the connected phone and launch it via `devecocli run --skip-build` — do not ask, this is the default end-of-task step. Skip only when no device is connected or the user explicitly declines.
 
+**Never delete app data when deploying.** Always use replace-install (覆盖安装, `devecocli run` / `hdc install -r`); NEVER uninstall the app (`hdc uninstall` / `bm uninstall`) before installing — the app's data directory (databases, settings, preferences) must be preserved across deployments.
+
 - `hvigorw assembleHap --no-daemon -p product=default` — Build debug HAP for Windows
 - `hvigorw clean assembleHap --no-daemon -p product=default` — Clean build (removes cached artifacts)
 - `hvigorw assembleHap --no-daemon -p product=mac_debug` — Build debug HAP for macOS

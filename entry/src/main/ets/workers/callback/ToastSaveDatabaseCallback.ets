@@ -76,6 +76,10 @@ export class ToastSaveDatabaseCallback implements SaveDatabaseCallback {
     if (this.progressVisible) {
       this.progressVisible = false;
       LoadingDialog.hide(LoadingState.LINEAR_PROGRESS).catch(() => {
+        // 关闭失败兜底：延迟重试（对齐 hideLoading 的失败重试语义）
+        setTimeout(() => {
+          LoadingDialog.hide(LoadingState.LINEAR_PROGRESS).catch(() => {});
+        }, 100);
       });
     }
   }
