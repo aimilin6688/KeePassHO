@@ -83,8 +83,7 @@ export struct Password {
     builder: LoadProgressDialog({
       loadingMessage: this.loadingMessage,
       progressPercent: this.progressPercent,
-      progressDetail: this.progressDetail,
-      dialogWidth: '90%'
+      progressDetail: this.progressDetail
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
