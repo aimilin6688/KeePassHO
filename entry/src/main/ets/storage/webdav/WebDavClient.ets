@@ -4,8 +4,8 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError, request } from '@kit.BasicServicesKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { ByteUtils } from 'kdbxweb';
-import { CommonUtils, ResourceManager, StringUtils } from '.';
-import { CertValidationMode } from '../../storage/webdav/WebDAVConfig';
+import { CommonUtils, ResourceManager, StringUtils } from '../../common/utils';
+import { CertValidationMode } from './WebDAVConfig';
 
 const DOMAIN = 0x0000;
 const TAG = 'WebDavClient';

@@ -1,6 +1,6 @@
 import { BaseFileStorage, FileInfo, FileType, PageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { ResultInfo, WebDavClient } from '../../common/utils/WebDavClient';
+import { ResultInfo, WebDavClient } from './WebDavClient';
 import { ResourceManager } from '../../common/utils'
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
 import { WebDAVPageConfig, WebDAVStorageConfig } from './WebDAVConfig';

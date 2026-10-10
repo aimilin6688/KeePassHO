@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from '@ohos/hypium';
-import { WebDavClient, ResultInfo } from '../../../../../main/ets/common/utils/WebDavClient';
+import { WebDavClient, ResultInfo } from '../../../../../main/ets/storage/webdav/WebDavClient';
 import { WebDAVStorage, WebDAVError } from '../../../../../main/ets/storage/webdav/WebDAVStorage';
 import { WebDAVStorageConfig } from '../../../../../main/ets/storage/webdav/WebDAVConfig';
 import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
