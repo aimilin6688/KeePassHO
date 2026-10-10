@@ -3,6 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { ByteUtils } from 'kdbxweb';
+import { TransferProgressCallback } from '../IFileStorage';
 
 const DOMAIN = 0x0000;
 const TAG = 'PCloudClient';
@@ -225,9 +226,11 @@ export class PCloudClient {
    * 内存窗口 = 单块（8MB），与文件大小解耦；首块若返回 200（Range 不支持）退化为整缓冲
    * @param fileId 文件 ID
    * @param destPath 本地目标文件路径（调用方管理生命周期）
+   * @param onProgress 下载进度回调（可选）：每块写盘后上报（transferredBytes, totalBytes），未传入时行为不变
    * @returns 下载字节数
    */
-  async downloadFileRangeToFile(fileId: string, destPath: string): Promise<number> {
+  async downloadFileRangeToFile(fileId: string, destPath: string,
+    onProgress?: TransferProgressCallback): Promise<number> {
     if (this.session === null) {
       throw new Error('PCloudClient session is closed');
     }
@@ -245,6 +248,9 @@ export class PCloudClient {
     let firstChunk = true;
     const file = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
     try {
+      if (onProgress) {
+        onProgress(0, fileSize);
+      }
       while (downloaded < fileSize) {
         const end = Math.min(downloaded + CHUNK_SIZE - 1, fileSize - 1);
         const headers: Record<string, string> = {};
@@ -257,6 +263,9 @@ export class PCloudClient {
           }
           await fs.write(file.fd, resp.body);
           downloaded = fileSize;
+          if (onProgress) {
+            onProgress(fileSize, fileSize);
+          }
           break;
         }
         firstChunk = false;
@@ -268,6 +277,9 @@ export class PCloudClient {
         }
         await fs.write(file.fd, resp.body);
         downloaded += resp.body.byteLength;
+        if (onProgress) {
+          onProgress(downloaded, fileSize);
+        }
       }
       await fs.fsync(file.fd);
     } finally {
@@ -348,8 +360,12 @@ export class PCloudClient {
    * 流式上传本地文件（S7：pCloud PUT 协议 + rcp UploadFromFile，请求体不驻内存）
    * PUT /uploadfile?folderid={id}&filename={name}&nopartial=1，请求体即文件数据（全部参数走 URL query）
    * nopartial=1 保证文件在上传完成前不可见（KDBX 原子保存语义）
+   * 进度说明：tracing 的 onUploadProgress 对文件请求体不触发；提供回调时改用 rcp.ReadFile 适配器——
+   * RCP 按内部块大小回调 read 拉取数据，每次拉取即上报真实已读字节（单调递增至 totalSize）
+   * @param onProgress 上传进度回调（可选）：按 rcp 拉取块上报（transferredBytes, totalBytes），未传入时行为不变
    */
-  async uploadFileFromFile(folderId: string, name: string, srcPath: string): Promise<PCloudMetadata> {
+  async uploadFileFromFile(folderId: string, name: string, srcPath: string,
+    onProgress?: TransferProgressCallback): Promise<PCloudMetadata> {
     if (this.session === null) {
       throw new Error('PCloudClient session is closed');
     }
@@ -360,15 +376,63 @@ export class PCloudClient {
     const url = this.buildUrl('/uploadfile', params);
     const headers: Record<string, string> = {};
     headers['Content-Type'] = 'application/octet-stream';
-    const req = new rcp.Request(url, 'PUT', headers, new rcp.UploadFromFile(srcPath));
-    const resp = await this.session.fetch(req);
-    const jsonData = this.responseToJson(resp);
-    this.checkResponse(jsonData);
-    const metadata = jsonData['metadata'] as PCloudMetadata[] | undefined;
-    if (metadata && metadata.length > 0) {
-      return metadata[0];
+
+    if (!onProgress) {
+      const req = new rcp.Request(url, 'PUT', headers, new rcp.UploadFromFile(srcPath));
+      const resp = await this.session.fetch(req);
+      const jsonData = this.responseToJson(resp);
+      this.checkResponse(jsonData);
+      const metadata = jsonData['metadata'] as PCloudMetadata[] | undefined;
+      if (metadata && metadata.length > 0) {
+        return metadata[0];
+      }
+      throw new PCloudError(-1, 'uploadFileFromFile: missing metadata in response');
     }
-    throw new PCloudError(-1, 'uploadFileFromFile: missing metadata in response');
+
+    let file: fs.File | null = null;
+    let uploadedBytes: number = 0;
+    let totalBytes: number = 0;
+    let srcEof: boolean = false;
+    const readFileAdapter: rcp.ReadFile = {
+      read: async (buffer: ArrayBuffer): Promise<number> => {
+        if (srcEof || file === null) {
+          return 0;
+        }
+        const readBytes: number = fs.readSync(file.fd, buffer);
+        if (readBytes <= 0) {
+          srcEof = true;
+          return 0;
+        }
+        uploadedBytes += readBytes;
+        onProgress(uploadedBytes, totalBytes);
+        return readBytes;
+      }
+    };
+
+    try {
+      totalBytes = fs.statSync(srcPath).size;
+      file = fs.openSync(srcPath, fs.OpenMode.READ_ONLY);
+      if (totalBytes > 0) {
+        onProgress(0, totalBytes);
+      }
+      const req = new rcp.Request(url, 'PUT', headers, new rcp.UploadFromFile(readFileAdapter));
+      const resp = await this.session.fetch(req);
+      const jsonData = this.responseToJson(resp);
+      this.checkResponse(jsonData);
+      const metadata = jsonData['metadata'] as PCloudMetadata[] | undefined;
+      if (metadata && metadata.length > 0) {
+        return metadata[0];
+      }
+      throw new PCloudError(-1, 'uploadFileFromFile: missing metadata in response');
+    } finally {
+      if (file !== null) {
+        try {
+          fs.closeSync(file);
+        } catch {
+          // 关闭失败忽略
+        }
+      }
+    }
   }
 
   /**

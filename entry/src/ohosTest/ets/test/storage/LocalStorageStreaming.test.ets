@@ -139,6 +139,94 @@ export default function LocalStorageStreamingTest() {
       const tmpFiles = entries.filter((name: string) => name.includes('.tmp.'));
       expect(tmpFiles.length).assertEqual(0);
     });
+    /**
+     * 版本快速路径能力声明：本地 size|mtime（fs.stat 秒级）版本标识可信
+     */
+    it('supportsVersionFastPath should be true', 0, () => {
+      expect(storage.supportsVersionFastPath()).assertTrue();
+    });
+
+    /**
+     * readToFile 进度回调：提供 onProgress 时分块（1MB）拷贝逐块上报，
+     * 首事件 (0, total)，末事件 (total, total)，单调不减且不超过 total
+     */
+    it('readToFile reports chunked progress when onProgress provided', 0, async () => {
+      const srcPath = testDir + '/src-progress.kdbx';
+      const totalSize = 2 * 1024 * 1024 + 512 * 1024; // 2.5MB → 3 个数据块
+      const data = new ArrayBuffer(totalSize);
+      const view = new Uint8Array(data);
+      for (let i = 0; i < view.length; i++) {
+        view[i] = i % 256;
+      }
+      const file = await fs.open(srcPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      await fs.write(file.fd, data);
+      await fs.close(file.fd);
+
+      const transferredList: number[] = [];
+      const totalList: number[] = [];
+      const destPath = testDir + '/dest-progress.kdbx';
+      await storage.readToFile(srcPath, destPath, (transferredBytes: number, totalBytes: number) => {
+        transferredList.push(transferredBytes);
+        totalList.push(totalBytes);
+      });
+
+      // 首事件 (0, total) + 3 个数据块事件 = 4 次
+      expect(transferredList.length).assertEqual(4);
+      expect(transferredList[0]).assertEqual(0);
+      expect(totalList[0]).assertEqual(totalSize);
+      const lastIndex = transferredList.length - 1;
+      expect(transferredList[lastIndex]).assertEqual(totalSize);
+      expect(totalList[lastIndex]).assertEqual(totalSize);
+      let prev = 0;
+      for (let i = 0; i < transferredList.length; i++) {
+        expect(transferredList[i] >= prev).assertTrue();
+        expect(transferredList[i] <= totalList[i]).assertTrue();
+        prev = transferredList[i];
+      }
+      // 内容一致
+      const buf = await readFile(destPath);
+      expect(buf.byteLength).assertEqual(totalSize);
+    });
+
+    /**
+     * writeFromFile 进度回调（沙箱原子路径）：分块拷贝逐块上报，
+     * 写入后内容正确且无 .tmp 残留（原子性不因进度路径破坏）
+     */
+    it('writeFromFile reports chunked progress on sandbox path', 0, async () => {
+      const srcPath = testDir + '/src-wprogress.kdbx';
+      const totalSize = 2 * 1024 * 1024 + 512 * 1024; // 2.5MB → 3 个数据块
+      const data = new ArrayBuffer(totalSize);
+      const view = new Uint8Array(data);
+      for (let i = 0; i < view.length; i++) {
+        view[i] = (i * 3) % 256;
+      }
+      const file = await fs.open(srcPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+      await fs.write(file.fd, data);
+      await fs.close(file.fd);
+
+      const transferredList: number[] = [];
+      const totalList: number[] = [];
+      const destPath = testDir + '/dest-wprogress.kdbx';
+      await storage.writeFromFile(destPath, srcPath, undefined,
+        (transferredBytes: number, totalBytes: number) => {
+          transferredList.push(transferredBytes);
+          totalList.push(totalBytes);
+        });
+
+      expect(transferredList.length).assertEqual(4);
+      expect(transferredList[0]).assertEqual(0);
+      expect(totalList[0]).assertEqual(totalSize);
+      const lastIndex = transferredList.length - 1;
+      expect(transferredList[lastIndex]).assertEqual(totalSize);
+      expect(totalList[lastIndex]).assertEqual(totalSize);
+      // 内容一致 + 无 .tmp 残留
+      const buf = await readFile(destPath);
+      expect(buf.byteLength).assertEqual(totalSize);
+      expect(Array.from(new Uint8Array(buf)).join(',')).assertEqual(Array.from(view).join(','));
+      const entries = fs.listFileSync(testDir);
+      const tmpFiles = entries.filter((name: string) => name.includes('.tmp.'));
+      expect(tmpFiles.length).assertEqual(0);
+    });
   });
 }
 

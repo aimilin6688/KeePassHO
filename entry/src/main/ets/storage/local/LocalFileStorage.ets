@@ -1,5 +1,5 @@
 import { fileShare, fileIo as fs } from '@kit.CoreFileKit';
-import { FileInfo, WriteOption } from '../IFileStorage';
+import { FileInfo, TransferProgressCallback, WriteOption } from '../IFileStorage';
 import { BaseFileStorage } from '../BaseFileStorage';
 import { FilenameUtils, FileUtils } from '../../common/utils';
 
@@ -17,12 +17,25 @@ const TAG = 'LocalFileStorage';
  * 使用鸿蒙系统的文件API实现本地文件的读写操作
  */
 export class LocalFileStorage extends BaseFileStorage {
+  /** 进度分块拷贝块大小（1MB）：块粒度进度事件，内存窗口与文件大小解耦 */
+  private static readonly PROGRESS_COPY_CHUNK_SIZE: number = 1024 * 1024;
+
   /**
    * 获取页面配置
    * @returns
    */
   public getPageConfig(): PageConfig {
     return LocalFilePageConfig;
+  }
+
+  /**
+   * 声明版本快速路径可用：本地版本标识 = size|mtime（doGetInfo，fs.stat 秒级 mtime），
+   * 内容变更必变 size 或 mtime，探测结果稳定可信。
+   * 注意：本存储不经 CacheStorage（无缓存元数据），加载链快速路径天然不参与；
+   * 该声明作用于保存链版本预检（跳过重拷贝+sha256）与下拉刷新远程探测早退。
+   */
+  public supportsVersionFastPath(): boolean {
+    return true;
   }
 
   /**
@@ -72,8 +85,10 @@ export class LocalFileStorage extends BaseFileStorage {
   /**
    * 流式读取文件到本地目标路径（fs 内核拷贝，零用户态整缓冲）
    * 顺带修复非原子写：destPath 与 path 在不同卷时退化为 read+write
+   * @param onProgress 拷贝进度回调（可选）：提供时分块（1MB）拷贝逐块上报，未提供时保持内核拷贝
    */
-  public async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  public async readToFile(path: string, destPath: string,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     await this.checkFilePermission(path, fileShare.OperationMode.READ_MODE);
     try {
       // file://docs/... URI 经 fs.copyFile(URI, path) 路径解析会 ENOENT（docs FUSE 不被内核拷贝识别）；
@@ -83,7 +98,14 @@ export class LocalFileStorage extends BaseFileStorage {
       try {
         const destFile = await fs.open(destPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
         try {
-          await fs.copyFile(srcFile.fd, destFile.fd);
+          if (onProgress) {
+            const stat = await fs.stat(srcFile.fd);
+            if (stat.size > 0) {
+              await LocalFileStorage.copyFdToFdWithProgress(srcFile.fd, destFile.fd, stat.size, onProgress);
+            }
+          } else {
+            await fs.copyFile(srcFile.fd, destFile.fd);
+          }
         } finally {
           await fs.close(destFile.fd);
         }
@@ -94,6 +116,27 @@ export class LocalFileStorage extends BaseFileStorage {
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Failed to copyFile: %{public}s', error.message);
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, error.message);
+    }
+  }
+
+  /**
+   * 分块 fd→fd 拷贝并逐块上报进度（1MB 块；首事件 (0, totalBytes)，末事件 (totalBytes, totalBytes)）
+   * 仅在调用方显式提供进度回调时使用；未提供时保持 fs.copyFile 内核拷贝
+   */
+  private static async copyFdToFdWithProgress(srcFd: number, destFd: number,
+    totalBytes: number, onProgress: TransferProgressCallback): Promise<void> {
+    const buffer: ArrayBuffer = new ArrayBuffer(LocalFileStorage.PROGRESS_COPY_CHUNK_SIZE);
+    let transferred: number = 0;
+    onProgress(0, totalBytes);
+    while (transferred < totalBytes) {
+      const readLen: number = Math.min(LocalFileStorage.PROGRESS_COPY_CHUNK_SIZE, totalBytes - transferred);
+      const bytesRead: number = await fs.read(srcFd, buffer, { length: readLen });
+      if (bytesRead <= 0) {
+        break;
+      }
+      await fs.write(destFd, buffer, { length: bytesRead });
+      transferred += bytesRead;
+      onProgress(transferred, totalBytes);
     }
   }
 
@@ -172,8 +215,10 @@ export class LocalFileStorage extends BaseFileStorage {
   /**
    * 流式从本地源文件写入：写临时文件 + fsync + 原子 rename 替换
    * 顺带修复非原子写（崩溃中断不破坏现有文件）
+   * @param onProgress 拷贝进度回调（可选）：提供时分块（1MB）拷贝逐块上报，未提供时保持内核拷贝
    */
-  public async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  public async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     await this.checkFilePermission(path, fileShare.OperationMode.WRITE_MODE);
     const expectedVersion: string | null = option?.expectedVersion ?? null;
     // 写前复核版本（与 doWrite 一致，两条路径共用）
@@ -194,7 +239,14 @@ export class LocalFileStorage extends BaseFileStorage {
         try {
           const destFile = await fs.open(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
           try {
-            await fs.copyFile(srcFile.fd, destFile.fd);
+            if (onProgress) {
+              const stat = await fs.stat(srcFile.fd);
+              if (stat.size > 0) {
+                await LocalFileStorage.copyFdToFdWithProgress(srcFile.fd, destFile.fd, stat.size, onProgress);
+              }
+            } else {
+              await fs.copyFile(srcFile.fd, destFile.fd);
+            }
           } finally {
             await fs.close(destFile.fd);
           }
@@ -213,13 +265,31 @@ export class LocalFileStorage extends BaseFileStorage {
     // 沙箱路径：写临时文件 + fsync + 原子 rename 替换（崩溃中断不破坏现有文件）
     const tempPath: string = path + '.tmp.' + Date.now();
     try {
-      // 拷贝到临时文件并落盘
-      await fs.copyFile(srcPath, tempPath);
-      const tmpFile = await fs.open(tempPath, fs.OpenMode.READ_ONLY);
-      try {
-        await fs.fsync(tmpFile.fd);
-      } finally {
-        await fs.close(tmpFile.fd);
+      // 拷贝到临时文件并落盘（提供进度回调时分块拷贝逐块上报）
+      if (onProgress) {
+        const srcFile = await fs.open(srcPath, fs.OpenMode.READ_ONLY);
+        try {
+          const stat = await fs.stat(srcFile.fd);
+          const tmpFile = await fs.open(tempPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+          try {
+            if (stat.size > 0) {
+              await LocalFileStorage.copyFdToFdWithProgress(srcFile.fd, tmpFile.fd, stat.size, onProgress);
+            }
+            await fs.fsync(tmpFile.fd);
+          } finally {
+            await fs.close(tmpFile.fd);
+          }
+        } finally {
+          await fs.close(srcFile.fd);
+        }
+      } else {
+        await fs.copyFile(srcPath, tempPath);
+        const tmpFile = await fs.open(tempPath, fs.OpenMode.READ_ONLY);
+        try {
+          await fs.fsync(tmpFile.fd);
+        } finally {
+          await fs.close(tmpFile.fd);
+        }
       }
       // 原子替换
       await fs.rename(tempPath, path);

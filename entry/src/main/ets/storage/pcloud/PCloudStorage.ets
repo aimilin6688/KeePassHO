@@ -1,4 +1,4 @@
-import { FileInfo, FileType, WriteOption } from '../IFileStorage';
+import { FileInfo, FileType, TransferProgressCallback, WriteOption } from '../IFileStorage';
 import { BaseFileStorage } from '../BaseFileStorage';
 import { StorageConfig, PageConfig } from '../StorageConfig';
 import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../StorageError';
@@ -35,13 +35,22 @@ export class PCloudStorage extends BaseFileStorage {
   }
 
   /**
-   * 流式分块下载到本地文件（S7：Range GET 循环 8MB 块直写盘，内存与文件大小解耦）
+   * 声明版本快速路径可用：pCloud 版本标识 = fileid:hash:size:modified（buildVersion），
+   * hash 为内容 hash，内容更新必变 hash/modified/size 至少一项，探测结果稳定可信
    */
-  async readToFile(path: string, destPath: string): Promise<FileInfo> {
+  supportsVersionFastPath(): boolean {
+    return true;
+  }
+
+  /**
+   * 流式分块下载到本地文件（S7：Range GET 循环 8MB 块直写盘，内存与文件大小解耦）
+   * @param onProgress 下载进度回调（可选）：逐块上报（transferredBytes, totalBytes）
+   */
+  async readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo> {
     this.ensureReady();
     this.config!.touchActive();
     try {
-      await this.client!.downloadFileRangeToFile(path, destPath);
+      await this.client!.downloadFileRangeToFile(path, destPath, onProgress);
       return await this.getInfo(path);
     } catch (error) {
       const err = error as Error;
@@ -56,10 +65,12 @@ export class PCloudStorage extends BaseFileStorage {
   /**
    * 流式从本地文件上传（S7：pCloud PUT 协议 + rcp UploadFromFile，请求体不驻内存，解除 CP-UP 约束）
    * 条件写入：传入 expectedVersion 时写前复核远端版本，不一致抛出版本冲突
+   * @param onProgress 上传进度回调（可选）：按 rcp 内部拉取块上报（transferredBytes, totalBytes）
    * @throws StorageError(VERSION_CONFLICT) 远端版本与期望不一致
    * @throws StorageError(FILE_WRITE_ERROR) 上传失败
    */
-  async writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  async writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     this.ensureReady();
     this.config!.touchActive();
 
@@ -79,7 +90,7 @@ export class PCloudStorage extends BaseFileStorage {
     try {
       // 条件写入：写前复核远端版本，不一致抛出版本冲突
       await this.checkExpectedVersion(folderNumericId, fileName, option);
-      await this.client!.uploadFileFromFile(folderNumericId, fileName, srcPath);
+      await this.client!.uploadFileFromFile(folderNumericId, fileName, srcPath, onProgress);
       return await this.getInfo(path);
     } catch (error) {
       // 版本冲突直接透传，保持错误码不被改写
