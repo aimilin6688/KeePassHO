@@ -1586,12 +1586,15 @@ export struct DatabaseView {
    */
   private refreshDatabase() {
     this.isRefreshing = true;
+    this.refreshText = $r('app.string.refreshing_message');
     probeRemoteUnchanged().then((unchanged: boolean) => {
       if (unchanged) {
         // 远端无变更：保留内存模型，仅结束刷新态
-        this.refreshText = $r('app.string.refreshing_message');
+        this.refreshText = $r('app.string.refresh_already_latest');
         this.isRefreshing = false;
-        CommonUtils.showToast({ message: $r('app.string.refresh_already_latest') });
+        setTimeout(() =>{
+          this.refreshText = $r('app.string.refreshing_message');
+        }, 100);
         return;
       }
       this.startForceRefreshLoad();
@@ -1628,8 +1631,7 @@ export struct DatabaseView {
         // 下载进度：阶段文案 + 字节明细（尺寸未知时仅百分比）
         const stage: string = ResourceManager.getMessage('downloading');
         if (message.totalBytes > 0) {
-          this.refreshText =
-            `${stage} ${StringUtils.formatFileSize(message.transferredBytes)} / ${StringUtils.formatFileSize(message.totalBytes)}`;
+          this.refreshText = `${stage} ${StringUtils.formatFileSize(message.transferredBytes)} / ${StringUtils.formatFileSize(message.totalBytes)}`;
         } else {
           this.refreshText = `${stage} ${message.percent}%`;
         }
