@@ -781,7 +781,35 @@ export class KdbxUtils {
   }
 
   public static kdbxErrorMessage(kdbxError: Error): string {
-    return ResourceManager.getString(KdbxUtils.kdbxErrorPayload(kdbxError));
+    const payload: string | number = KdbxUtils.kdbxErrorPayload(kdbxError);
+    const prefix: string = ResourceManager.getString(payload);
+    // payload 为资源 ID（本地化分支）时拼接原始明细展示详细错误；payload 已是原始文本时原样返回
+    if (typeof payload !== 'number') {
+      return prefix;
+    }
+    const detail: string | undefined = KdbxUtils.kdbxErrorDetail(kdbxError);
+    return detail ? `${prefix}: ${detail}` : prefix;
+  }
+
+  /**
+   * 提取 KDBX 错误明细（KdbxError "Error <code>: <detail>" 中的 <detail> 部分），
+   * 供调用方与本地化前缀拼接展示详细错误。
+   * 仅在 payload 为资源 ID（kdbxErrorPayload 返回 number）时拼接，payload 已是原始文本时
+   * 不拼接（原文已含明细，避免重复）；调用方需自行做该判断。
+   * 非 KdbxError 或无明细时返回 undefined。
+   * @param kdbxError 错误对象
+   * @returns 错误明细文本，无明细时 undefined
+   */
+  public static kdbxErrorDetail(kdbxError: Error): string | undefined {
+    if (!(kdbxError instanceof KdbxError)) {
+      return undefined;
+    }
+    const prefix: string = 'Error ' + kdbxError.code + ': ';
+    if (kdbxError.message.startsWith(prefix)) {
+      const detail: string = kdbxError.message.substring(prefix.length);
+      return detail.length > 0 ? detail : undefined;
+    }
+    return undefined;
   }
 
   /**

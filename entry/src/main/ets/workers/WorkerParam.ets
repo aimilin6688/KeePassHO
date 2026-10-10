@@ -120,10 +120,17 @@ export class InitWorkerMessage implements WorkerMessage {
 export class LoadMessage implements WorkerMessage {
   type: MessageType;
   message: string | number;
+  /**
+   * 错误明细（原始错误文本，如 'bad argon2 version'）：
+   * 由主线程与本地化前缀拼接展示详细错误（"文件损坏: bad argon2 version"）；
+   * undefined 表示无明细，仅展示本地化前缀
+   */
+  detail?: string;
 
-  constructor(type: MessageType, message: string | number) {
+  constructor(type: MessageType, message: string | number, detail?: string) {
     this.type = type;
     this.message = message;
+    this.detail = detail;
   }
 }
 
@@ -307,6 +314,6 @@ export function toLoadMessage(message: string | Resource): LoadMessage {
   return new LoadMessage(MessageType.MESSAGE, message.id);
 }
 
-export function toErrorMessage(message: string | number): LoadMessage {
-  return new LoadMessage(MessageType.ERROR, message);
+export function toErrorMessage(message: string | number, detail?: string): LoadMessage {
+  return new LoadMessage(MessageType.ERROR, message, detail);
 }

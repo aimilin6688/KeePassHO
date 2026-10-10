@@ -204,7 +204,10 @@ export class DatabaseSave {
         // 重试耗尽仍冲突：远端正被持续写入，提示用户稍后重试，本地修改保留在内存中
         this.postErrorMessage('save_conflict_retry_exhausted');
       } else {
-        this.postErrorMessage(KdbxUtils.kdbxErrorPayload(error));
+        // payload 为资源 ID（本地化分支）时携带原始明细，主线程拼接展示详细错误
+        const payload: string | number = KdbxUtils.kdbxErrorPayload(error);
+        const detail: string | undefined = typeof payload === 'number' ? KdbxUtils.kdbxErrorDetail(error) : undefined;
+        this.postErrorMessage(payload, detail);
       }
     } finally {
       // 清理管道临时文件（ciphertext + S6 保存中间态 + MERGE 流式加载中间态，用完即删）
@@ -516,11 +519,13 @@ export class DatabaseSave {
   /**
    * 发送失败消息
    * @param message 消息（资源名或原始文本，由消费方按名本地化、原文透传）
+   * @param detail 错误明细（原始错误文本），拼接在本地化前缀后展示详细错误
    */
-  postErrorMessage(message: string | number) {
+  postErrorMessage(message: string | number, detail?: string) {
     const msgText = ResourceManager.getMessage(message);
+    const fullText = detail ? `${msgText}: ${detail}` : msgText;
     if (this.callback && this.callback.onError) {
-      this.callback.onError(msgText);
+      this.callback.onError(fullText);
     }
   }
 

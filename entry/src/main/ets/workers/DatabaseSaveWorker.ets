@@ -104,10 +104,11 @@ class DatabaseSaveWorker extends DatabaseSave {
   /**
    * 发送失败消息
    * @param message 消息（原始文本或资源 ID，由主线程本地化）
+   * @param detail 错误明细（原始错误文本，由主线程拼接在本地化前缀后展示）
    */
-  postErrorMessage(message: string | number) {
+  postErrorMessage(message: string | number, detail?: string) {
     try {
-      workerPort.postMessage(toErrorMessage(message));
+      workerPort.postMessage(toErrorMessage(message, detail));
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'postErrorMessage error:%{public}s', error.message);
       CommonUtils.showToast(String(message));

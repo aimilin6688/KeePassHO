@@ -1250,7 +1250,7 @@
     },
     {
       "name": "kdbx_error_FileCorrupt",
-      "value": "文件埙坏"
+      "value": "文件损坏"
     },
     {
       "name": "kdbx_error_InvalidVersion",
