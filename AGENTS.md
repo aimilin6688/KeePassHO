@@ -36,7 +36,7 @@ After every task's `devecocli build` succeeds, ALWAYS automatically deploy the a
 
 HAP output is placed at `entry/build/<product>/outputs/default/entry-<product>-signed.hap`.
 
-Tests use Hypium (`@ohos/hypium`) and Hamock (`@ohos/hamock`). Run tests **on-device/emulator** via `hdc shell aa test`, not via `hvigorw test`.
+Tests use Hypium (`@ohos/hypium`). Run tests **on-device/emulator** via `hdc shell aa test`, not via `hvigorw test`.
 
 ## Coding Style and Naming Conventions
 
@@ -57,7 +57,7 @@ Tests use Hypium (`@ohos/hypium`) and Hamock (`@ohos/hamock`). Run tests **on-de
 
 ## Testing Guidelines
 
-- Uses Hypium test framework with Hamock for mocking, running **on-device/emulator**.
+- Uses Hypium test framework, running **on-device/emulator**.
 - Test files mirror source structure under `src/ohosTest/ets/test/`.
 - Suite entry is `List.test.ets` which imports all `*.test.ets` suites.
 - Single test class run: `hdc shell aa test -b com.aimilin.keepassho -m entry_test -s unittest OpenHarmonyTestRunner -s class <SuiteName> -s timeout 60000`.
