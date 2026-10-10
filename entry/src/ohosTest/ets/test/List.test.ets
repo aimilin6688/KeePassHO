@@ -47,6 +47,8 @@ import WorkerEnvironmentInjectionTest from './workers/WorkerEnvironmentInjection
 import ProgressThrottlerTest from './workers/ProgressThrottler.test';
 import ProgressMessageTest from './workers/ProgressMessage.test';
 import ProgressDispatchTest from './workers/ProgressDispatch.test';
+// 保存错误明细展示链路测试（LoadMessage.detail / toErrorMessage / postErrorMessage 拼接）
+import SaveErrorDetailTest from './workers/SaveErrorDetail.test';
 import DatabaseLoadGuardTest from './services/DatabaseLoadGuard.test';
 import LoadDispatchServiceTest from './services/LoadDispatchService.test';
 import HashUtilsFileTest from './utils/HashUtilsFile.test';
@@ -59,6 +61,8 @@ import CacheStorageVersionMetaTest from './storage/cache/CacheStorageVersionMeta
 import DatabaseLoadFastPathTest from './workers/DatabaseLoadFastPath.test';
 import GetInfoOrNullTest from './storage/GetInfoOrNull.test';
 import KdbxErrorPayloadTest from './kdbx/KdbxErrorPayload.test';
+// KDF 切换（AES↔Argon2）字典重建修复回归测试
+import KdfSwitchTest from './kdbx/KdfSwitch.test';
 import UploadTooLargeGuardTest from './storage/UploadTooLargeGuard.test';
 
 // KPSN 二进制快照协议单元测试（跨线程传输格式编解码）
@@ -279,6 +283,9 @@ export default function testsuite() {
   ProgressMessageTest();
   ProgressDispatchTest();
 
+  // 保存错误明细展示链路测试（detail 字段 + 前缀拼接）
+  SaveErrorDetailTest();
+
   // 数据库加载守卫测试（CP1 文件大小 / CP-DISK 磁盘余量 / CP2' 解压上限）
   DatabaseLoadGuardTest();
 
@@ -308,6 +315,9 @@ export default function testsuite() {
 
   // kdbxErrorPayload 新增映射测试（DecompressedTooLarge + UPLOAD_TOO_LARGE）
   KdbxErrorPayloadTest();
+
+  // KDF 切换字典重建修复回归测试（AES↔Argon2d/Argon2id / V 键补齐 / 残留键清理）
+  KdfSwitchTest();
 
   // CP-UP 上传上限守卫测试
   UploadTooLargeGuardTest();

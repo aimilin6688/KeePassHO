@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@ohos/hypium';
-import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
+import { Kdbx, KdbxCredentials, Consts, KdbxError, ProtectedValue } from 'kdbxweb';
 import { common } from '@kit.AbilityKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import KdbxSaveService from '../../../../main/ets/services/kdbx/KdbxSaveService';
@@ -296,6 +296,37 @@ export default function KdbxSaveServiceTest() {
         threw = true;
       }
       expect(threw).assertFalse();
+    });
+
+    it('onError with detail composes prefix and detail', 0, () => {
+      const tracker = new SaveCallbackTracker();
+      const loadMessage = new LoadMessage(MessageType.ERROR, 'kdf_error_prefix', 'bad argon2 version');
+      KdbxSaveService.onError(loadMessage, tracker);
+      expect(tracker.errorCount).assertEqual(1);
+      expect(tracker.lastErrorMessage).assertEqual('kdf_error_prefix: bad argon2 version');
+    });
+
+    it('onError without detail passes prefix only', 0, () => {
+      const tracker = new SaveCallbackTracker();
+      const loadMessage = new LoadMessage(MessageType.ERROR, 'kdf_error_only');
+      KdbxSaveService.onError(loadMessage, tracker);
+      expect(tracker.errorCount).assertEqual(1);
+      expect(tracker.lastErrorMessage).assertEqual('kdf_error_only');
+    });
+
+    it('onError with resource-id message appends detail after localized prefix', 0, () => {
+      // 复用 kdbxErrorPayload 生成资源 ID 载体（FileCorrupt → kdbx_error_FileCorrupt）
+      let payload: string | number = '';
+      try {
+        throw new KdbxError(Consts.ErrorCodes.FileCorrupt, 'x');
+      } catch (e) {
+        payload = KdbxUtils.kdbxErrorPayload(e);
+      }
+      const tracker = new SaveCallbackTracker();
+      const loadMessage = new LoadMessage(MessageType.ERROR, payload, 'bad argon2 version');
+      KdbxSaveService.onError(loadMessage, tracker);
+      // 前缀是否本地化取决于 ResourceManager 上下文，断言仅锁定明细拼接位置
+      expect(tracker.lastErrorMessage.endsWith(': bad argon2 version')).assertTrue();
     });
 
     // ==================== callbackWarp (synchronous) ====================
