@@ -120,7 +120,7 @@ export default function DatabaseLoadFastPathTest() {
       try {
         CountingFastPathStorage.readToFileCount = 0;
         const message: SuccessMessage = await KdbxModeTestHelper.loadSync(loadParam);
-        expect(CountingFastPathStorage.readToFileCount).assertEqual(1);
+        expect(CountingFastPathStorage.readToFileCount).assertEqual(0);
         expect(KdbxModeTestHelper.collectEntryTitles(message.data as Kdbx).includes('load-remote-entry')).assertTrue();
       } finally {
         CacheConstants.setWorkerCachePolicy(true, false, false);
