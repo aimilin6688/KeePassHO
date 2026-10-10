@@ -30,7 +30,7 @@ export class PCloudStorage extends BaseFileStorage {
 
   init(config: StorageConfig): void {
     this.config = config as PCloudStorageConfig;
-    this.client = new PCloudClient();
+    this.client = new PCloudClient(this.config.apiBaseUrl);
     this.client.setAccessToken(this.config.accessToken);
   }
 

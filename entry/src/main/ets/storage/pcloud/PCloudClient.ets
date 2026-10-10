@@ -61,12 +61,18 @@ export interface PCloudLinkResult {
  * 响应检查 result === 0，非零抛出 PCloudError
  */
 export class PCloudClient {
-  private static readonly BASE_URL: string = 'https://api.pcloud.com';
+  private static readonly DEFAULT_BASE_URL: string = 'https://api.pcloud.com';
 
   private session: rcp.Session | null = null;
   private accessToken: string = '';
+  private baseUrl: string = PCloudClient.DEFAULT_BASE_URL;
 
-  constructor() {
+  /**
+   * @param baseUrl API 基地址，默认 US 端点 https://api.pcloud.com；
+   *                EU 数据中心需传 https://eapi.pcloud.com（OAuth 回调 hostname）
+   */
+  constructor(baseUrl?: string) {
+    this.baseUrl = PCloudClient.normalizeBaseUrl(baseUrl);
     this.session = rcp.createSession({
       requestConfiguration: {
         transfer: {
@@ -77,6 +83,16 @@ export class PCloudClient {
   }
 
   /**
+   * 规范化 API 基地址：空值回退默认 US 端点，去除末尾斜杠
+   */
+  static normalizeBaseUrl(url?: string): string {
+    if (url === undefined || url.length === 0) {
+      return PCloudClient.DEFAULT_BASE_URL;
+    }
+    return url.replace(/\/+$/, '');
+  }
+
+  /**
    * 设置 access_token，后续所有请求自动附加
    */
   setAccessToken(token: string): void {
@@ -84,7 +100,8 @@ export class PCloudClient {
   }
 
   /**
-   * 构建完整 URL，附加 access_token 和查询参数
+   * 构建完整 URL（绝对地址），附加 access_token 和查询参数
+   * rcp 未设置 baseAddress 时相对 URL 会报 "Syntax Error. Invalid url string"，必须拼接 baseUrl
    */
   private buildUrl(path: string, params?: Record<string, string>): string {
     let queryParts: string[] = [];
@@ -100,9 +117,9 @@ export class PCloudClient {
       }
     }
     if (queryParts.length > 0) {
-      return path + '?' + queryParts.join('&');
+      return this.baseUrl + path + '?' + queryParts.join('&');
     }
-    return path;
+    return this.baseUrl + path;
   }
 
   /**

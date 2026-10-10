@@ -7,10 +7,13 @@ import { StorageType } from '../StorageType'
  * accessToken 使用 Sm4Utils 加密存储
  */
 export class PCloudStorageConfig implements StorageConfig {
+  private static readonly DEFAULT_API_BASE_URL: string = 'https://api.pcloud.com'
+
   private _accessToken: string = ''
   private _expireAt: number = 0
   private _lastActiveAt: number = Date.now()
   private _timeout: number = 30000
+  private _apiBaseUrl: string = PCloudStorageConfig.DEFAULT_API_BASE_URL
 
   get accessToken(): string {
     return Sm4Utils.decryptWithPrefix(this._accessToken)
@@ -45,8 +48,23 @@ export class PCloudStorageConfig implements StorageConfig {
   }
 
   /**
+   * pCloud API 基地址
+   * 官方要求登录后所有 API 调用必须使用 OAuth 回调返回的 hostname 对应端点：
+   * US 数据中心: https://api.pcloud.com（默认）
+   * EU 数据中心: https://eapi.pcloud.com（回调 hostname=eapi.pcloud.com 时由 PCloudPage 写入）
+   */
+  get apiBaseUrl(): string {
+    return this._apiBaseUrl
+  }
+
+  set apiBaseUrl(val: string) {
+    this._apiBaseUrl = val
+  }
+
+  /**
    * 检查 Token 是否已过期
-   * pCloud 的 access_token 有 expire 绝对过期时间
+   * pCloud 官方 OAuth2 不返回 expires_in，access_token 长期有效直至用户撤销；
+   * expireAt 为 0 表示无过期时间（视为未过期），非 0 仅来自历史遗留数据
    */
   isTokenExpired(): boolean {
     if (this._expireAt === 0) {
@@ -57,7 +75,7 @@ export class PCloudStorageConfig implements StorageConfig {
 
   /**
    * 更新活跃时间（每次成功 API 调用后调用）
-   * pCloud 持续使用 token 会自动延长 expire_inactive
+   * 仅用于本地会话管理记录，pCloud token 不存在"活跃自动延长"机制
    */
   touchActive(): void {
     this._lastActiveAt = Date.now()
