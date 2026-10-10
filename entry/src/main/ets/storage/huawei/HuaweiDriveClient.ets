@@ -309,7 +309,7 @@ class ChunkDownloadWriter {
     if (now - this.lastProgressLogTime >= 2000 || percent - this.lastLoggedPercent >= 10) {
       this.lastProgressLogTime = now;
       this.lastLoggedPercent = percent;
-      hilog.info(DOMAIN, TAG,
+      hilog.debug(DOMAIN, TAG,
         'download progress: chunk %{public}d/%{public}d, %{public}d/%{public}d bytes (%{public}d%%)',
         this.chunkIndex + 1, this.chunkCount, this.received, this.expectedSize, percent);
     }
