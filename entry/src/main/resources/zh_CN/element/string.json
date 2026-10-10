@@ -881,6 +881,10 @@
       "value": "刷新完成"
     },
     {
+      "name": "refresh_already_latest",
+      "value": "已是最新内容"
+    },
+    {
       "name": "Settings_security",
       "value": "安全设置"
     },

@@ -953,6 +953,10 @@
       "value": "Refresh success"
     },
     {
+      "name": "refresh_already_latest",
+      "value": "Already up to date"
+    },
+    {
       "name": "Settings_security",
       "value": "Setting security"
     },

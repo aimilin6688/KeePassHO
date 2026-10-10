@@ -4,18 +4,20 @@
     e2e 存储回归测试 hdc 反向隧道自动 setup（S3 / WebDAV / SFTP），Windows(PowerShell) 版。
 .DESCRIPTION
     为已连接的真机/模拟器建立 hdc 反向隧道，使设备侧 127.0.0.1:<dport> 转发到宿主 127.0.0.1:<hport>。
-    逻辑与 docs/e2e/e2e-tunnels.sh 保持一致：双条件判定 + 僵尸监听清理 + 幂等。
+    逻辑与 docs/e2e/e2e-tunnels.sh 保持一致：列出所有在线设备（含名称/类型）、多设备交互选择、
+    仅一个则自动选用、双条件判定 + 僵尸监听清理 + 幂等。真机无可靠 netstat，仅以注册表判活。
 .PARAMETER Containers
     宿主端口不通时，自动调用 e2e-fileserver.ps1 拉起容器文件服务器。
 .PARAMETER Reset
     强制清理重建（含僵尸监听清理）。
 .PARAMETER Target
     仅处理指定设备，如 -Target 192.168.3.6:42755（真机网络调试）或 -Target 127.0.0.1:5555（模拟器）。
+    指定后跳过交互选择。
 .EXAMPLE
-    .\e2e-tunnels.ps1                              # 为所有已连接设备幂等建立缺失隧道
+    .\e2e-tunnels.ps1                              # 列出所有在线设备：仅一个自动挂载，多个则交互选择
     .\e2e-tunnels.ps1 -Containers                 # 宿主端口不通时自动拉起容器
     .\e2e-tunnels.ps1 -Reset                      # 强制清理重建
-    .\e2e-tunnels.ps1 -Target 192.168.3.6:42755   # 仅针对某台真机
+    .\e2e-tunnels.ps1 -Target 192.168.3.6:42755   # 仅针对某台真机（跳过选择）
 #>
 [CmdletBinding()]
 param(
@@ -59,17 +61,51 @@ if (-not $HDC) {
 Write-Host "hdc: $HDC"
 
 # ---------- 设备清单 ----------
-$raw = & $HDC list targets 2>$null
-$Targets = ($raw | Where-Object { $_ -and -not $_.StartsWith('[Empty') }).Trim()
-if (-not $Targets) {
+# 用 list targets -v 取详情（列：serial / 连接类型 / 状态 / 名称 / 连接器），
+# 解析为对象数组（下游建隧道用 Serial，展示用 Name/Type）
+$raw = & $HDC list targets -v 2>$null
+$Targets = New-Object System.Collections.Generic.List[object]
+foreach ($line in $raw) {
+    if (-not $line -or $line.StartsWith('[Empty')) { continue }
+    $parts = ($line -split '\s+') | Where-Object { $_ }
+    if ($parts.Count -lt 1) { continue }
+    $serial = $parts[0]
+    $type = if ($parts.Count -ge 2) { $parts[1] } else { '' }
+    $name = if ($parts.Count -ge 4) { $parts[3] } else { '' }
+    $Targets.Add([PSCustomObject]@{ Serial = $serial; Type = $type; Name = $name })
+}
+if ($Targets.Count -eq 0) {
     Write-Host "错误：无已连接设备（hdc list targets 为空）" -ForegroundColor Red
     exit 1
 }
+# 由设备对象取展示名："名称（连接类型）"，名称缺失（如 localhost）时降级为连接类型
+function Device-Label($dev) {
+    if ($dev.Name -and $dev.Name -ne 'localhost') { return "$($dev.Name) ($($dev.Type))" }
+    if ($dev.Type) { return $dev.Type }
+    return $dev.Serial
+}
 if ($Target) {
-    $Targets = ($Targets | Where-Object { $_.Contains($Target) })
-    if (-not $Targets) {
+    $Targets = @($Targets | Where-Object { $_.Serial.Contains($Target) })
+    if ($Targets.Count -eq 0) {
         Write-Host "错误：设备 $Target 不在线" -ForegroundColor Red
         exit 1
+    }
+} else {
+    # 未显式指定 -Target 时：逐个列出在线设备；超过一个则交互选择，仅一个则自动选用
+    if ($Targets.Count -gt 1) {
+        Write-Host "[设备] 检测到 $($Targets.Count) 个在线设备，请选择要挂载隧道的目标："
+        for ($i = 0; $i -lt $Targets.Count; $i++) {
+            $n = $i + 1
+            Write-Host "  $n) $($Targets[$i].Serial)  [$(Device-Label $Targets[$i])]"
+        }
+        $choice = Read-Host "请选择 [1-$($Targets.Count)]，回车默认 1"
+        if (-not $choice) { $choice = 1 }
+        if ($choice -notmatch '^\d+$' -or [int]$choice -lt 1 -or [int]$choice -gt $Targets.Count) {
+            Write-Host "错误：无效选择：$choice" -ForegroundColor Red
+            exit 1
+        }
+        $Targets = @($Targets[[int]$choice - 1])
+        Write-Host "[设备] 已选择：$($Targets[0].Serial)（$(Device-Label $Targets[0])）"
     }
 }
 
@@ -84,9 +120,20 @@ function Registry-Has([string]$target, [int]$dport) {
     return $false
 }
 # 设备侧是否 LISTEN 127.0.0.1:<dport>（锚定 LISTEN + 端口后随空白，规避残留客户端 socket）
+# 注意：仅对模拟器可靠；真机（非 root）多数无 netstat，调用方须按 Is-Emulator 分支处理
 function Device-Listening([string]$target, [int]$dport) {
     & $HDC -t $target shell "netstat -tln 2>/dev/null | grep 'LISTEN' | grep '127.0.0.1:$dport '" 2>$null >$null
     return ($LASTEXITCODE -eq 0)
+}
+# 判断目标是否为模拟器：localhost / 127.0.0.1 / 其他 IP:port 形态视为模拟器；其余（纯 serial 的 USB 真机）视为真机
+function Is-Emulator([string]$serial) {
+    return ($serial -match '^(127\.0\.0\.1|localhost):' -or $serial -match '^\d+\.\d+\.\d+\.\d+:')
+}
+# 隧道是否就绪：注册表有规则是必要条件；模拟器额外校验设备侧 LISTEN（规避僵尸黑洞），真机仅以注册表为准
+function Tunnel-Ready($dev, [int]$dport) {
+    if (-not (Registry-Has $dev.Serial $dport)) { return $false }
+    if (Is-Emulator $dev.Serial) { return (Device-Listening $dev.Serial $dport) }
+    return $true
 }
 # 宿主侧端口连通性（容器发布端口）
 function Host-PortOk([int]$port) {
@@ -120,9 +167,10 @@ if ($containersDown) {
 # missing  = 两侧皆无，需新建
 foreach ($t in $Targets) {
     foreach ($p in $Ports) {
-        if ((Registry-Has $t $p.Dport) -and (Device-Listening $t $p.Dport)) { continue }
-        if (Device-Listening $t $p.Dport) {
-            $zombieTargets.Add(@{ Target = $t; Dport = $p.Dport })
+        if (Tunnel-Ready $t $p.Dport) { continue }
+        # 仅模拟器需关注"僵尸监听"（hdc 重启残留黑洞）；真机以注册表为准，不判僵尸
+        if ((Device-Listening $t.Serial $p.Dport) -and (Is-Emulator $t.Serial)) {
+            $zombieTargets.Add(@{ Target = $t.Serial; Dport = $p.Dport })
         }
     }
 }
@@ -153,13 +201,13 @@ if ($zombieTargets.Count -gt 0 -or $Reset) {
 $failTotal = 0
 foreach ($t in $Targets) {
     Write-Host ""
-    Write-Host "=== 设备 $t ==="
+    Write-Host "=== 设备 $($t.Serial)（$(Device-Label $t)）==="
     foreach ($p in $Ports) {
-        if ((Registry-Has $t $p.Dport) -and (Device-Listening $t $p.Dport)) {
+        if (Tunnel-Ready $t $p.Dport) {
             Write-Host "  【$($p.Name)】 设备 $($p.Dport) -> 宿主 $($p.Hport) ：已就绪"
             continue
         }
-        $result = & $HDC -t $t rport "tcp:$($p.Dport)" "tcp:$($p.Hport)" 2>&1
+        $result = & $HDC -t $t.Serial rport "tcp:$($p.Dport)" "tcp:$($p.Hport)" 2>&1
         if ($result -notmatch 'OK') {
             Write-Host "  【$($p.Name)】 建立失败：$result" -ForegroundColor Red
             $failTotal++
@@ -168,7 +216,7 @@ foreach ($t in $Targets) {
         $ok = $false
         $checkRounds = 0
         while ($checkRounds -lt 5) {
-            if ((Registry-Has $t $p.Dport) -and (Device-Listening $t $p.Dport)) {
+            if (Tunnel-Ready $t $p.Dport) {
                 $ok = $true; break
             }
             Start-Sleep -Seconds 1

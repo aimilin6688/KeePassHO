@@ -196,6 +196,38 @@ export class CacheStorage extends BaseFileStorage {
   }
 
   /**
+   * 保存链路（整缓冲路径）后的缓存刷新：复制成品内容到本地缓存并回写版本元数据。
+   * write() 写入时新版本未知，仅异步复制内容不更新元数据；保存成功后由编排层
+   * 携带写入后的远端事实（version/size/modifiedTime）调用本方法，对齐流式
+   * writeFromFile 的 refreshCache 语义，使"保存后立刻重载"命中版本快速路径。
+   * best-effort：失败仅记日志，主链路不受影响
+   * @param path 远端路径
+   * @param content 写入远端成功的成品内容
+   * @param info 写入后的远端文件信息（version 元数据事实来源）
+   */
+  public async refreshCacheFromBuffer(path: string, content: ArrayBuffer, info: FileInfo): Promise<void> {
+    if (!CacheConstants.isEnableLocalCache()) {
+      return; // 关闭本地缓存：装饰器透明，无缓存可刷
+    }
+    try {
+      this.ensureCacheDir(CacheConstants.getCacheDir());
+      // 内容先于元数据就位（writeToCache 临时文件 + 原子重命名），
+      // 元数据指向新版本时缓存文件必已是新内容，避免快速路径命中残缺副本
+      await this.writeToCache(CacheConstants.getCacheFilePath(path), content);
+      await CacheMetaService.writeMeta(path, {
+        version: info.version ?? null,
+        size: info.size,
+        modifiedTime: info.modifiedTime,
+        savedAt: Date.now()
+      });
+      hilog.info(DOMAIN, TAG, 'refreshCacheFromBuffer success: %{public}s, version=%{public}s',
+        path, info.version ?? 'null');
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'refreshCacheFromBuffer failed (transparent): %{public}s', error?.message);
+    }
+  }
+
+  /**
    * 流式从本地源文件写入远端
    * 仅缓存模式：只读拒绝；正常模式：委托底层 + 异步刷新本地缓存
    * @param path 远端路径

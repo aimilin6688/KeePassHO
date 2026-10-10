@@ -116,6 +116,17 @@ export interface IFileStorage {
    */
   readCacheToFile?(path: string, destPath: string, expectedVersion: string,
     expectedSize: number): Promise<boolean>;
+
+  /**
+   * 保存链路（整缓冲路径）后的本地缓存刷新：把写入远端成功的成品内容复制到本地缓存，
+   * 并以写入后的远端 FileInfo（version/size）回写缓存元数据，使后续加载命中版本快速路径。
+   * 可选能力成员：仅 CacheStorage 装饰器实现，其余实现视为空操作
+   * （整缓冲 write() 写入时新版本未知，仅复制内容不更新元数据，由编排层保存成功后调用本方法补齐）。
+   * @param path 远端路径
+   * @param content 写入远端成功的成品内容
+   * @param info 写入后的远端文件信息（version 元数据事实来源）
+   */
+  refreshCacheFromBuffer?(path: string, content: ArrayBuffer, info: FileInfo): Promise<void>;
 }
 
 /**
