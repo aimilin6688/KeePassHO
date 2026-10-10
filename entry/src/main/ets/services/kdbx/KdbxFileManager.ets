@@ -193,6 +193,17 @@ export class KdbxFileManager {
   }
 
   /**
+   * 保存链路（整缓冲路径）后的本地缓存刷新：复制成品内容到缓存文件并回写版本元数据
+   * 能力协商透传：仅缓存装饰器实现，其余存储（含 LOCAL）为空操作
+   * @param path 远端路径
+   * @param content 写入远端成功的成品内容
+   * @param info 写入后的远端文件信息（version/size 元数据事实来源）
+   */
+  public async refreshCacheFromBuffer(path: string, content: ArrayBuffer, info: FileInfo): Promise<void> {
+    await this.storage.refreshCacheFromBuffer?.(path, content, info);
+  }
+
+  /**
    * 获取文件信息；确定不存在返回 null，无法判定（网络错误等）上抛
    * @param filePath 文件路径
    * @return Promise<FileInfo | null> 文件信息，确定不存在时为 null

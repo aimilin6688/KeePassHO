@@ -1,6 +1,6 @@
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { AddGroupDialog } from '../components/AddGroupDialog';
-import { DatabaseShowParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
+import { DatabaseShowParam, DbFileParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -25,6 +25,8 @@ import { emitter } from '@kit.BasicServicesKit';
 import display from '@ohos.display';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
+import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import { FileInfo } from '../storage/IFileStorage';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
@@ -43,6 +45,32 @@ const TAG = 'DatabaseView';
 @Builder
 export function DatabaseViewBuilder(name: string, param: Object): void {
   DatabaseView({ databaseShowParam: param as DatabaseShowParam })
+}
+
+/**
+ * 下拉刷新早退探测：远端版本与内存基线一致（仅版本可信存储）时判定"无远端变更"。
+ * 须在 setForceRefresh 之前调用：getInfoOrNull 会消费一次性的 force 标志；
+ * 版本缺失/存储不支持/探测失败一律返回 false，交由正常刷新流程兜底
+ */
+async function probeRemoteUnchanged(): Promise<boolean> {
+  const dbFileParam: DbFileParam = FileService.getDbFileParam();
+  const baselineVersion: string | null = dbFileParam.version ?? null;
+  if (!baselineVersion || !dbFileParam.database) {
+    return false;
+  }
+  try {
+    const fileManager: KdbxFileManager = new KdbxFileManager(dbFileParam.storageType, dbFileParam.storageConfig);
+    if (!fileManager.supportsVersionFastPath()) {
+      return false;
+    }
+    const info: FileInfo | null = await fileManager.getInfoOrNull(dbFileParam.filePath);
+    const remoteVersion: string | null = info?.version ?? null;
+    hilog.debug(DOMAIN, TAG, 'refresh early-exit probe: match=%{public}s', `${remoteVersion === baselineVersion}`);
+    return remoteVersion !== null && remoteVersion === baselineVersion;
+  } catch (error) {
+    hilog.debug(DOMAIN, TAG, 'refresh early-exit probe failed: %{public}s', error?.message);
+    return false;
+  }
 }
 
 @Component
@@ -1550,12 +1578,30 @@ export struct DatabaseView {
 
   /**
    * 下拉刷新（与远端比对，不一致才下载）
-   * 先置 force_refresh 忽略"仅使用本地缓存"，再走版本快速路径：
+   * 早退探测先行：版本可信存储且远端版本与内存基线一致 → 无远端变更，
+   * 跳过下载+解析+建模（大库秒级完成），保留内存中的模型；
+   * 否则置 force_refresh 忽略"仅使用本地缓存"，再走版本快速路径：
    * 远端 version+size 与本地缓存元数据一致 → 直接复用本地副本（零下载）；
-   * 不一致才全量下载。语义仍是"拉最新"，只是内容未变时不再重复传输
+   * 不一致才全量下载。语义仍是"拉最新"，只是内容未变时不再重复传输/解析
    */
   private refreshDatabase() {
     this.isRefreshing = true;
+    probeRemoteUnchanged().then((unchanged: boolean) => {
+      if (unchanged) {
+        // 远端无变更：保留内存模型，仅结束刷新态
+        this.refreshText = $r('app.string.refreshing_message');
+        this.isRefreshing = false;
+        CommonUtils.showToast({ message: $r('app.string.refresh_already_latest') });
+        return;
+      }
+      this.startForceRefreshLoad();
+    });
+  }
+
+  /**
+   * 强制刷新加载：忽略仅缓存设置，走完整下载+解析流程
+   */
+  private startForceRefreshLoad() {
     // 设置强制从远端刷新标志，忽略仅使用本地缓存的设置
     CacheConstants.setForceRefresh(true);
 

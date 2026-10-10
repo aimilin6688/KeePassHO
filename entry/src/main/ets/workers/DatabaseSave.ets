@@ -447,6 +447,22 @@ export class DatabaseSave {
       const data = new ArrayBuffer(0);
       const message = new SuccessMessage(data, fileInfo.modifiedTime, isMerge,
         fileInfo.version ?? null, contentHash);
+      // 保存后远端尺寸可能剧增（新增附件等）：随消息回传新尺寸，
+      // 主线程回填加载调度缓存与最近文件快照，避免下次加载仍按旧尺寸
+      // 误判"小库"派发主线程（大库解密+解析阻塞 UI）
+      let newSize: number = fileInfo.size ?? 0;
+      if (newSize <= 0 && saved.buffer !== null) {
+        newSize = saved.buffer.byteLength;
+      }
+      if (newSize > 0) {
+        message.fileSize = newSize;
+      }
+      // 整缓冲回退路径的缓存回写：write() 写入时新版本未知，仅复制内容不更新元数据；
+      // 此处携带写入后的远端事实刷新缓存+元数据，与流式 writeFromFile 的 refreshCache
+      // 对齐，使"保存后立刻重载"命中版本快速路径（跳过全量下载）
+      if (saved.buffer !== null) {
+        await fileManager.refreshCacheFromBuffer(request.filePath, saved.buffer, fileInfo);
+      }
       if (isMerge && database) {
         // §7.4：合并模型经会话密钥包裹落盘 M0，仅路径跨线程（KPSN ArrayBuffer 协议退役）
         const snapshotBytes: ArrayBuffer = await database.saveSnapshot();

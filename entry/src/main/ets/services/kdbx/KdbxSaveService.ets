@@ -14,6 +14,9 @@ import { ConflictStrategy, SaveDatabaseMessage } from '../../workers/DatabaseSav
 import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import KdbxLoadService from './KdbxLoadService';
+import { LoadDispatchCache } from './LoadDispatchCache';
+import { RecentFile } from '../TypeDefined';
+import { RecentFilesService } from '../RecentFilesService';
 import { ConflictMessage, LoadMessage, MessageType, ProgressMessage, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
 
@@ -376,6 +379,9 @@ export default class KdbxSaveService {
     dbFileParam.modifiedTime = message.modifiedTime;
     dbFileParam.version = message.version ?? null;
     dbFileParam.contentHash = message.contentHash ?? null;
+    // 保存后库大小可能剧增（附件等）：回填加载调度尺寸事实（进程内存 + 最近文件持久化快照），
+    // 避免下次加载按旧尺寸误判"小库"派发主线程（大库解密+解析阻塞 UI）
+    KdbxSaveService.refreshSizeCache(dbFileParam.filePath, message.fileSize);
     if (message.isMerge) {
       // §7.4：合并模型走 M0 会话文件解包裹还原（仅路径跨线程），缺失时回退消息内 data
       KdbxUtils.successMessageToKdbx(message, FileService.getDbFileParam()).then(kdbx => {
@@ -401,6 +407,31 @@ export default class KdbxSaveService {
       }
       release?.();
     }
+  }
+
+  /**
+   * 保存成功后回填尺寸调度事实：分级加载尺寸解析链的 ① 调度缓存（进程内存）与
+   * ② 最近文件持久化快照（RecentFile.fileSize）两级来源同步更新。
+   * best-effort：失败仅记日志，不影响保存主流程
+   * @param filePath 远端文件路径
+   * @param fileSize 保存后的新尺寸（字节），无效值忽略
+   */
+  private static refreshSizeCache(filePath: string, fileSize: number | undefined): void {
+    if (fileSize === undefined || fileSize <= 0) {
+      return;
+    }
+    LoadDispatchCache.put(filePath, fileSize);
+    RecentFilesService.getRecentFile(filePath).then((recentFile: RecentFile | null) => {
+      if (recentFile === null) {
+        return;
+      }
+      recentFile.fileSize = fileSize;
+      RecentFilesService.addRecentFile(recentFile).catch((error: Error) => {
+        hilog.warn(DOMAIN, TAG, 'Refresh recent file size failed: %{public}s', error.message);
+      });
+    }).catch((error: Error) => {
+      hilog.warn(DOMAIN, TAG, 'Read recent file for size refresh failed: %{public}s', error.message);
+    });
   }
 
   static onSuccess(message: SuccessMessage, callback?: SaveDatabaseCallback) {
