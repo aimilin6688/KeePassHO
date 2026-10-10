@@ -22,11 +22,12 @@ export class FileStorageFactory {
   private constructor() {
     this.registerStorage(StorageType.LOCAL, new LocalFileStorage());
     this.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
+    this.registerStorage(StorageType.HUAWEI_DRIVE, new HuaweiDriveStorage());
     this.registerStorage(StorageType.S3, new S3Storage());
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
-    this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
+    // this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
-    this.registerStorage(StorageType.HUAWEI_DRIVE, new HuaweiDriveStorage());
+
   }
 
   /**
