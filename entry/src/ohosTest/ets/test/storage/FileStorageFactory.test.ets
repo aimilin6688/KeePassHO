@@ -42,19 +42,16 @@ export default function FileStorageFactoryTest() {
   describe('FileStorageFactoryTest', () => {
 
     beforeAll(() => {
-      // 确保基线干净：PCLOUD / BAIDU_NETDISK 默认未注册
-      FileStorageFactory.getInstance().removeStorage(StorageType.PCLOUD);
+      // 确保基线干净：BAIDU_NETDISK 默认未注册（PCLOUD 已启用默认注册）
       FileStorageFactory.getInstance().removeStorage(StorageType.BAIDU_NETDISK);
     });
 
     afterEach(() => {
       // 恢复默认注册表：移除测试中可能注册的桩
-      FileStorageFactory.getInstance().removeStorage(StorageType.PCLOUD);
       FileStorageFactory.getInstance().removeStorage(StorageType.BAIDU_NETDISK);
     });
 
     afterAll(() => {
-      FileStorageFactory.getInstance().removeStorage(StorageType.PCLOUD);
       FileStorageFactory.getInstance().removeStorage(StorageType.BAIDU_NETDISK);
     });
 
@@ -86,15 +83,15 @@ export default function FileStorageFactoryTest() {
         expect(FileStorageFactory.getInstance().hasStorage(StorageType.HUAWEI_DRIVE)).assertTrue();
       });
 
-      it('should NOT have PCLOUD registered by default', 0, () => {
-        expect(FileStorageFactory.getInstance().hasStorage(StorageType.PCLOUD)).assertFalse();
+      it('should have PCLOUD registered', 0, () => {
+        expect(FileStorageFactory.getInstance().hasStorage(StorageType.PCLOUD)).assertTrue();
       });
       it('should NOT have BAIDU_NETDISK registered by default', 0, () => {
         expect(FileStorageFactory.getInstance().hasStorage(StorageType.BAIDU_NETDISK)).assertFalse();
       });
 
-      it('storageMap should contain 6 default entries', 0, () => {
-        expect(FileStorageFactory.getInstance().getStorageMap().size).assertEqual(6);
+      it('storageMap should contain 7 default entries', 0, () => {
+        expect(FileStorageFactory.getInstance().getStorageMap().size).assertEqual(7);
       });
     });
 
@@ -140,20 +137,15 @@ export default function FileStorageFactoryTest() {
         expect(s instanceof CacheStorage).assertTrue();
       });
 
+      it('PCLOUD should be wrapped in CacheStorage', 0, () => {
+        const s: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.PCLOUD);
+        expect(s instanceof CacheStorage).assertTrue();
+      });
+
       it('non-LOCAL storages should return a NEW CacheStorage instance each call', 0, () => {
         const a: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.S3);
         const b: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.S3);
         expect(a === b).assertFalse();
-      });
-
-      it('should throw for unregistered PCLOUD', 0, () => {
-        try {
-          FileStorageFactory.getInstance().getStorage(StorageType.PCLOUD);
-          expect(false).assertTrue();
-        } catch (e) {
-          expect((e as Error).message).assertContain('PCLOUD');
-          expect((e as Error).message).assertContain('not registered');
-        }
       });
 
       it('should throw for unregistered BAIDU_NETDISK', 0, () => {
@@ -169,14 +161,14 @@ export default function FileStorageFactoryTest() {
     describe('registerStorage_removeStorage', () => {
       it('registerStorage should make hasStorage true', 0, () => {
         const stub: StubFileStorage = new StubFileStorage();
-        FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, stub);
-        expect(FileStorageFactory.getInstance().hasStorage(StorageType.PCLOUD)).assertTrue();
+        FileStorageFactory.getInstance().registerStorage(StorageType.BAIDU_NETDISK, stub);
+        expect(FileStorageFactory.getInstance().hasStorage(StorageType.BAIDU_NETDISK)).assertTrue();
       });
 
       it('getStorage for newly registered non-LOCAL type should wrap in CacheStorage', 0, () => {
         const stub: StubFileStorage = new StubFileStorage();
-        FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, stub);
-        const s: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.PCLOUD);
+        FileStorageFactory.getInstance().registerStorage(StorageType.BAIDU_NETDISK, stub);
+        const s: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.BAIDU_NETDISK);
         expect(s instanceof CacheStorage).assertTrue();
       });
 
@@ -188,10 +180,10 @@ export default function FileStorageFactoryTest() {
 
       it('removeStorage should make hasStorage false', 0, () => {
         const stub: StubFileStorage = new StubFileStorage();
-        FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, stub);
-        expect(FileStorageFactory.getInstance().hasStorage(StorageType.PCLOUD)).assertTrue();
-        FileStorageFactory.getInstance().removeStorage(StorageType.PCLOUD);
-        expect(FileStorageFactory.getInstance().hasStorage(StorageType.PCLOUD)).assertFalse();
+        FileStorageFactory.getInstance().registerStorage(StorageType.BAIDU_NETDISK, stub);
+        expect(FileStorageFactory.getInstance().hasStorage(StorageType.BAIDU_NETDISK)).assertTrue();
+        FileStorageFactory.getInstance().removeStorage(StorageType.BAIDU_NETDISK);
+        expect(FileStorageFactory.getInstance().hasStorage(StorageType.BAIDU_NETDISK)).assertFalse();
       });
 
       it('removeStorage for non-existent type is a no-op', 0, () => {
@@ -203,9 +195,9 @@ export default function FileStorageFactoryTest() {
       it('registerStorage can override an existing registration', 0, () => {
         const stub1: StubFileStorage = new StubFileStorage();
         const stub2: StubFileStorage = new StubFileStorage();
-        FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, stub1);
-        FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, stub2);
-        expect(FileStorageFactory.getInstance().getStorageMap().get(StorageType.PCLOUD) === stub2).assertTrue();
+        FileStorageFactory.getInstance().registerStorage(StorageType.BAIDU_NETDISK, stub1);
+        FileStorageFactory.getInstance().registerStorage(StorageType.BAIDU_NETDISK, stub2);
+        expect(FileStorageFactory.getInstance().getStorageMap().get(StorageType.BAIDU_NETDISK) === stub2).assertTrue();
       });
     });
 
@@ -222,10 +214,10 @@ export default function FileStorageFactoryTest() {
 
       it('should reflect register/remove changes', 0, () => {
         const stub: StubFileStorage = new StubFileStorage();
-        FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, stub);
-        expect(FileStorageFactory.getInstance().getStorageMap().has(StorageType.PCLOUD)).assertTrue();
-        FileStorageFactory.getInstance().removeStorage(StorageType.PCLOUD);
-        expect(FileStorageFactory.getInstance().getStorageMap().has(StorageType.PCLOUD)).assertFalse();
+        FileStorageFactory.getInstance().registerStorage(StorageType.BAIDU_NETDISK, stub);
+        expect(FileStorageFactory.getInstance().getStorageMap().has(StorageType.BAIDU_NETDISK)).assertTrue();
+        FileStorageFactory.getInstance().removeStorage(StorageType.BAIDU_NETDISK);
+        expect(FileStorageFactory.getInstance().getStorageMap().has(StorageType.BAIDU_NETDISK)).assertFalse();
       });
     });
 
@@ -238,15 +230,15 @@ export default function FileStorageFactoryTest() {
 
       it('FileStorage.hasStorage should reflect singleton state', 0, () => {
         expect(FileStorage.hasStorage(StorageType.LOCAL)).assertTrue();
-        expect(FileStorage.hasStorage(StorageType.PCLOUD)).assertFalse();
+        expect(FileStorage.hasStorage(StorageType.PCLOUD)).assertTrue();
       });
 
       it('FileStorage.registerStorage / removeStorage should affect singleton', 0, () => {
         const stub: StubFileStorage = new StubFileStorage();
-        FileStorage.registerStorage(StorageType.PCLOUD, stub);
-        expect(FileStorage.hasStorage(StorageType.PCLOUD)).assertTrue();
-        FileStorage.removeStorage(StorageType.PCLOUD);
-        expect(FileStorage.hasStorage(StorageType.PCLOUD)).assertFalse();
+        FileStorage.registerStorage(StorageType.BAIDU_NETDISK, stub);
+        expect(FileStorage.hasStorage(StorageType.BAIDU_NETDISK)).assertTrue();
+        FileStorage.removeStorage(StorageType.BAIDU_NETDISK);
+        expect(FileStorage.hasStorage(StorageType.BAIDU_NETDISK)).assertFalse();
       });
 
       it('FileStorage.getAllPageConfig should return one PageConfig per registered storage', 0, () => {
@@ -261,10 +253,10 @@ export default function FileStorageFactoryTest() {
       it('FileStorage.getAllPageConfig should grow after registerStorage', 0, () => {
         const before: number = FileStorage.getAllPageConfig().length;
         const stub: StubFileStorage = new StubFileStorage();
-        FileStorage.registerStorage(StorageType.PCLOUD, stub);
+        FileStorage.registerStorage(StorageType.BAIDU_NETDISK, stub);
         const after: number = FileStorage.getAllPageConfig().length;
         expect(after).assertEqual(before + 1);
-        FileStorage.removeStorage(StorageType.PCLOUD);
+        FileStorage.removeStorage(StorageType.BAIDU_NETDISK);
         expect(FileStorage.getAllPageConfig().length).assertEqual(before);
       });
     });

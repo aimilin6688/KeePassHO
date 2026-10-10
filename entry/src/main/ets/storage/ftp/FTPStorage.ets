@@ -32,6 +32,17 @@ export class FTPStorage extends BaseFileStorage {
     return FTPPageConfig;
   }
 
+  /**
+   * 版本快速路径 opt-in（仅 SFTP）：version 为 `size|modifiedTime` 复合串，
+   * SFTP stat 秒级 mtime 事实稳定；write/writeFromFile 已履约 expectedVersion
+   * 条件写入（写前 stat 复核 + VERSION_CONFLICT）。
+   * FTP 不点亮：LIST 分钟级 mtime（无秒、年份需猜测），"同分 + 同尺寸"误判
+   * 窗口超出设计底线（同秒 + 同尺寸），待切换 MLSD 优先后再评估。
+   */
+  public supportsVersionFastPath(): boolean {
+    return this.config?.isSFTP() === true;
+  }
+
   public init(config: FTPStorageConfig): void {
     const newConfig = FTPStorage.parseConfig(config);
     // 同配置复用现有 handler，避免 FTPPage 每次操作（测试连接/选目录/保存）都重建 handler 导致控制连接泄漏

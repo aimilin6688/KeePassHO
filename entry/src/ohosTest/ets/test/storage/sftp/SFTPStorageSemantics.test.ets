@@ -102,6 +102,27 @@ export default function SFTPStorageSemanticsTest() {
       expect(parsed.port).assertEqual(2222);
     });
 
+    it('supportsVersionFastPath is true for SFTP (stat-based size|mtime version)', 0, () => {
+      const storage = new FTPStorage();
+      storage.init(makeSftpConfig(1));
+      expect(storage.supportsVersionFastPath()).assertTrue();
+    });
+
+    it('supportsVersionFastPath is false for FTP (LIST minute-level mtime)', 0, () => {
+      const config = new FTPStorageConfig('', '', '', { protocol: ProtocolType.FTP, port: 21, timeout: 3000 });
+      config.host = '127.0.0.1';
+      config.username = 'user';
+      config.password = 'pass';
+      const storage = new FTPStorage();
+      storage.init(config);
+      expect(storage.supportsVersionFastPath()).assertFalse();
+    });
+
+    it('supportsVersionFastPath is false before init', 0, () => {
+      const storage = new FTPStorage();
+      expect(storage.supportsVersionFastPath()).assertFalse();
+    });
+
     it('exists rejects (never false) when SFTP server unreachable — L1 semantics', 0, async () => {
       const storage = new FTPStorage();
       storage.init(makeSftpConfig(1));

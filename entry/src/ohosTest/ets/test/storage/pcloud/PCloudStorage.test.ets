@@ -127,7 +127,15 @@ export default function PCloudStorageTest() {
       });
     });
 
-    // ==================== 真实 API 用例（5-10） ====================
+    // ==================== 5. 版本快速路径能力声明 ====================
+    describe('VersionFastPath', () => {
+      it('supportsVersionFastPath should be true（fileid:hash:size:modified 内容 hash 版本标识可信）', 0, () => {
+        const storage: PCloudStorage = new PCloudStorage();
+        expect(storage.supportsVersionFastPath()).assertTrue();
+      });
+    });
+
+    // ==================== 真实 API 用例（6-11） ====================
     // pCloud 为专有云服务，无法本地自建；仅在配置了有效 access_token 时注册，
     // 未配置时整体不注册（诚实跳过，见 PCloudTestConfig.isRealApiEnabled 与 docs/storage-regression-test.md）
     if (PCloudTestConfig.isRealApiEnabled()) {
