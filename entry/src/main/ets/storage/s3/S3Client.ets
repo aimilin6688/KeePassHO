@@ -483,7 +483,58 @@ export class S3Client {
     }
   }
 
-  public async putObject(bucket: string, key: string, data: ArrayBuffer): Promise<S3Result<void>> {
+  /**
+   * 构造单次 PUT 请求：需要进度时挂请求级 tracing（rcp Configuration），否则返回原样请求（行为不变）
+   * @param url 请求 URL
+   * @param headers 已签名请求头
+   * @param data 请求体
+   * @param onProgress 进度回调（可选）
+   */
+  private static buildPutRequest(url: string, headers: Record<string, string>, data: ArrayBuffer,
+    onProgress?: ProgressCallback): rcp.Request {
+    if (!onProgress) {
+      return new rcp.Request(url, 'PUT', headers, data);
+    }
+    const configuration: rcp.Configuration = {
+      tracing: {
+        httpEventsHandler: {
+          // rcp onUploadProgress 形参为 (totalSize, transferredSize)
+          onUploadProgress: (totalSize: number, transferredSize: number): void => {
+            S3Client.reportProgress(onProgress, transferredSize, totalSize);
+          }
+        }
+      }
+    };
+    return new rcp.Request(url, 'PUT', headers, data, undefined, undefined, configuration);
+  }
+
+  /**
+   * 上报单次（非分片）上传进度：part 语义固定为 1/1
+   * @param onProgress 进度回调，未定义时无操作
+   * @param uploadedBytes 已上传字节
+   * @param totalBytes 总字节
+   */
+  private static reportProgress(onProgress: ProgressCallback | undefined, uploadedBytes: number,
+    totalBytes: number): void {
+    onProgress?.({
+      uploadedBytes: uploadedBytes,
+      totalBytes: totalBytes,
+      currentPart: 1,
+      totalParts: 1
+    });
+  }
+
+  /**
+   * 单次 PUT 上传对象
+   * @param bucket 存储桶名称
+   * @param key 对象键
+   * @param data 文件数据
+   * @param onProgress 进度回调（可选）：经 rcp 请求级 tracing 的 onUploadProgress 上报；
+   *        未传入时构造不含 configuration 的请求，行为与改动前完全一致
+   * @returns S3Result<void>
+   */
+  public async putObject(bucket: string, key: string, data: ArrayBuffer,
+    onProgress?: ProgressCallback): Promise<S3Result<void>> {
     try {
       const fileSizeMB = (data.byteLength / (1024 * 1024)).toFixed(2);
       hilog.info(DOMAIN, TAG, 'putObject: bucket=%{public}s, key=%{public}s, size=%{public}s MB',
@@ -500,7 +551,7 @@ export class S3Client {
       );
 
       const url = this.buildUrl(bucket, key);
-      const request = new rcp.Request(url, 'PUT', this.headersToRecord(headers), data);
+      const request = S3Client.buildPutRequest(url, this.headersToRecord(headers), data, onProgress);
       const response = await this.getSession()?.fetch(request);
 
       if (response && response.statusCode >= 200 && response.statusCode < 300) {
@@ -902,9 +953,14 @@ ${partsXml}
 
     // 判断文件大小
     if (data.byteLength < multipartThreshold) {
-      // 小文件：使用现有 putObject
+      // 小文件：单次 PUT（tracing 不一定对缓冲体产生事件，首/末两条粗粒度事件兜底）
       hilog.debug(DOMAIN, TAG, 'putObjectSmart: using simple putObject (file < threshold)');
-      return this.putObject(bucket, key, data);
+      S3Client.reportProgress(onProgress, 0, data.byteLength);
+      const putResult: S3Result<void> = await this.putObject(bucket, key, data, onProgress);
+      if (putResult.success) {
+        S3Client.reportProgress(onProgress, data.byteLength, data.byteLength);
+      }
+      return putResult;
     }
 
     // 大文件：使用 Multipart Upload
@@ -1341,12 +1397,17 @@ ${partsXml}
         'putObjectSmartFromFile: bucket=%{public}s, key=%{public}s, size=%{public}s MB', bucket, key, sizeMB);
 
       if (totalSize < multipartThreshold) {
-        // 小文件：读入内存单次上传
+        // 小文件：读入内存单次上传（与内存版一致：tracing + 首末两条粗粒度兜底）
         const data = new ArrayBuffer(totalSize);
         await fs.read(file.fd, data);
         await fs.close(file.fd);
         file = null;
-        return this.putObject(bucket, key, data);
+        S3Client.reportProgress(onProgress, 0, totalSize);
+        const putResult: S3Result<void> = await this.putObject(bucket, key, data, onProgress);
+        if (putResult.success) {
+          S3Client.reportProgress(onProgress, totalSize, totalSize);
+        }
+        return putResult;
       }
 
       const result = await this.putObjectMultipartFromFileFd(

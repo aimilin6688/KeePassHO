@@ -258,9 +258,12 @@ export class S3Storage extends BaseFileStorage {
   /**
    * 写入文件内容（>= 阈值自动 multipart，内存窗口 = 单分片）
    * @param option 写入选项，传入 expectedVersion 时写前 HEAD 复核 etag
+   * @param onProgress 上传进度回调（可选）：优先于 setProgressCallback；multipart 按分片上报，
+   *        小文件单 PUT 由 rcp tracing 上报并以首末两条粗粒度事件兜底
    * @throws StorageError(VERSION_CONFLICT) etag 不一致时抛出
    */
-  public async write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
+  public async write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     if (!this.client) {
       throw new StorageError(StorageErrorCodes.CLIENT_UNDEFINED, 'S3 not initialized');
     }
@@ -276,12 +279,15 @@ export class S3Storage extends BaseFileStorage {
       'write: path=%{public}s, bucket=%{public}s, key=%{public}s, size=%{public}s MB, threshold=%{public}s MB',
       path, pathResult.bucket, pathResult.key, fileSizeMB, thresholdMB);
 
+    // 上传进度：优先使用调用方透传的回调，未传入时回退 setProgressCallback 注入（兼容既有行为）
+    const progress: ProgressCallback | undefined = onProgress ? this.wrapProgress(onProgress) : this.progressCallback;
+
     // 使用新的智能上传方法
     const result = await this.client.putObjectSmart(
       pathResult.bucket,
       pathResult.key,
       content,
-      this.progressCallback,
+      progress,
       S3MultipartConfig.MULTIPART_THRESHOLD
     );
 
