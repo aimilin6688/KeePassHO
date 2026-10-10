@@ -40,6 +40,37 @@ export default function PCloudClientTest() {
     });
 
     /**
+     * 测试 normalizeBaseUrl（US 默认端点回退 / EU 端点 / 末尾斜杠去除）
+     */
+    describe('BaseUrl', () => {
+      it('should fallback to US endpoint for undefined', 0, () => {
+        expect(PCloudClient.normalizeBaseUrl(undefined)).assertEqual('https://api.pcloud.com');
+      });
+
+      it('should fallback to US endpoint for empty string', 0, () => {
+        expect(PCloudClient.normalizeBaseUrl('')).assertEqual('https://api.pcloud.com');
+      });
+
+      it('should keep EU endpoint as-is', 0, () => {
+        expect(PCloudClient.normalizeBaseUrl('https://eapi.pcloud.com')).assertEqual('https://eapi.pcloud.com');
+      });
+
+      it('should strip trailing slash', 0, () => {
+        expect(PCloudClient.normalizeBaseUrl('https://eapi.pcloud.com/')).assertEqual('https://eapi.pcloud.com');
+      });
+
+      it('should strip multiple trailing slashes', 0, () => {
+        expect(PCloudClient.normalizeBaseUrl('https://api.pcloud.com///')).assertEqual('https://api.pcloud.com');
+      });
+
+      it('should create client with EU base url', 0, () => {
+        const client: PCloudClient = new PCloudClient('https://eapi.pcloud.com');
+        expect(client).not().assertUndefined();
+        client.close();
+      });
+    });
+
+    /**
      * 测试 PCloudError
      */
     describe('PCloudError', () => {

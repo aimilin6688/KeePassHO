@@ -31,6 +31,22 @@ export default function PCloudConfigTest() {
     });
 
     /**
+     * 测试 apiBaseUrl（US 默认 / EU 端点）
+     */
+    describe('ApiBaseUrl', () => {
+      it('should default to US endpoint', 0, () => {
+        const config: PCloudStorageConfig = new PCloudStorageConfig();
+        expect(config.apiBaseUrl).assertEqual('https://api.pcloud.com');
+      });
+
+      it('should set and get EU endpoint', 0, () => {
+        const config: PCloudStorageConfig = new PCloudStorageConfig();
+        config.apiBaseUrl = 'https://eapi.pcloud.com';
+        expect(config.apiBaseUrl).assertEqual('https://eapi.pcloud.com');
+      });
+    });
+
+    /**
      * 测试 accessToken 加密/解密
      */
     describe('AccessToken', () => {

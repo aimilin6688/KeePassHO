@@ -384,6 +384,10 @@ struct PCloud {
     if (this.oauth2Token.expiresAt && this.oauth2Token.expiresAt > 0) {
       config.expireAt = this.oauth2Token.expiresAt;
     }
+    const hostname = this.oauth2Token.extraParams?.['hostname'];
+    if (typeof hostname === 'string' && hostname.length > 0) {
+      config.apiBaseUrl = 'https://' + hostname;
+    }
     return config;
   }
 
