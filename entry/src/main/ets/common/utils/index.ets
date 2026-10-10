@@ -18,7 +18,6 @@ export * from './Sm4Utils';
 export * from './StringUtils';
 export * from './ThemeManager';
 export * from './UrlUtils';
-export * from './WebDavClient';
 export * from './WebImageDownloader';
 export * from './WindowUtils';
 export * from './ErrorUtils';
