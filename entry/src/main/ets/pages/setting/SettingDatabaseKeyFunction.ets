@@ -113,17 +113,31 @@ export struct SettingDatabaseKeyFunctionContent {
         // KDBX3.x + AES-KDF：直接写头部转换轮数，保持 v3 格式（不创建 kdfParameters）
         header.keyEncryptionRounds = this.rounds;
       } else if (kdfParameters && this.isArgon2()) {
-        // 设置内存最大值为512M
-        this.memory = this.resetMemory(this.memory, (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
-        kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
-        kdfParameters.set('I', VarDictionary.ValueType.UInt64, Int64.from(this.iteration));
-        kdfParameters.set('M', VarDictionary.ValueType.UInt64, Int64.from(Number(this.memory) * 1024 * 1024));
-        kdfParameters.set('P', VarDictionary.ValueType.UInt32, this.parallelism);
+        // KDF 类型变化时重建参数字典（补齐 Argon2 必需的 V/S 键并清除旧算法残留键），再应用用户参数
+        const currentKdf: string = ByteUtils.bytesToBase64(kdfParameters.get('$UUID') as ArrayBuffer);
+        if (currentKdf !== this.algoType) {
+          header.setKdf(this.algoType);
+        }
+        const newParams = header.kdfParameters;
+        if (newParams) {
+          // 设置内存最大值为512M
+          this.memory = this.resetMemory(this.memory, (HeaderConst.DefaultKdfMemory / 1024 / 1024) + "");
+          newParams.set('I', VarDictionary.ValueType.UInt64, Int64.from(this.iteration));
+          newParams.set('M', VarDictionary.ValueType.UInt64, Int64.from(Number(this.memory) * 1024 * 1024));
+          newParams.set('P', VarDictionary.ValueType.UInt32, this.parallelism);
+        }
       } else if (kdfParameters && this.algoType === Consts.KdfId.Aes) {
-        kdfParameters.set('$UUID', VarDictionary.ValueType.Bytes, ByteUtils.base64ToBytes(this.algoType));
-        kdfParameters.set('R', VarDictionary.ValueType.UInt64, Int64.from(this.rounds));
+        // KDF 类型变化时重建参数字典（清除 Argon2 残留键），再应用用户转换轮数
+        const currentKdf: string = ByteUtils.bytesToBase64(kdfParameters.get('$UUID') as ArrayBuffer);
+        if (currentKdf !== this.algoType) {
+          header.setKdf(this.algoType);
+        }
+        const newParams = header.kdfParameters;
+        if (newParams) {
+          newParams.set('R', VarDictionary.ValueType.UInt64, Int64.from(this.rounds));
+        }
       }
-      hilog.debug(DOMAIN, TAG, "saveAlgoParams:%{public}s", JSON.stringify(kdfParameters));
+      hilog.debug(DOMAIN, TAG, "saveAlgoParams:%{public}s", JSON.stringify(header.kdfParameters));
       // 保存数据库
       KdbxSaveService.saveDatabaseFromUi();
     } catch (error) {

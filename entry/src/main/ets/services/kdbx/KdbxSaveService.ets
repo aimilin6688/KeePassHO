@@ -530,7 +530,8 @@ export default class KdbxSaveService {
       return;
     }
     if (callback.onError) {
-      callback.onError(ResourceManager.getMessage(data.message));
+      const prefix: string = ResourceManager.getMessage(data.message);
+      callback.onError(data.detail ? `${prefix}: ${data.detail}` : prefix);
     }
   }
 }
