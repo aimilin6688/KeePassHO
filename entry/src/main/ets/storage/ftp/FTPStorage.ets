@@ -1,4 +1,4 @@
-import { BaseFileStorage, FileInfo, FileType, PageConfig, WriteOption } from '../index';
+import { BaseFileStorage, FileInfo, FileType, PageConfig, TransferProgressCallback, WriteOption } from '../index';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { CommonUtils, ResourceManager } from '../../common/utils';
@@ -236,12 +236,15 @@ export class FTPStorage extends BaseFileStorage {
    * @param path 文件路径
    * @param content 文件内容
    * @param option 写入选项，传入 expectedVersion 时写前 stat 复核（SFTP stat / FTP MLSD）
+   * @param onProgress 上传进度回调（可选），经临时文件透传给底层 handler
    */
-  public write(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
-    return this.serialize(() => this.writeOnce(path, content, option));
+  public write(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
+    return this.serialize(() => this.writeOnce(path, content, option, onProgress));
   }
 
-  private async writeOnce(path: string, content: ArrayBuffer, option?: WriteOption): Promise<void> {
+  private async writeOnce(path: string, content: ArrayBuffer, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<void> {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
@@ -265,7 +268,7 @@ export class FTPStorage extends BaseFileStorage {
             throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Remote file version changed');
           }
         }
-        await handler.uploadTo(tempFilePath, fullPath);
+        await handler.uploadTo(tempFilePath, fullPath, onProgress);
         await fs.unlink(tempFilePath);
       } catch (uploadError) {
         try {
@@ -288,16 +291,18 @@ export class FTPStorage extends BaseFileStorage {
   /**
    * 流式下载到本地文件（FTP/SFTP socket 直写文件，不驻留整缓冲，修 P9）
    * 复用底层 handler.downloadFrom 的文件传输能力（basic-ftp 已具备）
+   * @param onProgress 下载进度回调（可选）：底层 handler 字节级透传
    */
-  public readToFile(path: string, destPath: string): Promise<FileInfo> {
-    return this.serialize(() => this.readToFileOnce(path, destPath));
+  public readToFile(path: string, destPath: string, onProgress?: TransferProgressCallback): Promise<FileInfo> {
+    return this.serialize(() => this.readToFileOnce(path, destPath, onProgress));
   }
 
-  private async readToFileOnce(path: string, destPath: string): Promise<FileInfo> {
+  private async readToFileOnce(path: string, destPath: string,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     try {
       const fullPath = this.getFullPath(path);
       const handler = await this.ensureConnected();
-      await handler.downloadFrom(fullPath, destPath);
+      await handler.downloadFrom(fullPath, destPath, onProgress);
       // 直接调 getInfoOnce（已在 serialize 队列内，跳过二次排队避免死锁）
       return await this.getInfoOnce(path);
     } catch (error) {
@@ -313,12 +318,15 @@ export class FTPStorage extends BaseFileStorage {
   /**
    * 流式从本地文件上传（FTP/SFTP socket 直读文件，不驻留整缓冲）
    * 复用底层 handler.uploadFrom 的文件传输能力；条件写入复用 writeOnce 的版本复核逻辑
+   * @param onProgress 上传进度回调（可选）：底层 handler 字节级透传
    */
-  public writeFromFile(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
-    return this.serialize(() => this.writeFromFileOnce(path, srcPath, option));
+  public writeFromFile(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
+    return this.serialize(() => this.writeFromFileOnce(path, srcPath, option, onProgress));
   }
 
-  private async writeFromFileOnce(path: string, srcPath: string, option?: WriteOption): Promise<FileInfo> {
+  private async writeFromFileOnce(path: string, srcPath: string, option?: WriteOption,
+    onProgress?: TransferProgressCallback): Promise<FileInfo> {
     const config = this.config;
     try {
       const fullPath = this.getFullPath(path);
@@ -334,7 +342,7 @@ export class FTPStorage extends BaseFileStorage {
           throw new StorageError(StorageErrorCodes.VERSION_CONFLICT, 'Remote file version changed');
         }
       }
-      await handler.uploadTo(srcPath, fullPath);
+      await handler.uploadTo(srcPath, fullPath, onProgress);
       // 上传后取远端 FileInfo（直接调 getInfoOnce 避免二次排队死锁）
       return await this.getInfoOnce(path);
     } catch (error) {

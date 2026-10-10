@@ -1,3 +1,5 @@
+import { TransferProgressCallback } from '../IFileStorage';
+
 /**
  * 文件信息接口
  */
@@ -25,13 +27,15 @@ export interface IFTPHandler {
 
   /**
    * 从远程路径下载文件到本地
+   * @param onProgress 下载进度回调（可选，opt-in 能力）：已接收字节 / 总字节
    */
-  downloadFrom(remotePath: string, localPath: string): Promise<void>;
+  downloadFrom(remotePath: string, localPath: string, onProgress?: TransferProgressCallback): Promise<void>;
 
   /**
    * 从本地上传文件到远程路径
+   * @param onProgress 上传进度回调（可选，opt-in 能力）：已发送字节 / 总字节
    */
-  uploadTo(localPath: string, remotePath: string): Promise<void>;
+  uploadTo(localPath: string, remotePath: string, onProgress?: TransferProgressCallback): Promise<void>;
 
   /**
    * 检查路径是否存在

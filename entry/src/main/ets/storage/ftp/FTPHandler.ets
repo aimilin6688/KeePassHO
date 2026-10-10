@@ -1,7 +1,9 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { Client as FTPClient } from '@ohos/basic-ftp';
 import { CommonUtils } from '../../common/utils';
 import { StorageError, StorageErrorCodes } from '../StorageError';
+import { TransferProgressCallback } from '../IFileStorage';
 import { FileItemInfo, IFTPHandler } from './IFTPHandler';
 
 const DOMAIN = 0x0000;
@@ -111,27 +113,77 @@ export class FTPHandler implements IFTPHandler {
 
   /**
    * 下载文件到本地
+   * @param onProgress 下载进度回调（可选）：basic-ftp ProgressTracker 字节级透传；
+   * 总字节经 SIZE 命令获取，服务器不支持时透传 -1（调用方限频器按"总字节未知"忽略）
    */
-  public async downloadFrom(remotePath: string, localPath: string): Promise<void> {
+  public async downloadFrom(remotePath: string, localPath: string,
+    onProgress?: TransferProgressCallback): Promise<void> {
     if (!this.client) {
       throw new Error('FTP client is not connected');
     }
+    const client: FTPClient = this.client;
     hilog.info(DOMAIN, TAG, `Downloading ${remotePath} to ${localPath}`);
-    await this.client.downloadTo(localPath, remotePath);
+    if (!onProgress) {
+      await client.downloadTo(localPath, remotePath);
+      hilog.info(DOMAIN, TAG, `Download completed: ${remotePath}`);
+      return;
+    }
+    // 总字节：SIZE 命令（二进制模式下可靠）；失败不阻断下载，进度退化为无分母
+    let totalBytes: number = -1;
+    try {
+      totalBytes = await client.size(remotePath);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `Failed to get remote size for progress: ${error.message}`);
+    }
+    // 进度事件仅在本次 downloadTo 期间注册，完成/失败后注销，避免污染后续 list 等数据传输
+    client.trackProgress((info) => {
+      onProgress(info.bytes, totalBytes);
+    });
+    try {
+      await client.downloadTo(localPath, remotePath);
+    } finally {
+      client.trackProgress();
+    }
     hilog.info(DOMAIN, TAG, `Download completed: ${remotePath}`);
   }
 
   /**
    * 上传本地文件到远程
+   * @param onProgress 上传进度回调（可选）：basic-ftp ProgressTracker 字节级透传；
+   * 总字节取本地文件 stat
    */
-  public async uploadTo(localPath: string, remotePath: string): Promise<void> {
+  public async uploadTo(localPath: string, remotePath: string,
+    onProgress?: TransferProgressCallback): Promise<void> {
     if (!this.client) {
       throw new Error('FTP client is not connected');
     }
+    const client: FTPClient = this.client;
     hilog.info(DOMAIN, TAG, `Uploading ${localPath} to ${remotePath}`);
-    await this.client.uploadFrom(localPath, remotePath).then(result=>{
-      hilog.info(DOMAIN, TAG, `Upload result: ${JSON.stringify(result)}`);
+    if (!onProgress) {
+      await client.uploadFrom(localPath, remotePath).then(result => {
+        hilog.info(DOMAIN, TAG, `Upload result: ${JSON.stringify(result)}`);
+      });
+      hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath}`);
+      return;
+    }
+    // 总字节：本地文件 stat（上传源文件尺寸必然已知）
+    let totalBytes: number = -1;
+    try {
+      const localStat = await fs.stat(localPath);
+      totalBytes = localStat.size;
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `Failed to stat local file for progress: ${error.message}`);
+    }
+    client.trackProgress((info) => {
+      onProgress(info.bytes, totalBytes);
     });
+    try {
+      await client.uploadFrom(localPath, remotePath).then(result => {
+        hilog.info(DOMAIN, TAG, `Upload result: ${JSON.stringify(result)}`);
+      });
+    } finally {
+      client.trackProgress();
+    }
     hilog.info(DOMAIN, TAG, `Upload completed: ${remotePath}`);
   }
 
