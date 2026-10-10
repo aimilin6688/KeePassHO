@@ -19,6 +19,13 @@ declare module 'libkdbxweb_zlib.so' {
     inflateFile(inPath: string, outPath: string): Promise<number>;
     /** gzip 流式压缩；resolve 压缩后字节数，level 0-9 默认 6 */
     deflateFile(inPath: string, outPath: string, level?: number): Promise<number>;
+    /**
+     * ChaCha20 就地 XOR 密钥流（src/main/cpp/chacha20.cpp），
+     * 语义与 crypto/chacha20.ts 的 xorInPlace 一致：
+     * data 支持 Uint8Array view；counter 为起始块计数器；
+     * blockOffset 为首块内已消耗偏移 0..63（流式跨调用续解密）。
+     */
+    chacha20Xor(data: Uint8Array, key: Uint8Array, nonce: Uint8Array, counter: number, blockOffset: number): void;
   }
   const zlibStream: ZlibStream;
   export default zlibStream;

@@ -1,5 +1,6 @@
 import { AesGcm, AesGcmDecryptSession, AesGcmEncryptSession } from './crypto/aes-gcm';
 import { ChaCha20 } from './crypto/chacha20';
+import { nativeChaCha20Available, setNativeChaCha20Enabled } from './crypto/chacha20-native';
 import * as CryptoEngine from './crypto/crypto-engine';
 import * as HashedBlockTransform from './crypto/hashed-block-transform';
 import * as HmacBlockTransform from './crypto/hmac-block-transform';
@@ -68,6 +69,8 @@ export {
     AesGcmDecryptSession,
     AesGcmEncryptSession,
     ChaCha20,
+    nativeChaCha20Available,
+    setNativeChaCha20Enabled,
     CryptoEngine,
     HashedBlockTransform,
     HmacBlockTransform,
