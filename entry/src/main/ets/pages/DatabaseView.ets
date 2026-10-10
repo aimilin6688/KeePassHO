@@ -2723,24 +2723,6 @@ export struct DatabaseView {
         .onClick(() => {
           this.showAddButtons = true;
         })
-
-        // 展开菜单时的关闭按钮
-        Button() {
-          Image($r('app.media.ic_clear'))
-            .width(28)
-            .height(28)
-            .fillColor(Color.White)
-        }
-        .width(56)
-        .height(56)
-        .borderRadius(28)
-        .backgroundColor($r("app.color.error"))
-        .enabled(!this.isLoading)
-        .opacity(this.isLoading ? 0.5 : 1)
-        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-        .onClick(() => {
-          this.showAddButtons = false;
-        })
       }
       .width(this.containerWidth)
       .height(this.showAddButtons ? 200 : this.containerHeight)
