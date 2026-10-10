@@ -150,7 +150,7 @@ export class S3Client {
   }
 
   private parseUrl(url: string): ParsedUrl {
-    let protocol: string = 'https';
+    let protocol: string = 'http';
     let host: string = url;
     let port: string = '';
     let path: string = '/';
@@ -198,14 +198,15 @@ export class S3Client {
   }
 
   private buildUrl(bucket: string, key: string): string {
+    const authority: string = this.buildAuthority();
+    const base: string = `${this.parsedEndpoint.protocol}://${authority}`;
     if (this.options.pathStyle) {
       if (key && key.length > 0) {
-        return `${this.options.endpoint}/${bucket}/${key}`;
+        return `${base}/${bucket}/${key}`;
       } else {
-        return `${this.options.endpoint}/${bucket}`;
+        return `${base}/${bucket}`;
       }
     } else {
-      const authority: string = this.buildAuthority();
       if (key && key.length > 0) {
         return `${this.parsedEndpoint.protocol}://${bucket}.${authority}/${key}`;
       } else {
