@@ -24,22 +24,40 @@ const DOMAIN = 0x0000;
 const TAG = 'KdbxSaveService';
 
 /**
+ * 待执行保存请求槽位元素：保存回调 + 冲突处理策略
+ */
+class PendingSave {
+  callback?: SaveDatabaseCallback;
+  conflictStrategy: string;
+
+  constructor(callback: SaveDatabaseCallback | undefined, conflictStrategy: string) {
+    this.callback = callback;
+    this.conflictStrategy = conflictStrategy;
+  }
+}
+
+/**
  * 保存数据库服务类
  * 保存冲突时弹框让用户选择处理策略：合并（保留双方修改）/ 覆盖（丢弃远端修改）/ 重载（丢弃本地修改）
  */
 export default class KdbxSaveService {
   private static databaseWorker: worker.ThreadWorker | null = null;
   /**
-   * 保存互斥链：串行化所有保存请求，防止并发保存时上一个 Worker 被半途 terminate
-   * 导致非原子存储写入残缺文件（设计文档 P4）
+   * 保存进行中标志：true 时拒绝新请求入队，仅更新 pendingSave 槽位（合并）
    */
-  private static saveLock: Promise<void> = Promise.resolve();
+  private static saving: boolean = false;
+  /**
+   * 待执行保存槽位（最多 1 个）：保存进行中到达的新请求替换此槽位，
+   * 中间状态无需落盘——锁内取最新模型构造请求，最终状态等价
+   */
+  private static pendingSave: PendingSave | null = null;
 
   /**
    * 保存数据库
+   * 保存进行中时仅保留最新请求（静默整体替换待执行槽位），中间请求直接丢弃、不通知旧回调；
+   * 最终状态由槽位取出时取最新模型落盘保证
    * @param callback 回调
    * @param conflictStrategy 冲突处理策略，默认 AUTO（检测到冲突时弹框询问用户）
-   * @returns 结果信息
    */
   public static saveDatabase(callback?: SaveDatabaseCallback, conflictStrategy?: string): void {
     const strategy: string = conflictStrategy ?? ConflictStrategy.AUTO;
@@ -57,32 +75,69 @@ export default class KdbxSaveService {
       return;
     }
 
-    // 保存请求进入互斥链排队：锁内取最新模型构造请求（合并成功会替换模型实例），
-    // 锁在前一次保存终态（成功/失败/冲突）后释放
-    KdbxSaveService.saveLock = KdbxSaveService.saveLock.then(() => {
-      return new Promise<void>((resolve: () => void) => {
-        const currentParam = FileService.getDbFileParam();
-        if (!currentParam.database) {
-          hilog.error(DOMAIN, TAG, 'Database is null in save lock');
-          if (callback && callback.onError) {
-            callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
-          }
-          resolve();
-          return;
-        }
-        const saveDatabaseReq = new SaveDatabaseMessage(currentParam.database, currentParam, strategy);
-        const callbackWarp = KdbxSaveService.callbackWarp(callback, resolve);
-        if (Constants.ASYNC_SAVE_DATABASE) {
-          KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp, resolve);
-        } else {
-          new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq)
-            .catch((error: Error) => {
-              hilog.error(DOMAIN, TAG, 'Save database rejected: %{public}s', error?.message);
-              callbackWarp.onError?.(error?.message ?? 'save failed');
-            });
-        }
-      });
-    });
+    // 保存进行中：静默合并——新请求整体替换待执行槽位（回调与策略），旧请求直接丢弃，
+    // 不通知旧回调；最终状态由后继保存取最新模型落盘保证
+    if (KdbxSaveService.saving) {
+      KdbxSaveService.pendingSave = new PendingSave(callback, strategy);
+      hilog.info(DOMAIN, TAG, 'Save in progress, coalesced pending save (replaced)');
+      return;
+    }
+
+    // 空闲：立即执行保存
+    KdbxSaveService.executeSave(callback, strategy);
+  }
+
+  /**
+   * 执行一次保存（从空闲态调用，或从 pendingSave 槽位取出后调用）
+   * 保存终态后检查 pendingSave 槽位，有则继续执行下一轮
+   */
+  private static executeSave(callback: SaveDatabaseCallback | undefined, conflictStrategy: string): void {
+    KdbxSaveService.saving = true;
+    const currentParam = FileService.getDbFileParam();
+    if (!currentParam.database) {
+      hilog.error(DOMAIN, TAG, 'Database is null in executeSave');
+      if (callback && callback.onError) {
+        callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
+      }
+      KdbxSaveService.onSaveDone();
+      return;
+    }
+    const saveDatabaseReq = new SaveDatabaseMessage(currentParam.database, currentParam, conflictStrategy);
+    // 一次性释放守卫：release 有多条触发路径（callbackWarp 终态 / 异常 catch 兜底 / Worker
+    // onexit 等），重复触发会把进行中保存的 saving 提前置 false，导致下一请求并发保存，
+    // 必须保证每轮保存仅推进一次 onSaveDone
+    let released = false;
+    const release = (): void => {
+      if (released) {
+        return;
+      }
+      released = true;
+      KdbxSaveService.onSaveDone();
+    };
+    const callbackWarp = KdbxSaveService.callbackWarp(callback, release);
+    if (Constants.ASYNC_SAVE_DATABASE) {
+      KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp, release);
+    } else {
+      new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq)
+        .catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, 'Save database rejected: %{public}s', error?.message);
+          callbackWarp.onError?.(error?.message ?? 'save failed');
+        });
+    }
+  }
+
+  /**
+   * 保存终态处理：检查 pendingSave 槽位，有则继续执行下一轮保存；无则回到空闲态
+   */
+  private static onSaveDone(): void {
+    const pending: PendingSave | null = KdbxSaveService.pendingSave;
+    KdbxSaveService.pendingSave = null;
+    if (pending !== null) {
+      hilog.info(DOMAIN, TAG, 'Pending save found, executing next round');
+      KdbxSaveService.executeSave(pending.callback, pending.conflictStrategy);
+    } else {
+      KdbxSaveService.saving = false;
+    }
   }
 
   /**
@@ -222,7 +277,7 @@ export default class KdbxSaveService {
    * false 时保留旧行为（每操作 terminate + 重建）
    * @param req
    * @param callback
-   * @param release 保存互斥锁释放函数（终态回调，异常路径必须调用，否则后续保存永久排队）
+   * @param release 保存锁释放函数（终态回调，异常路径必须调用，否则后续保存永久排队）
    */
   static async saveDatabaseAsync(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
     release?: () => void) {
@@ -262,7 +317,7 @@ export default class KdbxSaveService {
    */
   private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
     release?: () => void): void {
-    // 懒创建常驻 Worker（旧行为下上方已置空，必新建；互斥链保证无并发保存）
+    // 懒创建常驻 Worker（旧行为下上方已置空，必新建；保存锁保证无并发保存）
     if (KdbxSaveService.databaseWorker === null) {
       KdbxSaveService.databaseWorker = DatabaseWorkerFactory.createSaveWorker();
     }
@@ -325,8 +380,8 @@ export default class KdbxSaveService {
       release?.();
     }
 
-    // 注册onexit回调：Worker 销毁时释放互斥锁，防止常驻 Worker 被外部终止
-    // （应用恢复重置 / 紧急清理）时 saveLock 永久排队
+    // 注册onexit回调：Worker 销毁时释放保存锁，防止常驻 Worker 被外部终止
+    // （应用恢复重置 / 紧急清理）时后续保存永久排队
     KdbxSaveService.databaseWorker.onexit = (code: number) => {
       hilog.info(DOMAIN, TAG, 'Database save worker exit: %{public}d', code);
       KdbxSaveService.databaseWorker = null;
