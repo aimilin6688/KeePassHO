@@ -2,10 +2,10 @@
 # 存储回归测试 hdc 反向隧道自动 setup（S3 / WebDAV / SFTP）
 #
 # 用法：
-#   sh docs/e2e/e2e-tunnels.sh                 # 为所有已连接设备建立隧道（幂等，可重复执行）
+#   sh docs/e2e/e2e-tunnels.sh                 # 列出所有在线设备：仅一个自动挂载，多个则交互选择
 #   sh docs/e2e/e2e-tunnels.sh --containers    # 宿主端口不通时自动拉起 e2e 容器
 #   sh docs/e2e/e2e-tunnels.sh --reset         # 强制清理重建（含僵尸监听清理）
-#   sh docs/e2e/e2e-tunnels.sh -t 127.0.0.1:5555   # 仅指定设备
+#   sh docs/e2e/e2e-tunnels.sh -t 127.0.0.1:5555   # 跳过选择，仅指定设备
 #
 # DevEco Studio 挂钩方式见 docs/e2e/e2e-tunnels.md
 # 原理与故障恢复说明见 docs/storage-regression-test.md §4
@@ -67,16 +67,59 @@ HDC_CMD=$(resolve_hdc) || {
 echo "hdc: $HDC_CMD"
 
 # ---------- 设备清单 ----------
-TARGETS=$("$HDC_CMD" list targets 2>/dev/null | grep -v '^\[Empty' | grep -v '^\s*$' || true)
+# 用 list targets -v 取设备详情（列：serial / 连接类型 / 状态 / 名称 / 连接器），
+# 解析出 serial 列表（下游建隧道用）并保留详情用于展示名称
+TARGETS_VERBOSE=$("$HDC_CMD" list targets -v 2>/dev/null | grep -v '^\[Empty' | grep -v '^\s*$' || true)
+TARGETS=$(printf '%s\n' "$TARGETS_VERBOSE" | awk 'NF>=1 {print $1}')
 if [ -z "$TARGETS" ]; then
   echo "[错误] 无已连接设备（hdc list targets 为空）"
   exit 1
 fi
+# 由 serial 取展示名："名称（连接类型）"，名称缺失（如 localhost）时降级为连接类型
+device_label() {
+  line=$(printf '%s\n' "$TARGETS_VERBOSE" | awk -v s="$1" '$1==s {print; exit}')
+  dtype=$(printf '%s\n' "$line" | awk '{print $2}')
+  dname=$(printf '%s\n' "$line" | awk '{print $4}')
+  if [ -n "$dname" ] && [ "$dname" != "localhost" ]; then
+    printf '%s (%s)' "$dname" "$dtype"
+  elif [ -n "$dtype" ]; then
+    printf '%s' "$dtype"
+  else
+    printf '%s' "$1"
+  fi
+}
 if [ -n "$TARGET_FILTER" ]; then
-  TARGETS=$(echo "$TARGETS" | grep -F "$TARGET_FILTER" || true)
+  TARGETS=$(printf '%s\n' "$TARGETS" | grep -F "$TARGET_FILTER" || true)
   if [ -z "$TARGETS" ]; then
     echo "[错误] 设备 $TARGET_FILTER 不在线"
     exit 1
+  fi
+else
+  # 未显式指定 -t 时：逐个列出在线设备；超过一个则交互选择，仅一个则自动选用
+  count=$(printf '%s\n' $TARGETS | grep -c .)
+  if [ "$count" -gt 1 ]; then
+    echo "[设备] 检测到 $count 个在线设备，请选择要挂载隧道的目标："
+    i=1
+    for t in $TARGETS; do
+      printf '  %d) %s  [%s]\n' "$i" "$t" "$(device_label "$t")"
+      i=$((i + 1))
+    done
+    printf '请选择 [1-%d]，回车默认 1：' "$count"
+    if [ -t 0 ]; then
+      read -r choice
+    else
+      choice=""
+      echo "（非交互环境，自动选用第 1 个设备）"
+    fi
+    if [ -z "$choice" ]; then
+      choice=1
+    fi
+    if ! printf '%s' "$choice" | grep -qE '^[0-9]+$' || [ "$choice" -lt 1 ] || [ "$choice" -gt "$count" ]; then
+      echo "[错误] 无效选择：$choice"
+      exit 1
+    fi
+    TARGETS=$(printf '%s\n' $TARGETS | sed -n "${choice}p")
+    echo "[设备] 已选择：$TARGETS（$(device_label "$TARGETS")）"
   fi
 fi
 
@@ -88,8 +131,33 @@ registry_has() {
 # 设备侧是否处于 LISTEN <port>（锚定 LISTEN 关键字 + 端口后随空白：
 # 部分模拟器 netstat 的 -l 参数失效会列出全部状态，需显式过滤，避免被应用残留的
 # ESTABLISHED/CLOSE_WAIT 客户端 socket 误判为"已有隧道"）
+# 注意：仅对模拟器可靠；真机（非 root）多数无 netstat，调用方须按 is_emulator 分支处理
 device_listening() {
   "$HDC_CMD" -t "$1" shell "netstat -tln 2>/dev/null | grep 'LISTEN' | grep -q '127.0.0.1:$2 '" >/dev/null 2>&1
+}
+
+# 判断目标是否为模拟器：localhost / 127.0.0.1 / 其他 IP:port 形态视为模拟器；
+# 其余（纯 serial 的 USB 真机）视为真机
+is_emulator() {
+  case "$1" in
+    127.0.0.1:*|localhost:*|[0-9]*.[0-9]*.[0-9]*.[0-9]*:*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# 隧道是否就绪：
+#  - 注册表（fport ls）含本设备+端口 是必要条件；
+#  - 模拟器额外校验设备侧 LISTEN（规避 hdc 重启残留的僵尸黑洞）；
+#  - 真机无可靠 netstat，仅以注册表为准
+tunnel_ready() {
+  if ! registry_has "$1" "$2"; then
+    return 1
+  fi
+  if is_emulator "$1"; then
+    device_listening "$1" "$2"
+  else
+    return 0
+  fi
 }
 
 # ---------- 宿主侧连通性（容器发布端口） ----------
@@ -122,10 +190,11 @@ plan_create=""
 for target in $TARGETS; do
   for line in $PORTS; do
     dport=$(echo "$line" | cut -d: -f1)
-    if registry_has "$target" "$dport" && device_listening "$target" "$dport"; then
+    if tunnel_ready "$target" "$dport"; then
       continue
     fi
-    if device_listening "$target" "$dport"; then
+    # 仅模拟器需关注"僵尸监听"（hdc 重启残留黑洞）；真机以注册表为准，不判僵尸
+    if is_emulator "$target" && device_listening "$target" "$dport"; then
       zombie_targets="$zombie_targets $target:$dport"
     fi
     plan_create="$plan_create $target:$dport:$line"
@@ -169,13 +238,13 @@ fi
 fail_total=0
 for target in $TARGETS; do
   echo ""
-  echo "=== 设备 $target ==="
+  echo "=== 设备 $target（$(device_label "$target")）==="
   for line in $PORTS; do
     dport=$(echo "$line" | cut -d: -f1)
     hport=$(echo "$line" | cut -d: -f2)
     name=$(echo "$line" | cut -d: -f3)
 
-    if registry_has "$target" "$dport" && device_listening "$target" "$dport"; then
+    if tunnel_ready "$target" "$dport"; then
       echo "  [$name] 设备 $dport → 宿主 $hport ：已就绪"
       continue
     fi
@@ -193,7 +262,7 @@ for target in $TARGETS; do
     ok=0
     check_rounds=0
     while [ $check_rounds -lt 5 ]; do
-      if registry_has "$target" "$dport" && device_listening "$target" "$dport"; then
+      if tunnel_ready "$target" "$dport"; then
         ok=1
         break
       fi
