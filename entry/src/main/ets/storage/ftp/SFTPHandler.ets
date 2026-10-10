@@ -1,6 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { SshClient } from 'sftp-ohos';
+import { TransferProgressCallback } from '../IFileStorage';
 import { FileItemInfo, IFTPHandler } from './IFTPHandler';
 
 const DOMAIN = 0x0000;
@@ -242,8 +243,10 @@ export class SFTPHandler implements IFTPHandler {
 
   /**
    * 下载远程文件到本地（SFTP 流式读取 + 大小校验）
+   * @param onProgress 下载进度回调（可选）：每分块落盘后上报（已接收字节 / 远端 stat 总字节）
    */
-  public async downloadFrom(remotePath: string, localPath: string): Promise<void> {
+  public async downloadFrom(remotePath: string, localPath: string,
+    onProgress?: TransferProgressCallback): Promise<void> {
     let client: SshClient | undefined = undefined;
     let handle = -1;
     try {
@@ -263,6 +266,9 @@ export class SFTPHandler implements IFTPHandler {
           }
           await fs.write(file.fd, chunk, { offset: offset });
           offset += chunk.byteLength;
+          if (onProgress) {
+            onProgress(offset, fileSize);
+          }
         }
       } finally {
         try {
@@ -292,8 +298,10 @@ export class SFTPHandler implements IFTPHandler {
 
   /**
    * 上传本地文件到远程（SFTP 流式写入 + 大小校验）
+   * @param onProgress 上传进度回调（可选）：每分块 sftpWrite 确认后上报（已发送字节 / 本地 stat 总字节）
    */
-  public async uploadTo(localPath: string, remotePath: string): Promise<void> {
+  public async uploadTo(localPath: string, remotePath: string,
+    onProgress?: TransferProgressCallback): Promise<void> {
     let client: SshClient | undefined = undefined;
     let handle = -1;
     const file = await fs.open(localPath, fs.OpenMode.READ_ONLY);
@@ -316,6 +324,9 @@ export class SFTPHandler implements IFTPHandler {
         const data = readLen === chunkSize ? buffer : buffer.slice(0, readLen);
         await client.sftpWrite(handle, data);
         offset += readLen;
+        if (onProgress) {
+          onProgress(offset, fileSize);
+        }
       }
     } catch (error) {
       const err = SFTPHandler.wrapError(error, `Failed to upload ${localPath}`);
