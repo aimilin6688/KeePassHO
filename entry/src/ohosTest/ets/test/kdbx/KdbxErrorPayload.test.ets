@@ -81,6 +81,63 @@ export default function KdbxErrorPayloadTest() {
     });
 
     /**
+     * kdbxErrorDetail 提取 KdbxError "Error <code>: <detail>" 中的明细部分
+     */
+    it('kdbxErrorDetail extracts detail from KdbxError message', 0, () => {
+      try {
+        throw new KdbxError(Consts.ErrorCodes.FileCorrupt, 'bad argon2 version');
+      } catch (e) {
+        expect(KdbxUtils.kdbxErrorDetail(e)).assertEqual('bad argon2 version');
+      }
+    });
+
+    /**
+     * KdbxError 无明细（仅 code）时返回 undefined
+     */
+    it('kdbxErrorDetail returns undefined for KdbxError without message', 0, () => {
+      try {
+        throw new KdbxError(Consts.ErrorCodes.InvalidKey);
+      } catch (e) {
+        expect(KdbxUtils.kdbxErrorDetail(e) === undefined).assertTrue();
+      }
+    });
+
+    /**
+     * 非 KdbxError 返回 undefined
+     */
+    it('kdbxErrorDetail returns undefined for plain Error', 0, () => {
+      try {
+        throw new Error('Error FileCorrupt: not a kdbx error');
+      } catch (e) {
+        expect(KdbxUtils.kdbxErrorDetail(e) === undefined).assertTrue();
+      }
+    });
+
+    /**
+     * kdbxErrorMessage 对资源 ID 载体（KdbxError）拼接前缀与明细：
+     * 明细固定拼接在末尾（前缀是否本地化取决于 ResourceManager 上下文，断言与之无关）
+     */
+    it('kdbxErrorMessage appends detail for KdbxError resource-id payload', 0, () => {
+      try {
+        throw new KdbxError(Consts.ErrorCodes.FileCorrupt, 'bad argon2 version');
+      } catch (e) {
+        const message = KdbxUtils.kdbxErrorMessage(e);
+        expect(message.endsWith(': bad argon2 version')).assertTrue();
+      }
+    });
+
+    /**
+     * kdbxErrorMessage 对原始文本载体（非 KdbxError）原样返回，不重复拼接明细
+     */
+    it('kdbxErrorMessage returns raw text payload unchanged', 0, () => {
+      try {
+        throw new Error('plain boom');
+      } catch (e) {
+        expect(KdbxUtils.kdbxErrorMessage(e)).assertEqual('plain boom');
+      }
+    });
+
+    /**
      * Consts.ErrorCodes 包含 DecompressedTooLarge
      */
     it('ErrorCodes has DecompressedTooLarge', 0, () => {
