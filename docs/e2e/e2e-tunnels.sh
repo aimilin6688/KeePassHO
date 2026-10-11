@@ -119,7 +119,7 @@ else
       exit 1
     fi
     TARGETS=$(printf '%s\n' $TARGETS | sed -n "${choice}p")
-    echo "[设备] 已选择：$TARGETS（$(device_label "$TARGETS")）"
+    echo "[设备] 已选择：${TARGETS}（$(device_label "$TARGETS")）"
   fi
 fi
 
@@ -238,7 +238,7 @@ fi
 fail_total=0
 for target in $TARGETS; do
   echo ""
-  echo "=== 设备 $target（$(device_label "$target")）==="
+  echo "=== 设备 ${target}（$(device_label "$target")）==="
   for line in $PORTS; do
     dport=$(echo "$line" | cut -d: -f1)
     hport=$(echo "$line" | cut -d: -f2)

@@ -85,9 +85,6 @@ import AesGcmTest from './kdbx/AesGcm.test';
 // ChaCha20 原生路径设备端验证（libkdbxweb_zlib.so chacha20Xor：可用性 / RFC 7539 向量 / 流式等价）
 import Chacha20NativeTest from './kdbx/Chacha20Native.test';
 
-// ChaCha20 原生 vs JS 性能基准（Worker 线程 4MB 吞吐对比 + 等价校验，结果经 hilog tag=Chacha20Perf 输出）
-import Chacha20PerfTest from './kdbx/Chacha20Perf.test';
-
 // §10/§12 大文件验收测试（att-100/300/500 + text-10k + CP2' + 残留清扫）
 import LargeFileAcceptanceTest from './acceptance/LargeFileAcceptance.test';
 
@@ -351,9 +348,6 @@ export default function testsuite() {
 
   // ChaCha20 原生路径设备端验证（原生可用性 / RFC 7539 向量 / 分块流式等价）
   Chacha20NativeTest();
-
-  // ChaCha20 原生 vs JS 性能基准（建议 -s class Chacha20Perf 单独运行，结果看 hilog）
-  Chacha20PerfTest();
 
   // §10/§12 大文件验收测试（建议 -s class LargeFileAcceptanceTest 单独运行）
   LargeFileAcceptanceTest();
