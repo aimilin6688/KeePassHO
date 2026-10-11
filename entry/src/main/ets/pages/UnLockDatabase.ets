@@ -18,14 +18,9 @@ interface PasswordParam {
 const DOMAIN = 0x0000;
 const TAG = 'UnLockDatabase';
 
-// UnLockDatabase页面的Builder函数
-@Builder
-export function UnLockDatabaseBuilder(name: string, param: Object): void {
-  UnLockDatabase()
-}
-
+@Entry
 @Component
-export struct UnLockDatabase {
+struct UnLockDatabase {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State defaultAuthType: UnlockAuthType = SettingsService.KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT;
   @State quickPassword: string = '';
@@ -39,12 +34,17 @@ export struct UnLockDatabase {
   aboutToAppear(): void {
     // 从 AppStorage 读取锁定标记，替代 router.getParams()
     this.isLocked = AppStorage.get<boolean>('lockIsManual') ?? false;
-    // 锁屏遮罩为条件挂载组件，挂载时 onPageShow 不回调，直接初始化页面状态
-    this.initPageState();
   }
 
   onPageShow(): void {
     this.initPageState();
+  }
+
+  /**
+   * 拦截返回手势：锁屏状态下不允许返回
+   */
+  onBackPress(): boolean {
+    return true;
   }
 
   /**
@@ -70,7 +70,7 @@ export struct UnLockDatabase {
 
   /**
    * 解锁成功后导航。
-   * 通过 EventBus 通知 LockScreenService 销毁子窗口，恢复主窗口
+   * 通过 EventBus 通知 LockScreenService 销毁锁屏子窗口，恢复主窗口
    */
   private navigateAfterUnlock(): void {
     EventBus.emit(LockScreenService.EVENT_LOCK_ACTION, 'unlock');
@@ -285,7 +285,6 @@ export struct UnLockDatabase {
       .width('90%')
       .position({ x: '5%', y: '100%' })
       .translate({ y: -100 }) // 调整位置，确保正确显示
-
 
       // 操作按钮
       Row() {

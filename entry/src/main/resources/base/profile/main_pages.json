@@ -1,5 +1,6 @@
 {
   "src": [
-    "pages/AppNavigation"
+    "pages/AppNavigation",
+    "pages/UnLockDatabase"
   ]
 }

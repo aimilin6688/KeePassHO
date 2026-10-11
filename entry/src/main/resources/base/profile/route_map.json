@@ -26,11 +26,6 @@
       "buildFunction": "CreateDatabaseBuilder"
     },
     {
-      "name": "UnLockDatabase",
-      "pageSourceFile": "src/main/ets/pages/UnLockDatabase.ets",
-      "buildFunction": "UnLockDatabaseBuilder"
-    },
-    {
       "name": "ChangePassword",
       "pageSourceFile": "src/main/ets/pages/ChangePassword.ets",
       "buildFunction": "ChangePasswordBuilder"
