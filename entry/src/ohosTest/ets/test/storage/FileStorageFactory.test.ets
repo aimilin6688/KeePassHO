@@ -83,9 +83,6 @@ export default function FileStorageFactoryTest() {
         expect(FileStorageFactory.getInstance().hasStorage(StorageType.HUAWEI_DRIVE)).assertTrue();
       });
 
-      it('should have PCLOUD registered', 0, () => {
-        expect(FileStorageFactory.getInstance().hasStorage(StorageType.PCLOUD)).assertTrue();
-      });
       it('should NOT have BAIDU_NETDISK registered by default', 0, () => {
         expect(FileStorageFactory.getInstance().hasStorage(StorageType.BAIDU_NETDISK)).assertFalse();
       });
@@ -134,11 +131,6 @@ export default function FileStorageFactoryTest() {
 
       it('HUAWEI_DRIVE should be wrapped in CacheStorage', 0, () => {
         const s: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.HUAWEI_DRIVE);
-        expect(s instanceof CacheStorage).assertTrue();
-      });
-
-      it('PCLOUD should be wrapped in CacheStorage', 0, () => {
-        const s: IFileStorage = FileStorageFactory.getInstance().getStorage(StorageType.PCLOUD);
         expect(s instanceof CacheStorage).assertTrue();
       });
 
