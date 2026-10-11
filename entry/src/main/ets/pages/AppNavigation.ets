@@ -3,15 +3,11 @@ import { WindowService, WindowInfo } from '../common/utils/WindowService';
 import { NavigationModeType } from '../common/constants/PageConfig';
 import { NavigationConstants } from '../common/constants/NavigationConstants';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { emitter } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { Index } from './Index';
 import { Settings } from './setting/Settings';
 import { DatabaseView } from './DatabaseView';
 import { TotpView } from './TotpView';
-import { UnLockDatabase } from './UnLockDatabase';
-import { EventBus } from '../services/EventBus';
-import { LockScreenService } from '../services/LockScreenService';
 
 const DOMAIN = 0x0000;
 const TAG = 'AppNavigation';
@@ -29,7 +25,6 @@ struct AppNavigation {
 
   @State currentRootPage: string = 'Index';
   @StorageLink("navBarWidth") navBarWidth: number = NavigationConstants.DEFAULT_NAV_BAR_WIDTH; // 导航栏宽度
-  @StorageLink('isLocked') isLocked: boolean = false; // 锁屏状态
 
   // 订阅响应式窗口信息：窗口尺寸变化时自动刷新、驱动分栏/单栏切换
   @State windowInfo: WindowInfo = WindowService.getInstance().info;
@@ -38,18 +33,6 @@ struct AppNavigation {
 
   private rootPageChangeListener = (rootPage: string): void => {
     this.currentRootPage = rootPage;
-  };
-
-  // 锁屏事件监听
-  private lockEventListener = (eventData: emitter.EventData): void => {
-    hilog.info(DOMAIN, TAG, 'Lock event received');
-    this.isLocked = true;
-  };
-
-  // 解锁事件监听
-  private unlockEventListener = (): void => {
-    hilog.info(DOMAIN, TAG, 'Unlock event received');
-    this.isLocked = false;
   };
 
   aboutToAppear() {
@@ -63,16 +46,10 @@ struct AppNavigation {
 
     this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
     this.currentRootPage = this.navManager.getCurrentRootPage();
-
-    // 注册锁屏/解锁事件监听
-    EventBus.on('lock_screen', this.lockEventListener);
-    EventBus.on('unlock_screen', this.unlockEventListener);
   }
 
   aboutToDisappear() {
     this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
-    EventBus.off('lock_screen', this.lockEventListener);
-    EventBus.off('unlock_screen', this.unlockEventListener);
   }
 
   /**
@@ -184,14 +161,6 @@ struct AppNavigation {
       .width('100%')
       .height('100%')
       .visibility(this.currentRootPage === 'Settings' ? Visibility.Visible : Visibility.None)
-
-      // 锁屏遮罩层
-      if (this.isLocked) {
-        UnLockDatabase()
-          .width('100%')
-          .height('100%')
-          .zIndex(999)
-      }
     }
     .width('100%')
     .height('100%')

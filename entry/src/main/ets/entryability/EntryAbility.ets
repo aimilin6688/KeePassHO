@@ -231,8 +231,8 @@ export default class EntryAbility extends UIAbility {
     hilog.info(DOMAIN, TAG, 'Ability onNewWant: %{public}s', uri);
     if (this.windowStage && uri) {
       FileService.close();
-      // 关闭锁屏遮罩（如果存在）
-      AppStorage.setOrCreate('isLocked', false);
+      // 关闭锁屏子窗口（如果存在），恢复主窗口交互
+      LockScreenService.closeLockWindow();
       this.openDatabase(uri);
     }
   }
