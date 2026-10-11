@@ -18,12 +18,20 @@ export class DialogWindowHelper {
   private windowClass: window.Window | undefined = undefined;
   private callback: WindowSizeChangeCallback | undefined = undefined;
   private currentWindowWidth: number = 0;
+  private currentWindowHeight: number = 0;
 
   /**
    * 获取当前窗口宽度（px）
    */
   get windowWidth(): number {
     return this.currentWindowWidth;
+  }
+
+  /**
+   * 获取当前窗口高度（px）
+   */
+  get windowHeight(): number {
+    return this.currentWindowHeight;
   }
 
   /**
@@ -42,11 +50,13 @@ export class DialogWindowHelper {
         // 获取当前窗口宽度
         const windowSize = this.windowClass.getWindowProperties().windowRect;
         this.currentWindowWidth = windowSize.width;
+        this.currentWindowHeight = windowSize.height;
         // 保存回调
         this.callback = callback;
         // 注册窗口大小变化监听
         this.windowClass.on('windowSizeChange', (size: window.Size) => {
           this.currentWindowWidth = size.width;
+          this.currentWindowHeight = size.height;
           if (this.callback) {
             this.callback(size.width, size.height);
           }
@@ -73,6 +83,7 @@ export class DialogWindowHelper {
       this.windowClass = undefined;
       this.callback = undefined;
       this.currentWindowWidth = 0;
+      this.currentWindowHeight = 0;
     }
   }
 }
