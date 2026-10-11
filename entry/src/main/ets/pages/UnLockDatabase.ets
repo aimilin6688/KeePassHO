@@ -199,158 +199,179 @@ struct UnLockDatabase {
 
   build() {
     Column() {
-      // 主要内容区域
-      Column() {
-        // Logo或应用图标
-        Image($r('app.media.startIcon'))
-          .width(90)
-          .height(90)
-          .margin({ top: 60, bottom: 40 })
-
-        Text($r('app.string.quick_unlock'))
-          .fontSize(22)
-          .width('100%')
-          .fontColor($r('app.color.text_primary'))
-
-        Text(this.dbFileParam.fileName)
-          .fontSize(14)
-          .fontColor($r('app.color.text_secondary'))
-          .width('100%')
-          .margin({ top: 8 })
-
-        // 非仅密钥文件模式，显示快速解锁密码输入框
-        if (!this.isKeyfileOnlyMode) {
+      // 参考 Password 页断点栅格：小屏全屏展示，大屏（PC）居中窄栏
+      GridRow({
+        columns: { xs: 2, sm: 5, md: 8, lg: 12, xl: 12, xxl: 12 },
+        breakpoints: {
+          value: ['320vp', '600vp', '840vp'],
+          reference: BreakpointsReference.WindowSize
+        }
+      }) {
+        GridCol({
+          span: { xs: 2, sm: 5, md: 6, lg: 6, xl: 4, xxl: 4 },
+          offset: { xs: 0, sm: 0, md: 1, lg: 3, xl: 4, xxl: 4 }
+        }) {
           Column() {
-            Text($r('app.string.input_quick_unlock_password', this.quickLockPasswordLength))
-              .fontSize(14)
-              .fontColor($r('app.color.text_primary'))
-              .margin({ bottom: 8 })
-              .alignSelf(ItemAlign.Start)
+            // 主要内容区域
+            Column() {
+              // Logo或应用图标
+              Image($r('app.media.startIcon'))
+                .width(90)
+                .height(90)
+                .margin({ top: 60, bottom: 40 })
 
-            TextInput({ text: this.quickPassword })
-              .width('100%')
-              .id('input_quick_password')
-              .type(InputType.Password)
-              .fontSize(16)
-              .enableAutoFill(false)
-              .fontColor($r('app.color.text_primary'))
-              .borderRadius(8)
-              .onChange((value) => {
-                this.quickPassword = value;
+              Text($r('app.string.quick_unlock'))
+                .fontSize(22)
+                .width('100%')
+                .fontColor($r('app.color.text_primary'))
+
+              Text(this.dbFileParam.fileName)
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .width('100%')
+                .margin({ top: 8 })
+
+              // 非仅密钥文件模式，显示快速解锁密码输入框
+              if (!this.isKeyfileOnlyMode) {
+                Column() {
+                  Text($r('app.string.input_quick_unlock_password', this.quickLockPasswordLength))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                    .margin({ bottom: 8 })
+                    .alignSelf(ItemAlign.Start)
+
+                  TextInput({ text: this.quickPassword })
+                    .width('100%')
+                    .id('input_quick_password')
+                    .type(InputType.Password)
+                    .fontSize(16)
+                    .enableAutoFill(false)
+                    .fontColor($r('app.color.text_primary'))
+                    .borderRadius(8)
+                    .onChange((value) => {
+                      this.quickPassword = value;
+                    })
+                    .onSubmit(() => {
+                      this.quickUnlock();
+                    })
+                }
+                .width('100%')
+                .margin({ top: 16 })
+              }
+            }
+            .width('90%')
+            .justifyContent(FlexAlign.Start)
+            .layoutWeight(1)
+            // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
+            .padding({ left: 16, right: 16, bottom: 70 })
+
+            Row() {
+              if (this.isFingerprintSupport) {
+                Text($r('app.string.auth_by_fingerprint'))
+                  .fontSize(16)
+                  .fontColor($r('app.color.button_bg_blue'))
+                  .margin({ bottom: 8, left: 8, right: 8 })
+                  .decoration({
+                    type: TextDecorationType.Underline,
+                    color: $r('app.color.button_bg_blue')
+                  })
+                  .onClick(() => {
+                    this.startFingerprintAuth();
+                  })
+              }
+
+              if (this.isFaceSupport) {
+                Text($r('app.string.auth_by_face'))
+                  .fontSize(16)
+                  .fontColor($r('app.color.button_bg_blue'))
+                  .margin({ bottom: 8, left: 8, right: 8 })
+                  .decoration({
+                    type: TextDecorationType.Underline,
+                    color: $r('app.color.button_bg_blue')
+                  })
+                  .onClick(() => {
+                    this.startFaceAuth();
+                  })
+              }
+            }
+            .justifyContent(FlexAlign.Center)
+            .width('90%')
+            .position({ x: '5%', y: '100%' })
+            .translate({ y: -100 }) // 调整位置，确保正确显示
+
+            // 操作按钮
+            Row() {
+              // 关闭数据库
+              Button() {
+                Row() {
+                  Image($r('sys.media.ohos_ic_public_cancel_filled'))
+                    .width(20)
+                    .height(20)
+                    .fillColor($r('app.color.button_text'))
+                    .margin({ right: 8 })
+
+                  Text($r('app.string.close_button_text'))
+                    .fontSize(16)
+                    .fontColor($r('app.color.button_text'))
+                }
+                .width('100%')
+                .justifyContent(FlexAlign.Center)
+              }
+              .width('45%')
+              .height(40)
+              .borderRadius(20)
+              .backgroundColor(Color.Gray)
+              .id('btn_close_database')
+              .onClick(() => {
+                this.closeDatabase();
               })
-              .onSubmit(() => {
+
+              Blank()
+              // 解锁按钮
+              Button() {
+                Row() {
+                  Image($r('app.media.ic_check'))
+                    .width(20)
+                    .height(20)
+                    .fillColor($r('app.color.button_text'))
+                    .margin({ right: 8 })
+
+                  Text($r('app.string.unlock'))
+                    .fontSize(16)
+                    .fontColor($r('app.color.button_text'))
+                }
+                .width('100%')
+                .justifyContent(FlexAlign.Center)
+              }
+              .width('45%')
+              .height(40)
+              .borderRadius(20)
+              .backgroundColor($r('app.color.button_bg_blue'))
+              .id('btn_quick_unlock')
+              .onClick(() => {
                 this.quickUnlock();
               })
+            }
+            .width('90%')
+            .height(60)
+            .backgroundColor(Color.Transparent)
+            .padding({
+              top: 8,
+              bottom: 8,
+              left: 16,
+              right: 16
+            })
+            // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
+            .position({ x: '5%', y: '100%' })
+            .translate({ y: -70 })
           }
           .width('100%')
-          .margin({ top: 16 })
+          .height('100%')
         }
+        .height('100%')
       }
-      .width('90%')
-      .justifyContent(FlexAlign.Start)
-      .layoutWeight(1)
-      // 底部留出悬浮按钮栏等高空间，防止最后的内容被按钮遮挡
-      .padding({ left: 16, right: 16, bottom: 70 })
-
-      Row() {
-        if (this.isFingerprintSupport) {
-          Text($r('app.string.auth_by_fingerprint'))
-            .fontSize(16)
-            .fontColor($r('app.color.button_bg_blue'))
-            .margin({ bottom: 8, left: 8, right: 8 })
-            .decoration({
-              type: TextDecorationType.Underline,
-              color: $r('app.color.button_bg_blue')
-            })
-            .onClick(() => {
-              this.startFingerprintAuth();
-            })
-        }
-
-        if (this.isFaceSupport) {
-          Text($r('app.string.auth_by_face'))
-            .fontSize(16)
-            .fontColor($r('app.color.button_bg_blue'))
-            .margin({ bottom: 8, left: 8, right: 8 })
-            .decoration({
-              type: TextDecorationType.Underline,
-              color: $r('app.color.button_bg_blue')
-            })
-            .onClick(() => {
-              this.startFaceAuth();
-            })
-        }
-      }
-      .justifyContent(FlexAlign.Center)
-      .width('90%')
-      .position({ x: '5%', y: '100%' })
-      .translate({ y: -100 }) // 调整位置，确保正确显示
-
-      // 操作按钮
-      Row() {
-        // 关闭数据库
-        Button() {
-          Row() {
-            Image($r('sys.media.ohos_ic_public_cancel_filled'))
-              .width(20)
-              .height(20)
-              .fillColor($r('app.color.button_text'))
-              .margin({ right: 8 })
-
-            Text($r('app.string.close_button_text'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor(Color.Gray)
-        .id('btn_close_database')
-        .onClick(() => {
-          this.closeDatabase();
-        })
-
-        Blank()
-        // 解锁按钮
-        Button() {
-          Row() {
-            Image($r('app.media.ic_check'))
-              .width(20)
-              .height(20)
-              .fillColor($r('app.color.button_text'))
-              .margin({ right: 8 })
-
-            Text($r('app.string.unlock'))
-              .fontSize(16)
-              .fontColor($r('app.color.button_text'))
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.Center)
-        }
-        .width('45%')
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r('app.color.button_bg_blue'))
-        .id('btn_quick_unlock')
-        .onClick(() => {
-          this.quickUnlock();
-        })
-      }
-      .width('90%')
-      .height(60)
-      .backgroundColor(Color.Transparent)
-      .padding({
-        top: 8,
-        bottom: 8,
-        left: 16,
-        right: 16
-      })
-      // 脱离文档流悬浮，上移量 = 自身高度 60 + 底部留白 16
-      .position({ x: '5%', y: '100%' })
-      .translate({ y: -70 })
+      .width('100%')
+      .height('100%')
     }
     .width('100%')
     .height('100%')
