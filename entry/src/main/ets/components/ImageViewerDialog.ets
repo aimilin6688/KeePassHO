@@ -13,13 +13,18 @@ const MAX_SCALE: number = 5.0;
 const DOUBLE_TAP_SCALE: number = 2.0;
 const ROTATE_STEP: number = 90;
 const TITLE_BAR_HEIGHT: number = 56;
-const MAX_DATA_URI_SIZE: number = 10 * 1024 * 1024; // 超过 10MB 的图片直接走 Image Kit 解码
+const MAX_DATA_URI_SIZE: number = 1 * 1024 * 1024; // 超过 1MB 的图片直接走 Image Kit 解码
+const MIN_DECODE_DIMENSION: number = 2048; // 降采样目标边长下限（px）
+const MAX_DECODE_DIMENSION: number = 4096; // 降采样目标边长上限（px），防止峰值内存过高
+// HEIC/HEIF 的 ISO-BMFF ftyp brand 集合，用于魔数嗅探（覆盖扩展名被改掉的文件）
+const HEIC_BRANDS: string[] = ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'];
 
 /**
  * 图片预览弹窗组件
  * 支持双指捏合缩放（捏合中心锚点）、单指 1:1 拖拽、双指旋转、90° 旋转按钮、双击缩放/复位
  * PC（2in1）模式下支持拖动标题栏移动弹窗位置
- * 通过 Base64 Data URI 加载图片
+ * 小图（≤1MB）通过 Base64 Data URI 加载（保留 GIF 动画），
+ * HEIC/HEIF 及大图经 Image Kit 降采样解码为 PixelMap 后加载
  */
 @CustomDialog
 export struct ImageViewerDialog {
@@ -96,8 +101,7 @@ export struct ImageViewerDialog {
    */
   private async convertToDataUri() {
     // 磁盘引用附件：打开时经 provider 读取最新内容（构造期 binaryFile 可能为空）
-    const binaryFile = this.binaryFile ??
-      (this.binaryFileProvider ? this.binaryFileProvider() : null);
+    const binaryFile = this.binaryFile ?? (this.binaryFileProvider ? this.binaryFileProvider() : null);
     if (!binaryFile || binaryFile.byteLength <= 0) {
       this.isLoading = false;
       this.errorMessage = '无效的图片数据';
@@ -105,14 +109,15 @@ export struct ImageViewerDialog {
     }
 
     try {
-      // HEIC/HEIF：Image 组件不支持，使用 Image Kit 解码为 PixelMap 后显示
-      if (this.isHeicFile()) {
+      // HEIC/HEIF（扩展名或魔数识别）：走 Image Kit 解码为 PixelMap 后显示
+      if (this.isHeicFile(binaryFile)) {
         await this.decodeToPixelMap(binaryFile);
         return;
       }
 
-      // 大图：Base64 峰值内存约为原始数据的 2.7 倍（原始数据 + Base64 串 + Data URI 串），
-      // 低内存设备（模拟器/低端真机）易分配失败，直接走 Image Kit 降采样解码
+      // 大图（>1MB）：Base64 峰值内存约为原始数据的 2.7 倍（原始数据 + Base64 串 + Data URI 串），
+      // 低内存设备（模拟器/低端真机）易分配失败，直接走 Image Kit 降采样解码；
+      // 阈值内仍走 Data URI 以保留 GIF 动画能力
       if (binaryFile.byteLength > MAX_DATA_URI_SIZE) {
         await this.decodeToPixelMap(binaryFile);
         return;
@@ -127,7 +132,7 @@ export struct ImageViewerDialog {
     } catch (error) {
       // 低内存设备（模拟器/低端真机）Base64 分配失败属预期降级场景，走 Image Kit 解码兜底
       hilog.warn(DOMAIN, TAG, 'Failed to create Data URI: %{public}s', `${error}`);
-      if (!this.isHeicFile() && !this.imagePixelMap) {
+      if (!this.isHeicFile(binaryFile) && !this.imagePixelMap) {
         try {
           await this.decodeToPixelMap(binaryFile);
           hilog.info(DOMAIN, TAG, 'Fallback Image Kit decode succeeded');
@@ -143,21 +148,47 @@ export struct ImageViewerDialog {
   }
 
   /**
-   * 是否为 HEIC/HEIF 图片（Image 组件不支持，需经 Image Kit 解码）
+   * 是否为 HEIC/HEIF 图片（扩展名或文件魔数命中均视为 HEIC，需经 Image Kit 解码）
    */
-  private isHeicFile(): boolean {
+  private isHeicFile(binaryFile: ArrayBuffer): boolean {
     const lowerName = this.binaryFileName.toLowerCase();
-    return lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+    if (lowerName.endsWith('.heic') || lowerName.endsWith('.heif')) {
+      return true;
+    }
+    // 扩展名被改掉的 HEIC（如 iOS 导出改名 .jpg）：嗅探 ISO-BMFF ftyp box 的 brand
+    if (binaryFile.byteLength < 12) {
+      return false;
+    }
+    const bytes = new Uint8Array(binaryFile);
+    const isFtyp = bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70;
+    if (!isFtyp) {
+      return false;
+    }
+    const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+    return HEIC_BRANDS.includes(brand);
+  }
+
+  /**
+   * 自适应降采样目标边长：按窗口最长边 × MAX_SCALE / 2 计算，
+   * 保证约 2.5 倍缩放内保持清晰，并限制在 [MIN, MAX] 区间控制峰值内存
+   */
+  private calcMaxDecodeDimension(): number {
+    const maxEdgePx = Math.max(this.windowHelper.windowWidth, this.windowHelper.windowHeight);
+    if (maxEdgePx <= 0) {
+      return MIN_DECODE_DIMENSION;
+    }
+    return Math.min(MAX_DECODE_DIMENSION,
+      Math.max(MIN_DECODE_DIMENSION, Math.ceil(maxEdgePx * MAX_SCALE / 2)));
   }
 
   /**
    * Image Kit 解码为 PixelMap（HEIC/HEIF 及大图场景，内存占用远低于 Base64 Data URI）
-   * 超过 2048px 的大图降采样解码，避免内存占用过高
+   * 超过自适应目标边长的大图降采样解码，避免内存占用过高
    */
   private async decodeToPixelMap(binaryFile: ArrayBuffer): Promise<void> {
     const imageSource = image.createImageSource(binaryFile);
     try {
-      const maxDimension = 2048;
+      const maxDimension = this.calcMaxDecodeDimension();
       const sourceInfo = await imageSource.getImageInfo();
       const sourceWidth = sourceInfo.size.width;
       const sourceHeight = sourceInfo.size.height;
@@ -180,6 +211,34 @@ export struct ImageViewerDialog {
         hilog.warn(DOMAIN, TAG, 'Release image source failed: %{public}s', error.message);
       });
     }
+  }
+
+  /**
+   * Image 组件加载失败处理：Data URI 加载失败（误标格式等）时清空后走 Image Kit 解码兜底
+   */
+  private handleImageError(error: ImageError): void {
+    hilog.error(DOMAIN, TAG, 'Failed to load image: %{public}s', error.message);
+    if (this.imageDataUri && !this.imagePixelMap) {
+      const binaryFile = this.binaryFile ??
+        (this.binaryFileProvider ? this.binaryFileProvider() : null);
+      if (binaryFile && binaryFile.byteLength > 0) {
+        this.imageDataUri = '';
+        this.isLoading = true;
+        this.fallbackDecode(binaryFile);
+        return;
+      }
+    }
+    this.errorMessage = '图片加载失败';
+  }
+
+  private async fallbackDecode(binaryFile: ArrayBuffer): Promise<void> {
+    try {
+      await this.decodeToPixelMap(binaryFile);
+    } catch (decodeError) {
+      hilog.error(DOMAIN, TAG, 'Fallback decode failed: %{public}s', `${decodeError}`);
+      this.errorMessage = '图片加载失败';
+    }
+    this.isLoading = false;
   }
 
   /**
@@ -461,8 +520,7 @@ export struct ImageViewerDialog {
               }
             })
             .onError((error: ImageError) => {
-              hilog.error(DOMAIN, TAG, 'Failed to load image: %{public}s', error.message);
-              this.errorMessage = '图片加载失败';
+              this.handleImageError(error);
             })
             .gesture(
               GestureGroup(GestureMode.Exclusive,
