@@ -7,7 +7,7 @@ export class FilenameUtils {
   /**
    * 图片文件扩展名列表
    */
-  private static IMAGE_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heif','svg'];
+  private static IMAGE_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic','svg'];
 
   /**
    * 获取文件名
