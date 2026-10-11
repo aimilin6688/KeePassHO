@@ -18,7 +18,6 @@ import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { uniformDataStruct, uniformTypeDescriptor } from '@kit.ArkData';
 import { EventBus } from '../services/EventBus';
-import { LockScreenService } from '../services/LockScreenService';
 import { FileContentInfo, LocalFileStorage } from '../storage';
 
 const DOMAIN = 0xFF00;
@@ -154,18 +153,8 @@ export struct EntryEdit {
   private templateService: TemplateService = TemplateService.getInstance();
   private isPcMode: boolean = deviceInfo.deviceType === '2in1';
   @State isDragOver: boolean = false; // PC 模式文件拖入悬停标识
-  // 锁库（超时/手动）时关闭本页所有自定义弹窗：弹窗层级在锁屏遮罩之上，会遮挡快速解锁页
-  private closeDialogsOnLock = (): void => {
-    this.fieldDialogController.close();
-    this.iconSelectorController.close();
-    this.passwordGeneratorController.close();
-    this.otpDialogController.close();
-    this.colorPickerController.close();
-  };
 
   aboutToAppear() {
-    // 注册锁库自动关闭弹窗回调（快速解锁页必须覆盖在弹窗之上）
-    LockScreenService.registerDialogCloser(this.closeDialogsOnLock);
     // 获取数据库信息
     const params = FileService.getInstance().getDbFileParam();
     this.database = params.database ?? null;
@@ -261,10 +250,6 @@ export struct EntryEdit {
         this.username = this.database.meta.defaultUser || '';
       }
     }
-  }
-
-  aboutToDisappear() {
-    LockScreenService.unregisterDialogCloser(this.closeDialogsOnLock);
   }
 
   onPageShow(): void {
