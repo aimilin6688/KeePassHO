@@ -55,7 +55,7 @@ export class LockScreenService {
     ClipboardUtils.forceClearNow();
     // 保存锁定状态到 AppStorage
     AppStorage.setOrCreate('lockIsManual', isManual);
-    // 发送锁屏事件，通知 AppNavigation 显示锁屏遮罩
+    // 发送锁屏事件，通知 AppNavigation 显示锁屏页面
     EventBus.emit<boolean>(LockScreenService.EVENT_LOCK_SCREEN, isManual);
     hilog.info(DOMAIN, TAG, 'lock_screen event emitted');
   }
