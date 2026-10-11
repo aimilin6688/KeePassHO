@@ -93,12 +93,15 @@ export default function S3StorageIntegrationTest() {
     it('should_use_regular_upload_for_small_file', 0, async () => {
       try {
         const smallData = new ArrayBuffer(1024 * 1024); // 1MB
-        let progressCalled = false;
+        const progressEvents: MultipartUploadProgress[] = [];
 
         storage.setProgressCallback((progress: MultipartUploadProgress) => {
-          progressCalled = true;
-          hilog.info(DOMAIN, TAG, 'Upload progress (small): %{public}d/%{public}d bytes',
-            progress.uploadedBytes, progress.totalBytes);
+          progressEvents.push({
+            uploadedBytes: progress.uploadedBytes,
+            totalBytes: progress.totalBytes,
+            currentPart: progress.currentPart,
+            totalParts: progress.totalParts
+          });
         });
 
         const testKey = 'integration-test/small-file-1mb.kdbx';
@@ -106,9 +109,13 @@ export default function S3StorageIntegrationTest() {
 
         hilog.info(DOMAIN, TAG, 'Small file uploaded successfully');
 
-        // 小文件不应该触发分块上传，因此进度回调不会被调用
-        // 注意：putObject 方法不会调用进度回调
-        expect(progressCalled).assertFalse();
+        // 小文件走普通上传（单分片 PUT），不会进入 multipart；
+        // 普通上传现也会以首/末两条粗粒度事件兜底上报进度（见 S3Client.putObjectSmart / reportProgress），
+        // 故进度回调会被调用，且 totalParts 恒为 1（区别于分块上传）。
+        expect(progressEvents.length > 0).assertTrue();
+        const lastProgress = progressEvents[progressEvents.length - 1];
+        expect(lastProgress.totalParts).assertEqual(1);
+        expect(lastProgress.currentPart).assertEqual(1);
 
         // 验证文件可以正常读取
         const result = await storage.read(`/${testBucket}/${testKey}`);
@@ -202,17 +209,26 @@ export default function S3StorageIntegrationTest() {
         // 4.9MB (just below threshold)；ArrayBuffer 构造入参须为整数，取整保证分配与断言一致
         const belowThresholdSize: number = Math.floor(4.9 * 1024 * 1024);
         const belowThresholdData = new ArrayBuffer(belowThresholdSize);
-        let progressCalled = false;
+        const progressEvents: MultipartUploadProgress[] = [];
 
         storage.setProgressCallback((progress: MultipartUploadProgress) => {
-          progressCalled = true;
+          progressEvents.push({
+            uploadedBytes: progress.uploadedBytes,
+            totalBytes: progress.totalBytes,
+            currentPart: progress.currentPart,
+            totalParts: progress.totalParts
+          });
         });
 
         const testKey = 'integration-test/below-threshold.kdbx';
         await storage.write(`/${testBucket}/${testKey}`, belowThresholdData);
 
-        // 小于 5MB 不应该触发分块上传
-        expect(progressCalled).assertFalse();
+        // 小于 5MB 走普通上传（单分片 PUT），不会触发 multipart；
+        // 普通上传同样以首/末两条粗粒度事件兜底上报进度，totalParts 恒为 1。
+        expect(progressEvents.length > 0).assertTrue();
+        const lastProgress = progressEvents[progressEvents.length - 1];
+        expect(lastProgress.totalParts).assertEqual(1);
+        expect(lastProgress.currentPart).assertEqual(1);
 
         // 验证文件大小
         const result = await storage.read(`/${testBucket}/${testKey}`);
