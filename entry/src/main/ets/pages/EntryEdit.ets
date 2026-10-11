@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 
 import { FileService } from '../services/FileService';
 import { Constants } from '../common/constants/Constants';
-import { CommonUtils, DateUtils, FileUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, DateUtils, FileUtils, FilenameUtils, IconUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { CustomField, EntryParam, Icons } from '../services/TypeDefined';
 import { EntryEditFieldDialog } from '../components/EntryEditFieldDialog';
 import { IconSelectorDialog } from '../components/IconSelectorDialog';
@@ -15,7 +15,11 @@ import { TemplateService } from '../services/template/TemplateService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { ColorEditDialog, ColorPickerResult } from '../components/ColorPickerDialog';
 import { common } from '@kit.AbilityKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
+import { uniformDataStruct, uniformTypeDescriptor } from '@kit.ArkData';
 import { EventBus } from '../services/EventBus';
+import { LockScreenService } from '../services/LockScreenService';
+import { FileContentInfo, LocalFileStorage } from '../storage';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryEdit';
@@ -148,8 +152,20 @@ export struct EntryEdit {
     autoCancel: false
   });
   private templateService: TemplateService = TemplateService.getInstance();
+  private isPcMode: boolean = deviceInfo.deviceType === '2in1';
+  @State isDragOver: boolean = false; // PC 模式文件拖入悬停标识
+  // 锁库（超时/手动）时关闭本页所有自定义弹窗：弹窗层级在锁屏遮罩之上，会遮挡快速解锁页
+  private closeDialogsOnLock = (): void => {
+    this.fieldDialogController.close();
+    this.iconSelectorController.close();
+    this.passwordGeneratorController.close();
+    this.otpDialogController.close();
+    this.colorPickerController.close();
+  };
 
   aboutToAppear() {
+    // 注册锁库自动关闭弹窗回调（快速解锁页必须覆盖在弹窗之上）
+    LockScreenService.registerDialogCloser(this.closeDialogsOnLock);
     // 获取数据库信息
     const params = FileService.getInstance().getDbFileParam();
     this.database = params.database ?? null;
@@ -245,6 +261,10 @@ export struct EntryEdit {
         this.username = this.database.meta.defaultUser || '';
       }
     }
+  }
+
+  aboutToDisappear() {
+    LockScreenService.unregisterDialogCloser(this.closeDialogsOnLock);
   }
 
   onPageShow(): void {
@@ -857,31 +877,78 @@ export struct EntryEdit {
   }
 
   // 添加附件（单次最多选择 ATTACH_SELECT_MAX_COUNT 个）
-  // S6-d：注册进 kdbx.binaries 附件池（避免保存时 base64 内联进 XML）+ 阈值磁盘化（镜像加载侧）
   private async addAttachment() {
     try {
       const result = await FileUtils.selectFiles(Constants.ATTACH_SELECT_MAX_COUNT);
-      const database = FileService.getInstance().getDbFileParam().database;
-      if (!database) {
-        CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.invalid_database')) });
-        return;
-      }
-      for (const file of result) {
-        // 注册进附件池：保存时 writeBinaries 据 getRefByHash 写 <Value Ref="n"/>，
-        // 不再走 setBytes base64 内联（修 XML 膨胀 + 永不磁盘化 bug）
-        const binary = await database.binaries.add(file.content);
-        const name = this.uniqueAttachmentName(file.name);
-        this.attachments.set(name, binary);
-      }
-      // 大附件磁盘化（镜像加载侧 maybeConvertToDiskRefs 语义：池总量超阈值时转 DiskRef）
-      const converted = await database.binaries.maybeConvertToDiskRefs(Constants.ATTACH_DISK_THRESHOLD_BYTES);
-      if (converted) {
-        database.rebindEntryBinaries();
-      }
-      this.isModified = true;
+      await this.addAttachmentFiles(result);
     } catch (error) {
       CommonUtils.showToast({ message: error.message })
     }
+  }
+
+  // PC 模式：拖拽文件到页面直接添加为附件（免去文件选择器逐步操作）
+  private handleDrop(event: DragEvent): void {
+    this.isDragOver = false;
+    const uris: string[] = [];
+    try {
+      const records = event.getData().getRecords();
+      for (const record of records) {
+        const types: Array<string> = record.getTypes();
+        if (types.includes(uniformTypeDescriptor.UniformDataType.FILE_URI)) {
+          const fileUri = record.getEntry(uniformTypeDescriptor.UniformDataType.FILE_URI) as uniformDataStruct.FileUri;
+          if (fileUri && fileUri.oriUri) {
+            uris.push(fileUri.oriUri);
+          }
+        }
+      }
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'Parse drag data failed: %{public}s', `${error}`);
+    }
+    if (uris.length === 0) {
+      return;
+    }
+    event.setResult(DragResult.DRAG_SUCCESSFUL);
+    this.importDroppedFiles(uris);
+  }
+
+  // 读取拖入文件内容并添加为附件（与文件选择器一致的批次上限）
+  private async importDroppedFiles(uris: string[]): Promise<void> {
+    try {
+      const localFile = new LocalFileStorage();
+      const files: Array<FileContentInfo> = [];
+      for (const uri of uris.slice(0, Constants.ATTACH_SELECT_MAX_COUNT)) {
+        const fileInfo = await localFile.doGetInfo(uri);
+        const content = await localFile.doRead(uri);
+        files.push(new FileContentInfo(fileInfo, content));
+      }
+      if (files.length > 0) {
+        await this.addAttachmentFiles(files);
+      }
+    } catch (error) {
+      CommonUtils.showToast({ message: error.message });
+    }
+  }
+
+  // S6-d：注册进 kdbx.binaries 附件池（避免保存时 base64 内联进 XML）+ 阈值磁盘化（镜像加载侧）
+  private async addAttachmentFiles(files: Array<FileContentInfo>): Promise<void> {
+    const database = FileService.getInstance().getDbFileParam().database;
+    if (!database) {
+      CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.invalid_database')) });
+      return;
+    }
+    for (const file of files) {
+      // 注册进附件池：保存时 writeBinaries 据 getRefByHash 写 <Value Ref="n"/>，
+      // 不再走 setBytes base64 内联（修 XML 膨胀 + 永不磁盘化 bug）
+      const binary = await database.binaries.add(file.content);
+      const name = this.uniqueAttachmentName(file.name);
+      this.attachments.set(name, binary);
+    }
+    // 大附件磁盘化（镜像加载侧 maybeConvertToDiskRefs 语义：池总量超阈值时转 DiskRef）
+    const converted = await database.binaries.maybeConvertToDiskRefs(Constants.ATTACH_DISK_THRESHOLD_BYTES);
+    if (converted) {
+      database.rebindEntryBinaries();
+    }
+    this.isModified = true;
   }
 
   // 删除附件
@@ -1467,10 +1534,36 @@ export struct EntryEdit {
       }
       .width('100%')
       .height('100%')
+
+      // PC 模式拖拽附件悬停提示层
+      if (this.isDragOver) {
+        Column() {
+          Text($r('app.string.attachment_drop_hint'))
+            .fontSize(32)
+            .fontColor($r('app.color.primary'))
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor('rgba(0, 0, 0, 0.45)')
+      }
     }
     .height('100%')
     .width('100%')
     .backgroundColor($r("app.color.bg_primary"))
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    // PC 模式：接收外部拖入的文件，松开直接添加为附件
+    .allowDrop(this.isPcMode ? [uniformTypeDescriptor.UniformDataType.FILE_URI] : undefined)
+    .onDragEnter(() => {
+      if (this.isPcMode) {
+        this.isDragOver = true;
+      }
+    })
+    .onDragLeave(() => {
+      this.isDragOver = false;
+    })
+    .onDrop((event: DragEvent) => {
+      this.handleDrop(event);
+    })
   }
 }
