@@ -1357,6 +1357,10 @@
       "value": "Attachment"
     },
     {
+      "name": "attachment_drop_hint",
+      "value": "Release to add file as attachment"
+    },
+    {
       "name": "Settings_database_import",
       "value": "Import database"
     },

@@ -1285,6 +1285,10 @@
       "value": "附件"
     },
     {
+      "name": "attachment_drop_hint",
+      "value": "松开鼠标添加为附件"
+    },
+    {
       "name": "Settings_database_import",
       "value": "导入数据库"
     },
