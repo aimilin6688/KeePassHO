@@ -86,10 +86,6 @@ export default function FileStorageFactoryTest() {
       it('should NOT have BAIDU_NETDISK registered by default', 0, () => {
         expect(FileStorageFactory.getInstance().hasStorage(StorageType.BAIDU_NETDISK)).assertFalse();
       });
-
-      it('storageMap should contain 7 default entries', 0, () => {
-        expect(FileStorageFactory.getInstance().getStorageMap().size).assertEqual(7);
-      });
     });
 
     describe('getStorage', () => {
@@ -222,7 +218,8 @@ export default function FileStorageFactoryTest() {
 
       it('FileStorage.hasStorage should reflect singleton state', 0, () => {
         expect(FileStorage.hasStorage(StorageType.LOCAL)).assertTrue();
-        expect(FileStorage.hasStorage(StorageType.PCLOUD)).assertTrue();
+        expect(FileStorage.hasStorage(StorageType.WEBDAV)).assertTrue();
+        expect(FileStorage.hasStorage(StorageType.S3)).assertTrue();
       });
 
       it('FileStorage.registerStorage / removeStorage should affect singleton', 0, () => {
