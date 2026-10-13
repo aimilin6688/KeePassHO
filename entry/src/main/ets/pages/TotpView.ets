@@ -1,4 +1,4 @@
-import { KdbxEntry } from 'kdbxweb';
+import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, StringUtils, WindowUtils } from '../common/utils';
 import { FileService } from '../services/FileService';
@@ -78,17 +78,41 @@ export struct TotpView {
       hilog.warn(DOMAIN, TAG, 'Database not loaded, cannot load TOTP entries');
       return;
     }
-    let result = KdbxUtils.searchInGroup(kdbx.getDefaultGroup(), 'otpauth://totp/');
-    hilog.info(DOMAIN, TAG, 'Found %{public}d TOTP entries', result.filteredEntries.length);
+    // 递归收集所有含时间令牌的条目（兼容 otpauth URL、KeePass2、KeeOTP、KeeTrayTOTP 等格式）
+    const totpEntries = this.collectTotpEntries(kdbx.getDefaultGroup(), kdbx);
+    hilog.info(DOMAIN, TAG, 'Found %{public}d TOTP entries', totpEntries.length);
 
     // 按名称排序
-    KdbxUtils.sortBy(result.filteredEntries, SortMode.NAME);
+    KdbxUtils.sortBy(totpEntries, SortMode.NAME);
 
-    this.totpEntries.push(...result.filteredEntries);
-    this.resultEntries.push(...result.filteredEntries);
+    this.totpEntries.push(...totpEntries);
+    this.resultEntries.push(...totpEntries);
 
     // 构建索引映射
     this.buildIndexerData();
+  }
+
+  /**
+   * 递归收集分组中包含时间令牌（TOTP）的条目
+   * 使用 KdbxUtils.getTotpUrl 兼容所有令牌格式，避免遗漏 KeeTrayTOTP、KeeOTP 等字段格式
+   * @param group 分组
+   * @param database 数据库对象（用于排除回收站）
+   * @returns 包含时间令牌的条目列表
+   */
+  private collectTotpEntries(group: KdbxGroup | undefined, database: Kdbx): Array<KdbxEntry> {
+    const result: Array<KdbxEntry> = [];
+    if (!group) {
+      return result;
+    }
+    for (const entry of group.entries) {
+      if (!database.isInRecycleBin(entry) && KdbxUtils.getTotpUrl(entry).length > 0) {
+        result.push(entry);
+      }
+    }
+    for (const subGroup of group.groups) {
+      result.push(...this.collectTotpEntries(subGroup, database));
+    }
+    return result;
   }
 
   /**
