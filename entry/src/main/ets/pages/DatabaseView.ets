@@ -1954,6 +1954,16 @@ export struct DatabaseView {
   }
 
   /**
+   * 取消搜索，退出搜索状态并清空搜索结果
+   */
+  private cancelSearch() {
+    this.isSearching = false;
+    this.showSearchAnimate();
+    this.searchText = '';
+    this.filteredItems = [];
+  }
+
+  /**
    * 添加搜索历史
    */
   private addAndGetSearchHistory() {
@@ -2071,10 +2081,7 @@ export struct DatabaseView {
                   .margin({ right: 16 })
                   .padding({ left: 5, right: 5 })
                   .onClick(() => {
-                    this.isSearching = false;
-                    this.showSearchAnimate();
-                    this.searchText = '';
-                    this.filteredItems = [];
+                    this.cancelSearch();
                   })
               }
               .width('100%')
@@ -2369,6 +2376,9 @@ export struct DatabaseView {
                         if (this.isSelectionMode) {
                           this.toggleSelection(item);
                         } else {
+                          if(this.isSearching){
+                            this.cancelSearch();
+                          }
                           // 判断是否是收藏项
                           const isFavorite = KdbxUtils.isFavorite(item);
                           // 点击分组时，直接在左侧列表中展开该分组
