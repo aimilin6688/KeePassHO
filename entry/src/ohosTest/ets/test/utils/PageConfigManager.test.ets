@@ -23,12 +23,14 @@ export default function PageConfigManagerTest() {
         PageConstants.PAGE_UNLOCK_DATABASE,
         PageConstants.PAGE_CHANGE_PASSWORD,
         PageConstants.PAGE_OAUTH2_LOGIN,
-        PageConstants.PAGE_LOCAL_FILE,
-        PageConstants.PAGE_WEBDAV,
-        PageConstants.PAGE_ONEDRIVE,
-        PageConstants.PAGE_FTP,
-        PageConstants.PAGE_S3,
-        PageConstants.PAGE_PCLOUD
+        // 存储相关页面由 FileStorageFactory 注册的存储 PageConfig 提供
+        // （pCloud 当前在工厂中被禁用，华为云盘已注册）
+        'LocalFilePage',
+        'WebDAVPage',
+        'OneDrivePage',
+        'FTPPage',
+        'S3Page',
+        'HuaweiDrivePage'
       ];
       for (const name of homePages) {
         const config = mgr.getPageConfig(name);

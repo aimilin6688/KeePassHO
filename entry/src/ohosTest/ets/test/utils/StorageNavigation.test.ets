@@ -12,20 +12,20 @@ const TEST_ROOT = 'StorageNavTestRoot';
 
 export default function StorageNavigationTest() {
   describe('StorageNavigation', () => {
-    // ---------------- getFileListPageName ----------------
-    it('getFileListPageName maps each cloud storage type to its page', 0, () => {
-      expect(StorageNavigation.getFileListPageName(StorageType.WEBDAV)).assertEqual(PageConstants.PAGE_WEBDAV_FILE_LIST);
-      expect(StorageNavigation.getFileListPageName(StorageType.ONEDRIVE)).assertEqual(PageConstants.PAGE_ONEDRIVE_FILE_LIST);
-      expect(StorageNavigation.getFileListPageName(StorageType.FTP)).assertEqual(PageConstants.PAGE_FTP_FILE_LIST);
-      expect(StorageNavigation.getFileListPageName(StorageType.S3)).assertEqual(PageConstants.PAGE_S3_FILE_LIST);
-      expect(StorageNavigation.getFileListPageName(StorageType.PCLOUD)).assertEqual(PageConstants.PAGE_PCLOUD_FILE_LIST);
-      expect(StorageNavigation.getFileListPageName(StorageType.HUAWEI_DRIVE))
-        .assertEqual(PageConstants.PAGE_HUAWEI_DRIVE_FILE_LIST);
+    // ---------------- 文件列表页 ----------------
+    it('file list page name constant is stable', 0, () => {
+      expect(PageConstants.PAGE_FILE_LIST).assertEqual('FileListPage');
     });
 
-    it('getFileListPageName returns empty string for unsupported types', 0, () => {
-      expect(StorageNavigation.getFileListPageName(StorageType.LOCAL)).assertEqual('');
-      expect(StorageNavigation.getFileListPageName(StorageType.BAIDU_NETDISK)).assertEqual('');
+    it('pushFileList with unsupported types does not navigate', 0, () => {
+      const mgr = NavigationManager.getInstance();
+      mgr.setCurrentNavPathStack(TEST_ROOT);
+      mgr.clearNavPathStack(TEST_ROOT);
+      const config: StorageConfig = {};
+      StorageNavigation.pushFileList(StorageType.LOCAL, '/', config);
+      StorageNavigation.pushFileList(StorageType.BAIDU_NETDISK, '/', config);
+      expect(mgr.getNavPathStackByRoot(TEST_ROOT)?.size() ?? 0).assertEqual(0);
+      mgr.removeNavPathStack(TEST_ROOT);
     });
 
     // ---------------- getStorageTitle ----------------
@@ -47,22 +47,6 @@ export default function StorageNavigationTest() {
     });
 
     // ---------------- pushFileList ----------------
-    it('pushFileList with unsupported type does not navigate', 0, () => {
-      const mgr = NavigationManager.getInstance();
-      mgr.setCurrentNavPathStack(TEST_ROOT);
-      mgr.clearNavPathStack(TEST_ROOT);
-      const config: StorageConfig = {};
-      let noThrow = true;
-      try {
-        StorageNavigation.pushFileList(StorageType.LOCAL, '/', config);
-      } catch {
-        noThrow = false;
-      }
-      expect(noThrow).assertTrue();
-      expect(mgr.getNavPathStackByRoot(TEST_ROOT)?.size() ?? 0).assertEqual(0);
-      mgr.removeNavPathStack(TEST_ROOT);
-    });
-
     it('pushFileList with supported type pushes exactly one page', 0, () => {
       const mgr = NavigationManager.getInstance();
       mgr.setCurrentNavPathStack(TEST_ROOT);
@@ -72,6 +56,7 @@ export default function StorageNavigationTest() {
       const stack = mgr.getNavPathStackByRoot(TEST_ROOT);
       expect(stack).not().assertNull();
       expect(stack!.size()).assertEqual(1);
+      expect(stack!.getAllPathName()[0]).assertEqual(PageConstants.PAGE_FILE_LIST);
       StorageNavigation.pop();
       expect(stack!.size()).assertEqual(0);
       mgr.removeNavPathStack(TEST_ROOT);

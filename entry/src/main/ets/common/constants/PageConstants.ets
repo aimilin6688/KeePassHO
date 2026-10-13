@@ -83,23 +83,7 @@ export class PageConstants {
   static readonly PAGE_UNLOCK_DATABASE: string = 'UnLockDatabase';
   static readonly PAGE_CHANGE_PASSWORD: string = 'ChangePassword';
   static readonly PAGE_OAUTH2_LOGIN: string = 'OAuth2Login';
-  static readonly PAGE_LOCAL_FILE: string = 'LocalFilePage';
-  static readonly PAGE_WEBDAV: string = 'WebDAVPage';
-  static readonly PAGE_ONEDRIVE: string = 'OneDrivePage';
-  static readonly PAGE_FTP: string = 'FTPPage';
-  static readonly PAGE_S3: string = 'S3Page';
-  static readonly PAGE_PCLOUD: string = 'PCloudPage';
-  static readonly PAGE_HUAWEI_DRIVE: string = 'HuaweiDrivePage';
-
-  /**
-   * 云存储文件列表页面名称
-   */
-  static readonly PAGE_WEBDAV_FILE_LIST: string = 'WebDAVFileListPage';
-  static readonly PAGE_ONEDRIVE_FILE_LIST: string = 'OneDriveFileListPage';
-  static readonly PAGE_FTP_FILE_LIST: string = 'FTPFileListPage';
-  static readonly PAGE_S3_FILE_LIST: string = 'S3FileListPage';
-  static readonly PAGE_PCLOUD_FILE_LIST: string = 'PCloudFileListPage';
-  static readonly PAGE_HUAWEI_DRIVE_FILE_LIST: string = 'HuaweiDriveFileListPage';
+  static readonly PAGE_FILE_LIST: string = 'FileListPage';
 
   /**
    * 数据库相关页面名称
@@ -124,46 +108,4 @@ export class PageConstants {
   static readonly PAGE_SETTING_DATABASE_CLEAN: string = 'SettingDatabaseClean';
   static readonly PAGE_ABOUT: string = 'About';
   static readonly PAGE_SUPPORT: string = 'Support';
-
-  /**
-   * 获取所有首页相关页面名称
-   */
-  static getHomePageNames(): string[] {
-    return [
-      PageConstants.PAGE_INDEX,
-      PageConstants.PAGE_PASSWORD,
-      PageConstants.PAGE_RECENT_FILES,
-      PageConstants.PAGE_SELECT_LOCATION,
-      PageConstants.PAGE_CREATE_DATABASE,
-      PageConstants.PAGE_UNLOCK_DATABASE,
-      PageConstants.PAGE_CHANGE_PASSWORD,
-      PageConstants.PAGE_OAUTH2_LOGIN,
-      PageConstants.PAGE_LOCAL_FILE,
-      PageConstants.PAGE_WEBDAV,
-      PageConstants.PAGE_ONEDRIVE,
-      PageConstants.PAGE_FTP,
-      PageConstants.PAGE_S3,
-      PageConstants.PAGE_PCLOUD,
-      PageConstants.PAGE_HUAWEI_DRIVE,
-      PageConstants.PAGE_WEBDAV_FILE_LIST,
-      PageConstants.PAGE_ONEDRIVE_FILE_LIST,
-      PageConstants.PAGE_FTP_FILE_LIST,
-      PageConstants.PAGE_S3_FILE_LIST,
-      PageConstants.PAGE_PCLOUD_FILE_LIST,
-      PageConstants.PAGE_HUAWEI_DRIVE_FILE_LIST
-    ];
-  }
-
-  /**
-   * 获取所有数据库相关页面名称
-   */
-  static getDatabasePageNames(): string[] {
-    return [
-      PageConstants.PAGE_DATABASE_VIEW,
-      PageConstants.PAGE_ENTRY_VIEW,
-      PageConstants.PAGE_ENTRY_EDIT,
-      PageConstants.PAGE_TOTP_VIEW,
-      PageConstants.PAGE_TEMPLATE_ENTRY_CREATE
-    ];
-  }
 }

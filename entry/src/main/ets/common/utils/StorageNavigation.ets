@@ -1,5 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { StorageConfig, StorageType } from '../../storage';
+import { FileStorage, StorageConfig, StorageType } from '../../storage';
 import { LocationInfo, LocationParam } from '../../services/beans/LocationParam';
 import { NavigationManager } from './NavigationManager';
 import { PageConstants } from '../constants/PageConstants';
@@ -28,24 +28,27 @@ export interface OAuth2LoginParam {
 
 /**
  * 云存储页面导航工具类
- * 集中维护「存储类型 → 页面名称 / 页面标题」的映射，
- * 避免每个存储页面重复编写跳转参数与标题资源。
+ * 「存储类型 → 连接配置页面名称 / 页面标题」等信息统一从各存储实现注册的
+ * PageConfig（经 FileStorageFactory 查询）中获取；
+ * 文件列表页所有云存储共用同一个 FileList 页面。
+ * 新增存储类型只需编写自己的 PageConfig 并在工厂注册，无需修改本类。
  */
 export class StorageNavigation {
   /**
    * 跳转到指定存储类型的文件列表页
+   * 所有云存储共用同一个 FileList 页面（路由名 FileListPage）
    * @param storageType 存储类型
    * @param filePath 初始路径
    * @param storageConfig 存储配置
    */
   static pushFileList(storageType: StorageType, filePath: string, storageConfig: StorageConfig): void {
-    const pageName: string = StorageNavigation.getFileListPageName(storageType);
-    if (pageName === '') {
+    // 本地存储走 LocalFilePage（系统文件选择器），不经过文件列表页
+    if (storageType === StorageType.LOCAL || !FileStorage.hasStorage(storageType)) {
       hilog.error(DOMAIN, TAG, 'Unsupported file list storage type: %{public}s', storageType);
       return;
     }
     const info: LocationInfo = LocationParam.toLocationInfo(storageType, filePath, storageConfig);
-    NavigationManager.getInstance().navigateTo(pageName, info);
+    NavigationManager.getInstance().navigateTo(PageConstants.PAGE_FILE_LIST, info);
   }
 
   /**
@@ -71,51 +74,23 @@ export class StorageNavigation {
   }
 
   /**
-   * 存储类型 → 文件列表页面名称
+   * 存储类型 → 连接配置页面名称
+   * 取 PageConfig.pageUrl 的最后一段作为路由表中的页面名称
    * @param storageType 存储类型
-   * @return 页面名称，不支持的类型返回空字符串
+   * @return 页面名称，未注册的存储类型返回空字符串
    */
-  static getFileListPageName(storageType: StorageType): string {
-    switch (storageType) {
-      case StorageType.WEBDAV:
-        return PageConstants.PAGE_WEBDAV_FILE_LIST;
-      case StorageType.ONEDRIVE:
-        return PageConstants.PAGE_ONEDRIVE_FILE_LIST;
-      case StorageType.FTP:
-        return PageConstants.PAGE_FTP_FILE_LIST;
-      case StorageType.S3:
-        return PageConstants.PAGE_S3_FILE_LIST;
-      case StorageType.PCLOUD:
-        return PageConstants.PAGE_PCLOUD_FILE_LIST;
-      case StorageType.HUAWEI_DRIVE:
-        return PageConstants.PAGE_HUAWEI_DRIVE_FILE_LIST;
-      default:
-        return '';
-    }
+  static getConfigPageName(storageType: StorageType): string {
+    const pageUrl: string = FileStorage.getPageConfig(storageType)?.pageUrl || '';
+    return pageUrl.split('/').pop() || '';
   }
 
   /**
    * 存储类型 → 页面标题资源
    * 配置页与文件列表页共用同一套标题
    * @param storageType 存储类型
-   * @return 标题资源，不支持的类型返回空字符串
+   * @return 标题资源，未注册的存储类型返回空字符串
    */
   static getStorageTitle(storageType: StorageType): ResourceStr {
-    switch (storageType) {
-      case StorageType.WEBDAV:
-        return $r('app.string.webdav_button_title');
-      case StorageType.ONEDRIVE:
-        return $r('app.string.onedrive_login_button');
-      case StorageType.FTP:
-        return $r('app.string.ftp_button_title');
-      case StorageType.S3:
-        return $r('app.string.s3_button_title');
-      case StorageType.PCLOUD:
-        return $r('app.string.pcloud_login_button');
-      case StorageType.HUAWEI_DRIVE:
-        return $r('app.string.huawei_drive_title');
-      default:
-        return '';
-    }
+    return FileStorage.getPageConfig(storageType)?.title || '';
   }
 }

@@ -46,7 +46,7 @@
       "buildFunction": "WebDAVPageBuilder"
     },
     {
-      "name": "WebDAVFileListPage",
+      "name": "FileListPage",
       "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
       "buildFunction": "FileListBuilder"
     },
@@ -56,19 +56,9 @@
       "buildFunction": "OneDrivePageBuilder"
     },
     {
-      "name": "OneDriveFileListPage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
-      "buildFunction": "FileListBuilder"
-    },
-    {
       "name": "FTPPage",
       "pageSourceFile": "src/main/ets/storage/ftp/FTPPage.ets",
       "buildFunction": "FTPPageBuilder"
-    },
-    {
-      "name": "FTPFileListPage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
-      "buildFunction": "FileListBuilder"
     },
     {
       "name": "S3Page",
@@ -76,29 +66,14 @@
       "buildFunction": "S3PageBuilder"
     },
     {
-      "name": "S3FileListPage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
-      "buildFunction": "FileListBuilder"
-    },
-    {
       "name": "PCloudPage",
       "pageSourceFile": "src/main/ets/storage/pcloud/PCloudPage.ets",
       "buildFunction": "PCloudPageBuilder"
     },
     {
-      "name": "PCloudFileListPage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
-      "buildFunction": "FileListBuilder"
-    },
-    {
       "name": "HuaweiDrivePage",
       "pageSourceFile": "src/main/ets/storage/huawei/HuaweiDrivePage.ets",
       "buildFunction": "HuaweiDrivePageBuilder"
-    },
-    {
-      "name": "HuaweiDriveFileListPage",
-      "pageSourceFile": "src/main/ets/pages/open/FileList.ets",
-      "buildFunction": "FileListBuilder"
     },
     {
       "name": "DatabaseView",

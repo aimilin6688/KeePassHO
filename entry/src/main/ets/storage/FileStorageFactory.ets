@@ -86,6 +86,16 @@ export class FileStorageFactory {
   }
 
   /**
+   * 获取指定存储类型的页面配置
+   * @param type 存储类型
+   * @return PageConfig 页面配置，未注册的存储类型返回 undefined
+   */
+  public getPageConfig(type: StorageType): PageConfig | undefined {
+    const storage = this.storageMap.get(type);
+    return storage === undefined ? undefined : storage.getPageConfig();
+  }
+
+  /**
    * 获取所有存储实现
    * @return Map<StorageType, IFileStorage> 存储实现
    */
@@ -134,6 +144,15 @@ export class FileStorage {
    */
   public static hasStorage(type: StorageType): boolean {
     return FileStorageFactory.getInstance().hasStorage(type);
+  }
+
+  /**
+   * 获取指定存储类型的页面配置
+   * @param type 存储类型
+   * @return PageConfig 页面配置，未注册的存储类型返回 undefined
+   */
+  public static getPageConfig(type: StorageType): PageConfig | undefined {
+    return FileStorageFactory.getInstance().getPageConfig(type);
   }
 
   /**

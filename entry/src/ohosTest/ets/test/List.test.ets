@@ -111,7 +111,6 @@ import SettingDialogConstantsTest from './constants/SettingDialogConstants.test'
 import NavigationConstantsTest from './constants/NavigationConstants.test';
 import ThemeConstantsTest from './constants/ThemeConstants.test';
 import PageConfigTest from './constants/PageConfig.test';
-import PageConstantsTest from './constants/PageConstants.test';
 import ConstantsTest from './constants/Constants.test';
 
 // ===== 新增：common/oauth2 OAuth2 框架单元测试 =====
@@ -371,7 +370,6 @@ export default function testsuite() {
   NavigationConstantsTest();
   ThemeConstantsTest();
   PageConfigTest();
-  PageConstantsTest();
   ConstantsTest();
 
   // ===== common/oauth2 =====

@@ -1,6 +1,7 @@
 import { PageConfig, NavigationModeType } from '../constants/PageConfig';
 import { PageConstants } from '../constants/PageConstants';
 import { NavigationConstants } from '../constants/NavigationConstants';
+import { FileStorage, PageConfig as StoragePageConfig } from '../../storage';
 
 /**
  * 页面配置项接口（用于首页相关页面）
@@ -60,13 +61,20 @@ export class PageConfigManager {
       { name: PageConstants.PAGE_UNLOCK_DATABASE, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
       { name: PageConstants.PAGE_CHANGE_PASSWORD, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
       { name: PageConstants.PAGE_OAUTH2_LOGIN, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
-      { name: PageConstants.PAGE_LOCAL_FILE, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
-      { name: PageConstants.PAGE_WEBDAV, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
-      { name: PageConstants.PAGE_ONEDRIVE, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
-      { name: PageConstants.PAGE_FTP, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
-      { name: PageConstants.PAGE_S3, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
-      { name: PageConstants.PAGE_PCLOUD, maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH, padding: PageConstants.HOME_PAGE_PADDING },
     ];
+
+    // ==================== 存储相关页面（独占模式 + 限制最大宽度）====================
+    // 从 FileStorageFactory 注册的存储 PageConfig 中获取（本地 + 各云存储），
+    // 页面名称取 pageUrl 最后一段（与 StorageNavigation.getConfigPageName 规则一致），
+    // 新增存储类型只需在 FileStorageFactory 注册，此处自动生效
+    FileStorage.getAllPageConfig().forEach((storagePageConfig: StoragePageConfig) => {
+      const pageName: string = storagePageConfig.pageUrl.split('/').pop() || storagePageConfig.pageUrl;
+      homePages.push({
+        name: pageName,
+        maxWidth: PageConstants.HOME_PAGE_MAX_WIDTH,
+        padding: PageConstants.HOME_PAGE_PADDING
+      });
+    });
 
     homePages.forEach((page: HomePageConfig) => {
       const config: PageConfig = {
