@@ -24,7 +24,6 @@ export default function LockScreenServiceTest() {
 
     afterEach(() => {
       LockScreenService.destroy();
-      EventBus.off('unlock_screen');
       EventBus.off(LockScreenService.EVENT_LOCK_SCREEN);
     });
 
@@ -60,6 +59,7 @@ export default function LockScreenServiceTest() {
 
     it('showLockWindow emits lock_screen event and sets AppStorage lockIsManual=true', 0, async () => {
       let received: boolean | null = null;
+      LockScreenService.init({} as window.WindowStage, () => {});
       EventBus.on(LockScreenService.EVENT_LOCK_SCREEN, (data: emitter.EventData) => {
         const raw: Object | undefined = data?.data;
         if (typeof raw === 'boolean') {
@@ -74,6 +74,7 @@ export default function LockScreenServiceTest() {
 
     it('showLockWindow(false) carries isManual=false to subscribers', 0, async () => {
       let received: boolean | null = null;
+      LockScreenService.init({} as window.WindowStage, () => {});
       EventBus.on(LockScreenService.EVENT_LOCK_SCREEN, (data: emitter.EventData) => {
         const raw: Object | undefined = data?.data;
         if (typeof raw === 'boolean') {
@@ -109,15 +110,18 @@ export default function LockScreenServiceTest() {
         AppStorage.get<boolean>('lockIsManual') === false).assertTrue();
     });
 
-    it('EVENT_LOCK_ACTION unlock emits unlock_screen event', 0, async () => {
-      let unlocked = false;
-      EventBus.on('unlock_screen', () => {
-        unlocked = true;
+    it('EVENT_LOCK_ACTION unlock clears isLocked and lockIsManual', 0, async () => {
+      let action = '';
+      AppStorage.setOrCreate<boolean>('lockIsManual', true);
+      AppStorage.setOrCreate<boolean>('isLocked', true);
+      LockScreenService.init({} as window.WindowStage, (a: string) => {
+        action = a;
       });
-      LockScreenService.init({} as window.WindowStage, () => {});
       EventBus.emit<string>(LockScreenService.EVENT_LOCK_ACTION, 'unlock');
       await sleep(50);
-      expect(unlocked).assertTrue();
+      expect(action).assertEqual('unlock');
+      expect(AppStorage.get<boolean>('isLocked') === false).assertTrue();
+      expect(AppStorage.get<boolean>('lockIsManual') === undefined).assertTrue();
     });
 
     it('EVENT_LOCK_ACTION with non-string data does not invoke callback', 0, async () => {

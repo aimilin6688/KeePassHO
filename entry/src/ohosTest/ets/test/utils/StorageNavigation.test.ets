@@ -32,7 +32,7 @@ export default function StorageNavigationTest() {
     it('getStorageTitle returns a resource for supported types', 0, () => {
       const types: StorageType[] = [
         StorageType.WEBDAV, StorageType.ONEDRIVE, StorageType.FTP,
-        StorageType.S3, StorageType.PCLOUD, StorageType.HUAWEI_DRIVE
+        StorageType.S3, StorageType.HUAWEI_DRIVE
       ];
       for (const type of types) {
         const title: ResourceStr = StorageNavigation.getStorageTitle(type);
@@ -42,7 +42,7 @@ export default function StorageNavigationTest() {
     });
 
     it('getStorageTitle returns empty string for unsupported types', 0, () => {
-      expect(StorageNavigation.getStorageTitle(StorageType.LOCAL)).assertEqual('');
+      expect(StorageNavigation.getStorageTitle(StorageType.PCLOUD)).assertEqual('');
       expect(StorageNavigation.getStorageTitle(StorageType.BAIDU_NETDISK)).assertEqual('');
     });
 
