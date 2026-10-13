@@ -65,7 +65,7 @@ export class KeePass2Parser implements IOtpFieldParser {
     // 提取配置参数
     const digits = parseInt(this.getFieldValue(entry, 'TimeOtp-Length') || '6');
     const period = parseInt(this.getFieldValue(entry, 'TimeOtp-Period') || '30');
-    const algorithm = this.getFieldValue(entry, 'TimeOtp-Algorithm') || 'SHA1';
+    const algorithm = this.normalizeAlgorithm(this.getFieldValue(entry, 'TimeOtp-Algorithm'));
 
     // 获取发行者（使用 Title 字段）
     const issuer = encodeURIComponent(KdbxUtils.getFieldValueString(entry.fields, 'Title') || 'Unknown');
@@ -74,6 +74,27 @@ export class KeePass2Parser implements IOtpFieldParser {
     const otpUrl = `otpauth://totp/${issuer}?secret=${base32Secret}&algorithm=${algorithm}&digits=${digits}&period=${period}`;
 
     return [otpUrl];
+  }
+
+  /**
+   * 规范化算法名称
+   * KeePass 官方取值为 HMAC-SHA-1 / HMAC-SHA-256 / HMAC-SHA-512，
+   * 对应 otpauth URL 的 SHA1 / SHA256 / SHA512
+   * @param algorithm TimeOtp-Algorithm 字段值
+   * @returns otpauth URL 算法名称
+   */
+  private normalizeAlgorithm(algorithm: string): string {
+    if (!algorithm) {
+      return 'SHA1';
+    }
+    const value = algorithm.trim().toUpperCase().replace(/-/g, '');
+    if (value === 'HMACSHA256' || value === 'SHA256') {
+      return 'SHA256';
+    }
+    if (value === 'HMACSHA512' || value === 'SHA512') {
+      return 'SHA512';
+    }
+    return 'SHA1';
   }
 
   /**

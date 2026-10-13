@@ -48,14 +48,23 @@ export class KeeOtpParser implements IOtpFieldParser {
         return [];
       }
 
+      // 仅支持 TOTP 类型，HOTP（type=Hotp）不支持
+      const type = (params.get('type') || 'Totp').toUpperCase();
+      if (type !== 'TOTP') {
+        return [];
+      }
+
       const step = params.get('step') || '30';
       const size = params.get('size') || '6';
+      // KeeOtp 的 otpHashMode 参数取值为 Sha1/Sha256/Sha512
+      const hashMode = (params.get('otpHashMode') || 'Sha1').toUpperCase();
+      const algorithm = hashMode === 'SHA256' || hashMode === 'SHA512' ? hashMode : 'SHA1';
 
       // 获取发行者
       const issuer = encodeURIComponent(KdbxUtils.getFieldValueString(entry.fields, 'Title') || 'Unknown');
 
       // 转换为标准 OTPURL
-      const otpUrl = `otpauth://totp/${issuer}?secret=${secret}&period=${step}&digits=${size}`;
+      const otpUrl = `otpauth://totp/${issuer}?secret=${secret}&period=${step}&digits=${size}&algorithm=${algorithm}`;
 
       return [otpUrl];
     } catch (error) {
