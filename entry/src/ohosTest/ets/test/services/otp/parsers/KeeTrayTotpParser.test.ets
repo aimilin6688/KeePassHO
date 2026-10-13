@@ -183,6 +183,28 @@ export default function KeeTrayTotpParserTest() {
     });
 
     /**
+     * 测试 Steam 令牌（TOTP Settings 为 30;S）
+     */
+    it('parse converts Steam settings to encoder=steam', 0, () => {
+      const fieldName = 'TOTP Seed';
+      const fieldValue = 'JBSWY3DPEHPK3PXP';
+      const mockEntry = {
+        fields: new Map([
+          ['Title', 'TestAccount'],
+          ['TOTP Seed', fieldValue],
+          ['TOTP Settings', '30;S']
+        ])
+      } as KdbxEntry;
+
+      const urls = parser.parse(fieldName, fieldValue, mockEntry);
+
+      expect(urls.length).assertEqual(1);
+      expect(urls[0]).assertContain('encoder=steam');
+      expect(urls[0]).assertContain('period=30');
+      expect(urls[0]).not().assertContain('digits=');
+    });
+
+    /**
      * 测试空 TOTP Settings
      */
     it('parse handles empty TOTP Settings', 0, () => {

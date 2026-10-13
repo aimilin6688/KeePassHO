@@ -414,10 +414,10 @@ export class TotpService {
         return null;
       }
 
-      // 获取其他可选参数
+      // 获取其他可选参数（parseInt 解析失败得 NaN，利用 NaN 为 falsy 回退默认值）
       const algorithm = this.parseAlgorithm(params.get('algorithm'));
-      const digits = parseInt(params.get('digits') || '6', 10);
-      const period = parseInt(params.get('period') || '30', 10);
+      const digits = parseInt(params.get('digits') || '6', 10) || 6;
+      const period = parseInt(params.get('period') || '30', 10) || 30;
 
       // 如果查询参数中有发行者，优先使用它
       if (params.get('issuer')) {

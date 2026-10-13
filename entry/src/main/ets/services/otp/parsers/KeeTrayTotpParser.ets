@@ -43,17 +43,19 @@ export class KeeTrayTotpParser implements IOtpFieldParser {
       return [];
     }
 
-    // 解析配置（格式：30;6，表示步长和位数）
+    // 解析配置（格式：30;6，表示步长和位数；Steam 令牌为 30;S）
     const settings = this.getFieldValue(entry, 'TOTP Settings') || '30;6';
     const parts = settings.split(';');
     const period = parts[0] || '30';
-    const digits = parts[1] || '6';
+    const lengthPart = (parts[1] || '6').trim().toUpperCase();
 
     // 获取发行者
     const issuer = encodeURIComponent(KdbxUtils.getFieldValueString(entry.fields, 'Title') || 'Unknown');
 
-    // 转换为标准 OTPURL
-    const otpUrl = `otpauth://totp/${issuer}?secret=${fieldValue}&period=${period}&digits=${digits}`;
+    // 转换为标准 OTPURL（KeeTrayTOTP 用 "S" 标记 Steam 格式，对应 encoder=steam）
+    const otpUrl = lengthPart === 'S'
+      ? `otpauth://totp/${issuer}?secret=${fieldValue}&period=${period}&encoder=steam`
+      : `otpauth://totp/${issuer}?secret=${fieldValue}&period=${period}&digits=${lengthPart}`;
 
     return [otpUrl];
   }
