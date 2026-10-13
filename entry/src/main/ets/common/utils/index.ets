@@ -2,6 +2,8 @@ export * from './AssetUtils';
 export * from './ClipboardUtils';
 export * from './CryptoUtils';
 export * from './CommonUtils';
+
+export * from './ConfigDecryptError';
 export * from './DateUtils';
 export * from './DeviceUtils';
 export * from './DialogWindowHelper';

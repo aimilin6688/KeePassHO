@@ -1,6 +1,11 @@
 import { aegis, SafeRandom } from '@hw-agconnect/petal-aegis';
 import { ProtectedValue } from 'kdbxweb';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AssetUtils } from './AssetUtils';
+import { ConfigDecryptError } from './ConfigDecryptError';
+
+const DOMAIN = 0x0000;
+const TAG = 'Sm4Utils';
 
 /**
  * SM4加密工具类
@@ -24,13 +29,15 @@ export class Sm4Utils {
    * 初始化
    */
   public static init(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       try {
         Sm4Utils.initKey();
-        return resolve();
       } catch (error) {
-        return reject(error);
+        // 瞬时故障（Asset 服务不可用/IPC 失败等）不在此中断启动：
+        // 首次实际加解密时会经 initKey 惰性重试，届时仍失败才对用户可见
+        hilog.error(DOMAIN, TAG, 'init sm4 key failed: %{public}s', `${error}`);
       }
+      return resolve();
     });
   }
 
@@ -44,14 +51,18 @@ export class Sm4Utils {
       return Sm4Utils.SM4_KEY.getText();
     }
 
-    // 关键资产中查询是否存在
+    // 关键资产中查询是否存在（未找到返回 undefined；瞬时故障上抛，绝不误生成新钥）
     let key = AssetUtils.querySync(Sm4Utils.ASSET_SM4_KEY_NAME);
     if (key != undefined) {
       Sm4Utils.SM4_KEY = ProtectedValue.fromString(key);
       return key;
     }
 
+    // 确认密钥不存在（首次启动或资产库未创建）：生成新钥并醒目记录——
+    // 若此前存在旧密文（升级/换机后资产丢失），旧密文自此永久不可解密，
+    // 由 ConfigDecryptError 在解密路径给出友好引导
     key = SafeRandom.ohAegRandomHex(16);
+    hilog.warn(DOMAIN, TAG, 'sm4_key not found in asset store, generating NEW key (old SM4-encrypted data becomes undecryptable)');
     AssetUtils.saveSync(Sm4Utils.ASSET_SM4_KEY_NAME, key);
     Sm4Utils.SM4_KEY = ProtectedValue.fromString(key);
     return key;
@@ -101,13 +112,20 @@ export class Sm4Utils {
    * SM4解密，认准SM4:前缀，有前缀才解密
    * @param data 16进制的字符串， SM4:1234567890123
    * @returns 明文字符串
+   * @throws ConfigDecryptError 解密失败（密钥变更/密文损坏，不可恢复，需重新编辑配置）
    */
   public static decryptWithPrefix(data: string): string {
     if (!data) {
       return '';
     }
     if (data && data.startsWith(Sm4Utils.SM4_ENCRYPT_PREFIX)) {
-      return aegis.sm4DecTextHexSync(aegis.SM4Alg.SM4_CBC_PKCS5Padding, data.substring(Sm4Utils.SM4_ENCRYPT_PREFIX.length), Sm4Utils.initKey());
+      const key = Sm4Utils.initKey();
+      try {
+        return aegis.sm4DecTextHexSync(aegis.SM4Alg.SM4_CBC_PKCS5Padding, data.substring(Sm4Utils.SM4_ENCRYPT_PREFIX.length), key);
+      } catch (error) {
+        hilog.error(DOMAIN, TAG, 'SM4 decrypt config failed: %{public}s', `${error}`);
+        throw new ConfigDecryptError(error as Error);
+      }
     }
     return data;
   }

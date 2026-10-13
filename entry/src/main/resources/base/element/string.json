@@ -1353,6 +1353,14 @@
       "value": "Network connection failed, please try again later"
     },
     {
+      "name": "storage_config_decrypt_failed",
+      "value": "The connection settings have expired. Please re-edit them"
+    },
+    {
+      "name": "re_edit_connection_config",
+      "value": "Re-edit"
+    },
+    {
       "name": "attachment",
       "value": "Attachment"
     },

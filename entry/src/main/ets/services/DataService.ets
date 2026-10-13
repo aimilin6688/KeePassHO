@@ -4,12 +4,13 @@ import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorCodes, KeePassHoError } from './error/KeepassHoError';
 import { LocationInfo, LocationMode, LocationParam } from './beans/LocationParam';
-import { DateUtils, CommonUtils, NavigationManager } from '../common/utils';
+import { DateUtils, CommonUtils, NavigationManager, StorageNavigation } from '../common/utils';
 import { ByteUtils, KdbxCredentials } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { SettingsService } from './SettingsService';
 import { CsvExportHandler } from './importExport/handlers/export/CsvExportHandler';
 import { PageConstants } from '../common/constants/PageConstants';
+import { StorageType } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'DataService';
@@ -115,6 +116,23 @@ export class DataService {
         DataService.toPasswordPage(locationInfo);
       }
     });
+  }
+
+  /**
+   * 配置解密失败后的 UI 引导入口：跳转到对应存储的连接配置页重新编辑连接信息。
+   * 复用打开数据库的选择流程（选择模式 + kdbx 后缀）：用户重新填写配置并选中同一文件后，
+   * toPasswordPage 会以新配置覆盖同路径的最近记录，即完成修复。
+   * @param storageType 存储类型
+   */
+  public static reEditStorageConfig(storageType: StorageType): void {
+    DataService.selectKdbx();
+    const pageName: string = StorageNavigation.getConfigPageName(storageType);
+    if (pageName === '') {
+      hilog.warn(DOMAIN, TAG, 'No config page for storage type: %{public}s, fallback to SelectLocation', storageType);
+      NavigationManager.getInstance().navigateTo(PageConstants.PAGE_SELECT_LOCATION);
+      return;
+    }
+    NavigationManager.getInstance().navigateTo(pageName);
   }
 
   /**

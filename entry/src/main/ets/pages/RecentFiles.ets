@@ -4,11 +4,11 @@ import { RecentFile } from '../services/TypeDefined';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
-import { CommonUtils, NavigationManager, WindowUtils } from '../common/utils';
-import { FileStorage, PageConfig } from '../storage';
+import { CommonUtils, ConfigDecryptError, NavigationManager, WindowUtils } from '../common/utils';
+import { FileStorage, PageConfig, StorageType } from '../storage';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
-import { PageConstants } from '../common/constants/PageConstants';
 import { Constants } from '../common/constants/Constants';
+import { DataService } from '../services/DataService';
 
 const DOMAIN = 0x0000;
 const TAG = 'RecentFiles';
@@ -121,12 +121,19 @@ struct RecentFilesContent {
     LoadingDialog.showLoading($r('app.string.loading_message'));
     let recentFilesService: RecentFilesService = RecentFilesService.getInstance();
     let errorMessage: string = '';
+    let decryptFailed: boolean = false;
     // 检查文件是否存在
     const fileExists = await recentFilesService.checkFileExists(recentFile).catch((e: Error) => {
       hilog.error(DOMAIN, TAG, 'check file exists error: %{public}s', e.message);
       errorMessage = e.message;
+      decryptFailed = e instanceof ConfigDecryptError;
     });
     LoadingDialog.hideLoading();
+    // 存储配置解密失败（密钥变更，密文不可恢复）：保留记录，引导重新编辑连接配置
+    if (decryptFailed) {
+      this.showReEditConfigGuide(recentFile.storageType);
+      return;
+    }
     if (!fileExists) {
       CommonUtils.showToast({
         message: errorMessage || $r('app.string.file_not_exists'),
@@ -148,6 +155,29 @@ struct RecentFilesContent {
       const navParam: PasswordNavParam = { filePath: recentFile.filePath };
       this.navManager.replaceAll('Password', navParam);
     }
+  }
+
+  /**
+   * 存储配置解密失败引导：弹框确认后跳转对应存储的连接配置页，
+   * 用户重新填写连接信息并再次选中该文件后，最近记录会被新配置覆盖（见 DataService.toPasswordPage）
+   */
+  private showReEditConfigGuide(storageType: StorageType): void {
+    this.getUIContext().showAlertDialog({
+      title: $r('app.string.dialog_prompt_title'),
+      message: $r('app.string.storage_config_decrypt_failed'),
+      autoCancel: true,
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r('app.string.re_edit_connection_config'),
+        action: () => {
+          DataService.reEditStorageConfig(storageType);
+        }
+      }
+    });
   }
 
   /**

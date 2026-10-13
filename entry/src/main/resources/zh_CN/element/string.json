@@ -1281,6 +1281,14 @@
       "value": "网络连接失败，请稍后重试"
     },
     {
+      "name": "storage_config_decrypt_failed",
+      "value": "连接配置已过期，请重新编辑"
+    },
+    {
+      "name": "re_edit_connection_config",
+      "value": "重新编辑"
+    },
+    {
       "name": "attachment",
       "value": "附件"
     },

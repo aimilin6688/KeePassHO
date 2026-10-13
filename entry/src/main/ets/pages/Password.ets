@@ -7,7 +7,7 @@ import { RecentFilesService } from '../services/RecentFilesService';
 import { StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
-import { CommonUtils, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
+import { CommonUtils, ConfigDecryptError, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
 import { Kdbx } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
@@ -500,6 +500,29 @@ export struct Password {
   }
 
   /**
+   * 存储配置解密失败引导：弹框确认后跳转对应存储的连接配置页，
+   * 用户重新填写连接信息并再次选中该文件后，最近记录会被新配置覆盖（见 DataService.toPasswordPage）
+   */
+  private showReEditConfigGuide(storageType: StorageType): void {
+    this.getUIContext().showAlertDialog({
+      title: $r('app.string.dialog_prompt_title'),
+      message: $r('app.string.storage_config_decrypt_failed'),
+      autoCancel: true,
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r('app.string.re_edit_connection_config'),
+        action: () => {
+          DataService.reEditStorageConfig(storageType);
+        }
+      }
+    });
+  }
+
+  /**
    * 验证密码并打开数据库
    */
   private verifyAndOpenDatabase() {
@@ -548,6 +571,11 @@ export struct Password {
       },
       onErrorMessage: (message: LoadMessage) => {
         this.closeLoadingDialog();
+        // 存储配置解密失败（Worker 抛出的 ConfigDecryptError 以资源名回传）：
+        // 弹框引导重新编辑连接配置（简短吐司已由 ToastLoadDatabaseCallback 默认行为展示）
+        if (this.storageType !== undefined && ConfigDecryptError.isDecryptFailedMessage(message.message)) {
+          this.showReEditConfigGuide(this.storageType);
+        }
       },
       onAllErrors: (error: ErrorEvent) => {
         this.closeLoadingDialog();

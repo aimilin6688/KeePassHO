@@ -13,7 +13,9 @@ export class AssetUtils {
   /**
    * 查询关键资产
    * @param assetId 关键资产Id
-   * @returns 关键资产内容
+   * @returns 关键资产内容；确认不存在（24000002）或资产库未创建（24000008）时返回 undefined
+   * @throws 其他错误（服务不可用、锁屏状态不匹配、IPC 失败等瞬时/环境故障）原样上抛，
+   *         调用方不得将其视为"资产不存在"而生成新数据（会使存量密文永久不可解密）
    */
   public static querySync(assetId: string): string | undefined {
     if (!assetId) {
@@ -31,15 +33,15 @@ export class AssetUtils {
       }
       return undefined;
     } catch (error) {
-      // 错误码 24000002 表示关键资产不存在（如首次启动、资产未生成或跨设备可信同步未完成），
-      // 属预期内情况，静默返回 undefined，不弹提示、不打 error 日志。
+      // 24000002 资产不存在（从未写入/已删除）；24000008 资产库未创建（首次使用前查询）。
+      // 两者均为"确认不存在"，静默返回 undefined 交由调用方决定是否生成。
       const ASSET_ERROR_CODE_NOT_FOUND = 24000002;
-      if (error?.code === ASSET_ERROR_CODE_NOT_FOUND) {
+      const ASSET_ERROR_CODE_DB_NOT_CREATED = 24000008;
+      if (error?.code === ASSET_ERROR_CODE_NOT_FOUND || error?.code === ASSET_ERROR_CODE_DB_NOT_CREATED) {
         return undefined;
       }
       hilog.error(DOMAIN, TAG, `queryAsset error:  Code is ${error?.code}, message is ${error?.message}`);
-      CommonUtils.showToast(`Query asset failed: ${error?.message}`, 5000);
-      return undefined;
+      throw error as Error;
     }
   }
 
@@ -61,6 +63,9 @@ export class AssetUtils {
       attr.set(asset.Tag.ACCESSIBILITY, asset.Accessibility.DEVICE_FIRST_UNLOCKED);
       attr.set(asset.Tag.SYNC_TYPE, asset.SyncType.TRUSTED_ACCOUNT);
       attr.set(asset.Tag.IS_PERSISTENT, true);
+      // 同别名已存在（24000003，如可信同步恢复/并发首写竞态）时覆盖写入，
+      // 保证持久化结果与调用方内存态一致（官方冲突处理建议）
+      attr.set(asset.Tag.CONFLICT_RESOLUTION, asset.ConflictResolution.OVERWRITE);
       asset.addSync(attr);
       hilog.info(DOMAIN, TAG, `addAsset success: assetId is ${assetId}`);
     } catch (error) {
