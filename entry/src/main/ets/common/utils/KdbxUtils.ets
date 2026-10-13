@@ -23,6 +23,7 @@ import { SuccessMessage } from '../../workers/WorkerParam';
 import { StorageError, StorageErrorCodes } from '../../storage/StorageError';
 import { SortMode } from '../constants/SortConstants';
 import { IconUtils, ResourceManager, StringUtils } from '.';
+import { ConfigDecryptError, STORAGE_CONFIG_DECRYPT_FAILED_RES } from './ConfigDecryptError';
 import { OtpCompatibilityManager, OtpExtractionResult } from '../../services/otp';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -823,6 +824,13 @@ export class KdbxUtils {
     // 先检查是否是网络错误
     if (KdbxUtils.isNetworkError(kdbxError)) {
       return $r('app.string.network_error').id;
+    }
+
+    // 跨线程契约：Worker 中 $r 同样可用，ConfigDecryptError.message 已是本地化文案，
+    // 主线程无法凭文案识别该错误；统一映射为资源名，由 getMessage 按名本地化展示、
+    // isDecryptFailedMessage 按名识别并弹框引导重新编辑
+    if (kdbxError instanceof ConfigDecryptError) {
+      return STORAGE_CONFIG_DECRYPT_FAILED_RES;
     }
 
     // CP-UP：整缓冲上传超限（明确拒绝而非交给 http 栈报 2300023）
