@@ -226,6 +226,33 @@ export default function CredentialsServiceTest() {
       expect(threw).assertTrue();
     });
 
+    it('createKdbxCredentials throws challenge-missing before keyfile-missing for keyfile-XC', 0, async () => {
+      const param: CredentialsParam = {
+        password: 'test',
+        authType: AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC
+      };
+      let threw = false;
+      let errMsg = '';
+      try {
+        await CredentialsService.createKdbxCredentials(param);
+      } catch (e) {
+        threw = true;
+        errMsg = (e as Error).message;
+      }
+      expect(threw).assertTrue();
+      expect(errMsg).assertEqual(ResourceManager.getString($r('app.string.error_challenge_response_missing')));
+    });
+
+    it('createKdbxCredentials falls back to password-only for unknown auth type', 0, async () => {
+      const unknownAuth: AuthTypeInfo = { type: 'unknown_future', value: AuthType.PASSWORD.value };
+      const param: CredentialsParam = {
+        password: 'secret123',
+        authType: unknownAuth
+      };
+      const credentials = await CredentialsService.createKdbxCredentials(param);
+      expect(credentials !== null && credentials !== undefined).assertTrue();
+    });
+
     it('LoadDatabase new credential fields survive worker JSON channel', 0, () => {
       const loadDatabase = new LoadDatabase('/path/db.kdbx', 'db.kdbx', 'test', AuthType.PASSWORD_OTP);
       expect(loadDatabase.otpSecretHex).assertUndefined();
