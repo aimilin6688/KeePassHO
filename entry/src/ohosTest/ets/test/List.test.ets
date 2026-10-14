@@ -82,10 +82,10 @@ import KdbxSnapshotV3Test from './kdbx/KdbxSnapshotV3.test';
 // 公共原生 AES-256-GCM 单元测试（seal/open 往返 / 篡改拒绝 / 流式会话等价）
 import AesGcmTest from './kdbx/AesGcm.test';
 
-// ChaCha20 原生路径设备端验证（libkdbxweb_zlib.so chacha20Xor：可用性 / RFC 7539 向量 / 流式等价）
+// ChaCha20 原生路径设备端验证（libkdbxweb_native.so chacha20Xor：可用性 / RFC 7539 向量 / 流式等价）
 import Chacha20NativeTest from './kdbx/Chacha20Native.test';
 
-// Salsa20 原生路径设备端验证（libkdbxweb_zlib.so salsa20Xor：djb 向量 / JS 等价 / 分块续算 / view 入参）
+// Salsa20 原生路径设备端验证（libkdbxweb_native.so salsa20Xor：djb 向量 / JS 等价 / 分块续算 / view 入参）
 import Salsa20NativeTest from './kdbx/Salsa20Native.test';
 
 // KdbxCredentials customKey（自定义密钥分量，KcpCustomKey 等价）单元测试
@@ -149,6 +149,8 @@ import NavigationManagerTest from './utils/NavigationManager.test';
 import StorageNavigationTest from './utils/StorageNavigation.test';
 import PageConfigManagerTest from './utils/PageConfigManager.test';
 import IconUtilsTest from './utils/IconUtils.test';
+// 修改主密码闪退回归（database 关闭后 getIcon 回退读 meta）
+import KdbxUtilsIconGuardTest from './utils/KdbxUtilsIconGuard.test';
 import ThemeManagerTest from './utils/ThemeManager.test';
 import WebImageDownloaderTest from './utils/WebImageDownloader.test';
 import ImagePickerUtilsTest from './utils/ImagePickerUtils.test';
@@ -417,6 +419,7 @@ export default function testsuite() {
   StorageNavigationTest();
   PageConfigManagerTest();
   IconUtilsTest();
+  KdbxUtilsIconGuardTest();
   ThemeManagerTest();
   WebImageDownloaderTest();
   ImagePickerUtilsTest();

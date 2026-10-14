@@ -21,7 +21,9 @@ export class IconUtils {
     let iconResource: Resource = $r('app.media.C48_Folder');
 
     if (typeof iconId === 'string') {
-      let icon = KdbxUtils.getCustomIcon(iconId, FileService.getInstance().getDbFileParam().database.meta);
+      // 数据库可能已关闭，database 可能为 undefined，需判空后再取 meta
+      const database = FileService.getInstance().getDbFileParam().database;
+      let icon = KdbxUtils.getCustomIcon(iconId, database != undefined ? database.meta : undefined);
       if (icon) {
         return icon;
       }

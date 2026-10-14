@@ -267,7 +267,11 @@ export class KdbxUtils {
       return defaultResource;
     }
     if (kdbxMeta == undefined) {
-      kdbxMeta = FileService.getInstance().getDbFileParam().database.meta;
+      // 数据库可能已关闭（如修改主密码后 FileService.close() 触发页面卸载重渲染），不能裸读 database.meta
+      const database = FileService.getInstance().getDbFileParam().database;
+      if (database != undefined) {
+        kdbxMeta = database.meta;
+      }
     }
     if (customIcon != undefined && kdbxMeta != undefined) {
       let customIconResult = KdbxUtils.getCustomIcon(customIcon, kdbxMeta);
