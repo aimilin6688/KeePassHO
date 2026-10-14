@@ -2,7 +2,7 @@ import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils, ChaCha20, nativeChaCha20Available } from 'kdbxweb';
 
 /**
- * ChaCha20 原生路径设备端验证（libkdbxweb_zlib.so 内 chacha20Xor，chacha20.cpp）。
+ * ChaCha20 原生路径设备端验证（libkdbxweb_native.so 内 chacha20Xor，chacha20.cpp）。
  * kdbxweb 侧 chacha20.test.ets 已保证 JS/native 字节级等价；
  * 本套件在真实应用测试包（.so 随包）中断言原生路径生效并复验官方向量。
  */

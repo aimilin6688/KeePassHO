@@ -1,4 +1,4 @@
-import zlibStream from 'libkdbxweb_zlib.so';
+import kdbxNative from 'libkdbxweb_native.so';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -8,7 +8,7 @@ let enabled = true;
 let availability: boolean | undefined = undefined;
 
 /**
- * Salsa20 原生模块包装（libkdbxweb_zlib.so 内的 salsa20Xor，见 salsa20.cpp）。
+ * Salsa20 原生模块包装（libkdbxweb_native.so 内的 salsa20Xor，见 salsa20.cpp）。
  *
  * 无状态设计：调用方通过 (counter, blockOffset) 精确重建流位置，
  * 支持分块流式续解密；data 就地 XOR，不分配内存。
@@ -20,7 +20,7 @@ export function nativeSalsa20Available(): boolean {
     }
     if (availability === undefined) {
         try {
-            availability = typeof zlibStream.salsa20Xor === 'function';
+            availability = typeof kdbxNative.salsa20Xor === 'function';
         } catch (e) {
             availability = false;
         }
@@ -38,7 +38,7 @@ export function salsa20XorNative(
     counter: number,
     blockOffset: number
 ): void {
-    zlibStream.salsa20Xor(data, key, nonce, counter, blockOffset);
+    kdbxNative.salsa20Xor(data, key, nonce, counter, blockOffset);
 }
 
 /** 测试用：禁用后新构造的 Salsa20 实例全部走纯 JS 路径 */

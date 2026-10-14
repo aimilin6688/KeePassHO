@@ -2,7 +2,7 @@
  * ChaCha20 原生实现（RFC 7539 + DJB 8 字节 nonce 变体），对齐 ets 侧 crypto/chacha20.ts。
  *
  * 纯 JS 路径在移动端约 100~200MB/s，是 KDBX4 整文件加解密与流式保存的瓶颈；
- * 本模块编译进既有 libkdbxweb_zlib.so（见 zlib_stream.cpp 的 Init 注入），不新增 napi 模块。
+ * 本模块编译进 libkdbxweb_native.so（经 native_entry.cpp 统一注册），不新增 napi 模块。
  *
  * 暴露 napi 接口（同步、JS 线程执行，语义与 TS xorInPlace 完全一致）：
  *   chacha20Xor(data, key, nonce, counter, blockOffset): void
@@ -190,7 +190,7 @@ napi_value ChaCha20Xor(napi_env env, napi_callback_info info)
 
 } // namespace
 
-// 由 zlib_stream.cpp 的 Init 调用，在同一 exports 上追加 chacha20Xor
+// 由 native_entry.cpp 的 Init 调用，在同一 exports 上追加 chacha20Xor
 napi_value DefineChaCha20(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {

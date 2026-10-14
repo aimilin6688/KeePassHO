@@ -2,7 +2,7 @@ import { describe, expect, it } from '@ohos/hypium';
 import { ByteUtils, Salsa20, nativeSalsa20Available, setNativeSalsa20Enabled } from 'kdbxweb';
 
 /**
- * Salsa20 原生路径设备端验证（libkdbxweb_zlib.so 内 salsa20Xor，salsa20.cpp）。
+ * Salsa20 原生路径设备端验证（libkdbxweb_native.so 内 salsa20Xor，salsa20.cpp）。
  * 本套件在真实应用测试包（.so 随包）中断言原生路径生效：
  * djb 官方向量（key=0x80||0…0，nonce=0）+ JS/原生字节级等价 + 分块续算 + view 入参 + 零长度边界。
  */

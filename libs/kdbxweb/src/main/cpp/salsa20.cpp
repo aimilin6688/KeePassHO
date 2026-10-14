@@ -2,8 +2,8 @@
  * Salsa20 原生实现（djb Salsa20，32 字节 key + 8 字节 nonce），对齐 ets 侧 crypto/salsa20.ts。
  *
  * 用途：OtpKeyProv 插件兼容（.otp.xml 的 EncryptedSecret/OTP v2 解密）与 KDBX3 随机流保护，
- * 纯 JS 路径逐字节解释执行较慢；本模块编译进既有 libkdbxweb_zlib.so
- * （见 zlib_stream.cpp 的 Init 注入），不新增 napi 模块。
+ * 纯 JS 路径逐字节解释执行较慢；本模块编译进 libkdbxweb_native.so
+ * （经 native_entry.cpp 统一注册），不新增 napi 模块。
  *
  * 暴露 napi 接口（同步、JS 线程执行，语义与 TS getBytes 完全一致）：
  *   salsa20Xor(data, key, nonce, counter, blockOffset): void
@@ -194,7 +194,7 @@ napi_value Salsa20Xor(napi_env env, napi_callback_info info)
 
 } // namespace
 
-// 由 zlib_stream.cpp 的 Init 调用，在同一 exports 上追加 salsa20Xor
+// 由 native_entry.cpp 的 Init 调用，在同一 exports 上追加 salsa20Xor
 napi_value DefineSalsa20(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {

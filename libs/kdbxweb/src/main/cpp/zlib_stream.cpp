@@ -9,6 +9,7 @@
  *   inflateFile(inPath, outPath): Promise<number>  gzip 流式解压，返回解压后字节数
  *   deflateFile(inPath, outPath, level?): Promise<number>  gzip 流式压缩，返回压缩后字节数
  *
+ * 经 native_entry.cpp 统一注册进 libkdbxweb_native.so。
  * 失败时输出文件会被删除（不留残缺中间文件），Promise 以 Error reject。
  */
 
@@ -25,12 +26,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-// chacha20.cpp 提供：在同一 exports 上追加 chacha20Xor 导出
-napi_value DefineChaCha20(napi_env env, napi_value exports);
-
-// salsa20.cpp 提供：在同一 exports 上追加 salsa20Xor 导出
-napi_value DefineSalsa20(napi_env env, napi_value exports);
 
 namespace {
 
@@ -359,31 +354,15 @@ napi_value DeflateFile(napi_env env, napi_callback_info info)
     return StartStream(env, info, false);
 }
 
-napi_value Init(napi_env env, napi_value exports)
+} // namespace
+
+// 由 native_entry.cpp 的 Init 调用，在同一 exports 上挂接 inflateFile / deflateFile
+napi_value DefineZlibStream(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
         {"inflateFile", nullptr, InflateFile, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"deflateFile", nullptr, DeflateFile, nullptr, nullptr, nullptr, napi_default, nullptr},
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
-    DefineChaCha20(env, exports);
-    DefineSalsa20(env, exports);
     return exports;
-}
-
-} // namespace
-
-static napi_module g_zlibStreamModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
-    .nm_filename = nullptr,
-    .nm_register_func = Init,
-    .nm_modname = "kdbxweb_zlib",
-    .nm_priv = nullptr,
-    .reserved = {0},
-};
-
-extern "C" __attribute__((constructor)) void RegisterKdbxwebZlibModule(void)
-{
-    napi_module_register(&g_zlibStreamModule);
 }

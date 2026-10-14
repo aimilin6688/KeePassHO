@@ -1,4 +1,4 @@
-import zlibStream from 'libkdbxweb_zlib.so';
+import kdbxNative from 'libkdbxweb_native.so';
 import { fileIo as fs } from '@kit.CoreFileKit';
 
 /**
@@ -11,12 +11,12 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 
 /** gzip 流式解压文件；resolve 解压后字节数 */
 export function inflateFile(inPath: string, outPath: string): Promise<number> {
-    return zlibStream.inflateFile(inPath, outPath);
+    return kdbxNative.inflateFile(inPath, outPath);
 }
 
 /** gzip 流式压缩文件；resolve 压缩后字节数 */
 export function deflateFile(inPath: string, outPath: string, level?: number): Promise<number> {
-    return zlibStream.deflateFile(inPath, outPath, level);
+    return kdbxNative.deflateFile(inPath, outPath, level);
 }
 
 /**
