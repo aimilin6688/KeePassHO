@@ -11,7 +11,6 @@ import { FileService } from '../../../../main/ets/services/FileService';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { StorageType } from '../../../../main/ets/storage';
 import { KdbxUtils } from '../../../../main/ets/common/utils/KdbxUtils';
-import { ResourceManager } from '../../../../main/ets/common/utils/ResourceManager';
 import { KdbxModeTestHelper } from '../workers/KdbxModeTestHelper';
 
 const TEST_TIMEOUT_MS: number = 60000;
@@ -656,8 +655,6 @@ export default function KdbxSaveServiceTest() {
     // ==================== RELOAD 策略与改密意图（F4 回归） ====================
 
     it('saveDatabase RELOAD with pending credential change reports abandoned error', 0, async () => {
-      // 测试进程 ResourceManager 未初始化（context 为 null）会使 getString 返回 ''，先初始化
-      ResourceManager.getInstance().init(KdbxModeTestHelper.initContext() as common.UIAbilityContext);
       const database = await KdbxModeTestHelper.createDatabase('ReloadPendDb', 'reload-pend-entry');
       const initialContent: ArrayBuffer = await database.save();
       await fileManager.write(dbPath, initialContent);
@@ -709,6 +706,42 @@ export default function KdbxSaveServiceTest() {
       expect(result.success).assertTrue();
       const param = FileService.getDbFileParam();
       expect(param.newPassword).assertUndefined();
+    });
+
+    // ==================== 零分量凭证防御（漏洞 #1 回归） ====================
+
+    it('saveDatabase with keyfile-only switch and notUseKeyFile blocked as empty credentials', 0, async () => {
+      const database = await KdbxModeTestHelper.createDatabase('EmptyCredDb', 'empty-cred-entry');
+      const initialContent: ArrayBuffer = await database.save();
+      await fileManager.write(dbPath, initialContent);
+      const baseHash = await KdbxModeTestHelper.sha256Hex(initialContent);
+
+      const dbFileParam = KdbxModeTestHelper.makeDbFileParam(database, dbPath, 'empty-cred.kdbx', null, baseHash);
+      FileService.setDbFileParam(dbFileParam);
+      // 模拟双勾状态：仅密钥文件切换（newPassword=''）+ 不使用密钥文件
+      FileService.getDbFileParam().newPassword = '';
+      FileService.getDbFileParam().notUseKeyFile = true;
+
+      const result = await withTimeout(new Promise<SaveCheckResult>(
+        (resolve) => {
+          KdbxSaveService.saveDatabase({
+            onSuccess: (msg: SuccessMessage) => { resolve({ success: true, error: '' }); },
+            onError: (err: string) => { resolve({ success: false, error: err }); }
+          });
+        }
+      ), TEST_TIMEOUT_MS);
+
+      // 纵深防御：拦截不落盘、回调 onError、待应用字段清理（F1 不变量）
+      expect(result.success).assertFalse();
+      expect(result.error.length > 0).assertTrue();
+      const param = FileService.getDbFileParam();
+      expect(param.newPassword).assertUndefined();
+      expect(param.notUseKeyFile).assertFalse();
+      // 文件未被改写：仍可凭原密码解锁
+      const fileContent = await fileManager.read(dbPath);
+      const reloaded = await Kdbx.load(fileContent.content,
+        new KdbxCredentials(ProtectedValue.fromString(KdbxModeTestHelper.DB_PASSWORD)));
+      expect(KdbxModeTestHelper.collectEntryTitles(reloaded).includes('empty-cred-entry')).assertTrue();
     });
   });
 }

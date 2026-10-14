@@ -1197,6 +1197,10 @@
       "value": "Password change discarded: the database was reloaded from remote. Please retry if needed"
     },
     {
+      "name": "change_password_credential_required",
+      "value": "At least one credential must remain"
+    },
+    {
       "name": "select_key_file_placeholder",
       "value": "Please select key file"
     },

@@ -1125,6 +1125,10 @@
       "value": "已放弃本次密码修改：数据库已从远端重新加载，如需修改请重试"
     },
     {
+      "name": "change_password_credential_required",
+      "value": "请至少保留一种凭据"
+    },
+    {
       "name": "select_key_file_placeholder",
       "value": "请选择密钥文件"
     },

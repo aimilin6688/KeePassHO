@@ -96,6 +96,11 @@ export struct ChangePasswordContent {
    * 验证密码是否匹配
    */
   private validatePassword(): boolean {
+    // 互斥兜底：不允许同时移除密码与密钥文件（对齐 KeePass2Android error_nopass 硬拒）
+    if (this.useKeyfileOnly && this.notUseKeyFile) {
+      this.errorMessage = ResourceManager.getString($r('app.string.change_password_credential_required'));
+      return false;
+    }
     // 仅密钥文件模式下不需要旧密码验证
     if (!this.isKeyfileOnlyMode && this.oldPassword.trim().length === 0) {
       this.errorMessage = ResourceManager.getString($r('app.string.change_password_old_password_placeholder'));
@@ -328,6 +333,9 @@ export struct ChangePasswordContent {
               .shape(CheckBoxShape.CIRCLE)
               .onChange((value: boolean) => {
                 this.notUseKeyFile = value;
+                if (value) {
+                  this.useKeyfileOnly = false;
+                }
               })
             Text($r('app.string.key_file_not_use_key_file'))
               .fontSize(14)
@@ -335,6 +343,9 @@ export struct ChangePasswordContent {
               .margin({ left: 8 })
               .onClick(() => {
                 this.notUseKeyFile = !this.notUseKeyFile;
+                if (this.notUseKeyFile) {
+                  this.useKeyfileOnly = false;
+                }
               })
           }
           .width("100%")

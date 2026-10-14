@@ -81,8 +81,22 @@ export default class KdbxSaveService {
     // 「保存前重贴卡」两阶段保存支持前明确阻断（RELOAD 远端重载不受影响：seed 未变、应答仍有效）
     if (dbFileParam.authType && AuthType.useChallengeResponseXc(dbFileParam.authType)) {
       hilog.warn(DOMAIN, TAG, 'Save blocked: challenge-response (XC) database save requires re-challenge, not supported yet');
+      // 阻断的保存不得残留待应用改密字段（F1 不变量）
+      FileService.clearPendingCredentialChanges();
       if (callback && callback.onError) {
         callback.onError(ResourceManager.getString($r('app.string.error_challenge_response_save_unsupported')));
+      }
+      return;
+    }
+
+    // 纵深防御：同时移除密码（切换仅密钥文件 newPassword=''）与密钥文件（notUseKeyFile）
+    // 将产生无凭证数据库（对齐 KeePass2Android SetPasswordDialog error_nopass 硬拒）；
+    // 拦截即清理待应用字段，恢复 F1 不变量（阻断的保存不残留改密意图）
+    if (dbFileParam.newPassword === '' && dbFileParam.notUseKeyFile) {
+      hilog.warn(DOMAIN, TAG, 'Save blocked: removing both password and key file');
+      FileService.clearPendingCredentialChanges();
+      if (callback && callback.onError) {
+        callback.onError(ResourceManager.getString($r('app.string.change_password_credential_required')));
       }
       return;
     }
