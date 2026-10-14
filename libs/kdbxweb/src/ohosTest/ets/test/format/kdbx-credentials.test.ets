@@ -71,6 +71,62 @@ export default function KdbxCredentialsTest() {
             );
         });
 
+        it('calculates hash for custom key only', 0, async () => {
+            const cred = new KdbxCredentials(
+                null,
+                null,
+                undefined,
+                new Uint8Array(32).fill(3)
+            );
+            const hash = await cred.getHash();
+            expect(ByteUtils.bytesToHex(hash)).assertEqual(
+                'f517c428914b046c432b1d1927ac580d60e8b70d328c84c1b8c43231d8871721'
+            );
+            expect(cred.customKeyHash).not().assertNull();
+            expect(ByteUtils.bytesToHex(cred.customKeyHash!.getBinary())).assertEqual(
+                '648aa5c579fb30f38af744d97d6ec840c7a91277a499a0d780f3e7314eca090b'
+            );
+        });
+
+        it('calculates hash for password and custom key', 0, async () => {
+            const cred = new KdbxCredentials(
+                ProtectedValue.fromString('test'),
+                null,
+                undefined,
+                new Uint8Array(32).fill(3)
+            );
+            const hash = await cred.getHash();
+            expect(ByteUtils.bytesToHex(hash)).assertEqual(
+                '89f0e9a585052c047d768a5cc7df32a5383d3d4790b3793f145e3068197bbd2d'
+            );
+        });
+
+        it('calculates hash for password and 20-byte otp-like secret', 0, async () => {
+            const cred = new KdbxCredentials(
+                ProtectedValue.fromString('test'),
+                null,
+                undefined,
+                new Uint8Array(20).fill(7)
+            );
+            const hash = await cred.getHash();
+            expect(ByteUtils.bytesToHex(hash)).assertEqual(
+                '9c6328ee84abb68e7dc09c4a55e3173745cb024d7d3e50cb44822cb4dd02e8f6'
+            );
+        });
+
+        it('calculates hash combining all key components', 0, async () => {
+            const cred = new KdbxCredentials(
+                ProtectedValue.fromString('test'),
+                new Uint8Array(32).fill(1),
+                (challenge) => Promise.resolve(challenge),
+                new Uint8Array(32).fill(3)
+            );
+            const hash = await cred.getHash(new Uint8Array(32).fill(2).buffer);
+            expect(ByteUtils.bytesToHex(hash)).assertEqual(
+                '31504908a53171b6de4606855772c0f6b758b45c5fb63af86e1dd589a1905c7d'
+            );
+        });
+
         it('calculates hash for a bad xml key file',  0,async () => {
             const keyFile = ByteUtils.stringToBytes('boo');
             const cred = new KdbxCredentials(null, keyFile);

@@ -21,17 +21,20 @@ export class KdbxCredentials {
     readonly ready: Promise<KdbxCredentials>;
     passwordHash: ProtectedValue | undefined;
     keyFileHash: ProtectedValue | undefined;
+    customKeyHash: ProtectedValue | undefined;
     private _challengeResponse: KdbxChallengeResponseFn | undefined;
 
     constructor(
         password: ProtectedValue | null,
         keyFile?: ArrayBuffer | Uint8Array | null,
-        challengeResponse?: KdbxChallengeResponseFn
+        challengeResponse?: KdbxChallengeResponseFn,
+        customKey?: ArrayBuffer | Uint8Array | null
     ) {
         this.ready = Promise.all([
             this.setPassword(password),
             this.setKeyFile(keyFile),
-            this.setChallengeResponse(challengeResponse)
+            this.setChallengeResponse(challengeResponse),
+            this.setCustomKey(customKey)
         ]).then(() => this);
     }
 
@@ -140,6 +143,26 @@ export class KdbxCredentials {
         return Promise.resolve();
     }
 
+    /**
+     * Sets a custom key component (KeePass KcpCustomKey equivalent, e.g. OTP secret).
+     * The raw key data is SHA-256 hashed once, matching KcpCustomKey with bPerformHash = true
+     * as used by KeePass2Android for OtpKeyProv / KeeChallenge secrets.
+     * The hash is combined into the composite key after the key file and before the
+     * challenge-response component (KeePass CompositeKey concatenation order).
+     */
+    setCustomKey(customKey: ArrayBuffer | Uint8Array | null | undefined): Promise<void> {
+        if (customKey && !(customKey instanceof ArrayBuffer) && !(customKey instanceof Uint8Array)) {
+            return Promise.reject(new KdbxError(ErrorCodes.InvalidArg, 'customKey'));
+        }
+        if (customKey) {
+            return CryptoEngine.sha256(customKey).then((hash) => {
+                this.customKeyHash = ProtectedValue.fromBinary(hash);
+            });
+        }
+        this.customKeyHash = undefined;
+        return Promise.resolve();
+    }
+
     getHash(challenge?: ArrayBuffer): Promise<ArrayBuffer> {
         return this.ready.then(() => {
             return this.getChallengeResponse(challenge).then((chalResp) => {
@@ -149,6 +172,9 @@ export class KdbxCredentials {
                 }
                 if (this.keyFileHash) {
                     buffers.push(this.keyFileHash.getBinary());
+                }
+                if (this.customKeyHash) {
+                    buffers.push(this.customKeyHash.getBinary());
                 }
                 if (chalResp) {
                     buffers.push(new Uint8Array(chalResp));
