@@ -220,6 +220,8 @@ export default class KdbxSaveService {
     }).catch((error: Error) => {
       // 用户关闭弹框：放弃本次保存，本地修改保留在内存中
       hilog.warn(DOMAIN, TAG, 'Conflict dialog dismissed: %{public}s', error?.message);
+      // 被放弃的保存若携带改密字段，同样必须清理，防止残留被后续保存静默应用（F1 回归）
+      FileService.clearPendingCredentialChanges();
       // 刷新列表以反映内存中保留的修改（新增条目在保存前已写入内存库，
       // 不刷新会导致列表与内存状态不一致，用户退回列表后看不到刚添加的条目）
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
@@ -231,6 +233,12 @@ export default class KdbxSaveService {
    * @param callback 原始回调，重载完成后回调 onSuccess/onError，保证调用方流程不挂起
    */
   private static reloadFromRemote(callback?: SaveDatabaseCallback): void {
+    // F4：RELOAD 策略语义 = 放弃本地修改（含本次改密意图）。
+    // 若本次保存携带改密字段，重载成功后不得回调 onSuccess（改密页会误报"改密成功"并跳转登录页，
+    // 但远端密码并未变更，用户按新密码登录将失败），应回调 onError 提示改密已被放弃。
+    const hadPendingCredentialChanges = FileService.hasPendingCredentialChanges();
+    // F1 回归：清理待应用凭证字段，防止残留的 newPassword 等被后续普通保存静默应用
+    FileService.clearPendingCredentialChanges();
     const dbFileParam = FileService.getDbFileParam();
     if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null');
@@ -248,7 +256,16 @@ export default class KdbxSaveService {
           FileService.resetDbFileParam(database, message.modifiedTime, message.version ?? null,
             message.contentHash ?? null);
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
-          if (callback && callback.onSuccess) {
+          if (hadPendingCredentialChanges) {
+            // 改密意图随重载被放弃：通知 onError（改密页停留并提示），不误报成功
+            const abandonedMessage: string =
+              ResourceManager.getString($r('app.string.change_password_abandoned_by_reload'));
+            if (callback && callback.onError) {
+              callback.onError(abandonedMessage);
+            } else {
+              CommonUtils.showToast(abandonedMessage);
+            }
+          } else if (callback && callback.onSuccess) {
             callback.onSuccess(message);
           }
         }).catch((error: Error) => {
@@ -385,6 +402,8 @@ export default class KdbxSaveService {
     KdbxSaveService.databaseWorker.onexit = (code: number) => {
       hilog.info(DOMAIN, TAG, 'Database save worker exit: %{public}d', code);
       KdbxSaveService.databaseWorker = null;
+      // 在途保存被外部终止：改密未完成，清理待应用凭证字段（F1 回归）
+      FileService.clearPendingCredentialChanges();
       release?.();
     }
   }
@@ -412,6 +431,9 @@ export default class KdbxSaveService {
         KdbxSaveService.handleSuccess(message, callback, release);
       },
       onError: (message: string) => {
+        // 保存失败：清理待应用的改密凭证字段（F1 回归），
+        // 防止残留的 newPassword/newKeyLocation/notUseKeyFile 被后续普通保存静默应用（锁定风险）
+        FileService.clearPendingCredentialChanges();
         callback?.onError?.(message);
         release?.();
       },

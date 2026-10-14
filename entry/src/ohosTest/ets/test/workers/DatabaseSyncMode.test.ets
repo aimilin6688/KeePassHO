@@ -2,10 +2,11 @@ import { beforeAll, describe, expect, it } from '@ohos/hypium';
 import { common } from '@kit.AbilityKit';
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
-import { ConflictStrategy } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
+import { ConflictStrategy, SaveDatabaseMessage } from '../../../../main/ets/workers/DatabaseSaveWorkerParam';
 import { StorageType } from '../../../../main/ets/storage';
 import { SuccessMessage } from '../../../../main/ets/workers/WorkerParam';
 import { HashUtils } from '../../../../main/ets/common/utils/HashUtils';
+import { LocationInfo, LocationMode } from '../../../../main/ets/services/beans/LocationParam';
 import { KdbxModeTestHelper, SyncSaveResult } from './KdbxModeTestHelper';
 
 const DOMAIN = 0x0000;
@@ -184,6 +185,67 @@ export default function DatabaseSyncModeTest() {
       // 更新基线
       baseVersion = success.version ?? null;
       baseHash = success.contentHash ?? null;
+    });
+
+    it('save with keyfile-only switch (empty newPassword) removes old password', 0, async () => {
+      // F5 回归：改密切换"仅密钥文件"传 newPassword=''，保存后必须可仅凭新密钥文件解锁
+      const switchDb = await KdbxModeTestHelper.createDatabase('KeyfileOnlySwitchDb', 'keyfile-only-entry');
+      const switchDbPath = appContext.filesDir + '/db-keyfile-only-switch.kdbx';
+      const initialContent: ArrayBuffer = await switchDb.save();
+      await fileManager.write(switchDbPath, initialContent);
+
+      // 32 字节原始密钥文件（kdbxweb：byteLength===32 直接作为 keyFileHash）
+      const keyFileBuffer = new ArrayBuffer(32);
+      const keyBytes = new Uint8Array(keyFileBuffer);
+      for (let i = 0; i < keyBytes.length; i++) {
+        keyBytes[i] = (i * 7 + 13) % 256;
+      }
+      const keyFilePath = appContext.filesDir + '/db-keyfile-only-switch.keyx';
+      await fileManager.write(keyFilePath, keyFileBuffer);
+
+      const dbFileParam = KdbxModeTestHelper.makeDbFileParam(switchDb, switchDbPath,
+        'db-keyfile-only-switch.kdbx', null, await KdbxModeTestHelper.sha256Hex(initialContent));
+      dbFileParam.newPassword = '';
+      const keyLocation: LocationInfo = {
+        mode: LocationMode.SELECT,
+        filePath: keyFilePath,
+        fileName: 'db-keyfile-only-switch.keyx',
+        storageType: StorageType.LOCAL,
+        storageConfig: {}
+      };
+      dbFileParam.newKeyLocation = keyLocation;
+      dbFileParam.notUseKeyFile = false;
+      const saveMessage = new SaveDatabaseMessage(switchDb, dbFileParam, ConflictStrategy.AUTO);
+
+      const result: SyncSaveResult = await KdbxModeTestHelper.saveSync(saveMessage);
+      expect(result.success !== null).assertTrue();
+      expect((result.success as SuccessMessage).isMerge).assertFalse();
+
+      const fileContent = await fileManager.read(switchDbPath);
+
+      // 核心断言：仅凭新密钥文件可解锁且数据完整
+      const keyOnly = await Kdbx.load(fileContent.content, new KdbxCredentials(null, keyFileBuffer));
+      const titles: string[] = KdbxModeTestHelper.collectEntryTitles(keyOnly);
+      expect(titles.includes('keyfile-only-entry')).assertTrue();
+
+      // 旧密码分量已移除：仅旧密码、旧密码+新密钥均解锁失败
+      let passwordOnlyRejected = false;
+      try {
+        await Kdbx.load(fileContent.content,
+          new KdbxCredentials(ProtectedValue.fromString(KdbxModeTestHelper.DB_PASSWORD)));
+      } catch (error) {
+        passwordOnlyRejected = true;
+      }
+      expect(passwordOnlyRejected).assertTrue();
+
+      let passwordAndKeyRejected = false;
+      try {
+        await Kdbx.load(fileContent.content,
+          new KdbxCredentials(ProtectedValue.fromString(KdbxModeTestHelper.DB_PASSWORD), keyFileBuffer));
+      } catch (error) {
+        passwordAndKeyRejected = true;
+      }
+      expect(passwordAndKeyRejected).assertTrue();
     });
   });
 }

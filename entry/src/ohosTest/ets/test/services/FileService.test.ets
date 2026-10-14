@@ -2,6 +2,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { FileService } from '../../../../main/ets/services/FileService';
 import { DbFileParam } from '../../../../main/ets/services/TypeDefined';
+import { LocationInfo, LocationMode } from '../../../../main/ets/services/beans/LocationParam';
+import { StorageType } from '../../../../main/ets/storage';
 
 export default function FileServiceTest() {
   describe('FileService', () => {
@@ -121,6 +123,80 @@ export default function FileServiceTest() {
       expect(FileService.isDatabaseValid()).assertTrue();
       FileService.init();
       expect(FileService.isDatabaseValid()).assertFalse();
+    });
+
+    // ==================== clearPendingCredentialChanges（F1 改密字段残留回归） ====================
+
+    it('clearPendingCredentialChanges clears transient credential fields only', 0, () => {
+      FileService.init();
+      const param = FileService.resetDbFileParam(kdbx, 42, 'v-clear', 'h-clear');
+      // 模拟改密页发起保存前写入共享 param 的三个待应用字段
+      param.password = 'OldPass';
+      param.filePath = '/keep/session.kdbx';
+      param.fileName = 'session.kdbx';
+      param.newPassword = 'NewPass!23';
+      const newKeyLocation: LocationInfo = {
+        mode: LocationMode.SELECT,
+        filePath: '/keep/e2e-test.keyx',
+        fileName: 'e2e-test.keyx',
+        storageType: StorageType.LOCAL,
+        storageConfig: {}
+      } as LocationInfo;
+      param.newKeyLocation = newKeyLocation;
+      param.notUseKeyFile = true;
+
+      FileService.clearPendingCredentialChanges();
+
+      // 待应用凭证字段被清理
+      expect(param.newPassword).assertUndefined();
+      expect(param.newKeyLocation).assertUndefined();
+      expect(param.notUseKeyFile).assertFalse();
+      // 会话字段不受影响：清理不得中断当前会话
+      expect(param.database).assertEqual(kdbx);
+      expect(param.password).assertEqual('OldPass');
+      expect(param.filePath).assertEqual('/keep/session.kdbx');
+      expect(param.fileName).assertEqual('session.kdbx');
+      expect(param.modifiedTime).assertEqual(42);
+      expect(param.version).assertEqual('v-clear');
+      expect(param.contentHash).assertEqual('h-clear');
+    });
+
+    it('static clearPendingCredentialChanges delegates to singleton', 0, () => {
+      FileService.init();
+      const param = FileService.getDbFileParam();
+      param.newPassword = 'NewPass!23';
+      param.notUseKeyFile = true;
+      FileService.clearPendingCredentialChanges();
+      expect(param.newPassword).assertUndefined();
+      expect(param.notUseKeyFile).assertFalse();
+    });
+
+    it('hasPendingCredentialChanges reflects pending state including keyfile-only', 0, () => {
+      FileService.init();
+      const param = FileService.getDbFileParam();
+      // 空参数：无待应用改密
+      expect(FileService.hasPendingCredentialChanges()).assertFalse();
+      // 仅密钥文件模式：newPassword=''（移除密码意图）同样是待应用变更
+      param.newPassword = '';
+      expect(FileService.hasPendingCredentialChanges()).assertTrue();
+      FileService.clearPendingCredentialChanges();
+      expect(FileService.hasPendingCredentialChanges()).assertFalse();
+      // newKeyLocation 待应用
+      param.newKeyLocation = {
+        mode: LocationMode.SELECT,
+        filePath: '/keep/e2e-test.keyx',
+        fileName: 'e2e-test.keyx',
+        storageType: StorageType.LOCAL,
+        storageConfig: {}
+      } as LocationInfo;
+      expect(FileService.hasPendingCredentialChanges()).assertTrue();
+      FileService.clearPendingCredentialChanges();
+      expect(FileService.hasPendingCredentialChanges()).assertFalse();
+      // notUseKeyFile=true 待应用
+      param.notUseKeyFile = true;
+      expect(FileService.hasPendingCredentialChanges()).assertTrue();
+      FileService.clearPendingCredentialChanges();
+      expect(FileService.hasPendingCredentialChanges()).assertFalse();
     });
   });
 }

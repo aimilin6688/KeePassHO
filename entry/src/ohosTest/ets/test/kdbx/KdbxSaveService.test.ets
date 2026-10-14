@@ -11,6 +11,7 @@ import { FileService } from '../../../../main/ets/services/FileService';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { StorageType } from '../../../../main/ets/storage';
 import { KdbxUtils } from '../../../../main/ets/common/utils/KdbxUtils';
+import { ResourceManager } from '../../../../main/ets/common/utils/ResourceManager';
 import { KdbxModeTestHelper } from '../workers/KdbxModeTestHelper';
 
 const TEST_TIMEOUT_MS: number = 60000;
@@ -341,6 +342,26 @@ export default function KdbxSaveServiceTest() {
       expect(released).assertTrue();
     });
 
+    it('callbackWarp onError clears pending credential change fields', 0, () => {
+      // F1 回归：改密保存失败后，待应用的改密凭证字段（newPassword/notUseKeyFile 等）
+      // 必须被清理，否则残留字段会被后续普通保存静默应用，导致非预期改密（用户被锁在库外）
+      FileService.getInstance().initDbFileParam();
+      const param = FileService.getDbFileParam();
+      param.newPassword = 'NewPass!23';
+      param.notUseKeyFile = true;
+
+      const tracker = new SaveCallbackTracker();
+      let released = false;
+      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      wrapped.onError?.('save-failed');
+
+      expect(tracker.errorCount).assertEqual(1);
+      expect(tracker.lastErrorMessage).assertEqual('save-failed');
+      expect(released).assertTrue();
+      expect(param.newPassword).assertUndefined();
+      expect(param.notUseKeyFile).assertFalse();
+    });
+
     it('callbackWarp onMessage passes through to callback', 0, () => {
       const tracker = new SaveCallbackTracker();
       let released = false;
@@ -630,6 +651,64 @@ export default function KdbxSaveServiceTest() {
       const titles = KdbxModeTestHelper.collectEntryTitles(remote);
       expect(titles.includes('remote-conflict-entry')).assertTrue();
       expect(titles.includes('local-conflict-entry')).assertFalse();
+    });
+
+    // ==================== RELOAD 策略与改密意图（F4 回归） ====================
+
+    it('saveDatabase RELOAD with pending credential change reports abandoned error', 0, async () => {
+      // 测试进程 ResourceManager 未初始化（context 为 null）会使 getString 返回 ''，先初始化
+      ResourceManager.getInstance().init(KdbxModeTestHelper.initContext() as common.UIAbilityContext);
+      const database = await KdbxModeTestHelper.createDatabase('ReloadPendDb', 'reload-pend-entry');
+      const initialContent: ArrayBuffer = await database.save();
+      await fileManager.write(dbPath, initialContent);
+      const baseHash = await KdbxModeTestHelper.sha256Hex(initialContent);
+
+      const dbFileParam = KdbxModeTestHelper.makeDbFileParam(database, dbPath, 'reload-pend.kdbx', null, baseHash);
+      FileService.setDbFileParam(dbFileParam);
+      // 模拟改密页发起保存前写入的待应用凭证字段
+      FileService.getDbFileParam().newPassword = 'NewPass!23';
+      FileService.getDbFileParam().notUseKeyFile = true;
+
+      const result = await withTimeout(new Promise<SaveCheckResult>(
+        (resolve) => {
+          KdbxSaveService.saveDatabase({
+            onSuccess: (msg: SuccessMessage) => { resolve({ success: true, error: '' }); },
+            onError: (err: string) => { resolve({ success: false, error: err }); }
+          }, ConflictStrategy.RELOAD);
+        }
+      ), TEST_TIMEOUT_MS);
+
+      // F4：改密意图随重载被放弃 → 回调 onError（改密页停留提示），不得误报 onSuccess
+      expect(result.success).assertFalse();
+      expect(result.error.length > 0).assertTrue();
+      // F1：待应用凭证字段已清理
+      const param = FileService.getDbFileParam();
+      expect(param.newPassword).assertUndefined();
+      expect(param.notUseKeyFile).assertFalse();
+    });
+
+    it('saveDatabase RELOAD without pending change still calls onSuccess', 0, async () => {
+      const database = await KdbxModeTestHelper.createDatabase('ReloadPlainDb', 'reload-plain-entry');
+      const initialContent: ArrayBuffer = await database.save();
+      await fileManager.write(dbPath, initialContent);
+      const baseHash = await KdbxModeTestHelper.sha256Hex(initialContent);
+
+      const dbFileParam = KdbxModeTestHelper.makeDbFileParam(database, dbPath, 'reload-plain.kdbx', null, baseHash);
+      FileService.setDbFileParam(dbFileParam);
+
+      const result = await withTimeout(new Promise<SaveCheckResult>(
+        (resolve) => {
+          KdbxSaveService.saveDatabase({
+            onSuccess: (msg: SuccessMessage) => { resolve({ success: true, error: '' }); },
+            onError: (err: string) => { resolve({ success: false, error: err }); }
+          }, ConflictStrategy.RELOAD);
+        }
+      ), TEST_TIMEOUT_MS);
+
+      // 普通保存的 RELOAD（放弃本地修改）语义不变：重载成功回调 onSuccess
+      expect(result.success).assertTrue();
+      const param = FileService.getDbFileParam();
+      expect(param.newPassword).assertUndefined();
     });
   });
 }

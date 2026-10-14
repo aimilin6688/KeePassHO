@@ -1117,6 +1117,10 @@
       "value": "旧密码错误"
     },
     {
+      "name": "change_password_abandoned_by_reload",
+      "value": "已放弃本次密码修改：数据库已从远端重新加载，如需修改请重试"
+    },
+    {
       "name": "select_key_file_placeholder",
       "value": "请选择密钥文件"
     },

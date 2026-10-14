@@ -263,17 +263,22 @@ export class DatabaseSave {
     savedPath?: string, x1Path?: string, x2Path?: string): Promise<SavedContent> {
     this.postMessage('save_saving');
     const database: Kdbx = kdbx ? kdbx : await KdbxUtils.arrayBufferToKdbx(request.data, request, credentials);
-    if (request.newPassword) {
-      database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
+    if (request.newPassword !== undefined) {
+      // F5: newPassword='' 表示切换仅密钥文件模式，必须移除密码分量（setPassword(null) → passwordHash = undefined）
+      if (request.newPassword === '') {
+        await database.credentials.setPassword(null);
+      } else {
+        await database.credentials.setPassword(ProtectedValue.fromString(request.newPassword));
+      }
     }
     // 不适用密钥文件
     if (request.notUseKeyFile) {
-      database.credentials.setKeyFile(null);
+      await database.credentials.setKeyFile(null);
     } else {
       if (request.newKeyLocation) {
-        await KdbxFileManager.of(request.newKeyLocation).read(request.newKeyLocation.filePath).then(newKeyFileContent => {
-          database.credentials.setKeyFile(newKeyFileContent.content);
-        });
+        const newKeyFileContent = await KdbxFileManager.of(request.newKeyLocation)
+          .read(request.newKeyLocation.filePath);
+        await database.credentials.setKeyFile(newKeyFileContent.content);
       }
     }
     const now = new Date().getTime();

@@ -76,4 +76,39 @@ export class FileService {
     FileService.getDbFileParam().contentHash = contentHash ?? null;
     return FileService.getDbFileParam();
   }
+
+  /**
+   * 清理待应用的改密凭证字段（newPassword / newKeyLocation / notUseKeyFile）
+   *
+   * 这些字段由改密页在发起保存前写入共享 dbFileParam，仅当次保存请求消费；
+   * 保存失败或被放弃（保存出错 / 冲突弹框关闭 / RELOAD 重载策略 / Worker 外部终止）后
+   * 必须清理，否则残留字段会被后续普通保存静默应用，
+   * 造成非预期的密码 / 密钥文件变更（用户被锁在库外）。
+   * 会话字段（database / password / filePath 等）不受影响。
+   */
+  public clearPendingCredentialChanges(): void {
+    const dbFileParam = this.getDbFileParam();
+    dbFileParam.newPassword = undefined;
+    dbFileParam.newKeyLocation = undefined;
+    dbFileParam.notUseKeyFile = false;
+  }
+
+  public static clearPendingCredentialChanges(): void {
+    FileService.instance.clearPendingCredentialChanges();
+  }
+
+  /**
+   * 是否存在待应用的改密凭证字段（改密页发起保存前写入、尚未被保存请求消费或清理）
+   * 注意 newPassword='' 表示"切换到仅密钥文件模式"的待应用变更，同样视为待应用状态
+   * @returns 是否存在待应用改密字段
+   */
+  public hasPendingCredentialChanges(): boolean {
+    const dbFileParam = this.getDbFileParam();
+    return dbFileParam.newPassword !== undefined || dbFileParam.newKeyLocation !== undefined
+      || dbFileParam.notUseKeyFile === true;
+  }
+
+  public static hasPendingCredentialChanges(): boolean {
+    return FileService.instance.hasPendingCredentialChanges();
+  }
 }
