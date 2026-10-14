@@ -27,6 +27,15 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
    */
   keyLocation?: LocationInfo;
   /**
+   * OTP / KeeChallenge 派生 secret（hex）：主线程派生后随 JSON 消息传入
+   * （undefined 字段序列化时自动丢弃，见 KdbxLoadService 消息通道）
+   */
+  otpSecretHex?: string;
+  /**
+   * 挑战-应答（XC）预计算应答（hex）：两阶段加载第二阶段由固定应答回调消费
+   */
+  challengeResponseHex?: string;
+  /**
    * 存储类型
    */
   storageType: StorageType;
@@ -63,7 +72,7 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
    * @returns
    */
   public static byDbFileParam(dbFileParam: DbFileParam): LoadDatabase {
-    return new LoadDatabase(
+    const loadDatabase = new LoadDatabase(
       dbFileParam.filePath,
       dbFileParam.fileName,
       dbFileParam.password,
@@ -72,5 +81,9 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
       dbFileParam.storageType,
       dbFileParam.storageConfig
     );
+    // OTP secret 在两次保存间稳定（仅 Counter 前进），重载/合并可复用；
+    // challengeResponseHex 单次有效（KDF seed 每次保存后变化），重载需重新挑战（M3 两阶段流程）
+    loadDatabase.otpSecretHex = dbFileParam.otpSecretHex;
+    return loadDatabase;
   }
 }

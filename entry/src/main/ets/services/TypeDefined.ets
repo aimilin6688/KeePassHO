@@ -20,6 +20,18 @@ export interface CredentialsParam {
    * 认证密码文件路径
    */
   keyLocation?: LocationInfo;
+
+  /**
+   * OTP / KeeChallenge（P2 旧版）派生 secret（hex 小写）：主线程派生后随任务消息传入
+   * Worker，不持久化；以 KcpCustomKey（bPerformHash=true）语义并入复合密钥
+   */
+  otpSecretHex?: string;
+
+  /**
+   * 挑战-应答（KeePassXC 兼容）预计算应答（hex 小写）：两阶段加载——主线程完成
+   * NFC 挑战后随消息传入，Worker 以固定应答回调组装（kdbxweb 内部再 SHA-256 并入）
+   */
+  challengeResponseHex?: string;
 }
 
 /**
@@ -325,6 +337,60 @@ export class AuthType {
            authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY.type ||
            authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_XC.type ||
            authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
+  }
+
+  /**
+   * 判断认证方式是否使用 OTP（含恢复模式）
+   * @param authType 认证方式
+   * @returns 是否使用 OTP
+   */
+  public static useOtpAuth(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD_OTP.type ||
+           authType.type === AuthType.PASSWORD_OTP_RECOVERY.type;
+  }
+
+  /**
+   * 判断认证方式是否使用挑战-应答（含 XC、KeeChallenge 旧版及其恢复模式）
+   * @param authType 认证方式
+   * @returns 是否使用挑战-应答
+   */
+  public static useChallengeAuth(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_XC.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
+  }
+
+  /**
+   * 判断认证方式是否为 KeePassXC 兼容挑战-应答（固定应答回调路径）
+   * @param authType 认证方式
+   * @returns 是否为 XC 挑战-应答
+   */
+  public static useChallengeResponseXc(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_XC.type ||
+           authType.type === AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC.type;
+  }
+
+  /**
+   * 判断认证方式是否为恢复模式（令牌丢失时直接输入 secret，无需硬件因子）
+   * @param authType 认证方式
+   * @returns 是否为恢复模式
+   */
+  public static isRecoveryMode(authType: AuthTypeInfo): boolean {
+    if (!authType) {
+      return false;
+    }
+    return authType.type === AuthType.PASSWORD_OTP_RECOVERY.type ||
+           authType.type === AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY.type;
   }
 }
 

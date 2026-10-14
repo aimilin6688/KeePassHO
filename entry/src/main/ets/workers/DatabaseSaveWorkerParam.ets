@@ -58,7 +58,9 @@ export class SaveDatabaseMessage implements WorkerMessage, CachePolicyCarrier {
       conflictStrategy: conflictStrategy ?? ConflictStrategy.AUTO,
       newPassword: dbFileParam.newPassword,
       newKeyLocation: dbFileParam.newKeyLocation,
-      notUseKeyFile: dbFileParam.notUseKeyFile
+      notUseKeyFile: dbFileParam.notUseKeyFile,
+      otpSecretHex: dbFileParam.otpSecretHex,
+      challengeResponseHex: dbFileParam.challengeResponseHex
     } as SaveDatabaseDbParam);
   }
 }
@@ -89,6 +91,14 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
   newPassword?: string;
   newKeyLocation?: LocationInfo;
   notUseKeyFile?: boolean;
+  /**
+   * OTP / KeeChallenge 派生 secret（hex）：保存合并时重建凭证（解密远端副本）需要
+   */
+  otpSecretHex?: string;
+  /**
+   * 挑战-应答（XC）预计算应答（hex）：单次有效（KDF seed 每次保存后变化）
+   */
+  challengeResponseHex?: string;
 
   constructor(dbParam: SaveDatabaseDbParam, message: SaveDatabaseMessage) {
     this.type = message.type;
@@ -107,6 +117,8 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.newPassword = dbParam.newPassword;
     this.newKeyLocation = dbParam.newKeyLocation;
     this.notUseKeyFile = dbParam.notUseKeyFile;
+    this.otpSecretHex = dbParam.otpSecretHex;
+    this.challengeResponseHex = dbParam.challengeResponseHex;
   }
 }
 

@@ -681,6 +681,14 @@
       "value": "未找到密钥文件"
     },
     {
+      "name": "error_otp_secret_missing",
+      "value": "OTP 密钥缺失，请重新输入动态密码"
+    },
+    {
+      "name": "error_challenge_response_missing",
+      "value": "挑战应答结果缺失，请重新进行挑战验证"
+    },
+    {
       "name": "history_version",
       "value": "历史版本 #%d"
     },

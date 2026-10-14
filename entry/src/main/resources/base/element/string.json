@@ -693,6 +693,14 @@
       "value": "Key file not found"
     },
     {
+      "name": "error_otp_secret_missing",
+      "value": "OTP secret is missing. Please re-enter the one-time passwords"
+    },
+    {
+      "name": "error_challenge_response_missing",
+      "value": "Challenge response is missing. Please retry the challenge verification"
+    },
+    {
       "name": "history_version",
       "value": "History version #%d"
     },
