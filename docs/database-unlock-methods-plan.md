@@ -19,7 +19,7 @@
 | M2-2 OTP 解锁 UI（Password.ets OTP 输入区 / 恢复模式区 / Counter 写回） | 已完成 | `getAllTypes` 启用 `password_otp` / `password_otp_recovery`；OTP 输入区（OtpsRequired 个码，辅助文件自动定位失败引导手动选择）+ 恢复模式区（secret + 五种编码格式）；解锁成功后 Counter 写回（重加密，失败仅告警）；生物识别仅代填密码分量；新增 `OtpAuxFileService`（定位/读写/写回）真机单测 4/4，otpkey 全量 31/31 + 凭证 22/22 + AuthType 相关回归 39/39 |
 | M3-1 YubiKey 挑战-应答（XC 兼容）— KDBX 头预解析 | 已完成 | 新增 `services/kdbx/KdbxHeaderReader.ets`（签名/版本校验、KDBX3 拒绝、外层字段 11 VarDictionary 解析、提取 KDF seed 'S' 与 '$UUID'）；真机单测 9/9（合成头向量 / 两阶段挑战-应答 E2E：预解析 seed → 模拟 HMAC-SHA1 → challengeResponseHex 语义重开成功、错误应答拒开 / KDBX3、版本、签名、截断、缺字段、缺 seed、坏字典异常路径），凭证与加载回归 38/38 |
 | M3 YubiKey 挑战-应答（XC 兼容）— NFC 服务与 UI | 已完成（代码与单测） | `YubiKeyNfcService`（tag.on readerMode 前台读卡 + IsoDepTag 两步 APDU：Select AID `A000000527200101` → HMAC 挑战 0x30/0x38 挑战补零 64 字节 → 20 字节应答 + SW 9000；7 类错误码状态机，会话内可重贴重试）；`NFC_TAG` 权限声明；`NfcChallengeDialog` 贴卡弹层（等待/读取/错误态，取消/重试，生命周期驱动会话）；Password.ets 槽位选择（默认槽位 2）+ 两阶段触发（阶段一头预解析提取挑战 → 弹层 → challengeResponseHex 加载）+ KDBX3/坏头/读失败分类提示；`RecentFile.yubikeySlot` 槽位记忆；`getAllTypes` 启用两个 XC 类型；APDU 纯函数真机单测 11/11，6 套件回归 58/58；待验证：YubiKey 5 NFC 实体钥互操作 |
-| M4 快速解锁与收尾 | 待开始 | — |
+| M4 快速解锁与收尾 | 已完成 | 快速解锁语义确认：应用内锁屏（UnLockDatabase）库保持内存解密态，生物识别/快速密码仅恢复界面，OTP/XC 无需重派生密钥，无需改动；Password.ets 生物识别对 XC 挑战-应答库改为仅代填密码分量（不自动弹 NFC 层，由用户按解锁键触发，与 OTP 行为一致）；`RecentFile.otpAuxLocation` OTP 辅助文件位置记忆（手动选择/自动定位结果持久化，重开免重新定位）；设置页验证无需改动（不枚举数据库认证方式）；新增用户使用说明 `docs/unlock-methods-guide.md`；6 套件回归 58/58 |
 | M5 KeeChallenge 旧版（可选 P2） | 待开始 | — |
 
 ---
@@ -163,7 +163,7 @@ Password.ets (UI 收集)
 - **OTP 辅助文件定位**：与数据库同目录同名 + `.otp.xml`；本地/远端存储统一经 `IFileStorage` 抽象读取（复用 `KdbxFileManager`/`FileService` 的存储访问层）；
 - **Counter 写回**：解锁成功后 `Counter += OtpsRequired(+i)` 写回 `.otp.xml`（对齐 `SaveOtpAuxFileAndLoadDb`）；写回失败仅告警不阻断（远端存储可能只读）；
 - **RecentFile 扩展**（`TypeDefined.ets:334`）：新增可选字段 `otpAuxLocation?: LocationInfo`（恢复模式/重开时免重新定位）、`yubikeySlot?: number`（记忆槽位）；OTP secret **不持久化**（每次解锁重新由 OTP 码派生）；
-- **快速解锁/生物识别适配**（`UnLockDatabase.ets`）：OTP/挑战-应答库的「快速解锁」语义调整为——生物识别通过后仍需补齐硬件因子：OTP 库需重新输入 OTP 码、XC 库需重新贴 YubiKey（KDF seed 每次保存后变化，应答不可复用，对齐 KP2A 行为）；仅密码分量可走既有快速密码/生物识别通道。
+- **快速解锁/生物识别适配**（M4 实测确认）：应用内锁屏（UnLockDatabase）下库保持内存解密态，快速密码/生物识别仅恢复界面遮罩，不重新派生密钥——OTP/挑战库无需补齐硬件因子，原方案（锁屏后重新输入 OTP 码/贴卡）不再需要；冷启动完整解锁流程中，生物识别仅代填密码分量，OTP 码 / YubiKey 贴卡仍需手动完成（KDF seed 每次保存后变化，应答不可复用，对齐 KP2A 行为）；仅密码分量可走既有快速密码/生物识别通道。
 
 ---
 

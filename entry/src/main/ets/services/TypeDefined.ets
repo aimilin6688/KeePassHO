@@ -453,6 +453,11 @@ export interface RecentFile {
    * YubiKey 挑战槽位（挑战-应答 XC 模式记忆：1=槽位1，2=槽位2）
    */
   yubikeySlot?: number;
+
+  /**
+   * OTP 辅助文件位置记忆（OTP 模式：手动/自动定位结果，重开时免重新定位）
+   */
+  otpAuxLocation?: LocationInfo;
 }
 
 /**

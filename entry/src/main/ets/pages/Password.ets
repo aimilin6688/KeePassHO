@@ -256,6 +256,8 @@ export struct Password {
     this.filePath = recentFile.filePath;
     this.storageType = recentFile.storageType;
     this.storageConfig = recentFile.storageConfig;
+    // 恢复 OTP 辅助文件位置记忆（手动选择过则免重新定位）
+    this.auxLocation = recentFile.otpAuxLocation;
     // 设置认证类型
     if (recentFile.authType) {
       this.setAuthType(recentFile.authType);
@@ -335,7 +337,8 @@ export struct Password {
   private onAuthTypeChanged(): void {
     this.pendingDerived = undefined;
     if (AuthType.useOtpAuth(this.authTypeInfo) && !AuthType.isRecoveryMode(this.authTypeInfo) && !this.otpInfo) {
-      this.loadAuxFile();
+      // 优先使用记忆的辅助文件位置，其次同目录自动定位
+      this.loadAuxFile(this.auxLocation);
     }
     this.updateButtonState();
   }
@@ -551,7 +554,8 @@ export struct Password {
           CryptoUtils.decryptText(this.recentFile?.password || '').then(result => {
             this.password = result;
             // OTP/恢复模式：生物识别仅代填密码分量，OTP 因子仍需手动输入（不自动提交）
-            if (AuthType.useOtpAuth(this.authTypeInfo)) {
+            // XC 挑战-应答：同理仅代填密码，由用户按解锁键触发 NFC 贴卡（避免自动弹出读卡弹层）
+            if (AuthType.useOtpAuth(this.authTypeInfo) || AuthType.useChallengeResponseXc(this.authTypeInfo)) {
               this.updateButtonState();
               return;
             }
@@ -1050,6 +1054,8 @@ export struct Password {
       storageConfig: this.storageConfig ?? {},
       // 挑战-应答槽位记忆（仅 XC 挑战-应答认证持久化）
       yubikeySlot: AuthType.useChallengeResponseXc(this.authTypeInfo) ? this.yubikeySlot : undefined,
+      // OTP 辅助文件位置记忆（仅 OTP 认证持久化，含自动定位结果）
+      otpAuxLocation: AuthType.useOtpAuth(this.authTypeInfo) ? this.auxLocation : undefined,
       fileSize: (successMessage?.fileSize !== undefined && successMessage.fileSize > 0)
         ? successMessage.fileSize : undefined
     } as RecentFile;
