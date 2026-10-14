@@ -11,6 +11,11 @@ import OtpUrlParserTest from './services/otp/parsers/OtpUrlParser.test';
 import KeePass2ParserTest from './services/otp/parsers/KeePass2Parser.test';
 import KeeOtpParserTest from './services/otp/parsers/KeeOtpParser.test';
 import KeeTrayTotpParserTest from './services/otp/parsers/KeeTrayTotpParser.test';
+import HmacOtpTest from './services/otpkey/HmacOtp.test';
+import EncodingUtilTest from './services/otpkey/EncodingUtil.test';
+import OtpUtilTest from './services/otpkey/OtpUtil.test';
+import OtpInfoTest from './services/otpkey/OtpInfo.test';
+import OtpKeyProvServiceTest from './services/otpkey/OtpKeyProvService.test';
 
 import S3ClientTest from './storage/s3/S3Client.test';
 import S3ClientMultipartTest from './storage/s3/S3ClientMultipart.test';
@@ -242,6 +247,11 @@ export default function testsuite() {
   KeePass2ParserTest();
   KeeOtpParserTest();
   KeeTrayTotpParserTest();
+  HmacOtpTest();
+  EncodingUtilTest();
+  OtpUtilTest();
+  OtpInfoTest();
+  OtpKeyProvServiceTest();
 
   S3ClientTest();
   S3ClientMultipartTest();
