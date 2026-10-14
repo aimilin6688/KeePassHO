@@ -2,9 +2,10 @@ import { PromptAction } from '@kit.ArkUI';
 import { FileType, StorageConfig, StorageType } from '..';
 import { WebDAVStorageConfig } from './WebDAVConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, FilenameUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, Sm4Utils, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
+import { RecentFilesService } from '../../services/RecentFilesService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { picker, fileIo as fs } from '@kit.CoreFileKit';
@@ -18,7 +19,7 @@ const TAG = 'WebDAV';
 @Builder
 export function WebDAVPageBuilder(name: string, param: Object): void {
   NavDestination() {
-    WebDAV()
+    WebDAV({ reEditParam: param })
   }
   .title(StorageNavigation.getStorageTitle(StorageType.WEBDAV))
   .backgroundColor($r('app.color.bg_primary'))
@@ -43,9 +44,11 @@ struct WebDAV {
   @State showCertSettings: boolean = false;
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.WEBDAV);
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
+  reEditParam: Object | undefined = undefined;
 
   aboutToAppear(): void {
     this.initSaveParam();
+    this.initReEditPrefill();
   }
 
   // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
@@ -70,25 +73,49 @@ struct WebDAV {
       this.url = LocationParam.getFileName();
       return;
     }
-    let storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig;
-    if (storageConfig) {
-      storageConfig = new WebDAVStorageConfig(storageConfig.url, storageConfig.username, storageConfig.password, {
-        rootPath: storageConfig.rootPath,
-        timeout: storageConfig.timeout,
-        certValidationMode: storageConfig.certValidationMode,
-        customCaCertContent: storageConfig.customCaCertContent
-      });
-      this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
-      this.username = storageConfig.getUserNameText();
-      this.password = storageConfig.getPasswordText();
-      // 恢复证书配置
-      this.certValidationMode = storageConfig.certValidationMode || CertValidationMode.SYSTEM;
-      this.customCaCertContent = storageConfig.customCaCertContent || '';
-      this.customCaCertPath = this.customCaCertContent ?
-        ResourceManager.getString($r('app.string.ssl_cert_certificate_selected')) : '';
-      // 如果有非默认的证书配置，展开设置面板
-      this.showCertSettings = this.certValidationMode !== CertValidationMode.SYSTEM || !!this.customCaCertContent;
+    const storageConfig = dbFileParam.storageConfig as WebDAVStorageConfig | undefined;
+    if (!storageConfig) {
+      return;
     }
+    this.prefillForm(storageConfig);
+    this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
+  }
+
+  /**
+   * 重新编辑连接配置（解密失败引导）预填：按传入的文件路径（URL）从最近记录解析原配置
+   */
+  private async initReEditPrefill(): Promise<void> {
+    if (LocationParam.isSaveMode()) {
+      return;
+    }
+    const reEditParam = this.reEditParam as Record<string, string>;
+    const filePath: string = reEditParam?.filePath ?? '';
+    if (!filePath) {
+      return;
+    }
+    const recent = await RecentFilesService.getRecentFile(filePath);
+    if (!recent || recent.storageType !== StorageType.WEBDAV) {
+      return;
+    }
+    this.prefillForm(recent.storageConfig as WebDAVStorageConfig);
+  }
+
+  /**
+   * 预填 WebDAV 连接配置表单：明文字段（服务器 URL）直接回填；
+   * 凭证（用户名/密码）密文仅在可解密时回填，解密失败（密钥变更/密文损坏）留空由用户重新输入；
+   * 同时恢复证书配置
+   */
+  private prefillForm(config: WebDAVStorageConfig): void {
+    this.url = config.url || '';
+    this.username = Sm4Utils.tryDecryptWithPrefix(config.username);
+    this.password = Sm4Utils.tryDecryptWithPrefix(config.password);
+    // 恢复证书配置
+    this.certValidationMode = config.certValidationMode || CertValidationMode.SYSTEM;
+    this.customCaCertContent = config.customCaCertContent || '';
+    this.customCaCertPath = this.customCaCertContent ?
+      ResourceManager.getString($r('app.string.ssl_cert_certificate_selected')) : '';
+    // 如果有非默认的证书配置，展开设置面板
+    this.showCertSettings = this.certValidationMode !== CertValidationMode.SYSTEM || !!this.customCaCertContent;
   }
 
   // 处理确认时间

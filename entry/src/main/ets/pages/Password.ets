@@ -503,7 +503,7 @@ export struct Password {
    * 存储配置解密失败引导：弹框确认后跳转对应存储的连接配置页，
    * 用户重新填写连接信息并再次选中该文件后，最近记录会被新配置覆盖（见 DataService.toPasswordPage）
    */
-  private showReEditConfigGuide(storageType: StorageType): void {
+  private showReEditConfigGuide(storageType: StorageType, filePath: string): void {
     this.getUIContext().showAlertDialog({
       title: $r('app.string.dialog_prompt_title'),
       message: $r('app.string.storage_config_decrypt_failed'),
@@ -516,7 +516,7 @@ export struct Password {
       secondaryButton: {
         value: $r('app.string.re_edit_connection_config'),
         action: () => {
-          DataService.reEditStorageConfig(storageType);
+          DataService.reEditStorageConfig(storageType, filePath);
         }
       }
     });
@@ -574,7 +574,7 @@ export struct Password {
         // 存储配置解密失败（Worker 抛出的 ConfigDecryptError 以资源名回传）：
         // 弹框引导重新编辑连接配置（简短吐司已由 ToastLoadDatabaseCallback 默认行为展示）
         if (this.storageType !== undefined && ConfigDecryptError.isDecryptFailedMessage(message.message)) {
-          this.showReEditConfigGuide(this.storageType);
+          this.showReEditConfigGuide(this.storageType, this.filePath);
         }
       },
       onAllErrors: (error: ErrorEvent) => {

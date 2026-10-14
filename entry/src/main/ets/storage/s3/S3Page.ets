@@ -2,9 +2,10 @@ import { StorageConfig, StorageType, FileType } from '..';
 import { S3StorageConfig } from './S3Config';
 import { S3Storage } from './S3Storage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, FilenameUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, Sm4Utils, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
+import { RecentFilesService } from '../../services/RecentFilesService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 
@@ -15,7 +16,7 @@ const TAG = 'S3Page';
 @Builder
 export function S3PageBuilder(name: string, param: Object): void {
   NavDestination() {
-    S3Page()
+    S3Page({ reEditParam: param })
   }
   .title(StorageNavigation.getStorageTitle(StorageType.S3))
   .backgroundColor($r('app.color.bg_primary'))
@@ -42,9 +43,12 @@ struct S3Page {
   @State isErrorStatus: boolean = false;
 
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.S3);
+  // 重新编辑连接配置（解密失败引导）导航参数：{ filePath }，按路径从最近记录解析原配置
+  reEditParam: Object | undefined = undefined;
 
   aboutToAppear(): void {
     this.initSaveParam();
+    this.initReEditPrefill();
   }
 
   // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
@@ -68,29 +72,45 @@ struct S3Page {
       this.filePath = LocationParam.getFileName();
       return;
     }
-    let storageConfig = dbFileParam.storageConfig as S3StorageConfig;
-    if (storageConfig) {
-      // Reconstruct S3StorageConfig to restore class methods
-      storageConfig = new S3StorageConfig(
-        storageConfig.endpoint,
-        storageConfig.accessKeyId,
-        storageConfig.secretAccessKey,
-        {
-          region: storageConfig.region,
-          bucket: storageConfig.bucket,
-          pathStyle: storageConfig.pathStyle,
-          timeout: storageConfig.timeout
-        }
-      );
-      this.endpoint = storageConfig.endpoint;
-      this.accessKeyId = storageConfig.getAccessKeyIdText();
-      this.secretAccessKey = storageConfig.getSecretAccessKeyText();
-      this.region = storageConfig.region || '';
-      this.bucket = storageConfig.bucket || '';
-      this.pathStyle = storageConfig.pathStyle;
-      this.timeout = storageConfig.timeout?.toString() || '30000';
-      this.filePath = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
+    const storageConfig = dbFileParam.storageConfig as S3StorageConfig | undefined;
+    if (!storageConfig) {
+      return;
     }
+    this.prefillForm(storageConfig);
+    this.filePath = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
+  }
+
+  /**
+   * 重新编辑连接配置（解密失败引导）预填：按传入的文件路径（URL）从最近记录解析原配置
+   */
+  private async initReEditPrefill(): Promise<void> {
+    if (LocationParam.isSaveMode()) {
+      return;
+    }
+    const reEditParam = this.reEditParam as Record<string, string>;
+    const filePath: string = reEditParam?.filePath ?? '';
+    if (!filePath) {
+      return;
+    }
+    const recent = await RecentFilesService.getRecentFile(filePath);
+    if (!recent || recent.storageType !== StorageType.S3) {
+      return;
+    }
+    this.prefillForm(recent.storageConfig as S3StorageConfig);
+  }
+
+  /**
+   * 预填 S3 连接配置表单：明文字段（endpoint/region/bucket/pathStyle/timeout）直接回填；
+   * 凭证（AK/SK）密文仅在可解密时回填，解密失败（密钥变更/密文损坏）留空由用户重新输入
+   */
+  private prefillForm(config: S3StorageConfig): void {
+    this.endpoint = config.endpoint || '';
+    this.region = config.region || '';
+    this.bucket = config.bucket || '';
+    this.pathStyle = config.pathStyle ?? false;
+    this.timeout = config.timeout?.toString() || '30000';
+    this.accessKeyId = Sm4Utils.tryDecryptWithPrefix(config.accessKeyId);
+    this.secretAccessKey = Sm4Utils.tryDecryptWithPrefix(config.secretAccessKey);
   }
 
   private checkParam(): boolean {

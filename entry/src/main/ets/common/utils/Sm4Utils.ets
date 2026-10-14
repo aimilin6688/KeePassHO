@@ -129,4 +129,19 @@ export class Sm4Utils {
     }
     return data;
   }
+
+  /**
+   * 尝试解密有前缀的密文，解密失败（密钥变更/密文损坏）不抛出，返回空串。
+   * 适用于连接配置页预填等场景：明文可恢复则回填，不可恢复则留空由用户重新输入。
+   * @param data 16进制的字符串， SM4:1234567890123
+   * @returns 明文字符串，解密失败返回空串
+   */
+  public static tryDecryptWithPrefix(data: string): string {
+    try {
+      return Sm4Utils.decryptWithPrefix(data);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'SM4 try decrypt failed, return empty: %{public}s', `${error}`);
+      return '';
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { SaveKdbxParam, ExportType, FileContent } from './TypeDefined';
+import { SaveKdbxParam, ExportType, FileContent, RecentFile } from './TypeDefined';
 import { RecentFilesService } from './RecentFilesService';
 import { KdbxFileManager } from './kdbx/KdbxFileManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -10,6 +10,7 @@ import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { SettingsService } from './SettingsService';
 import { CsvExportHandler } from './importExport/handlers/export/CsvExportHandler';
 import { PageConstants } from '../common/constants/PageConstants';
+import { Constants } from '../common/constants/Constants';
 import { StorageType } from '../storage';
 
 const DOMAIN = 0x0000;
@@ -22,6 +23,11 @@ interface PasswordParam {
 
 interface IndexParam {
   notRedirect: boolean;
+}
+
+// 重新编辑连接配置导航参数：配置页按 filePath 从最近记录解析原配置预填表单
+interface ReEditParam {
+  filePath: string;
 }
 
 /**
@@ -122,9 +128,11 @@ export class DataService {
    * 配置解密失败后的 UI 引导入口：跳转到对应存储的连接配置页重新编辑连接信息。
    * 复用打开数据库的选择流程（选择模式 + kdbx 后缀）：用户重新填写配置并选中同一文件后，
    * toPasswordPage 会以新配置覆盖同路径的最近记录，即完成修复。
+   * 传入 filePath 时作为导航参数带给配置页，页面按路径从最近记录解析原配置预填表单。
    * @param storageType 存储类型
+   * @param filePath 文件路径（URL）
    */
-  public static reEditStorageConfig(storageType: StorageType): void {
+  public static reEditStorageConfig(storageType: StorageType, filePath?: string): void {
     DataService.selectKdbx();
     const pageName: string = StorageNavigation.getConfigPageName(storageType);
     if (pageName === '') {
@@ -132,7 +140,8 @@ export class DataService {
       NavigationManager.getInstance().navigateTo(PageConstants.PAGE_SELECT_LOCATION);
       return;
     }
-    NavigationManager.getInstance().navigateTo(pageName);
+    const reEditParam: ReEditParam = { filePath: filePath ?? '' };
+    NavigationManager.getInstance().navigateTo(pageName, reEditParam);
   }
 
   /**
@@ -141,12 +150,16 @@ export class DataService {
    */
   public static toPasswordPage(locationInfo: LocationInfo): void {
     // 添加到最近打开的文件列表
-    RecentFilesService.addRecentFile({
+    const recentFile: RecentFile = {
       filePath: locationInfo.filePath,
       fileName: locationInfo.fileName,
       storageType: locationInfo.storageType,
       storageConfig: locationInfo.storageConfig
-    }).then(() => {
+    };
+    RecentFilesService.addRecentFile(recentFile).then(() => {
+      // 同步刷新启动预加载快照（AppStorage）：否则本会话内 Password.openRecentFileOptimized
+      // 仍会命中启动时的旧快照（含旧 storageConfig），重新编辑连接后的新配置无法生效
+      AppStorage.setOrCreate(Constants.APP_STORAGE_PRELOAD_RECENT_FILE, recentFile);
       // 导航到密码输入页面
       const passwordParam: PasswordParam = {
         filePath: locationInfo.filePath

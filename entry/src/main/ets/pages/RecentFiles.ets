@@ -131,7 +131,7 @@ struct RecentFilesContent {
     LoadingDialog.hideLoading();
     // 存储配置解密失败（密钥变更，密文不可恢复）：保留记录，引导重新编辑连接配置
     if (decryptFailed) {
-      this.showReEditConfigGuide(recentFile.storageType);
+      this.showReEditConfigGuide(recentFile.storageType, recentFile.filePath);
       return;
     }
     if (!fileExists) {
@@ -161,7 +161,7 @@ struct RecentFilesContent {
    * 存储配置解密失败引导：弹框确认后跳转对应存储的连接配置页，
    * 用户重新填写连接信息并再次选中该文件后，最近记录会被新配置覆盖（见 DataService.toPasswordPage）
    */
-  private showReEditConfigGuide(storageType: StorageType): void {
+  private showReEditConfigGuide(storageType: StorageType, filePath: string): void {
     this.getUIContext().showAlertDialog({
       title: $r('app.string.dialog_prompt_title'),
       message: $r('app.string.storage_config_decrypt_failed'),
@@ -174,7 +174,7 @@ struct RecentFilesContent {
       secondaryButton: {
         value: $r('app.string.re_edit_connection_config'),
         action: () => {
-          DataService.reEditStorageConfig(storageType);
+          DataService.reEditStorageConfig(storageType, filePath);
         }
       }
     });

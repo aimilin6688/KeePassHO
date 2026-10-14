@@ -1,9 +1,10 @@
 import { FileType, StorageConfig, StorageType } from '..';
 import { FTPStorageConfig, ProtocolType, SecureType } from './FTPConfig';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
-import { CommonUtils, FilenameUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
+import { CommonUtils, FilenameUtils, ResourceManager, Sm4Utils, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { FileService } from '../../services/FileService';
+import { RecentFilesService } from '../../services/RecentFilesService';
 import { LocationParam } from '../../services/beans/LocationParam';
 import { common } from '@kit.AbilityKit';
 import { FTPStorage } from './FTPStorage';
@@ -15,7 +16,7 @@ const TAG = 'FTP';
 @Builder
 export function FTPPageBuilder(name: string, param: Object): void {
   NavDestination() {
-    FTP()
+    FTP({ reEditParam: param })
   }
   .title(StorageNavigation.getStorageTitle(StorageType.FTP))
   .backgroundColor($r('app.color.bg_primary'))
@@ -41,6 +42,7 @@ struct FTP {
   @State secureSelectIndex: number = 0;
   @State secureSelectText: ResourceStr = $r('app.string.ftp_secure_type_none');
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.FTP);
+  reEditParam: Object | undefined = undefined;
   private secureTypeOptions: Array<SecureTypeOptions> = [
     { value: $r('app.string.ftp_secure_type_none'), type: false },
     { value: $r('app.string.ftp_secure_type_explicit'), type: true },
@@ -49,6 +51,7 @@ struct FTP {
 
   aboutToAppear(): void {
     this.initSaveParam();
+    this.initReEditPrefill();
   }
 
   // NavDestination 下 onPageShow 不回调，由 NavDestination.onShown 驱动页面显示处理
@@ -76,13 +79,57 @@ struct FTP {
     }
     const storageConfig = FTPStorage.parseConfig(dbFileParam.storageConfig as FTPStorageConfig);
     if (storageConfig) {
-      this.host = storageConfig.host;
-      this.port = storageConfig.port.toString();
-      this.username = storageConfig.getUserNameText();
-      this.password = storageConfig.getPasswordText();
+      this.prefillForm(storageConfig);
       this.url = FilenameUtils.replaceFileName(dbFileParam.filePath, LocationParam.getFileName());
-      this.secure = storageConfig.secure === true;
-      this.protocol = storageConfig.protocol || ProtocolType.FTP;
+    }
+  }
+
+  /**
+   * 重新编辑连接配置（解密失败引导）预填：按传入的文件路径（URL）从最近记录解析原配置
+   */
+  private async initReEditPrefill(): Promise<void> {
+    if (LocationParam.isSaveMode()) {
+      return;
+    }
+    const reEditParam = this.reEditParam as Record<string, string>;
+    const filePath: string = reEditParam?.filePath ?? '';
+    if (!filePath) {
+      return;
+    }
+    const recent = await RecentFilesService.getRecentFile(filePath);
+    if (!recent || recent.storageType !== StorageType.FTP) {
+      return;
+    }
+    this.prefillForm(FTPStorage.parseConfig(recent.storageConfig as FTPStorageConfig));
+  }
+
+  /**
+   * 预填 FTP 连接配置表单：明文字段（host/port/secure/protocol）直接回填；
+   * 凭证（用户名/密码）密文仅在可解密时回填，解密失败（密钥变更/密文损坏）留空由用户重新输入
+   */
+  private prefillForm(config: FTPStorageConfig): void {
+    this.host = config.host || '';
+    this.port = config.port?.toString() || '21';
+    this.username = Sm4Utils.tryDecryptWithPrefix(config.username);
+    this.password = Sm4Utils.tryDecryptWithPrefix(config.password);
+    this.secure = config.secure ?? false;
+    this.protocol = config.protocol || ProtocolType.FTP;
+    this.syncSecureSelect();
+  }
+
+  /**
+   * 同步安全连接下拉框选中态与 secure 值一致
+   */
+  private syncSecureSelect(): void {
+    if (this.secure === true) {
+      this.secureSelectIndex = 1;
+      this.secureSelectText = $r('app.string.ftp_secure_type_explicit');
+    } else if (this.secure === 'implicit') {
+      this.secureSelectIndex = 2;
+      this.secureSelectText = $r('app.string.ftp_secure_type_implicit');
+    } else {
+      this.secureSelectIndex = 0;
+      this.secureSelectText = $r('app.string.ftp_secure_type_none');
     }
   }
 
