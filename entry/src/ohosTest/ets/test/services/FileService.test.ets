@@ -5,6 +5,22 @@ import { DbFileParam } from '../../../../main/ets/services/TypeDefined';
 import { LocationInfo, LocationMode } from '../../../../main/ets/services/beans/LocationParam';
 import { StorageType } from '../../../../main/ets/storage';
 
+/**
+ * 构造多库 facade 测试用会话参数（不同 filePath 形成不同 iocKey）
+ */
+function makeFacadeParam(filePath: string, kdbx: Kdbx): DbFileParam {
+  return {
+    password: 'p',
+    authType: { type: 'password', value: $r('app.string.auth_type_password') },
+    filePath: filePath,
+    fileName: 'x.kdbx',
+    database: kdbx,
+    storageType: StorageType.LOCAL,
+    storageConfig: {},
+    modifiedTime: 0
+  } as DbFileParam;
+}
+
 export default function FileServiceTest() {
   describe('FileService', () => {
     let kdbx: Kdbx;
@@ -197,6 +213,110 @@ export default function FileServiceTest() {
       expect(FileService.hasPendingCredentialChanges()).assertTrue();
       FileService.clearPendingCredentialChanges();
       expect(FileService.hasPendingCredentialChanges()).assertFalse();
+    });
+
+    // ==================== M2 多库注册表 facade ====================
+
+    it('setDbFileParam registers param and getDbFileParam returns same object', 0, () => {
+      FileService.init();
+      const param = makeFacadeParam('/facade/round-trip.kdbx', kdbx);
+      FileService.setDbFileParam(param);
+      // 对象身份穿透注册表：存量调用点依赖 param === set 入参的引用语义
+      expect(FileService.getDbFileParam() === param).assertTrue();
+      expect(FileService.getRegistry().size()).assertEqual(1);
+    });
+
+    it('hasOpenDatabase reflects registry state', 0, () => {
+      FileService.init();
+      expect(FileService.hasOpenDatabase()).assertFalse();
+      FileService.setDbFileParam(makeFacadeParam('/facade/has-open.kdbx', kdbx));
+      expect(FileService.hasOpenDatabase()).assertTrue();
+      FileService.init();
+      expect(FileService.hasOpenDatabase()).assertFalse();
+    });
+
+    it('closeCurrent removes current database and returns its param', 0, () => {
+      FileService.init();
+      const param = makeFacadeParam('/facade/close-last.kdbx', kdbx);
+      FileService.setDbFileParam(param);
+      const removed = FileService.closeCurrent();
+      expect(removed === param).assertTrue();
+      expect(FileService.hasOpenDatabase()).assertFalse();
+      expect(FileService.getRegistry().size()).assertEqual(0);
+      // 关闭后回到空会话：getDbFileParam 返回空参数（filePath 未定义）
+      expect(FileService.getDbFileParam().filePath === undefined).assertTrue();
+    });
+
+    it('closeCurrent on empty registry returns undefined without throwing', 0, () => {
+      FileService.init();
+      let threw = false;
+      let removed: DbFileParam | undefined = undefined;
+      try {
+        removed = FileService.closeCurrent();
+      } catch (e) {
+        threw = true;
+      }
+      expect(threw).assertFalse();
+      expect(removed === undefined).assertTrue();
+    });
+
+    it('closeCurrent auto-switches to remaining database', 0, () => {
+      FileService.init();
+      const a = makeFacadeParam('/facade/a.kdbx', kdbx);
+      const b = makeFacadeParam('/facade/b.kdbx', kdbx);
+      FileService.setDbFileParam(a);
+      FileService.setDbFileParam(b);
+      expect(FileService.getDbFileParam() === b).assertTrue();
+      const removed = FileService.closeCurrent();
+      expect(removed === b).assertTrue();
+      // 关闭当前库后自动切换到剩余库
+      expect(FileService.getDbFileParam() === a).assertTrue();
+      expect(FileService.hasOpenDatabase()).assertTrue();
+    });
+
+    it('closeCurrent resets empty session param after last database closes', 0, () => {
+      FileService.init();
+      const param = makeFacadeParam('/facade/clean-empty.kdbx', kdbx);
+      FileService.setDbFileParam(param);
+      // 在空会话参数上留下脏字段后关闭最后一个库：emptyParam 必须整体换新
+      FileService.closeCurrent();
+      const fresh = makeFacadeParam('/facade/clean-empty-2.kdbx', kdbx);
+      FileService.setDbFileParam(fresh);
+      FileService.closeCurrent();
+      expect(FileService.getDbFileParam().newPassword).assertUndefined();
+    });
+
+    it('clearPendingCredentialChangesOf clears given param without touching current', 0, () => {
+      FileService.init();
+      const current = FileService.getDbFileParam();
+      current.newPassword = 'current-pending';
+      const other = makeFacadeParam('/facade/other.kdbx', kdbx);
+      other.newPassword = 'other-pending';
+      other.notUseKeyFile = true;
+      FileService.clearPendingCredentialChangesOf(other);
+      expect(other.newPassword).assertUndefined();
+      expect(other.notUseKeyFile).assertFalse();
+      // 多库安全：仅清理传入 param，不作用于当前库会话
+      expect(current.newPassword).assertEqual('current-pending');
+    });
+
+    it('hasPendingCredentialChangesOf reflects given param state', 0, () => {
+      const param = {} as DbFileParam;
+      expect(FileService.hasPendingCredentialChangesOf(param)).assertFalse();
+      // newPassword=''（切换仅密钥文件意图）同样视为待应用
+      param.newPassword = '';
+      expect(FileService.hasPendingCredentialChangesOf(param)).assertTrue();
+      FileService.clearPendingCredentialChangesOf(param);
+      expect(FileService.hasPendingCredentialChangesOf(param)).assertFalse();
+    });
+
+    it('initDbFileParam resets registry to empty state', 0, () => {
+      FileService.setDbFileParam(makeFacadeParam('/facade/reset.kdbx', kdbx));
+      expect(FileService.hasOpenDatabase()).assertTrue();
+      FileService.getInstance().initDbFileParam();
+      expect(FileService.hasOpenDatabase()).assertFalse();
+      expect(FileService.getRegistry().size()).assertEqual(0);
+      expect(FileService.getDbFileParam().filePath === undefined).assertTrue();
     });
   });
 }

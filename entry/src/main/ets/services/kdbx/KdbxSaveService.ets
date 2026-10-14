@@ -15,8 +15,9 @@ import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import KdbxLoadService from './KdbxLoadService';
 import { LoadDispatchCache } from './LoadDispatchCache';
-import { RecentFile } from '../TypeDefined';
+import { DbFileParam, RecentFile } from '../TypeDefined';
 import { AuthType } from '../TypeDefined';
+import { DatabaseRegistry } from '../database/DatabaseRegistry';
 import { RecentFilesService } from '../RecentFilesService';
 import { ConflictMessage, LoadMessage, MessageType, ProgressMessage, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
@@ -25,13 +26,15 @@ const DOMAIN = 0x0000;
 const TAG = 'KdbxSaveService';
 
 /**
- * 待执行保存请求槽位元素：保存回调 + 冲突处理策略
+ * 待执行保存请求槽位元素：目标库会话参数 + 保存回调 + 冲突处理策略
  */
 class PendingSave {
+  dbFileParam: DbFileParam;
   callback?: SaveDatabaseCallback;
   conflictStrategy: string;
 
-  constructor(callback: SaveDatabaseCallback | undefined, conflictStrategy: string) {
+  constructor(dbFileParam: DbFileParam, callback: SaveDatabaseCallback | undefined, conflictStrategy: string) {
+    this.dbFileParam = dbFileParam;
     this.callback = callback;
     this.conflictStrategy = conflictStrategy;
   }
@@ -44,30 +47,43 @@ class PendingSave {
 export default class KdbxSaveService {
   private static databaseWorker: worker.ThreadWorker | null = null;
   /**
-   * 保存进行中标志：true 时拒绝新请求入队，仅更新 pendingSave 槽位（合并）
+   * 保存进行中标志：true 时拒绝新请求立即执行，新请求进入 pendingSaves 排队
    */
   private static saving: boolean = false;
   /**
-   * 待执行保存槽位（最多 1 个）：保存进行中到达的新请求替换此槽位，
-   * 中间状态无需落盘——锁内取最新模型构造请求，最终状态等价
+   * 待执行保存队列（按库 iocKey 分槽，FIFO 取出）：
+   * 保存进行中到达的新请求按目标库登记——同一库的新请求整体替换旧槽位（静默合并，
+   * 中间状态无需落盘——锁内取最新模型构造请求，最终状态等价）；
+   * 不同库的请求各自排队（M3 多库：单一 Worker 仍串行执行）
    */
-  private static pendingSave: PendingSave | null = null;
+  private static pendingSaves: Map<string, PendingSave> = new Map<string, PendingSave>();
 
   /**
-   * 保存数据库
-   * 保存进行中时仅保留最新请求（静默整体替换待执行槽位），中间请求直接丢弃、不通知旧回调；
+   * 保存数据库（当前库便捷入口）
+   * 保存进行中时同一库的新请求仅保留最新一条（静默整体替换待执行槽位），中间请求直接丢弃、不通知旧回调；
    * 最终状态由槽位取出时取最新模型落盘保证
    * @param callback 回调
    * @param conflictStrategy 冲突处理策略，默认 AUTO（检测到冲突时弹框询问用户）
    */
   public static saveDatabase(callback?: SaveDatabaseCallback, conflictStrategy?: string): void {
+    KdbxSaveService.saveDatabaseFor(FileService.getDbFileParam(), callback, conflictStrategy);
+  }
+
+  /**
+   * 保存指定库：整个保存链路（排队 / 执行 / 回调 / 冲突处理 / 重载）持有并穿透
+   * 入参 dbFileParam 引用（多库安全：回调时当前库可能已切换，不得重读当前库指针）
+   * @param dbFileParam 目标库会话参数（调用时捕获，链路内不再重读）
+   * @param callback 回调
+   * @param conflictStrategy 冲突处理策略，默认 AUTO（检测到冲突时弹框询问用户）
+   */
+  private static saveDatabaseFor(dbFileParam: DbFileParam, callback?: SaveDatabaseCallback,
+    conflictStrategy?: string): void {
     const strategy: string = conflictStrategy ?? ConflictStrategy.AUTO;
     // 重载策略由服务层拦截：放弃本地修改，直接从远端重新加载数据库
     if (strategy === ConflictStrategy.RELOAD) {
-      KdbxSaveService.reloadFromRemote(callback);
+      KdbxSaveService.reloadFromRemote(dbFileParam, callback);
       return;
     }
-    const dbFileParam = FileService.getDbFileParam();
     if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null');
       if (callback && callback.onError) {
@@ -82,7 +98,7 @@ export default class KdbxSaveService {
     if (dbFileParam.authType && AuthType.useChallengeResponseXc(dbFileParam.authType)) {
       hilog.warn(DOMAIN, TAG, 'Save blocked: challenge-response (XC) database save requires re-challenge, not supported yet');
       // 阻断的保存不得残留待应用改密字段（F1 不变量）
-      FileService.clearPendingCredentialChanges();
+      FileService.clearPendingCredentialChangesOf(dbFileParam);
       if (callback && callback.onError) {
         callback.onError(ResourceManager.getString($r('app.string.error_challenge_response_save_unsupported')));
       }
@@ -94,33 +110,34 @@ export default class KdbxSaveService {
     // 拦截即清理待应用字段，恢复 F1 不变量（阻断的保存不残留改密意图）
     if (dbFileParam.newPassword === '' && dbFileParam.notUseKeyFile) {
       hilog.warn(DOMAIN, TAG, 'Save blocked: removing both password and key file');
-      FileService.clearPendingCredentialChanges();
+      FileService.clearPendingCredentialChangesOf(dbFileParam);
       if (callback && callback.onError) {
         callback.onError(ResourceManager.getString($r('app.string.change_password_credential_required')));
       }
       return;
     }
 
-    // 保存进行中：静默合并——新请求整体替换待执行槽位（回调与策略），旧请求直接丢弃，
-    // 不通知旧回调；最终状态由后继保存取最新模型落盘保证
+    // 保存进行中：按目标库登记待执行槽位——同一库新请求整体替换旧槽位（回调与策略），
+    // 旧请求直接丢弃，不通知旧回调；不同库各自排队。最终状态由后继保存取最新模型落盘保证
     if (KdbxSaveService.saving) {
-      KdbxSaveService.pendingSave = new PendingSave(callback, strategy);
+      KdbxSaveService.pendingSaves.set(DatabaseRegistry.iocKeyOf(dbFileParam),
+        new PendingSave(dbFileParam, callback, strategy));
       hilog.info(DOMAIN, TAG, 'Save in progress, coalesced pending save (replaced)');
       return;
     }
 
     // 空闲：立即执行保存
-    KdbxSaveService.executeSave(callback, strategy);
+    KdbxSaveService.executeSave(dbFileParam, callback, strategy);
   }
 
   /**
-   * 执行一次保存（从空闲态调用，或从 pendingSave 槽位取出后调用）
-   * 保存终态后检查 pendingSave 槽位，有则继续执行下一轮
+   * 执行一次保存（从空闲态调用，或从 pendingSaves 队列取出后调用）
+   * 保存终态后检查 pendingSaves 队列，有则继续执行下一轮
    */
-  private static executeSave(callback: SaveDatabaseCallback | undefined, conflictStrategy: string): void {
+  private static executeSave(dbFileParam: DbFileParam, callback: SaveDatabaseCallback | undefined,
+    conflictStrategy: string): void {
     KdbxSaveService.saving = true;
-    const currentParam = FileService.getDbFileParam();
-    if (!currentParam.database) {
+    if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null in executeSave');
       if (callback && callback.onError) {
         callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
@@ -128,7 +145,7 @@ export default class KdbxSaveService {
       KdbxSaveService.onSaveDone();
       return;
     }
-    const saveDatabaseReq = new SaveDatabaseMessage(currentParam.database, currentParam, conflictStrategy);
+    const saveDatabaseReq = new SaveDatabaseMessage(dbFileParam.database, dbFileParam, conflictStrategy);
     // 一次性释放守卫：release 有多条触发路径（callbackWarp 终态 / 异常 catch 兜底 / Worker
     // onexit 等），重复触发会把进行中保存的 saving 提前置 false，导致下一请求并发保存，
     // 必须保证每轮保存仅推进一次 onSaveDone
@@ -140,9 +157,9 @@ export default class KdbxSaveService {
       released = true;
       KdbxSaveService.onSaveDone();
     };
-    const callbackWarp = KdbxSaveService.callbackWarp(callback, release);
+    const callbackWarp = KdbxSaveService.callbackWarp(dbFileParam, callback, release);
     if (Constants.ASYNC_SAVE_DATABASE) {
-      KdbxSaveService.saveDatabaseAsync(saveDatabaseReq, callbackWarp, release);
+      KdbxSaveService.saveDatabaseAsync(dbFileParam, saveDatabaseReq, callbackWarp, release);
     } else {
       new DatabaseSave(callbackWarp).handleSaveDatabase(saveDatabaseReq)
         .catch((error: Error) => {
@@ -153,17 +170,24 @@ export default class KdbxSaveService {
   }
 
   /**
-   * 保存终态处理：检查 pendingSave 槽位，有则继续执行下一轮保存；无则回到空闲态
+   * 保存终态处理：检查 pendingSaves 队列（插入序 FIFO），有则继续执行下一轮保存；无则回到空闲态
    */
   private static onSaveDone(): void {
-    const pending: PendingSave | null = KdbxSaveService.pendingSave;
-    KdbxSaveService.pendingSave = null;
-    if (pending !== null) {
-      hilog.info(DOMAIN, TAG, 'Pending save found, executing next round');
-      KdbxSaveService.executeSave(pending.callback, pending.conflictStrategy);
-    } else {
-      KdbxSaveService.saving = false;
+    let nextKey: string | null = null;
+    for (const key of KdbxSaveService.pendingSaves.keys()) {
+      nextKey = key;
+      break;
     }
+    if (nextKey !== null) {
+      const pending: PendingSave | undefined = KdbxSaveService.pendingSaves.get(nextKey);
+      KdbxSaveService.pendingSaves.delete(nextKey);
+      if (pending !== undefined) {
+        hilog.info(DOMAIN, TAG, 'Pending save found, executing next round');
+        KdbxSaveService.executeSave(pending.dbFileParam, pending.callback, pending.conflictStrategy);
+        return;
+      }
+    }
+    KdbxSaveService.saving = false;
   }
 
   /**
@@ -212,10 +236,12 @@ export default class KdbxSaveService {
 
   /**
    * 处理保存冲突：弹框让用户选择处理策略
+   * @param dbFileParam 冲突库的会话参数（捕获引用：弹框回调时不得重读当前库指针）
    * @param message 冲突信息
    * @param callback 原始回调（选择策略后继续保存时复用）
    */
-  private static handleConflict(message: ConflictMessage, callback?: SaveDatabaseCallback): void {
+  private static handleConflict(dbFileParam: DbFileParam, message: ConflictMessage,
+    callback?: SaveDatabaseCallback): void {
     // 按接口约定先通知调用方冲突已发生（等待上层决定处理策略），再走 AUTO 弹框流程
     callback?.onConflict?.(message);
     // 关闭保存过程的加载弹框与线性进度弹框，避免与冲突弹框叠加
@@ -235,19 +261,19 @@ export default class KdbxSaveService {
     CommonUtils.showDialog(dialogOptions).then((response: ShowDialogSuccessResponse) => {
       if (response.index === 0) {
         // 合并：保留双方修改
-        KdbxSaveService.saveDatabase(callback, ConflictStrategy.MERGE);
+        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.MERGE);
       } else if (response.index === 1) {
         // 覆盖：丢弃远端修改
-        KdbxSaveService.saveDatabase(callback, ConflictStrategy.OVERWRITE);
+        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.OVERWRITE);
       } else if (response.index === 2) {
         // 重载：丢弃本地修改，以远端为准
-        KdbxSaveService.saveDatabase(callback, ConflictStrategy.RELOAD);
+        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.RELOAD);
       }
     }).catch((error: Error) => {
       // 用户关闭弹框：放弃本次保存，本地修改保留在内存中
       hilog.warn(DOMAIN, TAG, 'Conflict dialog dismissed: %{public}s', error?.message);
       // 被放弃的保存若携带改密字段，同样必须清理，防止残留被后续保存静默应用（F1 回归）
-      FileService.clearPendingCredentialChanges();
+      FileService.clearPendingCredentialChangesOf(dbFileParam);
       // 刷新列表以反映内存中保留的修改（新增条目在保存前已写入内存库，
       // 不刷新会导致列表与内存状态不一致，用户退回列表后看不到刚添加的条目）
       EventBus.emit<void>(EventBus.DATABASE_UPDATE);
@@ -255,17 +281,17 @@ export default class KdbxSaveService {
   }
 
   /**
-   * 从远端重新加载数据库（丢弃本地未保存的修改）
+   * 从远端重新加载指定库（丢弃本地未保存的修改）
+   * @param dbFileParam 目标库会话参数（捕获引用：异步回调时不得重读当前库指针）
    * @param callback 原始回调，重载完成后回调 onSuccess/onError，保证调用方流程不挂起
    */
-  private static reloadFromRemote(callback?: SaveDatabaseCallback): void {
+  private static reloadFromRemote(dbFileParam: DbFileParam, callback?: SaveDatabaseCallback): void {
     // F4：RELOAD 策略语义 = 放弃本地修改（含本次改密意图）。
     // 若本次保存携带改密字段，重载成功后不得回调 onSuccess（改密页会误报"改密成功"并跳转登录页，
     // 但远端密码并未变更，用户按新密码登录将失败），应回调 onError 提示改密已被放弃。
-    const hadPendingCredentialChanges = FileService.hasPendingCredentialChanges();
+    const hadPendingCredentialChanges = FileService.hasPendingCredentialChangesOf(dbFileParam);
     // F1 回归：清理待应用凭证字段，防止残留的 newPassword 等被后续普通保存静默应用
-    FileService.clearPendingCredentialChanges();
-    const dbFileParam = FileService.getDbFileParam();
+    FileService.clearPendingCredentialChangesOf(dbFileParam);
     if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null');
       if (callback && callback.onError) {
@@ -279,8 +305,12 @@ export default class KdbxSaveService {
     KdbxLoadService.loadDatabase(loadParam, {
       onSuccessMessage: (message: SuccessMessage) => {
         KdbxUtils.successMessageToKdbx(message, loadParam).then((database: Kdbx) => {
-          FileService.resetDbFileParam(database, message.modifiedTime, message.version ?? null,
-            message.contentHash ?? null);
+          // 就地更新捕获的会话参数（注册表中该库记录持有同一对象引用，多库安全：
+          // 回调时当前库可能已切换，不得通过 resetDbFileParam 作用于当前库）
+          dbFileParam.database = database;
+          dbFileParam.modifiedTime = message.modifiedTime;
+          dbFileParam.version = message.version ?? null;
+          dbFileParam.contentHash = message.contentHash ?? null;
           EventBus.emit<void>(EventBus.DATABASE_RELOAD);
           if (hadPendingCredentialChanges) {
             // 改密意图随重载被放弃：通知 onError（改密页停留并提示），不误报成功
@@ -318,12 +348,13 @@ export default class KdbxSaveService {
    * 异步方式 - 保存数据库
    * 常驻池化（POOL_DATABASE_WORKER = true）：复用常驻 Worker；
    * false 时保留旧行为（每操作 terminate + 重建）
+   * @param dbFileParam 目标库会话参数（捕获引用：Worker 异常 / 退出兜底清理时使用）
    * @param req
    * @param callback
    * @param release 保存锁释放函数（终态回调，异常路径必须调用，否则后续保存永久排队）
    */
-  static async saveDatabaseAsync(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
-    release?: () => void) {
+  static async saveDatabaseAsync(dbFileParam: DbFileParam, req: SaveDatabaseMessage,
+    callback?: SaveDatabaseCallback, release?: () => void) {
     // 旧行为：释放之前的异步线程（互斥锁保证此时上一个 Worker 已空闲，terminate 仅做清理）
     if (!Constants.POOL_DATABASE_WORKER && KdbxSaveService.databaseWorker) {
       try {
@@ -341,7 +372,7 @@ export default class KdbxSaveService {
 
     try {
       req.data = await KdbxUtils.kdbxToArrayBuffer(req.data);
-      KdbxSaveService.saveDatabaseWorker(req, callback, release);
+      KdbxSaveService.saveDatabaseWorker(dbFileParam, req, callback, release);
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Save database serialize error: %{public}s', error?.message);
       if (callback && callback.onError) {
@@ -355,11 +386,13 @@ export default class KdbxSaveService {
 
   /**
    * 保存数据库线程
-   * @param savedDb
-   * @param dbFileParam
+   * @param dbFileParam 目标库会话参数（捕获引用：Worker 外部终止时清理该库待应用改密字段）
+   * @param req
+   * @param callback
+   * @param release 保存锁释放函数
    */
-  private static saveDatabaseWorker(req: SaveDatabaseMessage, callback?: SaveDatabaseCallback,
-    release?: () => void): void {
+  private static saveDatabaseWorker(dbFileParam: DbFileParam, req: SaveDatabaseMessage,
+    callback?: SaveDatabaseCallback, release?: () => void): void {
     // 懒创建常驻 Worker（旧行为下上方已置空，必新建；保存锁保证无并发保存）
     if (KdbxSaveService.databaseWorker === null) {
       KdbxSaveService.databaseWorker = DatabaseWorkerFactory.createSaveWorker();
@@ -428,8 +461,8 @@ export default class KdbxSaveService {
     KdbxSaveService.databaseWorker.onexit = (code: number) => {
       hilog.info(DOMAIN, TAG, 'Database save worker exit: %{public}d', code);
       KdbxSaveService.databaseWorker = null;
-      // 在途保存被外部终止：改密未完成，清理待应用凭证字段（F1 回归）
-      FileService.clearPendingCredentialChanges();
+      // 在途保存被外部终止：改密未完成，清理该库待应用凭证字段（F1 回归）
+      FileService.clearPendingCredentialChangesOf(dbFileParam);
       release?.();
     }
   }
@@ -451,15 +484,16 @@ export default class KdbxSaveService {
     }
   }
 
-  static callbackWarp(callback?: SaveDatabaseCallback, release?: () => void): SaveDatabaseCallback {
+  static callbackWarp(dbFileParam: DbFileParam, callback?: SaveDatabaseCallback,
+    release?: () => void): SaveDatabaseCallback {
     return {
       onSuccess: (message: SuccessMessage) => {
-        KdbxSaveService.handleSuccess(message, callback, release);
+        KdbxSaveService.handleSuccess(dbFileParam, message, callback, release);
       },
       onError: (message: string) => {
-        // 保存失败：清理待应用的改密凭证字段（F1 回归），
+        // 保存失败：清理该库待应用的改密凭证字段（F1 回归），
         // 防止残留的 newPassword/newKeyLocation/notUseKeyFile 被后续普通保存静默应用（锁定风险）
-        FileService.clearPendingCredentialChanges();
+        FileService.clearPendingCredentialChangesOf(dbFileParam);
         callback?.onError?.(message);
         release?.();
       },
@@ -470,15 +504,16 @@ export default class KdbxSaveService {
         callback?.onProgress?.(message);
       },
       onConflict: (message: ConflictMessage) => {
-        KdbxSaveService.handleConflict(message, callback);
+        KdbxSaveService.handleConflict(dbFileParam, message, callback);
         release?.();
       }
     }
   }
 
-  static handleSuccess(message: SuccessMessage, callback?: SaveDatabaseCallback, release?: () => void) {
-    // 数据库保存成功：更新版本基线（modifiedTime + version + contentHash），供下次保存做冲突检测
-    const dbFileParam = FileService.getDbFileParam();
+  static handleSuccess(dbFileParam: DbFileParam, message: SuccessMessage, callback?: SaveDatabaseCallback,
+    release?: () => void) {
+    // 数据库保存成功：更新该库版本基线（modifiedTime + version + contentHash），供下次保存做冲突检测
+    // （多库安全：更新捕获的会话参数——注册表中该库记录持有同一对象引用，不依赖当前库指针）
     dbFileParam.modifiedTime = message.modifiedTime;
     dbFileParam.version = message.version ?? null;
     dbFileParam.contentHash = message.contentHash ?? null;
@@ -487,8 +522,8 @@ export default class KdbxSaveService {
     KdbxSaveService.refreshSizeCache(dbFileParam.filePath, message.fileSize);
     if (message.isMerge) {
       // §7.4：合并模型走 M0 会话文件解包裹还原（仅路径跨线程），缺失时回退消息内 data
-      KdbxUtils.successMessageToKdbx(message, FileService.getDbFileParam()).then(kdbx => {
-        FileService.getDbFileParam().database = kdbx;
+      KdbxUtils.successMessageToKdbx(message, dbFileParam).then(kdbx => {
+        dbFileParam.database = kdbx;
         EventBus.emit<void>(EventBus.DATABASE_RELOAD);
         if (callback && callback.onSuccess) {
           callback.onSuccess(message);

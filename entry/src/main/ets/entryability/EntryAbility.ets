@@ -303,8 +303,7 @@ export default class EntryAbility extends UIAbility {
    * @returns
    */
   private isLockScreen(): boolean {
-    let dbFileParam = FileService.getDbFileParam();
-    return dbFileParam && dbFileParam.filePath !== undefined;
+    return FileService.hasOpenDatabase();
   }
 
   /**

@@ -334,7 +334,7 @@ export default function KdbxSaveServiceTest() {
     it('callbackWarp onError calls callback onError and release', 0, () => {
       const tracker = new SaveCallbackTracker();
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(FileService.getDbFileParam(), tracker, () => { released = true; });
       wrapped.onError?.('warp-error');
       expect(tracker.errorCount).assertEqual(1);
       expect(tracker.lastErrorMessage).assertEqual('warp-error');
@@ -351,7 +351,7 @@ export default function KdbxSaveServiceTest() {
 
       const tracker = new SaveCallbackTracker();
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(param, tracker, () => { released = true; });
       wrapped.onError?.('save-failed');
 
       expect(tracker.errorCount).assertEqual(1);
@@ -364,7 +364,7 @@ export default function KdbxSaveServiceTest() {
     it('callbackWarp onMessage passes through to callback', 0, () => {
       const tracker = new SaveCallbackTracker();
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(FileService.getDbFileParam(), tracker, () => { released = true; });
       wrapped.onMessage?.('warp-message');
       expect(tracker.messageCount).assertEqual(1);
       expect(tracker.lastMessageString).assertEqual('warp-message');
@@ -374,7 +374,7 @@ export default function KdbxSaveServiceTest() {
     it('callbackWarp onProgress passes through without release', 0, () => {
       const tracker = new SaveCallbackTracker();
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(FileService.getDbFileParam(), tracker, () => { released = true; });
       wrapped.onProgress?.(new ProgressMessage(33, 330, 1000));
       expect(tracker.progressCount).assertEqual(1);
       expect(tracker.lastProgressMessage !== null).assertTrue();
@@ -386,7 +386,7 @@ export default function KdbxSaveServiceTest() {
     it('callbackWarp onConflict calls release', 0, () => {
       const tracker = new SaveCallbackTracker();
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(FileService.getDbFileParam(), tracker, () => { released = true; });
       const conflict = new ConflictMessage(999, 'conflict-v');
       wrapped.onConflict?.(conflict);
       expect(released).assertTrue();
@@ -399,7 +399,7 @@ export default function KdbxSaveServiceTest() {
 
       const tracker = new SaveCallbackTracker();
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(tracker, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(FileService.getDbFileParam(), tracker, () => { released = true; });
       const message = new SuccessMessage(new ArrayBuffer(0), 555, false, 'warp-v', 'warp-h');
       wrapped.onSuccess?.(message);
 
@@ -412,7 +412,7 @@ export default function KdbxSaveServiceTest() {
 
     it('callbackWarp without inner callback does not throw on onError', 0, () => {
       let released = false;
-      const wrapped = KdbxSaveService.callbackWarp(undefined, () => { released = true; });
+      const wrapped = KdbxSaveService.callbackWarp(FileService.getDbFileParam(), undefined, () => { released = true; });
       let threw = false;
       try {
         wrapped.onError?.('no-inner');
@@ -434,7 +434,7 @@ export default function KdbxSaveServiceTest() {
       let released = false;
       const message = new SuccessMessage(new ArrayBuffer(0), 777, false, 'hs-v', 'hs-h');
 
-      KdbxSaveService.handleSuccess(message, tracker, () => { released = true; });
+      KdbxSaveService.handleSuccess(FileService.getDbFileParam(), message, tracker, () => { released = true; });
 
       expect(tracker.successCount).assertEqual(1);
       expect(released).assertTrue();
@@ -454,7 +454,7 @@ export default function KdbxSaveServiceTest() {
       const message = new SuccessMessage(savedBuffer, 888, true, 'merge-v', 'merge-h');
 
       await withTimeout(new Promise<void>((resolve, reject) => {
-        KdbxSaveService.handleSuccess(message, {
+        KdbxSaveService.handleSuccess(FileService.getDbFileParam(), message, {
           onSuccess: (msg: SuccessMessage) => {
             tracker.onSuccess(msg);
             resolve();
@@ -484,7 +484,7 @@ export default function KdbxSaveServiceTest() {
       const message = new SuccessMessage(new ArrayBuffer(0), 0, false, null, null);
       let threw = false;
       try {
-        KdbxSaveService.handleSuccess(message, undefined, () => { released = true; });
+        KdbxSaveService.handleSuccess(FileService.getDbFileParam(), message, undefined, () => { released = true; });
       } catch (e) {
         threw = true;
       }
@@ -562,7 +562,7 @@ export default function KdbxSaveServiceTest() {
       let releaseCalled = false;
       const result = await withTimeout(new Promise<AsyncSaveCheckResult>(
         (resolve) => {
-          KdbxSaveService.saveDatabaseAsync(saveReq, {
+          KdbxSaveService.saveDatabaseAsync(dbFileParam, saveReq, {
             onSuccess: (msg: SuccessMessage) => { resolve({ success: true, error: '', message: msg }); },
             onError: (err: string) => { resolve({ success: false, error: err, message: null }); }
           }, () => { releaseCalled = true; }).catch((error: Error) => {

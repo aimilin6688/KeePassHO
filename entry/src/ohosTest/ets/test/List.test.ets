@@ -194,6 +194,9 @@ import AutoOpenPathResolverTest from './services/autoopen/AutoOpenPathResolver.t
 import AutoOpenServiceTest from './services/autoopen/AutoOpenService.test';
 import DeviceIdentityTest from './services/autoopen/DeviceIdentity.test';
 
+// ===== services/database 多库注册表（M2 子数据库）单元测试 =====
+import DatabaseRegistryTest from './services/database/DatabaseRegistry.test';
+
 // ===== 新增：services/template 模板子系统单元测试 =====
 import TemplateTypesTest from './services/template/TemplateTypes.test';
 import TemplateConstantsTest from './services/template/TemplateConstants.test';
@@ -479,6 +482,9 @@ export default function testsuite() {
   AutoOpenPathResolverTest();
   AutoOpenServiceTest();
   DeviceIdentityTest();
+
+  // ===== services/database 多库注册表（M2） =====
+  DatabaseRegistryTest();
 
   // ===== services/template =====
   TemplateTypesTest();
