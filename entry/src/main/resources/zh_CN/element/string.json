@@ -689,6 +689,50 @@
       "value": "挑战应答结果缺失，请重新进行挑战验证"
     },
     {
+      "name": "otp_inputs_title",
+      "value": "一次性密码"
+    },
+    {
+      "name": "otp_input_hint",
+      "value": "OTP 码 %d"
+    },
+    {
+      "name": "otp_aux_file_loading",
+      "value": "正在加载 OTP 辅助文件..."
+    },
+    {
+      "name": "otp_aux_file_missing",
+      "value": "无法读取数据库同目录的 .otp.xml 辅助文件，请手动选择。"
+    },
+    {
+      "name": "otp_select_aux_file",
+      "value": "选择 OTP 辅助文件"
+    },
+    {
+      "name": "otp_input_incomplete",
+      "value": "请输入全部一次性密码"
+    },
+    {
+      "name": "otp_key_error",
+      "value": "OTP 校验失败，请检查输入。"
+    },
+    {
+      "name": "otp_counter_save_failed",
+      "value": "OTP 计数器写回失败"
+    },
+    {
+      "name": "otp_recovery_hint",
+      "value": "输入创建 OTP 密钥时保存的恢复密钥"
+    },
+    {
+      "name": "otp_recovery_secret_placeholder",
+      "value": "恢复密钥"
+    },
+    {
+      "name": "otp_secret_format",
+      "value": "密钥格式"
+    },
+    {
       "name": "history_version",
       "value": "历史版本 #%d"
     },

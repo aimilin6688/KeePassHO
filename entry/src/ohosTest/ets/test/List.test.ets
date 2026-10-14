@@ -16,6 +16,7 @@ import EncodingUtilTest from './services/otpkey/EncodingUtil.test';
 import OtpUtilTest from './services/otpkey/OtpUtil.test';
 import OtpInfoTest from './services/otpkey/OtpInfo.test';
 import OtpKeyProvServiceTest from './services/otpkey/OtpKeyProvService.test';
+import OtpAuxFileServiceTest from './services/otpkey/OtpAuxFileService.test';
 
 import S3ClientTest from './storage/s3/S3Client.test';
 import S3ClientMultipartTest from './storage/s3/S3ClientMultipart.test';
@@ -252,6 +253,7 @@ export default function testsuite() {
   OtpUtilTest();
   OtpInfoTest();
   OtpKeyProvServiceTest();
+  OtpAuxFileServiceTest();
 
   S3ClientTest();
   S3ClientMultipartTest();

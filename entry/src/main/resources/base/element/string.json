@@ -701,6 +701,50 @@
       "value": "Challenge response is missing. Please retry the challenge verification"
     },
     {
+      "name": "otp_inputs_title",
+      "value": "One-time passwords"
+    },
+    {
+      "name": "otp_input_hint",
+      "value": "OTP %d"
+    },
+    {
+      "name": "otp_aux_file_loading",
+      "value": "Loading OTP auxiliary file..."
+    },
+    {
+      "name": "otp_aux_file_missing",
+      "value": "Cannot load the .otp.xml auxiliary file next to the database. Please select it manually."
+    },
+    {
+      "name": "otp_select_aux_file",
+      "value": "Select OTP auxiliary file"
+    },
+    {
+      "name": "otp_input_incomplete",
+      "value": "Please enter all one-time passwords"
+    },
+    {
+      "name": "otp_key_error",
+      "value": "OTP verification failed. Please check the entered codes."
+    },
+    {
+      "name": "otp_counter_save_failed",
+      "value": "Failed to update the OTP counter in the auxiliary file"
+    },
+    {
+      "name": "otp_recovery_hint",
+      "value": "Enter the recovery secret saved when the OTP key was created"
+    },
+    {
+      "name": "otp_recovery_secret_placeholder",
+      "value": "Recovery secret"
+    },
+    {
+      "name": "otp_secret_format",
+      "value": "Secret format"
+    },
+    {
       "name": "history_version",
       "value": "History version #%d"
     },

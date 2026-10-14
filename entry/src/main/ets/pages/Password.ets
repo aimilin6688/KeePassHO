@@ -8,7 +8,7 @@ import { StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { CommonUtils, ConfigDecryptError, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
-import { Kdbx } from 'kdbxweb';
+import { ByteUtils, Kdbx } from 'kdbxweb';
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { LoadMessage, SuccessMessage } from '../workers/WorkerParam';
 import { ToastLoadDatabaseCallback } from '../workers/callback/ToastLoadDatabaseCallback';
@@ -25,6 +25,10 @@ import { Constants } from '../common/constants/Constants';
 import { common } from '@kit.AbilityKit';
 import { CacheConstants } from '../storage/cache/CacheConstants';
 import { PageConstants } from '../common/constants/PageConstants';
+import { OtpAuxFileService } from '../services/otpkey/OtpAuxFileService';
+import { OtpDerivedSecret, OtpKeyProvService } from '../services/otpkey/OtpKeyProvService';
+import { OtpInfo } from '../services/otpkey/OtpInfo';
+import { EncodingUtil, OtpDataFmt } from '../services/otpkey/EncodingUtil';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -75,10 +79,31 @@ export struct Password {
   private shouldStartAuth: boolean = false;
   // 标记是否应该保留密码（用于选择密钥文件等场景）
   private shouldPreservePassword: boolean = false;
+  // ===== OTP（OtpKeyProv）解锁状态 =====
+  // 辅助文件解析结果（password_otp 模式）
+  @State otpInfo: OtpInfo | undefined = undefined;
+  // OTP 码输入（与 OtpsRequired 等长）
+  @State otpCodes: string[] = [];
+  // 辅助文件加载状态：idle | loading | ready | missing
+  @State otpAuxState: string = 'idle';
+  // 恢复模式：secret 输入与编码格式
+  @State recoverySecret: string = '';
+  @State recoveryFmtIndex: number = 0;
+  // 辅助文件实际位置（同目录推导或手动选择）
+  private auxLocation: LocationInfo | undefined = undefined;
+  // 本次解锁派生结果（解锁成功后写回 Counter）
+  private pendingDerived: OtpDerivedSecret | undefined = undefined;
+  // 恢复模式编码格式下拉选项
+  private formatOptions: SelectOption[] = [];
 
   aboutToAppear() {
     //初始化认证方式
     this.setAuthType(this.authTypeInfo);
+
+    // 初始化恢复模式编码格式下拉选项
+    for (const fmt of EncodingUtil.FORMATS) {
+      this.formatOptions.push({ value: fmt });
+    }
 
     // 优先使用当前导航栈：页面被 push 到哪个栈就从哪个栈取参
     // （如从 DatabaseView 根切换数据库时 replaceAll 会把本页 push 到 DatabaseView 栈，
@@ -215,6 +240,7 @@ export struct Password {
     // 设置认证类型
     if (recentFile.authType) {
       this.setAuthType(recentFile.authType);
+      this.onAuthTypeChanged();
     }
     // 是否使用缓存复选框
     this.initCacheCheckbox();
@@ -246,6 +272,24 @@ export struct Password {
       return;
     }
 
+    // OTP 模式（含恢复模式）：需要密码 + OTP 因子
+    if (AuthType.useOtpAuth(this.authTypeInfo)) {
+      if (this.isLoading || this.password.length === 0) {
+        this.buttonEnabled = false;
+        return;
+      }
+      if (AuthType.isRecoveryMode(this.authTypeInfo)) {
+        this.buttonEnabled = this.recoverySecret.length > 0;
+        return;
+      }
+      if (!this.otpInfo || this.otpAuxState !== 'ready' || !this.areOtpCodesComplete()) {
+        this.buttonEnabled = false;
+        return;
+      }
+      this.buttonEnabled = true;
+      return;
+    }
+
     // 其他模式：需要密码
     if (this.isLoading || this.password.length === 0) {
       this.buttonEnabled = false;
@@ -258,6 +302,101 @@ export struct Password {
       return;
     }
     this.buttonEnabled = true;
+  }
+
+  /**
+   * 认证方式切换钩子：加载/重置 OTP 区块状态
+   */
+  private onAuthTypeChanged(): void {
+    this.pendingDerived = undefined;
+    if (AuthType.useOtpAuth(this.authTypeInfo) && !AuthType.isRecoveryMode(this.authTypeInfo) && !this.otpInfo) {
+      this.loadAuxFile();
+    }
+    this.updateButtonState();
+  }
+
+  /**
+   * OTP 码是否全部输入完整（长度对齐辅助文件 OtpLength）
+   */
+  private areOtpCodesComplete(): boolean {
+    const info = this.otpInfo;
+    if (!info || this.otpAuxState !== 'ready') {
+      return false;
+    }
+    if (this.otpCodes.length < info.otpsRequired) {
+      return false;
+    }
+    const needLength = info.otpLength > 0 ? info.otpLength : 1;
+    for (let i = 0; i < info.otpsRequired; i++) {
+      if ((this.otpCodes[i] ?? '').length < needLength) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 构造与数据库同目录的辅助文件位置（自动推导）
+   */
+  private buildAutoAuxLocation(): LocationInfo | undefined {
+    if (!this.filePath || this.storageType === undefined) {
+      return undefined;
+    }
+    const loc: LocationInfo = {
+      mode: LocationMode.SELECT,
+      filePath: OtpAuxFileService.buildAuxFilePath(this.filePath),
+      fileName: OtpKeyProvService.buildAuxFileName(this.fileName),
+      storageType: this.storageType,
+      storageConfig: this.storageConfig ?? {}
+    };
+    return loc;
+  }
+
+  /**
+   * 加载 OTP 辅助文件并解析（自动定位失败时 UI 引导手动选择）
+   */
+  private loadAuxFile(target?: LocationInfo): void {
+    const loc = target ?? this.buildAutoAuxLocation();
+    if (!loc) {
+      this.otpAuxState = 'missing';
+      this.updateButtonState();
+      return;
+    }
+    this.otpAuxState = 'loading';
+    this.updateButtonState();
+    OtpAuxFileService.loadOtpInfo(loc).then((info: OtpInfo) => {
+      this.auxLocation = loc;
+      this.otpInfo = info;
+      this.otpCodes = [];
+      for (let i = 0; i < info.otpsRequired; i++) {
+        this.otpCodes.push('');
+      }
+      this.otpAuxState = 'ready';
+      this.updateButtonState();
+    }).catch((error: Error) => {
+      hilog.warn(DOMAIN, TAG, 'Load otp aux file failed: %{public}s', error.message);
+      this.otpInfo = undefined;
+      this.otpAuxState = 'missing';
+      this.updateButtonState();
+    });
+  }
+
+  /**
+   * 手动选择 OTP 辅助文件（本地存储无同目录读权限时的兜底路径）
+   */
+  private selectAuxFile(): void {
+    // 保留已输入内容（密码/OTP 码）
+    this.shouldPreservePassword = true;
+    LocationParam.ofSelect(['xml'], (locationInfo: LocationInfo) => {
+      this.shouldStartAuth = false;
+      this.loadAuxFile(locationInfo);
+      this.navigateBack();
+    });
+    if (this.workingNavPathStack) {
+      this.workingNavPathStack.pushPathByName('SelectLocation', null);
+    } else {
+      hilog.error(DOMAIN, TAG, 'selectAuxFile: NavPathStack is null!');
+    }
   }
 
   /**
@@ -386,6 +525,11 @@ export struct Password {
         } else {
           CryptoUtils.decryptText(this.recentFile?.password || '').then(result => {
             this.password = result;
+            // OTP/恢复模式：生物识别仅代填密码分量，OTP 因子仍需手动输入（不自动提交）
+            if (AuthType.useOtpAuth(this.authTypeInfo)) {
+              this.updateButtonState();
+              return;
+            }
             this.verifyAndOpenDatabase();
           });
         }
@@ -406,6 +550,9 @@ export struct Password {
   private clearSensitiveData(): void {
     this.password = '';
     this.showPassword = false;
+    this.recoverySecret = '';
+    // 派生 secret 属敏感材料，随页面状态清理（otpCodes 为短时效 OTP 码，保留以改善输入体验）
+    this.pendingDerived = undefined;
     this.shouldPreservePassword = false; // 重置保留标志
     this.updateButtonState();
     hilog.info(DOMAIN, TAG, 'Sensitive data cleared for security');
@@ -526,6 +673,12 @@ export struct Password {
    * 验证密码并打开数据库
    */
   private verifyAndOpenDatabase() {
+    // OTP 认证（含恢复模式）：密码 + OTP 因子校验后走独立派生路径
+    if (AuthType.useOtpAuth(this.authTypeInfo)) {
+      this.verifyAndOpenDatabaseWithOtp();
+      return;
+    }
+
     // 仅密钥文件模式验证
     if (AuthType.isKeyfileOnly(this.authTypeInfo)) {
       if (!this.keyLocation) {
@@ -563,8 +716,87 @@ export struct Password {
     // 打开加载进度弹框
     this.openLoadingDialog();
     // 打开数据库
-    let loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
-    // 进度 HUD/吐司由 ToastLoadDatabaseCallback 默认行为驱动，这里只覆盖页面逻辑
+    const loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo, this.keyLocation, this.storageType, this.storageConfig);
+    this.startLoadDatabase(loadDatabase);
+  }
+
+  /**
+   * OTP 认证（含恢复模式）校验 + 派生 secret + 打开数据库：
+   * 密码 + OTP 码（或恢复 secret）→ 主线程派生 otpSecretHex → 交 Worker 构建 customKey
+   */
+  private verifyAndOpenDatabaseWithOtp(): void {
+    if (this.isLoading) {
+      return;
+    }
+    if (!this.password) {
+      CommonUtils.showToast({ message: $r('app.string.password_placeholder'), duration: 2000 });
+      return;
+    }
+    if (AuthType.isRecoveryMode(this.authTypeInfo)) {
+      if (!this.recoverySecret) {
+        CommonUtils.showToast({ message: $r('app.string.otp_recovery_secret_placeholder'), duration: 2000 });
+        return;
+      }
+    } else {
+      if (!this.otpInfo || this.otpAuxState !== 'ready') {
+        CommonUtils.showToast({ message: $r('app.string.otp_aux_file_missing'), duration: 2000 });
+        return;
+      }
+      if (!this.areOtpCodesComplete()) {
+        CommonUtils.showToast({ message: $r('app.string.otp_input_incomplete'), duration: 2000 });
+        return;
+      }
+    }
+    if (this.storageType === null) {
+      CommonUtils.showToast({ message: $r('app.string.storage_type_empty') });
+      return;
+    }
+
+    // 打开加载进度弹框（派生与加载共用）
+    this.openLoadingDialog();
+    this.buildOtpLoadDatabase().then((loadDatabase: LoadDatabase) => {
+      this.startLoadDatabase(loadDatabase);
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, TAG, 'OTP derive secret failed: %{public}s', error.message);
+      this.closeLoadingDialog();
+      CommonUtils.showToast({ message: $r('app.string.otp_key_error'), duration: 3000 });
+    });
+  }
+
+  /**
+   * 构建 OTP 加载参数：恢复模式直接按编码格式解析；OTP 码模式经 KeyFromOtps 派生
+   */
+  private async buildOtpLoadDatabase(): Promise<LoadDatabase> {
+    let secretHex = '';
+    if (AuthType.isRecoveryMode(this.authTypeInfo)) {
+      const fmt = EncodingUtil.getOtpDataFormat(EncodingUtil.FORMATS[this.recoveryFmtIndex]) ?? OtpDataFmt.Hex;
+      const secret = OtpKeyProvService.deriveSecretFromRecoveryInput(this.recoverySecret, fmt);
+      secretHex = ByteUtils.bytesToHex(secret);
+      // 恢复模式无 Counter 写回
+      this.pendingDerived = undefined;
+    } else {
+      const info = this.otpInfo;
+      if (!info) {
+        throw new Error('otp aux file not loaded');
+      }
+      const otps: string[] = [];
+      for (let i = 0; i < info.otpsRequired; i++) {
+        otps.push(this.otpCodes[i] ?? '');
+      }
+      const derived = await OtpKeyProvService.deriveSecretFromOtps(info, otps);
+      this.pendingDerived = derived;
+      secretHex = derived.secretHex;
+    }
+    const loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo,
+      this.keyLocation, this.storageType, this.storageConfig);
+    loadDatabase.otpSecretHex = secretHex;
+    return loadDatabase;
+  }
+
+  /**
+   * 统一启动数据库加载（进度 HUD/吐司由 ToastLoadDatabaseCallback 默认行为驱动）
+   */
+  private startLoadDatabase(loadDatabase: LoadDatabase): void {
     KdbxLoadService.loadDatabase(loadDatabase, ToastLoadDatabaseCallback.wrap({
       onSuccessMessage: (message: SuccessMessage) => {
         this.handleSuccessMessage(message);
@@ -593,6 +825,8 @@ export struct Password {
   private handleSuccessMessage(successMessage: SuccessMessage) {
     this.init();
     this.putFileToRecentFile(successMessage);
+    // OTP 解锁成功：Counter 写回辅助文件（失败仅告警，见 writeBackOtpCounter）
+    this.writeBackOtpCounter();
     this.setFileParam(successMessage).then(() => {
       LoadingDialog.showLoading(ResourceManager.getString($r('app.string.open_success')));
       // 清空本页所在的导航栈（移除 Password 自身及其下方残留页面），
@@ -610,6 +844,29 @@ export struct Password {
       CommonUtils.showToast({ message: error.message, duration: 3000 });
       this.closeLoadingDialog();
     });
+  }
+
+  /**
+   * OTP 解锁成功后写回 Counter（对齐 KP2A SaveOtpAuxFileAndLoadDb）：
+   * Counter += OtpsRequired(+i) → 以新 Counter 重新加密 secret → 写回辅助文件；
+   * fire-and-forget，写回失败仅告警不阻断（远端存储可能只读）
+   */
+  private writeBackOtpCounter(): void {
+    const derived = this.pendingDerived;
+    const info = this.otpInfo;
+    const loc = this.auxLocation;
+    // 恢复模式/未派生：无写回
+    if (!derived || !info || !loc || AuthType.isRecoveryMode(this.authTypeInfo)) {
+      return;
+    }
+    OtpAuxFileService.saveAfterUnlock(info, derived.secret, derived.counterDelta, loc)
+      .then(() => {
+        hilog.info(DOMAIN, TAG, 'Otp counter write-back success');
+      })
+      .catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Otp counter write-back failed: %{public}s', error.message);
+        CommonUtils.showToast({ message: $r('app.string.otp_counter_save_failed'), duration: 3000 });
+      });
   }
 
   /**
@@ -751,7 +1008,7 @@ export struct Password {
                       this.keyLocation = undefined;
                       this.keyFileName = '';
                     }
-                    this.updateButtonState(); // 更新按钮状态
+                    this.onAuthTypeChanged();
                   })
               }
               .width('100%')
@@ -790,6 +1047,16 @@ export struct Password {
               // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
               if (AuthType.useKeyAuth(this.authTypeInfo)) {
                 this.KeyFileSelector()
+              }
+
+              // OTP 输入区（密码 + OTP：OtpsRequired 个码）
+              if (AuthType.useOtpAuth(this.authTypeInfo) && !AuthType.isRecoveryMode(this.authTypeInfo)) {
+                this.OtpInputArea()
+              }
+
+              // OTP 恢复模式区（令牌丢失时直接输入 secret）
+              if (AuthType.useOtpAuth(this.authTypeInfo) && AuthType.isRecoveryMode(this.authTypeInfo)) {
+                this.OtpRecoveryArea()
               }
 
               // 仅使用本地缓存复选框（仅在远程存储且有缓存时显示）
@@ -943,6 +1210,138 @@ export struct Password {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, bottom: 24 })
+  }
+
+  /**
+   * OTP 输入区：辅助文件加载状态 + OtpsRequired 个 OTP 码输入框
+   */
+  @Builder
+  OtpInputArea() {
+    Column() {
+      Text($r('app.string.otp_inputs_title'))
+        .fontSize(16)
+        .fontColor($r('app.color.text_primary'))
+        .margin({ bottom: 16 })
+        .alignSelf(ItemAlign.Start)
+
+      if (this.otpAuxState === 'loading') {
+        Text($r('app.string.otp_aux_file_loading'))
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+          .alignSelf(ItemAlign.Start)
+      } else if (this.otpAuxState !== 'ready' || !this.otpInfo) {
+        // 辅助文件缺失/不可读：引导手动选择
+        Text($r('app.string.otp_aux_file_missing'))
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+          .margin({ bottom: 12 })
+          .alignSelf(ItemAlign.Start)
+
+        Button($r('app.string.otp_select_aux_file'))
+          .width('100%')
+          .height(44)
+          .fontSize(16)
+          .fontColor($r('app.color.button_text'))
+          .backgroundColor($r("app.color.button_bg_blue"))
+          .id('btn_select_otp_aux_file')
+          .onClick(() => {
+            this.selectAuxFile();
+          })
+      } else {
+        // 辅助文件名提示
+        Text(this.auxLocation?.fileName ?? '')
+          .fontSize(12)
+          .fontColor($r('app.color.text_secondary'))
+          .margin({ bottom: 12 })
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .alignSelf(ItemAlign.Start)
+
+        Row({ space: 8 }) {
+          ForEach(this.otpCodes, (code: string, index: number) => {
+            TextInput({ text: code, placeholder: $r('app.string.otp_input_hint', index + 1) })
+              .id('input_otp_' + index)
+              .type(InputType.Number)
+              .maxLength(this.otpInfo?.otpLength ?? 8)
+              .placeholderColor($r('app.color.text_secondary'))
+              .placeholderFont({ size: 14 })
+              .fontSize(16)
+              .fontColor($r('app.color.text_primary'))
+              .textAlign(TextAlign.Center)
+              .height(44)
+              .layoutWeight(1)
+              .backgroundColor(Color.Transparent)
+              .border({
+                width: { bottom: 1 },
+                color: $r('app.color.divider')
+              })
+              .onChange((value: string) => {
+                this.otpCodes[index] = value;
+                this.updateButtonState();
+              })
+              .onSubmit(() => {
+                this.verifyAndOpenDatabase();
+              })
+          }, (code: string, index: number) => index.toString() + '_' + code.length.toString())
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+      }
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, bottom: 24 })
+  }
+
+  /**
+   * OTP 恢复模式区：secret 输入 + 编码格式选择（Hex/Base64/UTF-8/Dec/Base32）
+   */
+  @Builder
+  OtpRecoveryArea() {
+    Column() {
+      Text($r('app.string.otp_recovery_hint'))
+        .fontSize(14)
+        .fontColor($r('app.color.text_secondary'))
+        .margin({ bottom: 12 })
+        .alignSelf(ItemAlign.Start)
+
+      TextInput({ placeholder: $r('app.string.otp_recovery_secret_placeholder') })
+        .id('input_otp_recovery_secret')
+        .placeholderColor($r('app.color.text_secondary'))
+        .placeholderFont({ size: 16 })
+        .fontSize(16)
+        .fontColor($r('app.color.text_primary'))
+        .width('100%')
+        .height(48)
+        .backgroundColor(Color.Transparent)
+        .onChange((value: string) => {
+          this.recoverySecret = value;
+          this.updateButtonState();
+        })
+        .onSubmit(() => {
+          this.verifyAndOpenDatabase();
+        })
+
+      Text($r('app.string.otp_secret_format'))
+        .fontSize(14)
+        .fontColor($r('app.color.text_primary'))
+        .margin({ top: 16, bottom: 8 })
+        .alignSelf(ItemAlign.Start)
+
+      Select(this.formatOptions)
+        .selected(this.recoveryFmtIndex)
+        .value(EncodingUtil.FORMATS[this.recoveryFmtIndex])
+        .font({ size: 16 })
+        .fontColor($r('app.color.text_primary'))
+        .selectedOptionFont({ size: 16 })
+        .optionFont({ size: 16 })
+        .id('select_otp_recovery_format')
+        .width('100%')
+        .onSelect((index: number, value: string) => {
+          this.recoveryFmtIndex = index;
+        })
     }
     .width('100%')
     .padding({ left: 16, right: 16, bottom: 24 })
