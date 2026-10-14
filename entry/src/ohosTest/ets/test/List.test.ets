@@ -213,6 +213,12 @@ import KdbxFileManagerTest from './kdbx/KdbxFileManager.test';
 import SaveDatabaseCallbackTest from './workers/SaveDatabaseCallback.test';
 import ToastSaveDatabaseCallbackTest from './workers/ToastSaveDatabaseCallback.test';
 
+// E2E 测试数据库生成套件（结构验证 + S3 上传，需 SeaweedFS 网关与反向隧道，
+// 建议 -s class GenerateE2eTestDatabaseTest 单独运行；连接方式与主密码见 docs/e2e-test-database.md）
+import GenerateE2eTestDatabaseTest from './testdata/GenerateE2eTestDatabase.test';
+// E2E 数据库操作单元测试（修改主密码往返 / 元数据设置持久化）
+import DatabaseChangePasswordMetaTest from './testdata/DatabaseChangePasswordMeta.test';
+
 
 export default function testsuite() {
   ActsAbilityTest();
@@ -471,6 +477,11 @@ export default function testsuite() {
   KdbxFileManagerTest();
   SaveDatabaseCallbackTest();
   ToastSaveDatabaseCallbackTest();
+
+  // E2E 测试数据库生成（生成结构验证 + 上传 S3；S3 用例需隧道，建议按 class 单独运行）
+  GenerateE2eTestDatabaseTest();
+  // E2E 数据库操作（修改主密码往返 / 元数据设置持久化）
+  DatabaseChangePasswordMetaTest();
 
   // UI 自动化测试
   // OpenDatabaseUiTest();
