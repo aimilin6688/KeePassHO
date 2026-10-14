@@ -9,6 +9,7 @@ import * as KeyEncryptorKdf from './crypto/key-encryptor-kdf';
 import { ProtectSaltGenerator } from './crypto/protect-salt-generator';
 import { ProtectedValue } from './crypto/protected-value';
 import { Salsa20 } from './crypto/salsa20';
+import { nativeSalsa20Available, setNativeSalsa20Enabled } from './crypto/salsa20-native';
 
 import * as Consts from './defs/consts';
 import * as XmlNames from './defs/xml-names';
@@ -79,6 +80,8 @@ export {
     ProtectSaltGenerator,
     ProtectedValue,
     Salsa20,
+    nativeSalsa20Available,
+    setNativeSalsa20Enabled,
     Consts,
     XmlNames,
     KdbxError,

@@ -1,5 +1,16 @@
 // code from this gist: https://gist.github.com/dchest/4582374 (no license declared)
 
+import { nativeSalsa20Available, salsa20XorNative } from './salsa20-native';
+
+/**
+ * 流式加解密的字节位置（无状态原生调用的重建参数）：
+ * counter = 起始 64 字节块计数器（64 位，低 32 位对应 _counterWords[0]），offset = 首块内已消耗字节偏移 0..63
+ */
+interface Salsa20StreamPosition {
+    counter: number;
+    offset: number;
+}
+
 export class Salsa20 {
     private readonly _rounds = 20;
     private readonly _sigmaWords = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
@@ -13,9 +24,19 @@ export class Salsa20 {
     private readonly _block = new Uint8Array(64); // output block of 64 bytes
     private _blockUsed = 64; // number of block bytes used
 
+    // ---- 原生路径状态镜像（与 _counterWords/_blockUsed 同步维护，见 nativeStart/applyNativeAdvance）----
+    private readonly _key: Uint8Array;
+    private readonly _nonce: Uint8Array;
+    private _counterUnits = 0;             // 已生成的 64 字节块总数（对应 generateBlock 调用数）
+    private readonly _useNative: boolean;  // 构造期决定：native 可用且参数合法则走原生路径
+
     constructor(key: Uint8Array, nonce: Uint8Array) {
         this.setKey(key);
         this.setNonce(nonce);
+        this._key = key;
+        this._nonce = nonce;
+        // 原生路径要求 key 32 字节、nonce 8 字节（view 亦可）
+        this._useNative = key.length === 32 && nonce.length === 8 && nativeSalsa20Available();
     }
 
     // setKey sets the key to the given 32-byte array.
@@ -48,6 +69,16 @@ export class Salsa20 {
     // getBytes returns the next numberOfBytes bytes of stream.
     getBytes(numberOfBytes: number): Uint8Array {
         const out = new Uint8Array(numberOfBytes);
+        if (this._useNative) {
+            // out 全零，XOR 密钥流后即为 keystream；空数据为 no-op（流位置不变），
+            // 避免零长度 typedarray 的 NAPI 空指针边界
+            if (numberOfBytes > 0) {
+                const start = this.nativeStart();
+                salsa20XorNative(out, this._key, this._nonce, start.counter, start.offset);
+                this.applyNativeAdvance(numberOfBytes, start);
+            }
+            return out;
+        }
         for (let i = 0; i < numberOfBytes; i++) {
             if (this._blockUsed === 64) {
                 this.generateBlock();
@@ -88,9 +119,46 @@ export class Salsa20 {
         return out.join('');
     }
 
+    /**
+     * 原生路径：重建当前流位置。
+     * _blockUsed === 64 → 下一块为 _counterUnits；否则当前块为 _counterUnits - 1、已消耗 _blockUsed 字节。
+     */
+    private nativeStart(): Salsa20StreamPosition {
+        if (this._blockUsed === 64) {
+            const pos: Salsa20StreamPosition = { counter: this._counterUnits, offset: 0 };
+            return pos;
+        }
+        const pos: Salsa20StreamPosition = { counter: this._counterUnits - 1, offset: this._blockUsed };
+        return pos;
+    }
+
+    /**
+     * 原生路径：按本次消耗的字节数推进镜像状态，并回写 _counterWords
+     * 供潜在的 JS 回退路径（构造后禁用原生等混合场景）从正确计数器续算。
+     */
+    private applyNativeAdvance(len: number, start: Salsa20StreamPosition): void {
+        const availableInFirst = 64 - start.offset;
+        const remaining = len > availableInFirst ? len - availableInFirst : 0;
+        const newBlocks = remaining > 0 ? Math.ceil(remaining / 64) : 0;
+        // start.offset === 0 时首块为本次新生成块（对应 JS 路径 generateBlock 的触发）
+        const firstIsNew = start.offset === 0 && len > 0;
+        this._counterUnits += newBlocks + (firstIsNew ? 1 : 0);
+        this._blockUsed = remaining === 0
+            ? start.offset + len
+            : (remaining % 64 === 0 ? 64 : remaining % 64);
+        this.syncCounterWords();
+    }
+
+    /** 将 _counterUnits 回写为 _counterWords（与 JS incrementCounter 的进位语义一致） */
+    private syncCounterWords(): void {
+        this._counterWords[0] = this._counterUnits % 4294967296;
+        this._counterWords[1] = Math.floor(this._counterUnits / 4294967296);
+    }
+
     private reset() {
         this._counterWords[0] = 0;
         this._counterWords[1] = 0;
+        this._counterUnits = 0;
         this._blockUsed = 64;
     }
 

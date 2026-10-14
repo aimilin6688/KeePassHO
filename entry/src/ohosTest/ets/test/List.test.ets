@@ -85,6 +85,9 @@ import AesGcmTest from './kdbx/AesGcm.test';
 // ChaCha20 原生路径设备端验证（libkdbxweb_zlib.so chacha20Xor：可用性 / RFC 7539 向量 / 流式等价）
 import Chacha20NativeTest from './kdbx/Chacha20Native.test';
 
+// Salsa20 原生路径设备端验证（libkdbxweb_zlib.so salsa20Xor：djb 向量 / JS 等价 / 分块续算 / view 入参）
+import Salsa20NativeTest from './kdbx/Salsa20Native.test';
+
 // KdbxCredentials customKey（自定义密钥分量，KcpCustomKey 等价）单元测试
 import KdbxCredentialsCustomKeyTest from './kdbx/KdbxCredentialsCustomKey.test';
 
@@ -356,6 +359,8 @@ export default function testsuite() {
 
   // ChaCha20 原生路径设备端验证（原生可用性 / RFC 7539 向量 / 分块流式等价）
   Chacha20NativeTest();
+  // Salsa20 原生路径设备端验证（djb 向量 / JS 等价 / 分块续算 / view 入参 / 零长度）
+  Salsa20NativeTest();
   KdbxCredentialsCustomKeyTest();
 
   // §10/§12 大文件验收测试（建议 -s class LargeFileAcceptanceTest 单独运行）

@@ -29,6 +29,9 @@
 // chacha20.cpp 提供：在同一 exports 上追加 chacha20Xor 导出
 napi_value DefineChaCha20(napi_env env, napi_value exports);
 
+// salsa20.cpp 提供：在同一 exports 上追加 salsa20Xor 导出
+napi_value DefineSalsa20(napi_env env, napi_value exports);
+
 namespace {
 
 constexpr size_t kInChunkSize = 1u << 20;   // 1MB 输入窗口
@@ -364,6 +367,7 @@ napi_value Init(napi_env env, napi_value exports)
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     DefineChaCha20(env, exports);
+    DefineSalsa20(env, exports);
     return exports;
 }
 
