@@ -12,6 +12,7 @@ import { StorageType } from '../../../../main/ets/storage';
 import { KdbxFileManager } from '../../../../main/ets/services/kdbx/KdbxFileManager';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
 import { HashUtils } from '../../../../main/ets/common/utils/HashUtils';
+import { ResourceManager } from '../../../../main/ets/common/utils/ResourceManager';
 import { ConflictMessage, LoadMessage, MessageType, SuccessMessage, WorkerMessage } from '../../../../main/ets/workers/WorkerParam';
 import { DatabaseWorkerFactory } from '../../../../main/ets/workers/DatabaseWorkerFactory';
 import { LoadDispatchCache } from '../../../../main/ets/services/kdbx/LoadDispatchCache';
@@ -34,11 +35,14 @@ export class KdbxModeTestHelper {
   public static readonly WORKER_TIMEOUT: number = 30000;
 
   /**
-   * 注入 ApplicationContext（ResourceManager / 临时目录等依赖）
+   * 注入 ApplicationContext（ResourceManager / 临时目录等依赖）。
+   * 测试进程运行 TestAbility 而非 EntryAbility，ResourceManager 单例需在此显式初始化，
+   * 否则策略/服务内 getString 因 context 为空返回空串（错误文案断言失真）。
    */
   public static initContext(): common.Context {
     const appContext = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
     CommonUtils.init(appContext as common.UIAbilityContext);
+    ResourceManager.getInstance().init(appContext as common.UIAbilityContext);
     return appContext;
   }
 

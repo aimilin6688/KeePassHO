@@ -16,6 +16,7 @@ import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import KdbxLoadService from './KdbxLoadService';
 import { LoadDispatchCache } from './LoadDispatchCache';
 import { RecentFile } from '../TypeDefined';
+import { AuthType } from '../TypeDefined';
 import { RecentFilesService } from '../RecentFilesService';
 import { ConflictMessage, LoadMessage, MessageType, ProgressMessage, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
@@ -71,6 +72,17 @@ export default class KdbxSaveService {
       hilog.error(DOMAIN, TAG, 'Database is null');
       if (callback && callback.onError) {
         callback.onError(ResourceManager.getString($r('app.string.invalid_database')));
+      }
+      return;
+    }
+
+    // 挑战-应答（XC）库保存拦截：kdbxweb 保存时重新生成 KDF seed，解锁时的 YubiKey 应答
+    // 仅对当前 seed 有效，直接保存将产生无法再次解锁的文件（数据损坏）；
+    // 「保存前重贴卡」两阶段保存支持前明确阻断（RELOAD 远端重载不受影响：seed 未变、应答仍有效）
+    if (dbFileParam.authType && AuthType.useChallengeResponseXc(dbFileParam.authType)) {
+      hilog.warn(DOMAIN, TAG, 'Save blocked: challenge-response (XC) database save requires re-challenge, not supported yet');
+      if (callback && callback.onError) {
+        callback.onError(ResourceManager.getString($r('app.string.error_challenge_response_save_unsupported')));
       }
       return;
     }

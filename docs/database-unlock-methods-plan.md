@@ -20,6 +20,7 @@
 | M3-1 YubiKey 挑战-应答（XC 兼容）— KDBX 头预解析 | 已完成 | 新增 `services/kdbx/KdbxHeaderReader.ets`（签名/版本校验、KDBX3 拒绝、外层字段 11 VarDictionary 解析、提取 KDF seed 'S' 与 '$UUID'）；真机单测 9/9（合成头向量 / 两阶段挑战-应答 E2E：预解析 seed → 模拟 HMAC-SHA1 → challengeResponseHex 语义重开成功、错误应答拒开 / KDBX3、版本、签名、截断、缺字段、缺 seed、坏字典异常路径），凭证与加载回归 38/38 |
 | M3 YubiKey 挑战-应答（XC 兼容）— NFC 服务与 UI | 已完成（代码与单测） | `YubiKeyNfcService`（tag.on readerMode 前台读卡 + IsoDepTag 两步 APDU：Select AID `A000000527200101` → HMAC 挑战 0x30/0x38 挑战补零 64 字节 → 20 字节应答 + SW 9000；7 类错误码状态机，会话内可重贴重试）；`NFC_TAG` 权限声明；`NfcChallengeDialog` 贴卡弹层（等待/读取/错误态，取消/重试，生命周期驱动会话）；Password.ets 槽位选择（默认槽位 2）+ 两阶段触发（阶段一头预解析提取挑战 → 弹层 → challengeResponseHex 加载）+ KDBX3/坏头/读失败分类提示；`RecentFile.yubikeySlot` 槽位记忆；`getAllTypes` 启用两个 XC 类型；APDU 纯函数真机单测 11/11，6 套件回归 58/58；待验证：YubiKey 5 NFC 实体钥互操作 |
 | M4 快速解锁与收尾 | 已完成 | 快速解锁语义确认：应用内锁屏（UnLockDatabase）库保持内存解密态，生物识别/快速密码仅恢复界面，OTP/XC 无需重派生密钥，无需改动；Password.ets 生物识别对 XC 挑战-应答库改为仅代填密码分量（不自动弹 NFC 层，由用户按解锁键触发，与 OTP 行为一致）；`RecentFile.otpAuxLocation` OTP 辅助文件位置记忆（手动选择/自动定位结果持久化，重开免重新定位）；设置页验证无需改动（不枚举数据库认证方式）；新增用户使用说明 `docs/unlock-methods-guide.md`；6 套件回归 58/58 |
+| 缺口复查修复（M4 后全链路复查） | 已完成 | ① OTP 库无法保存：`setFileParam` 的 DbFileParam/credentialsParam 从未携带 `otpSecretHex` → 保存时策略抛 `error_otp_secret_missing`；修复：Password.ets 解锁时暂存 `otpSecretHex`/`challengeResponseHex`（页面状态，切换认证方式即清理），`setFileParam` 双路透传（successMessageToKdbx 还原 + FileService.setDbFileParam），保存/重载/下拉刷新链路打通。② 大库（>4MB）Worker 容器路径：主线程 `successMessageToKdbx` 重建凭证缺 secret 而失败（"Database open failed"）；XC 模型路径 `fixedResponse` 函数随 Kdbx 实例 postMessage 触发结构化克隆 DataCloneError；修复：容器路径由 ① 提供 secret；DatabaseLoad 模型路径 XC 传输前 `setChallengeResponse(undefined)` 剥离挑战回调（`kdbxweb` setter 改 public）。③ XC 保存语义缺失：kdbxweb `save()` 必重新生成 KDF seed，解锁应答仅对当前 seed 有效，直接保存将产生无法回开的文件；修复：`KdbxSaveService.saveDatabase` 入口拦截（`error_challenge_response_save_unsupported`，覆盖手动/自动/合并全路径；RELOAD 不拦截——seed 未变应答仍有效，`byDbFileParam` 透传 challengeResponseHex 支持重载/下拉刷新）；两阶段「保存前重贴卡」列入 P2 backlog。新增 E2E 回归 `UnlockSecretsSaveReload`（OTP Worker 容器解锁→保存→重开、缺 secret 负例、XC 挑战剥离、XC 缺应答负例、XC 保存拦截文件零变更）；待验证：KeePass 桌面 OtpKeyProv / KeePassXC+YubiKey 实体钥互操作、反向保存后回开 |
 | M5 KeeChallenge 旧版（可选 P2） | 待开始 | — |
 
 ---
@@ -227,7 +228,7 @@ Password.ets (UI 收集)
 |---|---|---|
 | 单元测试（kdbxweb） | customKey 哈希拼接顺序与 KeePass 一致；challengeResponse 固定回调 | `libs/kdbxweb/src/ohosTest/`，Hypium，`hdc shell aa test` 真机运行 |
 | 单元测试（entry） | HOTP RFC 4226 向量；`KeyFromOtps`/Salsa20/PlainTextHash 向量（从 KP2A 插件测试取数）；五种编码解析 | `entry/src/ohosTest/ets/test/` |
-| 互操作 | KeePass 2.x（Windows）+ OtpKeyProv 创建 `.otp.xml` 库 → KeePassHO 解锁；KeePassXC + YubiKey 创建 KDBX4 挑战-应答库 → KeePassHO 解锁；反向保存后回开 | 真机 + 桌面工具 |
+| 互操作 | KeePass 2.x（Windows）+ OtpKeyProv 创建 `.otp.xml` 库 → KeePassHO 解锁；KeePassXC + YubiKey 创建 KDBX4 挑战-应答库 → KeePassHO 解锁；反向保存后回开 | 真机 + 桌面工具；**均未执行，待验证**（无 YubiKey 实体钥与桌面环境） |
 | 回归 | 现有 3 种解锁方式（密码/密钥/密码+密钥）全链路回归；快速解锁、生物识别、锁定流程 | 真机 E2E |
 | 异常路径 | OTP 码错误（PlainTextHash 不匹配）、辅助文件缺失/损坏、Counter 写回失败、NFC 超时/移卡、KDBX3 库选 XC 挑战、远端存储离线 | 手工/自动化 |
 
@@ -243,6 +244,7 @@ Password.ets (UI 收集)
 | AES-KDF 变换轮数高（OTP 派生）主线程卡顿 | 输入 OTP 后 UI 冻结 | 轮数来自辅助文件（典型 1 万轮，量级可控）；>5 万轮时放 Worker 派生 |
 | 新增密钥分量改变复合密钥拼接顺序导致互操作破坏 | 跨端无法解锁 | 不传 customKey 时零行为变化；单测锁定拼接顺序（password→keyfile→customKey→challenge） |
 | OTP secret 经 Worker 消息通道传输 | 内存暴露面扩大 | 与现有 password 通道同级；用后 `zeroBuffer` 清理（kdbxweb 已有此惯例） |
+| XC 库保存被拦截后用户误以为已保存 | 修改丢失（用户预期落空） | 拦截以明确错误提示（Toast/回调 onError），文案说明"修改未保存"；远端重载/下拉刷新不受影响；后续 P2 支持「保存前重贴卡」两阶段保存后解除拦截 |
 
 ---
 

@@ -136,7 +136,13 @@ export class KdbxCredentials {
         return Promise.resolve();
     }
 
-    private setChallengeResponse(
+    /**
+     * Sets or clears the challenge-response callback.
+     * Public: the XC challenge fn is single-use per KDF seed; callers clear it
+     * after load so the Kdbx instance can cross worker boundaries (functions
+     * are not structurally cloneable).
+     */
+    setChallengeResponse(
         challengeResponse: KdbxChallengeResponseFn | undefined
     ): Promise<void> {
         this._challengeResponse = challengeResponse;

@@ -689,6 +689,10 @@
       "value": "挑战应答结果缺失，请重新进行挑战验证"
     },
     {
+      "name": "error_challenge_response_save_unsupported",
+      "value": "挑战-应答数据库暂不支持保存（每次保存需重新贴卡验证，将在后续版本支持），您的修改未保存"
+    },
+    {
       "name": "otp_inputs_title",
       "value": "一次性密码"
     },

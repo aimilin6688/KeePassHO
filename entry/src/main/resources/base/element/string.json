@@ -701,6 +701,10 @@
       "value": "Challenge response is missing. Please retry the challenge verification"
     },
     {
+      "name": "error_challenge_response_save_unsupported",
+      "value": "Saving challenge-response databases is not supported yet (each save requires a new YubiKey tap). Your changes were not saved"
+    },
+    {
       "name": "otp_inputs_title",
       "value": "One-time passwords"
     },

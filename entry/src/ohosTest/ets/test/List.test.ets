@@ -230,6 +230,7 @@ import IFTPHandlerTest from './storage/ftp/IFTPHandler.test';
 import KdbxSaveServiceTest from './kdbx/KdbxSaveService.test';
 import KdbxLoadServiceTest from './kdbx/KdbxLoadService.test';
 import KdbxFileManagerTest from './kdbx/KdbxFileManager.test';
+import UnlockSecretsSaveReloadTest from './kdbx/UnlockSecretsSaveReload.test';
 import SaveDatabaseCallbackTest from './workers/SaveDatabaseCallback.test';
 import ToastSaveDatabaseCallbackTest from './workers/ToastSaveDatabaseCallback.test';
 
@@ -509,6 +510,7 @@ export default function testsuite() {
   KdbxSaveServiceTest();
   KdbxLoadServiceTest();
   KdbxFileManagerTest();
+  UnlockSecretsSaveReloadTest();
   SaveDatabaseCallbackTest();
   ToastSaveDatabaseCallbackTest();
 

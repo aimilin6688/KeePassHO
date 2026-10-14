@@ -1,5 +1,6 @@
 import { Kdbx, KdbxCredentials, ErrorCodes, KdbxError } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
+import { AuthType } from '../services/TypeDefined';
 import { FileInfo } from '../storage';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { KdbxLoadServiceCallback } from '../services/kdbx/KdbxLoadService';
@@ -120,6 +121,13 @@ export class DatabaseLoad {
           attachmentsDiskThreshold: attachmentsDiskThreshold
         });
       hilog.info(DOMAIN, TAG, 'load stage parse(decrypt+inflate+xml): %{public}d ms', Date.now() - tParse);
+
+      // 挑战-应答（XC）：应答已在加载中消费（新 seed 每次保存后变化，本次应答不可复用）；
+      // 凭证中的固定应答回调为函数体，无法随 Kdbx 实例跨线程结构化克隆（Worker 模型路径
+      // DataCloneError），且主线程对 XC 库的保存已被入口拦截 —— 传输前剥离挑战回调
+      if (AuthType.useChallengeResponseXc(request.authType)) {
+        await kdbx.credentials.setChallengeResponse(undefined);
+      }
 
       this.postMessage('loading_complete', callback?.onLoadMessage);
       // 流式 sha256 冲突检测基线（T0 文件 = 远端原始内容）

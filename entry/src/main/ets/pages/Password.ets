@@ -114,6 +114,10 @@ export struct Password {
   ];
   // NFC 贴卡弹层控制器（阶段二，运行时按挑战值创建）
   private nfcChallengeController: CustomDialogController | null = null;
+  // 本次解锁派生的 OTP/恢复 secret（hex）：解锁成功后随 DbFileParam 保存链路重建凭证用（内存态，不持久化）
+  private otpSecretHex: string | undefined = undefined;
+  // 本次解锁的 YubiKey 挑战应答（hex）：解锁成功后随 DbFileParam 供容器还原/远端重载重建凭证（seed 未变前有效）
+  private challengeResponseHex: string | undefined = undefined;
 
   aboutToAppear() {
     //初始化认证方式
@@ -336,6 +340,9 @@ export struct Password {
    */
   private onAuthTypeChanged(): void {
     this.pendingDerived = undefined;
+    // 清理上次尝试的派生 secret / 挑战应答（防止换认证方式后残留随 DbFileParam 带出）
+    this.otpSecretHex = undefined;
+    this.challengeResponseHex = undefined;
     if (AuthType.useOtpAuth(this.authTypeInfo) && !AuthType.isRecoveryMode(this.authTypeInfo) && !this.otpInfo) {
       // 优先使用记忆的辅助文件位置，其次同目录自动定位
       this.loadAuxFile(this.auxLocation);
@@ -822,6 +829,8 @@ export struct Password {
       this.pendingDerived = derived;
       secretHex = derived.secretHex;
     }
+    // 暂存派生 secret：解锁成功后 setFileParam 随 DbFileParam 带入保存链路
+    this.otpSecretHex = secretHex;
     const loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo,
       this.keyLocation, this.storageType, this.storageConfig);
     loadDatabase.otpSecretHex = secretHex;
@@ -917,6 +926,8 @@ export struct Password {
    */
   private handleChallengeResponse(responseHex: string): void {
     this.nfcChallengeController = null;
+    // 暂存应答：解锁成功后 setFileParam 随 DbFileParam 带入（容器还原/远端重载重建凭证）
+    this.challengeResponseHex = responseHex;
     const loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo,
       this.keyLocation, this.storageType, this.storageConfig);
     loadDatabase.challengeResponseHex = responseHex;
@@ -1008,10 +1019,14 @@ export struct Password {
    */
   private setFileParam(successMessage: SuccessMessage): Promise<void> {
     let date = new Date().getTime();
+    // 派生 secret / 挑战应答随凭证参数传入：容器还原（m0Path）重建凭证依赖（缺省时策略抛错，
+    // 大库 Worker 加载路径在最后一步失败）；secret 仅存内存 DbFileParam，不持久化
     return KdbxUtils.successMessageToKdbx(successMessage, {
       password: this.password,
       authType: this.authTypeInfo,
       keyLocation: this.keyLocation,
+      otpSecretHex: this.otpSecretHex,
+      challengeResponseHex: this.challengeResponseHex
     } as CredentialsParam).then((kdbx: Kdbx) => {
       hilog.info(DOMAIN, TAG, 'Array buffer to kdbx time: %{public}d ms', new Date().getTime() - date);
       // 设置数据库文件信息
@@ -1022,6 +1037,8 @@ export struct Password {
         database: kdbx,
         keyLocation: this.keyLocation, // 添加密钥文件路径，以便后续保存时使用
         authType: this.authTypeInfo, // 添加认证类型
+        otpSecretHex: this.otpSecretHex, // OTP/恢复 secret：保存/重载链路重建凭证
+        challengeResponseHex: this.challengeResponseHex, // 挑战应答：远端重载重建凭证（seed 未变前有效）
         storageType: this.storageType ?? StorageType.LOCAL,
         storageConfig: this.storageConfig ?? {},
         modifiedTime: successMessage.modifiedTime,
