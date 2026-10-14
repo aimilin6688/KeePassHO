@@ -188,6 +188,12 @@ import BasicDataSourceTest from './services/BasicDataSource.test';
 import LocationParamTest from './services/LocationParam.test';
 import KeepassHoErrorTest from './services/KeepassHoError.test';
 
+// ===== services/autoopen 子数据库（AutoOpen/KeeAutoExec 兼容）单元测试 =====
+import IfDeviceParserTest from './services/autoopen/IfDeviceParser.test';
+import AutoOpenPathResolverTest from './services/autoopen/AutoOpenPathResolver.test';
+import AutoOpenServiceTest from './services/autoopen/AutoOpenService.test';
+import DeviceIdentityTest from './services/autoopen/DeviceIdentity.test';
+
 // ===== 新增：services/template 模板子系统单元测试 =====
 import TemplateTypesTest from './services/template/TemplateTypes.test';
 import TemplateConstantsTest from './services/template/TemplateConstants.test';
@@ -467,6 +473,12 @@ export default function testsuite() {
   BasicDataSourceTest();
   LocationParamTest();
   KeepassHoErrorTest();
+
+  // ===== services/autoopen 子数据库 =====
+  IfDeviceParserTest();
+  AutoOpenPathResolverTest();
+  AutoOpenServiceTest();
+  DeviceIdentityTest();
 
   // ===== services/template =====
   TemplateTypesTest();
