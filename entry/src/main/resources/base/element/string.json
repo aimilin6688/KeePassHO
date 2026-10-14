@@ -965,6 +965,10 @@
       "value": "Already up to date"
     },
     {
+      "name": "refresh_session_closed",
+      "value": "Database closed. Please sign in again"
+    },
+    {
       "name": "Settings_security",
       "value": "Setting security"
     },

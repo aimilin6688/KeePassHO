@@ -1585,6 +1585,15 @@ export struct DatabaseView {
    * 不一致才全量下载。语义仍是"拉最新"，只是内容未变时不再重复传输/解析
    */
   private refreshDatabase() {
+    // 会话守卫：database 缺失说明数据库会话已关闭（如修改主密码后 FileService.close()
+    // 已置空 param、尚未重新登录），当前界面只是陈旧的内存渲染。带空参强刷会把
+    // undefined 密码一路传进 worker（stringToBytes 直接抛错），必须在此拦截
+    if (!FileService.getDbFileParam().database) {
+      this.refreshText = $r('app.string.refreshing_message');
+      CommonUtils.showToast({ message: $r('app.string.refresh_session_closed') });
+      this.isRefreshing = false;
+      return;
+    }
     this.isRefreshing = true;
     this.refreshText = $r('app.string.refreshing_message');
     probeRemoteUnchanged().then((unchanged: boolean) => {

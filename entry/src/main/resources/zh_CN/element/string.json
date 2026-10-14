@@ -893,6 +893,10 @@
       "value": "已是最新内容"
     },
     {
+      "name": "refresh_session_closed",
+      "value": "数据库已关闭，请重新登录"
+    },
+    {
       "name": "Settings_security",
       "value": "安全设置"
     },
