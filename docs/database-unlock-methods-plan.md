@@ -17,7 +17,8 @@
 | M1 基础设施（kdbxweb customKey / AuthType 判定 / 凭证分派 / Worker 链路透传） | 已完成 | `dc93068d`、`515cc83e`；凭证构建策略化重构 `cb0f2678`；真机单测 5/5 + 22/22 通过 |
 | M2-1 OTP 核心服务（HmacOtp / EncodingUtil / OtpUtil / OtpInfo / OtpKeyProvService + 单测） | 已完成 | services/otpkey/ 5 文件落地；真机单测 31/31 通过（HmacOtp 6：RFC 4226 官方向量 / EncodingUtil 8：RFC 4648 Base32 向量 / OtpUtil 6：v1/v2 夹具 / OtpInfo 5：双格式解析+往返 / OtpKeyProvService 6：前瞻窗口+恢复模式）；凭证回归 5/5 + 22/22 |
 | M2-2 OTP 解锁 UI（Password.ets OTP 输入区 / 恢复模式区 / Counter 写回） | 已完成 | `getAllTypes` 启用 `password_otp` / `password_otp_recovery`；OTP 输入区（OtpsRequired 个码，辅助文件自动定位失败引导手动选择）+ 恢复模式区（secret + 五种编码格式）；解锁成功后 Counter 写回（重加密，失败仅告警）；生物识别仅代填密码分量；新增 `OtpAuxFileService`（定位/读写/写回）真机单测 4/4，otpkey 全量 31/31 + 凭证 22/22 + AuthType 相关回归 39/39 |
-| M3 YubiKey 挑战-应答（XC 兼容） | 待开始 | — |
+| M3-1 YubiKey 挑战-应答（XC 兼容）— KDBX 头预解析 | 已完成 | 新增 `services/kdbx/KdbxHeaderReader.ets`（签名/版本校验、KDBX3 拒绝、外层字段 11 VarDictionary 解析、提取 KDF seed 'S' 与 '$UUID'）；真机单测 9/9（合成头向量 / 两阶段挑战-应答 E2E：预解析 seed → 模拟 HMAC-SHA1 → challengeResponseHex 语义重开成功、错误应答拒开 / KDBX3、版本、签名、截断、缺字段、缺 seed、坏字典异常路径），凭证与加载回归 38/38 |
+| M3 YubiKey 挑战-应答（XC 兼容）— NFC 服务与 UI | 进行中 | 剩余：YubiKeyNfcService（IsoDepTag APDU）/ NFC 权限与前台分发 / NfcChallengeDialog / Password.ets 槽位选择与触发 / RecentFile.yubikeySlot / 真机 YubiKey 5 NFC 互操作 |
 | M4 快速解锁与收尾 | 待开始 | — |
 | M5 KeeChallenge 旧版（可选 P2） | 待开始 | — |
 

@@ -97,6 +97,9 @@ import Salsa20NativeTest from './kdbx/Salsa20Native.test';
 // KdbxCredentials customKey（自定义密钥分量，KcpCustomKey 等价）单元测试
 import KdbxCredentialsCustomKeyTest from './kdbx/KdbxCredentialsCustomKey.test';
 
+// M3-1 KDBX 头预解析单元测试（KDF seed 提取 / 挑战-应答两阶段 E2E / 异常路径）
+import KdbxHeaderReaderTest from './kdbx/KdbxHeaderReader.test';
+
 // §10/§12 大文件验收测试（att-100/300/500 + text-10k + CP2' + 残留清扫）
 import LargeFileAcceptanceTest from './acceptance/LargeFileAcceptance.test';
 
@@ -376,6 +379,8 @@ export default function testsuite() {
   // Salsa20 原生路径设备端验证（djb 向量 / JS 等价 / 分块续算 / view 入参 / 零长度）
   Salsa20NativeTest();
   KdbxCredentialsCustomKeyTest();
+  // M3-1 KDBX 头预解析（KDF seed 提取 / 两阶段挑战-应答 E2E / 异常路径）
+  KdbxHeaderReaderTest();
 
   // §10/§12 大文件验收测试（建议 -s class LargeFileAcceptanceTest 单独运行）
   LargeFileAcceptanceTest();
