@@ -26,10 +26,14 @@ export default function ResourceManagerTest() {
     });
 
     it('getString returns empty for number resource without context', 0, () => {
+      // 全量运行时单例已被更早套件（KdbxModeTestHelper.initContext）初始化，
+      // 显式清空使"without context"前提确定成立；套件内 init 用例会恢复上下文
+      ResourceManager.getInstance().init(null);
       expect(ResourceManager.getInstance().getString(999999)).assertEqual('');
     });
 
     it('getString returns empty for Resource object without context', 0, () => {
+      ResourceManager.getInstance().init(null);
       const resource: Resource = {
         bundleName: 'com.test.app',
         moduleName: 'entry',
@@ -45,6 +49,7 @@ export default function ResourceManagerTest() {
     });
 
     it('static getString returns empty for number without context', 0, () => {
+      ResourceManager.getInstance().init(null);
       expect(ResourceManager.getString(888888)).assertEqual('');
     });
 
@@ -53,6 +58,7 @@ export default function ResourceManagerTest() {
     });
 
     it('getMessage returns empty for number without context', 0, () => {
+      ResourceManager.getInstance().init(null);
       expect(ResourceManager.getInstance().getMessage(999999)).assertEqual('');
     });
 

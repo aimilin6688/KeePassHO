@@ -6,6 +6,19 @@ function sleep(ms: number): Promise<void> {
   return new Promise<void>(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * 轮询等待条件成立（上限 timeoutMs）。
+ * emitter 投递为异步，固定 sleep 在全量运行高负载下可能早于投递完成，
+ * 导致正向断言随机失败（曾现：50ms sleep 后 payload 仍为 null）。
+ */
+async function waitFor(cond: () => boolean, timeoutMs: number = 2000): Promise<boolean> {
+  const deadline: number = Date.now() + timeoutMs;
+  while (!cond() && Date.now() < deadline) {
+    await sleep(20);
+  }
+  return cond();
+}
+
 export default function EventBusTest() {
   describe('EventBus', () => {
     const EVENT_A = 'test_event_bus_a';
@@ -54,7 +67,7 @@ export default function EventBusTest() {
       };
       EventBus.on(EVENT_A, cb);
       EventBus.emit<string>(EVENT_A, 'hello');
-      await sleep(50);
+      await waitFor(() => received !== null);
       expect(received).assertEqual('hello');
     });
 
@@ -65,7 +78,7 @@ export default function EventBusTest() {
       };
       EventBus.on(EVENT_B, cb);
       EventBus.emit<string>(EVENT_B);
-      await sleep(50);
+      await waitFor(() => invoked);
       expect(invoked).assertTrue();
     });
 
@@ -80,7 +93,7 @@ export default function EventBusTest() {
       EventBus.on(EVENT_C, cb1);
       EventBus.on(EVENT_C, cb2);
       EventBus.emit<string>(EVENT_C);
-      await sleep(50);
+      await waitFor(() => count === 2);
       expect(count).assertEqual(2);
     });
 
@@ -97,7 +110,7 @@ export default function EventBusTest() {
       EventBus.on(EVENT_A, gone);
       EventBus.off(EVENT_A, gone);
       EventBus.emit<string>(EVENT_A);
-      await sleep(50);
+      await waitFor(() => alive === 1);
       expect(alive).assertEqual(1);
       expect(dead).assertEqual(0);
     });

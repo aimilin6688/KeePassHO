@@ -15,10 +15,10 @@ export class ResourceManager {
   }
 
   /**
-   * 初始化主题管理器
-   * @param context UIAbilityContext
+   * 初始化资源管理器；传 null 清空已初始化的上下文（测试隔离用）
+   * @param context UIAbilityContext，传 null 表示清除
    */
-  public init(context: common.UIAbilityContext): void {
+  public init(context: common.UIAbilityContext | null): void {
     this.context = context;
   }
 
