@@ -8,6 +8,8 @@ import { SortMode } from '../common/constants';
 import { UIUtils } from '@kit.ArkUI';
 import { PageConstants } from '../common/constants/PageConstants';
 import { EntryParam } from '../services/TypeDefined';
+import { EventBus } from '../services/EventBus';
+import { emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'TotpView';
@@ -52,10 +54,29 @@ export struct TotpView {
     }
   };
 
+  /**
+   * 数据库更新事件回调（条目保存/删除后触发）
+   */
+  private onDatabaseUpdate: Callback<emitter.EventData> = (): void => {
+    hilog.info(DOMAIN, TAG, 'Receive database update event, reloading TOTP entries');
+    this.loadTotpEntries();
+  };
+
+  /**
+   * 数据库重新加载事件回调
+   */
+  private onDatabaseReload: Callback<emitter.EventData> = (): void => {
+    hilog.info(DOMAIN, TAG, 'Receive database reload event, reloading TOTP entries');
+    this.loadTotpEntries();
+  };
+
   aboutToAppear(): void {
     hilog.info(DOMAIN, TAG, 'TotpView aboutToAppear, navPathStack size: %{public}d', this.navPathStack.size());
     // 注册根页面变化监听
     this.navManager.addRootPageChangeListener(this.rootPageChangeListener);
+    // 监听数据库更新事件，条目编辑保存后刷新缓存列表
+    EventBus.on(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
+    EventBus.on(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
     // 尝试加载数据（如果数据库已打开）
     this.loadTotpEntries();
   }
@@ -63,6 +84,9 @@ export struct TotpView {
   aboutToDisappear() {
     // 移除根页面变化监听
     this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
+    // 取消监听数据库更新事件
+    EventBus.off(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
+    EventBus.off(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
   }
 
   onPageShow(): void {
