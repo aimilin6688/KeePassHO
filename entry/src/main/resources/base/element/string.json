@@ -745,6 +745,74 @@
       "value": "Secret format"
     },
     {
+      "name": "yubikey_slot_title",
+      "value": "YubiKey challenge slot"
+    },
+    {
+      "name": "yubikey_slot_1",
+      "value": "Slot 1 (short press)"
+    },
+    {
+      "name": "yubikey_slot_2",
+      "value": "Slot 2 (long press)"
+    },
+    {
+      "name": "yubikey_slot_hint",
+      "value": "Must match the YubiKey HMAC slot configured in KeePassXC"
+    },
+    {
+      "name": "yubikey_nfc_title",
+      "value": "Hold YubiKey"
+    },
+    {
+      "name": "yubikey_nfc_waiting",
+      "value": "Hold your YubiKey against the back of your phone"
+    },
+    {
+      "name": "yubikey_nfc_verifying",
+      "value": "Reading, keep the key in place..."
+    },
+    {
+      "name": "yubikey_nfc_error_unavailable",
+      "value": "NFC is not available on this device"
+    },
+    {
+      "name": "yubikey_nfc_error_disabled",
+      "value": "NFC is off. Turn it on in system settings"
+    },
+    {
+      "name": "yubikey_nfc_error_not_iso_dep",
+      "value": "This is not a YubiKey"
+    },
+    {
+      "name": "yubikey_nfc_error_select",
+      "value": "YubiKey rejected the request. Check the challenge slot"
+    },
+    {
+      "name": "yubikey_nfc_error_challenge",
+      "value": "Challenge failed. Hold the key until it finishes"
+    },
+    {
+      "name": "yubikey_nfc_error_invalid",
+      "value": "Unexpected YubiKey response"
+    },
+    {
+      "name": "yubikey_nfc_error_disconnected",
+      "value": "Lost contact with the key. Hold it again"
+    },
+    {
+      "name": "challenge_response_kdbx3_unsupported",
+      "value": "KDBX 3 databases do not support challenge-response unlock"
+    },
+    {
+      "name": "challenge_response_header_invalid",
+      "value": "Failed to parse the database file header"
+    },
+    {
+      "name": "challenge_response_read_failed",
+      "value": "Failed to read the database file"
+    },
+    {
       "name": "history_version",
       "value": "History version #%d"
     },

@@ -1,0 +1,157 @@
+import { describe, expect, it } from '@ohos/hypium';
+import {
+  buildChallengeApdu,
+  buildSelectApdu,
+  numbersToHex,
+  padChallengeTo64,
+  parseChallengeResponse,
+  parseSelectResponse,
+  YubiKeyNfcError,
+  YubiKeyNfcErrorCode,
+  YubiKeySlot
+} from '../../../../main/ets/services/yubikey/YubiKeyNfcService';
+
+/**
+ * YubiKeyNfcService 纯函数单元测试（APDU 构造 / 应答解析，无需 NFC 硬件）。
+ *
+ * 协议对齐 Yubico OTP/HMAC 规范与 KeePassXC 挑战-应答语义：
+ * - SELECT：00 A4 04 00 07 A0 00 00 05 27 20 01（按 AID 选择 YubiKey OTP 应用）
+ * - HMAC 挑战：00 (0x30|0x38) 00 00 40 <64 字节补零挑战>，INS 0x30=槽位1 / 0x38=槽位2
+ * - 应答：20 字节 HMAC + SW 9000
+ */
+
+/** 32 字节测试挑战（KDBX4 KDF seed 典型长度） */
+const SEED_32: number[] = [
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+  0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+  0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+];
+
+/** 20 字节测试 HMAC 应答 */
+const HMAC_20: number[] = [
+  0xde, 0xad, 0xbe, 0xef, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+  0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+];
+
+/** 捕获错误码（无码时断言失败） */
+function catchCode(action: () => void): YubiKeyNfcErrorCode {
+  try {
+    action();
+  } catch (e) {
+    const err = e as YubiKeyNfcError;
+    return err.code;
+  }
+  throw new Error('expected throw but no error raised');
+}
+
+export default function YubiKeyNfcServiceTest() {
+  describe('YubiKeyNfcService', () => {
+    it('buildSelectApdu_returnsAidSelect', 0, () => {
+      const apdu: number[] = buildSelectApdu();
+      expect(apdu.length).assertEqual(12);
+      expect(apdu).assertDeepEquals([0x00, 0xA4, 0x04, 0x00, 0x07,
+        0xA0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01]);
+    });
+
+    it('padChallengeTo64_pads32ByteSeed', 0, () => {
+      const padded: number[] = padChallengeTo64(SEED_32);
+      expect(padded.length).assertEqual(64);
+      // 前 32 字节 = 原文
+      for (let i = 0; i < 32; i++) {
+        expect(padded[i]).assertEqual(SEED_32[i]);
+      }
+      // 尾部补零
+      for (let i = 32; i < 64; i++) {
+        expect(padded[i]).assertEqual(0);
+      }
+    });
+
+    it('padChallengeTo64_padsShortChallengeAndKeeps64Max', 0, () => {
+      const short: number[] = [0xaa, 0xbb, 0xcc];
+      const padded: number[] = padChallengeTo64(short);
+      expect(padded.length).assertEqual(64);
+      expect(padded[0]).assertEqual(0xaa);
+      expect(padded[1]).assertEqual(0xbb);
+      expect(padded[2]).assertEqual(0xcc);
+      expect(padded[3]).assertEqual(0);
+      // 超长挑战截断至 64
+      const long: number[] = new Array<number>(80).fill(0x11);
+      expect(padChallengeTo64(long).length).assertEqual(64);
+    });
+
+    it('buildChallengeApdu_slot1UsesIns30', 0, () => {
+      const apdu: number[] = buildChallengeApdu(YubiKeySlot.SLOT_1, SEED_32);
+      expect(apdu.length).assertEqual(5 + 64);
+      expect(apdu[0]).assertEqual(0x00);
+      expect(apdu[1]).assertEqual(0x30);
+      expect(apdu[2]).assertEqual(0x00);
+      expect(apdu[3]).assertEqual(0x00);
+      expect(apdu[4]).assertEqual(0x40);
+      // 数据区前 32 字节 = seed 原文
+      for (let i = 0; i < 32; i++) {
+        expect(apdu[5 + i]).assertEqual(SEED_32[i]);
+      }
+      // 数据区尾部补零
+      expect(apdu[5 + 63]).assertEqual(0);
+    });
+
+    it('buildChallengeApdu_slot2UsesIns38', 0, () => {
+      const apdu: number[] = buildChallengeApdu(YubiKeySlot.SLOT_2, SEED_32);
+      expect(apdu[1]).assertEqual(0x38);
+      expect(apdu.length).assertEqual(69);
+    });
+
+    it('parseSelectResponse_accepts9000', 0, () => {
+      // 任选一个带文件信息的应答 + 90 00
+      parseSelectResponse([0x6f, 0x17, 0x90, 0x00]);
+      // 仅 SW
+      parseSelectResponse([0x90, 0x00]);
+    });
+
+    it('parseSelectResponse_rejectsFailureStatus', 0, () => {
+      // 6A 82：应用未找到
+      expect(catchCode(() => parseSelectResponse([0x6a, 0x82]))).assertEqual(YubiKeyNfcErrorCode.SELECT_FAILED);
+      // 69 82：安全状态不满足
+      expect(catchCode(() => parseSelectResponse([0x69, 0x82]))).assertEqual(YubiKeyNfcErrorCode.SELECT_FAILED);
+      // 空应答
+      expect(catchCode(() => parseSelectResponse([]))).assertEqual(YubiKeyNfcErrorCode.INVALID_RESPONSE);
+    });
+
+    it('parseChallengeResponse_returns20ByteHmac', 0, () => {
+      const response: number[] = HMAC_20.concat([0x90, 0x00]);
+      const hmac: number[] = parseChallengeResponse(response);
+      expect(hmac.length).assertEqual(20);
+      expect(hmac).assertDeepEquals(HMAC_20);
+    });
+
+    it('parseChallengeResponse_classifiesFailures', 0, () => {
+      // SW 69 85：使用条件不满足（槽位未配置）
+      const wrongSw: number[] = HMAC_20.concat([0x69, 0x85]);
+      expect(catchCode(() => parseChallengeResponse(wrongSw)))
+        .assertEqual(YubiKeyNfcErrorCode.CHALLENGE_FAILED);
+      // SW 6A 80：数据域错误
+      const badData: number[] = HMAC_20.concat([0x6a, 0x80]);
+      expect(catchCode(() => parseChallengeResponse(badData)))
+        .assertEqual(YubiKeyNfcErrorCode.CHALLENGE_FAILED);
+      // SW 正确但长度不符
+      const wrongLen: number[] = HMAC_20.slice(0, 18).concat([0x90, 0x00]);
+      expect(catchCode(() => parseChallengeResponse(wrongLen)))
+        .assertEqual(YubiKeyNfcErrorCode.INVALID_RESPONSE);
+    });
+
+    it('numbersToHex_lowerCaseHex', 0, () => {
+      expect(numbersToHex([0x00, 0x0f, 0xa5, 0xff])).assertEqual('000fa5ff');
+      expect(numbersToHex(HMAC_20.slice(0, 2))).assertEqual('dead');
+      expect(numbersToHex([])).assertEqual('');
+    });
+
+    it('yubiKeyNfcError_isErrorWithCode', 0, () => {
+      const error: YubiKeyNfcError = new YubiKeyNfcError(YubiKeyNfcErrorCode.NFC_DISABLED, 'off');
+      expect(error instanceof Error).assertTrue();
+      expect(error.name).assertEqual('YubiKeyNfcError');
+      expect(error.code).assertEqual(YubiKeyNfcErrorCode.NFC_DISABLED);
+      expect(error.message).assertEqual('off');
+    });
+  });
+}

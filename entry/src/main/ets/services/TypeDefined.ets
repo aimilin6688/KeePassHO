@@ -253,8 +253,8 @@ export class AuthType {
       AuthType.PASSWORD_OTP_RECOVERY,
       // AuthType.PASSWORD_CHALLENGE_RESPONSE,
       // AuthType.PASSWORD_CHALLENGE_RESPONSE_RECOVERY,
-      // AuthType.PASSWORD_CHALLENGE_RESPONSE_XC,
-      // AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC
+      AuthType.PASSWORD_CHALLENGE_RESPONSE_XC,
+      AuthType.PASSWORD_KEYFILE_CHALLENGE_RESPONSE_XC
     ];
   }
 
@@ -448,6 +448,11 @@ export interface RecentFile {
    * 仅作调度参考，过期误判由加载守卫兜底）
    */
   fileSize?: number;
+
+  /**
+   * YubiKey 挑战槽位（挑战-应答 XC 模式记忆：1=槽位1，2=槽位2）
+   */
+  yubikeySlot?: number;
 }
 
 /**

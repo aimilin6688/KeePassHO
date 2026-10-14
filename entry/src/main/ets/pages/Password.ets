@@ -4,7 +4,7 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { StorageConfig, StorageType } from '../storage';
+import { FileContentInfo, StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { CommonUtils, ConfigDecryptError, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
@@ -29,6 +29,15 @@ import { OtpAuxFileService } from '../services/otpkey/OtpAuxFileService';
 import { OtpDerivedSecret, OtpKeyProvService } from '../services/otpkey/OtpKeyProvService';
 import { OtpInfo } from '../services/otpkey/OtpInfo';
 import { EncodingUtil, OtpDataFmt } from '../services/otpkey/EncodingUtil';
+import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import {
+  KdbxHeaderInfo,
+  KdbxHeaderParseError,
+  KdbxHeaderParseErrorCode,
+  KdbxHeaderReader
+} from '../services/kdbx/KdbxHeaderReader';
+import { YubiKeySlot } from '../services/yubikey/YubiKeyNfcService';
+import { NfcChallengeDialog } from '../components/yubikey/NfcChallengeDialog';
 
 const DOMAIN = 0x0000;
 const TAG = 'Password';
@@ -95,6 +104,16 @@ export struct Password {
   private pendingDerived: OtpDerivedSecret | undefined = undefined;
   // 恢复模式编码格式下拉选项
   private formatOptions: SelectOption[] = [];
+  // ===== 挑战-应答（YubiKey NFC + KeePassXC）解锁状态 =====
+  // YubiKey HMAC 挑战槽位（默认槽位 2：出厂 OTP 占用槽位 1）
+  @State yubikeySlot: YubiKeySlot = YubiKeySlot.SLOT_2;
+  // 槽位下拉选项
+  private yubikeySlotOptions: SelectOption[] = [
+    { value: $r('app.string.yubikey_slot_1') },
+    { value: $r('app.string.yubikey_slot_2') }
+  ];
+  // NFC 贴卡弹层控制器（阶段二，运行时按挑战值创建）
+  private nfcChallengeController: CustomDialogController | null = null;
 
   aboutToAppear() {
     //初始化认证方式
@@ -241,6 +260,12 @@ export struct Password {
     if (recentFile.authType) {
       this.setAuthType(recentFile.authType);
       this.onAuthTypeChanged();
+    }
+    // 恢复 YubiKey 挑战槽位记忆
+    if (recentFile.yubikeySlot === YubiKeySlot.SLOT_1) {
+      this.yubikeySlot = YubiKeySlot.SLOT_1;
+    } else {
+      this.yubikeySlot = YubiKeySlot.SLOT_2;
     }
     // 是否使用缓存复选框
     this.initCacheCheckbox();
@@ -679,6 +704,12 @@ export struct Password {
       return;
     }
 
+    // 挑战-应答（KeePassXC + YubiKey NFC）：校验后进入两阶段贴卡流程
+    if (AuthType.useChallengeResponseXc(this.authTypeInfo)) {
+      this.verifyAndOpenDatabaseWithChallengeResponse();
+      return;
+    }
+
     // 仅密钥文件模式验证
     if (AuthType.isKeyfileOnly(this.authTypeInfo)) {
       if (!this.keyLocation) {
@@ -791,6 +822,102 @@ export struct Password {
       this.keyLocation, this.storageType, this.storageConfig);
     loadDatabase.otpSecretHex = secretHex;
     return loadDatabase;
+  }
+
+  /**
+   * 挑战-应答（KeePassXC + YubiKey NFC）解锁，两阶段流程：
+   * 阶段一（主线程）：读库文件 → KdbxHeaderReader 预解析 → 提取挑战值（KDF seed 原文）
+   * 阶段二（贴卡弹层 → Worker）：YubiKey NFC HMAC-SHA1 应答 → challengeResponseHex 固定应答加载
+   */
+  private verifyAndOpenDatabaseWithChallengeResponse(): void {
+    if (this.isLoading) {
+      return;
+    }
+    if (!this.password) {
+      CommonUtils.showToast({ message: $r('app.string.password_placeholder'), duration: 2000 });
+      return;
+    }
+    if (AuthType.useKeyAuth(this.authTypeInfo) && !this.keyLocation) {
+      CommonUtils.showToast({ message: $r('app.string.select_key_file'), duration: 2000 });
+      return;
+    }
+    if (this.storageType === null) {
+      CommonUtils.showToast({ message: $r('app.string.storage_type_empty') });
+      return;
+    }
+    this.openLoadingDialog();
+    this.readChallengeSeed()
+      .then((seed: number[]) => {
+        this.closeLoadingDialog();
+        this.showNfcChallengeDialog(seed);
+      })
+      .catch((error: Error) => {
+        hilog.error(DOMAIN, TAG, 'Challenge phase-1 (header pre-parse) failed: %{public}s', error.message);
+        this.closeLoadingDialog();
+        CommonUtils.showToast({ message: this.challengePhaseOneErrorText(error), duration: 3000 });
+      });
+  }
+
+  /**
+   * 阶段一：读库字节并预解析 KDBX 头，返回挑战值（KDF seed）字节
+   */
+  private async readChallengeSeed(): Promise<number[]> {
+    const manager = new KdbxFileManager(this.storageType, this.storageConfig);
+    const contentInfo: FileContentInfo = await manager.read(this.filePath);
+    const headerInfo: KdbxHeaderInfo = KdbxHeaderReader.readHeader(contentInfo.content);
+    const seedBytes = new Uint8Array(headerInfo.kdfSeed);
+    const seed: number[] = [];
+    for (let i = 0; i < seedBytes.length; i++) {
+      seed.push(seedBytes[i]);
+    }
+    return seed;
+  }
+
+  /**
+   * 阶段一错误 → 提示文案（KDBX3 / 头损坏 / 读失败分类）
+   */
+  private challengePhaseOneErrorText(error: Error): ResourceStr {
+    if (error instanceof KdbxHeaderParseError) {
+      if (error.code === KdbxHeaderParseErrorCode.KDBX3_NOT_SUPPORTED) {
+        return $r('app.string.challenge_response_kdbx3_unsupported');
+      }
+      return $r('app.string.challenge_response_header_invalid');
+    }
+    return $r('app.string.challenge_response_read_failed');
+  }
+
+  /**
+   * 弹出 YubiKey NFC 贴卡弹层（阶段二）
+   */
+  private showNfcChallengeDialog(seed: number[]): void {
+    this.nfcChallengeController = new CustomDialogController({
+      builder: NfcChallengeDialog({
+        challenge: seed,
+        slot: this.yubikeySlot,
+        onChallengeResponse: (responseHex: string) => {
+          this.handleChallengeResponse(responseHex);
+        },
+        onCancel: () => {
+          this.nfcChallengeController = null;
+        }
+      }),
+      alignment: DialogAlignment.Center,
+      customStyle: true,
+      autoCancel: false
+    });
+    this.nfcChallengeController.open();
+  }
+
+  /**
+   * 阶段二完成：携带 YubiKey HMAC 应答进入 Worker 加载
+   */
+  private handleChallengeResponse(responseHex: string): void {
+    this.nfcChallengeController = null;
+    const loadDatabase = new LoadDatabase(this.filePath, this.fileName, this.password, this.authTypeInfo,
+      this.keyLocation, this.storageType, this.storageConfig);
+    loadDatabase.challengeResponseHex = responseHex;
+    this.openLoadingDialog();
+    this.startLoadDatabase(loadDatabase);
   }
 
   /**
@@ -921,6 +1048,8 @@ export struct Password {
       authType: this.authTypeInfo,
       keyLocation: this.keyLocation,
       storageConfig: this.storageConfig ?? {},
+      // 挑战-应答槽位记忆（仅 XC 挑战-应答认证持久化）
+      yubikeySlot: AuthType.useChallengeResponseXc(this.authTypeInfo) ? this.yubikeySlot : undefined,
       fileSize: (successMessage?.fileSize !== undefined && successMessage.fileSize > 0)
         ? successMessage.fileSize : undefined
     } as RecentFile;
@@ -1047,6 +1176,11 @@ export struct Password {
               // 密钥文件选择（仅在需要密钥文件的认证方式时显示）
               if (AuthType.useKeyAuth(this.authTypeInfo)) {
                 this.KeyFileSelector()
+              }
+
+              // YubiKey 槽位选择（KeePassXC 挑战-应答）
+              if (AuthType.useChallengeResponseXc(this.authTypeInfo)) {
+                this.YubiKeySlotSelector()
               }
 
               // OTP 输入区（密码 + OTP：OtpsRequired 个码）
@@ -1342,6 +1476,43 @@ export struct Password {
         .onSelect((index: number, value: string) => {
           this.recoveryFmtIndex = index;
         })
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, bottom: 24 })
+  }
+
+  /**
+   * YubiKey 槽位选择区（KeePassXC 挑战-应答：槽位与 KeePassXC 中配置的 HMAC 槽位一致）
+   */
+  @Builder
+  YubiKeySlotSelector() {
+    Column() {
+      Text($r('app.string.yubikey_slot_title'))
+        .fontSize(16)
+        .fontColor($r('app.color.text_primary'))
+        .margin({ bottom: 16 })
+        .alignSelf(ItemAlign.Start)
+
+      Select(this.yubikeySlotOptions)
+        .selected(this.yubikeySlot === YubiKeySlot.SLOT_1 ? 0 : 1)
+        .value(this.yubikeySlot === YubiKeySlot.SLOT_1
+          ? ResourceManager.getString($r('app.string.yubikey_slot_1'))
+          : ResourceManager.getString($r('app.string.yubikey_slot_2')))
+        .font({ size: 16 })
+        .fontColor($r('app.color.text_primary'))
+        .selectedOptionFont({ size: 16 })
+        .optionFont({ size: 16 })
+        .id('select_yubikey_slot')
+        .width('100%')
+        .onSelect((index: number, value: string) => {
+          this.yubikeySlot = index === 0 ? YubiKeySlot.SLOT_1 : YubiKeySlot.SLOT_2;
+        })
+
+      Text($r('app.string.yubikey_slot_hint'))
+        .fontSize(12)
+        .fontColor($r('app.color.text_secondary'))
+        .margin({ top: 8 })
+        .alignSelf(ItemAlign.Start)
     }
     .width('100%')
     .padding({ left: 16, right: 16, bottom: 24 })

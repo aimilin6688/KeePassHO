@@ -733,6 +733,74 @@
       "value": "密钥格式"
     },
     {
+      "name": "yubikey_slot_title",
+      "value": "YubiKey 挑战槽位"
+    },
+    {
+      "name": "yubikey_slot_1",
+      "value": "槽位 1（短按）"
+    },
+    {
+      "name": "yubikey_slot_2",
+      "value": "槽位 2（长按）"
+    },
+    {
+      "name": "yubikey_slot_hint",
+      "value": "需与 KeePassXC 中配置的 YubiKey HMAC 槽位一致"
+    },
+    {
+      "name": "yubikey_nfc_title",
+      "value": "触碰 YubiKey"
+    },
+    {
+      "name": "yubikey_nfc_waiting",
+      "value": "请将 YubiKey 贴近手机背面"
+    },
+    {
+      "name": "yubikey_nfc_verifying",
+      "value": "正在读取，请保持贴合…"
+    },
+    {
+      "name": "yubikey_nfc_error_unavailable",
+      "value": "此设备不支持 NFC"
+    },
+    {
+      "name": "yubikey_nfc_error_disabled",
+      "value": "NFC 未开启，请在系统设置中开启"
+    },
+    {
+      "name": "yubikey_nfc_error_not_iso_dep",
+      "value": "未识别到 YubiKey"
+    },
+    {
+      "name": "yubikey_nfc_error_select",
+      "value": "YubiKey 拒绝了请求，请检查挑战槽位配置"
+    },
+    {
+      "name": "yubikey_nfc_error_challenge",
+      "value": "挑战-应答失败，请保持贴合直至完成"
+    },
+    {
+      "name": "yubikey_nfc_error_invalid",
+      "value": "YubiKey 应答异常"
+    },
+    {
+      "name": "yubikey_nfc_error_disconnected",
+      "value": "与密钥连接中断，请重新贴合"
+    },
+    {
+      "name": "challenge_response_kdbx3_unsupported",
+      "value": "KDBX 3 数据库不支持挑战-应答解锁"
+    },
+    {
+      "name": "challenge_response_header_invalid",
+      "value": "数据库文件头解析失败"
+    },
+    {
+      "name": "challenge_response_read_failed",
+      "value": "读取数据库文件失败"
+    },
+    {
       "name": "history_version",
       "value": "历史版本 #%d"
     },

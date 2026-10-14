@@ -100,6 +100,9 @@ import KdbxCredentialsCustomKeyTest from './kdbx/KdbxCredentialsCustomKey.test';
 // M3-1 KDBX 头预解析单元测试（KDF seed 提取 / 挑战-应答两阶段 E2E / 异常路径）
 import KdbxHeaderReaderTest from './kdbx/KdbxHeaderReader.test';
 
+// M3-2 YubiKey NFC 挑战-应答 APDU 纯函数单元测试（SELECT/HMAC 挑战构造、应答解析）
+import YubiKeyNfcServiceTest from './yubikey/YubiKeyNfcService.test';
+
 // §10/§12 大文件验收测试（att-100/300/500 + text-10k + CP2' + 残留清扫）
 import LargeFileAcceptanceTest from './acceptance/LargeFileAcceptance.test';
 
@@ -381,6 +384,8 @@ export default function testsuite() {
   KdbxCredentialsCustomKeyTest();
   // M3-1 KDBX 头预解析（KDF seed 提取 / 两阶段挑战-应答 E2E / 异常路径）
   KdbxHeaderReaderTest();
+  // M3-2 YubiKey NFC 挑战-应答 APDU 纯函数（构造 / 解析 / 错误分类）
+  YubiKeyNfcServiceTest();
 
   // §10/§12 大文件验收测试（建议 -s class LargeFileAcceptanceTest 单独运行）
   LargeFileAcceptanceTest();
