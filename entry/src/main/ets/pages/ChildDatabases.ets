@@ -425,6 +425,8 @@ struct ChildDatabasesPage {
     .width('100%')
     .constraintSize({ minHeight: 64 })
     .borderRadius(8)
+    .backgroundColor($r('app.color.card_bg'))
+    .margin({ bottom: 8 })
     .onClick(() => {
     })
     .bindMenu(this.ChildRowMenu(row))
@@ -433,14 +435,18 @@ struct ChildDatabasesPage {
   @Builder
   EmptyState() {
     Column() {
+      Image($r('app.media.ic_empty'))
+        .width(100)
+        .height(100)
+        .margin({ bottom: 16 })
+        .fillColor(Color.Gray)
       Text($r('app.string.child_dbs_empty'))
-        .fontSize(14)
-        .fontColor($r('app.color.text_secondary'))
-        .textAlign(TextAlign.Center)
-        .padding({ left: 32, right: 32 })
+        .fontSize(16)
+        .fontColor(Color.Gray)
     }
     .width('100%')
-    .margin({ top: 64 })
+    .layoutWeight(1)
+    .justifyContent(FlexAlign.Center)
   }
 
   build() {
@@ -468,7 +474,7 @@ struct ChildDatabasesPage {
           .width('100%')
           .layoutWeight(1)
           .scrollBar(BarState.Off)
-          .align(Alignment.Start)
+          .align(Alignment.TopStart)
         }
       }
       .width('100%')

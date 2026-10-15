@@ -2664,7 +2664,8 @@ export struct DatabaseView {
         }
 
         // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
-        if (this.showChildDbHint) {
+        // 底部悬浮面包屑（默认可见）为 36vp 绝对定位浮层，提示条需上移避让；移动/选择模式下与面包屑一致隐藏
+        if (this.showChildDbHint && !this.moveParam && !this.isSelectionMode) {
           Row({ space: 12 }) {
             Text($r('app.string.unconfigured_child_dbs'))
               .fontSize(12)
@@ -2695,6 +2696,9 @@ export struct DatabaseView {
           .padding({ left: 16, right: 16, top: 8, bottom: 8 })
           .backgroundColor($r('app.color.bg_secondary'))
           .alignItems(VerticalAlign.Top)
+          .margin({
+            bottom: this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM ? 36 : 0
+          })
         }
       }
       .width('100%')

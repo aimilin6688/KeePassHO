@@ -318,7 +318,7 @@ export struct DatabaseSwitcherSheet {
       }
       .layoutWeight(1)
       .scrollBar(BarState.Off)
-      .align(Alignment.Start)
+      .align(Alignment.TopStart)
     }
     .width('100%')
     .height('100%')
