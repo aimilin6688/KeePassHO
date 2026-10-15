@@ -58,6 +58,9 @@ export class SettingsService {
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE = 'Database_auth_default_type';
   public static readonly KEY_SECURITY_AUTH_DEFAULT_TYPE_DEFAULT = UnlockAuthType.PASSWORD;
 
+  // 子数据库提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时提示，「不再提示」按库记忆
+  public static readonly KEY_CHILD_DB_HINT_HIDDEN_PREFIX = 'ChildDb_hint_hidden_';
+
   // 数据库大小上限（MB），CP1 守卫：超过该值的数据库文件拒绝加载
   public static readonly KEY_DATABASE_MAX_SIZE = 'database_max_size';
   public static readonly KEY_DATABASE_MAX_SIZE_DEFAULT = 512;
@@ -267,6 +270,19 @@ export class SettingsService {
    */
   public static getSync<T extends preferences.ValueType>(key: string, defValue: T): T {
     return SettingsService.getInstance().getSync(key, defValue);
+  }
+
+  /**
+   * 生成子数据库提示条「不再提示」的按库记忆键（M5）
+   * 键 = 前缀 + iocKey 哈希（djb2 变体：乘子 31、模 2^31-1，全程 2^53 内精确运算，确定性散列）
+   * @param iocKey 库会话键（storageType::filePath）
+   */
+  public static childDbHintHiddenKey(iocKey: string): string {
+    let hash = 5381;
+    for (let i = 0; i < iocKey.length; i++) {
+      hash = (hash * 31 + iocKey.charCodeAt(i)) % 2147483647;
+    }
+    return `${SettingsService.KEY_CHILD_DB_HINT_HIDDEN_PREFIX}${hash.toString(16)}`;
   }
 
   // 读取数据

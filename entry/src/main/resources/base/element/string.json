@@ -709,6 +709,22 @@
       "value": "Only local databases can be added as child databases"
     },
     {
+      "name": "child_dbs_go_configure",
+      "value": "Configure"
+    },
+    {
+      "name": "child_dbs_hint_dismiss",
+      "value": "Don't show again"
+    },
+    {
+      "name": "unconfigured_child_dbs",
+      "value": "Your database contains new child databases in the \"AutoOpen\" group. Please specify whether these should be used on this device."
+    },
+    {
+      "name": "child_db_explanation",
+      "value": "Child databases are other databases which can be opened automatically when you open the parent database. Therefore, the child's master password and file location are stored in the parent. This feature allows to share some of your passwords with another person."
+    },
+    {
       "name": "clear_all_button",
       "value": "Clear all"
     },

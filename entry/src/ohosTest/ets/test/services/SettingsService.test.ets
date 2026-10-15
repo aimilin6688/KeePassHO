@@ -213,5 +213,20 @@ export default function SettingsServiceTest() {
       const mode = await SettingsService.getInstance().getThemeMode();
       expect(mode).assertEqual(ThemeMode.SYSTEM);
     });
+
+    // ---------------- childDbHintHiddenKey（M5 子数据库提示条按库记忆） ----------------
+
+    it('childDbHintHiddenKey: deterministic and prefixed for the same iocKey', 0, () => {
+      const key1: string = SettingsService.childDbHintHiddenKey('LOCAL::/data/a.kdbx');
+      const key2: string = SettingsService.childDbHintHiddenKey('LOCAL::/data/a.kdbx');
+      expect(key1 === key2).assertTrue();
+      expect(key1.startsWith(SettingsService.KEY_CHILD_DB_HINT_HIDDEN_PREFIX)).assertTrue();
+    });
+
+    it('childDbHintHiddenKey: differs across iocKeys', 0, () => {
+      const keyA: string = SettingsService.childDbHintHiddenKey('LOCAL::/data/a.kdbx');
+      const keyB: string = SettingsService.childDbHintHiddenKey('LOCAL::/data/b.kdbx');
+      expect(keyA !== keyB).assertTrue();
+    });
   });
 }

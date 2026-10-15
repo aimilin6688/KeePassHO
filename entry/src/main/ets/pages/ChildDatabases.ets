@@ -446,6 +446,12 @@ struct ChildDatabasesPage {
   build() {
     NavDestination() {
       Column() {
+        // 功能说明（对齐 kp2a config_child_db 布局：列表上方固定说明文案）
+        Text($r('app.string.child_db_explanation'))
+          .fontSize(12)
+          .fontColor($r('app.color.text_secondary'))
+          .padding({ left: 16, right: 16, top: 10, bottom: 6 })
+          .width('100%')
         if (this.rows.length === 0) {
           this.EmptyState()
         } else {

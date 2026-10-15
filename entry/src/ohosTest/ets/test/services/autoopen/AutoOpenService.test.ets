@@ -240,5 +240,47 @@ export default function AutoOpenServiceTest() {
       expect(entries.length).assertEqual(1);
       expect(entries[0].uuid.id).assertEqual(entry.uuid.id);
     });
+
+    // ---------------- hasUnconfiguredForDevice（M5 提示条判定） ----------------
+
+    it('hasUnconfiguredForDevice: false when no AutoOpen group exists', 0, async () => {
+      const db = await TestUtils.createTestDatabase('No AutoOpen');
+      expect(AutoOpenService.hasUnconfiguredForDevice(db, IOC_KEY, 'DEV_A')).assertFalse();
+    });
+
+    it('hasUnconfiguredForDevice: true when entry has no IfDevice field', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      // 无 IfDevice 字段 = 未显式配置本设备
+      expect(AutoOpenService.hasUnconfiguredForDevice(holder.db, IOC_KEY, 'DEV_A')).assertTrue();
+    });
+
+    it('hasUnconfiguredForDevice: false when device explicitly whitelisted', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      entry.fields.set('IfDevice', 'DEV_A');
+      expect(AutoOpenService.hasUnconfiguredForDevice(holder.db, IOC_KEY, 'DEV_A')).assertFalse();
+    });
+
+    it('hasUnconfiguredForDevice: false when device explicitly excluded', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      entry.fields.set('IfDevice', '!DEV_A');
+      expect(AutoOpenService.hasUnconfiguredForDevice(holder.db, IOC_KEY, 'DEV_A')).assertFalse();
+    });
+
+    it('hasUnconfiguredForDevice: true when whitelist names only another device', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      // 白名单仅 DEV_B：DEV_A 未显式命中 → 提示
+      entry.fields.set('IfDevice', 'DEV_B');
+      expect(AutoOpenService.hasUnconfiguredForDevice(holder.db, IOC_KEY, 'DEV_A')).assertTrue();
+    });
+
+    it('hasUnconfiguredForDevice: skips entries without URL', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      TestUtils.createTestEntry(holder.db, holder.autoOpen, 'no-url', 'u', 'p');
+      expect(AutoOpenService.hasUnconfiguredForDevice(holder.db, IOC_KEY, 'DEV_A')).assertFalse();
+    });
   });
 }

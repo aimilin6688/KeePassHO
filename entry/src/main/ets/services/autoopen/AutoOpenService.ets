@@ -2,6 +2,7 @@ import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import { KdbxUtils } from '../../common/utils';
 import { AUTO_OPEN_GROUP_NAME, AutoOpenFieldName } from './AutoOpenConstants';
 import { AutoOpenItem } from './AutoOpenItem';
+import { IfDeviceParser } from './IfDeviceParser';
 
 /**
  * AutoOpen 组扫描与条目解析服务
@@ -54,6 +55,24 @@ export class AutoOpenService {
       return (order.get(a.entryUuid) ?? 0) - (order.get(b.entryUuid) ?? 0);
     });
     return items;
+  }
+
+  /**
+   * 是否存在未显式配置指定设备的 AutoOpen 条目（M5 根组提示条判定）
+   * 与 kp2a GroupBaseActivity.UpdateChildDbInfo 对齐：
+   * 任一条目 IfDevice 未显式命中本设备（无字段 / 未列出）即提示用户配置
+   * @param database 已打开的数据库
+   * @param parentIocKey 归属父库 iocKey
+   * @param deviceId 设备 ID
+   */
+  public static hasUnconfiguredForDevice(database: Kdbx, parentIocKey: string, deviceId: string): boolean {
+    const items: AutoOpenItem[] = AutoOpenService.scan(database, parentIocKey);
+    for (const item of items) {
+      if (!IfDeviceParser.isEnabled(item.ifDeviceRaw, deviceId).isExplicit) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

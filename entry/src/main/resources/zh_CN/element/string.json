@@ -697,6 +697,22 @@
       "value": "仅支持将本地数据库添加为子数据库"
     },
     {
+      "name": "child_dbs_go_configure",
+      "value": "去配置"
+    },
+    {
+      "name": "child_dbs_hint_dismiss",
+      "value": "不再提示"
+    },
+    {
+      "name": "unconfigured_child_dbs",
+      "value": "您的数据库包含「AutoOpen」组中的新子数据库。请指定是否应在此设备上使用这些子数据库。"
+    },
+    {
+      "name": "child_db_explanation",
+      "value": "子数据库是可以在打开父数据库时自动打开的其他数据库。因此，子数据库的主密码和文件位置存储在父数据库中。此功能允许与其他人共享您的一些密码。"
+    },
+    {
       "name": "clear_all_button",
       "value": "清除全部"
     },

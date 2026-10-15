@@ -30,6 +30,8 @@ import { FileInfo } from '../storage/IFileStorage';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
 import { DatabaseRegistry } from '../services/database/DatabaseRegistry';
+import { AutoOpenService } from '../services/autoopen/AutoOpenService';
+import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
 import window from '@ohos.window';
@@ -116,6 +118,7 @@ export struct DatabaseView {
   // 数据库切换面板（M3）：半模态显示状态 + 面板数据刷新节拍（每次展开自增）
   @State showDatabaseSwitcher: boolean = false;
   @State switcherRefreshTick: number = 0;
+  @State showChildDbHint: boolean = false; // 子数据库配置提示条（M5）
   // 批量操作相关状态
   @State isSelectionMode: boolean = false; // 是否处于选择模式
   @State selectedItems: Map<string, KdbxGroup | KdbxEntry> = new Map(); // 选中的条目或分组
@@ -656,6 +659,7 @@ export struct DatabaseView {
       this.items = [...this.currentGroup.groups, ...this.currentGroup.entries];
       KdbxUtils.sortBy(this.items, this.sortBy);
       this.addFavorite();
+      this.updateChildDbHint();
       hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.items.length} items`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
@@ -704,6 +708,7 @@ export struct DatabaseView {
     if (updateBreadcrumb) {
       this.updateBreadcrumb(group);
     }
+    this.updateChildDbHint();
   }
 
   /**
@@ -770,8 +775,44 @@ export struct DatabaseView {
         this.items = [...savedGroup.groups, ...savedGroup.entries];
         KdbxUtils.sortBy(this.items, this.sortBy);
         this.addFavorite();
+        this.updateChildDbHint();
       }
     }
+  }
+
+  /**
+   * 子数据库配置提示条（M5）：根组视图且存在未显式配置本设备的 AutoOpen 条目时显示。
+   * 对齐 kp2a GroupBaseActivity.UpdateChildDbInfo：根组判定 + IfDevice 未显式命中判定 + 「不再提示」按库记忆。
+   */
+  private updateChildDbHint(): void {
+    this.showChildDbHint = false;
+    if (this.database === null || this.currentGroup === undefined) {
+      return;
+    }
+    // 仅根组视图显示
+    if (this.currentGroup.parentGroup !== undefined) {
+      return;
+    }
+    const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
+    if (!AutoOpenService.hasUnconfiguredForDevice(this.database, iocKey, DeviceIdentity.getDeviceId())) {
+      return;
+    }
+    // 「不再提示」按库记忆（KEY_CHILD_DB_HINT_HIDDEN_<iocKeyHash>）
+    const hidden: boolean = SettingsService.getSync(SettingsService.childDbHintHiddenKey(iocKey), false);
+    this.showChildDbHint = !hidden;
+  }
+
+  /**
+   * 「不再提示」子数据库配置条：按库记忆并立即隐藏
+   */
+  private dismissChildDbHint(): void {
+    const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
+    if (iocKey.length > 0) {
+      SettingsService.put(SettingsService.childDbHintHiddenKey(iocKey), true).catch(() => {
+        hilog.warn(DOMAIN, TAG, 'Failed to persist child db hint hidden flag');
+      });
+    }
+    this.showChildDbHint = false;
   }
 
   /**
@@ -797,6 +838,7 @@ export struct DatabaseView {
 
       // 更新面包屑导航
       this.updateBreadcrumb(parentGroup);
+      this.updateChildDbHint();
     } else {
       // 没有父分组，返回到根分组
       const rootGroup = this.database?.getDefaultGroup();
@@ -811,6 +853,7 @@ export struct DatabaseView {
 
         // 更新面包屑导航
         this.updateBreadcrumb(rootGroup);
+        this.updateChildDbHint();
       }
     }
   }
@@ -1891,6 +1934,7 @@ export struct DatabaseView {
         // 非搜索状态，添加收藏数据
         this.addFavorite();
       }
+      this.updateChildDbHint();
       // 恢复滚动位置
       setTimeout(() => {
         this.listScroller.scrollTo({ xOffset: 0, yOffset: savedScrollOffset, animation: { duration: 0 } });
@@ -2617,6 +2661,40 @@ export struct DatabaseView {
           }
           .width('100%')
           .layoutWeight(1)
+        }
+
+        // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
+        if (this.showChildDbHint) {
+          Row({ space: 12 }) {
+            Text($r('app.string.unconfigured_child_dbs'))
+              .fontSize(12)
+              .fontColor($r('app.color.text_secondary'))
+              .layoutWeight(1)
+              .lineHeight(16)
+            Column({ space: 2 }) {
+              Button($r('app.string.child_dbs_go_configure'))
+                .fontSize(13)
+                .fontWeight(FontWeight.Medium)
+                .height(28)
+                .padding({ left: 14, right: 14 })
+                .backgroundColor($r('app.color.button_bg_blue'))
+                .fontColor(Color.White)
+                .onClick(() => {
+                  NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
+                })
+              Text($r('app.string.child_dbs_hint_dismiss'))
+                .fontSize(11)
+                .fontColor($r('app.color.text_secondary'))
+                .onClick(() => {
+                  this.dismissChildDbHint();
+                })
+            }
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .backgroundColor($r('app.color.bg_secondary'))
+          .alignItems(VerticalAlign.Top)
         }
       }
       .width('100%')
