@@ -459,7 +459,8 @@ struct ChildDatabasesPage {
             Column() {
               ForEach(this.rows, (row: ChildRowItem) => {
                 this.ChildRow(row)
-              }, (row: ChildRowItem) => row.item.entryUuid)
+              }, (row: ChildRowItem) =>
+                row.item.entryUuid + '|' + row.deviceEnabled + '|' + row.deviceExplicit + '|' + row.opened)
             }
             .width('100%')
             .padding({ left: 8, right: 8, top: 8, bottom: 24 })
