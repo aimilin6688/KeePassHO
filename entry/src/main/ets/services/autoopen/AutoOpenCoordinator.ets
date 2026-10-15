@@ -1,4 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { emitter } from '@kit.BasicServicesKit';
 import { ErrorEvent } from '@kit.ArkTS';
 
 import { AutoOpenItem } from './AutoOpenItem';
@@ -14,7 +15,7 @@ import { KdbxFileManager } from '../kdbx/KdbxFileManager';
 import { AuthType, DbFileParam } from '../TypeDefined';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../../workers/WorkerParam';
-import { FilenameUtils, KdbxUtils } from '../../common/utils';
+import { FilenameUtils, KdbxUtils, CommonUtils } from '../../common/utils';
 import { LocalFileStorageConfig } from '../../storage/local/LocalFileConfig';
 import { StorageType } from '../../storage';
 import { LocationInfo, LocationMode } from '../beans/LocationParam';
@@ -132,6 +133,32 @@ export class AutoOpenCoordinator {
     if (queuedCount === 0) {
       EventBus.emit(AutoOpenCoordinator.EVENT_AUTO_OPEN_DONE, parentIocKey);
     }
+  }
+
+  /**
+   * 子库打开失败统一提示（切换面板 / 子库管理页的 OPEN_FAILED 事件监听调用）。
+   * 子库加载为异步入队，「立即打开」发起后仅返回 loading，真正的失败终态经本事件到达——
+   * 若不在此提示，用户点击后将无任何反馈。
+   * emitter 会序列化事件数据，此处按字段读取 AutoOpenFailure 同构普通对象。
+   */
+  static showOpenFailedToast(eventData: emitter.EventData): void {
+    const raw: Object | undefined = eventData.data;
+    if (raw === undefined || raw === null) {
+      CommonUtils.showToast($r('app.string.database_switcher_child_failed'), 2000);
+      return;
+    }
+    const failure: AutoOpenFailure = raw as AutoOpenFailure;
+    const title: string = failure.title;
+    const reason: string = failure.reason;
+    if (title.length === 0) {
+      CommonUtils.showToast($r('app.string.database_switcher_child_failed'), 2000);
+      return;
+    }
+    if (reason.length > 0) {
+      CommonUtils.showToast($r('app.string.child_dbs_open_failed_detail', title, reason), 2000);
+      return;
+    }
+    CommonUtils.showToast($r('app.string.child_dbs_open_failed', title), 2000);
   }
 
   /**

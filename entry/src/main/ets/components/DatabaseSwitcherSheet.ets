@@ -36,7 +36,8 @@ export struct DatabaseSwitcherSheet {
   private onChildOpened: Callback<emitter.EventData> = (): void => {
     this.refreshData();
   };
-  private onChildOpenFailed: Callback<emitter.EventData> = (): void => {
+  private onChildOpenFailed: Callback<emitter.EventData> = (event: emitter.EventData): void => {
+    AutoOpenCoordinator.showOpenFailedToast(event);
     this.refreshData();
   };
   private onAutoOpenDone: Callback<emitter.EventData> = (): void => {
@@ -117,13 +118,15 @@ export struct DatabaseSwitcherSheet {
   }
 
   /**
-   * 区块 2 点击：手动打开子库（成功后成为当前库；失败仅提示，面板保留供重试）
+   * 区块 2 点击：手动打开子库（成功后成为当前库；失败仅提示，面板保留供重试）。
+   * 加载为异步入队，异步失败终态经 OPEN_FAILED 事件由 onChildOpenFailed 提示
    */
   private openChild(item: AutoOpenItem): void {
     AutoOpenCoordinator.getInstance().openManually(item).then((result: string) => {
       if (result === 'failed') {
         this.getUIContext().getPromptAction().showToast({
-          message: $r('app.string.database_switcher_child_failed'),
+          message: $r('app.string.child_dbs_open_failed',
+            item.title.length > 0 ? item.title : item.url),
           duration: 2000
         });
         return;

@@ -633,6 +633,14 @@
       "value": "子数据库打开失败"
     },
     {
+      "name": "child_dbs_open_failed",
+      "value": "子数据库「%s」打开失败"
+    },
+    {
+      "name": "child_dbs_open_failed_detail",
+      "value": "子数据库「%s」打开失败：%s"
+    },
+    {
       "name": "child_dbs_title",
       "value": "子数据库"
     },

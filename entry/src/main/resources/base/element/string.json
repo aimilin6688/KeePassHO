@@ -645,6 +645,14 @@
       "value": "Failed to open child database"
     },
     {
+      "name": "child_dbs_open_failed",
+      "value": "Failed to open child database %s"
+    },
+    {
+      "name": "child_dbs_open_failed_detail",
+      "value": "Failed to open child database %s: %s"
+    },
+    {
       "name": "child_dbs_title",
       "value": "Child databases"
     },

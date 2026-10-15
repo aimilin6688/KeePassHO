@@ -1,5 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { deviceInfo } from '@kit.BasicServicesKit';
+import { deviceInfo, emitter } from '@kit.BasicServicesKit';
 
 import { Kdbx, KdbxEntry } from 'kdbxweb';
 
@@ -58,7 +58,8 @@ struct ChildDatabasesPage {
   private onChildOpened = (): void => {
     this.refreshData();
   };
-  private onChildOpenFailed = (): void => {
+  private onChildOpenFailed = (event: emitter.EventData): void => {
+    AutoOpenCoordinator.showOpenFailedToast(event);
     this.refreshData();
   };
   private onChildOpenDone = (): void => {
@@ -150,18 +151,24 @@ struct ChildDatabasesPage {
   }
 
   /**
-   * 行操作：立即打开子库（已在注册表时 openManually 直接切换当前库）
+   * 行操作：立即打开子库（已在注册表时 openManually 直接切换当前库）。
+   * 加载为异步入队，失败终态经 OPEN_FAILED 事件由 onChildOpenFailed 提示
    */
   private openChildNow(row: ChildRowItem): void {
     AutoOpenCoordinator.getInstance().openManually(row.item).then((result: string) => {
       if (result === 'failed') {
-        CommonUtils.showToast({
-          message: $r('app.string.database_switcher_child_failed'),
-          duration: 2000
-        });
+        CommonUtils.showToast(
+          $r('app.string.child_dbs_open_failed', this.displayName(row.item)), 2000);
       }
       this.refreshData();
     });
+  }
+
+  /**
+   * 子库条目展示名：Title 为空时回退 URL（与行展示一致）
+   */
+  private displayName(item: AutoOpenItem): string {
+    return item.title.length > 0 ? item.title : item.url;
   }
 
   /**
