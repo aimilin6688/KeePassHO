@@ -2005,6 +2005,70 @@
       "value": "Save the file to OneDrive"
     },
     {
+      "name": "baidu_netdisk_authenticating",
+      "value": "Authenticating..."
+    },
+    {
+      "name": "baidu_netdisk_authentication_successful",
+      "value": "Authentication successful"
+    },
+    {
+      "name": "baidu_netdisk_login_successful",
+      "value": "Login successful"
+    },
+    {
+      "name": "baidu_netdisk_authentication_failed",
+      "value": "Authentication failed"
+    },
+    {
+      "name": "baidu_netdisk_logged_in",
+      "value": "Logged in"
+    },
+    {
+      "name": "baidu_netdisk_logout",
+      "value": "Logout"
+    },
+    {
+      "name": "baidu_netdisk_login_prompt",
+      "value": "Please sign in to your Baidu Netdisk account to access your files"
+    },
+    {
+      "name": "baidu_netdisk_login_button",
+      "value": "Sign in to Baidu Netdisk"
+    },
+    {
+      "name": "baidu_netdisk_manual_login_toggle",
+      "value": "Sign in with authorization code"
+    },
+    {
+      "name": "baidu_netdisk_manual_login_prompt",
+      "value": "1. Copy the authorization link and open it in a browser\n2. Sign in, authorize, and copy the authorization code shown\n3. Paste the code below"
+    },
+    {
+      "name": "baidu_netdisk_copy_auth_url",
+      "value": "Copy authorization link"
+    },
+    {
+      "name": "baidu_netdisk_manual_code_placeholder",
+      "value": "Enter authorization code"
+    },
+    {
+      "name": "baidu_netdisk_manual_code_exchange",
+      "value": "Sign in with code"
+    },
+    {
+      "name": "baidu_netdisk_manual_code_empty",
+      "value": "Authorization code is required"
+    },
+    {
+      "name": "baidu_netdisk_select_file",
+      "value": "Select a file from Baidu Netdisk"
+    },
+    {
+      "name": "baidu_netdisk_save_file",
+      "value": "Save the file to Baidu Netdisk"
+    },
+    {
       "name": "huawei_drive_select_file",
       "value": "Select a file from Huawei Drive"
     },

@@ -76,6 +76,11 @@
       "buildFunction": "HuaweiDrivePageBuilder"
     },
     {
+      "name": "BaiduNetdiskPage",
+      "pageSourceFile": "src/main/ets/storage/baidu/BaiduNetdiskPage.ets",
+      "buildFunction": "BaiduNetdiskPageBuilder"
+    },
+    {
       "name": "DatabaseView",
       "pageSourceFile": "src/main/ets/pages/DatabaseView.ets",
       "buildFunction": "DatabaseViewBuilder"

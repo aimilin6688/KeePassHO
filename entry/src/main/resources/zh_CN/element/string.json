@@ -1933,6 +1933,70 @@
       "value": "保存文件到OneDrive中"
     },
     {
+      "name": "baidu_netdisk_authenticating",
+      "value": "身份验证中..."
+    },
+    {
+      "name": "baidu_netdisk_authentication_successful",
+      "value": "身份验证成功"
+    },
+    {
+      "name": "baidu_netdisk_login_successful",
+      "value": "登录成功"
+    },
+    {
+      "name": "baidu_netdisk_authentication_failed",
+      "value": "身份验证失败"
+    },
+    {
+      "name": "baidu_netdisk_logged_in",
+      "value": "已登录"
+    },
+    {
+      "name": "baidu_netdisk_logout",
+      "value": "登出"
+    },
+    {
+      "name": "baidu_netdisk_login_prompt",
+      "value": "请登录百度网盘账号以访问您的文件"
+    },
+    {
+      "name": "baidu_netdisk_login_button",
+      "value": "登录百度网盘"
+    },
+    {
+      "name": "baidu_netdisk_manual_login_toggle",
+      "value": "使用授权码登录"
+    },
+    {
+      "name": "baidu_netdisk_manual_login_prompt",
+      "value": "1. 复制授权链接并在浏览器中打开\n2. 登录并完成授权，复制页面显示的授权码\n3. 将授权码粘贴到下方输入框"
+    },
+    {
+      "name": "baidu_netdisk_copy_auth_url",
+      "value": "复制授权链接"
+    },
+    {
+      "name": "baidu_netdisk_manual_code_placeholder",
+      "value": "请输入授权码"
+    },
+    {
+      "name": "baidu_netdisk_manual_code_exchange",
+      "value": "授权码登录"
+    },
+    {
+      "name": "baidu_netdisk_manual_code_empty",
+      "value": "授权码不能为空"
+    },
+    {
+      "name": "baidu_netdisk_select_file",
+      "value": "从百度网盘中选择文件"
+    },
+    {
+      "name": "baidu_netdisk_save_file",
+      "value": "保存文件到百度网盘中"
+    },
+    {
       "name": "huawei_drive_select_file",
       "value": "从华为云盘中选择文件"
     },

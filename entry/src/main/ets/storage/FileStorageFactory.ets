@@ -7,6 +7,7 @@ import { S3Storage } from './s3/S3Storage';
 import { CacheStorage } from './cache/CacheStorage';
 import {PCloudStorage} from './pcloud/PCloudStorage'
 import {HuaweiDriveStorage} from './huawei/HuaweiDriveStorage'
+import {BaiduNetdiskStorage} from './baidu/BaiduNetdiskStorage'
 
 /**
  * 文件存储工厂类
@@ -27,6 +28,7 @@ export class FileStorageFactory {
     this.registerStorage(StorageType.ONEDRIVE, new OneDriveStorage());
     // this.registerStorage(StorageType.PCLOUD, new PCloudStorage());
     this.registerStorage(StorageType.FTP, new FTPStorage());
+    this.registerStorage(StorageType.BAIDU_NETDISK, new BaiduNetdiskStorage());
 
   }
 

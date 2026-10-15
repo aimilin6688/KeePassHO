@@ -32,6 +32,24 @@ export class HashUtils {
   }
 
   /**
+   * 计算数据的 MD5 哈希值（十六进制小写）
+   * 仅供百度网盘开放平台协议使用（content-md5 / slice-md5 / 分片 block_list 上报约定），
+   * 非安全用途，不用于密码学保护
+   * @param data 待计算的数据
+   * @returns 十六进制小写哈希字符串
+   */
+  public static md5Hex(data: ArrayBuffer): string {
+    // 空 ArrayBuffer：cryptoFramework 不支持空 update，返回已知空 MD5
+    if (data.byteLength === 0) {
+      return 'd41d8cd98f00b204e9800998ecf8427e';
+    }
+    const md: cryptoFramework.Md = cryptoFramework.createMd('MD5');
+    md.updateSync({ data: new Uint8Array(data) });
+    const digest: cryptoFramework.DataBlob = md.digestSync();
+    return HashUtils.toHexString(digest.data);
+  }
+
+  /**
    * 计算本地文件的 SHA256 哈希值（增量喂入分块，避免整缓冲驻留内存）
    * 与 sha256Hex 结果一致，可用于流式冲突检测替代整缓冲哈希
    * @param filePath 本地文件路径
