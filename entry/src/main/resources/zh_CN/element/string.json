@@ -609,6 +609,30 @@
       "value": "最近打开的数据库"
     },
     {
+      "name": "database_switcher_title",
+      "value": "数据库"
+    },
+    {
+      "name": "database_switcher_opened_section",
+      "value": "已打开"
+    },
+    {
+      "name": "database_switcher_children_section",
+      "value": "子数据库"
+    },
+    {
+      "name": "database_switcher_open_other",
+      "value": "打开其他数据库…"
+    },
+    {
+      "name": "database_switcher_current",
+      "value": "当前"
+    },
+    {
+      "name": "database_switcher_child_failed",
+      "value": "子数据库打开失败"
+    },
+    {
       "name": "clear_all_button",
       "value": "清除全部"
     },

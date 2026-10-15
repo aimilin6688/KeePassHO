@@ -193,9 +193,13 @@ import IfDeviceParserTest from './services/autoopen/IfDeviceParser.test';
 import AutoOpenPathResolverTest from './services/autoopen/AutoOpenPathResolver.test';
 import AutoOpenServiceTest from './services/autoopen/AutoOpenService.test';
 import DeviceIdentityTest from './services/autoopen/DeviceIdentity.test';
+import AutoOpenCoordinatorTest from './services/autoopen/AutoOpenCoordinator.test';
 
 // ===== services/database 多库注册表（M2 子数据库）单元测试 =====
 import DatabaseRegistryTest from './services/database/DatabaseRegistry.test';
+
+// ===== workers 子数据库串行加载队列（M3）单元测试 =====
+import DatabaseLoadQueueTest from './workers/DatabaseLoadQueue.test';
 
 // ===== 新增：services/template 模板子系统单元测试 =====
 import TemplateTypesTest from './services/template/TemplateTypes.test';
@@ -482,9 +486,13 @@ export default function testsuite() {
   AutoOpenPathResolverTest();
   AutoOpenServiceTest();
   DeviceIdentityTest();
+  AutoOpenCoordinatorTest();
 
   // ===== services/database 多库注册表（M2） =====
   DatabaseRegistryTest();
+
+  // ===== workers 子数据库串行加载队列（M3） =====
+  DatabaseLoadQueueTest();
 
   // ===== services/template =====
   TemplateTypesTest();

@@ -28,6 +28,8 @@ import { CacheConstants } from '../storage/cache/CacheConstants';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { FileInfo } from '../storage/IFileStorage';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
+import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
+import { DatabaseRegistry } from '../services/database/DatabaseRegistry';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
 import window from '@ohos.window';
@@ -111,6 +113,9 @@ export struct DatabaseView {
   @State showMoreMenu: boolean = false; // 是否显示更多操作菜单
   @State moreMenuX: number = 0; // 更多菜单X坐标
   @State moreMenuY: number = 0; // 更多菜单Y坐标
+  // 数据库切换面板（M3）：半模态显示状态 + 面板数据刷新节拍（每次展开自增）
+  @State showDatabaseSwitcher: boolean = false;
+  @State switcherRefreshTick: number = 0;
   // 批量操作相关状态
   @State isSelectionMode: boolean = false; // 是否处于选择模式
   @State selectedItems: Map<string, KdbxGroup | KdbxEntry> = new Map(); // 选中的条目或分组
@@ -186,6 +191,17 @@ export struct DatabaseView {
   onDatabaseUpdate: Callback<emitter.EventData> = (eventData: emitter.EventData) => {
     hilog.debug(DOMAIN, TAG, 'Receive database update event');
     this.updateUI();
+  }
+  /**
+   * 当前库变更事件（切换面板切换 / 添加模式打开新库 / 子库手动打开成功）：
+   * 重置分组状态并重载新当前库内容
+   */
+  onCurrentDatabaseChanged: Callback<emitter.EventData> = (eventData: emitter.EventData) => {
+    hilog.info(DOMAIN, TAG, 'Current database changed, reloading view');
+    this.currentGroupId = '';
+    this.currentGroup = undefined;
+    this.navigationPath = [];
+    this.loadDatabase();
   }
   /**
    * 根页面变化监听器
@@ -266,6 +282,7 @@ export struct DatabaseView {
   aboutToDisappear() {
     EventBus.off(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
     EventBus.off(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
+    EventBus.off(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, this.onCurrentDatabaseChanged);
     // 移除根页面变化监听
     this.navManager.removeRootPageChangeListener(this.rootPageChangeListener);
     // 注销系统返回键的上下文处理器
@@ -452,6 +469,7 @@ export struct DatabaseView {
   private registerDatabaseEvent() {
     EventBus.on(EventBus.DATABASE_RELOAD, this.onDatabaseReload);
     EventBus.on(EventBus.DATABASE_UPDATE, this.onDatabaseUpdate);
+    EventBus.on(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, this.onCurrentDatabaseChanged);
   }
 
   /**
@@ -2030,6 +2048,19 @@ export struct DatabaseView {
     this.navPathStack.pop();
   }
 
+  /**
+   * 数据库切换面板内容（M3）：bindSheet 半模态
+   */
+  @Builder
+  DatabaseSwitcherBuilder() {
+    DatabaseSwitcherSheet({
+      refreshTick: this.switcherRefreshTick,
+      onRequestClose: () => {
+        this.showDatabaseSwitcher = false;
+      }
+    })
+  }
+
   build() {
     Stack() {
       // 更多操作菜单
@@ -2174,10 +2205,29 @@ export struct DatabaseView {
                   .fontColor($r('app.color.text_primary'))
                   .maxLines(1)
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
+                // 数据库切换面板入口（M3）：点击展开已打开库/子库切换半模态
+                if (!this.isSelectionMode) {
+                  Image($r('app.media.ic_angle_down'))
+                    .width(18)
+                    .height(18)
+                    .fillColor($r('app.color.text_secondary'))
+                    .margin({ left: 4 })
+                    .id('btn_database_switcher')
+                    .onClick(() => {
+                      this.showDatabaseSwitcher = true;
+                    })
+                }
               }
               .margin({ right: 25 })
               .layoutWeight(1)
               .flexShrink(1)
+              .bindSheet($$this.showDatabaseSwitcher, this.DatabaseSwitcherBuilder(), {
+                height: SheetSize.MEDIUM,
+                dragBar: true,
+                onAppear: () => {
+                  this.switcherRefreshTick++;
+                }
+              })
 
               // 选择模式下显示全选/取消全选按钮，否则显示常规按钮
               if (this.isSelectionMode) {

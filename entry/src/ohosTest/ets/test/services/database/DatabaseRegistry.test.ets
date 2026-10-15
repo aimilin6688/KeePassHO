@@ -1,6 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
+import { emitter } from '@kit.BasicServicesKit';
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { DatabaseRegistry, OpenDatabaseRecord, PutDatabaseOptions } from '../../../../../main/ets/services/database/DatabaseRegistry';
+import { EventBus } from '../../../../../main/ets/services/EventBus';
 import { AuthType, DbFileParam } from '../../../../../main/ets/services/TypeDefined';
 
 /**
@@ -17,6 +19,17 @@ function makeRegistryParam(filePath: string, storageType: string, database: Kdbx
     storageConfig: {},
     modifiedTime: 0
   } as DbFileParam;
+}
+
+/**
+ * 让步一个事件循环刻度：emitter 事件为异步派发，注册表变更后需让步再断言监听结果
+ */
+function yieldEventDispatch(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, 20);
+  });
 }
 
 /**
@@ -192,6 +205,101 @@ export default function DatabaseRegistryTest() {
       expect(registry.size()).assertEqual(0);
       expect(registry.getCurrentKey()).assertNull();
       expect(registry.wasAttempted('LOCAL::/x.kdbx')).assertFalse();
+    });
+
+    it('removeAttempted clears a single key without touching others', 0, () => {
+      registry.markAttempted('LOCAL::/a.kdbx');
+      registry.markAttempted('LOCAL::/b.kdbx');
+      registry.removeAttempted('LOCAL::/a.kdbx');
+      expect(registry.wasAttempted('LOCAL::/a.kdbx')).assertFalse();
+      expect(registry.wasAttempted('LOCAL::/b.kdbx')).assertTrue();
+    });
+
+    // ==================== EVENT_CURRENT_DATABASE_CHANGED（M3） ====================
+
+    it('put with makeCurrent emits current changed event with new key', 0, async () => {
+      let received: string | null = null;
+      const cb: Callback<emitter.EventData> = (data: emitter.EventData) => {
+        const raw: Object | undefined = data?.data;
+        if (typeof raw === 'string') {
+          received = raw;
+        }
+      };
+      EventBus.on(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      try {
+        const key = registry.put(makeRegistryParam('/a.kdbx', 'LOCAL', database)).iocKey;
+        await yieldEventDispatch();
+        expect(received).assertEqual(key);
+      } finally {
+        EventBus.off(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      }
+    });
+
+    it('put makeCurrent=false keeps current and emits no event', 0, async () => {
+      const first = registry.put(makeRegistryParam('/a.kdbx', 'LOCAL', database)).iocKey;
+      let eventCount = 0;
+      const cb: Callback<emitter.EventData> = () => {
+        eventCount++;
+      };
+      EventBus.on(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      try {
+        registry.put(makeRegistryParam('/b.kdbx', 'LOCAL', database), new PutDatabaseOptions(false, true));
+        await yieldEventDispatch();
+        expect(eventCount).assertEqual(0);
+        expect(registry.getCurrentKey()).assertEqual(first);
+      } finally {
+        EventBus.off(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      }
+    });
+
+    it('setCurrent emits event only on actual change', 0, async () => {
+      const keyA = registry.put(makeRegistryParam('/a.kdbx', 'LOCAL', database)).iocKey;
+      const keyB = registry.put(makeRegistryParam('/b.kdbx', 'LOCAL', database)).iocKey;
+      let eventCount = 0;
+      let lastReceived: string | null = null;
+      const cb: Callback<emitter.EventData> = (data: emitter.EventData) => {
+        eventCount++;
+        const raw: Object | undefined = data?.data;
+        if (typeof raw === 'string') {
+          lastReceived = raw;
+        }
+      };
+      EventBus.on(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      try {
+        // 同库重复切换：不发射
+        registry.setCurrent(keyB);
+        await yieldEventDispatch();
+        expect(eventCount).assertEqual(0);
+        // 切到另一库：发射且数据为新键
+        registry.setCurrent(keyA);
+        await yieldEventDispatch();
+        expect(eventCount).assertEqual(1);
+        expect(lastReceived).assertEqual(keyA);
+      } finally {
+        EventBus.off(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      }
+    });
+
+    it('remove of current emits event with the remaining first key', 0, async () => {
+      const keyA = registry.put(makeRegistryParam('/a.kdbx', 'LOCAL', database)).iocKey;
+      const keyB = registry.put(makeRegistryParam('/b.kdbx', 'LOCAL', database)).iocKey;
+      expect(registry.getCurrentKey()).assertEqual(keyB);
+      let received: string | null = null;
+      const cb: Callback<emitter.EventData> = (data: emitter.EventData) => {
+        const raw: Object | undefined = data?.data;
+        if (typeof raw === 'string') {
+          received = raw;
+        }
+      };
+      EventBus.on(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      try {
+        registry.remove(keyB);
+        await yieldEventDispatch();
+        expect(registry.getCurrentKey()).assertEqual(keyA);
+        expect(received).assertEqual(keyA);
+      } finally {
+        EventBus.off(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, cb);
+      }
     });
   });
 }

@@ -621,6 +621,30 @@
       "value": "Recently opened databases"
     },
     {
+      "name": "database_switcher_title",
+      "value": "Databases"
+    },
+    {
+      "name": "database_switcher_opened_section",
+      "value": "Opened"
+    },
+    {
+      "name": "database_switcher_children_section",
+      "value": "Child databases"
+    },
+    {
+      "name": "database_switcher_open_other",
+      "value": "Open another database…"
+    },
+    {
+      "name": "database_switcher_current",
+      "value": "Current"
+    },
+    {
+      "name": "database_switcher_child_failed",
+      "value": "Failed to open child database"
+    },
+    {
       "name": "clear_all_button",
       "value": "Clear all"
     },

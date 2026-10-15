@@ -28,6 +28,8 @@ import { PageConstants } from '../common/constants/PageConstants';
 import { OtpAuxFileService } from '../services/otpkey/OtpAuxFileService';
 import { OtpDerivedSecret, OtpKeyProvService } from '../services/otpkey/OtpKeyProvService';
 import { OtpInfo } from '../services/otpkey/OtpInfo';
+import { AutoOpenCoordinator } from '../services/autoopen/AutoOpenCoordinator';
+import { DatabaseRegistry } from '../services/database/DatabaseRegistry';
 import { EncodingUtil, OtpDataFmt } from '../services/otpkey/EncodingUtil';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import {
@@ -77,6 +79,8 @@ export struct Password {
   private filePath: string = '';
   private storageType: StorageType | undefined = undefined;
   private storageConfig: StorageConfig | undefined = undefined;
+  // 添加模式（切换面板「打开其他数据库」中继）：解锁成功后保留多库注册表，仅追加新库
+  private openAddMode: boolean = false;
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private focusController: FocusController = new FocusController();
   // 生物认证支持状态（在 onPageShow 中初始化，依赖 SettingsService）
@@ -150,6 +154,8 @@ export struct Password {
     // 取最后一个（最近 push 的）参数，避免读到栈中残留的旧参数
     const params: Record<string, string> | undefined = paramsArray && paramsArray.length > 0
       ? paramsArray[paramsArray.length - 1] as Record<string, string> : undefined;
+    // 添加模式（切换面板「打开其他数据库」中继）：解锁成功后不清多库注册表
+    this.openAddMode = params !== undefined && params.openMode === 'add';
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
     if (locationInfo) {
@@ -965,7 +971,12 @@ export struct Password {
    * @param data
    */
   private handleSuccessMessage(successMessage: SuccessMessage) {
-    this.init();
+    if (this.openAddMode) {
+      // 添加模式：保留多库注册表（不清已打开的库），仅复位 KdbxUtils IO 缓存
+      KdbxUtils.init();
+    } else {
+      this.init();
+    }
     this.putFileToRecentFile(successMessage);
     // OTP 解锁成功：Counter 写回辅助文件（失败仅告警，见 writeBackOtpCounter）
     this.writeBackOtpCounter();
@@ -981,6 +992,10 @@ export struct Password {
       this.closeLoadingDialog();
       // 通知解锁会话：与 UnLockDatabase 页保持同一事件流（冷启动/换库路径此前缺失）
       EventBus.emit(LockScreenService.EVENT_LOCK_ACTION, 'unlock');
+      // 子数据库：父库解锁成功后后台扫描并串行打开 AutoOpen 子库（不抢当前库）
+      const parentIocKey: string = DatabaseRegistry.buildIocKey(
+        this.storageType ?? StorageType.LOCAL, this.filePath);
+      AutoOpenCoordinator.getInstance().onParentUnlocked(parentIocKey);
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
       CommonUtils.showToast({ message: error.message, duration: 3000 });

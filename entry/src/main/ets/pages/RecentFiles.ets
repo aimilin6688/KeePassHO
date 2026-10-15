@@ -16,13 +16,16 @@ const TAG = 'RecentFiles';
 // 定义导航参数接口
 interface PasswordNavParam {
   filePath: string;
+  // 'add' = 添加模式（切换面板「打开其他数据库」中继）：解锁后保留多库注册表
+  openMode?: string;
 }
 
 // RecentFiles页面的Builder函数
 @Builder
 export function RecentFilesBuilder(name: string, param: Object): void {
   RecentFilesPage({
-    source: (param as Record<string, string>)?.source || 'home'
+    source: (param as Record<string, string>)?.source || 'home',
+    openAddMode: (param as Record<string, string>)?.openMode === 'add'
   })
 }
 
@@ -33,6 +36,8 @@ export function RecentFilesBuilder(name: string, param: Object): void {
 @Component
 struct RecentFilesPage {
   @Prop source: string = 'home';
+  // 添加模式（切换面板中继）：透传给内容区，解锁 Password 时以 openMode='add' 打开
+  @Prop openAddMode: boolean = false;
   // 点击"清除全部"自增，触发内容区弹出确认并清空
   @State clearSignal: number = 0;
 
@@ -55,6 +60,7 @@ struct RecentFilesPage {
     NavDestination() {
       RecentFilesContent({
         source: this.source,
+        openAddMode: this.openAddMode,
         clearSignal: this.clearSignal
       })
     }
@@ -67,6 +73,8 @@ struct RecentFilesPage {
 @Component
 struct RecentFilesContent {
   @Prop source: string = 'home';
+  // 添加模式（切换面板中继）：以 openMode='add' 打开 Password，解锁后保留多库注册表
+  @Prop openAddMode: boolean = false;
   // 标题栏"清除全部"点击信号（由 Page 驱动）
   @Prop @Watch('onClearSignal') clearSignal: number = 0;
   private navManager = NavigationManager.getInstance();
@@ -152,7 +160,10 @@ struct RecentFilesContent {
       // 使用整个窗口方式打开数据库（清空当前导航栈）
       // 清除可能残留的位置信息（如上次通过 URL 打开后未消费），避免 Password 页面优先读到旧库信息
       AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
-      const navParam: PasswordNavParam = { filePath: recentFile.filePath };
+      const navParam: PasswordNavParam = {
+        filePath: recentFile.filePath,
+        openMode: this.openAddMode ? 'add' : undefined
+      };
       this.navManager.replaceAll('Password', navParam);
     }
   }

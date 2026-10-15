@@ -1,4 +1,5 @@
 import { DbFileParam } from '../TypeDefined';
+import { EventBus } from '../EventBus';
 
 /**
  * 多库注册表中单条打开记录：会话参数 + 来源标记（主库 / 子库）
@@ -45,6 +46,12 @@ export class PutDatabaseOptions {
  *   （对齐 kp2a App._openAttempts：失败也计入，避免反复重试同一不可打开的子库）
  */
 export class DatabaseRegistry {
+  /**
+   * 当前库变更事件：currentKey 实际发生变化时发射（数据为新 currentKey，可能为 null）
+   * 数据库视图等监听方据此重载展示内容
+   */
+  static readonly EVENT_CURRENT_DATABASE_CHANGED: string = 'current_database_changed';
+
   private records: Map<string, OpenDatabaseRecord> = new Map<string, OpenDatabaseRecord>();
   /** 本会话内已尝试打开的库（AutoOpen 触发循环防护）：与记录独立，未成功登记记录的失败尝试也计入 */
   private attempted: Set<string> = new Set<string>();
@@ -67,6 +74,17 @@ export class DatabaseRegistry {
   }
 
   /**
+   * 变更当前库指针；实际变化时广播 EVENT_CURRENT_DATABASE_CHANGED
+   */
+  private switchCurrentTo(newKey: string | null): void {
+    if (this.currentKey === newKey) {
+      return;
+    }
+    this.currentKey = newKey;
+    EventBus.emit(DatabaseRegistry.EVENT_CURRENT_DATABASE_CHANGED, newKey);
+  }
+
+  /**
    * 登记一个已打开的数据库会话
    * - 同键重复 put：替换会话参数对象，保留原记录的 isChild 标记（子库身份不因会话更新丢失）
    * - makeCurrent 默认 true；显式 false 且注册表已有当前库时不切换；注册表为空时兜底成为当前库
@@ -79,9 +97,9 @@ export class DatabaseRegistry {
     const record = new OpenDatabaseRecord(key, dbFileParam, isChild);
     this.records.set(key, record);
     if (options?.makeCurrent ?? true) {
-      this.currentKey = key;
+      this.switchCurrentTo(key);
     } else if (this.currentKey === null) {
-      this.currentKey = key;
+      this.switchCurrentTo(key);
     }
     return record;
   }
@@ -125,7 +143,7 @@ export class DatabaseRegistry {
     if (!this.records.has(iocKey)) {
       return false;
     }
-    this.currentKey = iocKey;
+    this.switchCurrentTo(iocKey);
     return true;
   }
 
@@ -160,7 +178,7 @@ export class DatabaseRegistry {
         firstKey = key;
         break;
       }
-      this.currentKey = firstKey;
+      this.switchCurrentTo(firstKey);
     }
     return record.dbFileParam;
   }
@@ -205,11 +223,18 @@ export class DatabaseRegistry {
   }
 
   /**
+   * 移除单个库的尝试标记（手动打开前允许重试失败的子库）
+   */
+  removeAttempted(iocKey: string): void {
+    this.attempted.delete(iocKey);
+  }
+
+  /**
    * 清空注册表：记录、尝试标记、当前库指针全部复位（锁库 / 关闭全部数据库）
    */
   clear(): void {
     this.records.clear();
     this.attempted.clear();
-    this.currentKey = null;
+    this.switchCurrentTo(null);
   }
 }

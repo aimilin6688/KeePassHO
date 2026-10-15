@@ -14,12 +14,29 @@ import { LoadDispatchService } from './LoadDispatchService';
 const DOMAIN = 0x0000;
 const TAG = 'KdbxLoadService';
 
+/**
+ * 串行加载队列元素：加载参数 + 任务回调
+ */
+class PendingLoad {
+  readonly loadParam: LoadDatabase;
+  readonly callback?: KdbxLoadServiceCallback;
+
+  constructor(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback) {
+    this.loadParam = loadParam;
+    this.callback = callback;
+  }
+}
+
 export default class KdbxLoadService {
   // 常驻加载 Worker（POOL_DATABASE_WORKER = true 时进程级复用；null 表示待懒创建）
   private static databaseWorker: worker.ThreadWorker | null = null;
   // 常驻池化忙标志：加载进行中时立即拒绝新请求（worker_busy），
   // 替代旧行为的 "kill 重来"，防双击打开导致两次成功导航
   private static workerBusy: boolean = false;
+  // 串行加载队列（AutoOpen 子库后台串行打开）：FIFO，前一个任务终态后派发下一个
+  private static pendingLoads: PendingLoad[] = [];
+  // 当前在途的队列任务（非 null 表示有任务在飞；兼作终态回调身份令牌，防重复推进）
+  private static currentPendingLoad: PendingLoad | null = null;
 
   /**
    * 加载数据库（三入口统一：Password 主打开 / DatabaseView 刷新 / KdbxSaveService 合并重载）
@@ -36,6 +53,73 @@ export default class KdbxLoadService {
       return;
     }
     KdbxLoadService.dispatchAndLoad(loadParam, callback);
+  }
+
+  /**
+   * 排队加载数据库（AutoOpen 多子库后台串行打开场景）：
+   * 与 loadDatabase 相比不因 Worker 忙而立即拒绝，而是 FIFO 排队，
+   * 前一个任务到达任一终态（成功/错误/异常/退出）后自动派发下一个；
+   * 同一任务的重复终态（如 SUCCESS 后 Worker 退出）只推进队列一次。
+   * 注意：与队列外的直连加载（用户解锁/下拉刷新）并发时仍可能收到 worker_busy 错误，
+   * 该场景由调用方以失败事件兜底（与 kp2a 子库打开失败语义一致）
+   */
+  public static enqueueLoad(loadParam: LoadDatabase, callback?: KdbxLoadServiceCallback): void {
+    KdbxLoadService.pendingLoads.push(new PendingLoad(loadParam, callback));
+    KdbxLoadService.dispatchNextPendingLoad();
+  }
+
+  /**
+   * 派发队首任务；有任务在飞或队列空时跳过
+   */
+  private static dispatchNextPendingLoad(): void {
+    if (KdbxLoadService.currentPendingLoad !== null) {
+      return;
+    }
+    const next: PendingLoad | undefined = KdbxLoadService.pendingLoads.shift();
+    if (next === undefined) {
+      return;
+    }
+    KdbxLoadService.currentPendingLoad = next;
+    const wrapped: KdbxLoadServiceCallback = {
+      onLoadMessage: next.callback?.onLoadMessage,
+      onProgressMessage: next.callback?.onProgressMessage,
+      onSuccessMessage: (message: SuccessMessage) => {
+        KdbxLoadService.finishPendingLoad(next);
+        if (next.callback?.onSuccessMessage) {
+          next.callback.onSuccessMessage(message);
+        }
+      },
+      onErrorMessage: (message: LoadMessage) => {
+        KdbxLoadService.finishPendingLoad(next);
+        if (next.callback?.onErrorMessage) {
+          next.callback.onErrorMessage(message);
+        }
+      },
+      onAllErrors: (err: ErrorEvent) => {
+        KdbxLoadService.finishPendingLoad(next);
+        if (next.callback?.onAllErrors) {
+          next.callback.onAllErrors(err);
+        }
+      },
+      onexit: (e: number) => {
+        KdbxLoadService.finishPendingLoad(next);
+        if (next.callback?.onexit) {
+          next.callback.onexit(e);
+        }
+      }
+    };
+    KdbxLoadService.loadDatabase(next.loadParam, wrapped);
+  }
+
+  /**
+   * 队列任务终态：清除在飞标记并派发下一个（身份令牌守卫防重复推进）
+   */
+  private static finishPendingLoad(done: PendingLoad): void {
+    if (KdbxLoadService.currentPendingLoad !== done) {
+      return;
+    }
+    KdbxLoadService.currentPendingLoad = null;
+    KdbxLoadService.dispatchNextPendingLoad();
   }
 
   /**
