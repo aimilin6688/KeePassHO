@@ -23,7 +23,7 @@ export default function StorageNavigationTest() {
       mgr.clearNavPathStack(TEST_ROOT);
       const config: StorageConfig = {};
       StorageNavigation.pushFileList(StorageType.LOCAL, '/', config);
-      StorageNavigation.pushFileList(StorageType.BAIDU_NETDISK, '/', config);
+      StorageNavigation.pushFileList(StorageType.PCLOUD, '/', config);
       expect(mgr.getNavPathStackByRoot(TEST_ROOT)?.size() ?? 0).assertEqual(0);
       mgr.removeNavPathStack(TEST_ROOT);
     });
@@ -32,7 +32,7 @@ export default function StorageNavigationTest() {
     it('getStorageTitle returns a resource for supported types', 0, () => {
       const types: StorageType[] = [
         StorageType.WEBDAV, StorageType.ONEDRIVE, StorageType.FTP,
-        StorageType.S3, StorageType.HUAWEI_DRIVE
+        StorageType.S3, StorageType.HUAWEI_DRIVE, StorageType.BAIDU_NETDISK
       ];
       for (const type of types) {
         const title: ResourceStr = StorageNavigation.getStorageTitle(type);
@@ -43,7 +43,6 @@ export default function StorageNavigationTest() {
 
     it('getStorageTitle returns empty string for unsupported types', 0, () => {
       expect(StorageNavigation.getStorageTitle(StorageType.PCLOUD)).assertEqual('');
-      expect(StorageNavigation.getStorageTitle(StorageType.BAIDU_NETDISK)).assertEqual('');
     });
 
     // ---------------- pushFileList ----------------
