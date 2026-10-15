@@ -645,6 +645,70 @@
       "value": "Failed to open child database"
     },
     {
+      "name": "child_dbs_title",
+      "value": "Child databases"
+    },
+    {
+      "name": "child_dbs_manage",
+      "value": "Manage child databases…"
+    },
+    {
+      "name": "child_dbs_add",
+      "value": "Add child database"
+    },
+    {
+      "name": "child_dbs_select_file",
+      "value": "Select file…"
+    },
+    {
+      "name": "child_dbs_open_now",
+      "value": "Open now"
+    },
+    {
+      "name": "child_dbs_enable_on_device",
+      "value": "Enable on this device"
+    },
+    {
+      "name": "child_dbs_disable_on_device",
+      "value": "Disable on this device"
+    },
+    {
+      "name": "child_dbs_copy_for_device",
+      "value": "Copy for this device"
+    },
+    {
+      "name": "child_dbs_device_enabled_label",
+      "value": "This device: enabled"
+    },
+    {
+      "name": "child_dbs_device_disabled_label",
+      "value": "This device: disabled"
+    },
+    {
+      "name": "child_dbs_device_unspecified_label",
+      "value": "This device: unspecified"
+    },
+    {
+      "name": "child_dbs_entry_disabled",
+      "value": "Disabled"
+    },
+    {
+      "name": "child_dbs_opened",
+      "value": "Opened"
+    },
+    {
+      "name": "child_dbs_empty",
+      "value": "No child databases. A child database is opened automatically when its parent is unlocked. Tap \"Add child database\" to create one."
+    },
+    {
+      "name": "child_dbs_add_failed",
+      "value": "Failed to add child database"
+    },
+    {
+      "name": "child_dbs_only_local",
+      "value": "Only local databases can be added as child databases"
+    },
+    {
       "name": "clear_all_button",
       "value": "Clear all"
     },

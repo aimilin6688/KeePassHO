@@ -151,6 +151,11 @@
       "buildFunction": "SettingDatabaseCleanBuilder"
     },
     {
+      "name": "ChildDatabases",
+      "pageSourceFile": "src/main/ets/pages/ChildDatabases.ets",
+      "buildFunction": "ChildDatabasesBuilder"
+    },
+    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/about/About.ets",
       "buildFunction": "AboutBuilder"

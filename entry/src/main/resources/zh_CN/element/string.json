@@ -633,6 +633,70 @@
       "value": "子数据库打开失败"
     },
     {
+      "name": "child_dbs_title",
+      "value": "子数据库"
+    },
+    {
+      "name": "child_dbs_manage",
+      "value": "管理子数据库…"
+    },
+    {
+      "name": "child_dbs_add",
+      "value": "添加子数据库"
+    },
+    {
+      "name": "child_dbs_select_file",
+      "value": "选择文件…"
+    },
+    {
+      "name": "child_dbs_open_now",
+      "value": "立即打开"
+    },
+    {
+      "name": "child_dbs_enable_on_device",
+      "value": "在此设备上启用"
+    },
+    {
+      "name": "child_dbs_disable_on_device",
+      "value": "在此设备上禁用"
+    },
+    {
+      "name": "child_dbs_copy_for_device",
+      "value": "为此设备创建副本"
+    },
+    {
+      "name": "child_dbs_device_enabled_label",
+      "value": "本设备启用：是"
+    },
+    {
+      "name": "child_dbs_device_disabled_label",
+      "value": "本设备启用：否"
+    },
+    {
+      "name": "child_dbs_device_unspecified_label",
+      "value": "本设备启用：未指定"
+    },
+    {
+      "name": "child_dbs_entry_disabled",
+      "value": "已禁用"
+    },
+    {
+      "name": "child_dbs_opened",
+      "value": "已打开"
+    },
+    {
+      "name": "child_dbs_empty",
+      "value": "暂无子数据库。子数据库会在父数据库解锁时自动打开，点击「添加子数据库」创建。"
+    },
+    {
+      "name": "child_dbs_add_failed",
+      "value": "添加子数据库失败"
+    },
+    {
+      "name": "child_dbs_only_local",
+      "value": "仅支持将本地数据库添加为子数据库"
+    },
+    {
       "name": "clear_all_button",
       "value": "清除全部"
     },

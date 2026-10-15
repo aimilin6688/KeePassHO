@@ -194,6 +194,7 @@ import AutoOpenPathResolverTest from './services/autoopen/AutoOpenPathResolver.t
 import AutoOpenServiceTest from './services/autoopen/AutoOpenService.test';
 import DeviceIdentityTest from './services/autoopen/DeviceIdentity.test';
 import AutoOpenCoordinatorTest from './services/autoopen/AutoOpenCoordinator.test';
+import AutoOpenEntryServiceTest from './services/autoopen/AutoOpenEntryService.test';
 
 // ===== services/database 多库注册表（M2 子数据库）单元测试 =====
 import DatabaseRegistryTest from './services/database/DatabaseRegistry.test';
@@ -487,6 +488,7 @@ export default function testsuite() {
   AutoOpenServiceTest();
   DeviceIdentityTest();
   AutoOpenCoordinatorTest();
+  AutoOpenEntryServiceTest();
 
   // ===== services/database 多库注册表（M2） =====
   DatabaseRegistryTest();

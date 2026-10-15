@@ -141,6 +141,14 @@ export struct DatabaseSwitcherSheet {
     this.navManager.navigateTo(PageConstants.PAGE_RECENT_FILES, navParam);
   }
 
+  /**
+   * 管理子数据库行点击：收起面板并进入子数据库管理页
+   */
+  private manageChildDatabases(): void {
+    this.onRequestClose();
+    this.navManager.navigateTo(PageConstants.PAGE_CHILD_DATABASES);
+  }
+
   @Builder
   SectionHeader(title: ResourceStr) {
     Text(title)
@@ -250,6 +258,37 @@ export struct DatabaseSwitcherSheet {
     })
   }
 
+  /**
+   * 管理子数据库行（区块 3 之后）：进入子数据库管理页
+   */
+  @Builder
+  ManageChildDatabasesRow() {
+    Row() {
+      Image($r('app.media.file_kdbx'))
+        .width(28)
+        .height(28)
+        .margin({ left: 12, right: 12 })
+      Text($r('app.string.child_dbs_manage'))
+        .fontSize(16)
+        .fontColor($r('app.color.text_primary'))
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Image($r('app.media.ic_arrow_right'))
+        .width(20)
+        .height(20)
+        .fillColor($r('app.color.text_secondary'))
+        .margin({ right: 12 })
+    }
+    .width('100%')
+    .height(52)
+    .borderRadius(8)
+    .margin({ top: 8 })
+    .onClick(() => {
+      this.manageChildDatabases();
+    })
+  }
+
   build() {
     Column() {
       Text($r('app.string.database_switcher_title'))
@@ -272,6 +311,7 @@ export struct DatabaseSwitcherSheet {
             }, (item: AutoOpenItem) => item.entryUuid)
           }
           this.OpenOtherRow()
+          this.ManageChildDatabasesRow()
         }
         .width('100%')
         .padding({ left: 8, right: 8, bottom: 24 })

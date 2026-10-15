@@ -2,7 +2,7 @@ import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ErrorEvent } from '@ohos.worker';
 
-import { AuthType, AuthTypeInfo, CredentialsParam, RecentFile } from '../services/TypeDefined';
+import { AuthType, AuthTypeInfo, CredentialsParam, DbFileParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
 import { FileContentInfo, StorageConfig, StorageType } from '../storage';
 import { FileService } from '../services/FileService';
@@ -29,7 +29,11 @@ import { OtpAuxFileService } from '../services/otpkey/OtpAuxFileService';
 import { OtpDerivedSecret, OtpKeyProvService } from '../services/otpkey/OtpKeyProvService';
 import { OtpInfo } from '../services/otpkey/OtpInfo';
 import { AutoOpenCoordinator } from '../services/autoopen/AutoOpenCoordinator';
+import { AutoOpenEntryService } from '../services/autoopen/AutoOpenEntryService';
+import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { DatabaseRegistry } from '../services/database/DatabaseRegistry';
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { EncodingUtil, OtpDataFmt } from '../services/otpkey/EncodingUtil';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import {
@@ -81,6 +85,8 @@ export struct Password {
   private storageConfig: StorageConfig | undefined = undefined;
   // 添加模式（切换面板「打开其他数据库」中继）：解锁成功后保留多库注册表，仅追加新库
   private openAddMode: boolean = false;
+  // 子库管理页「选择文件」中继：解锁成功后把该库登记为指定父库的子库（AutoOpen 条目）
+  private addChildParentIocKey: string = '';
   private promptAction: PromptAction = this.getUIContext().getPromptAction();
   private focusController: FocusController = new FocusController();
   // 生物认证支持状态（在 onPageShow 中初始化，依赖 SettingsService）
@@ -156,6 +162,8 @@ export struct Password {
       ? paramsArray[paramsArray.length - 1] as Record<string, string> : undefined;
     // 添加模式（切换面板「打开其他数据库」中继）：解锁成功后不清多库注册表
     this.openAddMode = params !== undefined && params.openMode === 'add';
+    // 子库管理页「选择文件」中继：解锁成功后把该库登记为指定父库的子库
+    this.addChildParentIocKey = params !== undefined && params.addChildParent ? params.addChildParent : '';
     // 通过位置信息直接打开
     const locationInfo: LocationInfo | undefined = AppStorage.get(Constants.APP_STORAGE_LOCATION_INFO);
     if (locationInfo) {
@@ -981,6 +989,11 @@ export struct Password {
     // OTP 解锁成功：Counter 写回辅助文件（失败仅告警，见 writeBackOtpCounter）
     this.writeBackOtpCounter();
     this.setFileParam(successMessage).then(() => {
+      // 子库管理页「选择文件」回环：把刚解锁的库登记为发起页指定父库的子库，
+      // 生成 AutoOpen 条目并恢复父库为当前库（随后静默保存父库）
+      if (this.openAddMode && this.addChildParentIocKey.length > 0) {
+        this.completeAddChildFromOpened();
+      }
       LoadingDialog.showLoading(ResourceManager.getString($r('app.string.open_success')));
       // 清空本页所在的导航栈（移除 Password 自身及其下方残留页面），
       // 否则切换根页面后该栈残留 Password，之后切回此根（如点击设置）会再次显示解锁页面
@@ -1001,6 +1014,47 @@ export struct Password {
       CommonUtils.showToast({ message: error.message, duration: 3000 });
       this.closeLoadingDialog();
     });
+  }
+
+  /**
+   * 子库管理页「选择文件」回环收尾：刚解锁的库已入注册表（当前库），
+   * 在指定父库生成 AutoOpen 条目 → 恢复父库为当前库 → 静默保存父库。
+   * 仅支持本地库作为子库（自动打开链路当前仅解析本地路径）；
+   * 失败仅提示，子库保持已打开状态（可稍后在管理页手动补建条目）。
+   */
+  private completeAddChildFromOpened(): void {
+    const registry: DatabaseRegistry = FileService.getRegistry();
+    const parentIocKey: string = this.addChildParentIocKey;
+    this.addChildParentIocKey = '';
+    const parentParam: DbFileParam | undefined = registry.get(parentIocKey);
+    const childParam: DbFileParam | undefined = registry.getCurrent();
+    if (parentParam === undefined || !parentParam.database
+      || childParam === undefined || !childParam.database) {
+      hilog.warn(DOMAIN, TAG, 'add child from opened skipped: parent or child missing');
+      return;
+    }
+    if (childParam.storageType !== StorageType.LOCAL) {
+      hilog.warn(DOMAIN, TAG, 'add child from opened skipped: non-local child');
+      CommonUtils.showToast({ message: $r('app.string.child_dbs_only_local'), duration: 2000 });
+      return;
+    }
+    const entry = AutoOpenEntryService.addEntryForOpenedChild(parentParam.database,
+      parentParam.filePath, childParam, DeviceIdentity.getDeviceId());
+    if (entry === undefined) {
+      CommonUtils.showToast({ message: $r('app.string.child_dbs_add_failed'), duration: 2000 });
+      return;
+    }
+    // 恢复父库为当前库（DatabaseView 落在父库视图）
+    registry.setCurrent(parentIocKey);
+    // 静默保存父库（子库条目落盘），终态吐司由回调包装器给出
+    KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
+      onSuccess: () => {
+        EventBus.emit<void>(EventBus.DATABASE_UPDATE);
+      },
+      onError: (error: string) => {
+        hilog.error(DOMAIN, TAG, 'save parent after add child failed: %{public}s', error);
+      }
+    }));
   }
 
   /**

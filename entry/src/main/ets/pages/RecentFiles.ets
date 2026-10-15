@@ -18,6 +18,8 @@ interface PasswordNavParam {
   filePath: string;
   // 'add' = 添加模式（切换面板「打开其他数据库」中继）：解锁后保留多库注册表
   openMode?: string;
+  // 子库管理页「选择文件」中继：解锁成功后把该库登记为指定父库的子库（AutoOpen 条目）
+  addChildParent?: string;
 }
 
 // RecentFiles页面的Builder函数
@@ -25,7 +27,8 @@ interface PasswordNavParam {
 export function RecentFilesBuilder(name: string, param: Object): void {
   RecentFilesPage({
     source: (param as Record<string, string>)?.source || 'home',
-    openAddMode: (param as Record<string, string>)?.openMode === 'add'
+    openAddMode: (param as Record<string, string>)?.openMode === 'add',
+    addChildParent: (param as Record<string, string>)?.addChildParent || ''
   })
 }
 
@@ -38,6 +41,8 @@ struct RecentFilesPage {
   @Prop source: string = 'home';
   // 添加模式（切换面板中继）：透传给内容区，解锁 Password 时以 openMode='add' 打开
   @Prop openAddMode: boolean = false;
+  // 子库管理页「选择文件」中继：透传给内容区，解锁后把该库登记为指定父库的子库
+  @Prop addChildParent: string = '';
   // 点击"清除全部"自增，触发内容区弹出确认并清空
   @State clearSignal: number = 0;
 
@@ -61,6 +66,7 @@ struct RecentFilesPage {
       RecentFilesContent({
         source: this.source,
         openAddMode: this.openAddMode,
+        addChildParent: this.addChildParent,
         clearSignal: this.clearSignal
       })
     }
@@ -75,6 +81,8 @@ struct RecentFilesContent {
   @Prop source: string = 'home';
   // 添加模式（切换面板中继）：以 openMode='add' 打开 Password，解锁后保留多库注册表
   @Prop openAddMode: boolean = false;
+  // 子库管理页「选择文件」中继：解锁后把该库登记为指定父库的子库（AutoOpen 条目）
+  @Prop addChildParent: string = '';
   // 标题栏"清除全部"点击信号（由 Page 驱动）
   @Prop @Watch('onClearSignal') clearSignal: number = 0;
   private navManager = NavigationManager.getInstance();
@@ -162,7 +170,8 @@ struct RecentFilesContent {
       AppStorage.delete(Constants.APP_STORAGE_LOCATION_INFO);
       const navParam: PasswordNavParam = {
         filePath: recentFile.filePath,
-        openMode: this.openAddMode ? 'add' : undefined
+        openMode: this.openAddMode ? 'add' : undefined,
+        addChildParent: this.addChildParent.length > 0 ? this.addChildParent : undefined
       };
       this.navManager.replaceAll('Password', navParam);
     }
