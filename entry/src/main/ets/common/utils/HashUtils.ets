@@ -96,52 +96,6 @@ export class HashUtils {
     }
   }
 
-  /**
-   * 计算本地文件的 MD5 哈希值（增量喂入分块，避免整缓冲驻留内存）
-   * 与 md5Hex 结果一致；仅供百度网盘版本标识（内容 md5）等非安全用途
-   * @param filePath 本地文件路径
-   * @returns 十六进制小写哈希字符串
-   */
-  public static async md5HexFile(filePath: string): Promise<string> {
-    const md: cryptoFramework.Md = cryptoFramework.createMd('MD5');
-    let file: fs.File | null = null;
-    try {
-      file = await fs.open(filePath, fs.OpenMode.READ_ONLY);
-      const stat = await fs.stat(file.fd);
-      const totalSize: number = stat.size;
-      const chunkSize: number = HashUtils.FILE_HASH_CHUNK_SIZE;
-      const buffer: ArrayBuffer = new ArrayBuffer(chunkSize);
-      let remaining: number = totalSize;
-      // 空文件：cryptoFramework 不支持空 update，直接返回已知空 MD5
-      if (totalSize === 0) {
-        return 'd41d8cd98f00b204e9800998ecf8427e';
-      }
-      while (remaining > 0) {
-        const readLen: number = Math.min(chunkSize, remaining);
-        const bytesRead = await fs.read(file.fd, buffer, { length: readLen });
-        if (bytesRead <= 0) {
-          break;
-        }
-        // 零拷贝视图：updateSync 同步处理，下次循环覆写 buffer 前已完成
-        md.updateSync({ data: new Uint8Array(buffer, 0, bytesRead) });
-        remaining -= bytesRead;
-      }
-      const digest: cryptoFramework.DataBlob = md.digestSync();
-      return HashUtils.toHexString(digest.data);
-    } catch (error) {
-      const err = error as Error;
-      hilog.error(DOMAIN, TAG, 'md5HexFile failed: %{public}s', err.message);
-      throw err;
-    } finally {
-      if (file !== null) {
-        try {
-          await fs.close(file.fd);
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }
 
   /**
    * 字节数组转十六进制小写字符串
