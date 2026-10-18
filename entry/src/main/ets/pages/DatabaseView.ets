@@ -2241,25 +2241,37 @@ export struct DatabaseView {
                       this.navigateToParentGroup();
                     })
                 }
-                // 选择模式下显示已选数量
-                Text(this.isSelectionMode ? `${this.titleName}(${this.selectedItems.size})` : this.titleName)
-                  .fontSize(22)
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ left: 16 })
-                  .fontColor($r('app.color.text_primary'))
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-                // 数据库切换面板入口（M3）：点击展开已打开库/子库切换半模态
+                // 数据库切换面板入口（M3）：标题与下拉箭头整体可点击，展开已打开库/子库切换半模态
                 if (!this.isSelectionMode) {
-                  Image($r('app.media.ic_angle_down'))
-                    .width(18)
-                    .height(18)
-                    .fillColor($r('app.color.text_secondary'))
-                    .margin({ left: 4 })
-                    .id('btn_database_switcher')
-                    .onClick(() => {
-                      this.showDatabaseSwitcher = true;
-                    })
+                  Row() {
+                    Text(this.titleName)
+                      .fontSize(22)
+                      .fontWeight(FontWeight.Medium)
+                      .margin({ left: 16 })
+                      .fontColor($r('app.color.text_primary'))
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Image($r('app.media.ic_angle_down'))
+                      .width(18)
+                      .height(18)
+                      .fillColor($r('app.color.text_secondary'))
+                      .margin({ left: 4 })
+                      .id('btn_database_switcher')
+                  }
+                  .alignItems(VerticalAlign.Center)
+                  .padding({ top: 6, bottom: 6 })
+                  .onClick(() => {
+                    this.showDatabaseSwitcher = true;
+                  })
+                } else {
+                  // 选择模式下显示已选数量
+                  Text(`${this.titleName}(${this.selectedItems.size})`)
+                    .fontSize(22)
+                    .fontWeight(FontWeight.Medium)
+                    .margin({ left: 16 })
+                    .fontColor($r('app.color.text_primary'))
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
                 }
               }
               .margin({ right: 25 })
