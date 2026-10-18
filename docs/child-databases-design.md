@@ -13,11 +13,18 @@
 
 | 阶段 | 状态 | 提交/说明 |
 |---|---|---|
-| M1 AutoOpen 解析基础（模型 / IfDevice / 路径解析 / DeviceIdentity + 单测） | 待开始 | — |
-| M2 多库注册表（DatabaseRegistry + FileService 兼容改造 + 锁/保存/会话适配） | 待开始 | — |
-| M3 自动打开编排 + 数据库切换 UI（AutoOpenCoordinator / 切换面板） | 待开始 | — |
-| M4 子数据库管理页（启停本设备 / 立即打开 / 编辑 / 复制副本 / 添加子库） | 待开始 | — |
-| M5 收尾（设置入口 / 字符串 / 提示条 / RecentFiles 适配 / E2E） | 待开始 | — |
+| M1 AutoOpen 解析基础（模型 / IfDevice / 路径解析 / DeviceIdentity + 单测） | ✅ 已完成 | f588f659 |
+| M2 多库注册表（DatabaseRegistry + FileService 兼容改造 + 锁/保存/会话适配） | ✅ 已完成 | accb79b7 |
+| M3 自动打开编排 + 数据库切换 UI（AutoOpenCoordinator / 切换面板） | ✅ 已完成 | 8728c23a |
+| M4 子数据库管理页（启停本设备 / 立即打开 / 编辑 / 复制副本 / 添加子库） | ✅ 已完成 | 91d2dba0 |
+| M5 收尾（设置入口 / 字符串 / 提示条 / RecentFiles 适配 / E2E） | ✅ 已完成 | 9b41a47f（用户指南 `child-databases-guide.md`） |
+
+后续修复：419cb693（管理页 ForEach 键缺状态字段致行不刷新）、8fb14d69（样式对齐全应用风格）、1f3ed38a（深色模式图标不可见与手动打开失败无提示）。
+
+**与原设计的实现差异**（代码注释中已说明）：
+
+- 后台自动打开 `makeCurrent=false`（不抢当前库）：原设计默认 true；因本应用无 kp2a 的库选择中枢页，用户解锁父库时期待直接看到父库内容，故后台打开一律不切换，仅手动打开（切换面板/管理页「立即打开」）成功后切换为当前库（`AutoOpenCoordinator.openChild`/`openManually`）。
+- `Focus=Restore` 字段未实现（同原设计 P2），由上述「后台不抢当前库」行为天然覆盖其意图。
 
 ---
 
@@ -367,7 +374,7 @@ onParentUnlocked(parentIocKey):
     markAttempted(childIocKey)                    ← 防循环/防重试（D 系防线）
     creds = KdbxCredentials(ProtectedValue(密码) [, 密钥文件字节])   // keyFile 读失败且 SkipIfKeyFileNotExists → 跳过
     await KdbxLoadService.enqueueLoad(LoadDatabase{...})            // 串行
-      成功 → Registry.put(param, {makeCurrent: 默认 true（Focus=Restore 不实现，注释预留）, isChild: true})
+      成功 → Registry.put(param, {makeCurrent: false（后台不抢当前库，见第 0 节差异说明）, isChild: true})
              → EventBus.emit(EVENT_DATABASE_OPENED, iocKey)
       失败 → hilog + EventBus.emit(EVENT_DATABASE_OPEN_FAILED, {iocKey, reason})；不重试
   全部完成 → EventBus.emit(EVENT_AUTO_OPEN_DONE, parentIocKey)
