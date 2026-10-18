@@ -7,8 +7,9 @@ export const BAIDU_TOKEN_INVALID_ERRNOS: number[] = [-6, 111, 20016];
 
 /**
  * 百度网盘 API errno：频次限制（指数退避重试）
+ * 20012：未审核应用超过频次/次数控制（权限与配额文档）
  */
-export const BAIDU_RATE_LIMIT_ERRNOS: number[] = [31034, 31064];
+export const BAIDU_RATE_LIMIT_ERRNOS: number[] = [31034, 31064, 20012];
 
 /**
  * 百度网盘 API errno：文件或目录不存在
@@ -29,9 +30,22 @@ export class BaiduNetdiskConstants {
    */
   static readonly PAN_BASE: string = 'https://pan.baidu.com/rest/2.0';
   /**
-   * PCS 分片上传 API 基地址（固定域名，D11）
+   * PCS API 基地址（locateupload 获取上传域名端点，固定域名）
    */
   static readonly PCS_BASE: string = 'https://d.pcs.baidu.com/rest/2.0';
+  /**
+   * 应用目录（权限与配额文档：第三方应用仅能操作 /apps/{应用名称} 下的文件，
+   * 应用名称与百度控制台登记一致）
+   */
+  static readonly APP_DIR: string = '/apps/KeePassHO';
+  /**
+   * locateupload 固定 appid（获取上传域名文档）
+   */
+  static readonly LOCATEUPLOAD_APPID: string = '250528';
+  /**
+   * locateupload 失败/未返回可用域名时的兜底上传域名（告警降级，正常流程必须动态获取）
+   */
+  static readonly DEFAULT_UPLOAD_HOST: string = 'https://d.pcs.baidu.com';
   /**
    * superfile2 分片大小（4MB，全会员类型合法值，D6）
    */

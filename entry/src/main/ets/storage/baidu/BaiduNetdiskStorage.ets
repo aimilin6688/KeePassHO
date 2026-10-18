@@ -395,7 +395,8 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
           const partSeq: number = pre.blockList[i];
           const start: number = partSeq * sliceSize;
           const end: number = Math.min(start + sliceSize, total);
-          await client.uploadSlice(remotePath, pre.uploadid, partSeq, data.slice(start, end));
+          await client.uploadSlice(remotePath, pre.uploadid, partSeq, data.slice(start, end),
+            blockList[partSeq]);
           if (onProgress) {
             onProgress(end, total);
           }
@@ -460,6 +461,7 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
 
   /**
    * 获取目录内容（list 分页循环直至单页不足 LIST_PAGE_SIZE）
+   * 目录不存在（如应用目录下首个文件上传前百度尚未创建）返回空列表
    * @param path 目录路径
    * @returns Promise<Array<FileInfo>> 目录内容
    * @throws StorageError 如果获取失败则抛出异常
@@ -488,7 +490,9 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
         throw error;
       }
       if (isBaiduNotFoundError(error)) {
-        throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, `Directory not found: ${normalizedPath}`);
+        // 目录尚不存在（应用目录首个文件上传前由百度自动创建）：视为空目录
+        hilog.info(DOMAIN, TAG, 'listDir: directory not found, return empty: %{public}s', normalizedPath);
+        return [];
       }
       hilog.error(DOMAIN, TAG, 'BaiduNetdisk listDir error: %{public}s', (error as Error).message);
       throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, (error as Error).message);
@@ -527,6 +531,7 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
 
   /**
    * 百度文件元信息 → FileInfo
+   * path：剥离应用目录前缀（toLogicalPath），UI/配置只见逻辑路径空间
    * version：仅文件类型且 decryptBaiduMd5 还原结果为 32 位 hex 时采用（目录/无法解出为 null）
    * modifiedTime：server_mtime（秒）转毫秒，缺省回落 server_ctime
    */
@@ -539,7 +544,7 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
       name: name,
       size: meta.size,
       modifiedTime: mtimeSec * 1000,
-      path: meta.path,
+      path: BaiduNetdiskClient.toLogicalPath(meta.path),
       type: meta.isdir === 1 ? FileType.DIR : FileType.FILE,
       childrenCount: 0,
       version: BaiduNetdiskStorage.extractVersion(meta)
