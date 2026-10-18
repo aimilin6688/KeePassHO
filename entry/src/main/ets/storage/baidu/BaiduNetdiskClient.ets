@@ -10,7 +10,9 @@ import {
   BaiduFileMeta,
   BaiduNetdiskConstants,
   BaiduNetdiskParser,
-  BaiduPrecreateResp
+  BaiduNetdiskQuota,
+  BaiduPrecreateResp,
+  BaiduUserInfo
 } from './BaiduNetdiskTypes';
 
 const DOMAIN = 0x0000;
@@ -159,13 +161,36 @@ export class BaiduNetdiskClient {
   }
 
   /**
-   * 获取用户信息（xpan uinfo）
+   * 获取用户信息（xpan/nas uinfo；vip_version=v2 返回实际身份信息）
+   * @throws BaiduApiError errno!==0（含 42905 查询用户名失败）
    */
-  public async getUinfo(): Promise<Record<string, Object>> {
-    return await this.requestJson(BaiduNetdiskConstants.PAN_BASE, '/xpan/nas', 'GET', {
+  public async getUinfo(): Promise<BaiduUserInfo> {
+    const json = await this.requestJson(BaiduNetdiskConstants.PAN_BASE, '/xpan/nas', 'GET', {
       'method': 'uinfo',
-      'access_token': this.accessToken
+      'access_token': this.accessToken,
+      'vip_version': 'v2'
     });
+    const errno = this.extractErrno(json);
+    if (errno !== 0) {
+      throw new BaiduApiError(errno, BaiduNetdiskParser.readString(json, 'error_msg'));
+    }
+    return BaiduNetdiskParser.parseUserInfo(json);
+  }
+
+  /**
+   * 获取网盘容量信息（api/quota：总空间/已用/剩余，单位字节）
+   * @throws BaiduApiError errno!==0
+   */
+  public async getQuota(): Promise<BaiduNetdiskQuota> {
+    const json = await this.requestJson(BaiduNetdiskConstants.PAN_OPEN_BASE, '/api/quota', 'GET', {
+      'access_token': this.accessToken,
+      'checkfree': '1'
+    });
+    const errno = this.extractErrno(json);
+    if (errno !== 0) {
+      throw new BaiduApiError(errno, BaiduNetdiskParser.readString(json, 'error_msg'));
+    }
+    return BaiduNetdiskParser.parseQuota(json);
   }
 
   /**

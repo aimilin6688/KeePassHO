@@ -2141,6 +2141,42 @@
       "value": "Logout"
     },
     {
+      "name": "baidu_netdisk_user",
+      "value": "User"
+    },
+    {
+      "name": "baidu_netdisk_vip_type",
+      "value": "Membership"
+    },
+    {
+      "name": "baidu_netdisk_vip_normal",
+      "value": "Regular user"
+    },
+    {
+      "name": "baidu_netdisk_vip_member",
+      "value": "Member"
+    },
+    {
+      "name": "baidu_netdisk_vip_svip",
+      "value": "Super VIP"
+    },
+    {
+      "name": "baidu_netdisk_total_space",
+      "value": "Total space"
+    },
+    {
+      "name": "baidu_netdisk_used_space",
+      "value": "Used space"
+    },
+    {
+      "name": "baidu_netdisk_free_space",
+      "value": "Free space"
+    },
+    {
+      "name": "baidu_netdisk_load_account_failed",
+      "value": "Failed to load account info: %s"
+    },
+    {
       "name": "baidu_netdisk_login_prompt",
       "value": "Please sign in to your Baidu Netdisk account to access your files"
     },

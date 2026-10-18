@@ -5,7 +5,8 @@ import { HTTP_UPLOAD_MAX_BYTES, StorageError, StorageErrorCodes } from '../Stora
 import { BaiduNetdiskPageConfig, BaiduNetdiskStorageConfig } from './BaiduNetdiskConfig';
 import { OAuth2Error, OAuth2Provider, OAuth2RefreshRequest, OAuth2Token, OAuth2TokenStorageService } from '../../common/oauth2';
 import { BaiduNetdiskOAuth2Provider, createBaiduNetdiskOAuth2Config } from './BaiduNetdiskOAuth2Provider';
-import { BaiduFileMeta, BaiduNetdiskConstants, BaiduNetdiskParser, isBaiduNotFoundError } from './BaiduNetdiskTypes';
+import { BaiduFileMeta, BaiduNetdiskConstants, BaiduNetdiskParser, BaiduNetdiskQuota, BaiduUserInfo,
+  isBaiduNotFoundError } from './BaiduNetdiskTypes';
 import { HashUtils } from '../../common/utils/HashUtils';
 import BuildProfile from 'BuildProfile';
 
@@ -86,6 +87,40 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
    */
   public supportsVersionFastPath(): boolean {
     return true;
+  }
+
+  /**
+   * 获取用户信息（xpan/nas uinfo，vip_version=v2）：账号名、头像、会员类型
+   * @throws StorageError
+   */
+  public async getUserInfo(): Promise<BaiduUserInfo> {
+    await this.ensureValidToken();
+    try {
+      return await this.requireClient().getUinfo();
+    } catch (error) {
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      hilog.error(DOMAIN, TAG, 'BaiduNetdisk getUserInfo error: %{public}s', (error as Error).message);
+      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, (error as Error).message);
+    }
+  }
+
+  /**
+   * 获取网盘容量信息（api/quota）：总空间/已用/剩余
+   * @throws StorageError
+   */
+  public async getQuota(): Promise<BaiduNetdiskQuota> {
+    await this.ensureValidToken();
+    try {
+      return await this.requireClient().getQuota();
+    } catch (error) {
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      hilog.error(DOMAIN, TAG, 'BaiduNetdisk getQuota error: %{public}s', (error as Error).message);
+      throw new StorageError(StorageErrorCodes.FILE_INFO_ERROR, (error as Error).message);
+    }
   }
 
   /**

@@ -30,6 +30,10 @@ export class BaiduNetdiskConstants {
    */
   static readonly PAN_BASE: string = 'https://pan.baidu.com/rest/2.0';
   /**
+   * 百度网盘开放平台基地址（无 rest/2.0 前缀的接口，如 api/quota 容量查询）
+   */
+  static readonly PAN_OPEN_BASE: string = 'https://pan.baidu.com';
+  /**
    * PCS API 基地址（locateupload 获取上传域名端点，固定域名）
    */
   static readonly PCS_BASE: string = 'https://d.pcs.baidu.com/rest/2.0';
@@ -156,6 +160,46 @@ export interface BaiduPrecreateResp {
 }
 
 /**
+ * 百度网盘用户信息（xpan/nas uinfo 显式拷贝模型）
+ */
+export interface BaiduUserInfo {
+  /**
+   * 百度账号名
+   */
+  baiduName: string;
+  /**
+   * 网盘账号名
+   */
+  netdiskName: string;
+  /**
+   * 头像地址
+   */
+  avatarUrl: string;
+  /**
+   * 会员类型（vip_version=v2 语义）：0-普通用户 1-会员用户 2-超级会员用户
+   */
+  vipType: number;
+}
+
+/**
+ * 百度网盘容量信息（api/quota 显式拷贝模型）
+ */
+export interface BaiduNetdiskQuota {
+  /**
+   * 总空间（字节）
+   */
+  total: number;
+  /**
+   * 已用空间（字节）
+   */
+  used: number;
+  /**
+   * 剩余空间（字节）
+   */
+  free: number;
+}
+
+/**
  * 百度网盘响应解析工具（JSON.parse 后按显式字段拷贝，禁止动态取键）
  */
 export class BaiduNetdiskParser {
@@ -201,6 +245,36 @@ export class BaiduNetdiskParser {
       }
     }
     return resp;
+  }
+
+  /**
+   * 解析 uinfo 用户信息响应
+   * @param raw JSON 原始对象
+   */
+  public static parseUserInfo(raw: Record<string, Object>): BaiduUserInfo {
+    const info: BaiduUserInfo = {
+      baiduName: BaiduNetdiskParser.readString(raw, 'baidu_name'),
+      netdiskName: BaiduNetdiskParser.readString(raw, 'netdisk_name'),
+      avatarUrl: BaiduNetdiskParser.readString(raw, 'avatar_url'),
+      vipType: BaiduNetdiskParser.readNumber(raw, 'vip_type')
+    };
+    return info;
+  }
+
+  /**
+   * 解析 quota 容量信息响应
+   * 剩余空间按 total-used 计算：服务端 free 字段为「免费容量」语义（实测等于 total，非剩余空间）
+   * @param raw JSON 原始对象
+   */
+  public static parseQuota(raw: Record<string, Object>): BaiduNetdiskQuota {
+    const total: number = BaiduNetdiskParser.readNumber(raw, 'total');
+    const used: number = BaiduNetdiskParser.readNumber(raw, 'used');
+    const quota: BaiduNetdiskQuota = {
+      total: total,
+      used: used,
+      free: total >= used ? total - used : 0
+    };
+    return quota;
   }
 
   /**

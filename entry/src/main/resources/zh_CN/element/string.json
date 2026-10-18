@@ -2069,6 +2069,42 @@
       "value": "登出"
     },
     {
+      "name": "baidu_netdisk_user",
+      "value": "用户"
+    },
+    {
+      "name": "baidu_netdisk_vip_type",
+      "value": "会员类型"
+    },
+    {
+      "name": "baidu_netdisk_vip_normal",
+      "value": "普通用户"
+    },
+    {
+      "name": "baidu_netdisk_vip_member",
+      "value": "会员用户"
+    },
+    {
+      "name": "baidu_netdisk_vip_svip",
+      "value": "超级会员用户"
+    },
+    {
+      "name": "baidu_netdisk_total_space",
+      "value": "总容量"
+    },
+    {
+      "name": "baidu_netdisk_used_space",
+      "value": "已用容量"
+    },
+    {
+      "name": "baidu_netdisk_free_space",
+      "value": "剩余容量"
+    },
+    {
+      "name": "baidu_netdisk_load_account_failed",
+      "value": "获取账户信息失败: %s"
+    },
+    {
       "name": "baidu_netdisk_login_prompt",
       "value": "请登录百度网盘账号以访问您的文件"
     },

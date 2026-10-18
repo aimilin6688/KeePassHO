@@ -1,5 +1,7 @@
 import { FileType, StorageConfig, StorageType } from '..';
 import { BaiduNetdiskStorageConfig } from './BaiduNetdiskConfig';
+import { BaiduNetdiskQuota, BaiduUserInfo } from './BaiduNetdiskTypes';
+import { BaiduNetdiskStorage } from './BaiduNetdiskStorage';
 import { KdbxFileManager } from '../../services/kdbx/KdbxFileManager';
 import { ClipboardUtils, CommonUtils, DateUtils, ResourceManager, StorageNavigation, WindowUtils } from '../../common/utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -29,6 +31,8 @@ struct BaiduNetdiskPage {
   @State isErrorStatus: boolean = false;
   @State showManualEntry: boolean = false;
   @State manualCode: string = '';
+  @State userInfo: BaiduUserInfo | null = null; // 账户信息（账号名、会员类型）
+  @State quotaInfo: BaiduNetdiskQuota | null = null; // 网盘容量信息（总容量/已用/剩余）
   private fileManager: KdbxFileManager = new KdbxFileManager(StorageType.BAIDU_NETDISK);
   private oauth2Provider?: BaiduNetdiskOAuth2Provider;
   /**
@@ -103,6 +107,32 @@ struct BaiduNetdiskPage {
     if (token) {
       this.oauth2Token = token;
       this.isLoggedIn = true;
+      this.loadAccountInfo();
+    }
+  }
+
+  /**
+   * 加载账户信息（xpan uinfo 用户信息 + api/quota 容量信息）
+   * 令牌刷新由存储层 ensureValidToken 内部处理并持久化
+   */
+  private async loadAccountInfo(): Promise<void> {
+    if (!this.oauth2Token) {
+      return;
+    }
+    const storage = new BaiduNetdiskStorage(this.getStorageConfig() as BaiduNetdiskStorageConfig);
+    try {
+      this.userInfo = await storage.getUserInfo();
+      this.quotaInfo = await storage.getQuota();
+      hilog.info(DOMAIN, TAG, 'Account info loaded: user=%{public}s, vipType=%{public}d, total=%{public}d, used=%{public}d',
+        this.userInfo.netdiskName || this.userInfo.baiduName, this.userInfo.vipType,
+        this.quotaInfo.total, this.quotaInfo.used);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to load account info: %{public}s', (error as Error).message);
+      this.userInfo = null;
+      this.quotaInfo = null;
+      this.connectionStatus = ResourceManager.getString($r('app.string.baidu_netdisk_load_account_failed'),
+        (error as Error).message);
+      this.isErrorStatus = true;
     }
   }
 
@@ -164,8 +194,8 @@ struct BaiduNetdiskPage {
 
       hilog.info(DOMAIN, TAG, `Token obtained, expires at: ${token.expiresAt}`);
       CommonUtils.showToast({ message: ResourceManager.getString($r('app.string.baidu_netdisk_login_successful')) });
-      // 登录成功后继续选择文件的流程：直接进入文件列表
-      this.toFileList();
+      // 登录成功后加载账户信息（用户信息 + 网盘容量），类似华为云盘展示方式
+      this.loadAccountInfo();
     } catch (error) {
       this.connectionStatus =
         ResourceManager.getString($r('app.string.baidu_netdisk_authentication_failed')) + `: ${(error as Error).message}`;
@@ -185,6 +215,8 @@ struct BaiduNetdiskPage {
     this.isLoggedIn = false;
     this.connectionStatus = '';
     this.manualCode = '';
+    this.userInfo = null;
+    this.quotaInfo = null;
     this.oauth2Provider = undefined;
     this.oobProvider = undefined;
     await OAuth2AuthService.deleteToken(OAuth2Provider.BAIDU_NETDISK);
@@ -419,6 +451,40 @@ struct BaiduNetdiskPage {
     );
   }
 
+  /**
+   * 格式化字节为可读字符串（B/KB/MB/GB/TB）
+   * @param bytes 字节数
+   * @returns 格式化后的字符串
+   */
+  private formatBytes(bytes: number): string {
+    if (bytes <= 0) {
+      return '0 B';
+    }
+    const units: string[] = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const base = 1024;
+    let unitIndex = 0;
+    let value = bytes;
+    while (value >= base && unitIndex < units.length - 1) {
+      value = value / base;
+      unitIndex++;
+    }
+    return `${value.toFixed(2)} ${units[unitIndex]}`;
+  }
+
+  /**
+   * 会员类型文案（vip_version=v2 语义：0-普通用户 1-会员用户 2-超级会员用户）
+   */
+  private getVipTypeText(): string {
+    const vipType: number = this.userInfo?.vipType ?? 0;
+    if (vipType === 2) {
+      return ResourceManager.getString($r('app.string.baidu_netdisk_vip_svip'));
+    }
+    if (vipType === 1) {
+      return ResourceManager.getString($r('app.string.baidu_netdisk_vip_member'));
+    }
+    return ResourceManager.getString($r('app.string.baidu_netdisk_vip_normal'));
+  }
+
   build() {
     NavDestination() {
       Column() {
@@ -449,6 +515,72 @@ struct BaiduNetdiskPage {
                   .fontSize(12)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 8 })
+              }
+
+              // 账户信息：用户、会员类型、总容量、已用容量、剩余容量
+              if (this.userInfo && this.quotaInfo) {
+                Divider()
+                  .color($r('app.color.divider'))
+                  .margin({ top: 12, bottom: 12 })
+
+                Row() {
+                  Text($r('app.string.baidu_netdisk_user'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_secondary'))
+                  Blank()
+                  Text(this.userInfo.netdiskName || this.userInfo.baiduName || '-')
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+
+                Row() {
+                  Text($r('app.string.baidu_netdisk_vip_type'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_secondary'))
+                  Blank()
+                  Text(this.getVipTypeText())
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+                .margin({ top: 8 })
+
+                Row() {
+                  Text($r('app.string.baidu_netdisk_total_space'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_secondary'))
+                  Blank()
+                  Text(this.formatBytes(this.quotaInfo.total))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+                .margin({ top: 8 })
+
+                Row() {
+                  Text($r('app.string.baidu_netdisk_used_space'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_secondary'))
+                  Blank()
+                  Text(this.formatBytes(this.quotaInfo.used))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+                .margin({ top: 8 })
+
+                Row() {
+                  Text($r('app.string.baidu_netdisk_free_space'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_secondary'))
+                  Blank()
+                  Text(this.formatBytes(this.quotaInfo.free))
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+                .margin({ top: 8 })
               }
             }
             .width('100%')
@@ -583,11 +715,13 @@ struct BaiduNetdiskPage {
             .width("100%")
           }
         }
-        .width('90%')
+        .width('100%')
+        .padding({ left: 16, right: 16 })
         .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
       .layoutWeight(1)
+      .align(Alignment.Top)
       }
       .width('100%')
       .height('100%')
