@@ -80,6 +80,15 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
   }
 
   /**
+   * 版本快速路径能力声明：FileInfo.version 为内容 md5
+   * （写入侧 contentMd5 / 读取侧已下载文件计算值 / 探测侧 decryptBaiduMd5 还原值，三者同值），
+   * 可信可用于保存/加载链路的版本预检与缓存快速路径
+   */
+  public supportsVersionFastPath(): boolean {
+    return true;
+  }
+
+  /**
    * 初始化存储配置
    * @param config 百度网盘存储配置
    */
@@ -275,6 +284,8 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
 
   /**
    * 流式下载到本地文件（filemetas dlink + rcp.downloadToFile，响应体不驻留内存）
+   * 返回 FileInfo.version 取已下载文件的内容 md5（与写入侧 contentMd5 同一版本空间，
+   * 保证缓存元数据版本非空可用；计算失败回落服务端 decryptBaiduMd5 结果）
    * @param path 远端文件路径
    * @param destPath 本地目标文件路径
    * @param onProgress 下载进度回调（可选）：rcp onDownloadProgress 字节级透传
@@ -293,7 +304,7 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
           onProgress(transferredSize, totalSize);
         } : undefined;
       await client.downloadToFile(fullMeta.dlink, destPath, progressAdapter);
-      return BaiduNetdiskStorage.toFileInfo(meta);
+      return await BaiduNetdiskStorage.buildDownloadedFileInfo(meta, destPath);
     } catch (error) {
       if (error instanceof StorageError) {
         throw error;
@@ -301,6 +312,23 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
       hilog.error(DOMAIN, TAG, 'BaiduNetdisk readToFile error: %{public}s', (error as Error).message);
       throw new StorageError(StorageErrorCodes.FILE_READ_ERROR, (error as Error).message);
     }
+  }
+
+  /**
+   * 构造下载完成后的 FileInfo
+   * version 优先取已下载文件的内容 md5（本地事实，非空保证缓存快速路径元数据可用，
+   * 与 write() 缓存的 contentMd5 版本空间一致）；计算失败回落服务端元信息版本
+   */
+  private static async buildDownloadedFileInfo(meta: BaiduFileMeta,
+    destPath: string): Promise<FileInfo> {
+    const info: FileInfo = BaiduNetdiskStorage.toFileInfo(meta);
+    try {
+      info.version = await HashUtils.md5HexFile(destPath);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, 'compute downloaded file md5 failed, fallback to server version: %{public}s',
+        (error as Error).message);
+    }
+    return info;
   }
 
   /**
@@ -395,8 +423,15 @@ export class BaiduNetdiskStorage extends BaseFileStorage {
           const partSeq: number = pre.blockList[i];
           const start: number = partSeq * sliceSize;
           const end: number = Math.min(start + sliceSize, total);
+          // 分片内字节级进度：rcp onUploadProgress 实时上报，累计基数 = 分片起始偏移
+          // （与其他存储的实时字节进度口径一致；分片完成后再报一次终点兜底事件不触发的场景）
+          const sliceBase: number = start;
+          const sliceProgress: ((sliceTransferred: number, sliceTotal: number) => void) | undefined =
+            onProgress ? (sliceTransferred: number, sliceTotal: number): void => {
+              onProgress(sliceBase + sliceTransferred, total);
+            } : undefined;
           await client.uploadSlice(remotePath, pre.uploadid, partSeq, data.slice(start, end),
-            blockList[partSeq]);
+            blockList[partSeq], sliceProgress);
           if (onProgress) {
             onProgress(end, total);
           }

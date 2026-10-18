@@ -32,6 +32,12 @@ const API_TIMEOUT_MS: number = 60000;
 const DOWNLOAD_TIMEOUT_MS: number = 300000;
 
 /**
+ * 弱网下载失败自动重试次数（整段重下，指数退避 1s/2s/4s）
+ * DownloadToFile keepLocal 默认 false（覆盖写），整段重下幂等安全
+ */
+const DOWNLOAD_MAX_RETRIES: number = 3;
+
+/**
  * superfile2 可重试业务错误码（当前分片重试）
  */
 const SLICE_RETRYABLE_ERRNOS: number[] = [31081];
@@ -270,38 +276,53 @@ export class BaiduNetdiskClient {
 
   /**
    * 下载文件到内存（小文件 read 路径）
-   * 固定 UA + rcp 默认跟随 302（D3）；dlink 后追加 access_token
+   * 固定 UA + rcp 默认跟随 302（D3）；dlink 后追加 access_token；
+   * 弱网失败指数退避整段重下（DOWNLOAD_MAX_RETRIES 次）
    */
   public async download(dlink: string): Promise<ArrayBuffer> {
     const url = this.appendAccessToken(dlink);
-    const session = rcp.createSession({
-      headers: {
-        'User-Agent': BaiduNetdiskConstants.DOWNLOAD_UA
-      }
-    });
-    try {
-      const request = new rcp.Request(url, 'GET');
-      request.configuration = {
-        transfer: {
-          timeout: { connectMs: 30000, transferMs: DOWNLOAD_TIMEOUT_MS }
+    let attempt = 0;
+    while (true) {
+      const session = rcp.createSession({
+        headers: {
+          'User-Agent': BaiduNetdiskConstants.DOWNLOAD_UA
         }
-      };
-      const response = await session.fetch(request);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw new BaiduApiError(response.statusCode,
-          `download failed, status=${response.statusCode}`);
+      });
+      try {
+        const request = new rcp.Request(url, 'GET');
+        request.configuration = {
+          transfer: {
+            timeout: { connectMs: 30000, transferMs: DOWNLOAD_TIMEOUT_MS }
+          }
+        };
+        const response = await session.fetch(request);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw new BaiduApiError(response.statusCode,
+            `download failed, status=${response.statusCode}`);
+        }
+        if (!response.body) {
+          throw new BaiduApiError(response.statusCode, 'download empty body');
+        }
+        return response.body;
+      } catch (error) {
+        if (attempt < DOWNLOAD_MAX_RETRIES) {
+          attempt++;
+          hilog.warn(DOMAIN, TAG, 'download failed, retry %{public}d/%{public}d: %{public}s',
+            String(attempt), String(DOWNLOAD_MAX_RETRIES), (error as Error).message);
+          await BaiduNetdiskClient.sleep(1000 * Math.pow(2, attempt - 1));
+          continue;
+        }
+        throw error as Error;
+      } finally {
+        session.close();
       }
-      if (!response.body) {
-        throw new BaiduApiError(response.statusCode, 'download empty body');
-      }
-      return response.body;
-    } finally {
-      session.close();
     }
   }
 
   /**
    * 流式下载到本地文件（readToFile 路径，响应体不驻留内存）
+   * 弱网失败指数退避整段重下（DOWNLOAD_MAX_RETRIES 次，覆盖写幂等）；
+   * 重试时进度从 0 重新上报（rcp onDownloadProgress 重新触发）
    * @param dlink 预授权下载链接
    * @param destPath 本地目标文件路径
    * @param onProgress 下载进度回调（可选）：rcp onDownloadProgress 透传
@@ -324,16 +345,29 @@ export class BaiduNetdiskClient {
         }
       };
     }
-    const session = rcp.createSession({
-      headers: {
-        'User-Agent': BaiduNetdiskConstants.DOWNLOAD_UA
-      },
-      requestConfiguration: configuration
-    });
-    try {
-      await session.downloadToFile(url, { kind: 'file', file: destPath } as rcp.DownloadToFile);
-    } finally {
-      session.close();
+    let attempt = 0;
+    while (true) {
+      const session = rcp.createSession({
+        headers: {
+          'User-Agent': BaiduNetdiskConstants.DOWNLOAD_UA
+        },
+        requestConfiguration: configuration
+      });
+      try {
+        await session.downloadToFile(url, { kind: 'file', file: destPath } as rcp.DownloadToFile);
+        return;
+      } catch (error) {
+        if (attempt < DOWNLOAD_MAX_RETRIES) {
+          attempt++;
+          hilog.warn(DOMAIN, TAG, 'downloadToFile failed, retry %{public}d/%{public}d: %{public}s',
+            String(attempt), String(DOWNLOAD_MAX_RETRIES), (error as Error).message);
+          await BaiduNetdiskClient.sleep(1000 * Math.pow(2, attempt - 1));
+          continue;
+        }
+        throw error as Error;
+      } finally {
+        session.close();
+      }
     }
   }
 
@@ -378,17 +412,20 @@ export class BaiduNetdiskClient {
   /**
    * 分片上传（PCS superfile2，multipart 字段名 file）
    * 上传域名经 locateupload 动态获取（按 uploadid 短期缓存，域名不可用时重取）；
-   * 上传成功后校验返回 md5 与预上传 block_list 对应分片 md5 一致（不一致退避重试）
+   * 上传成功后校验返回 md5 与预上传 block_list 对应分片 md5 一致（不一致退避重试）；
+   * 请求级 tracing onUploadProgress 上报分片内实时字节进度（与其他存储的字节级进度口径一致）
    * @param remotePath 远端文件路径
    * @param uploadid 预上传任务 id
    * @param partSeq 分片序号（precreate 返回 block_list 中的待传序号）
    * @param data 分片内容
    * @param expectedMd5 预上传 block_list 中该分片的 md5
+   * @param onSliceProgress 分片内字节进度回调（可选）：(sliceTransferred, sliceTotal)
    * @returns 分片 md5（百度返回，已校验与 expectedMd5 一致）
    * @throws BaiduUploadIdExpiredError uploadid 过期/任务不存在（外层重新 precreate）
    */
   public async uploadSlice(remotePath: string, uploadid: string, partSeq: number,
-    data: ArrayBuffer, expectedMd5: string): Promise<string> {
+    data: ArrayBuffer, expectedMd5: string,
+    onSliceProgress?: (sliceTransferred: number, sliceTotal: number) => void): Promise<string> {
     const remote = BaiduNetdiskClient.toRemotePath(remotePath);
     const form = new rcp.MultipartForm({
       'file': {
@@ -397,6 +434,11 @@ export class BaiduNetdiskClient {
         contentOrPath: { content: data }
       }
     });
+    // multipart 请求体含少量协议开销，按分片长度钳制，避免累计进度超出文件总大小
+    const uploadProgressAdapter: ((totalSize: number, transferredSize: number) => void) | undefined =
+      onSliceProgress ? (totalSize: number, transferredSize: number): void => {
+        onSliceProgress(Math.min(transferredSize, data.byteLength), data.byteLength);
+      } : undefined;
     let uploadHost: string = await this.getUploadHost(remote, uploadid);
     let hostRefetched = false;
     let attempt = 0;
@@ -411,7 +453,7 @@ export class BaiduNetdiskClient {
       });
       let json: Record<string, Object>;
       try {
-        json = await this.fetchJson(url, 'POST', form, UPLOAD_SLICE_TIMEOUT_MS);
+        json = await this.fetchJson(url, 'POST', form, UPLOAD_SLICE_TIMEOUT_MS, uploadProgressAdapter);
       } catch (error) {
         const err: Error = error as Error;
         // 网络层瞬时错误退避重试；首次同时失效域名缓存并重取（上传域名不可用场景）
@@ -632,20 +674,33 @@ export class BaiduNetdiskClient {
 
   /**
    * 单次 HTTP 请求并解析 JSON（不含重试语义）
+   * @param onUploadProgress 上传进度回调（可选）：请求级 tracing onUploadProgress 透传（分片内字节级）
    */
   private async fetchJson(url: string, method: rcp.HttpMethod, form: rcp.Form | rcp.MultipartForm | undefined,
-    timeoutMs: number): Promise<Record<string, Object>> {
+    timeoutMs: number,
+    onUploadProgress?: (totalSize: number, transferredSize: number) => void): Promise<Record<string, Object>> {
     const session = rcp.createSession();
     try {
       const request = new rcp.Request(url, method);
       if (form !== undefined) {
         request.content = form;
       }
-      request.configuration = {
+      const configuration: rcp.Configuration = {
         transfer: {
           timeout: { connectMs: 30000, transferMs: timeoutMs }
         }
       };
+      if (onUploadProgress) {
+        const progressCallback = onUploadProgress;
+        configuration.tracing = {
+          httpEventsHandler: {
+            onUploadProgress: (totalSize: number, transferredSize: number): void => {
+              progressCallback(totalSize, transferredSize);
+            }
+          }
+        };
+      }
+      request.configuration = configuration;
       const response = await session.fetch(request);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         const text = response.body ? ByteUtils.bytesToString(response.body) : '';
