@@ -44,7 +44,8 @@ class ChildRowItem {
 /**
  * 子数据库管理页（M4，对齐 kp2a ConfigureChildDatabasesActivity）：
  * - 列表：当前库 AutoOpen 条目，按 Title 升序、LastModificationTime 倒序；
- * - 行操作：本设备启用/停用（改写 IfDevice）、立即打开（未打开时）、编辑、复制为本设备副本；
+ * - 行操作：本设备启用/停用（改写 IfDevice）、立即打开（未打开时）、编辑、复制为本设备副本、
+ *   删除子数据库（移除父库 AutoOpen 条目，不删除子库文件本身）；
  * - 添加子库：菜单选择——其他已打开的库直接生成条目 / 选择文件走解锁回环（addChildParent 中继）；
  * - 修改均走现有保存管线存当前库（父库）。
  */
@@ -206,6 +207,40 @@ struct ChildDatabasesPage {
   }
 
   /**
+   * 行操作：删除子数据库（确认后移除父库中的 AutoOpen 条目，不删除子库文件本身；
+   * Kdbx.remove 自带回收站语义：未启用回收站或条目已在回收站时为永久删除，
+   * 永久删除时清理孤儿附件，对齐 DatabaseView.deleteItem）
+   */
+  private deleteChildEntry(row: ChildRowItem): void {
+    const database: Kdbx | undefined = this.getDatabase();
+    const entry: KdbxEntry | null | undefined = this.findEntry(row);
+    if (database === undefined || entry === null || entry === undefined) {
+      this.refreshData();
+      return;
+    }
+    const isPermanentDelete = database.isInRecycleBin(entry);
+    this.getUIContext().showAlertDialog({
+      title: $r('app.string.child_dbs_delete'),
+      message: $r('app.string.child_dbs_delete_confirm_message', this.displayName(row.item)),
+      primaryButton: {
+        value: $r('app.string.cancel_button_text'),
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: $r('app.string.delete_button_text'),
+        action: () => {
+          database.remove(entry);
+          if (isPermanentDelete) {
+            KdbxUtils.cleanupOrphanedBinaries(database);
+          }
+          this.saveParentDatabase();
+        }
+      }
+    });
+  }
+
+  /**
    * 添加子库：其他已打开的库直接生成条目
    */
   private addChildFromRecord(record: OpenDatabaseRecord): void {
@@ -356,6 +391,13 @@ struct ChildDatabasesPage {
         .onClick(() => {
           this.copyForDevice(row);
         })
+      MenuItem({
+        startIcon: $r('app.media.ic_delete'),
+        content: $r('app.string.child_dbs_delete')
+      })
+        .onClick(() => {
+          this.deleteChildEntry(row);
+        })
     }
   }
 
@@ -436,7 +478,10 @@ struct ChildDatabasesPage {
     .margin({ bottom: 8 })
     .onClick(() => {
     })
-    .bindMenu(this.ChildRowMenu(row))
+    .bindMenu(this.ChildRowMenu(row), {
+      // 菜单右对齐锚点弹出（默认左侧），位置放不下时系统自动翻转
+      placement: Placement.BottomRight
+    })
   }
 
   @Builder

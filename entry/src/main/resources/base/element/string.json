@@ -685,6 +685,14 @@
       "value": "Copy for this device"
     },
     {
+      "name": "child_dbs_delete",
+      "value": "Delete child database"
+    },
+    {
+      "name": "child_dbs_delete_confirm_message",
+      "value": "Delete child database %s? Only the AutoOpen entry in the parent database will be removed. The child database file itself will not be deleted."
+    },
+    {
       "name": "child_dbs_device_enabled_label",
       "value": "This device: enabled"
     },

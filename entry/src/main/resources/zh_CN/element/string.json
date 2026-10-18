@@ -673,6 +673,14 @@
       "value": "为此设备创建副本"
     },
     {
+      "name": "child_dbs_delete",
+      "value": "删除子数据库"
+    },
+    {
+      "name": "child_dbs_delete_confirm_message",
+      "value": "确定删除子数据库「%s」吗？仅移除父库中的 AutoOpen 条目，不会删除子数据库文件本身。"
+    },
+    {
       "name": "child_dbs_device_enabled_label",
       "value": "本设备启用：是"
     },
