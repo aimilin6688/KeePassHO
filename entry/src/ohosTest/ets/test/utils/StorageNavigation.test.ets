@@ -23,7 +23,7 @@ export default function StorageNavigationTest() {
       mgr.clearNavPathStack(TEST_ROOT);
       const config: StorageConfig = {};
       StorageNavigation.pushFileList(StorageType.LOCAL, '/', config);
-      StorageNavigation.pushFileList(StorageType.PCLOUD, '/', config);
+      StorageNavigation.pushFileList(StorageType.WEBDAV, '/', config);
       expect(mgr.getNavPathStackByRoot(TEST_ROOT)?.size() ?? 0).assertEqual(0);
       mgr.removeNavPathStack(TEST_ROOT);
     });
