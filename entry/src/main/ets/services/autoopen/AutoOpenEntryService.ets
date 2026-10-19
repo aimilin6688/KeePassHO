@@ -45,11 +45,12 @@ export class AutoOpenEntryService {
     entry.setField(KdbxUtils.FIELD_URL,
       AutoOpenEntryService.buildChildUrl(child, parentFilePath), memoryProtection.url);
     entry.setField(KdbxUtils.FIELD_PASSWORD, child.password, memoryProtection.password ?? true);
+    // 无密钥文件时必须显式清空：KdbxEntry.create 预填 UserName=父库 meta.defaultUser，
+    // 残留值会被 AutoOpenService.makeItem 误读为子库密钥文件路径（KeeAutoExec 约定）
     const keyFilePath: string = child.keyLocation?.filePath ?? '';
-    if (keyFilePath.length > 0) {
-      entry.setField(KdbxUtils.FIELD_USERNAME,
-        AutoOpenPathResolver.makeRelative(keyFilePath, parentFilePath), memoryProtection.userName);
-    }
+    entry.setField(KdbxUtils.FIELD_USERNAME,
+      keyFilePath.length > 0 ? AutoOpenPathResolver.makeRelative(keyFilePath, parentFilePath) : '',
+      memoryProtection.userName);
     // M6：远端子库写连接凭据/附加字段（经 childDb 端口；OAuth 型不写，令牌设备本地）
     if (child.storageType !== StorageType.LOCAL) {
       AutoOpenEntryService.writeRemoteFields(entry, child);

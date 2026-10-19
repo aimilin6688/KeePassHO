@@ -111,6 +111,28 @@ export default function AutoOpenEntryServiceTest() {
       expect(fieldString(entry!, 'UserName')).assertEqual('');
     });
 
+    it('addEntryForOpenedChild: clears defaultUser prefill when child has no key file', 0, async () => {
+      const parent = await TestUtils.createTestDatabase('Parent');
+      // KdbxEntry.create 会预填 UserName=meta.defaultUser（kdbx-entry.ts create），
+      // 无密钥文件时必须清空，否则 AutoOpenService.makeItem 会把默认用户名误读为密钥文件路径
+      parent.meta.defaultUser = 'test-user@example.com';
+      const childDb = await TestUtils.createTestDatabase('Child');
+      const child = makeChildParam('/data/parent/child.kdbx', 'child.kdbx', 'p', childDb);
+      const entry = AutoOpenEntryService.addEntryForOpenedChild(parent,
+        '/data/parent/parent.kdbx', child, DEVICE_ID);
+      expect(fieldString(entry!, 'UserName')).assertEqual('');
+    });
+
+    it('addEntryForOpenedChild: key file path overrides defaultUser prefill', 0, async () => {
+      const parent = await TestUtils.createTestDatabase('Parent');
+      parent.meta.defaultUser = 'test-user@example.com';
+      const childDb = await TestUtils.createTestDatabase('Child');
+      const child = makeChildParam('/data/parent/child.kdbx', 'child.kdbx', 'p', childDb, '/data/parent/keys.key');
+      const entry = AutoOpenEntryService.addEntryForOpenedChild(parent,
+        '/data/parent/parent.kdbx', child, DEVICE_ID);
+      expect(fieldString(entry!, 'UserName')).assertEqual('{DB_DIR}{ENV_DIRSEP}keys.key');
+    });
+
     it('setEntryDeviceEnabled: disable writes exclusion and enable restores whitelist', 0, async () => {
       const parent = await TestUtils.createTestDatabase('Parent');
       const childDb = await TestUtils.createTestDatabase('Child');
