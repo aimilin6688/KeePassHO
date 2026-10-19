@@ -10,8 +10,9 @@ import { AutoOpenService } from '../services/autoopen/AutoOpenService';
 import { SchemeMapper } from '../services/autoopen/SchemeMapper';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { DeviceEnableState, IfDeviceParser } from '../services/autoopen/IfDeviceParser';
-import { DatabaseRegistry, OpenDatabaseRecord } from '../services/kdbx/DatabaseRegistry';
+import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
 import { DbFileParam, EntryParam } from '../services/TypeDefined';
+import { DataService } from '../services/DataService';
 import { FileService } from '../services/FileService';
 import { EventBus } from '../services/EventBus';
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
@@ -48,13 +49,13 @@ class ChildRowItem {
  * - 列表：当前库 AutoOpen 条目，按 Title 升序、LastModificationTime 倒序；
  * - 行操作：本设备启用/停用（改写 IfDevice）、立即打开（未打开时）、编辑、复制为本设备副本、
  *   删除子数据库（移除父库 AutoOpen 条目，不删除子库文件本身）；
- * - 添加子库：菜单选择——其他已打开的库直接生成条目 / 选择文件走解锁回环（addChildParent 中继）；
+ * - 添加子库：菜单选择——「选择文件…」进入存储选择页（支持本地/远端全存储）、
+ *   「最近打开」进入最近文件列表，均经解锁回环（addChildParent 中继）登记为父库子库；
  * - 修改均走现有保存管线存当前库（父库）。
  */
 @Component
 struct ChildDatabasesPage {
   @State rows: ChildRowItem[] = [];
-  @State otherOpenedRecords: OpenDatabaseRecord[] = [];
   private registry: DatabaseRegistry = FileService.getRegistry();
   private navManager: NavigationManager = NavigationManager.getInstance();
 
@@ -126,20 +127,6 @@ struct ChildDatabasesPage {
       return b.item.lastModificationTime - a.item.lastModificationTime;
     });
     this.rows = rows;
-    this.refreshOtherOpenedRecords(parentIocKey);
-  }
-
-  /**
-   * 重建「添加子库」可选的已打开库（排除当前库）
-   */
-  private refreshOtherOpenedRecords(currentKey: string | null): void {
-    const records: OpenDatabaseRecord[] = [];
-    for (const record of this.registry.all()) {
-      if (record.iocKey !== currentKey) {
-        records.push(record);
-      }
-    }
-    this.otherOpenedRecords = records;
   }
 
   /**
@@ -247,29 +234,21 @@ struct ChildDatabasesPage {
   }
 
   /**
-   * 添加子库：其他已打开的库直接生成条目
+   * 添加子库：选择文件（存储选择页 → 解锁回环：addChildParent 中继回本页发起库）
    */
-  private addChildFromRecord(record: OpenDatabaseRecord): void {
-    const currentParam: DbFileParam | undefined = this.registry.getCurrent();
-    if (currentParam === undefined || currentParam.database === undefined) {
+  private addChildFromSelectLocation(): void {
+    const currentKey: string | null = this.registry.getCurrentKey();
+    if (currentKey === null) {
       return;
     }
-    const entry: KdbxEntry | undefined = AutoOpenEntryService.addEntryForOpenedChild(
-      currentParam.database, currentParam.filePath, record.dbFileParam, DeviceIdentity.getDeviceId());
-    if (entry === undefined) {
-      CommonUtils.showToast({
-        message: $r('app.string.child_dbs_add_failed'),
-        duration: 2000
-      });
-      return;
-    }
-    this.saveParentDatabase();
+    DataService.selectKdbx('add', currentKey);
+    this.navManager.navigateTo(PageConstants.PAGE_SELECT_LOCATION);
   }
 
   /**
-   * 添加子库：选择文件（最近文件 → 解锁回环：addChildParent 中继回本页发起库）
+   * 添加子库：最近打开（最近文件列表 → 解锁回环：addChildParent 中继回本页发起库）
    */
-  private addChildFromFile(): void {
+  private addChildFromRecentFiles(): void {
     const currentKey: string | null = this.registry.getCurrentKey();
     if (currentKey === null) {
       return;
@@ -331,21 +310,19 @@ struct ChildDatabasesPage {
   @Builder
   AddSourceMenu() {
     Menu() {
-      ForEach(this.otherOpenedRecords, (record: OpenDatabaseRecord) => {
-        MenuItem({
-          startIcon: $r('app.media.file_kdbx'),
-          content: record.dbFileParam.fileName
-        })
-          .onClick(() => {
-            this.addChildFromRecord(record);
-          })
-      }, (record: OpenDatabaseRecord) => record.iocKey)
       MenuItem({
         startIcon: $r('app.media.ic_add_file'),
         content: $r('app.string.child_dbs_select_file')
       })
         .onClick(() => {
-          this.addChildFromFile();
+          this.addChildFromSelectLocation();
+        })
+      MenuItem({
+        startIcon: $r('app.media.ic_clock'),
+        content: $r('app.string.recent_files')
+      })
+        .onClick(() => {
+          this.addChildFromRecentFiles();
         })
     }
   }
@@ -439,6 +416,7 @@ struct ChildDatabasesPage {
       Image(this.getStorageIcon(row))
         .width(28)
         .height(28)
+        .fillColor($r('app.color.text_primary'))
         .margin({ left: 12, right: 12 })
       Column() {
         Row() {

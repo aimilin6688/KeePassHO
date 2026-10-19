@@ -19,6 +19,10 @@ const TAG = 'DataService';
 // 定义参数接口
 interface PasswordParam {
   filePath: string;
+  // 'add' = 添加模式（切换面板「打开其他数据库」中继）：解锁后保留多库注册表
+  openMode?: string;
+  // 子库管理页「选择文件」中继：解锁成功后把该库登记为指定父库的子库（AutoOpen 条目）
+  addChildParent?: string;
 }
 
 interface IndexParam {
@@ -109,8 +113,10 @@ export class DataService {
 
   /**
    * 选择数据库
+   * @param openMode 添加模式中继（'add'）：透传给解锁页，解锁后保留多库注册表
+   * @param addChildParent 子库管理页中继（父库 IocKey）：解锁成功后把该库登记为指定父库的子库
    */
-  public static selectKdbx() {
+  public static selectKdbx(openMode?: string, addChildParent?: string) {
     const fileSuffix: Array<string> = [];
     if (SettingsService.getSync(SettingsService.KEY_APP_LIMIT_DB_EXT, SettingsService.KEY_APP_LIMIT_DB_EXT_DEFAULT)) {
       fileSuffix.push('kdbx');
@@ -119,7 +125,7 @@ export class DataService {
       mode: LocationMode.SELECT,
       fileSuffix: fileSuffix,
       onLocation: (locationInfo: LocationInfo) => {
-        DataService.toPasswordPage(locationInfo);
+        DataService.toPasswordPage(locationInfo, openMode, addChildParent);
       }
     });
   }
@@ -147,8 +153,10 @@ export class DataService {
   /**
    * 跳转到数据库打开页面
    * @param locationInfo 位置信息
+   * @param openMode 添加模式中继（'add'）：解锁后保留多库注册表，仅追加新库
+   * @param addChildParent 子库管理页中继（父库 IocKey）：解锁成功后把该库登记为指定父库的子库（AutoOpen 条目）
    */
-  public static toPasswordPage(locationInfo: LocationInfo): void {
+  public static toPasswordPage(locationInfo: LocationInfo, openMode?: string, addChildParent?: string): void {
     // 添加到最近打开的文件列表
     const recentFile: RecentFile = {
       filePath: locationInfo.filePath,
@@ -162,7 +170,9 @@ export class DataService {
       AppStorage.setOrCreate(Constants.APP_STORAGE_PRELOAD_RECENT_FILE, recentFile);
       // 导航到密码输入页面
       const passwordParam: PasswordParam = {
-        filePath: locationInfo.filePath
+        filePath: locationInfo.filePath,
+        openMode: openMode,
+        addChildParent: addChildParent
       };
       NavigationManager.getInstance().navigateTo(PageConstants.PAGE_PASSWORD, passwordParam);
     }).catch((error: Error) => {
