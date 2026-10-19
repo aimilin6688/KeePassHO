@@ -17,6 +17,8 @@ export { ChildTarget } from '../../storage';
  * 框架内置默认（不属于任何存储声明）：
  * - 裸相对/绝对路径 → LOCAL（M1-M5 既有语义）；
  * - `file://` URI → LOCAL（本地 filePath 即 file:// 形态，保留原文）。
+ * `kdbx://` 前缀（KeePassXC 2.8 私有写法）不在此处处理：上游
+ * `AutoOpenPathResolver.resolveUrl` 统一剥离后再按裸路径进入本类。
  *
  * 文法（固定通用集合，见 ChildDbUrlKind；AUTHORITY 约定 config 字段名
  * host/port/protocol，ENDPOINT_BUCKET 约定 endpoint/bucket）：

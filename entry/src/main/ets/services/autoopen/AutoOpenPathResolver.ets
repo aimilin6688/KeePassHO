@@ -6,8 +6,11 @@ import { AutoOpenPlaceholder } from './AutoOpenConstants';
  * kdbxweb 无 SprEngine，本类实现最小占位符集：
  * - `{DB_DIR}`：父数据库文件所在目录；
  * - `{ENV_DIRSEP}`：目录分隔符（HarmonyOS 为 '/'）。
- * 裸相对路径按父库目录解析（KeePass 桌面按 exe 目录、kp2a 不支持，
+ * 裸相对路径按父库目录解析（PC 端 KeeAutoExec 按进程目录、kp2a 不支持，
  * 手机场景取父库目录最符合直觉；跨设备可移植写法推荐 `{DB_DIR}{ENV_DIRSEP}`）。
+ * 另兼容 KeePassXC 2.8 特有的 `kdbx://` URL 前缀：剥离后余下按本地路径处理
+ * （相对余项沿用父库目录解析，对齐 XC `openDatabaseFromEntry`；该前缀为 XC
+ * 私有扩展，KeeAutoExec/kp2a 均不识别，本应用写侧不产出此写法）。
  */
 export class AutoOpenPathResolver {
   /**
@@ -36,6 +39,13 @@ export class AutoOpenPathResolver {
       return '';
     }
     const parentDir = AutoOpenPathResolver.getDirName(parentFilePath);
+    // KeePassXC 2.8 兼容：剥离 kdbx:// 前缀（大小写敏感，对齐 XC openDatabaseFromEntry 的 startsWith 判定）
+    if (normalized.startsWith('kdbx://')) {
+      normalized = normalized.substring('kdbx://'.length);
+      if (normalized.length === 0) {
+        return '';
+      }
+    }
     normalized = normalized.split(AutoOpenPlaceholder.DB_DIR).join(parentDir);
     normalized = normalized.split(AutoOpenPlaceholder.ENV_DIRSEP).join('/');
     if (AutoOpenPathResolver.isAbsolutePath(normalized)) {

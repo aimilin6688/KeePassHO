@@ -13,7 +13,7 @@ export default function SchemeMapperTest() {
   describe('SchemeMapper', () => {
     // pCloud 在工厂构造中暂被注释停用；此处注册以验证
     // 「新存储注册即自动接入 scheme 映射，映射器零修改」的注册表驱动设计
-    FileStorageFactory.registerStorage(StorageType.PCLOUD, new PCloudStorage());
+    FileStorageFactory.getInstance().registerStorage(StorageType.PCLOUD, new PCloudStorage());
     // ---------- parse：本地 ----------
     it('parse: bare path is LOCAL with path preserved', 0, () => {
       const target = SchemeMapper.parse('/docs/child.kdbx');
@@ -152,6 +152,35 @@ export default function SchemeMapperTest() {
       expect(target !== undefined).assertTrue();
       expect(target!.storageType).assertEqual(StorageType.WEBDAV);
       expect(target!.filePath).assertEqual('https://dav.example.com/dav/child.kdbx');
+    });
+
+    // ---------- resolveTarget：kdbx:// 前缀（KeePassXC 2.8 兼容） ----------
+    it('resolveTarget: kdbx prefix with absolute path is LOCAL', 0, () => {
+      const target = SchemeMapper.resolveTarget(
+        'kdbx:///docs/child.kdbx', '/docs/parent.kdbx');
+      expect(target !== undefined).assertTrue();
+      expect(target!.storageType).assertEqual(StorageType.LOCAL);
+      expect(target!.filePath).assertEqual('/docs/child.kdbx');
+    });
+
+    it('resolveTarget: kdbx prefix with relative remainder resolves to parent dir', 0, () => {
+      const target = SchemeMapper.resolveTarget(
+        'kdbx://child.kdbx', '/docs/parent.kdbx');
+      expect(target !== undefined).assertTrue();
+      expect(target!.storageType).assertEqual(StorageType.LOCAL);
+      expect(target!.filePath).assertEqual('/docs/child.kdbx');
+    });
+
+    it('resolveTarget: kdbx prefix with placeholders expands then resolves', 0, () => {
+      const target = SchemeMapper.resolveTarget(
+        'kdbx://{DB_DIR}{ENV_DIRSEP}child.kdbx', '/docs/parent.kdbx');
+      expect(target !== undefined).assertTrue();
+      expect(target!.storageType).assertEqual(StorageType.LOCAL);
+      expect(target!.filePath).assertEqual('/docs/child.kdbx');
+    });
+
+    it('resolveTarget: kdbx prefix with empty remainder returns undefined', 0, () => {
+      expect(SchemeMapper.resolveTarget('kdbx://', '/docs/parent.kdbx')).assertUndefined();
     });
 
     it('resolveTarget: empty url returns undefined', 0, () => {

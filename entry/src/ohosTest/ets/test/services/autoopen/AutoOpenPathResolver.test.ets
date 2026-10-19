@@ -49,6 +49,25 @@ export default function AutoOpenPathResolverTest() {
       expect(AutoOpenPathResolver.resolveUrl('sub/child.kdbx', '/docs/parent.kdbx')).assertEqual('/docs/sub/child.kdbx');
     });
 
+    it('resolveUrl: kdbx prefix stripped, absolute remainder unchanged', 0, () => {
+      expect(AutoOpenPathResolver.resolveUrl('kdbx:///docs/child.kdbx', '/docs/parent.kdbx'))
+        .assertEqual('/docs/child.kdbx');
+    });
+
+    it('resolveUrl: kdbx prefix with relative remainder resolves against parent dir', 0, () => {
+      expect(AutoOpenPathResolver.resolveUrl('kdbx://sub/child.kdbx', '/docs/parent.kdbx'))
+        .assertEqual('/docs/sub/child.kdbx');
+    });
+
+    it('resolveUrl: kdbx prefix with empty remainder returns empty', 0, () => {
+      expect(AutoOpenPathResolver.resolveUrl('kdbx://', '/docs/parent.kdbx')).assertEqual('');
+    });
+
+    it('resolveUrl: uppercase KDBX prefix is not stripped (XC startsWith is case-sensitive)', 0, () => {
+      expect(AutoOpenPathResolver.resolveUrl('KDBX://child.kdbx', '/docs/parent.kdbx'))
+        .assertEqual('KDBX://child.kdbx');
+    });
+
     it('resolveUrl: relative path with no parent dir stays as-is', 0, () => {
       expect(AutoOpenPathResolver.resolveUrl('child.kdbx', 'parent.kdbx')).assertEqual('child.kdbx');
     });

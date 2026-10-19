@@ -1,7 +1,7 @@
 # 子数据库（Child Databases / AutoOpen）功能设计方案
 
 > 目标：参考 KeePass2Android（kp2a）的 Child Databases 实现，为 KeePassHO 引入「父数据库解锁后自动打开子数据库」能力，
-> 并支持多数据库同时打开与切换。实现与 KeePass 桌面版内置 AutoOpen 机制、KeeAutoExec 插件（PC）字段约定兼容。
+> 并支持多数据库同时打开与切换。实现与 KeeAutoExec 插件（PC）字段约定、keepass2android（kp2a）兼容，另兼容 KeePassXC 2.8 的 `kdbx://` URL 前缀（M6.8）；KeePass 桌面版本身不内置 AutoOpen，其能力经 KeeAutoExec 插件获得。
 > 参考源码位置：`/Users/liujunguang1/workspace/code/other/harmony/KeePassHO/其他库/keepass2android`
 > （核心文件：`src/keepass2android-app/KeeAutoExec.cs`、`ConfigureChildDatabasesActivity.cs`、`SelectCurrentDbActivity.cs`、`app/App.cs`）
 
@@ -19,6 +19,7 @@
 | M4 子数据库管理页（启停本设备 / 立即打开 / 编辑 / 复制副本 / 添加子库） | ✅ 已完成 | 91d2dba0 |
 | M5 收尾（设置入口 / 字符串 / 提示条 / RecentFiles 适配 / E2E） | ✅ 已完成 | 9b41a47f（用户指南 `child-databases-guide.md`） |
 | M6 远端子数据库（URL scheme 映射 / IocUserName/IocPassword 凭据 / OAuth 设备本地令牌） | ✅ 已实现（构建通过；SchemeMapper / AutoOpenConfigRebuilder / 写侧 Ioc 字段 / 管理页与切换面板按存储类型显示图标，见 §4 M6） | — |
+| M6.8 `kdbx://` URL 前缀兼容（KeePassXC 2.8） | ✅ 已实现（读取剥离，写侧不产出，见 §4 M6.8） | — |
 
 后续修复：419cb693（管理页 ForEach 键缺状态字段致行不刷新）、8fb14d69（样式对齐全应用风格）、1f3ed38a（深色模式图标不可见与手动打开失败无提示）。
 
@@ -45,11 +46,11 @@ kp2a 官方文案（`Resources/values/strings.xml:741`）：
 1. **子数据库 = 父库内一条普通条目**：子库的**文件位置 + 主密码**存储在父库的一个专用条目里，不引入任何新文件格式；
 2. **打开父库时自动打开子库**（多库并存，可切换）；
 3. **可按设备启停**（IfDevice 过滤），典型场景是「与他人共享部分密码」；
-4. **与 KeePass 桌面版内置 AutoOpen 机制、KeeAutoExec 插件双向兼容**——同一个 .kdbx 在 PC（KeePass/KeeAutoExec）与手机（kp2a）上行为一致。
+4. **与 KeeAutoExec 插件（PC）双向兼容**——同一个 .kdbx 在 PC（KeePass + KeeAutoExec 插件）与手机（kp2a）上行为一致（KeePass 桌面版本身不内置 AutoOpen，全源码无 autoopen 匹配，2.61.1 已核）。
 
 ### 1.2 数据模型：AutoOpen 组条目约定
 
-KeePass 桌面版约定：在数据库**根组**下建一个名为 `AutoOpen` 的子组，组内每个条目描述一个待自动打开的数据库。kp2a 完整兼容并扩展（`KeeAutoExec.cs`）：
+KeeAutoExec 插件约定：在数据库**根组**下建一个名为 `AutoOpen` 的子组，组内每个条目描述一个待自动打开的数据库。kp2a 完整兼容并扩展（`KeeAutoExec.cs`）：
 
 **组发现规则**（`KeeAutoExecExt.AddAutoExecEntries`，KeeAutoExec.cs:102）：
 
@@ -62,7 +63,7 @@ KeePass 桌面版约定：在数据库**根组**下建一个名为 `AutoOpen` �
 | 字段 | 含义 | 备注 |
 |---|---|---|
 | `Title` | 子库显示名 | 展示用 |
-| `URL` | 子库文件路径 | **必填**（为空则条目被忽略）；支持占位符 `{DB_DIR}`、`{ENV_DIRSEP}`（kp2a 走完整 SprEngine 编译）；裸相对路径在 kp2a 本地文件场景**不支持**（AutoOpenEntry 返回 false），桌面版按 exe 目录解析 |
+| `URL` | 子库文件路径 | **必填**（为空则条目被忽略）；支持占位符 `{DB_DIR}`、`{ENV_DIRSEP}`（kp2a 走完整 SprEngine 编译）；裸相对路径在 kp2a 本地文件场景**不支持**（AutoOpenEntry 返回 false），PC 端 KeeAutoExec 按进程目录解析 |
 | `UserName` | 子库**密钥文件**路径 | 与 KeePass 桌面约定一致；亦支持占位符 |
 | `Password` | 子库**主密码** | 以 ProtectedString 存于父库 |
 | 自定义字符串 `Enabled` | `True`/`False`，条目总开关 | 覆盖默认；默认规则：条目 `Expires && ExpiryTime <= UtcNow` → 禁用 |
@@ -233,7 +234,7 @@ kp2a 的子数据库**不限于本地文件**：条目 `URL` 可写任意已注�
 **目标**
 
 1. 父库解锁后，按 AutoOpen 条目**自动打开**子库（多库并存、可切换当前库）；
-2. 与 KeePass 桌面 AutoOpen / KeeAutoExec / kp2a **字段级兼容**：PC 上配置好的父库拷到手机可直接用，反之亦然；
+2. 与 KeeAutoExec / kp2a **字段级兼容**（KeePass 桌面版经 KeeAutoExec 插件获得该能力）：PC 上配置好的父库拷到手机可直接用，反之亦然；
 3. 按设备启停子库（IfDevice），提供子库管理页（启停/编辑/立即打开/复制副本/添加）；
 4. 锁（快速锁）、关、超时自动锁对**全部库**统一生效。
 
@@ -450,11 +451,11 @@ scheme 映射、storageConfig 重建、写侧凭据/附加字段均由 `PageConf
 
 **M6.1 URL scheme → StorageType 映射**
 
-`AutoOpenPathResolver.resolveUrl` 对带 scheme 的 URI 原样透传（`isAbsolutePath` 已识别 `scheme://`，AutoOpenPathResolver.ets:76-81），M6 新增 `SchemeMapper` 剥离 scheme 前缀：
+`AutoOpenPathResolver.resolveUrl` 对带 scheme 的 URI 原样透传（`isAbsolutePath` 已识别 `scheme://`，AutoOpenPathResolver.ets:76-81；例外：`kdbx://` 前缀先行剥离，见 M6.8），M6 新增 `SchemeMapper` 剥离 scheme 前缀：
 
 | URL（条目 `URL` 字段） | StorageType | 连接凭据来源 | storageConfig 重建 |
 |---|---|---|---|
-| 无 scheme / `file://` / `{DB_DIR}` 展开 | LOCAL | — | 现状不变 |
+| 无 scheme / `file://` / `kdbx://` 剥离后 / `{DB_DIR}` 展开 | LOCAL | — | 现状不变（`kdbx://` 见 M6.8） |
 | `webdav://host[:port]/远端路径`（→ https）及 `https://`、`http://`（对齐 kp2a WebDAV 直连） | WEBDAV | 条目 `IocUserName`/`IocPassword` | `new WebDAVStorageConfig('https://host[:port]/', user, pass)`（明文时 http） |
 | `ftp://host[:port]/远端路径` | FTP | 同上 | `new FTPStorageConfig(host, user, pass, { port })` |
 | `sftp://host[:port]/远端路径` | FTP | 同上 | `new FTPStorageConfig(host, user, pass, { port: 22, protocol: SFTP })` |
@@ -516,8 +517,20 @@ SkipIfNotExists: storageType !== LOCAL 时跳过存在性检查（远端恒视�
 
 **M6.7 测试计划补充**
 
-- 单测：SchemeMapper 全 scheme/端口/无 scheme/非法 scheme；ConfigRebuilder 凭据型字段重建（WebDAV/S3/FTP 各 ≥3 例）、OAuth 型命中/未命中 RecentFile；
+- 单测：SchemeMapper 全 scheme/端口/无 scheme/非法 scheme/`kdbx://` 前缀剥离（M6.8，含相对余项按父库目录解析）；ConfigRebuilder 凭据型字段重建（WebDAV/S3/FTP 各 ≥3 例）、OAuth 型命中/未命中 RecentFile；
 - 集成：① WebDAV 子库（IocUserName/IocPassword）父库解锁自动打开；② OneDrive 子库：本设备已授权 → 自动打开，未授权 → 失败提示；③ 远端子库 + `SkipIfNotExists=True` 离线 → 静默跳过不阻塞；④ 同一远端文件先正常打开再解锁父库 → 判重不重复打开；⑤ 三端互操作：本机 M6 生成的条目在 kp2a / KeeAutoExec 可读（Ioc 字段名一致）。
+
+**M6.8 `kdbx://` URL 前缀兼容（KeePassXC 2.8）**
+
+KeePassXC 2.8 的 AutoOpen 实现私有扩展了 `kdbx://` 前缀（`DatabaseWidget.cpp openDatabaseFromEntry`：`startsWith("kdbx://")` 剥离后余项按本地路径处理，相对余项按当前库目录解析）。该前缀**不属于** KeeAutoExec/kp2a 约定：kp2a 全工程无 `kdbx://`，未知 scheme 抛 `NoFileStorageFoundException`（App.cs:984）。
+
+本项目**读取侧**兼容（写侧不产出该写法，维持 kp2a/KeeAutoExec 互通与写格式逐字一致）：
+
+- 剥离点：`AutoOpenPathResolver.resolveUrl`——占位符展开前、大小写敏感 `startsWith('kdbx://')`（对齐 XC）；
+- 余项语义：绝对路径 / `file://` 原样进入 `SchemeMapper.parse`；**相对余项按父库目录解析**（与 XC `dbFileInfo.setFile(currentpath.absoluteDir(), …)` 一致）；`{DB_DIR}` 等占位符随后正常展开；
+- 空余项（`kdbx://`）→ 空串 → 条目按 URL 为空跳过；
+- 优于 XC 的边界（可接受）：`kdbx://webdav://…` 等嵌套 scheme 余项会被继续按 scheme 解析（XC 按本地路径处理必然失败，本项目更宽松）；
+- 单测：`AutoOpenPathResolver.test.ets`（剥离/相对余项/空余项/大小写敏感 4 例）+ `SchemeMapper.test.ets`（resolveTarget 端到端 4 例）。
 
 ---
 
@@ -547,25 +560,28 @@ SkipIfNotExists: storageType !== LOCAL 时跳过存在性检查（远端恒视�
 
 ---
 
-## 7. 兼容性对照表（三端）
+## 7. 兼容性对照表
 
-| 能力 | KeePass 桌面 | KeeAutoExec 插件 | kp2a | KeePassHO（本设计） |
+> KeePass 桌面版（2.x）**不内置** AutoOpen（2.61.1 全源码无 autoopen 匹配，其能力经 KeeAutoExec 插件获得），故不设列；下表另补 KeePassXC 2.8（`processAutoOpen`，DatabaseWidget.cpp:2758）实测核对结果。
+
+| 能力 | KeePassXC 2.8 | KeeAutoExec 插件 | kp2a | KeePassHO（本设计） |
 |---|---|---|---|---|
-| 根下 AutoOpen 组 | ✅ | ✅ | ✅ | ✅ M1 |
-| Title/URL/UserName(密钥文件)/Password | ✅ | ✅ | ✅ | ✅ M1/M4 |
-| `{DB_DIR}` `{ENV_DIRSEP}` 占位符 | ✅（SprEngine） | ✅ | ✅ | ✅ M1（最小实现） |
-| 条目过期禁用 | ✅ | ✅ | ✅ | ✅ M1 |
-| Enabled/Visible/Priority | ❌ | ✅ | ✅ | ✅ M1（Priority 排序 M3 生效） |
-| IfDevice 设备 CSV | ❌ | ✅ | ✅ | ✅ M1/M4 |
+| 根下 AutoOpen 组 | ✅（仅根组直连子组，组名大小写敏感） | ✅（递归、大小写不敏感） | ✅（递归、大小写不敏感） | ✅ M1（递归、大小写不敏感） |
+| Title/URL/UserName(密钥文件)/Password | ✅（需 URL 且 password/username 至少一项非空） | ✅ | ✅ | ✅ M1/M4 |
+| `{DB_DIR}` / `{ENV_DIRSEP}` 占位符 | `{DB_DIR}` ✅；`{ENV_DIRSEP}` ❌（无此占位符） | ✅（SprEngine） | ✅ | ✅ M1（最小实现） |
+| `kdbx://` URL 前缀 | ✅（起源，私有扩展） | ❌ | ❌ | ✅ 读取剥离（M6.8，写侧不产出） |
+| 条目过期禁用 | ❌（忽略） | ✅ | ✅ | ✅ M1 |
+| Enabled/Visible/Priority | ❌（忽略） | ✅ | ✅ | ✅ M1（Priority 排序 M3 生效） |
+| IfDevice 设备 CSV | ✅（主机名；矛盾列表先命中即定） | ✅ | ✅ | ✅ M1/M4 |
 | SkipIfNotExists（及旧名） | ❌ | ✅ | ✅ | ✅ M3 |
 | `IocUserName`/`IocPassword` 远端连接凭据 | ❌ | ✅ | ✅ | ✅ M6 |
-| 远端子库（scheme URL + 设备本地 OAuth 令牌） | ❌ | ✅ | ✅ | ✅ M6 |
+| 远端子库（scheme URL + 设备本地 OAuth 令牌） | ❌（仅本地路径） | ✅ | ✅ | ✅ M6 |
 | 附件 KeyFile.bin | ❌ | ✅ | ✅ | P2 |
 | Focus=Restore | ❌ | ✅ | ✅ | P2（默认 makeCurrent） |
-| 多库并存+切换 | ❌（多实例多开） | — | ✅ | ✅ M2/M3 |
-| 子库管理页 | — | ✅（插件 UI） | ✅ | ✅ M4 |
+| 多库并存+切换 | ✅（多标签页） | — | ✅ | ✅ M2/M3 |
+| 子库管理页 | ❌（条目需手动创建） | ✅（插件 UI） | ✅ | ✅ M4 |
 
-同一 .kdbx 三端往返注意：本设计生成的条目仅使用上表「KeePass 桌面 ✅ 或 KeeAutoExec ✅」的字段，保证桌面端可读。
+同一 .kdbx 多端往返注意：本设计生成的条目仅使用上表「KeeAutoExec ✅」的字段，保证 PC 端（KeePass + KeeAutoExec）可读。两点已核对的跨端差异——① `{ENV_DIRSEP}` 在 KeePassXC 无对应占位符（字面量残留导致 XC 端「找不到文件」，kp2a/KeeAutoExec 写法同样受影响，属生态上游缺口）：需 XC 互操作时手写含字面 `/` 的路径（如 `{DB_DIR}/child.kdbx`，四端均可识别）；② 远端 scheme URL 在 KeePassXC 端无对应存储（XC 报「找不到文件」），KeePassXC 用户请使用本地路径。
 
 ---
 
@@ -585,7 +601,7 @@ SkipIfNotExists: storageType !== LOCAL 时跳过存在性检查（远端恒视�
 3. 环依赖 A→B→A → 无死循环（attempted 防线）；
 4. 大子库（>4MB）×2 → Worker 串行队列逐个完成，父库期间可浏览；
 5. 多库下：锁 → 快速解锁恢复；关 → 全部清理回 Index；保存当前库互不影响另一库；
-6. PC 互操作：KeePass 桌面创建的 AutoOpen 库在真机自动打开；本机 M4 添加的子库在桌面 KeePass/KeeAutoExec 可识别；
+6. PC 互操作：KeePass 桌面（+KeeAutoExec 插件）创建的 AutoOpen 库在真机自动打开；本机 M4 添加的子库在桌面 KeePass/KeeAutoExec 可识别；KeePassXC 创建的 `kdbx://` 条目在真机自动打开（M6.8）；
 7. 回归：既有解锁方式（密码/密钥文件/OTP/XC）、E2E 套件全绿。
 
 ---
@@ -625,5 +641,6 @@ SkipIfNotExists: storageType !== LOCAL 时跳过存在性检查（远端恒视�
 | `KeeAutoExecExt.TryGetDatabaseIoc`（IocUserName/IocPassword → ioc） | `services/autoopen/SchemeMapper` + `ConfigRebuilder`（M6 新增） | M6 |
 | kp2a 设备本地 OAuth token（SharedPreferences） | RecentFilesService 持久化的 `RecentFile.storageConfig`（SM4 加密） | M6 |
 | `AddAutoOpenEntryForDatabase` 写远端子库（含凭据） | `AutoOpenEntryService` 扩展（M6.4） | M6 |
+| KeePassXC 2.8 `kdbx://` URL 前缀（`openDatabaseFromEntry`） | `AutoOpenPathResolver.resolveUrl` 前缀剥离（M6.8） | M6 |
 | `IsChildDatabase` 生物识别建议抑制 | `Registry.isChild` | M5 |
 | `pref_database.xml` 设置入口 | `SettingDatabase.ets` | M5 |
