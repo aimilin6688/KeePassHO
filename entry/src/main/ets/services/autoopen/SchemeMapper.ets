@@ -9,10 +9,11 @@ export { ChildTarget } from '../../storage';
 /**
  * AutoOpen 条目 URL 的 scheme → StorageType 映射器（M6.1，注册表驱动）
  *
- * 各存储在自身 PageConfig.childDbSchemes 中声明 scheme + ChildDbUrlKind 文法；
- * 本类经 FileStorageFactory 注册表发现声明并按固定文法解析/构造 URL。
- * 新增存储接入子库：实现存储 + PageConfig 声明 + 工厂注册（均为存储层既有必做项），
- * 本文件及全部存储无关代码零修改。
+ * 各存储在自身 PageConfig.childDb 适配器（ChildDbSupport 端口，M6.9）中
+ * 声明 scheme + ChildDbUrlKind 文法；本类经 FileStorageFactory 注册表发现
+ * 声明并按固定文法解析/构造 URL。
+ * 新增存储接入子库：实现存储 + PageConfig 声明 childDb + 工厂注册
+ * （均为存储层既有必做项），本文件及全部存储无关代码零修改。
  *
  * 框架内置默认（不属于任何存储声明）：
  * - 裸相对/绝对路径 → LOCAL（M1-M5 既有语义）；
@@ -99,9 +100,13 @@ export class SchemeMapper {
     if (pageConfig === undefined) {
       return filePath;
     }
-    const schemes = pageConfig.childDbSchemes;
-    if (schemes === undefined || schemes.length === 0) {
-      // LOCAL / 未声明子库 scheme 的存储：原样返回
+    const childDb = pageConfig.childDb;
+    if (childDb === undefined) {
+      // LOCAL / 未声明子库适配器的存储：原样返回
+      return filePath;
+    }
+    const schemes = childDb.schemes;
+    if (schemes.length === 0) {
       return filePath;
     }
     switch (schemes[0].kind) {
@@ -127,7 +132,7 @@ export class SchemeMapper {
     const storageMap = FileStorageFactory.getInstance().getStorageMap();
     for (const entry of storageMap.entries()) {
       const pageConfig = entry[1].getPageConfig();
-      const declarations = pageConfig.childDbSchemes;
+      const declarations = pageConfig.childDb === undefined ? undefined : pageConfig.childDb.schemes;
       if (declarations === undefined) {
         continue;
       }
@@ -149,13 +154,14 @@ export class SchemeMapper {
   }
 
   /**
-   * 写侧默认 scheme：PageConfig.childDbWriteScheme，缺省取首个声明
+   * 写侧默认 scheme：childDb.writeScheme，缺省取首个声明
    */
   private static writeScheme(pageConfig: PageConfig): string {
-    if (pageConfig.childDbWriteScheme !== undefined && pageConfig.childDbWriteScheme.length > 0) {
-      return pageConfig.childDbWriteScheme;
+    const childDb = pageConfig.childDb;
+    if (childDb !== undefined && childDb.writeScheme !== undefined && childDb.writeScheme.length > 0) {
+      return childDb.writeScheme;
     }
-    const schemes = pageConfig.childDbSchemes;
+    const schemes = childDb === undefined ? undefined : childDb.schemes;
     return schemes !== undefined && schemes.length > 0 ? schemes[0].scheme : '';
   }
 
@@ -254,7 +260,8 @@ export class SchemeMapper {
       port = portRaw !== undefined ? Number(portRaw) : 0;
       isSftp = record['protocol'] !== undefined && String(record['protocol']) === 'SFTP';
     }
-    const schemes = pageConfig.childDbSchemes;
+    const childDb = pageConfig.childDb;
+    const schemes = childDb === undefined ? undefined : childDb.schemes;
     let scheme = SchemeMapper.writeScheme(pageConfig);
     let defaultPort: number | undefined = schemes !== undefined && schemes.length > 0
       ? schemes[0].defaultPort : undefined;

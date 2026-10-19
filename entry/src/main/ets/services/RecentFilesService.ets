@@ -452,6 +452,99 @@ export class RecentFilesService {
     }
   }
 
+  // ==================== M6.9 子库连接配置回写 ====================
+
+  /**
+   * 子库连接配置记录合并（纯函数，可单测，M6.9）：
+   * 远端子库打开成功后把连接配置合入最近文件列表——
+   * - 命中（storageType+filePath 联合匹配）且配置无变化 → 返回原列表引用
+   *   （调用方据此跳过写盘）；
+   * - 命中且有变化 → 原位更新 fileName/storageConfig/authType/keyLocation，
+   *   显式保留位置无关记忆（password/passwordSaveTime/searchHistory/fileSize/
+   *   yubikeySlot/otpAuxLocation）；
+   * - 未命中 → 满 MAX_RECENT_FILES 先淘汰最旧，再尾部追加（不置顶：不影响
+   *   loadMostRecentFile 启动预加载与「最近」排序语义）。
+   * 子库主密码恒不写入（record 不含 password 字段）。
+   * @param recentFiles 现有最近文件列表（不修改）
+   * @param record 子库连接配置记录（storageType+filePath 为键）
+   * @returns 合并后的新列表；无变化时返回原列表引用
+   */
+  public static mergeChildConfigRecord(recentFiles: RecentFile[], record: RecentFile): RecentFile[] {
+    const index: number = recentFiles.findIndex(file =>
+      file.storageType === record.storageType && file.filePath === record.filePath);
+    if (index < 0) {
+      const appended: RecentFile[] = recentFiles.slice();
+      if (appended.length >= RecentFilesService.MAX_RECENT_FILES) {
+        appended.pop();
+      }
+      appended.push(record);
+      return appended;
+    }
+    const existing: RecentFile = recentFiles[index];
+    if (RecentFilesService.isChildRecordUpToDate(existing, record)) {
+      return recentFiles;
+    }
+    const updated: RecentFile = {
+      filePath: existing.filePath,
+      fileName: record.fileName.length > 0 ? record.fileName : existing.fileName,
+      storageType: existing.storageType,
+      storageConfig: record.storageConfig,
+      authType: record.authType === undefined ? existing.authType : record.authType,
+      keyLocation: record.keyLocation === undefined ? existing.keyLocation : record.keyLocation,
+      password: existing.password,
+      passwordSaveTime: existing.passwordSaveTime,
+      searchHistory: existing.searchHistory,
+      fileSize: existing.fileSize,
+      yubikeySlot: existing.yubikeySlot,
+      otpAuxLocation: existing.otpAuxLocation
+    };
+    const merged: RecentFile[] = recentFiles.slice();
+    merged[index] = updated;
+    return merged;
+  }
+
+  /**
+   * 子库连接配置是否已是最新（storageConfig 序列化一致 + 认证方式一致 +
+   * 密钥文件路径一致；不含 password/searchHistory 等位置无关记忆）
+   */
+  private static isChildRecordUpToDate(existing: RecentFile, record: RecentFile): boolean {
+    return JSON.stringify(existing.storageConfig) === JSON.stringify(record.storageConfig)
+      && existing.authType?.type === record.authType?.type
+      && existing.keyLocation?.filePath === record.keyLocation?.filePath;
+  }
+
+  /**
+   * 子库连接配置回写（M6.9，统一解析链②的持久化数据源）：
+   * 远端子库打开成功（自动/手动经协调器）后 best-effort 保存连接配置——
+   * 失败仅告警不抛出，不阻塞打开流程
+   * @param record 连接配置记录（由调用方从加载参数构建；不含子库主密码）
+   */
+  public async upsertChildConfigRecord(record: RecentFile): Promise<void> {
+    try {
+      if (!this.preferences) {
+        return;
+      }
+      const recentFiles = await this.getRecentFiles();
+      const merged: RecentFile[] = RecentFilesService.mergeChildConfigRecord(recentFiles, record);
+      if (merged === recentFiles) {
+        return; // 配置无变化，跳过写盘
+      }
+      await this.preferences.put(RecentFilesService.RECENT_FILES_KEY, JSON.stringify(merged));
+      await this.preferences.flush();
+      SyncSettingsService.syncRecentFiles(merged);
+      hilog.debug(DOMAIN, TAG, 'Upsert child config record: %{public}s', record.filePath);
+    } catch (error) {
+      hilog.warn(DOMAIN, TAG, `Upsert child config record error: ${error}`);
+    }
+  }
+
+  /**
+   * 子库连接配置回写（静态包装）
+   */
+  public static upsertChildConfigRecord(record: RecentFile): Promise<void> {
+    return RecentFilesService.getInstance().upsertChildConfigRecord(record);
+  }
+
   /**
    * 清除所有最近打开的文件
    */

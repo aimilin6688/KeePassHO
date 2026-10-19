@@ -12,9 +12,10 @@ import { IfDeviceParser } from './IfDeviceParser';
 import { DatabaseRegistry, PutDatabaseOptions } from '../database/DatabaseRegistry';
 import { FileService } from '../FileService';
 import { EventBus } from '../EventBus';
+import { RecentFilesService } from '../RecentFilesService';
 import KdbxLoadService from '../kdbx/KdbxLoadService';
 import { KdbxFileManager } from '../kdbx/KdbxFileManager';
-import { AuthType, DbFileParam } from '../TypeDefined';
+import { AuthType, DbFileParam, RecentFile } from '../TypeDefined';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../../workers/WorkerParam';
 import { FilenameUtils, KdbxUtils, CommonUtils } from '../../common/utils';
@@ -72,7 +73,9 @@ class ChildOpenTask {
  *   kp2a 的 Focus=Restore 语义依赖其库选择中枢页，本应用无该页面故细化为此行为）；
  *   手动打开（openManually）成功后切换为当前库；
  * - 子库打开成功后递归扫描孙库（attempted 标记天然防环）；
- * - 子库不写入最近文件列表（RecentFiles 由主打开链路维护）；
+ * - 远端子库打开成功后把连接配置（不含子库主密码）回写最近文件记录
+ *   （RecentFilesService.upsertChildConfigRecord，M6.9：统一解析链②的数据源，
+ *   尾部追加不置顶）；本地子库不回写；主打开链路的 RecentFiles 维持既有逻辑；
  * - 全程事件驱动：OPENED / OPEN_FAILED / AUTO_OPEN_DONE（数据见各常量注释）。
  */
 export class AutoOpenCoordinator {
@@ -239,7 +242,8 @@ export class AutoOpenCoordinator {
     // 发起前标记（失败也计入，防自动触发反复重试同一不可打开子库）
     registry.markAttempted(childIocKey);
 
-    // M6：远端子库 storageConfig 重建（凭据型条目 Ioc 字段 / OAuth 型设备本地克隆）
+    // M6.9：远端子库 storageConfig 统一解析链（①RecentFiles 命中复用 →
+    // ②凭据型条目 Ioc 字段重建 → ③精确失败文案）
     const rebuild: ConfigRebuildResult = await AutoOpenConfigRebuilder.build(item, target);
     if (rebuild.config === undefined) {
       hilog.warn(DOMAIN, TAG, 'child storage config rebuild failed: %{public}s, reason: %{public}s',
@@ -334,6 +338,19 @@ export class AutoOpenCoordinator {
       EventBus.emit(AutoOpenCoordinator.EVENT_DATABASE_OPENED, childIocKey);
       hilog.info(DOMAIN, TAG, 'child database opened: %{public}s (makeCurrent=%{public}s)',
         childIocKey, `${task.makeCurrent}`);
+      // M6.9：远端子库回写连接配置到最近文件（统一解析链②的数据源；
+      // 不含子库主密码；best-effort 不阻塞打开流程）
+      if (task.loadParam.storageType !== StorageType.LOCAL) {
+        const record: RecentFile = {
+          filePath: task.loadParam.filePath,
+          fileName: task.loadParam.fileName,
+          storageType: task.loadParam.storageType,
+          storageConfig: task.loadParam.storageConfig,
+          authType: task.loadParam.authType,
+          keyLocation: task.loadParam.keyLocation
+        };
+        await RecentFilesService.upsertChildConfigRecord(record);
+      }
       // 递归扫描孙库（attempted/has 标记防环）
       await this.onParentUnlocked(childIocKey);
     } catch (error) {

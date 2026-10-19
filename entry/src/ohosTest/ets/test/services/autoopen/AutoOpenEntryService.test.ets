@@ -2,11 +2,14 @@ import { describe, expect, it } from '@ohos/hypium';
 import { Kdbx, KdbxEntry, KdbxGroup, ProtectedValue } from 'kdbxweb';
 
 import { AutoOpenEntryService } from '../../../../../main/ets/services/autoopen/AutoOpenEntryService';
+import { AutoOpenFieldName } from '../../../../../main/ets/services/autoopen/AutoOpenConstants';
 import { AutoOpenPathResolver } from '../../../../../main/ets/services/autoopen/AutoOpenPathResolver';
 import { IfDeviceParser } from '../../../../../main/ets/services/autoopen/IfDeviceParser';
 import { AutoOpenService } from '../../../../../main/ets/services/autoopen/AutoOpenService';
 import { AuthType, DbFileParam } from '../../../../../main/ets/services/TypeDefined';
 import { StorageType } from '../../../../../main/ets/storage';
+import { WebDAVStorageConfig } from '../../../../../main/ets/storage/webdav/WebDAVConfig';
+import { OneDriveStorageConfig } from '../../../../../main/ets/storage/onedrive/OneDriveConfig';
 import { LocationInfo, LocationMode } from '../../../../../main/ets/services/beans/LocationParam';
 import { TestUtils } from '../../importExport/TestUtils';
 
@@ -178,6 +181,54 @@ export default function AutoOpenEntryServiceTest() {
         '/data/parent/parent.kdbx', child, DEVICE_ID);
       const resolved = AutoOpenPathResolver.resolveUrl(fieldString(entry!, 'URL'), '/data/parent/parent.kdbx');
       expect(resolved).assertEqual('/data/parent/sub/child.kdbx');
+    });
+
+    // ==================== M6.9 远端子库写侧（经 childDb 端口） ====================
+
+    it('addEntryForOpenedChild: WEBDAV child writes scheme URL with Ioc credentials', 0, async () => {
+      const parent = await TestUtils.createTestDatabase('Parent');
+      const childDb = await TestUtils.createTestDatabase('Child');
+      const child: DbFileParam = {
+        password: 'p',
+        authType: AuthType.PASSWORD,
+        filePath: 'https://dav.example.com/dav/child.kdbx',
+        fileName: 'child.kdbx',
+        database: childDb,
+        storageType: StorageType.WEBDAV,
+        storageConfig: new WebDAVStorageConfig('https://dav.example.com', 'davuser', 'davpass'),
+        modifiedTime: 0
+      } as DbFileParam;
+      const entry = AutoOpenEntryService.addEntryForOpenedChild(parent,
+        '/data/parent/parent.kdbx', child, DEVICE_ID);
+      expect(entry !== undefined).assertTrue();
+      // URL 文法：filePath 即完整 URL，原样写入（不相对化）
+      expect(fieldString(entry!, 'URL')).assertEqual('https://dav.example.com/dav/child.kdbx');
+      // 凭据型适配器 extractCredentials → IocUserName / IocPassword
+      expect(fieldString(entry!, AutoOpenFieldName.IOC_USER_NAME)).assertEqual('davuser');
+      expect(fieldString(entry!, AutoOpenFieldName.IOC_PASSWORD)).assertEqual('davpass');
+    });
+
+    it('addEntryForOpenedChild: OneDrive child writes scheme URL without Ioc fields', 0, async () => {
+      const parent = await TestUtils.createTestDatabase('Parent');
+      const childDb = await TestUtils.createTestDatabase('Child');
+      const child: DbFileParam = {
+        password: 'p',
+        authType: AuthType.PASSWORD,
+        filePath: 'root/child.kdbx',
+        fileName: 'child.kdbx',
+        database: childDb,
+        storageType: StorageType.ONEDRIVE,
+        storageConfig: new OneDriveStorageConfig('token', 'refresh', 3600),
+        modifiedTime: 0
+      } as DbFileParam;
+      const entry = AutoOpenEntryService.addEntryForOpenedChild(parent,
+        '/data/parent/parent.kdbx', child, DEVICE_ID);
+      expect(entry !== undefined).assertTrue();
+      // PATH 文法：scheme://filePath
+      expect(fieldString(entry!, 'URL')).assertEqual('onedrive://root/child.kdbx');
+      // OAuth 型：不声明 extractCredentials → 不写 Ioc 字段
+      expect(entry!.fields.has(AutoOpenFieldName.IOC_USER_NAME)).assertFalse();
+      expect(entry!.fields.has(AutoOpenFieldName.IOC_PASSWORD)).assertFalse();
     });
   });
 }

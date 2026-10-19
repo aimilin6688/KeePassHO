@@ -6,22 +6,9 @@ import { AutoOpenService } from './AutoOpenService';
 import { IfDeviceParser } from './IfDeviceParser';
 import { SchemeMapper } from './SchemeMapper';
 import { DbFileParam } from '../TypeDefined';
-import { KdbxUtils, Sm4Utils } from '../../common/utils';
-import { PageConfig, StorageConfig, StorageType } from '../../storage';
+import { KdbxUtils } from '../../common/utils';
+import { IocCredentials, PageConfig, StorageConfig, StorageType } from '../../storage';
 import { FileStorageFactory } from '../../storage/FileStorageFactory';
-
-/**
- * 远端子库连接凭据（解密明文，仅在内存中，写完即弃）
- */
-class IocCredentials {
-  userName: string;
-  password: string;
-
-  constructor(userName: string, password: string) {
-    this.userName = userName;
-    this.password = password;
-  }
-}
 
 /**
  * AutoOpen 子库条目写服务（M4 子数据库管理页 / M6 远端子库）
@@ -31,10 +18,11 @@ class IocCredentials {
  * - URL / 密钥文件路径与父库同目录时写 `{DB_DIR}{ENV_DIRSEP}相对路径`（跨设备可移植）；
  * - 子库主密码经 memoryProtection 判定写入（通常为 ProtectedValue 内存保护字段）；
  * - 「本设备停用」改写 IfDevice 后若为空串则删除该字段（避免残留空字段）；
- * - 远端子库（M6）：URL 按 scheme 反向映射（SchemeMapper.buildUrl），
- *   凭据型（WEBDAV/S3/FTP）追加 IocUserName/IocPassword 自定义字符串
- *   （与 KeeAutoExec.cs:409-414 同名同义，PC 端可读；IocPassword 内存保护），
- *   OAuth 型仅写 URL（令牌留设备本地，打开时从 RecentFiles 克隆）。
+ * - 远端子库（M6）：URL 按 scheme 反向映射（SchemeMapper.buildUrl）；
+ *   连接凭据/附加字段经 PageConfig.childDb 端口（M6.9）——凭据型适配器声明
+ *   extractCredentials 时写 IocUserName/IocPassword（与 KeeAutoExec.cs:409-414
+ *   同名同义，PC 端可读；IocPassword 内存保护）与 extraFields 附加字段
+ *   （如 S3 微调项），OAuth 型不写（令牌留设备本地）。
  */
 export class AutoOpenEntryService {
   /**
@@ -62,14 +50,9 @@ export class AutoOpenEntryService {
       entry.setField(KdbxUtils.FIELD_USERNAME,
         AutoOpenPathResolver.makeRelative(keyFilePath, parentFilePath), memoryProtection.userName);
     }
-    // M6：凭据型远端子库写 IocUserName/IocPassword（OAuth 型不写，令牌设备本地）
+    // M6：远端子库写连接凭据/附加字段（经 childDb 端口；OAuth 型不写，令牌设备本地）
     if (child.storageType !== StorageType.LOCAL) {
-      const credentials: IocCredentials | undefined = AutoOpenEntryService.extractIocCredentials(child);
-      if (credentials !== undefined) {
-        entry.setField(AutoOpenFieldName.IOC_USER_NAME, credentials.userName, false);
-        entry.setField(AutoOpenFieldName.IOC_PASSWORD, credentials.password, true);
-      }
-      AutoOpenEntryService.writeExtraFields(entry, child);
+      AutoOpenEntryService.writeRemoteFields(entry, child);
     }
     AutoOpenEntryService.writeOnlyThisDevice(entry, deviceId);
     return entry;
@@ -89,52 +72,37 @@ export class AutoOpenEntryService {
   }
 
   /**
-   * 从子库 storageConfig 解密读取远端连接凭据（按 PageConfig.childDbCredentialKeys
-   * 声明的字段名：WEBDAV/FTP 登录凭据、S3 AK/SK 等，类实例与 plain JSON 同名字段）；
-   * 未声明凭据键（OAuth 型）或 LOCAL 返回 undefined（无连接凭据概念 / 令牌不入库）；
-   * 解密失败（SM4 密钥变更/密文损坏）返回 undefined，由调用方跳过 Ioc 字段写入
+   * 远端子库连接字段写入（经 PageConfig.childDb 端口，M6.9）：
+   * - extractCredentials（凭据型适配器声明）：从 storageConfig 解密提取连接
+   *   凭据 → 写 IocUserName/IocPassword；未声明（OAuth 型）不写——令牌不入 kdbx；
+   * - extraFields（可选声明）：由 storageConfig 产出附加自定义字符串字段表
+   *   （如 S3 的 S3Region/S3PathStyle 微调字段），框架统一写入。
+   * 解密失败（SM4 密钥变更/密文损坏）跳过 Ioc 字段写入，不阻塞其余字段。
    */
-  private static extractIocCredentials(child: DbFileParam): IocCredentials | undefined {
+  private static writeRemoteFields(entry: KdbxEntry, child: DbFileParam): void {
     const config: StorageConfig | undefined = child.storageConfig;
     if (config === undefined || config === null) {
-      return undefined;
+      return;
     }
     const pageConfig = AutoOpenEntryService.findPageConfig(child.storageType);
-    const credentialKeys = pageConfig?.childDbCredentialKeys;
-    if (credentialKeys === undefined) {
-      return undefined;
+    const childDb = pageConfig?.childDb;
+    if (childDb === undefined) {
+      return;
     }
-    try {
-      const record = config as Record<string, Object>;
-      const userName: Object | undefined = record[credentialKeys.userKey];
-      const password: Object | undefined = record[credentialKeys.passwordKey];
-      if (userName === undefined || password === undefined) {
-        return undefined;
+    const extract = childDb.extractCredentials;
+    if (extract !== undefined) {
+      const credentials: IocCredentials | undefined = extract(config);
+      if (credentials !== undefined) {
+        entry.setField(AutoOpenFieldName.IOC_USER_NAME, credentials.userName, false);
+        entry.setField(AutoOpenFieldName.IOC_PASSWORD, credentials.password, true);
       }
-      return new IocCredentials(Sm4Utils.tryDecryptWithPrefix(String(userName)),
-        Sm4Utils.tryDecryptWithPrefix(String(password)));
-    } catch (error) {
-      return undefined;
     }
-  }
-
-  /**
-   * 写侧附加自定义字符串（按 PageConfig.childDbExtraFields 声明，如 S3 的
-   * S3Region/S3PathStyle 微调字段）：由存储声明的函数从 storageConfig 产出
-   * 字段表，框架统一写入条目
-   */
-  private static writeExtraFields(entry: KdbxEntry, child: DbFileParam): void {
-    if (child.storageConfig === undefined || child.storageConfig === null) {
-      return;
-    }
-    const pageConfig = AutoOpenEntryService.findPageConfig(child.storageType);
-    const extraFields = pageConfig?.childDbExtraFields;
-    if (extraFields === undefined) {
-      return;
-    }
-    const fields: Map<string, string> = extraFields(child.storageConfig);
-    for (const field of fields.entries()) {
-      entry.fields.set(field[0], field[1]);
+    const extra = childDb.extraFields;
+    if (extra !== undefined) {
+      const fields: Map<string, string> = extra(config);
+      for (const field of fields.entries()) {
+        entry.fields.set(field[0], field[1]);
+      }
     }
   }
 

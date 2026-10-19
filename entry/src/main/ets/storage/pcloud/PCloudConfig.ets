@@ -1,5 +1,5 @@
 import { Sm4Utils } from '../../common/utils/Sm4Utils'
-import { StorageConfig, PageConfig, ChildDbScheme, ChildDbUrlKind } from '../StorageConfig'
+import { StorageConfig, PageConfig, PathChildDbSupport } from '../StorageConfig'
 import { StorageType } from '../StorageType'
 
 /**
@@ -92,6 +92,6 @@ export const PCloudPageConfig: PageConfig = {
   saveDesc: $r('app.string.pcloud_save_desc'),
   pageUrl: 'storage/pcloud/PCloudPage',
   storageType: StorageType.PCLOUD,
-  // M6 子库 scheme 声明（PATH 文法）；OAuth 型不声明 rebuilder——令牌不进 kdbx
-  childDbSchemes: [new ChildDbScheme('pcloud', ChildDbUrlKind.PATH)]
+  // M6.9 子库支持适配器（PATH 文法共享适配器）；OAuth 型不声明 rebuildConfig——令牌不进 kdbx
+  childDb: new PathChildDbSupport('pcloud')
 }
