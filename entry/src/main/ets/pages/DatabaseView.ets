@@ -2,7 +2,6 @@ import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { AddGroupDialog } from '../components/AddGroupDialog';
 import { DatabaseShowParam, DbFileParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FocusController } from '@ohos.arkui.UIContext';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import { ClipboardUtils, CommonUtils, DateUtils, KdbxUtils, NavigationManager, ResourceManager, ThemeManager, WindowUtils, StringUtils } from '../common/utils';
 import { WindowService, WindowInfo } from '../common/utils/WindowService';
@@ -160,7 +159,6 @@ export struct DatabaseView {
     autoCancel: false,
     keyboardAvoidMode: KeyboardAvoidMode.NONE
   });
-  private searchController: FocusController = new FocusController();
   private listScroller: ListScroller = new ListScroller();
   private breadcrumbScroller: Scroller = new Scroller();
   private clearHistoryUrlPage: Array<string> = ["Password"];
@@ -2147,9 +2145,9 @@ export struct DatabaseView {
                   })
                   .onAppear(() => {
                     try {
-                      this.searchController.requestFocus('searchKey'); // 传入组件key
+                      this.getUIContext().getFocusController().requestFocus('input_search');
                     } catch (error) {
-                      hilog.error(DOMAIN, TAG, 'SearchKey con not get focus: %{public}s', error?.message);
+                      hilog.error(DOMAIN, TAG, 'Search input can not get focus: %{public}s', error?.message);
                     }
                   })
                   .onBlur(() => {
