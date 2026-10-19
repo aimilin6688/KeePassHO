@@ -1,4 +1,4 @@
-import { PageConfig, StorageConfig } from '../StorageConfig';
+import { ChildDbScheme, ChildDbUrlKind, PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -124,5 +124,8 @@ export const OneDrivePageConfig: PageConfig = {
   selectDesc: $r('app.string.onedrive_select_file'),
   saveDesc: $r('app.string.onedrive_save_file'),
   pageUrl: 'storage/onedrive/OneDrivePage',
-  storageType: StorageType.ONEDRIVE
+  storageType: StorageType.ONEDRIVE,
+  // M6 子库 scheme 声明（PATH 文法）：rest 原样为 filePath；
+  // OAuth 型不声明 rebuilder/凭据键——令牌不进 kdbx，打开时从 RecentFiles 克隆
+  childDbSchemes: [new ChildDbScheme('onedrive', ChildDbUrlKind.PATH)]
 };

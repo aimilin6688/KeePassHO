@@ -1,4 +1,4 @@
-import { PageConfig, StorageConfig } from '../StorageConfig';
+import { ChildDbScheme, ChildDbUrlKind, PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -140,5 +140,7 @@ export const HuaweiDrivePageConfig: PageConfig = {
   selectDesc: $r('app.string.huawei_drive_select_file'),
   saveDesc: $r('app.string.huawei_drive_save_file'),
   pageUrl: 'storage/huawei/HuaweiDrivePage',
-  storageType: StorageType.HUAWEI_DRIVE
+  storageType: StorageType.HUAWEI_DRIVE,
+  // M6 子库 scheme 声明（PATH 文法）；OAuth 型不声明 rebuilder——令牌不进 kdbx
+  childDbSchemes: [new ChildDbScheme('huawei-drive', ChildDbUrlKind.PATH)]
 };

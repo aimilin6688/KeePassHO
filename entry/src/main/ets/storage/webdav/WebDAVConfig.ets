@@ -1,5 +1,7 @@
-import { PageConfig, StorageConfig } from '../StorageConfig';
+import { ChildDbCredentialKeys, ChildDbRebuildArgs, ChildDbScheme, ChildDbUrlKind, ChildTarget,
+  PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { UrlUtils } from '../../common/utils/UrlUtils';
 import { StorageType } from '..';
 
 /**
@@ -79,6 +81,23 @@ export class WebDAVStorageConfig implements StorageConfig {
 }
 
 /**
+ * 子库打开时 storageConfig 重建（PageConfig.childDbConfigRebuilder 契约，M6.3）：
+ * Ioc 凭据 + URL origin → WebDAVStorageConfig
+ * （filePath 为完整 http(s) URL，请求按绝对 URL 发出，config.url 取 origin 即可）
+ */
+export function webdavChildDbConfigRebuilder(args: ChildDbRebuildArgs,
+  target: ChildTarget): StorageConfig | undefined {
+  if (args.iocUserName.length === 0) {
+    return undefined;
+  }
+  const origin: string = UrlUtils.getHost(target.filePath);
+  if (origin.length === 0) {
+    return undefined;
+  }
+  return new WebDAVStorageConfig(origin, args.iocUserName, args.iocPassword);
+}
+
+/**
  * WebDAV页面配置类
  */
 export const WebDAVPageConfig = {
@@ -87,5 +106,14 @@ export const WebDAVPageConfig = {
   selectDesc: $r('app.string.location_webdav_desc_select'),
   saveDesc: $r('app.string.location_webdav_desc_save'),
   pageUrl: 'storage/webdav/WebDAVPage',
-  storageType: StorageType.WEBDAV
+  storageType: StorageType.WEBDAV,
+  // M6 子库 scheme 声明（URL 文法）：webdav(s) 升格 https；http(s) 直连
+  childDbSchemes: [
+    new ChildDbScheme('webdav', ChildDbUrlKind.URL, 'https'),
+    new ChildDbScheme('webdavs', ChildDbUrlKind.URL, 'https'),
+    new ChildDbScheme('http', ChildDbUrlKind.URL),
+    new ChildDbScheme('https', ChildDbUrlKind.URL)
+  ],
+  childDbCredentialKeys: new ChildDbCredentialKeys('username', 'password'),
+  childDbConfigRebuilder: webdavChildDbConfigRebuilder
 } as PageConfig;

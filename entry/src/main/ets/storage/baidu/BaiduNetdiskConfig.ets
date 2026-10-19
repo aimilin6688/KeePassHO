@@ -1,4 +1,4 @@
-import { PageConfig, StorageConfig } from '../StorageConfig';
+import { ChildDbScheme, ChildDbUrlKind, PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -123,5 +123,7 @@ export const BaiduNetdiskPageConfig: PageConfig = {
   selectDesc: $r('app.string.baidu_netdisk_select_file'),
   saveDesc: $r('app.string.baidu_netdisk_save_file'),
   pageUrl: 'storage/baidu/BaiduNetdiskPage',
-  storageType: StorageType.BAIDU_NETDISK
+  storageType: StorageType.BAIDU_NETDISK,
+  // M6 子库 scheme 声明（PATH 文法）；OAuth 型不声明 rebuilder——令牌不进 kdbx
+  childDbSchemes: [new ChildDbScheme('baidu', ChildDbUrlKind.PATH)]
 };

@@ -24,6 +24,17 @@ export class AutoOpenFieldName {
   public static readonly SKIP_IF_NOT_EXISTS_LEGACY = 'Skip if not exists';
   /** 密钥文件不存在时静默跳过（True） */
   public static readonly SKIP_IF_KEY_FILE_NOT_EXISTS = 'SkipIfKeyFileNotExists';
+  /**
+   * 远端协议连接用户名（kp2a KeeAutoExec.cs 同名扩展）：
+   * WEBDAV/FTP 为登录用户名，S3 为 AccessKeyId
+   */
+  public static readonly IOC_USER_NAME = 'IocUserName';
+  /** 远端协议连接密码（kp2a 同名）：WEBDAV/FTP 为登录密码，S3 为 SecretAccessKey */
+  public static readonly IOC_PASSWORD = 'IocPassword';
+  /** S3 区域（本项目扩展，可选；缺省 us-east-1） */
+  public static readonly S3_REGION = 'S3Region';
+  /** S3 路径样式（本项目扩展，可选 True；缺省 false） */
+  public static readonly S3_PATH_STYLE = 'S3PathStyle';
 }
 
 /** SprEngine 占位符（本应用以 AutoOpenPathResolver 做最小实现） */

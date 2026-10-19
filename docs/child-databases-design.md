@@ -18,6 +18,7 @@
 | M3 自动打开编排 + 数据库切换 UI（AutoOpenCoordinator / 切换面板） | ✅ 已完成 | 8728c23a |
 | M4 子数据库管理页（启停本设备 / 立即打开 / 编辑 / 复制副本 / 添加子库） | ✅ 已完成 | 91d2dba0 |
 | M5 收尾（设置入口 / 字符串 / 提示条 / RecentFiles 适配 / E2E） | ✅ 已完成 | 9b41a47f（用户指南 `child-databases-guide.md`） |
+| M6 远端子数据库（URL scheme 映射 / IocUserName/IocPassword 凭据 / OAuth 设备本地令牌） | ✅ 已实现（构建通过；SchemeMapper / AutoOpenConfigRebuilder / 写侧 Ioc 字段 / 管理页与切换面板按存储类型显示图标，见 §4 M6） | — |
 
 后续修复：419cb693（管理页 ForEach 键缺状态字段致行不刷新）、8fb14d69（样式对齐全应用风格）、1f3ed38a（深色模式图标不可见与手动打开失败无提示）。
 
@@ -72,7 +73,7 @@ KeePass 桌面版约定：在数据库**根组**下建一个名为 `AutoOpen` �
 | 自定义字符串 `SkipIfKeyFileNotExists` | `True` → 密钥文件不存在则静默跳过 | — |
 | 自定义字符串 `Focus` | `Restore` → 子库加载后**不**切换为当前库 | 默认加载后 makeCurrent |
 | 附件 `KeyFile.bin` | 内嵌密钥文件 | 无 UserName 字段时作为密钥文件来源 |
-| `IocUserName` / `IocPassword` / `IocTimeout` / `IocPreAuth` / `IocUserAgent` / `IocExpect100Continue` / `IocPassive` | 远程协议（WebDAV/FTP/HTTP）连接参数 | kp2a 私有扩展，本项目 P2 再议 |
+| `IocUserName` / `IocPassword` / `IocTimeout` / `IocPreAuth` / `IocUserAgent` / `IocExpect100Continue` / `IocPassive` | 远程协议（WebDAV/FTP/HTTP）连接参数 | kp2a 私有扩展；本项目 M6 实现 `IocUserName`/`IocPassword`（连接凭据），其余连接参数留 P2（详见 1.9 与 M6） |
 
 ### 1.3 设备过滤：IfDevice CSV 格式
 
@@ -168,6 +169,22 @@ kp2a 在「数据库中枢页」`SelectCurrentDbActivity.OnResume` 触发（Sele
 | 底部提示条 / 生物识别建议抑制 | `keepass2android-app/GroupBaseActivity.cs:638-653, 864-909` |
 | 字符串资源 | `keepass2android-app/Resources/values/strings.xml:736-750` |
 
+### 1.9 远端子数据库：认证信息保存与自动打开（kp2a 研究）
+
+kp2a 的子数据库**不限于本地文件**：条目 `URL` 可写任意已注册存储的 scheme URI——`https://`/`http://`（WebDAV）、`owncloud://`、`nextcloud://`、`ftp://`、`sftp://`、`smb://`、`onedrive://`、`gdrive://`、`pcloud://`、`mega://`（**无 S3 协议**，见 App.cs `FileStorages` 列表 993-1019）。认证信息按存储类型分两条路径：
+
+**路径 A：凭据存父库条目（随 .kdbx 跨设备携带）** —— 用户名+密码型存储（WebDAV/FTP/SFTP/SMB）：
+
+1. **URL 内嵌**：`scheme://user:pass@host/path`。交互式「添加子库」写入的 URL 即含凭据的 `ioc.Path`（ConfigureChildDatabasesActivity.cs:368 `TryMakeRelativePath` 对远端返回原 `ioc.Path`）；`WebDavStorage.splitStringToConnectionInfo` 解析 `user:pass@`（WebDavStorage.java:107-128），`buildFullPath` 反向构建（:101-105）。
+2. **扩展字段**：自定义字符串 `IocUserName` / `IocPassword` → `ioc.UserName/Password`，两者齐备时置 `ioc.IsComplete = true`（凭据完整、免交互直连）；另有 `IocTimeout`/`IocPreAuth`/`IocUserAgent`/`IocExpect100Continue`/`IocPassive` 连接参数（KeeAutoExec.cs:408-441）。
+
+**路径 B：令牌存设备本地（不进 kdbx）** —— OAuth 型云存储（OneDrive/GoogleDrive/Dropbox/PCloud/Mega）：token 存应用私有 SharedPreferences（如 DropboxV2Storage.java:294、PCloudFileStorage.java:345）；条目只携带协议路径，打开时 `prepareFileUsage` 检查本地 token，缺失则抛 `UserInteractionRequiredException` → 该设备须先手动完成一次账号授权，此后才能自动打开。
+
+**远端语义差异**：
+
+- `SkipIfNotExists` 仅对本地文件真实检查，**远端恒视为存在**（KeeAutoExec.cs:358-385：远端文件对所有设备要么都存在要么都不存在，另有 IfDevice 与缓存兜底）；
+- 自动打开流程与本地一致（`TryGetDatabaseIoc` 构造 IOConnectionInfo → `AutoOpenEntry` 组装 CompositeKey → `PasswordActivity.Launch`），凭据直接取自 ioc/URL；失败由 `_openAttempts` 防重试；`CachingFileStorage` 提供离线缓存回退。
+
 ---
 
 ## 2. KeePassHO 现状与差距分析
@@ -224,7 +241,7 @@ kp2a 在「数据库中枢页」`SelectCurrentDbActivity.OnResume` 触发（Sele
 
 - 跨库全局搜索、跨库条目移动/复制；
 - 子库凭证写入 RecentFiles 生物识别持久化（子库不做生物识别建议，同 kp2a）；
-- `IocUserName/IocPassword/...` 远程连接参数字段、`Focus` 字段、远程 URL scheme（`webdav://` 等）映射到 StorageType；
+- `Focus` 字段、`IocTimeout`/`IocPreAuth`/`IocUserAgent`/`IocExpect100Continue`/`IocPassive` 等连接参数字段、URL 内嵌 `user:pass@` 凭据兼容读取（`IocUserName`/`IocPassword` 与远程 URL scheme → StorageType 映射已提前至 M6，见 §4 M6）；
 - 附件 `KeyFile.bin` 内嵌密钥文件（kp2a 支持，P2）；
 - 子库自动后台同步编排（单库下拉刷新/保存照旧，按库独立）。
 
@@ -286,7 +303,7 @@ class ResolvedChildDatabase {
   item: AutoOpenItem;
   iocKey: string;                // 展开占位符 + 归一化后的子库 iocKey
   filePath: string;
-  storageType: StorageType;      // M3 起恒为 LOCAL，schema 映射留 P2
+  storageType: StorageType;      // M3–M5 恒为 LOCAL；M6 起按 URL scheme 映射（见 §4 M6.1）
 }
 ```
 
@@ -415,6 +432,93 @@ onParentUnlocked(parentIocKey):
 5. **RecentFiles**：子库自动打开**不**调 `putFileToRecentFile`（D5）；
 6. **用户文档**：`docs/child-databases-guide.md`（使用说明 + 与 PC 互操作指引：KeePass 桌面建 AutoOpen 组、KeeAutoExec 字段表、`{DB_DIR}` 写法建议）。
 
+### M6 远端子数据库（WebDAV / S3 / FTP / OAuth 云盘）
+
+> 状态：✅ 已实现（构建通过，含注册表驱动重构：新增存储类型时存储无关代码零修改）。按 kp2a 的远端子库认证保存方式（§1.9）扩展：**凭据型存储的连接凭据存父库条目（`IocUserName`/`IocPassword`），OAuth 型存储的令牌留设备本地（RecentFiles）**。可行性已结合当前真实代码逐点核验（M6.6），结论为可行。
+
+**M6.0 注册表驱动架构（零修改扩展）**
+
+scheme 映射、storageConfig 重建、写侧凭据/附加字段均由 `PageConfig` 声明驱动（`storage/StorageConfig.ets`），框架经 `FileStorageFactory` 注册表发现声明，`IFileStorage` 接口零新增方法：
+
+- `childDbSchemes?: ChildDbScheme[]` — scheme + 文法（`ChildDbUrlKind.PATH / AUTHORITY / ENDPOINT_BUCKET / URL` 四种固定文法，声明即接入解析/构造）；
+- `childDbCredentialKeys?: ChildDbCredentialKeys` — 凭据型存储写侧从 storageConfig 解密提取连接凭据的字段名声明；
+- `childDbConfigRebuilder?: (args, target) => StorageConfig | undefined` — 打开时由 `IocUserName`/`IocPassword` + `customStrings` 透传包 + `ChildTarget` 连接要素重建 Config（隐式契约：声明即凭据型）；
+- `childDbExtraFields?: (config) => Map<string, string>` — 写侧附加自定义字符串（如 S3 的 `S3Region`/`S3PathStyle`）；
+- 隐式分类：声明 rebuilder = 凭据型（失败提示凭据缺失）；仅声明 schemes = OAuth 型（框架从 RecentFiles 克隆，失败提示先手动打开一次）；均不声明 = LOCAL（框架默认裸路径/`file://`）。
+
+**新存储接入子库 checklist**（全部为存储层自身必做项，`SchemeMapper`/`AutoOpenConfigRebuilder`/`AutoOpenEntryService` 等存储无关代码零修改）：实现 Storage + 在自身 PageConfig 声明 childDb* 成员 + `FileStorageFactory` 注册。
+
+**M6.1 URL scheme → StorageType 映射**
+
+`AutoOpenPathResolver.resolveUrl` 对带 scheme 的 URI 原样透传（`isAbsolutePath` 已识别 `scheme://`，AutoOpenPathResolver.ets:76-81），M6 新增 `SchemeMapper` 剥离 scheme 前缀：
+
+| URL（条目 `URL` 字段） | StorageType | 连接凭据来源 | storageConfig 重建 |
+|---|---|---|---|
+| 无 scheme / `file://` / `{DB_DIR}` 展开 | LOCAL | — | 现状不变 |
+| `webdav://host[:port]/远端路径`（→ https）及 `https://`、`http://`（对齐 kp2a WebDAV 直连） | WEBDAV | 条目 `IocUserName`/`IocPassword` | `new WebDAVStorageConfig('https://host[:port]/', user, pass)`（明文时 http） |
+| `ftp://host[:port]/远端路径` | FTP | 同上 | `new FTPStorageConfig(host, user, pass, { port })` |
+| `sftp://host[:port]/远端路径` | FTP | 同上 | `new FTPStorageConfig(host, user, pass, { port: 22, protocol: SFTP })` |
+| `s3://endpoint/bucket/对象键` | S3 | `IocUserName`=AccessKeyId、`IocPassword`=SecretAccessKey | `new S3StorageConfig(endpoint, ak, sk, { bucket })`；`S3Region`/`S3PathStyle` 自定义字符串可选（本项目扩展，非 kp2a 字段） |
+| `onedrive://远端路径` | ONEDRIVE | 设备本地（RecentFiles） | 按 storageType+filePath 匹配克隆 `RecentFile.storageConfig`（含 SM4 加密 token） |
+| `huawei-drive://远端路径` | HUAWEI_DRIVE | 设备本地 | 同上 |
+| `baidu://远端路径` | BAIDU_NETDISK | 设备本地 | 同上 |
+| `pcloud://远端路径` | PCLOUD | 设备本地 | 同上（工厂恢复注册后生效，FileStorageFactory.ets:29） |
+
+**M6.2 条目字段约定（kp2a 兼容）**
+
+- `URL` = scheme URI。**不采用** kp2a 路径 A 的 URL 内嵌 `user:pass@` 写法：凭据内嵌会明文暴露在 URL 字段，且与本项目结构化 `StorageConfig`（url/username/password 分离字段）冲突；kp2a 自身也是「URL 内嵌 / Ioc 字段」二选一，我们统一取 Ioc 字段（与 KeeAutoExec.cs:409-414 同名同义，PC 端 KeeAutoExec 可读）。
+- 自定义字符串 `IocUserName` / `IocPassword`：`IocPassword` 与 `Password` 同级敏感，以 ProtectedString（memoryProtection）写入。
+- OAuth 型存储条目**不写** Ioc 字段——令牌天然设备本地（对齐 kp2a 路径 B）。
+
+**M6.3 打开流程改造（AutoOpenCoordinator）**
+
+现状 3 处硬编码 `StorageType.LOCAL`（AutoOpenCoordinator.ets:181、203-211、245）改为经 `resolveChildTarget` 解析：
+
+```text
+resolveChildTarget(item, parentParam):
+  url = PathResolver.resolveUrl(item.url, parentParam.filePath)   // scheme URI 原样透传
+  { storageType, filePath } = SchemeMapper.parse(url)             // 剥 scheme → 远端 filePath + StorageType
+  storageConfig = ConfigRebuilder.build(item, storageType, filePath):
+      WEBDAV / S3 / FTP → 由 IocUserName/IocPassword + URL host/endpoint/bucket new 对应 Config（构造函数收明文凭据，内部 SM4 加密）
+      OAuth 型          → RecentFilesService 按 storageType+filePath 匹配 RecentFile，克隆其 storageConfig；
+                           未命中 → 失败 reason='需先在本设备手动打开一次该文件'（等价 kp2a UserInteractionRequiredException 降级）
+  → { storageType, filePath, storageConfig }
+
+openChild:  iocKey = DatabaseRegistry.buildIocKey(storageType, filePath)   // 与正常打开远端文件的 iocKey 一致，天然判重
+            LoadDatabase(..., storageType, storageConfig)                  // Worker 已支持（DatabaseLoadWorker.ets:103）
+SkipIfNotExists: storageType !== LOCAL 时跳过存在性检查（远端恒视为存在，对齐 kp2a KeeAutoExec.cs:358-385）
+```
+
+**M6.4 添加子库写侧（AutoOpenEntryService）**
+
+`addEntryForOpenedChild` 扩展：`child.storageType !== LOCAL` 时——
+
+- `URL` = `scheme://` + child.filePath（按 M6.1 反向映射；`makeRelative` 的 `{DB_DIR}` 相对化仅对 LOCAL 生效，对远端路径天然原样返回）；
+- WEBDAV/S3/FTP：追加 `IocUserName`/`IocPassword` 自定义字符串（从 `child.storageConfig` 解密读取：`WebDAVStorageConfig.getUserNameText()`/`getPasswordText()`、`S3StorageConfig.getAccessKeyIdText()`/`getSecretAccessKeyText()` 等）；
+- OAuth 型：仅写 URL。
+
+**M6.5 UI 适配**
+
+- 子库管理页 / 切换面板行按 storageType 显示存储图标（`FileStorageFactory.getPageConfig(type).icon`）；
+- OAuth 型打开失败提示「先手动打开一次」；远端子库离线失败沿用 OPEN_FAILED 单条 toast + attempted 防重试，不阻塞父库。
+
+**M6.6 可行性确认（结合当前代码核验，结论：可行）**
+
+| # | 依赖点 | 现状核验 | 结论 |
+|---|---|---|---|
+| 1 | scheme URI 透传 | `AutoOpenPathResolver.isAbsolutePath` 匹配 `^[a-zA-Z][a-zA-Z0-9+.-]*://`，resolveUrl 对远端 URL 原样返回（AutoOpenPathResolver.ets:33-50、76-81） | 无需改动 |
+| 2 | 加载管线远端能力 | `LoadDatabase` 携带 storageType/storageConfig（DatabaseLoadWorkerParam.ets:41-45）；`DatabaseLoadWorker.ets:103` 据此建 `KdbxFileManager`；保存侧同（DatabaseSaveWorkerParam.ets:53） | Worker 零改动 |
+| 3 | storageConfig 结构化重建 | 各 Config 类构造函数收明文凭据并 SM4 加密（WebDAVConfig.ets:62-70、S3Config.ets:69-82、FTPConfig.ets:61-69）；plain JSON 可复活（`WebDAVStorage.parseConfig`，WebDAVStorage.ets:84-90）；`Sm4Utils.encryptWithPrefix` 对已加密串幂等（Sm4Utils.ets:105-108） | 由条目字段 new Config、从 RecentFile 克隆 config 均可行 |
+| 4 | OAuth 令牌设备本地持久化 | RecentFile.storageConfig 以 JSON 持久化于 preferences（RecentFilesService.ets:144），token 字段 SM4 加密（OneDriveConfig.ets:57-59 等） | 可按 storageType+filePath 匹配克隆 |
+| 5 | iocKey 一致性 | `DatabaseRegistry.buildIocKey(storageType, filePath)` 已带类型参数（DatabaseRegistry.ets:65）；M6 解析出的 filePath 与正常打开远端文件一致 → 与最近文件打开的库判重/切换无缝 | 可行 |
+| 6 | 存储注册 | FileStorageFactory 已注册 WEBDAV/S3/FTP/ONEDRIVE/HUAWEI_DRIVE/BAIDU_NETDISK，PCLOUD 注释待恢复（FileStorageFactory.ets:24-31） | 全类型可达 |
+| 7 | 改动面 | AutoOpenCoordinator（去 LOCAL 硬编码）+ AutoOpenService.makeItem（读 Ioc 字段）+ AutoOpenEntryService（写 Ioc 字段）+ 新增 SchemeMapper/ConfigRebuilder；Registry / KdbxLoadService / Worker / 各 Storage 零改动 | 集中且小 |
+
+**M6.7 测试计划补充**
+
+- 单测：SchemeMapper 全 scheme/端口/无 scheme/非法 scheme；ConfigRebuilder 凭据型字段重建（WebDAV/S3/FTP 各 ≥3 例）、OAuth 型命中/未命中 RecentFile；
+- 集成：① WebDAV 子库（IocUserName/IocPassword）父库解锁自动打开；② OneDrive 子库：本设备已授权 → 自动打开，未授权 → 失败提示；③ 远端子库 + `SkipIfNotExists=True` 离线 → 静默跳过不阻塞；④ 同一远端文件先正常打开再解锁父库 → 判重不重复打开；⑤ 三端互操作：本机 M6 生成的条目在 kp2a / KeeAutoExec 可读（Ioc 字段名一致）。
+
 ---
 
 ## 5. 生命周期语义汇总（多库下）
@@ -435,10 +539,11 @@ onParentUnlocked(parentIocKey):
 ## 6. 安全考量
 
 1. **子库主密码存于父库条目**（功能固有）：文档需明确告知用户此事实（kp2a 官方文案同款表述）；写入时用 `ProtectedValue`（KDBX 内存保护字段）；
-2. **内存驻留**：多库 = 多份解密模型驻留；锁屏不清内存为既有语义（快速解锁依赖），与 kp2a 一致；`close_database` 全清不变；
-3. **不扩大持久化面**：子库密码不写 RecentFiles（不落 SM4 持久层）、不写日志（hilog 仅 iocKey/reason，不打 URL 密码）；
-4. **主线程不持有明文密码**：Coordinator 组装凭证后即交 Worker 管线（既有约定）；
-5. **DeviceIdentity 本地 UUID** 存 SettingsService（明文无害，仅设备过滤用途）。
+2. **M6 远端连接凭据（`IocPassword`）同样存于父库条目**：与子库主密码同级敏感，ProtectedString 写入、管理页脱敏显示、不写日志；OAuth 型存储令牌**不进 kdbx**（留设备本地 RecentFiles，SM4 加密），条目仅存路径；
+3. **内存驻留**：多库 = 多份解密模型驻留；锁屏不清内存为既有语义（快速解锁依赖），与 kp2a 一致；`close_database` 全清不变；
+4. **不扩大持久化面**：子库密码不写 RecentFiles（不落 SM4 持久层）、不写日志（hilog 仅 iocKey/reason，不打 URL 密码）；
+5. **主线程不持有明文密码**：Coordinator 组装凭证后即交 Worker 管线（既有约定）；
+6. **DeviceIdentity 本地 UUID** 存 SettingsService（明文无害，仅设备过滤用途）。
 
 ---
 
@@ -453,6 +558,8 @@ onParentUnlocked(parentIocKey):
 | Enabled/Visible/Priority | ❌ | ✅ | ✅ | ✅ M1（Priority 排序 M3 生效） |
 | IfDevice 设备 CSV | ❌ | ✅ | ✅ | ✅ M1/M4 |
 | SkipIfNotExists（及旧名） | ❌ | ✅ | ✅ | ✅ M3 |
+| `IocUserName`/`IocPassword` 远端连接凭据 | ❌ | ✅ | ✅ | ✅ M6 |
+| 远端子库（scheme URL + 设备本地 OAuth 令牌） | ❌ | ✅ | ✅ | ✅ M6 |
 | 附件 KeyFile.bin | ❌ | ✅ | ✅ | P2 |
 | Focus=Restore | ❌ | ✅ | ✅ | P2（默认 makeCurrent） |
 | 多库并存+切换 | ❌（多实例多开） | — | ✅ | ✅ M2/M3 |
@@ -493,6 +600,9 @@ onParentUnlocked(parentIocKey):
 | 结构化克隆传输多 Kdbx 实例稳定性 | 低 | reload/refresh 已有先例；M3 集成测试覆盖 |
 | 单槽 AppStorage 键遗漏（isLocked/isLockScreen 判定等） | 中 | M2 盘点清单化（EntryAbility.isLockScreen、databaseView_currentGroupId），逐项确认 |
 | IfDevice 与 PC 端设备名不可对应（PC 用机器名） | 低 | 属 KeeAutoExec 预期行为：CSV 多条目各设备一行，文档说明 |
+| M6：远端连接凭据（IocPassword）随父库分发，泄露面与子库主密码同级 | 中 | 与 kp2a/KeeAutoExec 行为一致（功能固有）；ProtectedString 写入 + 管理页脱敏显示 + 文档明示 |
+| M6：OAuth 型子库在未授权设备静默失败造成困惑 | 低 | 失败事件 reason 明确提示「先手动打开一次」；管理页对 OAuth 型子库显示授权状态 |
+| M6：远端不可达时自动打开批量失败噪音 | 中 | OPEN_FAILED 单条 toast + attempted 防重试；离线且无缓存时静默跳过 |
 
 ---
 
@@ -512,5 +622,8 @@ onParentUnlocked(parentIocKey):
 | `ConfigureChildDatabasesActivity` | `pages/ChildDatabases.ets` | M4 |
 | `AddAutoOpenEntryForDatabase` / `TryMakeRelativePath` | M4 添加流程 + `AutoOpenPathResolver.makeRelative` | M4 |
 | `GroupBaseActivity.UpdateChildDbInfo` 提示条 | DatabaseView 底部提示条 | M5 |
+| `KeeAutoExecExt.TryGetDatabaseIoc`（IocUserName/IocPassword → ioc） | `services/autoopen/SchemeMapper` + `ConfigRebuilder`（M6 新增） | M6 |
+| kp2a 设备本地 OAuth token（SharedPreferences） | RecentFilesService 持久化的 `RecentFile.storageConfig`（SM4 加密） | M6 |
+| `AddAutoOpenEntryForDatabase` 写远端子库（含凭据） | `AutoOpenEntryService` 扩展（M6.4） | M6 |
 | `IsChildDatabase` 生物识别建议抑制 | `Registry.isChild` | M5 |
 | `pref_database.xml` 设置入口 | `SettingDatabase.ets` | M5 |

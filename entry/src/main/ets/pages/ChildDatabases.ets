@@ -6,8 +6,8 @@ import { Kdbx, KdbxEntry } from 'kdbxweb';
 import { AutoOpenCoordinator } from '../services/autoopen/AutoOpenCoordinator';
 import { AutoOpenEntryService } from '../services/autoopen/AutoOpenEntryService';
 import { AutoOpenItem } from '../services/autoopen/AutoOpenItem';
-import { AutoOpenPathResolver } from '../services/autoopen/AutoOpenPathResolver';
 import { AutoOpenService } from '../services/autoopen/AutoOpenService';
+import { SchemeMapper } from '../services/autoopen/SchemeMapper';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { DeviceEnableState, IfDeviceParser } from '../services/autoopen/IfDeviceParser';
 import { DatabaseRegistry, OpenDatabaseRecord } from '../services/database/DatabaseRegistry';
@@ -19,7 +19,7 @@ import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabase
 import { LoadingDialog } from '../components/loading/LoadingDialogUtils';
 import { CommonUtils, KdbxUtils, NavigationManager, ResourceManager } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
-import { StorageType } from '../storage';
+import { FileStorage, StorageType } from '../storage';
 
 const DOMAIN = 0x0000;
 const TAG = 'ChildDatabases';
@@ -35,6 +35,8 @@ class ChildRowItem {
   public deviceEnabled: boolean = true;
   /** 本设备是否显式配置（未配置显示「未指定」） */
   public deviceExplicit: boolean = false;
+  /** 子库存储类型（M6：行图标按此显示；解析失败回落 LOCAL） */
+  public storageType: StorageType = StorageType.LOCAL;
 
   constructor(item: AutoOpenItem) {
     this.item = item;
@@ -102,9 +104,13 @@ struct ChildDatabasesPage {
       const items: AutoOpenItem[] = AutoOpenService.scan(currentParam.database, parentIocKey);
       for (const item of items) {
         const row: ChildRowItem = new ChildRowItem(item);
-        const childPath: string = AutoOpenPathResolver.resolveUrl(item.url, currentParam.filePath);
-        row.opened = childPath.length > 0
-          && this.registry.has(DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath));
+        // M6：本地/远端统一解析（scheme 决定存储类型），「已打开」判定与协调器同口径
+        const target = SchemeMapper.resolveTarget(item.url, currentParam.filePath);
+        if (target !== undefined) {
+          row.storageType = target.storageType;
+          row.opened = this.registry.has(
+            DatabaseRegistry.buildIocKey(target.storageType, target.filePath));
+        }
         const state: DeviceEnableState = IfDeviceParser.isEnabled(item.ifDeviceRaw, deviceId);
         row.deviceEnabled = state.enabled;
         row.deviceExplicit = state.isExplicit;
@@ -295,6 +301,15 @@ struct ChildDatabasesPage {
   }
 
   /**
+   * 行存储图标（M6）：按子库存储类型取 FileStorageFactory 页面配置图标，
+   * 未注册类型回落本地 kdbx 文件图标
+   */
+  private getStorageIcon(row: ChildRowItem): ResourceStr {
+    const pageConfig = FileStorage.getPageConfig(row.storageType);
+    return pageConfig !== undefined ? pageConfig.icon : $r('app.media.file_kdbx');
+  }
+
+  /**
    * 保存当前库（父库）：成功后广播 DATABASE_UPDATE 并刷新列表
    */
   private saveParentDatabase(): void {
@@ -421,7 +436,7 @@ struct ChildDatabasesPage {
   @Builder
   ChildRow(row: ChildRowItem) {
     Row() {
-      Image($r('app.media.file_kdbx'))
+      Image(this.getStorageIcon(row))
         .width(28)
         .height(28)
         .margin({ left: 12, right: 12 })

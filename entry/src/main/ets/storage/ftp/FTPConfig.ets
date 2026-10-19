@@ -1,4 +1,5 @@
-import { PageConfig, StorageConfig } from '../StorageConfig';
+import { ChildDbCredentialKeys, ChildDbRebuildArgs, ChildDbScheme, ChildDbUrlKind, ChildTarget,
+  PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -82,6 +83,21 @@ export class FTPStorageConfig implements StorageConfig {
 }
 
 /**
+ * 子库打开时 storageConfig 重建（PageConfig.childDbConfigRebuilder 契约，M6.3）：
+ * Ioc 凭据 + host[:port] → FTPStorageConfig（端口未指定时由配置类取协议默认值 21/22）
+ */
+export function ftpChildDbConfigRebuilder(args: ChildDbRebuildArgs,
+  target: ChildTarget): StorageConfig | undefined {
+  if (args.iocUserName.length === 0 || target.host.length === 0) {
+    return undefined;
+  }
+  const options: FTPStorageConfigOptions = target.sftp
+    ? { port: target.port > 0 ? target.port : 22, protocol: ProtocolType.SFTP }
+    : { port: target.port > 0 ? target.port : 21, protocol: ProtocolType.FTP };
+  return new FTPStorageConfig(target.host, args.iocUserName, args.iocPassword, options);
+}
+
+/**
  * FTP页面配置类
  */
 export const FTPPageConfig = {
@@ -90,5 +106,12 @@ export const FTPPageConfig = {
   selectDesc: $r('app.string.location_ftp_desc_select'),
   saveDesc: $r('app.string.location_ftp_desc_save'),
   pageUrl: 'storage/ftp/FTPPage',
-  storageType: StorageType.FTP
+  storageType: StorageType.FTP,
+  // M6 子库 scheme 声明（AUTHORITY 文法）：host[:port]/远端路径；默认端口写侧省略
+  childDbSchemes: [
+    new ChildDbScheme('ftp', ChildDbUrlKind.AUTHORITY, undefined, false, 21),
+    new ChildDbScheme('sftp', ChildDbUrlKind.AUTHORITY, undefined, true, 22)
+  ],
+  childDbCredentialKeys: new ChildDbCredentialKeys('username', 'password'),
+  childDbConfigRebuilder: ftpChildDbConfigRebuilder
 } as PageConfig;

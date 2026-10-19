@@ -3,15 +3,15 @@ import { emitter } from '@kit.BasicServicesKit';
 import { AutoOpenCoordinator } from '../services/autoopen/AutoOpenCoordinator';
 import { AutoOpenItem } from '../services/autoopen/AutoOpenItem';
 import { AutoOpenService } from '../services/autoopen/AutoOpenService';
-import { AutoOpenPathResolver } from '../services/autoopen/AutoOpenPathResolver';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { IfDeviceParser } from '../services/autoopen/IfDeviceParser';
+import { SchemeMapper } from '../services/autoopen/SchemeMapper';
 import { DatabaseRegistry, OpenDatabaseRecord } from '../services/database/DatabaseRegistry';
 import { FileService } from '../services/FileService';
 import { EventBus } from '../services/EventBus';
 import { NavigationManager } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
-import { StorageType } from '../storage';
+import { FileStorage } from '../storage';
 
 /**
  * 数据库切换面板（M3，bindSheet 半模态内容）：
@@ -95,11 +95,12 @@ export struct DatabaseSwitcherSheet {
       if (!IfDeviceParser.isEnabled(item.ifDeviceRaw, deviceId).enabled) {
         continue;
       }
-      const childPath: string = AutoOpenPathResolver.resolveUrl(item.url, currentParam.filePath);
-      if (childPath.length === 0) {
+      // M6：本地/远端统一经 buildChildIocKey 判定「已打开」（scheme 决定存储类型）
+      const childIocKey: string = AutoOpenCoordinator.buildChildIocKey(item.url, currentParam.filePath);
+      if (childIocKey.length === 0) {
         continue;
       }
-      if (this.registry.has(DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath))) {
+      if (this.registry.has(childIocKey)) {
         continue;
       }
       items.push(item);
@@ -202,10 +203,28 @@ export struct DatabaseSwitcherSheet {
     })
   }
 
+  /**
+   * 子库行图标（M6）：按条目 URL scheme 解析存储类型取页面配置图标，
+   * 解析失败/未注册类型回落本地 kdbx 文件图标
+   */
+  private getChildItemIcon(item: AutoOpenItem): ResourceStr {
+    const currentParam = this.registry.getCurrent();
+    if (currentParam !== undefined) {
+      const target = SchemeMapper.resolveTarget(item.url, currentParam.filePath);
+      if (target !== undefined) {
+        const pageConfig = FileStorage.getPageConfig(target.storageType);
+        if (pageConfig !== undefined) {
+          return pageConfig.icon;
+        }
+      }
+    }
+    return $r('app.media.file_kdbx');
+  }
+
   @Builder
   ChildItemRow(item: AutoOpenItem) {
     Row() {
-      Image($r('app.media.file_kdbx'))
+      Image(this.getChildItemIcon(item))
         .width(28)
         .height(28)
         .margin({ left: 12, right: 12 })

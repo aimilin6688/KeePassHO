@@ -713,6 +713,14 @@
       "value": "仅支持将本地数据库添加为子数据库"
     },
     {
+      "name": "child_dbs_ioc_credentials_missing",
+      "value": "缺少连接凭据（IocUserName/IocPassword）"
+    },
+    {
+      "name": "child_dbs_remote_not_opened_on_device",
+      "value": "该云端子数据库尚未在本设备打开过，请先手动打开一次后重试"
+    },
+    {
       "name": "child_dbs_go_configure",
       "value": "去配置"
     },

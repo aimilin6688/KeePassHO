@@ -120,6 +120,9 @@ export class AutoOpenService {
     }
 
     item.ifDeviceRaw = KdbxUtils.getFieldValueString(entry.fields, AutoOpenFieldName.IF_DEVICE);
+    item.iocUserName = KdbxUtils.getFieldValueString(entry.fields, AutoOpenFieldName.IOC_USER_NAME);
+    item.iocPassword = KdbxUtils.getFieldValueString(entry.fields, AutoOpenFieldName.IOC_PASSWORD);
+    item.customStrings = AutoOpenService.collectCustomStrings(entry);
     item.skipIfNotExists = AutoOpenService.getBoolField(entry, AutoOpenFieldName.SKIP_IF_NOT_EXISTS) === true
       || AutoOpenService.getBoolField(entry, AutoOpenFieldName.SKIP_IF_NOT_EXISTS_LEGACY) === true;
     item.skipIfKeyFileNotExists =
@@ -153,6 +156,44 @@ export class AutoOpenService {
    */
   public static isAutoOpenGroupName(group: KdbxGroup): boolean {
     return (group.name ?? '').toLowerCase() === AUTO_OPEN_GROUP_NAME.toLowerCase();
+  }
+
+  /**
+   * 收集条目中除标准字段与框架已知字段外的全部自定义字符串字段原文
+   * （含 S3Region/S3PathStyle 等；内容不解释，交由目标存储 rebuilder 按需读取）
+   */
+  private static collectCustomStrings(entry: KdbxEntry): Map<string, string> {
+    const result = new Map<string, string>();
+    for (const field of entry.fields.entries()) {
+      const name = field[0];
+      if (AutoOpenService.isFrameworkFieldName(name)) {
+        continue;
+      }
+      const value = field[1];
+      if (typeof value !== 'string' || value.length === 0) {
+        continue;
+      }
+      result.set(name, value);
+    }
+    return result;
+  }
+
+  /**
+   * 是否标准字段（Title/UserName/...）或框架已知自定义字段（AutoOpenFieldName）：
+   * 这些字段有专属解析逻辑，不进 customStrings 透传包
+   */
+  private static isFrameworkFieldName(name: string): boolean {
+    if (name === KdbxUtils.FIELD_TITLE || name === KdbxUtils.FIELD_USERNAME
+      || name === KdbxUtils.FIELD_PASSWORD || name === KdbxUtils.FIELD_URL
+      || name === KdbxUtils.FIELD_NOTES) {
+      return true;
+    }
+    return name === AutoOpenFieldName.IF_DEVICE || name === AutoOpenFieldName.ENABLED
+      || name === AutoOpenFieldName.VISIBLE || name === AutoOpenFieldName.PRIORITY
+      || name === AutoOpenFieldName.IOC_USER_NAME || name === AutoOpenFieldName.IOC_PASSWORD
+      || name === AutoOpenFieldName.SKIP_IF_NOT_EXISTS
+      || name === AutoOpenFieldName.SKIP_IF_NOT_EXISTS_LEGACY
+      || name === AutoOpenFieldName.SKIP_IF_KEY_FILE_NOT_EXISTS;
   }
 
   private static collectEntriesFromGroup(group: KdbxGroup, result: KdbxEntry[]): void {

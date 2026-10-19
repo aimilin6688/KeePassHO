@@ -1019,8 +1019,10 @@ export struct Password {
   /**
    * 子库管理页「选择文件」回环收尾：刚解锁的库已入注册表（当前库），
    * 在指定父库生成 AutoOpen 条目 → 恢复父库为当前库 → 静默保存父库。
-   * 仅支持本地库作为子库（自动打开链路当前仅解析本地路径）；
-   * 失败仅提示，子库保持已打开状态（可稍后在管理页手动补建条目）。
+   * M6：本地/远端子库均支持——本地条目 URL 写 {DB_DIR} 相对化路径，
+   * 远端条目 URL 写 scheme URL 并追加 IocUserName/IocPassword 连接凭据
+   * （OAuth 云盘仅写 URL，令牌留设备本地）；失败仅提示，
+   * 子库保持已打开状态（可稍后在管理页手动补建条目）。
    */
   private completeAddChildFromOpened(): void {
     const registry: DatabaseRegistry = FileService.getRegistry();
@@ -1031,11 +1033,6 @@ export struct Password {
     if (parentParam === undefined || !parentParam.database
       || childParam === undefined || !childParam.database) {
       hilog.warn(DOMAIN, TAG, 'add child from opened skipped: parent or child missing');
-      return;
-    }
-    if (childParam.storageType !== StorageType.LOCAL) {
-      hilog.warn(DOMAIN, TAG, 'add child from opened skipped: non-local child');
-      CommonUtils.showToast({ message: $r('app.string.child_dbs_only_local'), duration: 2000 });
       return;
     }
     const entry = AutoOpenEntryService.addEntryForOpenedChild(parentParam.database,

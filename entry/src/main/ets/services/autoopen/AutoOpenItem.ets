@@ -19,6 +19,15 @@ export class AutoOpenItem {
   public keyFilePath: string = '';
   /** 子库主密码（Password 字段明文，仅在内存中） */
   public passwordText: string = '';
+  /** 远端协议连接用户名（IocUserName，WEBDAV/FTP 登录名 / S3 AccessKeyId） */
+  public iocUserName: string = '';
+  /** 远端协议连接密码（IocPassword，仅在内存中） */
+  public iocPassword: string = '';
+  /**
+   * 其余自定义字符串字段原文（S3Region/S3PathStyle 等，键 = 字段名）：
+   * 框架不解释内容，原样交给目标存储的 childDbConfigRebuilder 按需读取
+   */
+  public customStrings: Map<string, string> = new Map();
   /** 条目总开关（Expires / 自定义 Enabled 综合判定） */
   public enabled: boolean = true;
   /** 是否在切换界面展示（自定义 Visible，默认 true） */

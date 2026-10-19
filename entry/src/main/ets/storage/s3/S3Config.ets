@@ -1,4 +1,5 @@
-import { PageConfig, StorageConfig } from '../StorageConfig';
+import { ChildDbCredentialKeys, ChildDbRebuildArgs, ChildDbScheme, ChildDbUrlKind, ChildTarget,
+  PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -149,6 +150,53 @@ export class S3MultipartConfig {
 }
 
 /**
+ * 子库打开时 storageConfig 重建（PageConfig.childDbConfigRebuilder 契约，M6.3）：
+ * IocUserName=AccessKeyId / IocPassword=SecretAccessKey
+ * + endpoint/bucket + S3Region/S3PathStyle 自定义字符串（本项目扩展，可选）
+ */
+export function s3ChildDbConfigRebuilder(args: ChildDbRebuildArgs,
+  target: ChildTarget): StorageConfig | undefined {
+  if (args.iocUserName.length === 0 || target.endpoint.length === 0) {
+    return undefined;
+  }
+  const regionRaw = args.customStrings.get('S3Region') ?? '';
+  const region = regionRaw.replace(/^\s+/, '').replace(/\s+$/, '');
+  const pathStyleRaw = args.customStrings.get('S3PathStyle') ?? '';
+  return new S3StorageConfig(target.endpoint, args.iocUserName, args.iocPassword, {
+    region: region.length > 0 ? region : undefined,
+    bucket: target.bucket.length > 0 ? target.bucket : undefined,
+    pathStyle: pathStyleRaw.toLowerCase() === 'true'
+  });
+}
+
+/**
+ * 子库写侧附加自定义字符串（PageConfig.childDbExtraFields 契约，M6.4）：
+ * 非默认 region 或开启 pathStyle 时产出微调字段（保持条目简洁，默认值不写）
+ */
+export function s3ChildDbExtraFields(config: StorageConfig): Map<string, string> {
+  const fields = new Map<string, string>();
+  let region = '';
+  let pathStyle = false;
+  if (config instanceof S3StorageConfig) {
+    region = config.region ?? '';
+    pathStyle = config.pathStyle;
+  } else {
+    const record = config as Record<string, Object>;
+    const regionValue: Object | undefined = record['region'];
+    region = regionValue === undefined ? '' : String(regionValue);
+    const pathStyleValue: Object | undefined = record['pathStyle'];
+    pathStyle = pathStyleValue !== undefined && String(pathStyleValue) === 'true';
+  }
+  if (region.length > 0 && region !== 'us-east-1') {
+    fields.set('S3Region', region);
+  }
+  if (pathStyle) {
+    fields.set('S3PathStyle', 'True');
+  }
+  return fields;
+}
+
+/**
  * S3 页面配置
  */
 export const S3PageConfig: PageConfig = {
@@ -157,5 +205,10 @@ export const S3PageConfig: PageConfig = {
   selectDesc: $r('app.string.s3_select_file'),
   saveDesc: $r('app.string.s3_save_file'),
   pageUrl: 'storage/s3/S3Page',
-  storageType: StorageType.S3
+  storageType: StorageType.S3,
+  // M6 子库 scheme 声明（ENDPOINT_BUCKET 文法）：endpoint权威/bucket/key
+  childDbSchemes: [new ChildDbScheme('s3', ChildDbUrlKind.ENDPOINT_BUCKET)],
+  childDbCredentialKeys: new ChildDbCredentialKeys('accessKeyId', 'secretAccessKey'),
+  childDbConfigRebuilder: s3ChildDbConfigRebuilder,
+  childDbExtraFields: s3ChildDbExtraFields
 };

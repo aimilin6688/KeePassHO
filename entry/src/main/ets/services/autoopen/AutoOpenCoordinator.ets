@@ -5,6 +5,8 @@ import { ErrorEvent } from '@kit.ArkTS';
 import { AutoOpenItem } from './AutoOpenItem';
 import { AutoOpenService } from './AutoOpenService';
 import { AutoOpenPathResolver } from './AutoOpenPathResolver';
+import { ChildTarget, SchemeMapper } from './SchemeMapper';
+import { AutoOpenConfigRebuilder, ConfigRebuildResult } from './AutoOpenConfigRebuilder';
 import { DeviceIdentity } from './DeviceIdentity';
 import { IfDeviceParser } from './IfDeviceParser';
 import { DatabaseRegistry, PutDatabaseOptions } from '../database/DatabaseRegistry';
@@ -17,7 +19,7 @@ import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../../workers/WorkerParam';
 import { FilenameUtils, KdbxUtils, CommonUtils } from '../../common/utils';
 import { LocalFileStorageConfig } from '../../storage/local/LocalFileConfig';
-import { StorageType } from '../../storage';
+import { StorageConfig, StorageType } from '../../storage';
 import { LocationInfo, LocationMode } from '../beans/LocationParam';
 
 const DOMAIN = 0x0000;
@@ -125,14 +127,28 @@ export class AutoOpenCoordinator {
       if (!IfDeviceParser.isEnabled(item.ifDeviceRaw, deviceId).enabled) {
         continue;
       }
-      const started: boolean = await this.openChild(item, parentParam, false);
-      if (started) {
+      const outcome: string = await this.openChild(item, parentParam, false);
+      if (outcome === 'queued') {
         queuedCount++;
       }
     }
     if (queuedCount === 0) {
       EventBus.emit(AutoOpenCoordinator.EVENT_AUTO_OPEN_DONE, parentIocKey);
     }
+  }
+
+  /**
+   * 由 AutoOpen 条目 URL 计算子库 iocKey（M6：本地/远端统一入口）：
+   * 占位符展开 → scheme 解析 → 按目标存储类型构造 iocKey。
+   * 管理页 / 切换面板的「已打开」判定与本协调器内部判定保持同一口径。
+   * @returns 可识别 scheme 时返回 iocKey；URL 为空或 scheme 不支持返回空串
+   */
+  static buildChildIocKey(itemUrl: string, parentFilePath: string): string {
+    const target: ChildTarget | undefined = SchemeMapper.resolveTarget(itemUrl, parentFilePath);
+    if (target === undefined) {
+      return '';
+    }
+    return DatabaseRegistry.buildIocKey(target.storageType, target.filePath);
   }
 
   /**
@@ -174,51 +190,77 @@ export class AutoOpenCoordinator {
     if (parentParam === undefined || !parentParam.database) {
       return 'failed';
     }
-    const childPath: string = AutoOpenPathResolver.resolveUrl(item.url, parentParam.filePath);
-    if (childPath.length === 0) {
+    const childUrl: string = AutoOpenPathResolver.resolveUrl(item.url, parentParam.filePath);
+    if (childUrl.length === 0) {
       return 'failed';
     }
-    const iocKey: string = DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath);
+    const target: ChildTarget | undefined = SchemeMapper.parse(childUrl);
+    if (target === undefined) {
+      hilog.warn(DOMAIN, TAG, 'unsupported child scheme: %{public}s', childUrl);
+      return 'failed';
+    }
+    const iocKey: string = DatabaseRegistry.buildIocKey(target.storageType, target.filePath);
     if (registry.has(iocKey)) {
       registry.setCurrent(iocKey);
       return 'switched';
     }
     // 允许重试本会话失败的子库（attempted 仅防自动触发循环，不拦手动重试）
     registry.removeAttempted(iocKey);
-    const started: boolean = await this.openChild(item, parentParam, true);
-    return started ? 'loading' : 'failed';
+    const outcome: string = await this.openChild(item, parentParam, true);
+    if (outcome === 'queued') {
+      return 'loading';
+    }
+    // 'failedNotified'：失败已由 OPEN_FAILED 事件给出详细提示，调用方无需再吐司
+    return outcome === 'failedNotified' ? 'failedNotified' : 'failed';
   }
 
   /**
-   * 发起单个子库打开：解析路径 → 循环防护标记 → skip 检查 → 构造加载参数 → 入队。
+   * 发起单个子库打开：解析路径与 scheme → 循环防护标记 → storageConfig 重建（M6）→
+   * skip 检查 → 构造加载参数 → 入队。
    * 加载终态由 ChildOpenTask 回调结算（见 handleChildSuccess / handleChildFailed）
-   * @returns 是否成功入队（false = 静默跳过或父库缺失）
+   * @returns 'queued' 成功入队；'skipped' 静默跳过（父库/路径缺失、判重、skip 条件命中）；
+   *          'failedNotified' storageConfig 重建失败（已发 OPEN_FAILED 详细提示）
    */
-  private async openChild(item: AutoOpenItem, parentParam: DbFileParam, makeCurrent: boolean): Promise<boolean> {
+  private async openChild(item: AutoOpenItem, parentParam: DbFileParam, makeCurrent: boolean): Promise<string> {
     const registry: DatabaseRegistry = FileService.getRegistry();
-    const childPath: string = AutoOpenPathResolver.resolveUrl(item.url, parentParam.filePath);
-    if (childPath.length === 0) {
-      return false;
+    const childUrl: string = AutoOpenPathResolver.resolveUrl(item.url, parentParam.filePath);
+    if (childUrl.length === 0) {
+      return 'skipped';
     }
-    const childIocKey: string = DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath);
+    const target: ChildTarget | undefined = SchemeMapper.parse(childUrl);
+    if (target === undefined) {
+      hilog.warn(DOMAIN, TAG, 'skip child: unsupported scheme: %{public}s', childUrl);
+      return 'skipped';
+    }
+    const childIocKey: string = DatabaseRegistry.buildIocKey(target.storageType, target.filePath);
     if (registry.has(childIocKey) || registry.wasAttempted(childIocKey)) {
-      return false;
+      return 'skipped';
     }
     // 发起前标记（失败也计入，防自动触发反复重试同一不可打开子库）
     registry.markAttempted(childIocKey);
 
-    const localConfig: LocalFileStorageConfig = new LocalFileStorageConfig();
-    const fileManager: KdbxFileManager = new KdbxFileManager(StorageType.LOCAL, localConfig);
+    // M6：远端子库 storageConfig 重建（凭据型条目 Ioc 字段 / OAuth 型设备本地克隆）
+    const rebuild: ConfigRebuildResult = await AutoOpenConfigRebuilder.build(item, target);
+    if (rebuild.config === undefined) {
+      hilog.warn(DOMAIN, TAG, 'child storage config rebuild failed: %{public}s, reason: %{public}s',
+        childIocKey, rebuild.failReason);
+      EventBus.emit(AutoOpenCoordinator.EVENT_DATABASE_OPEN_FAILED,
+        new AutoOpenFailure(childIocKey, item.title, rebuild.failReason));
+      return 'failedNotified';
+    }
+    const storageConfig: StorageConfig = rebuild.config;
 
-    // 密钥文件解析（UserName 字段支持 {DB_DIR} 等占位符）
+    // 密钥文件解析（UserName 字段支持 {DB_DIR} 等占位符；密钥文件恒为本地文件）
+    const localFileManager: KdbxFileManager =
+      new KdbxFileManager(StorageType.LOCAL, new LocalFileStorageConfig());
     let keyLocation: LocationInfo | undefined = undefined;
     if (item.keyFilePath.length > 0) {
       const keyPath: string = AutoOpenPathResolver.resolveUrl(item.keyFilePath, parentParam.filePath);
       if (item.skipIfKeyFileNotExists) {
-        const keyInfo = await fileManager.getInfoOrNull(keyPath);
+        const keyInfo = await localFileManager.getInfoOrNull(keyPath);
         if (keyInfo === null) {
           hilog.info(DOMAIN, TAG, 'skip child: key file not exists: %{public}s', keyPath);
-          return false;
+          return 'skipped';
         }
       }
       keyLocation = {
@@ -226,23 +268,24 @@ export class AutoOpenCoordinator {
         filePath: keyPath,
         fileName: FilenameUtils.getFileName(keyPath),
         storageType: StorageType.LOCAL,
-        storageConfig: localConfig
+        storageConfig: new LocalFileStorageConfig()
       };
     }
 
-    // 子库文件缺失 + SkipIfNotExists：静默跳过（对齐 KeePass 桌面语义）
-    if (item.skipIfNotExists) {
-      const childInfo = await fileManager.getInfoOrNull(childPath);
+    // 子库文件缺失 + SkipIfNotExists：仅本地检查存在性；远端恒视为存在
+    // （对齐 kp2a KeeAutoExec.cs:358-385：远端存在性探测代价高且可能需交互，不作拦截）
+    if (item.skipIfNotExists && target.storageType === StorageType.LOCAL) {
+      const childInfo = await localFileManager.getInfoOrNull(target.filePath);
       if (childInfo === null) {
-        hilog.info(DOMAIN, TAG, 'skip child: file not exists: %{public}s', childPath);
-        return false;
+        hilog.info(DOMAIN, TAG, 'skip child: file not exists: %{public}s', target.filePath);
+        return 'skipped';
       }
     }
 
     this.beginPending(item.sourceIocKey);
     const authType = keyLocation !== undefined ? AuthType.PASSWORD_KEYFILE : AuthType.PASSWORD;
-    const loadParam: LoadDatabase = new LoadDatabase(childPath, FilenameUtils.getFileName(childPath),
-      item.passwordText, authType, keyLocation, StorageType.LOCAL, localConfig);
+    const loadParam: LoadDatabase = new LoadDatabase(target.filePath, FilenameUtils.getFileName(target.filePath),
+      item.passwordText, authType, keyLocation, target.storageType, storageConfig);
     const task: ChildOpenTask = new ChildOpenTask(item, loadParam, makeCurrent);
     KdbxLoadService.enqueueLoad(loadParam, {
       onSuccessMessage: (message: SuccessMessage) => {
@@ -258,7 +301,7 @@ export class AutoOpenCoordinator {
         hilog.debug(DOMAIN, TAG, 'child load worker exit: %{public}d', e);
       }
     });
-    return true;
+    return 'queued';
   }
 
   /**
@@ -269,7 +312,8 @@ export class AutoOpenCoordinator {
       return;
     }
     task.finished = true;
-    const childIocKey: string = DatabaseRegistry.buildIocKey(StorageType.LOCAL, task.loadParam.filePath);
+    const childIocKey: string = DatabaseRegistry.buildIocKey(
+      task.loadParam.storageType, task.loadParam.filePath);
     try {
       const kdbx = await KdbxUtils.successMessageToKdbx(message, task.loadParam);
       const childParam: DbFileParam = {
@@ -279,7 +323,7 @@ export class AutoOpenCoordinator {
         database: kdbx,
         authType: task.loadParam.authType,
         keyLocation: task.loadParam.keyLocation,
-        storageType: StorageType.LOCAL,
+        storageType: task.loadParam.storageType,
         storageConfig: task.loadParam.storageConfig,
         modifiedTime: message.modifiedTime,
         version: message.version ?? null,
@@ -309,7 +353,8 @@ export class AutoOpenCoordinator {
       return;
     }
     task.finished = true;
-    const childIocKey: string = DatabaseRegistry.buildIocKey(StorageType.LOCAL, task.loadParam.filePath);
+    const childIocKey: string = DatabaseRegistry.buildIocKey(
+      task.loadParam.storageType, task.loadParam.filePath);
     hilog.warn(DOMAIN, TAG, 'child database open failed: %{public}s, reason=%{public}s', childIocKey, reason);
     EventBus.emit(AutoOpenCoordinator.EVENT_DATABASE_OPEN_FAILED,
       new AutoOpenFailure(childIocKey, task.item.title, reason));
