@@ -1,6 +1,6 @@
 import { Sm4Utils } from '../../common/utils/Sm4Utils'
 import { StorageConfig, PageConfig } from '../StorageConfig'
-import { PathChildDbSupport } from '../ChildDbSupport'
+import { PathChildDbSupport } from '../PathChildDbSupport'
 import { StorageType } from '../StorageType'
 
 /**
@@ -17,7 +17,7 @@ export class PCloudStorageConfig implements StorageConfig {
   private _apiBaseUrl: string = PCloudStorageConfig.DEFAULT_API_BASE_URL
 
   get accessToken(): string {
-    return Sm4Utils.decryptWithPrefix(this._accessToken)
+    return Sm4Utils.tryDecryptWithPrefix(this._accessToken)
   }
 
   set accessToken(val: string) {
@@ -93,6 +93,5 @@ export const PCloudPageConfig: PageConfig = {
   saveDesc: $r('app.string.pcloud_save_desc'),
   pageUrl: 'storage/pcloud/PCloudPage',
   storageType: StorageType.PCLOUD,
-  // M6.9 子库支持适配器（PATH 文法共享适配器）；OAuth 型不声明 rebuildConfig——令牌不进 kdbx
-  childDb: new PathChildDbSupport('pcloud')
+  childDb: new PathChildDbSupport(StorageType.PCLOUD, 'pcloud')
 }

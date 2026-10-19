@@ -66,29 +66,28 @@ export default function SchemeMapperTest() {
     });
 
     // ---------- parse：FTP/SFTP ----------
+    // host/port/sftp 等文法细节内聚于 FTPChildDbSupport，不外泄到 ChildTarget；
+    // 此处断言路由与通用要素（storageType/filePath/url），
+    // 连接要素经 AutoOpenConfigRebuilder 的 rebuildConfig 断言覆盖。
     it('parse: ftp url with port and path', 0, () => {
       const target = SchemeMapper.parse('ftp://files.example.com:2121/remote/child.kdbx');
       expect(target !== undefined).assertTrue();
       expect(target!.storageType).assertEqual(StorageType.FTP);
-      expect(target!.sftp).assertFalse();
-      expect(target!.host).assertEqual('files.example.com');
-      expect(target!.port).assertEqual(2121);
       expect(target!.filePath).assertEqual('/remote/child.kdbx');
+      expect(target!.url).assertEqual('ftp://files.example.com:2121/remote/child.kdbx');
     });
 
-    it('parse: sftp url defaults port 0 and keeps leading slash', 0, () => {
+    it('parse: sftp url keeps leading slash', 0, () => {
       const target = SchemeMapper.parse('sftp://files.example.com/remote/child.kdbx');
       expect(target !== undefined).assertTrue();
       expect(target!.storageType).assertEqual(StorageType.FTP);
-      expect(target!.sftp).assertTrue();
-      expect(target!.port).assertEqual(0);
       expect(target!.filePath).assertEqual('/remote/child.kdbx');
+      expect(target!.url).assertEqual('sftp://files.example.com/remote/child.kdbx');
     });
 
     it('parse: ftp without path normalizes filePath to root', 0, () => {
       const target = SchemeMapper.parse('ftp://files.example.com');
       expect(target !== undefined).assertTrue();
-      expect(target!.host).assertEqual('files.example.com');
       expect(target!.filePath).assertEqual('/');
     });
 
@@ -99,13 +98,14 @@ export default function SchemeMapperTest() {
     });
 
     // ---------- parse：S3 ----------
-    it('parse: s3 url yields endpoint bucket and bucket/key path', 0, () => {
+    // endpoint/bucket 文法细节内聚于 S3ChildDbSupport，不外泄到 ChildTarget；
+    // 此处断言路由与通用要素，endpoint/bucket 经 rebuildConfig 断言覆盖。
+    it('parse: s3 url yields bucket/key path', 0, () => {
       const target = SchemeMapper.parse('s3://s3.amazonaws.com/mybucket/db/child.kdbx');
       expect(target !== undefined).assertTrue();
       expect(target!.storageType).assertEqual(StorageType.S3);
-      expect(target!.endpoint).assertEqual('https://s3.amazonaws.com');
-      expect(target!.bucket).assertEqual('mybucket');
       expect(target!.filePath).assertEqual('mybucket/db/child.kdbx');
+      expect(target!.url).assertEqual('s3://s3.amazonaws.com/mybucket/db/child.kdbx');
     });
 
     it('parse: s3 with empty rest returns undefined', 0, () => {
@@ -237,25 +237,23 @@ export default function SchemeMapperTest() {
     });
 
     // ---------- parse ↔ buildUrl 往返 ----------
-    it('round-trip: FTP config build → parse restores connection facts', 0, () => {
+    it('round-trip: FTP config build → parse restores storage type and path', 0, () => {
       const config = new FTPStorageConfig('files.example.com', 'user', 'pass', { port: 2121 });
       const url = SchemeMapper.buildUrl(StorageType.FTP, '/remote/child.kdbx', config);
       const target = SchemeMapper.parse(url);
       expect(target !== undefined).assertTrue();
       expect(target!.storageType).assertEqual(StorageType.FTP);
-      expect(target!.host).assertEqual('files.example.com');
-      expect(target!.port).assertEqual(2121);
       expect(target!.filePath).assertEqual('/remote/child.kdbx');
+      expect(target!.url).assertEqual('ftp://files.example.com:2121/remote/child.kdbx');
     });
 
-    it('round-trip: S3 config build → parse restores endpoint and path', 0, () => {
+    it('round-trip: S3 config build → parse restores storage type and path', 0, () => {
       const config = new S3StorageConfig('https://s3.amazonaws.com', 'ak', 'sk',
         { bucket: 'mybucket' });
       const url = SchemeMapper.buildUrl(StorageType.S3, 'db/child.kdbx', config);
       const target = SchemeMapper.parse(url);
       expect(target !== undefined).assertTrue();
       expect(target!.storageType).assertEqual(StorageType.S3);
-      expect(target!.endpoint).assertEqual('https://s3.amazonaws.com');
       expect(target!.filePath).assertEqual('mybucket/db/child.kdbx');
     });
 

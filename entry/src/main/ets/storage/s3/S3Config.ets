@@ -1,7 +1,6 @@
-import { ChildDbRebuildArgs, ChildDbScheme, ChildDbSupport, ChildDbUrlKind, ChildTarget,
-  IocCredentials } from '../ChildDbSupport';
 import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
+import { S3ChildDbSupport } from './S3ChildDbSupport';
 import { StorageType } from '..';
 
 /**
@@ -87,14 +86,14 @@ export class S3StorageConfig implements StorageConfig {
    * 获取 Access Key ID（解密后）
    */
   public getAccessKeyIdText(): string {
-    return Sm4Utils.decryptWithPrefix(this.accessKeyId);
+    return Sm4Utils.tryDecryptWithPrefix(this.accessKeyId);
   }
 
   /**
    * 获取 Secret Access Key（解密后）
    */
   public getSecretAccessKeyText(): string {
-    return Sm4Utils.decryptWithPrefix(this.secretAccessKey);
+    return Sm4Utils.tryDecryptWithPrefix(this.secretAccessKey);
   }
 }
 
@@ -151,61 +150,6 @@ export class S3MultipartConfig {
 }
 
 /**
- * S3 子库支持适配器（ChildDbSupport 端口，M6.9）：
- * ENDPOINT_BUCKET 文法；统一解析链②由条目 Ioc 凭据
- * （IocUserName=AccessKeyId / IocPassword=SecretAccessKey）+ endpoint/bucket
- * + S3Region/S3PathStyle 自定义字符串（本项目扩展，可选）重建 Config；
- * 写侧提取 AK/SK 加密字段并产出微调字段。
- */
-export class S3ChildDbSupport implements ChildDbSupport {
-  readonly schemes: ChildDbScheme[] = [new ChildDbScheme('s3', ChildDbUrlKind.ENDPOINT_BUCKET)];
-
-  /** 统一解析链②：Ioc 凭据 + endpoint/bucket + 可选微调字段 → S3StorageConfig */
-  readonly rebuildConfig = (args: ChildDbRebuildArgs, target: ChildTarget): StorageConfig | undefined => {
-    if (args.iocUserName.length === 0 || target.endpoint.length === 0) {
-      return undefined;
-    }
-    const regionRaw = args.customStrings.get('S3Region') ?? '';
-    const region = regionRaw.replace(/^\s+/, '').replace(/\s+$/, '');
-    const pathStyleRaw = args.customStrings.get('S3PathStyle') ?? '';
-    return new S3StorageConfig(target.endpoint, args.iocUserName, args.iocPassword, {
-      region: region.length > 0 ? region : undefined,
-      bucket: target.bucket.length > 0 ? target.bucket : undefined,
-      pathStyle: pathStyleRaw.toLowerCase() === 'true'
-    });
-  };
-
-  /** 写侧：从 storageConfig 解密提取 AK/SK（类实例与 plain JSON 同名字段） */
-  readonly extractCredentials = (config: StorageConfig): IocCredentials | undefined =>
-    IocCredentials.fromEncryptedFields(config, 'accessKeyId', 'secretAccessKey');
-
-  /** 写侧附加自定义字符串：非默认 region 或开启 pathStyle 时产出微调字段
-   *  （保持条目简洁，默认值不写） */
-  readonly extraFields = (config: StorageConfig): Map<string, string> => {
-    const fields = new Map<string, string>();
-    let region = '';
-    let pathStyle = false;
-    if (config instanceof S3StorageConfig) {
-      region = config.region ?? '';
-      pathStyle = config.pathStyle;
-    } else {
-      const record = config as Record<string, Object>;
-      const regionValue: Object | undefined = record['region'];
-      region = regionValue === undefined ? '' : String(regionValue);
-      const pathStyleValue: Object | undefined = record['pathStyle'];
-      pathStyle = pathStyleValue !== undefined && String(pathStyleValue) === 'true';
-    }
-    if (region.length > 0 && region !== 'us-east-1') {
-      fields.set('S3Region', region);
-    }
-    if (pathStyle) {
-      fields.set('S3PathStyle', 'True');
-    }
-    return fields;
-  };
-}
-
-/**
  * S3 页面配置
  */
 export const S3PageConfig: PageConfig = {
@@ -215,6 +159,5 @@ export const S3PageConfig: PageConfig = {
   saveDesc: $r('app.string.s3_save_file'),
   pageUrl: 'storage/s3/S3Page',
   storageType: StorageType.S3,
-  // M6.9 子库支持适配器（ENDPOINT_BUCKET 文法；凭据型：链②重建 + 写侧 AK/SK 提取 + 微调字段）
   childDb: new S3ChildDbSupport()
 };

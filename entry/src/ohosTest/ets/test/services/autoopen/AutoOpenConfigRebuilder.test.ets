@@ -6,7 +6,8 @@ import { AutoOpenItem } from '../../../../../main/ets/services/autoopen/AutoOpen
 import { ChildTarget, SchemeMapper } from '../../../../../main/ets/services/autoopen/SchemeMapper';
 import { RecentFile } from '../../../../../main/ets/services/TypeDefined';
 import { LocalFileStorageConfig } from '../../../../../main/ets/storage/local/LocalFileConfig';
-import { CertValidationMode, WebDAVChildDbSupport, WebDAVStorageConfig } from '../../../../../main/ets/storage/webdav/WebDAVConfig';
+import { CertValidationMode, WebDAVStorageConfig } from '../../../../../main/ets/storage/webdav/WebDAVConfig';
+import { WebDAVChildDbSupport } from '../../../../../main/ets/storage/webdav/WebDAVChildDbSupport';
 import { FTPStorageConfig, ProtocolType } from '../../../../../main/ets/storage/ftp/FTPConfig';
 import { S3StorageConfig } from '../../../../../main/ets/storage/s3/S3Config';
 import { OneDriveStorageConfig } from '../../../../../main/ets/storage/onedrive/OneDriveConfig';
@@ -218,7 +219,7 @@ export default function AutoOpenConfigRebuilderTest() {
         storageConfig: new OneDriveStorageConfig('token', 'refresh', 3600)
       };
       const result = AutoOpenConfigRebuilder.resolve(
-        makeItem('', ''), target!, [saved], new PathChildDbSupport('onedrive'));
+        makeItem('', ''), target!, [saved], new PathChildDbSupport(StorageType.ONEDRIVE, 'onedrive'));
       expect(result.config === saved.storageConfig).assertTrue();
       expect(result.failReason).assertEqual('');
     });
@@ -231,7 +232,7 @@ export default function AutoOpenConfigRebuilderTest() {
       const oauthTarget = SchemeMapper.parse('onedrive://root/child.kdbx');
       expect(oauthTarget !== undefined).assertTrue();
       const notOpened = AutoOpenConfigRebuilder.resolve(
-        makeItem('', ''), oauthTarget!, [], new PathChildDbSupport('onedrive'));
+        makeItem('', ''), oauthTarget!, [], new PathChildDbSupport(StorageType.ONEDRIVE, 'onedrive'));
       expect(credentialMissing.config).assertUndefined();
       expect(notOpened.config).assertUndefined();
       expect(credentialMissing.failReason.length > 0).assertTrue();

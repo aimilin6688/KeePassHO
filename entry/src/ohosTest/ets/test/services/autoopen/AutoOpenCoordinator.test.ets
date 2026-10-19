@@ -9,7 +9,7 @@ import { AutoOpenItem } from '../../../../../main/ets/services/autoopen/AutoOpen
 import { AutoOpenService } from '../../../../../main/ets/services/autoopen/AutoOpenService';
 import { DeviceIdentity } from '../../../../../main/ets/services/autoopen/DeviceIdentity';
 import { AUTO_OPEN_GROUP_NAME, AutoOpenFieldName } from '../../../../../main/ets/services/autoopen/AutoOpenConstants';
-import { DatabaseRegistry } from '../../../../../main/ets/services/database/DatabaseRegistry';
+import { DatabaseRegistry } from '../../../../../main/ets/services/kdbx/DatabaseRegistry';
 import { FileService } from '../../../../../main/ets/services/FileService';
 import { EventBus } from '../../../../../main/ets/services/EventBus';
 import { DbFileParam, AuthType } from '../../../../../main/ets/services/TypeDefined';

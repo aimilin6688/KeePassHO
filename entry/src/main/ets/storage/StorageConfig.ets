@@ -47,12 +47,12 @@ export interface PageConfig {
 
   /**
    * 子库支持适配器（M6.9，可选）：声明即接入子库链路——框架经
-   * FileStorageFactory 注册表发现本声明，按 ChildDbUrlKind 固定文法
-   * 解析/构造条目 URL。
+   * FileStorageFactory 注册表发现本声明，按适配器 schemes 路由其
+   * parseTarget/buildUrl 解析/构造条目 URL（文法内聚于各适配器）。
    * 新存储接入子库只需在自身 PageConfig 加一行 childDb 声明
-   * （OAuth 型 new PathChildDbSupport('scheme')）；凭据型按需在自身
-   * 模块实现 ChildDbSupport 适配器类（rebuildConfig/extractCredentials/
-   * extraFields 均可选）。
+   * （OAuth 型 new PathChildDbSupport(storageType, 'scheme')）；凭据型
+   * 在自身模块实现 ChildDbSupport 适配器类（rebuildConfig/
+   * extractCredentials/extraFields 均可选）。
    */
   childDb?: ChildDbSupport;
 }

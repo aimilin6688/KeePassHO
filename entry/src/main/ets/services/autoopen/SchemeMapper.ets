@@ -1,4 +1,4 @@
-import { ChildDbScheme, ChildDbUrlKind, ChildTarget, PageConfig, StorageConfig, StorageType } from '../../storage';
+import { ChildDbSupport, ChildTarget, PageConfig, StorageConfig, StorageType } from '../../storage';
 import { FileStorageFactory } from '../../storage/FileStorageFactory';
 import { AutoOpenPathResolver } from './AutoOpenPathResolver';
 
@@ -7,26 +7,19 @@ import { AutoOpenPathResolver } from './AutoOpenPathResolver';
 export { ChildTarget } from '../../storage';
 
 /**
- * AutoOpen 条目 URL 的 scheme → StorageType 映射器（M6.1，注册表驱动）
+ * AutoOpen 条目 URL 的 scheme 路由器（M6.1/M6.9，注册表驱动）
  *
- * 各存储在自身 PageConfig.childDb 适配器（ChildDbSupport 端口，M6.9）中
- * 声明 scheme + ChildDbUrlKind 文法；本类经 FileStorageFactory 注册表发现
- * 声明并按固定文法解析/构造 URL。
- * 新增存储接入子库：实现存储 + PageConfig 声明 childDb + 工厂注册
- * （均为存储层既有必做项），本文件及全部存储无关代码零修改。
+ * 本类不实现任何 URL 文法：各存储在自身 PageConfig.childDb 适配器
+ * （ChildDbSupport 端口，M6.9）中声明 schemes 并自带 parseTarget/buildUrl；
+ * 本类经 FileStorageFactory 注册表发现适配器，按 scheme 路由解析、
+ * 按存储类型路由构造。新增存储接入子库：实现存储 + PageConfig 声明
+ * childDb + 工厂注册（均为存储层既有必做项），本文件及全部存储无关代码零修改。
  *
  * 框架内置默认（不属于任何存储声明）：
  * - 裸相对/绝对路径 → LOCAL（M1-M5 既有语义）；
  * - `file://` URI → LOCAL（本地 filePath 即 file:// 形态，保留原文）。
  * `kdbx://` 前缀（KeePassXC 2.8 私有写法）不在此处处理：上游
  * `AutoOpenPathResolver.resolveUrl` 统一剥离后再按裸路径进入本类。
- *
- * 文法（固定通用集合，见 ChildDbUrlKind；AUTHORITY 约定 config 字段名
- * host/port/protocol，ENDPOINT_BUCKET 约定 endpoint/bucket）：
- * - PATH：rest 原样为 filePath（OAuth 云盘）；
- * - URL：完整 URL 为 filePath（WebDAV 直连；webdav(s) 升格 https）；
- * - AUTHORITY：host[:port]/path → host/port/sftp/filePath（FTP/SFTP）；
- * - ENDPOINT_BUCKET：endpoint权威/bucket/key → endpoint/bucket/filePath（S3）。
  */
 export class SchemeMapper {
   private static readonly SCHEME_PATTERN = /^([a-zA-Z][a-zA-Z0-9+.-]*):\/\/(.*)$/;
@@ -47,7 +40,8 @@ export class SchemeMapper {
   }
 
   /**
-   * 解析（已展开占位符的）子库 URL
+   * 解析（已展开占位符的）子库 URL：按 scheme 路由到声明它的子库适配器，
+   * 由适配器按自身文法解析（M6.9 起文法内聚于各适配器，本类零文法）
    * @param url AutoOpenPathResolver.resolveUrl 的产物
    * @returns 解析结果；URL 为空或 scheme 不受支持时返回 undefined
    */
@@ -62,83 +56,49 @@ export class SchemeMapper {
       return SchemeMapper.local(normalized);
     }
     const scheme = match[1].toLowerCase();
-    const rest = match[2];
     // 框架默认：本地 file URI 保留原文（本应用本地 filePath 即 file:// 形态）
     if (scheme === 'file') {
       return SchemeMapper.local(normalized);
     }
-    const found = SchemeMapper.findScheme(scheme);
-    if (found === undefined) {
+    const childDb = SchemeMapper.findChildDb(scheme);
+    if (childDb === undefined) {
       return undefined;
     }
-    const target = new ChildTarget();
-    target.storageType = found.storageType;
-    switch (found.schemeDecl.kind) {
-      case ChildDbUrlKind.URL:
-        return SchemeMapper.parseUrlKind(target, normalized, rest, found.schemeDecl);
-      case ChildDbUrlKind.AUTHORITY:
-        return SchemeMapper.parseAuthorityKind(target, rest, found.schemeDecl);
-      case ChildDbUrlKind.ENDPOINT_BUCKET:
-        return SchemeMapper.parseEndpointBucketKind(target, rest);
-      case ChildDbUrlKind.PATH:
-      default:
-        target.filePath = rest;
-        return target;
-    }
+    return childDb.parseTarget(normalized);
   }
 
   /**
    * 写侧反向映射：由已打开子库的存储信息拼装条目 URL（M6.4）
    * @param storageType 存储类型
    * @param filePath 子库文件路径（远端格式）
-   * @param config 子库存储配置（读取 host/endpoint/bucket 等连接要素；缺省时
-   *               AUTHORITY/ENDPOINT_BUCKET 产出降级 URL，PATH/URL 文法完全无影响）
+   * @param config 子库存储配置（各适配器按需读取连接要素；缺省时产出降级 URL）
    * @returns scheme URL；LOCAL 返回 filePath 原样（由调用方做 {DB_DIR} 相对化）
    */
   public static buildUrl(storageType: StorageType, filePath: string, config?: StorageConfig): string {
     const pageConfig = SchemeMapper.findPageConfig(storageType);
-    if (pageConfig === undefined) {
-      return filePath;
-    }
-    const childDb = pageConfig.childDb;
+    const childDb = pageConfig === undefined ? undefined : pageConfig.childDb;
     if (childDb === undefined) {
       // LOCAL / 未声明子库适配器的存储：原样返回
       return filePath;
     }
-    const schemes = childDb.schemes;
-    if (schemes.length === 0) {
-      return filePath;
-    }
-    switch (schemes[0].kind) {
-      case ChildDbUrlKind.URL:
-        // WebDAV filePath 即完整 http(s) URL（含 host），原样写入（https/http 直连语义）
-        return filePath;
-      case ChildDbUrlKind.AUTHORITY:
-        return SchemeMapper.buildAuthorityUrl(filePath, config, pageConfig);
-      case ChildDbUrlKind.ENDPOINT_BUCKET:
-        return SchemeMapper.buildEndpointBucketUrl(filePath, config);
-      case ChildDbUrlKind.PATH:
-      default:
-        return SchemeMapper.writeScheme(pageConfig) + '://' + filePath;
-    }
+    return childDb.buildUrl(filePath, config);
   }
 
   // ==================== 注册表访问 ====================
 
   /**
-   * 在 FileStorageFactory 注册表中查找 scheme 声明
+   * 在 FileStorageFactory 注册表中查找声明了该 scheme 的子库适配器
    */
-  private static findScheme(scheme: string): SchemeDeclEntry | undefined {
+  private static findChildDb(scheme: string): ChildDbSupport | undefined {
     const storageMap = FileStorageFactory.getInstance().getStorageMap();
     for (const entry of storageMap.entries()) {
-      const pageConfig = entry[1].getPageConfig();
-      const declarations = pageConfig.childDb === undefined ? undefined : pageConfig.childDb.schemes;
-      if (declarations === undefined) {
+      const childDb = entry[1].getPageConfig().childDb;
+      if (childDb === undefined) {
         continue;
       }
-      for (const declaration of declarations) {
-        if (declaration.scheme === scheme) {
-          return new SchemeDeclEntry(entry[0], declaration);
+      for (const declared of childDb.schemes) {
+        if (declared === scheme) {
+          return childDb;
         }
       }
     }
@@ -154,162 +114,13 @@ export class SchemeMapper {
   }
 
   /**
-   * 写侧默认 scheme：childDb.writeScheme，缺省取首个声明
+   * 框架默认：本地目标（裸路径 / file:// 原文）
    */
-  private static writeScheme(pageConfig: PageConfig): string {
-    const childDb = pageConfig.childDb;
-    if (childDb !== undefined && childDb.writeScheme !== undefined && childDb.writeScheme.length > 0) {
-      return childDb.writeScheme;
-    }
-    const schemes = childDb === undefined ? undefined : childDb.schemes;
-    return schemes !== undefined && schemes.length > 0 ? schemes[0].scheme : '';
-  }
-
-  // ==================== 解析文法实现 ====================
-
   private static local(filePath: string): ChildTarget {
     const target = new ChildTarget();
     target.storageType = StorageType.LOCAL;
     target.filePath = filePath;
+    target.url = filePath;
     return target;
-  }
-
-  /**
-   * URL 文法：完整 http(s) URL 为 filePath；声明升格时替换 scheme（webdav → https）
-   */
-  private static parseUrlKind(target: ChildTarget, normalized: string,
-    rest: string, decl: ChildDbScheme): ChildTarget | undefined {
-    if (decl.upgradeScheme !== undefined) {
-      if (rest.length === 0) {
-        return undefined;
-      }
-      target.filePath = decl.upgradeScheme + '://' + rest;
-      return target;
-    }
-    // 无升格声明（http/https 直连）：原样保留
-    target.filePath = normalized;
-    return target;
-  }
-
-  /**
-   * AUTHORITY 文法：`host[:port][/远端路径]`
-   * filePath 统一带前导 '/'（与远端路径约定一致，RecentFiles 判重同构）
-   */
-  private static parseAuthorityKind(target: ChildTarget, rest: string,
-    decl: ChildDbScheme): ChildTarget | undefined {
-    if (rest.length === 0) {
-      return undefined;
-    }
-    target.sftp = decl.sftp === true;
-    const slashIdx = rest.indexOf('/');
-    const authority = slashIdx >= 0 ? rest.substring(0, slashIdx) : rest;
-    let remotePath = slashIdx >= 0 ? rest.substring(slashIdx) : '';
-    if (remotePath.length === 0 || !remotePath.startsWith('/')) {
-      remotePath = '/' + remotePath;
-    }
-    const colonIdx = authority.indexOf(':');
-    if (colonIdx >= 0) {
-      target.host = authority.substring(0, colonIdx);
-      const port = Number(authority.substring(colonIdx + 1));
-      target.port = isNaN(port) || port <= 0 ? 0 : Math.trunc(port);
-    } else {
-      target.host = authority;
-    }
-    if (target.host.length === 0) {
-      return undefined;
-    }
-    target.filePath = remotePath;
-    return target;
-  }
-
-  /**
-   * ENDPOINT_BUCKET 文法：`endpoint权威/bucket/key` → endpoint = https://authority，
-   * filePath = `bucket/key`（与该存储 filePath 约定一致）
-   */
-  private static parseEndpointBucketKind(target: ChildTarget, rest: string): ChildTarget | undefined {
-    if (rest.length === 0) {
-      return undefined;
-    }
-    const slashIdx = rest.indexOf('/');
-    const authority = slashIdx >= 0 ? rest.substring(0, slashIdx) : rest;
-    const pathPart = slashIdx >= 0 ? rest.substring(slashIdx + 1) : '';
-    target.endpoint = 'https://' + authority;
-    if (pathPart.length > 0) {
-      const keySlash = pathPart.indexOf('/');
-      target.bucket = keySlash >= 0 ? pathPart.substring(0, keySlash) : pathPart;
-      target.filePath = pathPart;
-    }
-    return target;
-  }
-
-  // ==================== 写侧文法实现 ====================
-
-  /**
-   * AUTHORITY 写侧：`scheme://host[:port]/远端路径`；端口为声明默认值时省略。
-   * config 字段约定：host / port / protocol（'SFTP' 时选 sftp 声明的 scheme）
-   */
-  private static buildAuthorityUrl(filePath: string, config: StorageConfig | undefined,
-    pageConfig: PageConfig): string {
-    let host = '';
-    let port = 0;
-    let isSftp = false;
-    if (config !== undefined && config !== null) {
-      const record = config as Record<string, Object>;
-      host = record['host'] !== undefined ? String(record['host']) : '';
-      const portRaw = record['port'];
-      port = portRaw !== undefined ? Number(portRaw) : 0;
-      isSftp = record['protocol'] !== undefined && String(record['protocol']) === 'SFTP';
-    }
-    const childDb = pageConfig.childDb;
-    const schemes = childDb === undefined ? undefined : childDb.schemes;
-    let scheme = SchemeMapper.writeScheme(pageConfig);
-    let defaultPort: number | undefined = schemes !== undefined && schemes.length > 0
-      ? schemes[0].defaultPort : undefined;
-    if (isSftp && schemes !== undefined) {
-      for (const declaration of schemes) {
-        if (declaration.sftp === true) {
-          scheme = declaration.scheme;
-          defaultPort = declaration.defaultPort;
-          break;
-        }
-      }
-    }
-    const portSuffix = port > 0 && port !== defaultPort ? ':' + port : '';
-    const remotePath = filePath.startsWith('/') ? filePath : '/' + filePath;
-    return scheme + '://' + host + portSuffix + remotePath;
-  }
-
-  /**
-   * ENDPOINT_BUCKET 写侧：`scheme://endpoint权威/bucket/key`；
-   * filePath 未含 bucket 前缀时补上。config 字段约定：endpoint / bucket
-   */
-  private static buildEndpointBucketUrl(filePath: string, config: StorageConfig | undefined): string {
-    let endpoint = '';
-    let bucket = '';
-    if (config !== undefined && config !== null) {
-      const record = config as Record<string, Object>;
-      endpoint = record['endpoint'] !== undefined ? String(record['endpoint']) : '';
-      bucket = record['bucket'] !== undefined ? String(record['bucket']) : '';
-    }
-    let authority = endpoint.replace(/^https:\/\//, '').replace(/^http:\/\//, '');
-    authority = authority.replace(/\/+$/, '');
-    let objectPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
-    if (bucket.length > 0 && !objectPath.startsWith(bucket + '/')) {
-      objectPath = bucket + '/' + objectPath;
-    }
-    return 's3://' + authority + '/' + objectPath;
-  }
-}
-
-/**
- * 注册表 scheme 索引条目
- */
-class SchemeDeclEntry {
-  readonly storageType: StorageType;
-  readonly schemeDecl: ChildDbScheme;
-
-  constructor(storageType: StorageType, schemeDecl: ChildDbScheme) {
-    this.storageType = storageType;
-    this.schemeDecl = schemeDecl;
   }
 }

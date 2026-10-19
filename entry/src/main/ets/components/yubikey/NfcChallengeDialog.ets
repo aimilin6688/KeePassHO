@@ -6,7 +6,7 @@ import {
   YubiKeyNfcErrorCode,
   YubiKeyNfcService,
   YubiKeySlot
-} from '../../services/yubikey/YubiKeyNfcService';
+} from '../../services/otpkey/YubiKeyNfcService';
 
 const TAG = 'NfcChallengeDialog';
 

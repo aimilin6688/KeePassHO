@@ -10,6 +10,8 @@ export * from './FileStorageFactory';
 
 export * from './StorageConfig';
 export * from './ChildDbSupport';
+export * from './ChildDbCredentials';
+export * from './PathChildDbSupport';
 export * from './local/LocalFileStorage'
 export * from './local/LocalFileConfig'
 export * from './cache/CacheConstants'

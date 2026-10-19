@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import { emitter } from '@kit.BasicServicesKit';
 import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
-import { DatabaseRegistry, OpenDatabaseRecord, PutDatabaseOptions } from '../../../../../main/ets/services/database/DatabaseRegistry';
+import { DatabaseRegistry, OpenDatabaseRecord, PutDatabaseOptions } from '../../../../../main/ets/services/kdbx/DatabaseRegistry';
 import { EventBus } from '../../../../../main/ets/services/EventBus';
 import { AuthType, DbFileParam } from '../../../../../main/ets/services/TypeDefined';
 

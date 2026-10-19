@@ -45,8 +45,7 @@ export interface IFileStorage {
    * @param onProgress 上传进度回调（可选，opt-in 能力）；未实现/未传入时不影响写入语义
    * @throws 如果写入失败则抛出异常
    */
-  write(path: string, content: ArrayBuffer, option?: WriteOption,
-    onProgress?: TransferProgressCallback): Promise<void>;
+  write(path: string, content: ArrayBuffer, option?: WriteOption, onProgress?: TransferProgressCallback): Promise<void>;
 
   /**
    * 流式从本地源文件写入到远端（分块上传/复制，避免整缓冲驻留内存）
@@ -114,8 +113,7 @@ export interface IFileStorage {
    * @param expectedSize 远端当前大小（版本之外的第二道防线）
    * @return Promise<boolean> true 表示命中（destPath 已就绪），false 表示未命中
    */
-  readCacheToFile?(path: string, destPath: string, expectedVersion: string,
-    expectedSize: number): Promise<boolean>;
+  readCacheToFile?(path: string, destPath: string, expectedVersion: string,  expectedSize: number): Promise<boolean>;
 
   /**
    * 保存链路（整缓冲路径）后的本地缓存刷新：把写入远端成功的成品内容复制到本地缓存，

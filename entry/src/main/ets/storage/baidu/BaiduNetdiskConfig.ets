@@ -1,5 +1,5 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
-import { PathChildDbSupport } from '../ChildDbSupport';
+import { PathChildDbSupport } from '../PathChildDbSupport';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -67,7 +67,7 @@ export class BaiduNetdiskStorageConfig implements StorageConfig {
    * @returns 访问令牌
    */
   public getAccessTokenText(): string {
-    return Sm4Utils.decryptWithPrefix(this.accessToken);
+    return Sm4Utils.tryDecryptWithPrefix(this.accessToken);
   }
 
   /**
@@ -75,7 +75,7 @@ export class BaiduNetdiskStorageConfig implements StorageConfig {
    * @returns 刷新令牌
    */
   public getRefreshTokenText(): string {
-    return Sm4Utils.decryptWithPrefix(this.refreshToken);
+    return Sm4Utils.tryDecryptWithPrefix(this.refreshToken);
   }
 
   /**
@@ -125,6 +125,5 @@ export const BaiduNetdiskPageConfig: PageConfig = {
   saveDesc: $r('app.string.baidu_netdisk_save_file'),
   pageUrl: 'storage/baidu/BaiduNetdiskPage',
   storageType: StorageType.BAIDU_NETDISK,
-  // M6.9 子库支持适配器（PATH 文法共享适配器）；OAuth 型不声明 rebuildConfig——令牌不进 kdbx
-  childDb: new PathChildDbSupport('baidu')
+  childDb: new PathChildDbSupport(StorageType.BAIDU_NETDISK, 'baidu')
 };

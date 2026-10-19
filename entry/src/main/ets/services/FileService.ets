@@ -1,6 +1,6 @@
 import { Kdbx } from 'kdbxweb';
 import { DbFileParam } from './TypeDefined';
-import { DatabaseRegistry, PutDatabaseOptions } from './database/DatabaseRegistry';
+import { DatabaseRegistry, PutDatabaseOptions } from './kdbx/DatabaseRegistry';
 
 
 /**

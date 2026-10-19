@@ -6,7 +6,7 @@ import { AutoOpenService } from '../services/autoopen/AutoOpenService';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { IfDeviceParser } from '../services/autoopen/IfDeviceParser';
 import { SchemeMapper } from '../services/autoopen/SchemeMapper';
-import { DatabaseRegistry, OpenDatabaseRecord } from '../services/database/DatabaseRegistry';
+import { DatabaseRegistry, OpenDatabaseRecord } from '../services/kdbx/DatabaseRegistry';
 import { FileService } from '../services/FileService';
 import { EventBus } from '../services/EventBus';
 import { NavigationManager } from '../common/utils';

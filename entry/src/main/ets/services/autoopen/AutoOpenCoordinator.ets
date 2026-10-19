@@ -9,7 +9,7 @@ import { ChildTarget, SchemeMapper } from './SchemeMapper';
 import { AutoOpenConfigRebuilder, ConfigRebuildResult } from './AutoOpenConfigRebuilder';
 import { DeviceIdentity } from './DeviceIdentity';
 import { IfDeviceParser } from './IfDeviceParser';
-import { DatabaseRegistry, PutDatabaseOptions } from '../database/DatabaseRegistry';
+import { DatabaseRegistry, PutDatabaseOptions } from '../kdbx/DatabaseRegistry';
 import { FileService } from '../FileService';
 import { EventBus } from '../EventBus';
 import { RecentFilesService } from '../RecentFilesService';

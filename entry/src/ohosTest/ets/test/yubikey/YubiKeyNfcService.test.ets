@@ -9,7 +9,7 @@ import {
   YubiKeyNfcError,
   YubiKeyNfcErrorCode,
   YubiKeySlot
-} from '../../../../main/ets/services/yubikey/YubiKeyNfcService';
+} from '../../../../main/ets/services/otpkey/YubiKeyNfcService';
 
 /**
  * YubiKeyNfcService 纯函数单元测试（APDU 构造 / 应答解析，无需 NFC 硬件）。

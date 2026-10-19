@@ -442,18 +442,20 @@ onParentUnlocked(parentIocKey):
 
 **M6.0 注册表驱动架构（零修改扩展；M6.9 起收敛为 Port-Adapter 端口）**
 
-scheme 映射、storageConfig 解析、写侧凭据/附加字段均由 `PageConfig.childDb` 单一适配器声明驱动（端口定义于 `storage/ChildDbSupport.ets`，`PageConfig` 位于 `storage/StorageConfig.ets`），框架经 `FileStorageFactory` 注册表发现声明，`IFileStorage` 接口零新增方法：
+scheme 路由、storageConfig 解析、写侧凭据/附加字段均由 `PageConfig.childDb` 单一适配器声明驱动（端口定义于 `storage/ChildDbSupport.ets`，`PageConfig` 位于 `storage/StorageConfig.ets`），框架经 `FileStorageFactory` 注册表发现声明，`IFileStorage` 接口零新增方法：
 
-- `childDb?: ChildDbSupport`（M6.9 收敛：原 5 个 `childDb*` 散字段合并为单一端口）：
-  - `schemes: ChildDbScheme[]` — scheme + 文法（`ChildDbUrlKind.PATH / AUTHORITY / ENDPOINT_BUCKET / URL` 四种固定文法，声明即接入解析/构造；唯一必填项）；
-  - `writeScheme?: string` — 写侧默认 scheme（缺省取 schemes[0].scheme）；
-  - `rebuildConfig?: (args, target) => StorageConfig | undefined` — 统一解析链②（M6.9）：RecentFiles 未命中时由条目 Ioc 凭据 + `customStrings` + `ChildTarget` 连接要素重建 Config（声明即凭据型）；
-  - `extractCredentials?: (config) => IocCredentials | undefined` — 写侧从 storageConfig 解密提取连接凭据（替代原 `childDbCredentialKeys` 散字段；共享实现 `IocCredentials.fromEncryptedFields`）；
+- `childDb?: ChildDbSupport`（M6.9 收敛：原 5 个 `childDb*` 散字段合并为单一端口；端口文件只含接口与通用值类型，具体适配器实现见 `PathChildDbSupport.ets` 与各存储模块的 `*ChildDbSupport.ets`）：
+  - `schemes: string[]` — 支持的条目 URL scheme（唯一必填项；框架据此路由解析/构造）；
+  - `parseTarget: (url) => ChildTarget | undefined` — 打开侧：解析条目 URL 为打开目标（各存储自带 URL 文法，框架不做任何文法假设）；
+  - `buildUrl: (filePath, config?) => string` — 写侧：由子库文件路径（+已打开配置）构造条目 URL；
+  - `rebuildConfig?: (args, target) => StorageConfig | undefined` — 统一解析链②（M6.9）：RecentFiles 未命中时由条目 Ioc 凭据 + `customStrings` + `ChildTarget` 重建 Config（声明即凭据型）；
+  - `extractCredentials?: (config) => IocCredentials | undefined` — 写侧从 storageConfig 解密提取连接凭据（替代原 `childDbCredentialKeys` 散字段；共享实现 `ChildDbCredentials.fromEncryptedFields`）；
   - `extraFields?: (config) => Map<string, string>` — 写侧附加自定义字符串（如 S3 的 `S3Region`/`S3PathStyle`）；
-  - `PathChildDbSupport`（框架提供）— PATH 文法 OAuth 云盘共享适配器，仅声明 scheme。
-- 隐式分类：声明 `rebuildConfig` = 凭据型（链②兜底，失败提示凭据缺失）；仅声明 `schemes` = OAuth 型（令牌不进 kdbx，链①从 RecentFiles 复用，失败提示先手动打开一次）；均不声明 = LOCAL（框架默认裸路径/`file://`）。
+  - `PathChildDbSupport`（框架提供，`storage/PathChildDbSupport.ets`）— OAuth 云盘共享适配器：`new PathChildDbSupport(storageType, 'scheme')` 一行声明。
+- `ChildTarget` 仅含框架所需通用要素：`storageType` / `filePath` / `url`（条目 URL 原文，适配器 rebuildConfig 重解析文法用）；host/port/sftp/endpoint/bucket 等文法细节由各适配器内部解析，不外泄到框架层。
+- 隐式分类：声明 `rebuildConfig` = 凭据型（链②兜底，失败提示凭据缺失）；仅声明 `parseTarget`/`buildUrl` = OAuth 型（令牌不进 kdbx，链①从 RecentFiles 复用，失败提示先手动打开一次）；均不声明 = LOCAL（框架默认裸路径/`file://`）。
 
-**新存储接入子库 checklist**（全部为存储层自身必做项，`SchemeMapper`/`AutoOpenConfigRebuilder`/`AutoOpenEntryService` 等存储无关代码零修改）：实现 Storage + 在自身 PageConfig 声明 `childDb`（OAuth 型 `new PathChildDbSupport('scheme名')` 一行；凭据型在自身模块实现 `ChildDbSupport` 适配器类）+ `FileStorageFactory` 注册。
+**新存储接入子库 checklist**（全部为存储层自身必做项，`SchemeMapper`/`AutoOpenConfigRebuilder`/`AutoOpenEntryService` 等存储无关代码零修改）：实现 Storage + 在自身 PageConfig 声明 `childDb`（OAuth 型 `new PathChildDbSupport(storageType, 'scheme名')` 一行；凭据型在自身模块实现 `ChildDbSupport` 适配器类，自带 URL 文法）+ `FileStorageFactory` 注册。
 
 **M6.1 URL scheme → StorageType 映射**
 
@@ -505,7 +507,7 @@ SkipIfNotExists: storageType !== LOCAL 时跳过存在性检查（远端恒视�
 `addEntryForOpenedChild` 扩展：`child.storageType !== LOCAL` 时——
 
 - `URL` = `scheme://` + child.filePath（按 M6.1 反向映射；`makeRelative` 的 `{DB_DIR}` 相对化仅对 LOCAL 生效，对远端路径天然原样返回）；
-- WEBDAV/S3/FTP：经 `childDb.extractCredentials`（`IocCredentials.fromEncryptedFields` 共享实现，类实例与 plain JSON 同名字段均适用）追加 `IocUserName`/`IocPassword` 自定义字符串；
+- WEBDAV/S3/FTP：经 `childDb.extractCredentials`（`ChildDbCredentials.fromEncryptedFields` 共享实现，类实例与 plain JSON 同名字段均适用）追加 `IocUserName`/`IocPassword` 自定义字符串；
 - S3 另经 `childDb.extraFields` 追加 `S3Region`/`S3PathStyle`（非默认值时）；
 - OAuth 型：仅写 URL。
 
@@ -551,17 +553,18 @@ KeePassXC 2.8 的 AutoOpen 实现私有扩展了 `kdbx://` 前缀（`DatabaseWid
 ┌────────── 子库框架（services/autoopen + storage/ChildDbSupport.ets，存储无关） ──────────┐
 │ AutoOpenService/Item/IfDeviceParser/DeviceIdentity  KeeAutoExec 约定解析（与存储无关）      │
 │ AutoOpenPathResolver                                占位符/相对路径/kdbx:// 剥离（M6.8）     │
-│ SchemeMapper                                        通用文法引擎（4 种固定文法，读端口 schemes）│
+│ SchemeMapper                                        scheme 路由（查注册表 → 委派适配器       │
+│                                                     parseTarget/buildUrl，无文法实现）        │
 │ AutoOpenConfigRebuilder                             统一解析链（resolve 纯函数 + build IO 包装）│
 │ AutoOpenEntryService                                写侧：buildUrl + 端口 extractCredentials/  │
 │                                                     extraFields                                │
 │ AutoOpenCoordinator                                 编排 + 打开成功配置回写（upsert）           │
 └─────────────────────────△ 只依赖 ChildDbSupport 端口（依赖倒置，框架拥有接口） ──────────────┘
-                          │ 各存储在自己模块内实现适配器（互不可见，新增存储对子库框架零侵入）
-  WebDAVChildDbSupport    S3ChildDbSupport     FTPChildDbSupport     PathChildDbSupport('onedrive' 等)
-  rebuildConfig/          + extraFields        rebuildConfig/        （框架提供的 PATH 文法共享
-  extractCredentials      rebuildConfig/       extractCredentials      适配器，OAuth 云盘用）
-                          extractCredentials
+                          │ 各存储在自己模块内实现适配器（独立类文件，互不可见，新增存储对子库框架零侵入）
+  WebDAVChildDbSupport.ets    S3ChildDbSupport.ets     FTPChildDbSupport.ets    PathChildDbSupport.ets
+  （webdav(s)/http(s) 文法    （s3 endpoint/bucket     （ftp/sftp host[:port]   （框架提供的 PATH 文法
+   升格 https + 链②重建 +      文法 + 链②重建 + AK/SK   文法 + 链②重建 + 凭据     共享适配器，OAuth 云盘用）
+   凭据提取）                   提取 + 微调字段）         提取）
 ```
 
 **统一解析链**（`AutoOpenConfigRebuilder.resolve` 纯函数可单测；`build` 为 IO 包装：取 RecentFiles + 查端口后委托）：
@@ -578,7 +581,7 @@ KeePassXC 2.8 的 AutoOpen 实现私有扩展了 `kdbx://` 前缀（`DatabaseWid
 - 链①优先于链②：条目 Ioc 凭据修改后，需重新打开一次子库（手动正常打开或经协调器打开成功回写）才生效——换取 CA/TLS/端口等完整选项保真（修复 P1 的关键）；
 - 自动打开的远端子库出现在「最近文件」列表尾部（指南 §1.3 已同步）；本地子库不写。
 
-**新存储接入成本**（改造后）：OAuth 型 = `childDb: new PathChildDbSupport('scheme')` 一行；凭据型 = 自身模块一个适配器类（`rebuildConfig`/`extractCredentials` 均可选，缺省仅降级为「须先手动打开一次」）；不声明 `childDb` = 子库条目被优雅跳过，不影响其余链路。子库框架与其余存储零改动。
+**新存储接入成本**（改造后）：OAuth 型 = `childDb: new PathChildDbSupport(storageType, 'scheme')` 一行；凭据型 = 自身模块一个适配器类（`rebuildConfig`/`extractCredentials` 均可选，缺省仅降级为「须先手动打开一次」）；不声明 `childDb` = 子库条目被优雅跳过，不影响其余链路。子库框架与其余存储零改动。
 
 **测试**：`AutoOpenConfigRebuilder.test.ets` 增链序用例（RecentFiles 命中优先于 rebuildConfig / 未命中走 rebuildConfig / 凭据缺失文案 / LOCAL）；`RecentFilesService.test.ets` 增 `mergeChildConfigRecord` 用例（尾部追加 / 原位更新保留密码与搜索历史 / storageType+filePath 联合匹配 / 满额淘汰 / 无变化返回原引用）；`AutoOpenEntryService.test.ets` 增远端写侧用例（WebDAV 写 IocUserName/IocPassword / OAuth 仅写 URL）。
 

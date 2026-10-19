@@ -31,7 +31,7 @@ import { OtpInfo } from '../services/otpkey/OtpInfo';
 import { AutoOpenCoordinator } from '../services/autoopen/AutoOpenCoordinator';
 import { AutoOpenEntryService } from '../services/autoopen/AutoOpenEntryService';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
-import { DatabaseRegistry } from '../services/database/DatabaseRegistry';
+import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { EncodingUtil, OtpDataFmt } from '../services/otpkey/EncodingUtil';
@@ -42,7 +42,7 @@ import {
   KdbxHeaderParseErrorCode,
   KdbxHeaderReader
 } from '../services/kdbx/KdbxHeaderReader';
-import { YubiKeySlot } from '../services/yubikey/YubiKeyNfcService';
+import { YubiKeySlot } from '../services/otpkey/YubiKeyNfcService';
 import { NfcChallengeDialog } from '../components/yubikey/NfcChallengeDialog';
 
 const DOMAIN = 0x0000;

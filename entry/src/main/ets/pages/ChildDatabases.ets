@@ -10,7 +10,7 @@ import { AutoOpenService } from '../services/autoopen/AutoOpenService';
 import { SchemeMapper } from '../services/autoopen/SchemeMapper';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { DeviceEnableState, IfDeviceParser } from '../services/autoopen/IfDeviceParser';
-import { DatabaseRegistry, OpenDatabaseRecord } from '../services/database/DatabaseRegistry';
+import { DatabaseRegistry, OpenDatabaseRecord } from '../services/kdbx/DatabaseRegistry';
 import { DbFileParam, EntryParam } from '../services/TypeDefined';
 import { FileService } from '../services/FileService';
 import { EventBus } from '../services/EventBus';

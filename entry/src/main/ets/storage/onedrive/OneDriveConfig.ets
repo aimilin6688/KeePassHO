@@ -1,5 +1,5 @@
 import { PageConfig, StorageConfig } from '../StorageConfig';
-import { PathChildDbSupport } from '../ChildDbSupport';
+import { PathChildDbSupport } from '../PathChildDbSupport';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
@@ -68,7 +68,7 @@ export class OneDriveStorageConfig implements StorageConfig {
    * @returns 访问令牌
    */
   public getAccessTokenText(): string {
-    return Sm4Utils.decryptWithPrefix(this.accessToken);
+    return Sm4Utils.tryDecryptWithPrefix(this.accessToken);
   }
 
   /**
@@ -76,7 +76,7 @@ export class OneDriveStorageConfig implements StorageConfig {
    * @returns 刷新令牌
    */
   public getRefreshTokenText(): string {
-    return Sm4Utils.decryptWithPrefix(this.refreshToken);
+    return Sm4Utils.tryDecryptWithPrefix(this.refreshToken);
   }
 
   /**
@@ -126,7 +126,5 @@ export const OneDrivePageConfig: PageConfig = {
   saveDesc: $r('app.string.onedrive_save_file'),
   pageUrl: 'storage/onedrive/OneDrivePage',
   storageType: StorageType.ONEDRIVE,
-  // M6.9 子库支持适配器（PATH 文法共享适配器）；OAuth 型不声明 rebuildConfig——
-  // 令牌不进 kdbx，打开时统一解析链从 RecentFiles 复用
-  childDb: new PathChildDbSupport('onedrive')
+  childDb: new PathChildDbSupport(StorageType.ONEDRIVE, 'onedrive')
 };

@@ -28,7 +28,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { FileInfo } from '../storage/IFileStorage';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
-import { DatabaseRegistry } from '../services/database/DatabaseRegistry';
+import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
 import { AutoOpenService } from '../services/autoopen/AutoOpenService';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';

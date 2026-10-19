@@ -17,7 +17,7 @@ import KdbxLoadService from './KdbxLoadService';
 import { LoadDispatchCache } from './LoadDispatchCache';
 import { DbFileParam, RecentFile } from '../TypeDefined';
 import { AuthType } from '../TypeDefined';
-import { DatabaseRegistry } from '../database/DatabaseRegistry';
+import { DatabaseRegistry } from './DatabaseRegistry';
 import { RecentFilesService } from '../RecentFilesService';
 import { ConflictMessage, LoadMessage, MessageType, ProgressMessage, SuccessMessage, WorkerMessage } from '../../workers/WorkerParam';
 import { EventBus } from '../EventBus';
