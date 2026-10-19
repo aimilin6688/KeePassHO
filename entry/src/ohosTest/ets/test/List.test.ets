@@ -163,6 +163,7 @@ import PageConfigManagerTest from './utils/PageConfigManager.test';
 import IconUtilsTest from './utils/IconUtils.test';
 // 修改主密码闪退回归（database 关闭后 getIcon 回退读 meta）
 import KdbxUtilsIconGuardTest from './utils/KdbxUtilsIconGuard.test';
+import KdbxUtilsTest from './utils/KdbxUtils.test';
 import ThemeManagerTest from './utils/ThemeManager.test';
 import WebImageDownloaderTest from './utils/WebImageDownloader.test';
 import ImagePickerUtilsTest from './utils/ImagePickerUtils.test';
@@ -236,7 +237,10 @@ import S3ConfigTest from './storage/s3/S3Config.test';
 import S3TypesTest from './storage/s3/S3Types.test';
 import S3UploadQueueTest from './storage/s3/S3UploadQueue.test';
 import OneDriveConfigTest from './storage/onedrive/OneDriveConfig.test';
+import OneDriveClientTest from './storage/onedrive/OneDriveClient.test';
 import OneDriveOAuth2ProviderTest from './storage/onedrive/OneDriveOAuth2Provider.test';
+import BaiduNetdiskConfigTest from './storage/baidu/BaiduNetdiskConfig.test';
+import BaiduNetdiskClientTest from './storage/baidu/BaiduNetdiskClient.test';
 import HuaweiDriveConfigTest from './storage/huawei/HuaweiDriveConfig.test';
 import HuaweiDriveOAuth2ProviderTest from './storage/huawei/HuaweiDriveOAuth2Provider.test';
 import HuaweiDrivePathCacheStoreTest from './storage/huawei/HuaweiDrivePathCacheStore.test';
@@ -461,6 +465,7 @@ export default function testsuite() {
   PageConfigManagerTest();
   IconUtilsTest();
   KdbxUtilsIconGuardTest();
+  KdbxUtilsTest();
   ThemeManagerTest();
   WebImageDownloaderTest();
   ImagePickerUtilsTest();
@@ -534,7 +539,10 @@ export default function testsuite() {
   S3TypesTest();
   S3UploadQueueTest();
   OneDriveConfigTest();
+  OneDriveClientTest();
   OneDriveOAuth2ProviderTest();
+  BaiduNetdiskConfigTest();
+  BaiduNetdiskClientTest();
   HuaweiDriveConfigTest();
   HuaweiDriveOAuth2ProviderTest();
   HuaweiDrivePathCacheStoreTest();

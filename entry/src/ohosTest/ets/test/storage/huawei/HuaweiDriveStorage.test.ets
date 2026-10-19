@@ -7,6 +7,8 @@ import { HuaweiDriveFile, HuaweiDriveClient } from '../../../../../main/ets/stor
 import { HuaweiDriveTestConfig, TestHuaweiDriveStorageConfig } from './HuaweiDriveTestConfig';
 import { FileInfo, FileType, WriteOption } from '../../../../../main/ets/storage/IFileStorage';
 import { StorageError, StorageErrorCodes } from '../../../../../main/ets/storage/StorageError';
+import { StorageConfig } from '../../../../../main/ets/storage/StorageConfig';
+import { StorageType } from '../../../../../main/ets/storage';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { util } from '@kit.ArkTS';
 
@@ -23,6 +25,29 @@ function makeDriveFile(id: string, size: number, editedTime: string): HuaweiDriv
     editedTime: editedTime,
     parentFolder: []
   };
+}
+
+/**
+ * 非 HuaweiDriveStorageConfig 实例的普通配置对象：
+ * 携带真实配置的 SM4 密文字段，用于触发 parseConfig 的重建分支
+ */
+class PlainHuaweiConfig implements StorageConfig {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  timeout?: number;
+  tokenType?: string;
+  scope?: string;
+
+  constructor(accessToken: string, refreshToken: string, expiresAt: number,
+    timeout?: number, tokenType?: string, scope?: string) {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.expiresAt = expiresAt;
+    this.timeout = timeout;
+    this.tokenType = tokenType;
+    this.scope = scope;
+  }
 }
 
 export default function HuaweiDriveStorageTest() {
@@ -46,6 +71,122 @@ export default function HuaweiDriveStorageTest() {
     it('supportsVersionFastPath opts in (version fingerprint + conditional write both ready)', 0, () => {
       const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
       expect(storage.supportsVersionFastPath()).assertTrue();
+    });
+
+    it('buildVersion handles empty drive file without throwing', 0, () => {
+      expect(HuaweiDriveStorage.buildVersion(makeDriveFile('', 0, ''))).assertEqual(':0:');
+    });
+
+    it('getPageConfig exposes HuaweiDrive page contract', 0, () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      const pageConfig = storage.getPageConfig();
+      expect(pageConfig.pageUrl).assertEqual('storage/huawei/HuaweiDrivePage');
+      expect(pageConfig.storageType).assertEqual(StorageType.HUAWEI_DRIVE);
+      expect(pageConfig.icon).not().assertUndefined();
+      expect(pageConfig.title).not().assertUndefined();
+      expect(pageConfig.selectDesc).not().assertUndefined();
+      expect(pageConfig.saveDesc).not().assertUndefined();
+      expect(pageConfig.childDb).not().assertUndefined();
+    });
+
+    it('getConfig is undefined before init', 0, () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      expect(storage.getConfig()).assertUndefined();
+    });
+
+    it('init keeps HuaweiDriveStorageConfig instance identity (parseConfig passthrough)', 0, () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      const config: HuaweiDriveStorageConfig = new HuaweiDriveStorageConfig('at', 'rt', 123456);
+      storage.init(config);
+      expect(storage.getConfig() === config).assertTrue();
+      storage.close();
+    });
+
+    it('init rebuilds config from plain object and round-trips encrypted tokens', 0, () => {
+      const original: HuaweiDriveStorageConfig =
+        new HuaweiDriveStorageConfig('plain-at', 'plain-rt', 123456,
+          { timeout: 7777, tokenType: 'Bearer', scope: 'scope-x' });
+      const plain: PlainHuaweiConfig =
+        new PlainHuaweiConfig(original.accessToken, original.refreshToken, 123456,
+          7777, 'Bearer', 'scope-x');
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      storage.init(plain);
+      const parsed = storage.getConfig();
+      expect(parsed).not().assertUndefined();
+      // 重建分支：返回新 HuaweiDriveStorageConfig 实例而非原对象
+      expect(parsed === plain).assertFalse();
+      expect(parsed instanceof HuaweiDriveStorageConfig).assertTrue();
+      // encryptWithPrefix 幂等：密文字段再次加密不改变解密结果
+      expect(parsed!.getAccessTokenText()).assertEqual('plain-at');
+      expect(parsed!.getRefreshTokenText()).assertEqual('plain-rt');
+      expect(parsed!.expiresAt).assertEqual(123456);
+      expect(parsed!.timeout).assertEqual(7777);
+      expect(parsed!.tokenType).assertEqual('Bearer');
+      expect(parsed!.scope).assertEqual('scope-x');
+      storage.close();
+    });
+
+    it('updateConfig replaces config and re-initializes', 0, () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      const first: HuaweiDriveStorageConfig = new HuaweiDriveStorageConfig('at1', 'rt1', 111);
+      const second: HuaweiDriveStorageConfig = new HuaweiDriveStorageConfig('at2', 'rt2', 222);
+      storage.init(first);
+      storage.updateConfig(second);
+      expect(storage.getConfig() === second).assertTrue();
+      expect(storage.getConfig()!.getAccessTokenText()).assertEqual('at2');
+      storage.close();
+    });
+
+    it('close is no-throw on uninitialized storage', 0, () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      storage.close();
+      expect(true).assertTrue();
+    });
+
+    it('uninitialized storage rejects all operations with CLIENT_UNDEFINED', 0, async () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      const buffer = new ArrayBuffer(4);
+      const cases: Array<() => Promise<void>> = [
+        async (): Promise<void> => { await storage.read('a.kdbx'); },
+        async (): Promise<void> => { await storage.write('a.kdbx', buffer); },
+        async (): Promise<void> => { await storage.writeFromFile('a.kdbx', '/nonexistent/src.bin'); },
+        async (): Promise<void> => { await storage.readToFile('a.kdbx', '/nonexistent/dst.bin'); },
+        async (): Promise<void> => { await storage.getInfoOrNull('a.kdbx'); },
+        async (): Promise<void> => { await storage.listDir('root'); },
+        async (): Promise<void> => { await storage.getAbout(); },
+        async (): Promise<void> => { await storage.delete('a.kdbx'); }
+      ];
+      for (const run of cases) {
+        let rejected = false;
+        let codeMatches = false;
+        try {
+          await run();
+        } catch (error) {
+          const storageError = error as StorageError;
+          rejected = error instanceof StorageError;
+          codeMatches = storageError.code === StorageErrorCodes.CLIENT_UNDEFINED;
+        }
+        expect(rejected).assertTrue();
+        expect(codeMatches).assertTrue();
+      }
+    });
+
+    it('close restores the uninitialized guard for subsequent operations', 0, async () => {
+      const storage: HuaweiDriveStorage = new HuaweiDriveStorage();
+      storage.init(new HuaweiDriveStorageConfig('at', 'rt', 123456));
+      storage.close();
+      let rejected = false;
+      try {
+        await storage.read('a.kdbx');
+      } catch (error) {
+        rejected = (error as StorageError).code === StorageErrorCodes.CLIENT_UNDEFINED;
+      }
+      expect(rejected).assertTrue();
+    });
+
+    it('clearPathCache is offline-safe and completes', 0, async () => {
+      await HuaweiDriveStorage.clearPathCache();
+      expect(true).assertTrue();
     });
   });
 

@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
-import { HuaweiDriveClient, HuaweiDriveClientOptions, HuaweiDriveFile, HttpResponse } from '../../../../../main/ets/storage/huawei/HuaweiDriveClient';
+import { HuaweiDriveClient, HuaweiDriveClientOptions, HuaweiDriveFile, HttpResponse,
+  HUAWEI_DRIVE_FOLDER_MIME_TYPE } from '../../../../../main/ets/storage/huawei/HuaweiDriveClient';
 import { HuaweiDriveTestConfig } from './HuaweiDriveTestConfig';
 import { util } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
@@ -836,5 +837,248 @@ export default function HuaweiDriveClientTest() {
     } // end isResumeUploadTestEnabled
 
     } // end isRealApiEnabled
+  });
+
+  /**
+   * 离线契约测试（始终注册，不依赖真实华为云 API）：
+   * 覆盖纯解析逻辑（parseFile/parseFileList/parseAbout）、HttpResponse、
+   * 未初始化守卫、close/connection/refreshToken 守卫与 options 生命周期。
+   */
+  describe('HuaweiDriveClientContract', () => {
+    const parentFolderEntry: Record<string, Object> = { 'id': 'p1' };
+    const parentFolder: Array<Record<string, Object>> = [parentFolderEntry];
+    const fullCapabilities: Record<string, Object> = {
+      'downloadPermission': 1,
+      'editPermission': 0,
+      'deletePermission': 1
+    };
+    const fullPayload: Record<string, Object> = {
+      'id': 'f1',
+      'fileName': 'db.kdbx',
+      'mimeType': 'application/octet-stream',
+      'size': 123,
+      'createdTime': '2026-01-01T00:00:00Z',
+      'editedTime': '2026-02-02T00:00:00Z',
+      'contentDownloadLink': 'https://dl.example.com/f1',
+      'parentFolder': parentFolder,
+      'capabilities': fullCapabilities
+    };
+
+    it('parseFile maps full payload with object-form parentFolder and numeric capabilities', 0, () => {
+      const client = new HuaweiDriveClient();
+      const file = client.parseFile(fullPayload);
+      expect(file.id).assertEqual('f1');
+      expect(file.fileName).assertEqual('db.kdbx');
+      expect(file.mimeType).assertEqual('application/octet-stream');
+      expect(file.size).assertEqual(123);
+      expect(file.createdTime).assertEqual('2026-01-01T00:00:00Z');
+      expect(file.editedTime).assertEqual('2026-02-02T00:00:00Z');
+      expect(file.contentDownloadLink).assertEqual('https://dl.example.com/f1');
+      expect(file.parentFolder.length).assertEqual(1);
+      expect(file.parentFolder[0].id).assertEqual('p1');
+      expect(file.capabilities!.downloadPermission).assertTrue();
+      expect(file.capabilities!.editPermission).assertFalse();
+      expect(file.capabilities!.deletePermission).assertTrue();
+    });
+
+    it('parseFile accepts string-array parentFolder', 0, () => {
+      const client = new HuaweiDriveClient();
+      const file = client.parseFile({
+        'id': 'a', 'fileName': 'b', 'parentFolder': ['root']
+      } as Record<string, Object>);
+      expect(file.parentFolder.length).assertEqual(1);
+      expect(file.parentFolder[0].id).assertEqual('root');
+    });
+
+    it('parseFile missing id falls back to defaults without throwing', 0, () => {
+      const client = new HuaweiDriveClient();
+      const file = client.parseFile({} as Record<string, Object>);
+      expect(file.id).assertEqual('');
+      expect(file.fileName).assertEqual('Unknown');
+      expect(file.mimeType).assertEqual('application/octet-stream');
+      expect(file.size).assertEqual(0);
+      expect(file.createdTime).assertEqual('');
+      expect(file.editedTime).assertEqual('');
+      expect(file.parentFolder.length).assertEqual(0);
+    });
+
+    it('parseFile fallback preserves extractable id when fileName missing', 0, () => {
+      const client = new HuaweiDriveClient();
+      const file = client.parseFile({ 'id': 'x' } as Record<string, Object>);
+      expect(file.id).assertEqual('x');
+      expect(file.fileName).assertEqual('Unknown');
+    });
+
+    it('parseFile coerces string size to 0 (number-only contract)', 0, () => {
+      const client = new HuaweiDriveClient();
+      const file = client.parseFile({
+        'id': 'a', 'fileName': 'b', 'size': '123'
+      } as Record<string, Object>);
+      expect(file.size).assertEqual(0);
+    });
+
+    it('parseFile capabilities boolean true is not 1 (raw === 1 contract)', 0, () => {
+      const client = new HuaweiDriveClient();
+      const boolCapabilities: Record<string, Object> = { 'downloadPermission': true };
+      const file = client.parseFile({
+        'id': 'a', 'fileName': 'b',
+        'capabilities': boolCapabilities
+      } as Record<string, Object>);
+      expect(file.capabilities!.downloadPermission).assertFalse();
+    });
+
+    it('parseFileList maps files array', 0, () => {
+      const client = new HuaweiDriveClient();
+      const fileA: Record<string, Object> = { 'id': 'a', 'fileName': 'x' };
+      const fileB: Record<string, Object> = { 'id': 'b', 'fileName': 'y' };
+      const files: Array<Record<string, Object>> = [fileA, fileB];
+      const list = client.parseFileList({
+        'files': files
+      } as Record<string, Object>);
+      expect(list.length).assertEqual(2);
+      expect(list[0].id).assertEqual('a');
+      expect(list[1].fileName).assertEqual('y');
+    });
+
+    it('parseFileList returns empty array for missing/non-array/empty files', 0, () => {
+      const client = new HuaweiDriveClient();
+      expect(client.parseFileList({} as Record<string, Object>).length).assertEqual(0);
+      expect(client.parseFileList({ 'files': 'x' } as Record<string, Object>).length).assertEqual(0);
+      expect(client.parseFileList({ 'files': [] } as Record<string, Object>).length).assertEqual(0);
+    });
+
+    it('parseFileList keeps fallback items alongside valid ones', 0, () => {
+      const client = new HuaweiDriveClient();
+      const emptyItem: Record<string, Object> = {};
+      const itemA: Record<string, Object> = { 'id': 'a', 'fileName': 'b' };
+      const files: Array<Record<string, Object>> = [emptyItem, itemA];
+      const list = client.parseFileList({
+        'files': files
+      } as Record<string, Object>);
+      expect(list.length).assertEqual(2);
+      expect(list[0].id).assertEqual('');
+      expect(list[1].id).assertEqual('a');
+    });
+
+    it('parseAbout maps user identity and string quotas', 0, () => {
+      const client = new HuaweiDriveClient();
+      const user: Record<string, Object> = { 'permissionId': 'pid', 'displayName': '张三' };
+      const quota: Record<string, Object> = { 'userCapacity': '1000', 'usedSpace': '400' };
+      const about = client.parseAbout({
+        'user': user,
+        'storageQuota': quota
+      } as Record<string, Object>);
+      expect(about.user.id).assertEqual('pid');
+      expect(about.user.displayName).assertEqual('张三');
+      expect(about.space.totalSpace).assertEqual(1000);
+      expect(about.space.usedSpace).assertEqual(400);
+    });
+
+    it('parseAbout empty input yields zeroed defaults', 0, () => {
+      const client = new HuaweiDriveClient();
+      const about = client.parseAbout({} as Record<string, Object>);
+      expect(about.user.id).assertEqual('');
+      expect(about.user.displayName).assertEqual('');
+      expect(about.space.totalSpace).assertEqual(0);
+      expect(about.space.usedSpace).assertEqual(0);
+    });
+
+    it('parseAbout ignores numeric quota values (string-only contract)', 0, () => {
+      const client = new HuaweiDriveClient();
+      const numericQuota: Record<string, Object> = { 'userCapacity': 1000 };
+      const about = client.parseAbout({
+        'storageQuota': numericQuota
+      } as Record<string, Object>);
+      expect(about.space.totalSpace).assertEqual(0);
+    });
+
+    it('HttpResponse constructor maps all fields with optional body', 0, () => {
+      const body = new ArrayBuffer(4);
+      const resp = new HttpResponse(true, 200, 'ok', { 'X': 'Y' }, body);
+      expect(resp.success).assertTrue();
+      expect(resp.statusCode).assertEqual(200);
+      expect(resp.message).assertEqual('ok');
+      expect(resp.headers['X']).assertEqual('Y');
+      expect(resp.body === body).assertTrue();
+      const noBody = new HttpResponse(false, 500, 'e', {});
+      expect(noBody.success).assertFalse();
+      expect(noBody.statusCode).assertEqual(500);
+      expect(noBody.body).assertUndefined();
+    });
+
+    it('HUAWEI_DRIVE_FOLDER_MIME_TYPE is the Huawei folder mime', 0, () => {
+      expect(HUAWEI_DRIVE_FOLDER_MIME_TYPE).assertEqual('application/vnd.huawei-apps.folder');
+    });
+
+    it('uninitialized client rejects network methods with axios guard', 0, async () => {
+      const client = new HuaweiDriveClient();
+      const buffer = new ArrayBuffer(4);
+      const cases: Array<() => Promise<void>> = [
+        async (): Promise<void> => { await client.valid(); },
+        async (): Promise<void> => { await client.getInfo('root'); },
+        async (): Promise<void> => { await client.list('root'); },
+        async (): Promise<void> => { await client.download('f1'); },
+        async (): Promise<void> => { await client.upload('root', 'a.txt', buffer); },
+        async (): Promise<void> => { await client.uploadFromFile('root', 'a.txt', '/nonexistent/a.txt'); },
+        async (): Promise<void> => { await client.createFolder('root', 'dir'); },
+        async (): Promise<void> => { await client.delete('f1'); },
+        async (): Promise<void> => { await client.downloadRangeToFile('f1', '/nonexistent/out.bin'); }
+      ];
+      for (const run of cases) {
+        let rejected = false;
+        let messageMatches = false;
+        try {
+          await run();
+        } catch (error) {
+          rejected = true;
+          messageMatches = (error as Error).message.includes('not initialized');
+        }
+        expect(rejected).assertTrue();
+        expect(messageMatches).assertTrue();
+      }
+    });
+
+    it('close() restores the uninitialized guard', 0, async () => {
+      const client = new HuaweiDriveClient({ apiBaseUrl: 'https://example.invalid', accessToken: 't' });
+      client.close();
+      let rejected = false;
+      try {
+        await client.valid();
+      } catch (error) {
+        rejected = (error as Error).message.includes('not initialized');
+      }
+      expect(rejected).assertTrue();
+    });
+
+    it('connection() is offline-safe on uninitialized and initialized clients', 0, () => {
+      const bare = new HuaweiDriveClient();
+      bare.connection();
+      const inited = new HuaweiDriveClient({ apiBaseUrl: 'https://example.invalid', accessToken: 't' });
+      inited.connection();
+      expect(true).assertTrue();
+    });
+
+    it('refreshToken rejects before network when OAuth2 config not set', 0, async () => {
+      const client = new HuaweiDriveClient({ apiBaseUrl: 'https://example.invalid', accessToken: 't' });
+      let rejected = false;
+      let messageMatches = false;
+      try {
+        await client.refreshToken('rt');
+      } catch (error) {
+        rejected = true;
+        messageMatches = (error as Error).message.includes('OAuth2 config not set');
+      }
+      expect(rejected).assertTrue();
+      expect(messageMatches).assertTrue();
+    });
+
+    it('updateOptions/updateAccessToken/setOAuth2Config are offline no-throw smoke', 0, () => {
+      const client = new HuaweiDriveClient();
+      client.updateAccessToken('t2');
+      client.updateOptions({ apiBaseUrl: 'https://example.invalid', accessToken: 't2', timeout: 5000 });
+      client.updateAccessToken('t3');
+      client.close();
+      expect(true).assertTrue();
+    });
   });
 }
