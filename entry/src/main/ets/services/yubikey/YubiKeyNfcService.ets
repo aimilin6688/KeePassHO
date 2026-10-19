@@ -84,7 +84,10 @@ export function buildSelectApdu(): number[] {
 }
 
 /**
- * 挑战值补零至 64 字节（YubiKey HMAC 槽位挑战语义）
+ * 挑战值按 PKCS#7 风格补齐至 64 字节（YubiKey HMAC 槽位挑战语义）：
+ * 不足 64 字节时，以 (64 - len) 的字节值填充（对齐 KeePassXC YubiKeyInterfaceUSB/PCSC
+ * 与 keepass2android ChallengeXCKey 的实现）。补零仅在 HMAC 槽位配置了
+ * 「消息 < 64 字节」（LT64）标志时等价；按 PKCS#7 补位对两种槽位配置均兼容。
  * @param challenge 挑战原文（KDBX4 KDF seed）
  */
 export function padChallengeTo64(challenge: number[]): number[] {
@@ -93,14 +96,15 @@ export function padChallengeTo64(challenge: number[]): number[] {
   for (let i = 0; i < length; i++) {
     padded.push(challenge[i] & 0xFF);
   }
+  const padValue = CHALLENGE_PAD_LENGTH - length;
   for (let i = length; i < CHALLENGE_PAD_LENGTH; i++) {
-    padded.push(0);
+    padded.push(padValue);
   }
   return padded;
 }
 
 /**
- * 构造 HMAC 挑战 APDU：00 INS 00 00 40 <64 字节补零挑战>
+ * 构造 HMAC 挑战 APDU：00 INS 00 00 40 <64 字节 PKCS#7 补位挑战>
  * INS：槽位 1 = 0x30，槽位 2 = 0x38
  */
 export function buildChallengeApdu(slot: YubiKeySlot, challenge: number[]): number[] {

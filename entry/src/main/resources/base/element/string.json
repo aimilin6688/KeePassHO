@@ -821,6 +821,10 @@
       "value": "Key file not found"
     },
     {
+      "name": "error_keyfile_is_database",
+      "value": "The selected key file is a database file, not a key file"
+    },
+    {
       "name": "error_otp_secret_missing",
       "value": "OTP secret is missing. Please re-enter the one-time passwords"
     },

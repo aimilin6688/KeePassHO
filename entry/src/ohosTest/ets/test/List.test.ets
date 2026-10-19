@@ -177,6 +177,7 @@ import AuthServiceTest from './services/AuthService.test';
 import CrashLogServiceTest from './services/CrashLogService.test';
 import SessionManagerTest from './services/SessionManager.test';
 import CredentialsServiceTest from './services/CredentialsService.test';
+import KeyFileReaderTest from './services/KeyFileReader.test';
 import SessionNotificationServiceTest from './services/SessionNotificationService.test';
 import CopyEventServiceTest from './services/CopyEventService.test';
 import FileServiceTest from './services/FileService.test';
@@ -473,6 +474,7 @@ export default function testsuite() {
   CrashLogServiceTest();
   SessionManagerTest();
   CredentialsServiceTest();
+  KeyFileReaderTest();
   SessionNotificationServiceTest();
   CopyEventServiceTest();
   FileServiceTest();

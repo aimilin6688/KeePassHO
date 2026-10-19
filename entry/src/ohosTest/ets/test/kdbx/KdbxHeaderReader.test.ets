@@ -33,11 +33,17 @@ async function hmacSha1(key: Uint8Array, message: Uint8Array): Promise<Uint8Arra
   return (await mac.doFinal()).data;
 }
 
-/** YubiKey HMAC 槽位挑战语义：挑战补零至 64 字节（KeePassXC slot challenge） */
+/** YubiKey HMAC 槽位挑战语义：挑战按 PKCS#7 补齐至 64 字节
+ *（对齐 KeePassXC YubiKeyInterfaceUSB/PCSC 与 KP2A ChallengeXCKey 发送侧行为） */
 function padChallengeTo64(challenge: ArrayBuffer): Uint8Array {
-  const padded = new Uint8Array(64);
   const bytes = new Uint8Array(challenge);
-  padded.set(bytes.subarray(0, Math.min(64, bytes.length)));
+  const length = Math.min(64, bytes.length);
+  const padded = new Uint8Array(64);
+  padded.set(bytes.subarray(0, length));
+  const padValue = 64 - length;
+  for (let i = length; i < 64; i++) {
+    padded[i] = padValue;
+  }
   return padded;
 }
 

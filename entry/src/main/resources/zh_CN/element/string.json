@@ -809,6 +809,10 @@
       "value": "未找到密钥文件"
     },
     {
+      "name": "error_keyfile_is_database",
+      "value": "所选密钥文件是数据库文件，不是密钥文件"
+    },
+    {
       "name": "error_otp_secret_missing",
       "value": "OTP 密钥缺失，请重新输入动态密码"
     },

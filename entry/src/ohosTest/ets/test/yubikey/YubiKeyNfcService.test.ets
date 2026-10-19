@@ -16,7 +16,7 @@ import {
  *
  * 协议对齐 Yubico OTP/HMAC 规范与 KeePassXC 挑战-应答语义：
  * - SELECT：00 A4 04 00 07 A0 00 00 05 27 20 01（按 AID 选择 YubiKey OTP 应用）
- * - HMAC 挑战：00 (0x30|0x38) 00 00 40 <64 字节补零挑战>，INS 0x30=槽位1 / 0x38=槽位2
+ * - HMAC 挑战：00 (0x30|0x38) 00 00 40 <64 字节 PKCS#7 补位挑战>，INS 0x30=槽位1 / 0x38=槽位2
  * - 应答：20 字节 HMAC + SW 9000
  */
 
@@ -61,9 +61,9 @@ export default function YubiKeyNfcServiceTest() {
       for (let i = 0; i < 32; i++) {
         expect(padded[i]).assertEqual(SEED_32[i]);
       }
-      // 尾部补零
+      // 尾部 PKCS#7 补位：32 字节的 0x20（64 - 32）
       for (let i = 32; i < 64; i++) {
-        expect(padded[i]).assertEqual(0);
+        expect(padded[i]).assertEqual(0x20);
       }
     });
 
@@ -74,10 +74,24 @@ export default function YubiKeyNfcServiceTest() {
       expect(padded[0]).assertEqual(0xaa);
       expect(padded[1]).assertEqual(0xbb);
       expect(padded[2]).assertEqual(0xcc);
-      expect(padded[3]).assertEqual(0);
-      // 超长挑战截断至 64
+      expect(padded[3]).assertEqual(61);
+      expect(padded[63]).assertEqual(61);
+      // 超长挑战截断至 64（不补位）
       const long: number[] = new Array<number>(80).fill(0x11);
-      expect(padChallengeTo64(long).length).assertEqual(64);
+      const truncated: number[] = padChallengeTo64(long);
+      expect(truncated.length).assertEqual(64);
+      for (let i = 0; i < 64; i++) {
+        expect(truncated[i]).assertEqual(0x11);
+      }
+    });
+
+    it('padChallengeTo64_exact64ByteChallengeNoPadding', 0, () => {
+      const exact: number[] = new Array<number>(64).fill(0x33);
+      const padded: number[] = padChallengeTo64(exact);
+      expect(padded.length).assertEqual(64);
+      for (let i = 0; i < 64; i++) {
+        expect(padded[i]).assertEqual(0x33);
+      }
     });
 
     it('buildChallengeApdu_slot1UsesIns30', 0, () => {
@@ -92,8 +106,8 @@ export default function YubiKeyNfcServiceTest() {
       for (let i = 0; i < 32; i++) {
         expect(apdu[5 + i]).assertEqual(SEED_32[i]);
       }
-      // 数据区尾部补零
-      expect(apdu[5 + 63]).assertEqual(0);
+      // 数据区尾部 PKCS#7 补位（32 字节 seed → 0x20）
+      expect(apdu[5 + 63]).assertEqual(0x20);
     });
 
     it('buildChallengeApdu_slot2UsesIns38', 0, () => {
