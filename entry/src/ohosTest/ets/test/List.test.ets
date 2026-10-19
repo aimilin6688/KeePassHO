@@ -170,6 +170,8 @@ import ImagePickerUtilsTest from './utils/ImagePickerUtils.test';
 import DialogWindowHelperTest from './utils/DialogWindowHelper.test';
 import UIUtilsTest from './utils/UIUtils.test';
 import HashUtilsTest from './utils/HashUtils.test';
+import DateUtilsTest from './utils/DateUtils.test';
+import FilenameUtilsTest from './utils/FilenameUtils.test';
 
 // ===== 新增：services 顶层服务单元测试 =====
 import EventBusTest from './services/EventBus.test';
@@ -189,6 +191,7 @@ import LockScreenServiceTest from './services/LockScreenService.test';
 import BasicDataSourceTest from './services/BasicDataSource.test';
 import LocationParamTest from './services/LocationParam.test';
 import KeepassHoErrorTest from './services/KeepassHoError.test';
+import TypeDefinedTest from './services/TypeDefined.test';
 
 // ===== services/autoopen 子数据库（AutoOpen/KeeAutoExec 兼容）单元测试 =====
 import IfDeviceParserTest from './services/autoopen/IfDeviceParser.test';
@@ -255,6 +258,7 @@ import KdbxFileManagerTest from './kdbx/KdbxFileManager.test';
 import UnlockSecretsSaveReloadTest from './kdbx/UnlockSecretsSaveReload.test';
 import SaveDatabaseCallbackTest from './workers/SaveDatabaseCallback.test';
 import ToastSaveDatabaseCallbackTest from './workers/ToastSaveDatabaseCallback.test';
+import ToastLoadDatabaseCallbackTest from './workers/ToastLoadDatabaseCallback.test';
 
 // E2E 测试数据库生成套件（结构验证 + S3 上传，需 SeaweedFS 网关与反向隧道，
 // 建议 -s class GenerateE2eTestDatabaseTest 单独运行；连接方式与主密码见 docs/e2e-test-database.md）
@@ -472,6 +476,8 @@ export default function testsuite() {
   DialogWindowHelperTest();
   UIUtilsTest();
   HashUtilsTest();
+  DateUtilsTest();
+  FilenameUtilsTest();
 
   // ===== services 顶层 =====
   EventBusTest();
@@ -491,6 +497,7 @@ export default function testsuite() {
   BasicDataSourceTest();
   LocationParamTest();
   KeepassHoErrorTest();
+  TypeDefinedTest();
 
   // ===== services/autoopen 子数据库 =====
   IfDeviceParserTest();
@@ -557,6 +564,7 @@ export default function testsuite() {
   UnlockSecretsSaveReloadTest();
   SaveDatabaseCallbackTest();
   ToastSaveDatabaseCallbackTest();
+  ToastLoadDatabaseCallbackTest();
 
   // E2E 测试数据库生成（生成结构验证 + 上传 S3；S3 用例需隧道，建议按 class 单独运行）
   GenerateE2eTestDatabaseTest();

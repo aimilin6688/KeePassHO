@@ -1,10 +1,14 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@ohos/hypium';
 import { TestContextHelper } from '../TestContextHelper';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { userAuth } from '@kit.UserAuthenticationKit';
+import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { AuthService, AuthServiceCallback } from '../../../../main/ets/services/AuthService';
 import { FileService } from '../../../../main/ets/services/FileService';
 import { SettingsService } from '../../../../main/ets/services/SettingsService';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
+import { AuthType, DbFileParam } from '../../../../main/ets/services/TypeDefined';
+import { StorageType } from '../../../../main/ets/storage';
 
 export default function AuthServiceTest() {
   describe('AuthService', () => {
@@ -133,6 +137,61 @@ export default function AuthServiceTest() {
       expect(success).assertEqual(0);
       expect(errorObj !== null).assertTrue();
       expect((errorObj!['code'] as number) === 1001).assertTrue();
+    });
+  });
+
+  /**
+   * 空密码数据库的主密码验证路径：startPasswordAuth 对未设置主密码的数据库直接放行
+   * （onSuccess 携带 UserAuthResultCode.SUCCESS，无需弹框）。非空密码路径依赖
+   * DialogHelper.showTextInputDialog（UI 弹框），不在单元测试范围。
+   * 本 describe 必须注册在既有 describe 之后：DATABASE_NOT_OPENED 用例依赖干净注册表。
+   */
+  describe('AuthServicePasswordAuth', () => {
+    beforeAll(async () => {
+      const appContext = await TestContextHelper.getUIAbilityContext();
+      CommonUtils.init(appContext);
+      await SettingsService.getInstance().init(appContext);
+      FileService.init();
+      const credentials = new KdbxCredentials(ProtectedValue.fromString('AuthService-Test-123'));
+      const database = Kdbx.create(credentials, 'AuthServiceDb');
+      const param: DbFileParam = {
+        filePath: '/data/test/auth-service.kdbx',
+        fileName: 'auth-service.kdbx',
+        password: '',
+        database: database,
+        authType: AuthType.PASSWORD,
+        storageType: StorageType.LOCAL,
+        storageConfig: {},
+        modifiedTime: 0
+      };
+      FileService.setDbFileParam(param);
+    });
+
+    afterAll(() => {
+      FileService.init();
+    });
+
+    it('startPasswordAuth succeeds immediately for an empty-password database', 0, async () => {
+      let successResult: number | null = null;
+      let fail = 0;
+      let error = 0;
+      const cb: AuthServiceCallback = {
+        onSuccess: (authResult: userAuth.UserAuthResult) => {
+          successResult = authResult.result;
+        },
+        onFail: () => {
+          fail++;
+        },
+        onError: () => {
+          error++;
+        }
+      };
+      AuthService.startPasswordAuth(cb);
+      await new Promise<void>(resolve => setTimeout(resolve, 100));
+      expect(fail).assertEqual(0);
+      expect(error).assertEqual(0);
+      expect(successResult !== null).assertTrue();
+      expect(successResult).assertEqual(userAuth.UserAuthResultCode.SUCCESS);
     });
   });
 }
