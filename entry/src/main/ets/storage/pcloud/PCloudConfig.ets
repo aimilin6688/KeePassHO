@@ -1,5 +1,6 @@
 import { Sm4Utils } from '../../common/utils/Sm4Utils'
-import { StorageConfig, PageConfig, PathChildDbSupport } from '../StorageConfig'
+import { StorageConfig, PageConfig } from '../StorageConfig'
+import { PathChildDbSupport } from '../ChildDbSupport'
 import { StorageType } from '../StorageType'
 
 /**

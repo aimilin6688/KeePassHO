@@ -9,6 +9,7 @@ export * from './StorageType';
 export * from './FileStorageFactory';
 
 export * from './StorageConfig';
+export * from './ChildDbSupport';
 export * from './local/LocalFileStorage'
 export * from './local/LocalFileConfig'
 export * from './cache/CacheConstants'

@@ -442,7 +442,7 @@ onParentUnlocked(parentIocKey):
 
 **M6.0 注册表驱动架构（零修改扩展；M6.9 起收敛为 Port-Adapter 端口）**
 
-scheme 映射、storageConfig 解析、写侧凭据/附加字段均由 `PageConfig.childDb` 单一适配器声明驱动（`storage/StorageConfig.ets`），框架经 `FileStorageFactory` 注册表发现声明，`IFileStorage` 接口零新增方法：
+scheme 映射、storageConfig 解析、写侧凭据/附加字段均由 `PageConfig.childDb` 单一适配器声明驱动（端口定义于 `storage/ChildDbSupport.ets`，`PageConfig` 位于 `storage/StorageConfig.ets`），框架经 `FileStorageFactory` 注册表发现声明，`IFileStorage` 接口零新增方法：
 
 - `childDb?: ChildDbSupport`（M6.9 收敛：原 5 个 `childDb*` 散字段合并为单一端口）：
   - `schemes: ChildDbScheme[]` — scheme + 文法（`ChildDbUrlKind.PATH / AUTHORITY / ENDPOINT_BUCKET / URL` 四种固定文法，声明即接入解析/构造；唯一必填项）；
@@ -548,7 +548,7 @@ KeePassXC 2.8 的 AutoOpen 实现私有扩展了 `kdbx://` 前缀（`DatabaseWid
 > 状态：✅ 已实现。动机——原实现存在三类缺陷：**P1** 凭据型子库每次自动打开都从条目 Ioc 字段重建 config，`certValidationMode`/`customCaCertContent`/`timeout`（WebDAV）、`secure`/`timeout`（FTPS）等无法进条目的选项全部丢失——自签 CA WebDAV / FTPS 子库「手动可开、自动打开必失败」；**P2** OAuth 与凭据双轨解析分支（声明 rebuilder 与否）扩散在 ConfigRebuilder/EntryService；**P3** 打开成功的完整 config 仅存内存 Registry，冷启动即丢。重构为完整 Port-Adapter 模式（高内聚低耦合：子库框架只认端口，存储各自实现适配器）：
 
 ```
-┌────────── 子库框架（services/autoopen + storage/StorageConfig.ets，存储无关） ──────────┐
+┌────────── 子库框架（services/autoopen + storage/ChildDbSupport.ets，存储无关） ──────────┐
 │ AutoOpenService/Item/IfDeviceParser/DeviceIdentity  KeeAutoExec 约定解析（与存储无关）      │
 │ AutoOpenPathResolver                                占位符/相对路径/kdbx:// 剥离（M6.8）     │
 │ SchemeMapper                                        通用文法引擎（4 种固定文法，读端口 schemes）│

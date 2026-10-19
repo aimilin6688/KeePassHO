@@ -1,5 +1,6 @@
 import { ChildDbRebuildArgs, ChildDbScheme, ChildDbSupport, ChildDbUrlKind, ChildTarget,
-  IocCredentials, PageConfig, StorageConfig } from '../StorageConfig';
+  IocCredentials } from '../ChildDbSupport';
+import { PageConfig, StorageConfig } from '../StorageConfig';
 import { Sm4Utils } from '../../common/utils/Sm4Utils';
 import { StorageType } from '..';
 
