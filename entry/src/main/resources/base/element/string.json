@@ -825,6 +825,10 @@
       "value": "The selected key file is a database file, not a key file"
     },
     {
+      "name": "error_keyfile_attachment_too_large",
+      "value": "The KeyFile.bin attachment exceeds the size limit for a key file"
+    },
+    {
       "name": "error_otp_secret_missing",
       "value": "OTP secret is missing. Please re-enter the one-time passwords"
     },

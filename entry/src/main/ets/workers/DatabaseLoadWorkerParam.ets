@@ -36,6 +36,11 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
    */
   challengeResponseHex?: string;
   /**
+   * 内联密钥文件内容（base64，AutoOpen 条目 KeyFile.bin 附件提取）：
+   * 主线程提取后随 JSON 消息传入（undefined 字段序列化时自动丢弃），不持久化
+   */
+  keyFileDataBase64?: string;
+  /**
    * 存储类型
    */
   storageType: StorageType;
@@ -86,6 +91,8 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
     // 解锁时应答对重载/下拉刷新始终有效（远端被其他设备换 seed 时重载报 InvalidKey，回解锁页重新贴卡）
     loadDatabase.otpSecretHex = dbFileParam.otpSecretHex;
     loadDatabase.challengeResponseHex = dbFileParam.challengeResponseHex;
+    // KeyFile.bin 内联密钥随会话内重载传递（registry DbFileParam → LoadDatabase）
+    loadDatabase.keyFileDataBase64 = dbFileParam.keyFileDataBase64;
     return loadDatabase;
   }
 }

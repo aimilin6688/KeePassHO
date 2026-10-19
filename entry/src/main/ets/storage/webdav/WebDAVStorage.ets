@@ -50,7 +50,11 @@ export class WebDAVStorage extends BaseFileStorage {
       username: this.config.getUserNameText(),
       password: this.config.getPasswordText(),
       certValidationMode: this.config.certValidationMode,
-      customCaCertContent: this.config.customCaCertContent
+      customCaCertContent: this.config.customCaCertContent,
+      timeout: this.config.timeout,
+      userAgent: this.config.userAgent,
+      preAuth: this.config.preAuth,
+      expect100Continue: this.config.expect100Continue
     });
   }
 
@@ -69,7 +73,7 @@ export class WebDAVStorage extends BaseFileStorage {
 
   /**
    * 判断配置是否相同
-   * 比较 url/username/password 三个字段，相同则 session 等价，无需重建
+   * 比较连接语义等价字段，相同则 session 等价，无需重建
    * 注意：比较解密后的值，因为加密结果每次不同
    */
   private isSameConfig(newConfig: WebDAVStorageConfig): boolean {
@@ -78,15 +82,34 @@ export class WebDAVStorage extends BaseFileStorage {
     }
     return this.config.url === newConfig.url
       && this.config.getUserNameText() === newConfig.getUserNameText()
-      && this.config.getPasswordText() === newConfig.getPasswordText();
+      && this.config.getPasswordText() === newConfig.getPasswordText()
+      && (this.config.timeout ?? 0) === (newConfig.timeout ?? 0)
+      && (this.config.certValidationMode ?? '') === (newConfig.certValidationMode ?? '')
+      && (this.config.customCaCertContent ?? '') === (newConfig.customCaCertContent ?? '')
+      && (this.config.userAgent ?? '') === (newConfig.userAgent ?? '')
+      && this.config.preAuth === newConfig.preAuth
+      && this.config.expect100Continue === newConfig.expect100Continue;
   }
 
-  private parseConfig(config: WebDAVStorageConfig): WebDAVStorageConfig {
+  /**
+   * 解析/规范化配置：Worker JSON 通道传入的 plain 对象全字段重建
+   * （public 以便单元测试回归字段保真：漏字段会静默回落默认值，
+   * 证书校验模式等连接语义字段在远端子库加载链路上曾被丢弃）
+   */
+  public parseConfig(config: WebDAVStorageConfig): WebDAVStorageConfig {
     if (config instanceof WebDAVStorageConfig) {
       return config;
     }
     config = config as WebDAVStorageConfig;
-    return new WebDAVStorageConfig(config.url, config.username, config.password, { rootPath: config.rootPath, timeout: config.timeout });
+    return new WebDAVStorageConfig(config.url, config.username, config.password, {
+      rootPath: config.rootPath,
+      timeout: config.timeout,
+      certValidationMode: config.certValidationMode,
+      customCaCertContent: config.customCaCertContent,
+      userAgent: config.userAgent,
+      preAuth: config.preAuth,
+      expect100Continue: config.expect100Continue
+    });
   }
 
   /**

@@ -228,6 +228,8 @@ import ImportExportIndexTest from './importExport/Index.test';
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
 import StorageConfigTest from './storage/StorageConfig.test';
 import StorageTypeTest from './storage/StorageType.test';
+// M7 子库 Ioc 高级连接字段（解析/适配器 extraFields/parseConfig 保真）
+import ChildDbIocFieldsTest from './storage/ChildDbIocFields.test';
 import LocalFileConfigTest from './storage/local/LocalFileConfig.test';
 import CacheConstantsTest from './storage/cache/CacheConstants.test';
 import S3ConfigTest from './storage/s3/S3Config.test';
@@ -524,6 +526,8 @@ export default function testsuite() {
   FileStorageFactoryTest();
   StorageConfigTest();
   StorageTypeTest();
+  // M7 子库 Ioc 高级连接字段（解析/适配器 extraFields/parseConfig 保真）
+  ChildDbIocFieldsTest();
   LocalFileConfigTest();
   CacheConstantsTest();
   S3ConfigTest();

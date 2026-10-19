@@ -1,8 +1,19 @@
-import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
-import { KdbxUtils } from '../../common/utils';
-import { AUTO_OPEN_GROUP_NAME, AutoOpenFieldName } from './AutoOpenConstants';
+import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryDiskRef, KdbxBinaryWithHash, KdbxEntry, KdbxGroup, ProtectedValue } from 'kdbxweb';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { KdbxUtils, ResourceManager } from '../../common/utils';
+import {
+  AUTO_OPEN_GROUP_NAME,
+  AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME,
+  AutoOpenFieldName
+} from './AutoOpenConstants';
 import { AutoOpenItem } from './AutoOpenItem';
 import { IfDeviceParser } from './IfDeviceParser';
+
+const DOMAIN = 0x0000;
+const TAG = 'AutoOpenService';
+
+/** KeyFile.bin 内嵌密钥附件大小上限（字节）：密钥文件均为 KB 级，超限视为误挂大文件 */
+const MAX_KEY_FILE_ATTACHMENT_BYTES = 16 * 1024 * 1024;
 
 /**
  * AutoOpen 组扫描与条目解析服务
@@ -127,7 +138,79 @@ export class AutoOpenService {
       || AutoOpenService.getBoolField(entry, AutoOpenFieldName.SKIP_IF_NOT_EXISTS_LEGACY) === true;
     item.skipIfKeyFileNotExists =
       AutoOpenService.getBoolField(entry, AutoOpenFieldName.SKIP_IF_KEY_FILE_NOT_EXISTS) === true;
+    item.hasKeyFileAttachment = entry.binaries.has(AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME);
     return item;
+  }
+
+  /**
+   * 按 UUID 在 AutoOpen 组条目中定位条目
+   * @param database 已打开的数据库
+   * @param entryUuid 条目 UUID（KdbxUuid.id）
+   */
+  public static findAutoOpenEntry(database: Kdbx, entryUuid: string): KdbxEntry | undefined {
+    const entries: KdbxEntry[] = AutoOpenService.collectAutoOpenEntries(database);
+    for (const entry of entries) {
+      if (entry.uuid.id === entryUuid) {
+        return entry;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * 读取条目 KeyFile.bin 内嵌密钥附件内容（UserName 密钥路径为空时的密钥来源，
+   * kp2a KeeAutoExec.cs:339-345 同义）：兼容内存态（ProtectedValue/ArrayBuffer）、
+   * 哈希包裹（KdbxBinaryWithHash）与 S4 附件磁盘化（KdbxBinaryDiskRef 异步回读）。
+   * @param database 父数据库模型
+   * @param entryUuid AutoOpen 条目 UUID
+   * @throws Error 条目/附件缺失、磁盘引用回读失败或超过大小上限时抛出
+   */
+  public static async readKeyFileAttachment(database: Kdbx, entryUuid: string): Promise<ArrayBuffer> {
+    const entry: KdbxEntry | undefined = AutoOpenService.findAutoOpenEntry(database, entryUuid);
+    if (entry === undefined) {
+      throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
+    }
+    const binary: KdbxBinary | KdbxBinaryWithHash | undefined =
+      entry.binaries.get(AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME);
+    if (binary === undefined) {
+      throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
+    }
+    const content: ArrayBuffer | undefined =
+      await AutoOpenService.resolveBinaryContent(database, binary);
+    if (content === undefined) {
+      throw new Error(ResourceManager.getString($r('app.string.error_keyfile_not_found')));
+    }
+    if (content.byteLength > MAX_KEY_FILE_ATTACHMENT_BYTES) {
+      hilog.warn(DOMAIN, TAG, 'KeyFile.bin attachment too large: %{public}d bytes', content.byteLength);
+      throw new Error(ResourceManager.getString($r('app.string.error_keyfile_attachment_too_large')));
+    }
+    return content;
+  }
+
+  /**
+   * 解析附件二进制为字节内容（含哈希包裹递归与磁盘引用异步回读；失败返回 undefined）
+   */
+  private static async resolveBinaryContent(database: Kdbx,
+    binary: KdbxBinary | KdbxBinaryWithHash): Promise<ArrayBuffer | undefined> {
+    if (KdbxBinaries.isKdbxBinaryWithHash(binary)) {
+      const wrapped: KdbxBinaryWithHash = binary as KdbxBinaryWithHash;
+      return AutoOpenService.resolveBinaryContent(database, wrapped.value);
+    }
+    if (binary instanceof ProtectedValue) {
+      return binary.getBinary();
+    }
+    if (binary instanceof ArrayBuffer) {
+      return binary;
+    }
+    if (binary instanceof KdbxBinaryDiskRef) {
+      try {
+        return await database.binaries.readDiskRef(binary);
+      } catch (error) {
+        hilog.warn(DOMAIN, TAG, 'read disk-ref KeyFile.bin failed: %{public}s', `${error}`);
+        return undefined;
+      }
+    }
+    return undefined;
   }
 
   /**

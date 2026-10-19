@@ -40,6 +40,12 @@ export class AutoOpenItem {
   public skipIfNotExists: boolean = false;
   /** 密钥文件不存在时静默跳过（自定义 SkipIfKeyFileNotExists） */
   public skipIfKeyFileNotExists: boolean = false;
+  /**
+   * 条目携带 KeyFile.bin 内嵌密钥附件（kp2a KeeAutoExec 约定）：
+   * 仅存在性标志，附件内容不驻留视图模型（打开时按 entryUuid 现取）；
+   * UserName 密钥文件路径优先，无路径时以该附件为密钥来源
+   */
+  public hasKeyFileAttachment: boolean = false;
   /** 条目图标 ID（UI 展示用） */
   public iconId: number = 0;
   /** 自定义图标 UUID（UI 展示用，空串表示无） */

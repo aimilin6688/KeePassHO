@@ -1,6 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { emitter } from '@kit.BasicServicesKit';
 import { ErrorEvent } from '@kit.ArkTS';
+import { ByteUtils } from 'kdbxweb';
 
 import { AutoOpenItem } from './AutoOpenItem';
 import { AutoOpenService } from './AutoOpenService';
@@ -15,7 +16,7 @@ import { EventBus } from '../EventBus';
 import { RecentFilesService } from '../RecentFilesService';
 import KdbxLoadService from '../kdbx/KdbxLoadService';
 import { KdbxFileManager } from '../kdbx/KdbxFileManager';
-import { AuthType, DbFileParam, RecentFile } from '../TypeDefined';
+import { AuthType, AuthTypeInfo, DbFileParam, RecentFile } from '../TypeDefined';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import { LoadMessage, SuccessMessage } from '../../workers/WorkerParam';
 import { FilenameUtils, KdbxUtils, CommonUtils } from '../../common/utils';
@@ -276,6 +277,24 @@ export class AutoOpenCoordinator {
       };
     }
 
+    // KeyFile.bin 内嵌密钥回退（kp2a KeeAutoExec.cs:339-345）：UserName 密钥路径为空
+    // 且条目携带 KeyFile.bin 附件时以附件内容为密钥来源（内容不驻留 item，现取现用，
+    // base64 随 JSON 消息传 Worker，otpSecretHex 同机制）
+    let keyFileDataBase64: string | undefined = undefined;
+    if (keyLocation === undefined && item.hasKeyFileAttachment) {
+      try {
+        const attachment: ArrayBuffer =
+          await AutoOpenService.readKeyFileAttachment(parentParam.database, item.entryUuid);
+        keyFileDataBase64 = ByteUtils.bytesToBase64(attachment);
+      } catch (error) {
+        const reason: string = error instanceof Error ? error.message : `${error}`;
+        hilog.warn(DOMAIN, TAG, 'read KeyFile.bin attachment failed: %{public}s', reason);
+        EventBus.emit(AutoOpenCoordinator.EVENT_DATABASE_OPEN_FAILED,
+          new AutoOpenFailure(childIocKey, item.title, reason));
+        return 'failedNotified';
+      }
+    }
+
     // 子库文件缺失 + SkipIfNotExists：仅本地检查存在性；远端恒视为存在
     // （对齐 kp2a KeeAutoExec.cs:358-385：远端存在性探测代价高且可能需交互，不作拦截）
     if (item.skipIfNotExists && target.storageType === StorageType.LOCAL) {
@@ -287,9 +306,17 @@ export class AutoOpenCoordinator {
     }
 
     this.beginPending(item.sourceIocKey);
-    const authType = keyLocation !== undefined ? AuthType.PASSWORD_KEYFILE : AuthType.PASSWORD;
+    // 认证方式：路径密钥 → 密码+密钥文件；附件密钥 → 有密码为密码+密钥文件、
+    // 无密码为仅密钥文件（kp2a 密码组件仅在 Password 非空时并入复合密钥）
+    let authType: AuthTypeInfo = AuthType.PASSWORD;
+    if (keyLocation !== undefined) {
+      authType = AuthType.PASSWORD_KEYFILE;
+    } else if (keyFileDataBase64 !== undefined) {
+      authType = item.passwordText.length > 0 ? AuthType.PASSWORD_KEYFILE : AuthType.KEYFILE;
+    }
     const loadParam: LoadDatabase = new LoadDatabase(target.filePath, FilenameUtils.getFileName(target.filePath),
       item.passwordText, authType, keyLocation, target.storageType, storageConfig);
+    loadParam.keyFileDataBase64 = keyFileDataBase64;
     const task: ChildOpenTask = new ChildOpenTask(item, loadParam, makeCurrent);
     KdbxLoadService.enqueueLoad(loadParam, {
       onSuccessMessage: (message: SuccessMessage) => {
@@ -327,6 +354,7 @@ export class AutoOpenCoordinator {
         database: kdbx,
         authType: task.loadParam.authType,
         keyLocation: task.loadParam.keyLocation,
+        keyFileDataBase64: task.loadParam.keyFileDataBase64,
         storageType: task.loadParam.storageType,
         storageConfig: task.loadParam.storageConfig,
         modifiedTime: message.modifiedTime,

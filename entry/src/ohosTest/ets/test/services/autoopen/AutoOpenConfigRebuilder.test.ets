@@ -13,6 +13,7 @@ import { S3StorageConfig } from '../../../../../main/ets/storage/s3/S3Config';
 import { OneDriveStorageConfig } from '../../../../../main/ets/storage/onedrive/OneDriveConfig';
 import { PathChildDbSupport } from '../../../../../main/ets/storage';
 import { StorageType } from '../../../../../main/ets/storage';
+import { ChildDbIocFields } from '../../../../../main/ets/storage/ChildDbIocFields';
 import { ResourceManager } from '../../../../../main/ets/common/utils';
 
 /**
@@ -129,6 +130,74 @@ export default function AutoOpenConfigRebuilderTest() {
       const result = await AutoOpenConfigRebuilder.build(makeItem('', ''), target!);
       expect(result.config).assertUndefined();
       expect(result.failReason.length > 0).assertTrue();
+    });
+
+    // ==================== M7 Ioc 高级连接字段（rebuildConfig 消费） ====================
+
+    it('WEBDAV rebuild consumes Ioc advanced fields into config', 0, async () => {
+      const target = SchemeMapper.parse('webdav://dav.example.com/dav/child.kdbx');
+      expect(target !== undefined).assertTrue();
+      const item = makeItem('davuser', 'davpass');
+      item.customStrings.set(ChildDbIocFields.TIMEOUT, '12345');
+      item.customStrings.set(ChildDbIocFields.USER_AGENT, 'KeePassHO/1.0');
+      item.customStrings.set(ChildDbIocFields.PRE_AUTH, 'True');
+      item.customStrings.set(ChildDbIocFields.EXPECT_100_CONTINUE, 'True');
+      const result = await AutoOpenConfigRebuilder.build(item, target!);
+      expect(result.config !== undefined).assertTrue();
+      const config = result.config as WebDAVStorageConfig;
+      expect(config.timeout).assertEqual(12345);
+      expect(config.userAgent).assertEqual('KeePassHO/1.0');
+      expect(config.preAuth).assertTrue();
+      expect(config.expect100Continue).assertTrue();
+      expect(result.failReason).assertEqual('');
+    });
+
+    it('WEBDAV rebuild without Ioc advanced fields keeps defaults', 0, async () => {
+      const target = SchemeMapper.parse('webdav://dav.example.com/dav/child.kdbx');
+      expect(target !== undefined).assertTrue();
+      const result = await AutoOpenConfigRebuilder.build(makeItem('davuser', 'davpass'), target!);
+      expect(result.config !== undefined).assertTrue();
+      const config = result.config as WebDAVStorageConfig;
+      expect(config.timeout).assertUndefined();
+      expect(config.userAgent).assertUndefined();
+      expect(config.preAuth).assertFalse();
+      expect(config.expect100Continue).assertFalse();
+    });
+
+    it('WEBDAV rebuild ignores invalid IocTimeout', 0, async () => {
+      const target = SchemeMapper.parse('webdav://dav.example.com/dav/child.kdbx');
+      expect(target !== undefined).assertTrue();
+      const item = makeItem('davuser', 'davpass');
+      item.customStrings.set(ChildDbIocFields.TIMEOUT, 'abc');
+      const result = await AutoOpenConfigRebuilder.build(item, target!);
+      expect(result.config !== undefined).assertTrue();
+      expect((result.config as WebDAVStorageConfig).timeout).assertUndefined();
+      expect(result.failReason).assertEqual('');
+    });
+
+    it('FTP rebuild consumes IocTimeout and defaults to 30000', 0, async () => {
+      const target = SchemeMapper.parse('ftp://files.example.com:2121/remote/child.kdbx');
+      expect(target !== undefined).assertTrue();
+      const item = makeItem('ftpuser', 'ftppass');
+      item.customStrings.set(ChildDbIocFields.TIMEOUT, '45000');
+      const result = await AutoOpenConfigRebuilder.build(item, target!);
+      expect(result.config !== undefined).assertTrue();
+      expect((result.config as FTPStorageConfig).timeout).assertEqual(45000);
+      // 无字段时保持构造默认 30000
+      const defaultResult = await AutoOpenConfigRebuilder.build(makeItem('ftpuser', 'ftppass'), target!);
+      expect((defaultResult.config as FTPStorageConfig).timeout).assertEqual(30000);
+    });
+
+    it('S3 rebuild consumes IocTimeout and defaults to 30000', 0, async () => {
+      const target = SchemeMapper.parse('s3://s3.example.com/mybucket/db/child.kdbx');
+      expect(target !== undefined).assertTrue();
+      const item = makeItem('AKID', 'SECRET');
+      item.customStrings.set(ChildDbIocFields.TIMEOUT, '60000');
+      const result = await AutoOpenConfigRebuilder.build(item, target!);
+      expect(result.config !== undefined).assertTrue();
+      expect((result.config as S3StorageConfig).timeout).assertEqual(60000);
+      const defaultResult = await AutoOpenConfigRebuilder.build(makeItem('AKID', 'SECRET'), target!);
+      expect((defaultResult.config as S3StorageConfig).timeout).assertEqual(30000);
     });
 
     it('OAuth type without matching recent file fails with reason', 0, async () => {

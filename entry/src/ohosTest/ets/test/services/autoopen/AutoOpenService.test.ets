@@ -1,7 +1,10 @@
-import { describe, expect, it } from '@ohos/hypium';
-import { Kdbx, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
+import { beforeAll, describe, expect, it } from '@ohos/hypium';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
+import { common } from '@kit.AbilityKit';
+import { KdbxBinaryDiskRef, Kdbx, KdbxGroup, KdbxUuid, ProtectedValue } from 'kdbxweb';
 import { AutoOpenService } from '../../../../../main/ets/services/autoopen/AutoOpenService';
 import { AutoOpenItem } from '../../../../../main/ets/services/autoopen/AutoOpenItem';
+import { ResourceManager } from '../../../../../main/ets/common/utils';
 import { TestUtils } from '../../importExport/TestUtils';
 
 /** 测试库 + AutoOpen 组持有者（避免元组解构） */
@@ -23,6 +26,15 @@ async function createDbWithAutoOpen(groupName: string = 'AutoOpen'): Promise<Aut
   return new AutoOpenTestDb(db, autoOpen);
 }
 
+/** 逐字节断言附件内容一致 */
+function expectBytesEqual(actual: ArrayBuffer, expected: number[]): void {
+  expect(actual.byteLength).assertEqual(expected.length);
+  const view = new Uint8Array(actual);
+  for (let i = 0; i < expected.length; i++) {
+    expect(view[i]).assertEqual(expected[i]);
+  }
+}
+
 /**
  * AutoOpen 组扫描与条目解析服务单元测试
  * 兼容语义对齐 KeePass 桌面 / KeeAutoExec / keepass2android：
@@ -31,6 +43,13 @@ async function createDbWithAutoOpen(groupName: string = 'AutoOpen'): Promise<Aut
 export default function AutoOpenServiceTest() {
   describe('AutoOpenService', () => {
     const IOC_KEY = 'ioc://parent';
+
+    beforeAll(() => {
+      // readKeyFileAttachment 失败文案经 ResourceManager 本地化，测试环境需注入真实 context
+      const appContext: common.Context = abilityDelegatorRegistry.getAbilityDelegator()
+        .getAppContext().getApplicationContext();
+      ResourceManager.getInstance().init(appContext as common.UIAbilityContext);
+    });
 
     it('scan: returns empty when no AutoOpen group exists', 0, async () => {
       const db = await TestUtils.createTestDatabase('No AutoOpen');
@@ -281,6 +300,105 @@ export default function AutoOpenServiceTest() {
       const holder = await createDbWithAutoOpen();
       TestUtils.createTestEntry(holder.db, holder.autoOpen, 'no-url', 'u', 'p');
       expect(AutoOpenService.hasUnconfiguredForDevice(holder.db, IOC_KEY, 'DEV_A')).assertFalse();
+    });
+
+    // ---------------- M7 KeyFile.bin 内嵌密钥附件 ----------------
+
+    it('scan: hasKeyFileAttachment reflects KeyFile.bin attachment presence', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const withAttachment =
+        TestUtils.createTestEntry(holder.db, holder.autoOpen, 'with-att', 'u', 'p', 'a.kdbx');
+      withAttachment.binaries.set('KeyFile.bin', new ArrayBuffer(8));
+      TestUtils.createTestEntry(holder.db, holder.autoOpen, 'no-att', 'u', 'p', 'b.kdbx');
+      const items = AutoOpenService.scan(holder.db, IOC_KEY);
+      const byTitle = new Map<string, AutoOpenItem>();
+      items.forEach((item: AutoOpenItem) => {
+        byTitle.set(item.title, item);
+      });
+      expect(byTitle.get('with-att')!.hasKeyFileAttachment).assertTrue();
+      expect(byTitle.get('no-att')!.hasKeyFileAttachment).assertFalse();
+    });
+
+    it('findAutoOpenEntry: locates entry by uuid and undefined for unknown', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      const found = AutoOpenService.findAutoOpenEntry(holder.db, entry.uuid.id);
+      expect(found !== undefined).assertTrue();
+      expect(found!.uuid.id).assertEqual(entry.uuid.id);
+      expect(AutoOpenService.findAutoOpenEntry(holder.db, new KdbxUuid().id)).assertUndefined();
+    });
+
+    it('readKeyFileAttachment: returns ArrayBuffer content bytes', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      const keyBytes = [0x11, 0x22, 0x33, 0x44];
+      entry.binaries.set('KeyFile.bin', new Uint8Array(keyBytes).buffer);
+      const content = await AutoOpenService.readKeyFileAttachment(holder.db, entry.uuid.id);
+      expectBytesEqual(content, keyBytes);
+    });
+
+    it('readKeyFileAttachment: unwraps ProtectedValue binary', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      const keyBytes = [0x55, 0x66, 0x77];
+      entry.binaries.set('KeyFile.bin', ProtectedValue.fromBinary(new Uint8Array(keyBytes).buffer));
+      const content = await AutoOpenService.readKeyFileAttachment(holder.db, entry.uuid.id);
+      expectBytesEqual(content, keyBytes);
+    });
+
+    it('readKeyFileAttachment: unwraps KdbxBinaryWithHash wrapper', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      const keyBytes = [0xaa, 0xbb, 0xcc, 0xdd, 0xee];
+      entry.binaries.set('KeyFile.bin', { hash: 'test-key-hash', value: new Uint8Array(keyBytes).buffer });
+      const content = await AutoOpenService.readKeyFileAttachment(holder.db, entry.uuid.id);
+      expectBytesEqual(content, keyBytes);
+    });
+
+    it('readKeyFileAttachment: throws when disk-ref cannot be resolved', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      // 测试库未挂 AttachmentStore：磁盘引用回读必然失败
+      entry.binaries.set('KeyFile.bin', new KdbxBinaryDiskRef('deadbeef', 4, false));
+      let threw = false;
+      try {
+        await AutoOpenService.readKeyFileAttachment(holder.db, entry.uuid.id);
+      } catch (e) {
+        threw = true;
+      }
+      expect(threw).assertTrue();
+    });
+
+    it('readKeyFileAttachment: throws when attachment exceeds 16MB limit', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      entry.binaries.set('KeyFile.bin', new ArrayBuffer(16 * 1024 * 1024 + 1));
+      let threw = false;
+      try {
+        await AutoOpenService.readKeyFileAttachment(holder.db, entry.uuid.id);
+      } catch (e) {
+        threw = true;
+      }
+      expect(threw).assertTrue();
+    });
+
+    it('readKeyFileAttachment: throws for missing attachment and unknown uuid', 0, async () => {
+      const holder = await createDbWithAutoOpen();
+      const entry = TestUtils.createTestEntry(holder.db, holder.autoOpen, 'child', 'u', 'p', 'child.kdbx');
+      let missingThrew = false;
+      try {
+        await AutoOpenService.readKeyFileAttachment(holder.db, entry.uuid.id);
+      } catch (e) {
+        missingThrew = true;
+      }
+      expect(missingThrew).assertTrue();
+      let unknownThrew = false;
+      try {
+        await AutoOpenService.readKeyFileAttachment(holder.db, new KdbxUuid().id);
+      } catch (e) {
+        unknownThrew = true;
+      }
+      expect(unknownThrew).assertTrue();
     });
   });
 }

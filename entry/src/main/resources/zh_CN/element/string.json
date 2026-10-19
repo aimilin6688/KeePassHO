@@ -813,6 +813,10 @@
       "value": "所选密钥文件是数据库文件，不是密钥文件"
     },
     {
+      "name": "error_keyfile_attachment_too_large",
+      "value": "KeyFile.bin 附件超出密钥文件大小限制"
+    },
+    {
       "name": "error_otp_secret_missing",
       "value": "OTP 密钥缺失，请重新输入动态密码"
     },

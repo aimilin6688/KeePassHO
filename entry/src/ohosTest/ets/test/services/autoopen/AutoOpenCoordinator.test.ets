@@ -8,13 +8,14 @@ import { AutoOpenCoordinator, AutoOpenFailure } from '../../../../../main/ets/se
 import { AutoOpenItem } from '../../../../../main/ets/services/autoopen/AutoOpenItem';
 import { AutoOpenService } from '../../../../../main/ets/services/autoopen/AutoOpenService';
 import { DeviceIdentity } from '../../../../../main/ets/services/autoopen/DeviceIdentity';
-import { AUTO_OPEN_GROUP_NAME, AutoOpenFieldName } from '../../../../../main/ets/services/autoopen/AutoOpenConstants';
+import { AUTO_OPEN_GROUP_NAME, AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME, AutoOpenFieldName } from '../../../../../main/ets/services/autoopen/AutoOpenConstants';
 import { DatabaseRegistry } from '../../../../../main/ets/services/kdbx/DatabaseRegistry';
 import { FileService } from '../../../../../main/ets/services/FileService';
 import { EventBus } from '../../../../../main/ets/services/EventBus';
 import { DbFileParam, AuthType } from '../../../../../main/ets/services/TypeDefined';
 import { StorageType } from '../../../../../main/ets/storage';
 import { KdbxFileManager } from '../../../../../main/ets/services/kdbx/KdbxFileManager';
+import { LoadDatabase } from '../../../../../main/ets/workers/DatabaseLoadWorkerParam';
 import { KdbxModeTestHelper } from '../../workers/KdbxModeTestHelper';
 
 const PARENT_PASSWORD = 'Coord-Parent-Pass-1';
@@ -69,6 +70,20 @@ function addChildEntry(parent: Kdbx, title: string, url: string, password: strin
   entry.fields.set('URL', url);
   entry.fields.set('Password', password);
   return entry;
+}
+
+/**
+ * 构造任意内容密钥文件字节（非 32 字节 / 非 hex / 非 XML：
+ * kdbxweb 走 sha256 全内容回退路径，行为确定）
+ */
+function testKeyFileBuffer(): ArrayBuffer {
+  const text = 'KeePassHO-Coord-Test-KeyFile-0123456789abcdef';
+  const buffer = new ArrayBuffer(text.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < text.length; i++) {
+    view[i] = text.charCodeAt(i) & 0xFF;
+  }
+  return buffer;
 }
 
 /**
@@ -340,6 +355,108 @@ export default function AutoOpenCoordinatorTest() {
       expect(result).assertEqual('switched');
       const childIocKey = DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath);
       expect(registry.getCurrentKey()).assertEqual(childIocKey);
+    });
+
+    // ---------------- M7 KeyFile.bin 内嵌密钥附件（端到端） ----------------
+
+    it('onParentUnlocked opens child with password plus KeyFile.bin attachment', 0, async () => {
+      const keyFileBuffer = testKeyFileBuffer();
+      // 子库：密码 + 密钥文件（与 PasswordKeyFileStrategy 构造一致）
+      const childCreds = new KdbxCredentials(ProtectedValue.fromString(CHILD_PASSWORD), keyFileBuffer);
+      const childPath = `${filesDir}/coord-child-att-pass.kdbx`;
+      const childDb = Kdbx.create(childCreds, 'ChildDb');
+      await fileManager.write(childPath, await childDb.save());
+
+      const parentPath = `${filesDir}/coord-parent-att-pass.kdbx`;
+      const parentDb = createKdbx('ParentDb', PARENT_PASSWORD);
+      const entry = addChildEntry(parentDb, 'ChildDb', childPath, CHILD_PASSWORD);
+      // 不设 UserName（无密钥路径）→ KeyFile.bin 附件为密钥来源
+      entry.binaries.set(AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME, keyFileBuffer);
+      const parentIocKey = await writeAndRegisterParent(parentPath, parentDb);
+
+      const donePromise = waitCoordinatorEvent(AutoOpenCoordinator.EVENT_AUTO_OPEN_DONE, parentIocKey, EVENT_TIMEOUT);
+      await AutoOpenCoordinator.getInstance().onParentUnlocked(parentIocKey);
+      await donePromise;
+
+      const childIocKey = DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath);
+      expect(registry.has(childIocKey)).assertTrue();
+      expect(registry.isChild(childIocKey)).assertTrue();
+      // 内联密钥随会话参数传递（registry DbFileParam，重载可用；不持久化）
+      const sessionParam = registry.get(childIocKey);
+      expect(sessionParam !== undefined).assertTrue();
+      expect(sessionParam!.keyFileDataBase64 !== undefined).assertTrue();
+      expect(sessionParam!.keyFileDataBase64!.length > 0).assertTrue();
+    });
+
+    it('onParentUnlocked opens child with KeyFile.bin attachment only (keyfile auth)', 0, async () => {
+      const keyFileBuffer = testKeyFileBuffer();
+      // 子库：仅密钥文件（与 KeyFileOnlyStrategy 构造一致：无密码分量）
+      const childCreds = new KdbxCredentials(null, keyFileBuffer);
+      const childPath = `${filesDir}/coord-child-att-only.kdbx`;
+      const childDb = Kdbx.create(childCreds, 'ChildDb');
+      await fileManager.write(childPath, await childDb.save());
+
+      const parentPath = `${filesDir}/coord-parent-att-only.kdbx`;
+      const parentDb = createKdbx('ParentDb', PARENT_PASSWORD);
+      // Password 为空：附件 + 无密码 → 仅密钥文件认证
+      const entry = addChildEntry(parentDb, 'ChildDb', childPath, '');
+      entry.binaries.set(AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME, keyFileBuffer);
+      const parentIocKey = await writeAndRegisterParent(parentPath, parentDb);
+
+      const donePromise = waitCoordinatorEvent(AutoOpenCoordinator.EVENT_AUTO_OPEN_DONE, parentIocKey, EVENT_TIMEOUT);
+      await AutoOpenCoordinator.getInstance().onParentUnlocked(parentIocKey);
+      await donePromise;
+
+      const childIocKey = DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath);
+      expect(registry.has(childIocKey)).assertTrue();
+      expect(registry.isChild(childIocKey)).assertTrue();
+      const sessionParam = registry.get(childIocKey);
+      expect(sessionParam !== undefined).assertTrue();
+      expect(sessionParam!.authType.type).assertEqual('keyfile');
+      expect(sessionParam!.keyFileDataBase64!.length > 0).assertTrue();
+    });
+
+    it('onParentUnlocked fails child when KeyFile.bin attachment is a database file', 0, async () => {
+      // 正常子库文件：失败源于内联密钥守卫（KDBX 魔数拒收），而非文件缺失
+      const childPath = `${filesDir}/coord-child-att-kdbx.kdbx`;
+      await fileManager.write(childPath, await createKdbx('ChildDb', CHILD_PASSWORD).save());
+
+      // 8 字节 KDBX 魔数内联附件（LE u32 双签名）
+      const magic = new ArrayBuffer(8);
+      const magicView = new DataView(magic);
+      magicView.setUint32(0, 0x9AA2D903, true);
+      magicView.setUint32(4, 0xB54BFB67, true);
+
+      const parentPath = `${filesDir}/coord-parent-att-kdbx.kdbx`;
+      const parentDb = createKdbx('ParentDb', PARENT_PASSWORD);
+      const entry = addChildEntry(parentDb, 'ChildDb', childPath, CHILD_PASSWORD);
+      entry.binaries.set(AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME, magic);
+      const parentIocKey = await writeAndRegisterParent(parentPath, parentDb);
+
+      const childIocKey = DatabaseRegistry.buildIocKey(StorageType.LOCAL, childPath);
+      const failedPromise = waitOpenFailedEvent(childIocKey, EVENT_TIMEOUT);
+      await AutoOpenCoordinator.getInstance().onParentUnlocked(parentIocKey);
+      await failedPromise;
+
+      expect(registry.has(childIocKey)).assertFalse();
+      expect(registry.wasAttempted(childIocKey)).assertTrue();
+    });
+
+    it('LoadDatabase.byDbFileParam propagates keyFileDataBase64 for session reload', 0, () => {
+      const dbFileParam: DbFileParam = {
+        filePath: '/docs/child.kdbx',
+        fileName: 'child.kdbx',
+        password: 'p',
+        database: createKdbx('Any', 'p'),
+        authType: AuthType.KEYFILE,
+        storageType: StorageType.LOCAL,
+        storageConfig: {},
+        modifiedTime: 0,
+        keyFileDataBase64: 'a2V5LWJpbmFy'
+      };
+      const loadDatabase = LoadDatabase.byDbFileParam(dbFileParam);
+      expect(loadDatabase.keyFileDataBase64).assertEqual('a2V5LWJpbmFy');
+      expect(loadDatabase.authType.type).assertEqual('keyfile');
     });
   });
 }

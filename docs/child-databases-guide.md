@@ -82,6 +82,13 @@ KeePass 桌面版（2.x）本身不内置 AutoOpen，需安装 [KeeAutoExec](htt
 | SkipIfKeyFileNotExists | true / false | 密钥文件不存在时静默跳过 |
 | IocUserName | 文本 | 远端子库连接用户名（WebDAV/FTP/SFTP 登录名；S3 为 AccessKeyId），见第 3 节 |
 | IocPassword | 文本 | 远端子库连接密码（WebDAV/FTP/SFTP 登录密码；S3 为 SecretAccessKey）；应用内写入时受 KDBX 内存保护 |
+| IocTimeout | 整数（毫秒） | 连接超时：WebDAV 为连接建立超时（不影响大文件传输时长）、FTP/SFTP 为指令超时、S3 为连接建立超时；非法值忽略 |
+| IocPreAuth | true / false | WebDAV 专用：`true` 时预先发送 Basic 认证（不等服务器 401 质询），适用于认证服务器不回 401 的场景 |
+| IocUserAgent | 文本 | WebDAV 专用：自定义 User-Agent 请求头 |
+| IocExpect100Continue | true / false | WebDAV 专用：上传时先发 `Expect: 100-continue`（部分代理/服务器需要） |
+| IocPassive | true / false | FTP 专用：本应用仅支持被动模式，写 `false` 时仅记录告警并仍按被动连接 |
+
+> **内嵌密钥文件 KeyFile.bin**：与 kp2a 兼容，子库条目**不带** UserName 密钥路径时，可给条目挂一个名为 `KeyFile.bin` 的附件作为密钥文件来源（优先级低于 UserName 路径；大小上限 16MB）。附件内容仅在本应用运行期间内存中传递，不会落盘；应用重启后请经父库解锁自动打开（会重新提取附件），不要从「最近文件」直接打开该子库。
 
 ### 2.3 IfDevice 设备过滤
 

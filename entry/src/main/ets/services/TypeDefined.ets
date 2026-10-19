@@ -32,6 +32,12 @@ export interface CredentialsParam {
    * NFC 挑战后随消息传入，Worker 以固定应答回调组装（kdbxweb 内部再 SHA-256 并入）
    */
   challengeResponseHex?: string;
+
+  /**
+   * 内联密钥文件内容（base64，AutoOpen 条目 KeyFile.bin 附件提取）：
+   * 主线程从父库条目提取后随任务消息传入 Worker，不持久化（会话内传递）
+   */
+  keyFileDataBase64?: string;
 }
 
 /**

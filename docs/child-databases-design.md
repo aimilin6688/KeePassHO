@@ -21,6 +21,7 @@
 | M6 远端子数据库（URL scheme 映射 / IocUserName/IocPassword 凭据 / OAuth 设备本地令牌） | ✅ 已实现（构建通过；SchemeMapper / AutoOpenConfigRebuilder / 写侧 Ioc 字段 / 管理页与切换面板按存储类型显示图标，见 §4 M6） | — |
 | M6.8 `kdbx://` URL 前缀兼容（KeePassXC 2.8） | ✅ 已实现（读取剥离，写侧不产出，见 §4 M6.8） | — |
 | M6.9 子库支持端口收敛（ChildDbSupport Port-Adapter）+ 统一解析链 + 打开成功配置回写 | ✅ 已实现（5 个 childDb* 散字段收敛为单一端口；RecentFiles 命中优先 → rebuildConfig 兜底 → 精确失败文案；远端子库打开成功回写最近文件记录，见 §4 M6.9） | — |
+| M7 P2 收口（Ioc 高级连接参数 IocTimeout/IocPreAuth/IocUserAgent/IocExpect100Continue/IocPassive + 附件 KeyFile.bin 内嵌密钥） | ✅ 已实现（共享解析 ChildDbIocFields + 各存储适配器读侧/写侧 + WebDavClient rcp 落地 + 凭据链内联密钥，见 §4 M7） | — |
 
 后续修复：419cb693（管理页 ForEach 键缺状态字段致行不刷新）、8fb14d69（样式对齐全应用风格）、1f3ed38a（深色模式图标不可见与手动打开失败无提示）。
 
@@ -74,8 +75,8 @@ KeeAutoExec 插件约定：在数据库**根组**下建一个名为 `AutoOpen` �
 | 自定义字符串 `SkipIfNotExists`（兼容旧名 `Skip if not exists`） | `True` → 打开前检查文件存在（仅本地文件有意义），不存在则静默跳过 | 远程文件默认视为存在 |
 | 自定义字符串 `SkipIfKeyFileNotExists` | `True` → 密钥文件不存在则静默跳过 | — |
 | 自定义字符串 `Focus` | `Restore` → 子库加载后**不**切换为当前库 | 默认加载后 makeCurrent |
-| 附件 `KeyFile.bin` | 内嵌密钥文件 | 无 UserName 字段时作为密钥文件来源 |
-| `IocUserName` / `IocPassword` / `IocTimeout` / `IocPreAuth` / `IocUserAgent` / `IocExpect100Continue` / `IocPassive` | 远程协议（WebDAV/FTP/HTTP）连接参数 | kp2a 私有扩展；本项目 M6 实现 `IocUserName`/`IocPassword`（连接凭据），其余连接参数留 P2（详见 1.9 与 M6） |
+| 附件 `KeyFile.bin` | 内嵌密钥文件 | 无 UserName 字段时作为密钥文件来源；本项目 M7 实现（16MB 上限，内容会话内传递不持久化） |
+| `IocUserName` / `IocPassword` / `IocTimeout` / `IocPreAuth` / `IocUserAgent` / `IocExpect100Continue` / `IocPassive` | 远程协议（WebDAV/FTP/HTTP）连接参数 | kp2a 私有扩展；本项目 M6 实现 `IocUserName`/`IocPassword`（连接凭据），M7 实现其余连接参数（详见 1.9 与 §4 M6/M7） |
 
 ### 1.3 设备过滤：IfDevice CSV 格式
 
@@ -243,8 +244,7 @@ kp2a 的子数据库**不限于本地文件**：条目 `URL` 可写任意已注�
 
 - 跨库全局搜索、跨库条目移动/复制；
 - 子库凭证写入 RecentFiles 生物识别持久化（子库不做生物识别建议，同 kp2a）；
-- `Focus` 字段、`IocTimeout`/`IocPreAuth`/`IocUserAgent`/`IocExpect100Continue`/`IocPassive` 等连接参数字段、URL 内嵌 `user:pass@` 凭据兼容读取（`IocUserName`/`IocPassword` 与远程 URL scheme → StorageType 映射已提前至 M6，见 §4 M6）；
-- 附件 `KeyFile.bin` 内嵌密钥文件（kp2a 支持，P2）；
+- `Focus` 字段、URL 内嵌 `user:pass@` 凭据兼容读取（`IocUserName`/`IocPassword` 与远程 URL scheme → StorageType 映射已提前至 M6，Ioc 高级连接参数与附件 `KeyFile.bin` 已于 M7 实现，见 §4 M6/M7）；
 - 子库自动后台同步编排（单库下拉刷新/保存照旧，按库独立）。
 
 ### 3.2 架构总览
@@ -585,6 +585,32 @@ KeePassXC 2.8 的 AutoOpen 实现私有扩展了 `kdbx://` 前缀（`DatabaseWid
 
 **测试**：`AutoOpenConfigRebuilder.test.ets` 增链序用例（RecentFiles 命中优先于 rebuildConfig / 未命中走 rebuildConfig / 凭据缺失文案 / LOCAL）；`RecentFilesService.test.ets` 增 `mergeChildConfigRecord` 用例（尾部追加 / 原位更新保留密码与搜索历史 / storageType+filePath 联合匹配 / 满额淘汰 / 无变化返回原引用）；`AutoOpenEntryService.test.ets` 增远端写侧用例（WebDAV 写 IocUserName/IocPassword / OAuth 仅写 URL）。
 
+**M7 P2 收口：Ioc 高级连接参数 + 附件 KeyFile.bin 内嵌密钥**
+
+> 状态：✅ 已实现。收口原设计 P2 backlog 的两项：① kp2a 私有连接参数字段（KeeAutoExec.cs:408-441 的 `IocTimeout`/`IocPreAuth`/`IocUserAgent`/`IocExpect100Continue`/`IocPassive`，经 customStrings 透传，S3Region 先例）；② `KeyFile.bin` 附件作为密钥文件来源（kp2a KeeAutoExec.cs:339-345：UserName 密钥路径优先，无路径才用附件）。
+
+**Ioc 高级字段 → 各存储行为**（共享解析 `storage/ChildDbIocFields.ets`：`parseTimeoutMs`（空/非数字/非正 → 忽略，取整 ms，kp2a `IocTimeout` 为 ms）、`parseBool`、`parseString`；字段名常量置 storage 层避免 storage→services 反向依赖）：
+
+| 字段 | WebDAV | FTP/SFTP | S3 |
+|---|---|---|---|
+| `IocTimeout`（ms） | rcp `connectMs`（`transferMs` 不设上限，避免大文件传输被整体截断；存在性检查等小请求 `connectMs+transferMs` = 有效超时快速失败） | basic-ftp Client 构造 `timeout`（ms，握手/指令级） | sessionPool `connectMs` |
+| `IocUserAgent` | 会话与上传请求 `User-Agent` 头 | — | — |
+| `IocPreAuth`（True） | 会话级手动 `Authorization: Basic`（预认证不等 401；rcp `serverAuthentication` 保留为质询回退） | — | — |
+| `IocExpect100Continue`（True） | 上传请求 `Expect: 100-continue` 头 | — | — |
+| `IocPassive` | — | 本应用 FTP 栈（`@ohos/basic-ftp`）仅被动模式：`False` 仅 hilog 告警后按被动继续，不改变行为 | — |
+
+- **读侧**：各适配器 `rebuildConfig` 消费（WebDAV 四字段、FTP `IocTimeout`、S3 `IocTimeout`）——仅新设备首开（链②）生效；链①命中沿用最近文件完整配置（M6.9 语义不变）。
+- **写侧**：适配器 `extraFields` 回发非默认值（`IocTimeout` ≠ 30000 / `IocPreAuth` 等为 True 时），应用内编辑子库条目时保留既有高级字段；默认值不写字段（条目简洁）。
+- **顺带修复**：`WebDAVStorage.parseConfig` plain 分支此前仅重建凭据字段，`certValidationMode`/`customCaCertContent`/`timeout`/`secure` 等在 worker 端 plain JSON 复活路径被丢弃（自签 CA 子库 loadWorker 内必失败的潜在缺陷）——改为全字段重建，新 Ioc 字段同样受益。
+
+**附件 KeyFile.bin 内嵌密钥**：
+
+- **提取**：`AutoOpenItem.hasKeyFileAttachment`（makeItem 检测 `entry.binaries.has('KeyFile.bin')`，仅存在性标志，内容不驻留模型）；`AutoOpenService.readKeyFileAttachment`（条目 UUID 反查 + 16MB 上限 + `KdbxBinaryWithHash` 递归 / `ProtectedValue.getBinary()` / `ArrayBuffer` / `KdbxBinaryDiskRef` 异步 `readDiskRef`，先例 EntryView.ets:239-257；缺失/超限抛本地化错误 `error_keyfile_not_found` / `error_keyfile_attachment_too_large`）。
+- **数据流**：Coordinator `openChild` 在 UserName 密钥路径为空且条目带附件时，主线程提取 → `ByteUtils.bytesToBase64` → `LoadDatabase.keyFileDataBase64`（JSON 消息通道，`otpSecretHex` 同机制）→ Worker 端 `KeyFileReader.requireAndRead` **内联优先**（base64 解码 → `isKdbxDatabaseBytes` 防误选守卫 → 返回）；三个用钥策略（PasswordKeyFile / KeyFileOnly / ChallengeResponseXc 的 useKeyAuth 分支）经公共入口自动受益。
+- **authType 映射**：路径密钥 → PASSWORD_KEYFILE（不变）；附件 + 密码 → PASSWORD_KEYFILE；附件无密码 → KEYFILE（kp2a 密码组件仅在 Password 非空时并入复合密钥）。
+- **会话内传递、不持久化**（安全考量 §6）：`CredentialsParam.keyFileDataBase64` → `handleChildSuccess` 复制进 Registry `DbFileParam` → `LoadDatabase.byDbFileParam` 透传，会话内重载（下拉刷新/保存）可用；**不写 RecentFiles**（附件明文落盘 NO）。
+- **取舍（已知并接受）**：应用重启后从「最近文件」直开该子库会因无密钥来源失败（明确报错）；需经父库解锁自动打开重新提取附件。若需重启后可直开，须将附件内容持久化，权衡后不做。
+
 ---
 
 ## 5. 生命周期语义汇总（多库下）
@@ -629,7 +655,7 @@ KeePassXC 2.8 的 AutoOpen 实现私有扩展了 `kdbx://` 前缀（`DatabaseWid
 | SkipIfNotExists（及旧名） | ❌ | ✅ | ✅ | ✅ M3 |
 | `IocUserName`/`IocPassword` 远端连接凭据 | ❌ | ✅ | ✅ | ✅ M6 |
 | 远端子库（scheme URL + 设备本地 OAuth 令牌） | ❌（仅本地路径） | ✅ | ✅ | ✅ M6 |
-| 附件 KeyFile.bin | ❌ | ✅ | ✅ | P2 |
+| 附件 KeyFile.bin | ❌ | ✅ | ✅ | ✅ M7（16MB 上限，会话内传递不持久化，重启后需经父库自动打开重提取） |
 | Focus=Restore | ❌ | ✅ | ✅ | P2（默认 makeCurrent） |
 | 多库并存+切换 | ✅（多标签页） | — | ✅ | ✅ M2/M3 |
 | 子库管理页 | ❌（条目需手动创建） | ✅（插件 UI） | ✅ | ✅ M4 |

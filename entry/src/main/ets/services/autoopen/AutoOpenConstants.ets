@@ -8,6 +8,12 @@
 /** 根组下用于存放子数据库描述条目的组名（大小写不敏感匹配） */
 export const AUTO_OPEN_GROUP_NAME = 'AutoOpen';
 
+/**
+ * AutoOpen 条目内嵌密钥文件附件名（kp2a KeeAutoExec.cs:341 同名约定）：
+ * UserName（密钥文件路径）字段为空时，以该附件内容作为子库密钥文件
+ */
+export const AUTO_OPEN_KEY_FILE_ATTACHMENT_NAME = 'KeyFile.bin';
+
 /** 自定义字符串字段名 */
 export class AutoOpenFieldName {
   /** 设备 CSV 过滤列表（KeeAutoExec 扩展） */

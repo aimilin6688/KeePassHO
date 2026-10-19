@@ -58,6 +58,14 @@ export interface WebDavClientOptions {
   certValidationMode?: CertValidationMode;
   /** 自定义 CA 证书内容（PEM 格式） */
   customCaCertContent?: string;
+  /** 建连超时（毫秒，IocTimeout；缺省 CONNECT_TIMEOUT_MS） */
+  timeout?: number;
+  /** 自定义 User-Agent（IocUserAgent；缺省用系统默认） */
+  userAgent?: string;
+  /** 预先发送 Basic 认证头（IocPreAuth；缺省等 401 挑战后认证） */
+  preAuth?: boolean;
+  /** 上传请求体前协商 100-continue（IocExpect100Continue） */
+  expect100Continue?: boolean;
 }
 
 
@@ -121,13 +129,49 @@ export class WebDavClient {
   }
 
   /**
+   * 有效建连超时（毫秒）：配置的 IocTimeout 优先，缺省/非正值回退 CONNECT_TIMEOUT_MS
+   */
+  private effectiveConnectTimeoutMs(): number {
+    const configured: number | undefined = this.config?.timeout;
+    return configured !== undefined && configured > 0 ? configured : CONNECT_TIMEOUT_MS;
+  }
+
+  /**
+   * 会话级请求头：Accept + 自定义 User-Agent（IocUserAgent）+
+   * 预先认证 Basic 头（IocPreAuth，省一次 401 挑战往返）
+   */
+  private buildSessionHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'Accept': 'text/plain,application/xml' };
+    const userAgent: string | undefined = this.config?.userAgent;
+    if (userAgent !== undefined && userAgent.length > 0) {
+      headers['User-Agent'] = userAgent;
+    }
+    if (this.config?.preAuth === true) {
+      headers['Authorization'] = 'Basic ' + this.getBase64Auth();
+    }
+    return headers;
+  }
+
+  /**
+   * 上传请求级请求头：IocExpect100Continue 开启时加 Expect 头
+   */
+  private buildUploadHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this.config?.expect100Continue === true) {
+      headers['Expect'] = '100-continue';
+    }
+    return headers;
+  }
+
+  /**
    * 连接检查类请求（valid/exists/单文件元数据 PROPFIND）的请求级配置：
-   * 建连与等待响应均以 CONNECT_TIMEOUT_MS 快速失败，不占用读取类请求（下载/上传/目录浏览）的 60s 读取超时
+   * 建连与等待响应均以有效超时快速失败，不占用读取类请求（下载/上传/目录浏览）的读取超时
    */
   private buildCheckRequestConfiguration(): rcp.Configuration {
+    const timeoutMs: number = this.effectiveConnectTimeoutMs();
     return {
       transfer: {
-        timeout: { connectMs: CONNECT_TIMEOUT_MS, transferMs: CONNECT_TIMEOUT_MS }
+        timeout: { connectMs: timeoutMs, transferMs: timeoutMs }
       },
       security: this.buildSecurityConfig()
     };
@@ -139,10 +183,10 @@ export class WebDavClient {
     try {
       this.session = rcp.createSession({
         baseAddress: this.config.url,
-        headers: { "Accept": "text/plain,application/xml" },
+        headers: this.buildSessionHeaders(),
         requestConfiguration: {
           transfer: {
-            timeout: { connectMs: CONNECT_TIMEOUT_MS }
+            timeout: { connectMs: this.effectiveConnectTimeoutMs() }
           },
           security: this.buildSecurityConfig()
         }
@@ -410,10 +454,10 @@ export class WebDavClient {
       try {
         progressSession = rcp.createSession({
           baseAddress: this.config.url,
-          headers: { "Accept": "text/plain,application/xml" },
+          headers: this.buildSessionHeaders(),
           requestConfiguration: {
             transfer: {
-              timeout: { connectMs: CONNECT_TIMEOUT_MS }
+              timeout: { connectMs: this.effectiveConnectTimeoutMs() }
             },
             security: this.buildSecurityConfig(),
             tracing: {
@@ -489,7 +533,7 @@ export class WebDavClient {
       }
     };
     hilog.debug(DOMAIN, TAG, `File upload url：${remoteUri}, size: ${fileBuffer.byteLength}`)
-    const req = new rcp.Request(remoteUri, "PUT", {}, fileBuffer, {}, {},
+    const req = new rcp.Request(remoteUri, "PUT", this.buildUploadHeaders(), fileBuffer, {}, {},
       { tracing: { httpEventsHandler: customHttpEventsHandler } });
     const rr = await this.request(req);
     if (!rr.success) {
@@ -512,7 +556,7 @@ export class WebDavClient {
    */
   async uploadFromFile(remoteUri: string, srcPath: string,
     progressCallback?: (totalSize: number, transferredSize: number) => void): Promise<ResultInfo> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = this.buildUploadHeaders();
     headers['Authorization'] = 'Basic ' + this.getBase64Auth();
     headers['Content-Type'] = 'application/octet-stream';
 
