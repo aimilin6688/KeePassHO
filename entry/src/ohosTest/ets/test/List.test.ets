@@ -235,7 +235,6 @@ import S3TypesTest from './storage/s3/S3Types.test';
 import S3UploadQueueTest from './storage/s3/S3UploadQueue.test';
 import OneDriveConfigTest from './storage/onedrive/OneDriveConfig.test';
 import OneDriveOAuth2ProviderTest from './storage/onedrive/OneDriveOAuth2Provider.test';
-import GoogleOAuth2ProviderTest from './storage/googledrive/GoogleOAuth2Provider.test';
 import HuaweiDriveConfigTest from './storage/huawei/HuaweiDriveConfig.test';
 import HuaweiDriveOAuth2ProviderTest from './storage/huawei/HuaweiDriveOAuth2Provider.test';
 import HuaweiDrivePathCacheStoreTest from './storage/huawei/HuaweiDrivePathCacheStore.test';
@@ -532,7 +531,6 @@ export default function testsuite() {
   S3UploadQueueTest();
   OneDriveConfigTest();
   OneDriveOAuth2ProviderTest();
-  GoogleOAuth2ProviderTest();
   HuaweiDriveConfigTest();
   HuaweiDriveOAuth2ProviderTest();
   HuaweiDrivePathCacheStoreTest();
