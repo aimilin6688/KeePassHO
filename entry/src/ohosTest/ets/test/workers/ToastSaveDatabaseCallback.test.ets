@@ -254,6 +254,17 @@ export default function ToastSaveDatabaseCallbackTest() {
       expect(threw).assertFalse();
     });
 
+    it('onProgress with zero totalBytes keeps stage text without byte detail', 0, () => {
+      const inner = new InnerCallback();
+      const cb = new ToastSaveDatabaseCallback(inner);
+
+      cb.onMessage('downloading');
+      cb.onProgress(new ProgressMessage(50, 0, 0));
+
+      expect(inner.progressCount).assertEqual(1);
+      expect(inner.lastProgressMessage!.totalBytes).assertEqual(0);
+    });
+
     it('onProgress forwards to inner callback', 0, () => {
       const inner = new InnerCallback();
       const cb = new ToastSaveDatabaseCallback(inner);

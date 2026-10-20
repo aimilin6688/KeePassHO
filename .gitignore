@@ -26,3 +26,4 @@ faultlogger
 .opencode
 /build-profile.json5
 /entry/build-profile.json5
+.test_tmp

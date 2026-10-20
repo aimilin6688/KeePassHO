@@ -70,7 +70,7 @@ if (workerPort) {
 /**
  * 保存数据库
  */
-class DatabaseSaveWorker extends DatabaseSave {
+export class DatabaseSaveWorker extends DatabaseSave {
   constructor(callback?: SaveDatabaseCallback) {
     super(callback);
   }
