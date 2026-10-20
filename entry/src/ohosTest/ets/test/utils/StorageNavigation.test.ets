@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@ohos/hypium';
-import { StorageConfig, StorageType } from '../../../../main/ets/storage';
+import { FileStorage, StorageConfig, StorageType } from '../../../../main/ets/storage';
+import { WebDAVStorage } from '../../../../main/ets/storage/webdav/WebDAVStorage';
+import { PCloudStorage } from '../../../../main/ets/storage/pcloud/PCloudStorage';
 import { OAuth2LoginParam, StorageNavigation } from '../../../../main/ets/common/utils/StorageNavigation';
 import { NavigationManager } from '../../../../main/ets/common/utils/NavigationManager';
 import { PageConstants } from '../../../../main/ets/common/constants/PageConstants';
@@ -22,8 +24,17 @@ export default function StorageNavigationTest() {
       mgr.setCurrentNavPathStack(TEST_ROOT);
       mgr.clearNavPathStack(TEST_ROOT);
       const config: StorageConfig = {};
+      // LOCAL 走系统文件选择器，不进文件列表页
       StorageNavigation.pushFileList(StorageType.LOCAL, '/', config);
+      // 临时移除 WEBDAV 注册，验证未注册类型不导航，随后恢复注册状态
+      const webdavRegistered = FileStorage.hasStorage(StorageType.WEBDAV);
+      if (webdavRegistered) {
+        FileStorage.removeStorage(StorageType.WEBDAV);
+      }
       StorageNavigation.pushFileList(StorageType.WEBDAV, '/', config);
+      if (webdavRegistered) {
+        FileStorage.registerStorage(StorageType.WEBDAV, new WebDAVStorage());
+      }
       expect(mgr.getNavPathStackByRoot(TEST_ROOT)?.size() ?? 0).assertEqual(0);
       mgr.removeNavPathStack(TEST_ROOT);
     });
@@ -42,7 +53,15 @@ export default function StorageNavigationTest() {
     });
 
     it('getStorageTitle returns empty string for unsupported types', 0, () => {
+      // SchemeMapper 套件会注册 PCLOUD 且不注销，先快照注册状态以获得确定性结果
+      const pcloudRegistered = FileStorage.hasStorage(StorageType.PCLOUD);
+      if (pcloudRegistered) {
+        FileStorage.removeStorage(StorageType.PCLOUD);
+      }
       expect(StorageNavigation.getStorageTitle(StorageType.PCLOUD)).assertEqual('');
+      if (pcloudRegistered) {
+        FileStorage.registerStorage(StorageType.PCLOUD, new PCloudStorage());
+      }
     });
 
     // ---------------- pushFileList ----------------
