@@ -2109,6 +2109,16 @@ export struct DatabaseView {
   }
 
   /**
+   * 数据库切换面板首选弹窗样式：
+   * 窗口宽度 ≥600vp 时显式指定居中弹窗（带蒙层，点击蒙层默认关闭半模态）。
+   * 宽度 ≥840vp 的默认样式为跟手弹窗（POPUP，允许窗外交互、无蒙层），
+   * 点击空白区域事件会穿透到下层页面导致面板无法关闭，故需覆盖。
+   */
+  private switcherSheetPreferType(): SheetType {
+    return this.windowInfo.windowWidthVp >= 600 ? SheetType.CENTER : SheetType.BOTTOM;
+  }
+
+  /**
    * 数据库切换面板内容（M3）：bindSheet 半模态
    */
   @Builder
@@ -2300,6 +2310,8 @@ export struct DatabaseView {
               .flexShrink(1)
               .bindSheet($$this.showDatabaseSwitcher, this.DatabaseSwitcherBuilder(), {
                 height: SheetSize.FIT_CONTENT,
+                preferType: this.switcherSheetPreferType(),
+                showClose: false,
                 dragBar: true,
                 onAppear: () => {
                   this.switcherRefreshTick++;
