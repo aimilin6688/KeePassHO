@@ -520,6 +520,14 @@ export struct DatabaseView {
     return KdbxUtils.getFieldName(group.name) || '';
   }
 
+  /**
+   * 标题当前是否展示数据库名称（默认分组/根分组视图）：
+   * 仅此时子库标题使用链接蓝色，进入子分组后恢复默认颜色
+   */
+  private isShowingDatabaseName(): boolean {
+    return this.currentGroup !== undefined && this.currentGroup.parentGroup === undefined;
+  }
+
   private reloadDatabase() {
     hilog.debug(DOMAIN, TAG, 'Receive reload database event');
     this.loadDatabase().then(() => {
@@ -2256,21 +2264,25 @@ export struct DatabaseView {
                       .fontSize(22)
                       .fontWeight(FontWeight.Medium)
                       .margin({ left: 16 })
-                      .fontColor(this.isCurrentDbChild ? $r('app.color.button_bg_blue') : $r('app.color.text_primary'))
+                      .fontColor($r('app.color.text_primary'))
                       .maxLines(1)
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-                    Image($r('app.media.ic_angle_down'))
-                      .width(24)
-                      .height(24)
-                      .fillColor($r('app.color.text_secondary'))
-                      .margin({ left: 4 })
-                      .id('btn_database_switcher')
+                    if(this.isShowingDatabaseName()){
+                      Image($r('app.media.ic_angle_down'))
+                        .width(24)
+                        .height(24)
+                        .fillColor(this.isCurrentDbChild ? $r('app.color.button_bg_blue') : $r('app.color.text_secondary'))
+                        .margin({ left: 4 })
+                        .id('btn_database_switcher')
+                    }
                   }
                   .alignItems(VerticalAlign.Center)
                   .padding({ top: 6, bottom: 6 })
                   .onClick(() => {
-                    this.showDatabaseSwitcher = true;
+                    if(this.isShowingDatabaseName()){
+                      this.showDatabaseSwitcher = true;
+                    }
                   })
                 } else {
                   // 选择模式下显示已选数量
