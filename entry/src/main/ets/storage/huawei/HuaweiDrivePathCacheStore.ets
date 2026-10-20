@@ -97,10 +97,17 @@ export class HuaweiDrivePathCacheStore {
 
   /**
    * 持久化文件路径
+   * 沙箱目录不可得（Context 未初始化且 Worker 路径未注入）时返回空串且不缓存：
+   * cachedFilePath 为静态缓存，缓存空目录会把路径永久固化为 '/文件名'（根目录不可写），
+   * 导致后续所有 save/load 静默失败。
    */
   private static getFilePath(): string {
     if (!HuaweiDrivePathCacheStore.cachedFilePath) {
-      HuaweiDrivePathCacheStore.cachedFilePath = CommonUtils.getAppFilesDir() + '/' + FILE_NAME;
+      const dir: string = CommonUtils.getAppFilesDir();
+      if (!dir) {
+        return '';
+      }
+      HuaweiDrivePathCacheStore.cachedFilePath = dir + '/' + FILE_NAME;
     }
     return HuaweiDrivePathCacheStore.cachedFilePath;
   }
@@ -129,10 +136,11 @@ export class HuaweiDrivePathCacheStore {
   public static async load(): Promise<HuaweiDrivePathCacheData | null> {
     try {
       await HuaweiDrivePathCacheStore.migrateLegacyOnce();
-      if (!fs.accessSync(HuaweiDrivePathCacheStore.getFilePath(), fs.AccessModeType.EXIST)) {
+      const path: string = HuaweiDrivePathCacheStore.getFilePath();
+      if (!path || !fs.accessSync(path, fs.AccessModeType.EXIST)) {
         return null;
       }
-      const jsonStr: string = fs.readTextSync(HuaweiDrivePathCacheStore.getFilePath());
+      const jsonStr: string = fs.readTextSync(path);
       if (!jsonStr) {
         return null;
       }
@@ -148,6 +156,11 @@ export class HuaweiDrivePathCacheStore {
    */
   public static async save(data: HuaweiDrivePathCacheData): Promise<void> {
     const write: () => Promise<void> = async (): Promise<void> => {
+      const path: string = HuaweiDrivePathCacheStore.getFilePath();
+      if (!path) {
+        hilog.warn(DOMAIN, TAG, 'Skip save: files dir unavailable (no context / worker paths)');
+        return;
+      }
       const raw: PathCacheRaw = {
         v: CACHE_VERSION,
         owner: data.owner,
@@ -155,7 +168,7 @@ export class HuaweiDrivePathCacheStore {
         entries: data.entries
       };
       const jsonStr: string = JSON.stringify(raw);
-      const tmpPath: string = HuaweiDrivePathCacheStore.getFilePath() + '.tmp';
+      const tmpPath: string = path + '.tmp';
       const file = await fs.open(tmpPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
       try {
         await fs.write(file.fd, jsonStr);
@@ -163,7 +176,7 @@ export class HuaweiDrivePathCacheStore {
       } finally {
         await fs.close(file.fd);
       }
-      await fs.rename(tmpPath, HuaweiDrivePathCacheStore.getFilePath());
+      await fs.rename(tmpPath, path);
     };
     HuaweiDrivePathCacheStore.writeChain = HuaweiDrivePathCacheStore.writeChain.then(write)
       .catch((error: BusinessError) => {
@@ -177,8 +190,9 @@ export class HuaweiDrivePathCacheStore {
    */
   public static async clear(): Promise<void> {
     try {
-      if (fs.accessSync(HuaweiDrivePathCacheStore.getFilePath(), fs.AccessModeType.EXIST)) {
-        await fs.unlink(HuaweiDrivePathCacheStore.getFilePath());
+      const path: string = HuaweiDrivePathCacheStore.getFilePath();
+      if (path && fs.accessSync(path, fs.AccessModeType.EXIST)) {
+        await fs.unlink(path);
       }
       // 旧 preferences 残留一并清理（仅主线程可达）
       if (CommonUtils.hasContext()) {
