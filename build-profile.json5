@@ -6,9 +6,9 @@
         "type": "HarmonyOS",
         "material": {
           "storeFile": "D:/workspace/harmonyos/key/KeePassHO_release.p12",
-          "storePassword": "000000194B548CE7A0B9088B192F518A7EA9B00C697FE63331087FAD97BB408B282BD7DB9CE2323170",
+          "storePassword": "00000019EA010665B0E769D3DCD7F8D5949CAF93811F49B6BD8293A3FA9DCDD998C30CCF7E18C71B68",
           "keyAlias": "keepassho",
-          "keyPassword": "00000019450F49559F22E13404264D28B35D72C6AD4B72077CEA8496281D7C58CD2A6CC525560000D5",
+          "keyPassword": "000000193CD42B420F030DC88937FB144162EE497C2AA68FB9CD269AD0A167AD0762768EE736599A7B",
           "signAlg": "SHA256withECDSA",
           "profile": "D:/workspace/harmonyos/key/KeePassHO_release.p7b",
           "certpath": "D:/workspace/harmonyos/key/KeePassHO_release.cer"
@@ -19,9 +19,9 @@
         "type": "HarmonyOS",
         "material": {
           "storeFile": "D:/workspace/harmonyos/key/KeePassHO_debug.p12",
-          "storePassword": "000000193EC7120965935167DF18280965BFEF228DE5805F083D5412BB1AA3E0BBD5A6A92E0816CC67",
+          "storePassword": "00000019F935EB638132908C967190824999B9970E343A74869EB4BA93663B42BAFED425056EB0C070",
           "keyAlias": "keepassho",
-          "keyPassword": "000000191ECD113D594531BE1C6F17E0966E492857F0B908492E9916A6DF8D154A15B7C33E86E42D1A",
+          "keyPassword": "00000019DA6EDB8BF2378565F80D7FE79505C0F6F76FAD5578ED73CE50E2637C0F1B3E6CBF5F22E7DF",
           "signAlg": "SHA256withECDSA",
           "profile": "D:/workspace/harmonyos/key/KeePassHO_debug.p7b",
           "certpath": "D:/workspace/harmonyos/key/KeePassHO_debug.cer"
