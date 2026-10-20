@@ -412,16 +412,14 @@ export struct EntryEdit {
       entryBinaries.set(key, value);
     });
 
-    // 限制历史条目格式
-    const historyMaxItems = this.database.meta.historyMaxItems;
-    if (historyMaxItems && historyMaxItems > 0 && this.entry.history.length >= historyMaxItems) {
-      const deleteCount = this.entry.history.length - historyMaxItems + 1;
-      this.entry.removeHistory(0, deleteCount);
-    }
-    // TODO 限制历史条目总大小
-
     // 添加到历史记录中
     this.entry.pushHistory();
+
+    // 限制历史条目数量与总大小（同 KeePass MaintainBackups 语义）
+    this.entry.maintainHistory(
+      this.database.meta.historyMaxItems,
+      this.database.meta.historyMaxSize
+    );
 
     // 恢复 entry.binaries 为编辑后的最新附件
     entryBinaries.clear();

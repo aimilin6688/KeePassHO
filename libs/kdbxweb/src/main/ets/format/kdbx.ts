@@ -498,7 +498,13 @@ export class Kdbx {
             typeof this.meta.historyMaxItems === 'number' &&
             this.meta.historyMaxItems >= 0
                 ? this.meta.historyMaxItems
-                : Infinity;
+                : undefined;
+        const historyMaxSize =
+            settings?.historyRules &&
+            typeof this.meta.historyMaxSize === 'number' &&
+            this.meta.historyMaxSize >= 0
+                ? this.meta.historyMaxSize
+                : undefined;
 
         const usedCustomIcons = new Set<string>();
         const usedBinaries = new Set<string>();
@@ -515,9 +521,7 @@ export class Kdbx {
         };
         for (const item of this.getDefaultGroup().allGroupsAndEntries()) {
             if (item instanceof KdbxEntry) {
-                if (item.history.length > historyMaxItems) {
-                    item.removeHistory(0, item.history.length - historyMaxItems);
-                }
+                item.maintainHistory(historyMaxItems, historyMaxSize);
                 processEntry(item);
                 if (item.history) {
                     for (const historyEntry of item.history) {

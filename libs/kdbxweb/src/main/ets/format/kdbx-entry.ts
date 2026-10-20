@@ -6,7 +6,13 @@ import { ProtectedValue } from '../crypto/protected-value';
 import { KdbxCustomData, KdbxCustomDataMap } from './kdbx-custom-data';
 import { KdbxUuid } from './kdbx-uuid';
 import { KdbxContext } from './kdbx-context';
-import { KdbxBinaries, KdbxBinary, KdbxBinaryOrRef, KdbxBinaryWithHash } from './kdbx-binaries';
+import {
+    KdbxBinaries,
+    KdbxBinary,
+    KdbxBinaryDiskRef,
+    KdbxBinaryOrRef,
+    KdbxBinaryWithHash
+} from './kdbx-binaries';
 import { KdbxMeta } from './kdbx-meta';
 import { KdbxGroup } from './kdbx-group';
 import { MergeObjectMap } from './kdbx';
@@ -332,6 +338,120 @@ export class KdbxEntry {
             }
         }
         this.history.splice(index, count);
+    }
+
+    /**
+     * Approximate the total size (in bytes) of this entry,
+     * including strings, binaries and history entries.
+     * Cf. KeePass PwEntry.GetSize().
+     */
+    getSize(): number {
+        let cb = 276; // approximate fixed length data
+        let cc = 0; // number of characters
+
+        cb += this.fields.size * 40;
+        for (const [key, value] of this.fields) {
+            cc += key.length + KdbxEntry.getFieldLength(value);
+        }
+
+        cb += this.binaries.size * 65;
+        for (const [key, value] of this.binaries) {
+            cc += key.length;
+            cb += KdbxEntry.getBinaryLength(value);
+        }
+
+        cc += this.autoType.defaultSequence?.length ?? 0;
+        cb += this.autoType.items.length * 24;
+        for (const item of this.autoType.items) {
+            cc += item.window.length + item.keystrokeSequence.length;
+        }
+
+        cb += this.history.length * 8;
+        for (const historyEntry of this.history) {
+            cb += historyEntry.getSize();
+        }
+
+        cc += this.overrideUrl?.length ?? 0;
+
+        cb += this.tags.length * 8;
+        for (const tag of this.tags) {
+            cc += tag.length;
+        }
+
+        if (this.customData) {
+            cb += this.customData.size * 16;
+            for (const [key, item] of this.customData) {
+                cc += key.length + (item?.value?.length ?? 0);
+            }
+        }
+
+        return cb + (cc << 1);
+    }
+
+    /**
+     * Delete old history entries if there are too many or the history size is too large.
+     * Cf. KeePass PwEntry.MaintainBackups().
+     * @returns true if one or more history entries have been deleted
+     */
+    maintainHistory(maxItems?: number, maxSize?: number): boolean {
+        let deleted = false;
+
+        if (typeof maxItems === 'number' && maxItems >= 0) {
+            while (this.history.length > maxItems) {
+                this.removeOldestHistory();
+                deleted = true;
+            }
+        }
+
+        if (typeof maxSize === 'number' && maxSize >= 0) {
+            while (this.history.length > 0) {
+                let historySize = 0;
+                for (const historyEntry of this.history) {
+                    historySize += historyEntry.getSize();
+                }
+                if (historySize > maxSize) {
+                    this.removeOldestHistory();
+                    deleted = true;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return deleted;
+    }
+
+    private removeOldestHistory(): void {
+        let minTime = Infinity;
+        let index = -1;
+        for (let i = 0; i < this.history.length; i++) {
+            const time = this.history[i].lastModTime;
+            if (time < minTime) {
+                index = i;
+                minTime = time;
+            }
+        }
+        if (index >= 0) {
+            this.removeHistory(index, 1);
+        }
+    }
+
+    private static getFieldLength(value: KdbxEntryField): number {
+        return value instanceof ProtectedValue ? value.value.length : value.length;
+    }
+
+    private static getBinaryLength(value: KdbxBinary | KdbxBinaryWithHash): number {
+        const binary = KdbxBinaries.isKdbxBinaryWithHash(value) ? value.value : value;
+        if (binary instanceof ProtectedValue) {
+            return binary.value.length;
+        }
+        if (binary instanceof KdbxBinaryDiskRef) {
+            return binary.byteLength;
+        }
+        if (binary instanceof ArrayBuffer) {
+            return binary.byteLength;
+        }
+        return 0;
     }
 
     copyFrom(entry: KdbxEntry): void {

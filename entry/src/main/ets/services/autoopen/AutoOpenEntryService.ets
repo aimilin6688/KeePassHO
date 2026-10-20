@@ -147,6 +147,7 @@ export class AutoOpenEntryService {
       return undefined;
     }
     entry.pushHistory();
+    entry.maintainHistory(parentDatabase.meta.historyMaxItems, parentDatabase.meta.historyMaxSize);
     AutoOpenEntryService.setEntryDeviceEnabled(entry, deviceId, false);
     const clone: KdbxEntry = parentDatabase.createEntry(group);
     clone.copyFrom(entry);

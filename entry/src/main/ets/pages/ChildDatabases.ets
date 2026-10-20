@@ -139,6 +139,10 @@ struct ChildDatabasesPage {
       return;
     }
     entry.pushHistory();
+    const parentDb: Kdbx | undefined = this.getDatabase();
+    if (parentDb !== undefined) {
+      entry.maintainHistory(parentDb.meta.historyMaxItems, parentDb.meta.historyMaxSize);
+    }
     AutoOpenEntryService.setEntryDeviceEnabled(entry, DeviceIdentity.getDeviceId(), !row.deviceEnabled);
     entry.times.update();
     this.saveParentDatabase();

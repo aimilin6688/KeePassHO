@@ -107,6 +107,9 @@ export struct SettingDatabaseMetaContent {
       this.database.meta.historyMaxSize = this.historyMaxSize ? this.historyMaxSize * 1024 * 1024 : undefined;
       this.database.meta.recycleBinEnabled = this.recycleBinEnabled;
 
+      // 立即应用新的历史记录规则（同 KeePass 设置变更后 MaintainBackups）
+      this.database.cleanup({ historyRules: true });
+
       // 其他设置
       this.database.header.compression = this.compressionEnabled ? Consts.CompressionAlgorithm.GZip : Consts.CompressionAlgorithm.None;
 
