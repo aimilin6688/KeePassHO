@@ -3591,6 +3591,10 @@
     {
       "name": "security_session_notify_enable_tips",
       "value": "解锁后在通知栏提供快捷复制按钮"
+    },
+    {
+      "name": "s3_button_title",
+      "value": "S3 存储"
     }
   ]
 }
