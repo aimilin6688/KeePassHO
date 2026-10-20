@@ -259,6 +259,7 @@ import KdbxSaveServiceTest from './kdbx/KdbxSaveService.test';
 import KdbxLoadServiceTest from './kdbx/KdbxLoadService.test';
 import KdbxFileManagerTest from './kdbx/KdbxFileManager.test';
 import UnlockSecretsSaveReloadTest from './kdbx/UnlockSecretsSaveReload.test';
+import XcTwoPhaseSaveTest from './kdbx/XcTwoPhaseSave.test';
 import SaveDatabaseCallbackTest from './workers/SaveDatabaseCallback.test';
 import ToastSaveDatabaseCallbackTest from './workers/ToastSaveDatabaseCallback.test';
 import ToastLoadDatabaseCallbackTest from './workers/ToastLoadDatabaseCallback.test';
@@ -569,6 +570,7 @@ export default function testsuite() {
   KdbxLoadServiceTest();
   KdbxFileManagerTest();
   UnlockSecretsSaveReloadTest();
+  XcTwoPhaseSaveTest();
   SaveDatabaseCallbackTest();
   ToastSaveDatabaseCallbackTest();
   ToastLoadDatabaseCallbackTest();

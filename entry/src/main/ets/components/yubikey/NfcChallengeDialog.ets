@@ -11,15 +11,17 @@ import {
 const TAG = 'NfcChallengeDialog';
 
 /**
- * YubiKey NFC 挑战-应答贴卡弹层
+ * YubiKey NFC 挑战-应答贴卡面板（纯组件：可宿于 @CustomDialog 或 ComponentContent）
  *
  * 生命周期驱动 NFC 读卡器会话：
  * - aboutToAppear：开启挑战会话（进入读卡器模式）
  * - 错误态保持会话：可重贴重试（Retry 重新开启）
  * - 成功/取消/aboutToDisappear：结束会话（退出读卡器模式，恢复卡模拟）
+ *
+ * 弹层关闭由宿主负责：onChallengeResponse / onClose 触发后由宿主关闭所在弹层
  */
-@CustomDialog
-export struct NfcChallengeDialog {
+@Component
+export struct NfcChallengePanel {
   // waiting | verifying | error
   @State status: string = 'waiting';
   @State errorText: string = '';
@@ -27,9 +29,8 @@ export struct NfcChallengeDialog {
   public slot: YubiKeySlot = YubiKeySlot.SLOT_2;
   public onChallengeResponse: (responseHex: string) => void = () => {
   };
-  public onCancel: () => void = () => {
+  public onClose: () => void = () => {
   };
-  private controller: CustomDialogController;
 
   aboutToAppear() {
     this.startSession();
@@ -50,7 +51,6 @@ export struct NfcChallengeDialog {
         this.status = 'verifying';
       },
       onSuccess: (responseHex: string) => {
-        this.controller.close();
         this.onChallengeResponse(responseHex);
       },
       onError: (error: YubiKeyNfcError) => {
@@ -86,11 +86,28 @@ export struct NfcChallengeDialog {
 
   build() {
     Column({ space: 16 }) {
-      Text($r('app.string.yubikey_nfc_title'))
-        .fontSize(20)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('app.color.text_primary'))
-        .margin({ top: 8 })
+      // 顶部标题栏（与其他对话框统一样式：标题左侧对齐、关闭按钮右侧）
+      Row() {
+        Text($r('app.string.yubikey_nfc_title'))
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('app.color.text_primary'))
+        Blank()
+        Button() {
+          Image($r('sys.media.ohos_ic_public_cancel_filled'))
+            .width(24)
+            .height(24)
+            .fillColor($r('app.color.text_primary'))
+        }
+        .type(ButtonType.Circle)
+        .backgroundColor('transparent')
+        .onClick(() => {
+          this.onClose();
+        })
+      }
+      .width('100%')
+      .height(56)
+      .alignItems(VerticalAlign.Center)
 
       // NFC 感应图形
       Stack() {
@@ -145,8 +162,7 @@ export struct NfcChallengeDialog {
           .backgroundColor($r('app.color.bg_secondary'))
           .id('btn_nfc_challenge_cancel')
           .onClick(() => {
-            this.controller.close();
-            this.onCancel();
+            this.onClose();
           })
 
         Button($r('app.string.retry_button_text'))
@@ -172,5 +188,35 @@ export struct NfcChallengeDialog {
     .backgroundColor($r('app.color.bg_primary'))
     .borderRadius(24)
     .shadow(ShadowStyle.OUTER_DEFAULT_LG)
+  }
+}
+
+/**
+ * YubiKey NFC 挑战-应答贴卡弹层（@CustomDialog 宿主，解锁页使用）
+ * 对外 API 与历史版本保持一致：challenge / slot / onChallengeResponse / onCancel
+ */
+@CustomDialog
+export struct NfcChallengeDialog {
+  public challenge: number[] = [];
+  public slot: YubiKeySlot = YubiKeySlot.SLOT_2;
+  public onChallengeResponse: (responseHex: string) => void = () => {
+  };
+  public onCancel: () => void = () => {
+  };
+  private controller: CustomDialogController;
+
+  build() {
+    NfcChallengePanel({
+      challenge: this.challenge,
+      slot: this.slot,
+      onChallengeResponse: (responseHex: string) => {
+        this.controller.close();
+        this.onChallengeResponse(responseHex);
+      },
+      onClose: () => {
+        this.controller.close();
+        this.onCancel();
+      }
+    })
   }
 }

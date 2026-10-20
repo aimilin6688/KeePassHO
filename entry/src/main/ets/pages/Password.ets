@@ -1175,6 +1175,7 @@ export struct Password {
         authType: this.authTypeInfo, // 添加认证类型
         otpSecretHex: this.otpSecretHex, // OTP/恢复 secret：保存/重载链路重建凭证
         challengeResponseHex: this.challengeResponseHex, // 挑战应答：远端重载重建凭证（seed 未变前有效）
+        yubikeySlot: AuthType.useChallengeResponseXc(this.authTypeInfo) ? this.yubikeySlot : undefined, // 挑战槽位：两阶段保存发起 NFC 挑战时使用
         storageType: this.storageType ?? StorageType.LOCAL,
         storageConfig: this.storageConfig ?? {},
         modifiedTime: successMessage.modifiedTime,

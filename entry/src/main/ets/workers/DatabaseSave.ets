@@ -1,4 +1,4 @@
-import { Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
+import { ByteUtils, Kdbx, KdbxChallengeResponseFn, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import { CredentialsService } from '../services/CredentialsService';
 import { FileContentInfo, TransferProgressCallback, WriteOption } from '../storage';
 import { fileIo as fs } from '@kit.CoreFileKit';
@@ -249,8 +249,11 @@ export class DatabaseSave {
 
   /**
    * 构建待写入的数据库内容（凭证变更处理 + 加密保存）
-   * S6 保存管道：v4 + ChaCha20 走 saveToFile 文件流式（deflate + encryptFromFile，内存与库大小解耦）；
+   * S6 保存管道：v4 + ChaCha20 走 saveToFile 文件流式（deflate + encryptFromFile），内存与库大小解耦；
    * v3 / AES-CBC 回退 save() 整缓冲。调用方据 SavedContent 选择 writeFromFile / write。
+   * XC 两阶段保存：请求携带预挑战对（saveKdfSaltHex + saveChallengeResponseHex）时，
+   * 以新固定应答替换凭证挑战应答，save/saveToFile 内 generateSalts() 后注入预挑战 salt，
+   * computeKeysV4 以新应答消费注入 salt；无对时行为与现状一致。
    * @param request 请求
    * @param credentials 凭证
    * @param kdbx 已有数据库对象（合并场景传入），不传则从请求数据反序列化
@@ -282,18 +285,65 @@ export class DatabaseSave {
       }
     }
     const now = new Date().getTime();
-    // S6 保存管道：v4 + ChaCha20 走文件流式（deflate + encryptFromFile），内存与库大小解耦；
-    // v3 / AES-CBC 回退整缓冲 save()
-    if (savedPath && x1Path && x2Path && database.canSaveToFile()) {
-      await database.saveToFile(savedPath, { x1Path: x1Path, x2Path: x2Path });
-      hilog.info(DOMAIN, TAG, 'save stage build(stream): %{public}d ms', new Date().getTime() - now);
-      return new SavedContent(savedPath, null);
+    // XC 两阶段保存：预挑战对注入（salt 覆盖 kdfParameters 'S' + 新固定应答）
+    const saveKdfSalt: ArrayBuffer | undefined = DatabaseSave.challengeSaltOf(request);
+    if (saveKdfSalt !== undefined) {
+      await database.credentials.setChallengeResponse(
+        DatabaseSave.fixedResponseFnOf(request.saveChallengeResponseHex));
     }
-    const savedDb: ArrayBuffer = await database.save().then(buf => {
-      hilog.info(DOMAIN, TAG, 'save stage build(buffer): %{public}d ms', new Date().getTime() - now);
-      return buf;
-    });
-    return new SavedContent(null, savedDb);
+    try {
+      // S6 保存管道：v4 + ChaCha20 走文件流式（deflate + encryptFromFile），内存与库大小解耦；
+      // v3 / AES-CBC 回退整缓冲 save()
+      if (savedPath && x1Path && x2Path && database.canSaveToFile()) {
+        await database.saveToFile(savedPath, { x1Path: x1Path, x2Path: x2Path, kdfSalt: saveKdfSalt });
+        hilog.info(DOMAIN, TAG, 'save stage build(stream): %{public}d ms', new Date().getTime() - now);
+        return new SavedContent(savedPath, null);
+      }
+      const savedDb: ArrayBuffer = await database.save({ kdfSalt: saveKdfSalt }).then(buf => {
+        hilog.info(DOMAIN, TAG, 'save stage build(buffer): %{public}d ms', new Date().getTime() - now);
+        return buf;
+      });
+      return new SavedContent(null, savedDb);
+    } finally {
+      // 还原会话固定应答：防止 VERSION_CONFLICT 重试时 mergeDatabase 以新应答解旧 seed
+      // 远端（InvalidKey）；快照（KPSN）与还原后的凭证均不消费挑战应答，对主线程无影响
+      if (saveKdfSalt !== undefined) {
+        await database.credentials.setChallengeResponse(
+          DatabaseSave.fixedResponseFnOf(request.challengeResponseHex));
+      }
+    }
+  }
+
+  /**
+   * 解析预挑战 KDF salt：请求携带完整挑战对（salt + 应答）时返回 32 字节 salt，否则 undefined
+   * @param request 请求
+   * @throws Error salt 长度非法
+   */
+  private static challengeSaltOf(request: SaveDatabase): ArrayBuffer | undefined {
+    if (request.saveKdfSaltHex === undefined || request.saveChallengeResponseHex === undefined) {
+      return undefined;
+    }
+    const salt: Uint8Array = ByteUtils.hexToBytes(request.saveKdfSaltHex);
+    if (salt.byteLength !== 32) {
+      throw new Error('save challenge pair invalid: kdf salt must be 32 bytes');
+    }
+    return salt.buffer;
+  }
+
+  /**
+   * 构造固定应答回调：每次调用返回副本（kdbxweb 哈希后清零返回的缓冲）
+   * @param responseHex 预计算应答（hex），undefined 表示清除挑战应答
+   */
+  private static fixedResponseFnOf(responseHex?: string): KdbxChallengeResponseFn | undefined {
+    if (responseHex === undefined) {
+      return undefined;
+    }
+    const responseBytes: Uint8Array = ByteUtils.hexToBytes(responseHex);
+    return (_challenge: ArrayBuffer) => {
+      const copy: Uint8Array = new Uint8Array(responseBytes.length);
+      copy.set(responseBytes);
+      return Promise.resolve(copy);
+    };
   }
 
   /**

@@ -838,7 +838,11 @@
     },
     {
       "name": "error_challenge_response_save_unsupported",
-      "value": "Saving challenge-response databases is not supported yet (each save requires a new YubiKey tap). Your changes were not saved"
+      "value": "Failed to start the challenge verification (each save requires a new YubiKey tap). Your changes were not saved"
+    },
+    {
+      "name": "challenge_response_save_cancelled",
+      "value": "Challenge verification cancelled. Your changes were not saved"
     },
     {
       "name": "otp_inputs_title",

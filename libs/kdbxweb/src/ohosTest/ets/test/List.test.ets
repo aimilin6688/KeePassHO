@@ -18,6 +18,7 @@ import KdbxTest from './format/kdbx.test';
 import KdbxLoadFromFileTest from './format/kdbx-load-from-file.test';
 import KdbxStreamingLoadTest from './format/kdbx-streaming-load.test';
 import KdbxSaveToFileTest from './format/kdbx-save-to-file.test';
+import KdbxSaveKdfSaltTest from './format/kdbx-save-kdf-salt.test';
 import KdbxXmlPullParserTest from './format/kdbx-xml-pull-parser.test';
 import KdbxAttachmentStoreTest from './format/kdbx-attachment-store.test';
 import KdbxBinariesTest from './format/kdbx-binaries.test';
@@ -59,6 +60,7 @@ export default function testsuite() {
   KdbxLoadFromFileTest();
   KdbxStreamingLoadTest();
   KdbxSaveToFileTest();
+  KdbxSaveKdfSaltTest();
   KdbxXmlPullParserTest();
   KdbxAttachmentStoreTest();
   KdbxBinariesTest();

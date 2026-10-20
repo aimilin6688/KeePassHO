@@ -162,6 +162,12 @@ export interface DbFileParam extends CredentialsParam {
    * 是否使用密钥文件
    */
   notUseKeyFile?: boolean;
+
+  /**
+   * YubiKey 挑战-应答槽位（YubiKeySlot 枚举序列值，仅内存会话）：
+   * 解锁页带入，两阶段保存编排发起 NFC 挑战时使用
+   */
+  yubikeySlot?: number;
 }
 
 /**

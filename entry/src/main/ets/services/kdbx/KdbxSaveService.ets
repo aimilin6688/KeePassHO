@@ -1,16 +1,19 @@
 import { ErrorEvent, MessageEvents, worker } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { promptAction, ShowDialogSuccessResponse } from '@kit.ArkUI';
-import { ByteUtils, Kdbx, KdbxCustomIcon, KdbxUuid } from 'kdbxweb';
+import { ByteUtils, CryptoEngine, Kdbx, KdbxCustomIcon, KdbxUuid } from 'kdbxweb';
 import { Constants } from '../../common/constants/Constants';
 import { CacheConstants } from '../../storage';
 import { CommonUtils, KdbxUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { LoadingDialog, LoadingState } from '../../components/loading/LoadingDialogUtils';
+import { PromptActionUtils } from '../../components/loading/PromptActionUtils';
+import { NfcSaveChallengeBuilder, NfcSaveChallengeOptions } from '../../components/yubikey/NfcSaveChallengeDialog';
+import { YubiKeySlot } from '../otpkey/YubiKeyNfcService';
 import { SaveDatabaseCallback } from '../../workers/callback/SaveDatabaseCallback';
 import { ToastSaveDatabaseCallback } from '../../workers/callback/ToastSaveDatabaseCallback';
 import { DatabaseSave } from '../../workers/DatabaseSave';
-import { ConflictStrategy, SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
+import { ConflictStrategy, SaveChallengePair, SaveDatabaseMessage } from '../../workers/DatabaseSaveWorkerParam';
 import { DatabaseWorkerFactory } from '../../workers/DatabaseWorkerFactory';
 import { LoadDatabase } from '../../workers/DatabaseLoadWorkerParam';
 import KdbxLoadService from './KdbxLoadService';
@@ -32,11 +35,14 @@ class PendingSave {
   dbFileParam: DbFileParam;
   callback?: SaveDatabaseCallback;
   conflictStrategy: string;
+  saveChallenge?: SaveChallengePair;
 
-  constructor(dbFileParam: DbFileParam, callback: SaveDatabaseCallback | undefined, conflictStrategy: string) {
+  constructor(dbFileParam: DbFileParam, callback: SaveDatabaseCallback | undefined,
+    conflictStrategy: string, saveChallenge?: SaveChallengePair) {
     this.dbFileParam = dbFileParam;
     this.callback = callback;
     this.conflictStrategy = conflictStrategy;
+    this.saveChallenge = saveChallenge;
   }
 }
 
@@ -57,6 +63,19 @@ export default class KdbxSaveService {
    * 不同库的请求各自排队（M3 多库：单一 Worker 仍串行执行）
    */
   private static pendingSaves: Map<string, PendingSave> = new Map<string, PendingSave>();
+  /**
+   * 待挑战保存请求（按库 iocKey 分槽，FIFO 消费；同一库新请求整体替换旧槽位——
+   * 与 pendingSaves 同语义，旧回调不通知，最终状态由槽位取出时最新模型保证）
+   */
+  private static pendingChallenges: Map<string, PendingSave> = new Map<string, PendingSave>();
+  /**
+   * 保存挑战弹层是否打开（含关闭中）：防止重复开层；关闭完成后再消费下一槽位
+   */
+  private static challengeDialogOpen: boolean = false;
+  /**
+   * 保存挑战弹层 dialogId（PromptActionUtils 登记 / 关闭用）
+   */
+  private static readonly SAVE_CHALLENGE_DIALOG_ID: string = 'nfc_save_challenge';
 
   /**
    * 保存数据库（当前库便捷入口）
@@ -75,11 +94,14 @@ export default class KdbxSaveService {
    * @param dbFileParam 目标库会话参数（调用时捕获，链路内不再重读）
    * @param callback 回调
    * @param conflictStrategy 冲突处理策略，默认 AUTO（检测到冲突时弹框询问用户）
+   * @param saveChallenge XC 两阶段保存挑战对（可选）：携带时 XC 库放行两阶段保存，
+   *        不携带时 XC 库保存被阻断（防 seed 漂移导致文件损坏）
    */
   private static saveDatabaseFor(dbFileParam: DbFileParam, callback?: SaveDatabaseCallback,
-    conflictStrategy?: string): void {
+    conflictStrategy?: string, saveChallenge?: SaveChallengePair): void {
     const strategy: string = conflictStrategy ?? ConflictStrategy.AUTO;
     // 重载策略由服务层拦截：放弃本地修改，直接从远端重新加载数据库
+    // （挑战对随本地修改一并放弃：远端 seed 未变，重载以原会话应答）
     if (strategy === ConflictStrategy.RELOAD) {
       KdbxSaveService.reloadFromRemote(dbFileParam, callback);
       return;
@@ -92,16 +114,14 @@ export default class KdbxSaveService {
       return;
     }
 
-    // 挑战-应答（XC）库保存拦截：kdbxweb 保存时重新生成 KDF seed，解锁时的 YubiKey 应答
-    // 仅对当前 seed 有效，直接保存将产生无法再次解锁的文件（数据损坏）；
-    // 「保存前重贴卡」两阶段保存支持前明确阻断（RELOAD 远端重载不受影响：seed 未变、应答仍有效）
-    if (dbFileParam.authType && AuthType.useChallengeResponseXc(dbFileParam.authType)) {
-      hilog.warn(DOMAIN, TAG, 'Save blocked: challenge-response (XC) database save requires re-challenge, not supported yet');
-      // 阻断的保存不得残留待应用改密字段（F1 不变量）
-      FileService.clearPendingCredentialChangesOf(dbFileParam);
-      if (callback && callback.onError) {
-        callback.onError(ResourceManager.getString($r('app.string.error_challenge_response_save_unsupported')));
-      }
+    // 挑战-应答（XC）库两阶段保存：kdbxweb 保存时重新生成 KDF seed，解锁时的 YubiKey 应答
+    // 仅对当前 seed 有效，直接保存将产生无法再次解锁的文件（数据损坏）。
+    // 携带预挑战对（saveChallenge）时直接两阶段保存（保存内注入预挑战 salt + 新固定应答；
+    // 冲突续走复用同一对）；无对时主线程预生成 KDF salt → 弹 NFC 贴卡层挑战 → 得对后保存
+    // （RELOAD 远端重载不受影响：seed 未变、应答仍有效）
+    if (dbFileParam.authType && AuthType.useChallengeResponseXc(dbFileParam.authType)
+      && saveChallenge === undefined) {
+      KdbxSaveService.challengeThenSave(dbFileParam, strategy, callback);
       return;
     }
 
@@ -121,21 +141,22 @@ export default class KdbxSaveService {
     // 旧请求直接丢弃，不通知旧回调；不同库各自排队。最终状态由后继保存取最新模型落盘保证
     if (KdbxSaveService.saving) {
       KdbxSaveService.pendingSaves.set(DatabaseRegistry.iocKeyOf(dbFileParam),
-        new PendingSave(dbFileParam, callback, strategy));
+        new PendingSave(dbFileParam, callback, strategy, saveChallenge));
       hilog.info(DOMAIN, TAG, 'Save in progress, coalesced pending save (replaced)');
       return;
     }
 
     // 空闲：立即执行保存
-    KdbxSaveService.executeSave(dbFileParam, callback, strategy);
+    KdbxSaveService.executeSave(dbFileParam, callback, strategy, saveChallenge);
   }
 
   /**
    * 执行一次保存（从空闲态调用，或从 pendingSaves 队列取出后调用）
    * 保存终态后检查 pendingSaves 队列，有则继续执行下一轮
+   * @param saveChallenge XC 两阶段保存挑战对（可选，队列槽位透传）
    */
   private static executeSave(dbFileParam: DbFileParam, callback: SaveDatabaseCallback | undefined,
-    conflictStrategy: string): void {
+    conflictStrategy: string, saveChallenge?: SaveChallengePair): void {
     KdbxSaveService.saving = true;
     if (!dbFileParam.database) {
       hilog.error(DOMAIN, TAG, 'Database is null in executeSave');
@@ -145,7 +166,8 @@ export default class KdbxSaveService {
       KdbxSaveService.onSaveDone();
       return;
     }
-    const saveDatabaseReq = new SaveDatabaseMessage(dbFileParam.database, dbFileParam, conflictStrategy);
+    const saveDatabaseReq = new SaveDatabaseMessage(dbFileParam.database, dbFileParam, conflictStrategy,
+      saveChallenge);
     // 一次性释放守卫：release 有多条触发路径（callbackWarp 终态 / 异常 catch 兜底 / Worker
     // onexit 等），重复触发会把进行中保存的 saving 提前置 false，导致下一请求并发保存，
     // 必须保证每轮保存仅推进一次 onSaveDone
@@ -157,7 +179,7 @@ export default class KdbxSaveService {
       released = true;
       KdbxSaveService.onSaveDone();
     };
-    const callbackWarp = KdbxSaveService.callbackWarp(dbFileParam, callback, release);
+    const callbackWarp = KdbxSaveService.callbackWarp(dbFileParam, callback, release, saveChallenge);
     if (Constants.ASYNC_SAVE_DATABASE) {
       KdbxSaveService.saveDatabaseAsync(dbFileParam, saveDatabaseReq, callbackWarp, release);
     } else {
@@ -183,11 +205,143 @@ export default class KdbxSaveService {
       KdbxSaveService.pendingSaves.delete(nextKey);
       if (pending !== undefined) {
         hilog.info(DOMAIN, TAG, 'Pending save found, executing next round');
-        KdbxSaveService.executeSave(pending.dbFileParam, pending.callback, pending.conflictStrategy);
+        KdbxSaveService.executeSave(pending.dbFileParam, pending.callback, pending.conflictStrategy,
+          pending.saveChallenge);
         return;
       }
     }
     KdbxSaveService.saving = false;
+  }
+
+  /**
+   * XC 两阶段保存·阶段一：登记待挑战槽位并弹 NFC 贴卡层挑战。
+   * 弹层已开（同库重复保存 / 异库并发保存）时不重复开层，槽位在弹层终态后按序消费；
+   * 弹层打开失败（无 UI 上下文等）兜底报错并清理待应用改密字段（F1 不变量），不裸保存
+   */
+  private static challengeThenSave(dbFileParam: DbFileParam, strategy: string,
+    callback?: SaveDatabaseCallback): void {
+    KdbxSaveService.pendingChallenges.set(DatabaseRegistry.iocKeyOf(dbFileParam),
+      new PendingSave(dbFileParam, callback, strategy));
+    KdbxSaveService.openSaveChallenge();
+  }
+
+  /**
+   * 取出最早登记的待挑战槽位（FIFO）并弹 NFC 贴卡层：
+   * 主线程预生成 KDF salt（与 kdbxweb generateSalts 同源同强度：CryptoEngine.random），
+   * 挑战应答 (salt, response) 原子成对，保存时注入 salt + 以固定应答消费
+   */
+  private static openSaveChallenge(): void {
+    if (KdbxSaveService.challengeDialogOpen) {
+      return;
+    }
+    let nextKey: string | null = null;
+    for (const key of KdbxSaveService.pendingChallenges.keys()) {
+      nextKey = key;
+      break;
+    }
+    if (nextKey === null) {
+      return;
+    }
+    const challengedKey: string = nextKey;
+    const pending: PendingSave | undefined = KdbxSaveService.pendingChallenges.get(challengedKey);
+    if (pending === undefined) {
+      KdbxSaveService.pendingChallenges.delete(challengedKey);
+      return;
+    }
+    // 阶段一：预生成 KDF salt 作为挑战原文
+    const salt: Uint8Array = CryptoEngine.random(32);
+    const saltHex: string = ByteUtils.bytesToHex(salt);
+    const challenge: number[] = [];
+    for (let i = 0; i < salt.length; i++) {
+      challenge.push(salt[i]);
+    }
+    // 挑战槽位（缺失时默认槽位 2：挑战-应答惯用配置）
+    const slot: YubiKeySlot = pending.dbFileParam.yubikeySlot === YubiKeySlot.SLOT_1
+      ? YubiKeySlot.SLOT_1 : YubiKeySlot.SLOT_2;
+    const options: NfcSaveChallengeOptions = new NfcSaveChallengeOptions(
+      KdbxSaveService.SAVE_CHALLENGE_DIALOG_ID, challenge, slot,
+      (responseHex: string) => {
+        KdbxSaveService.onSaveChallengeResponse(challengedKey, saltHex, responseHex);
+      },
+      () => {
+        KdbxSaveService.onSaveChallengeCancelled(challengedKey);
+      });
+    KdbxSaveService.challengeDialogOpen = true;
+    PromptActionUtils.openCustomDialog<NfcSaveChallengeOptions>({
+      builder: wrapBuilder(NfcSaveChallengeBuilder),
+      params: options,
+      options: {
+        alignment: DialogAlignment.Center,
+        hideOnTouchOutside: false,
+        hideOnSystemBack: false,
+        isModal: true
+      }
+    }).catch((error: Error) => {
+      // 弹层打开失败（无 UI 上下文等）：兜底报错中止保存，不残留待应用改密字段（F1 不变量）
+      hilog.error(DOMAIN, TAG, 'Open save challenge dialog failed: %{public}s', error?.message);
+      KdbxSaveService.challengeDialogOpen = false;
+      KdbxSaveService.finishSaveChallenge(challengedKey, (p: PendingSave) => {
+        FileService.clearPendingCredentialChangesOf(p.dbFileParam);
+        const fallbackMessage: string =
+          ResourceManager.getString($r('app.string.error_challenge_response_save_unsupported'));
+        if (p.callback && p.callback.onError) {
+          p.callback.onError(fallbackMessage);
+        } else {
+          CommonUtils.showToast(fallbackMessage);
+        }
+      });
+    });
+  }
+
+  /**
+   * 挑战成功（阶段一完成）：组挑战对 → 关弹层 → 进入两阶段保存；继续消费后续槽位
+   */
+  private static async onSaveChallengeResponse(iocKey: string, saltHex: string,
+    responseHex: string): Promise<void> {
+    KdbxSaveService.challengeDialogOpen = false;
+    await PromptActionUtils.closeCustomDialog(KdbxSaveService.SAVE_CHALLENGE_DIALOG_ID).catch(() => {
+    });
+    const pending: PendingSave | undefined = KdbxSaveService.pendingChallenges.get(iocKey);
+    KdbxSaveService.pendingChallenges.delete(iocKey);
+    if (pending !== undefined) {
+      const pair: SaveChallengePair = { kdfSaltHex: saltHex, responseHex: responseHex };
+      KdbxSaveService.saveDatabaseFor(pending.dbFileParam, pending.callback,
+        pending.conflictStrategy, pair);
+    }
+    // 异库并发保存：继续弹出下一槽位的挑战
+    KdbxSaveService.openSaveChallenge();
+  }
+
+  /**
+   * 挑战取消：中止本次保存（本地修改保留在内存中），继续消费后续槽位
+   */
+  private static async onSaveChallengeCancelled(iocKey: string): Promise<void> {
+    KdbxSaveService.challengeDialogOpen = false;
+    await PromptActionUtils.closeCustomDialog(KdbxSaveService.SAVE_CHALLENGE_DIALOG_ID).catch(() => {
+    });
+    KdbxSaveService.finishSaveChallenge(iocKey, (pending: PendingSave) => {
+      // 中止的保存不得残留待应用改密字段（F1 不变量）
+      FileService.clearPendingCredentialChangesOf(pending.dbFileParam);
+      const cancelledMessage: string =
+        ResourceManager.getString($r('app.string.challenge_response_save_cancelled'));
+      if (pending.callback && pending.callback.onError) {
+        pending.callback.onError(cancelledMessage);
+      } else {
+        CommonUtils.showToast(cancelledMessage);
+      }
+    });
+    KdbxSaveService.openSaveChallenge();
+  }
+
+  /**
+   * 终结指定槽位的待挑战保存（取出槽位并回调），供挑战取消 / 弹层打开失败兜底
+   */
+  private static finishSaveChallenge(iocKey: string, finish: (pending: PendingSave) => void): void {
+    const pending: PendingSave | undefined = KdbxSaveService.pendingChallenges.get(iocKey);
+    KdbxSaveService.pendingChallenges.delete(iocKey);
+    if (pending !== undefined) {
+      finish(pending);
+    }
   }
 
   /**
@@ -239,9 +393,11 @@ export default class KdbxSaveService {
    * @param dbFileParam 冲突库的会话参数（捕获引用：弹框回调时不得重读当前库指针）
    * @param message 冲突信息
    * @param callback 原始回调（选择策略后继续保存时复用）
+   * @param saveChallenge XC 两阶段保存挑战对（可选）：本次保存尚未写入，挑战对仍有效，
+   *        合并/覆盖续走两阶段保存；重载放弃本地修改，挑战对随之作废
    */
   private static handleConflict(dbFileParam: DbFileParam, message: ConflictMessage,
-    callback?: SaveDatabaseCallback): void {
+    callback?: SaveDatabaseCallback, saveChallenge?: SaveChallengePair): void {
     // 按接口约定先通知调用方冲突已发生（等待上层决定处理策略），再走 AUTO 弹框流程
     callback?.onConflict?.(message);
     // 关闭保存过程的加载弹框与线性进度弹框，避免与冲突弹框叠加
@@ -260,17 +416,17 @@ export default class KdbxSaveService {
     };
     CommonUtils.showDialog(dialogOptions).then((response: ShowDialogSuccessResponse) => {
       if (response.index === 0) {
-        // 合并：保留双方修改
-        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.MERGE);
+        // 合并：保留双方修改（挑战对仍有效，续走两阶段保存）
+        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.MERGE, saveChallenge);
       } else if (response.index === 1) {
-        // 覆盖：丢弃远端修改
-        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.OVERWRITE);
+        // 覆盖：丢弃远端修改（挑战对仍有效，续走两阶段保存）
+        KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.OVERWRITE, saveChallenge);
       } else if (response.index === 2) {
-        // 重载：丢弃本地修改，以远端为准
+        // 重载：丢弃本地修改，以远端为准（挑战对随本地修改一并放弃）
         KdbxSaveService.saveDatabaseFor(dbFileParam, callback, ConflictStrategy.RELOAD);
       }
     }).catch((error: Error) => {
-      // 用户关闭弹框：放弃本次保存，本地修改保留在内存中
+      // 用户关闭弹框：放弃本次保存，本地修改保留在内存中（挑战对随之作废，下次保存重新挑战）
       hilog.warn(DOMAIN, TAG, 'Conflict dialog dismissed: %{public}s', error?.message);
       // 被放弃的保存若携带改密字段，同样必须清理，防止残留被后续保存静默应用（F1 回归）
       FileService.clearPendingCredentialChangesOf(dbFileParam);
@@ -485,14 +641,15 @@ export default class KdbxSaveService {
   }
 
   static callbackWarp(dbFileParam: DbFileParam, callback?: SaveDatabaseCallback,
-    release?: () => void): SaveDatabaseCallback {
+    release?: () => void, saveChallenge?: SaveChallengePair): SaveDatabaseCallback {
     return {
       onSuccess: (message: SuccessMessage) => {
-        KdbxSaveService.handleSuccess(dbFileParam, message, callback, release);
+        KdbxSaveService.handleSuccess(dbFileParam, message, callback, release, saveChallenge);
       },
       onError: (message: string) => {
         // 保存失败：清理该库待应用的改密凭证字段（F1 回归），
         // 防止残留的 newPassword/newKeyLocation/notUseKeyFile 被后续普通保存静默应用（锁定风险）
+        // （XC 挑战对不落会话字段，失败即作废，下次保存重新挑战）
         FileService.clearPendingCredentialChangesOf(dbFileParam);
         callback?.onError?.(message);
         release?.();
@@ -504,14 +661,20 @@ export default class KdbxSaveService {
         callback?.onProgress?.(message);
       },
       onConflict: (message: ConflictMessage) => {
-        KdbxSaveService.handleConflict(dbFileParam, message, callback);
+        KdbxSaveService.handleConflict(dbFileParam, message, callback, saveChallenge);
         release?.();
       }
     }
   }
 
   static handleSuccess(dbFileParam: DbFileParam, message: SuccessMessage, callback?: SaveDatabaseCallback,
-    release?: () => void) {
+    release?: () => void, saveChallenge?: SaveChallengePair) {
+    // XC 两阶段保存成功：文件 KDF seed 已变为预挑战 salt，会话应答单点更新为新应答
+    // （关键新增不变量：后续 RELOAD / 下一轮保存的 MERGE 远端加载均以新应答解新 seed，
+    // 否则文件 seed 已漂移而会话应答仍旧值，重载将报 InvalidKey）
+    if (saveChallenge !== undefined) {
+      dbFileParam.challengeResponseHex = saveChallenge.responseHex;
+    }
     // 数据库保存成功：更新该库版本基线（modifiedTime + version + contentHash），供下次保存做冲突检测
     // （多库安全：更新捕获的会话参数——注册表中该库记录持有同一对象引用，不依赖当前库指针）
     dbFileParam.modifiedTime = message.modifiedTime;

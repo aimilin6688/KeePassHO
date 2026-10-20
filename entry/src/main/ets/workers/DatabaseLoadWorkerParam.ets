@@ -87,8 +87,9 @@ export class LoadDatabase implements WorkerMessage, CredentialsParam, CachePolic
       dbFileParam.storageConfig
     );
     // OTP secret 在两次保存间稳定（仅 Counter 前进），重载/合并可复用；
-    // challengeResponseHex：XC 库保存已被入口拦截，会话内远端 KDF seed 不变，
-    // 解锁时应答对重载/下拉刷新始终有效（远端被其他设备换 seed 时重载报 InvalidKey，回解锁页重新贴卡）
+    // challengeResponseHex：XC 库两阶段保存成功后由 KdbxSaveService 单点更新为新应答
+    // （文件 seed = 预挑战 salt），会话内重载/下拉刷新始终配对有效；
+    // 远端被其他设备换 seed 时重载报 InvalidKey，回解锁页重新贴卡
     loadDatabase.otpSecretHex = dbFileParam.otpSecretHex;
     loadDatabase.challengeResponseHex = dbFileParam.challengeResponseHex;
     // KeyFile.bin 内联密钥随会话内重载传递（registry DbFileParam → LoadDatabase）

@@ -27,6 +27,22 @@ export enum ConflictStrategy {
   RELOAD = 'RELOAD',
 }
 
+/**
+ * XC 两阶段保存挑战对：保存前主线程预生成 KDF salt 并完成 NFC 挑战所得
+ * （salt 与应答原子成对传递：保存时注入 salt + 以固定应答消费；
+ * 成功后由主线程单点更新会话 challengeResponseHex 为新应答）
+ */
+export interface SaveChallengePair {
+  /**
+   * 预挑战的 KDF salt（hex，32 字节）：保存时注入 kdfParameters 'S'
+   */
+  kdfSaltHex: string;
+  /**
+   * 对 kdfSaltHex 的 YubiKey HMAC-SHA1 应答（hex）：保存时以固定应答消费
+   */
+  responseHex: string;
+}
+
 export class SaveDatabaseMessage implements WorkerMessage, CachePolicyCarrier {
   type: MessageType;
   /**
@@ -41,7 +57,8 @@ export class SaveDatabaseMessage implements WorkerMessage, CachePolicyCarrier {
   onlyUseCache?: boolean;
   forceRefresh?: boolean;
 
-  constructor(data: ArrayBuffer | Kdbx, dbFileParam: DbFileParam, conflictStrategy?: string) {
+  constructor(data: ArrayBuffer | Kdbx, dbFileParam: DbFileParam, conflictStrategy?: string,
+    saveChallenge?: SaveChallengePair) {
     this.type = MessageType.SAVE_DATABASE;
     this.data = data;
     this.dbFileParam = JSON.stringify({
@@ -60,7 +77,9 @@ export class SaveDatabaseMessage implements WorkerMessage, CachePolicyCarrier {
       newKeyLocation: dbFileParam.newKeyLocation,
       notUseKeyFile: dbFileParam.notUseKeyFile,
       otpSecretHex: dbFileParam.otpSecretHex,
-      challengeResponseHex: dbFileParam.challengeResponseHex
+      challengeResponseHex: dbFileParam.challengeResponseHex,
+      saveKdfSaltHex: saveChallenge?.kdfSaltHex,
+      saveChallengeResponseHex: saveChallenge?.responseHex
     } as SaveDatabaseDbParam);
   }
 }
@@ -99,6 +118,14 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
    * 挑战-应答（XC）预计算应答（hex）：单次有效（KDF seed 每次保存后变化）
    */
   challengeResponseHex?: string;
+  /**
+   * XC 两阶段保存：预挑战 KDF salt（hex，32 字节），保存时注入 kdfParameters 'S'
+   */
+  saveKdfSaltHex?: string;
+  /**
+   * XC 两阶段保存：对 saveKdfSaltHex 的预计算应答（hex），保存时以固定应答消费
+   */
+  saveChallengeResponseHex?: string;
 
   constructor(dbParam: SaveDatabaseDbParam, message: SaveDatabaseMessage) {
     this.type = message.type;
@@ -119,6 +146,8 @@ export class SaveDatabase implements SaveDatabaseDbParam, WorkerMessage {
     this.notUseKeyFile = dbParam.notUseKeyFile;
     this.otpSecretHex = dbParam.otpSecretHex;
     this.challengeResponseHex = dbParam.challengeResponseHex;
+    this.saveKdfSaltHex = dbParam.saveKdfSaltHex;
+    this.saveChallengeResponseHex = dbParam.saveChallengeResponseHex;
   }
 }
 
@@ -195,4 +224,14 @@ export interface SaveDatabaseDbParam extends CredentialsParam {
    * 是否使用密钥文件
    */
   notUseKeyFile?: boolean;
+
+  /**
+   * XC 两阶段保存：预挑战 KDF salt（hex，32 字节）；与 saveChallengeResponseHex 原子成对
+   */
+  saveKdfSaltHex?: string;
+
+  /**
+   * XC 两阶段保存：对 saveKdfSaltHex 的预计算应答（hex）
+   */
+  saveChallengeResponseHex?: string;
 }
