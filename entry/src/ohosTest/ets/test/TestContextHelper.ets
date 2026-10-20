@@ -10,9 +10,13 @@ import { common } from '@kit.AbilityKit';
  */
 export class TestContextHelper {
   public static async getUIAbilityContext(): Promise<common.UIAbilityContext> {
-    const delegator: abilityDelegatorRegistry.AbilityDelegator =
-      abilityDelegatorRegistry.getAbilityDelegator();
-    const ability = await delegator.getCurrentTopAbility();
-    return ability.context;
+    try {
+      const delegator: abilityDelegatorRegistry.AbilityDelegator =
+        abilityDelegatorRegistry.getAbilityDelegator();
+      const ability = await delegator.getCurrentTopAbility();
+      return ability.context;
+    } catch (e){
+      return abilityDelegatorRegistry.getAbilityDelegator().getAppContext() as common.UIAbilityContext;
+    }
   }
 }
