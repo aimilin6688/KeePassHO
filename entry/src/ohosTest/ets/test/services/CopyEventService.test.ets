@@ -7,6 +7,7 @@ import { TestContextHelper } from '../TestContextHelper';
 import { CopyEventService } from '../../../../main/ets/services/CopyEventService';
 import { SettingsService } from '../../../../main/ets/services/SettingsService';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
+import { ResourceManager } from '../../../../main/ets/common/utils/ResourceManager';
 import { Constants } from '../../../../main/ets/common/constants/Constants';
 import { EventBus } from '../../../../main/ets/services/EventBus';
 import { LockScreenService } from '../../../../main/ets/services/LockScreenService';
@@ -191,6 +192,7 @@ export default function CopyEventServiceTest() {
     beforeAll(async () => {
       const appContext = await TestContextHelper.getUIAbilityContext();
       CommonUtils.init(appContext);
+      ResourceManager.getInstance().init(appContext);
       await SettingsService.getInstance().init(appContext);
       // 正数窗口（60 秒）使 restartWindow 的重置可通过 getRemainingSec 观测
       savedClearTime = SettingsService.getSync(SettingsService.KEY_SECURITY_CLEAR_PASTEBOARD_TIME,

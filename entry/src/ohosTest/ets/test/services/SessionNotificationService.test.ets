@@ -4,6 +4,7 @@ import { notificationManager } from '@kit.NotificationKit';
 import { TestContextHelper } from '../TestContextHelper';
 import { SessionNotificationService } from '../../../../main/ets/services/SessionNotificationService';
 import { CommonUtils } from '../../../../main/ets/common/utils/CommonUtils';
+import { ResourceManager } from '../../../../main/ets/common/utils/ResourceManager';
 import { SessionEntryInfo } from '../../../../main/ets/services/SessionManager';
 import { SettingsService } from '../../../../main/ets/services/SettingsService';
 import { Constants } from '../../../../main/ets/common/constants/Constants';
@@ -156,49 +157,59 @@ export default function SessionNotificationServiceTest() {
     beforeAll(async () => {
       const appContext = await TestContextHelper.getUIAbilityContext();
       CommonUtils.init(appContext);
+      ResourceManager.getInstance().init(appContext);
       await SettingsService.getInstance().init(appContext);
       savedNotifyEnable = SettingsService.getSync(SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE,
         SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE_DEFAULT);
       await SettingsService.put(SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE, true);
-      AppStorage.setOrCreate<common.UIAbilityContext>('context', appContext);
       notifyEnabled = await notificationManager.isNotificationEnabled();
+      // 仅在系统通知授权可用时注入 context：未授权（拒绝/待答复）时真实发布路径整体跳过，
+      // 避免 requestEnableNotification 弹系统授权框阻塞用例
+      if (notifyEnabled) {
+        AppStorage.setOrCreate<common.UIAbilityContext>('context', appContext);
+      }
       fullEntry = buildEntry('g1', 'e1', 'MyEntry', true, true);
     });
 
     afterAll(async () => {
       await SessionNotificationService.getInstance().cancelSession();
-      AppStorage.delete('context');
+      if (notifyEnabled) {
+        AppStorage.delete('context');
+      }
       await SettingsService.put(SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE, savedNotifyEnable);
     });
 
     it('publishActiveEntry publishes the ongoing session notification', 0, async () => {
-      await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, 30);
-      await sleep(500);
       if (!notifyEnabled) {
         return;
       }
+      await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, 30);
+      await sleep(500);
       expect(await hasSessionNotification()).assertTrue();
     });
 
     it('publishActiveEntry with -1 remaining (never clear) keeps the notification without auto-delete', 0, async () => {
-      await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, -1);
-      await sleep(500);
       if (!notifyEnabled) {
         return;
       }
+      await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, -1);
+      await sleep(500);
       expect(await hasSessionNotification()).assertTrue();
     });
 
     it('publishCopied for username refreshes the notification text', 0, async () => {
-      await SessionNotificationService.getInstance().publishCopied(fullEntry, 25, Constants.SESSION_FIELD_TYPE_USERNAME);
-      await sleep(500);
       if (!notifyEnabled) {
         return;
       }
+      await SessionNotificationService.getInstance().publishCopied(fullEntry, 25, Constants.SESSION_FIELD_TYPE_USERNAME);
+      await sleep(500);
       expect(await hasSessionNotification()).assertTrue();
     });
 
     it('publishCopied for password with -1 remaining does not throw', 0, async () => {
+      if (!notifyEnabled) {
+        return;
+      }
       let threw = false;
       try {
         await SessionNotificationService.getInstance().publishCopied(fullEntry, -1, Constants.SESSION_FIELD_TYPE_PASSWORD);
@@ -206,13 +217,13 @@ export default function SessionNotificationServiceTest() {
         threw = true;
       }
       expect(threw).assertFalse();
-      if (!notifyEnabled) {
-        return;
-      }
       expect(await hasSessionNotification()).assertTrue();
     });
 
     it('second publish of the same entry reuses the cached wantAgent without throwing', 0, async () => {
+      if (!notifyEnabled) {
+        return;
+      }
       let threw = false;
       try {
         await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, 30);
@@ -224,6 +235,9 @@ export default function SessionNotificationServiceTest() {
     });
 
     it('username-only entry publishes with a single username action button', 0, async () => {
+      if (!notifyEnabled) {
+        return;
+      }
       const usernameOnly = buildEntry('g2', 'e2', 'UsernameOnly', true, false);
       let threw = false;
       try {
@@ -232,13 +246,13 @@ export default function SessionNotificationServiceTest() {
         threw = true;
       }
       expect(threw).assertFalse();
-      if (!notifyEnabled) {
-        return;
-      }
       expect(await hasSessionNotification()).assertTrue();
     });
 
     it('password-only entry publishes with a single password action button', 0, async () => {
+      if (!notifyEnabled) {
+        return;
+      }
       const passwordOnly = buildEntry('g3', 'e3', 'PasswordOnly', false, true);
       let threw = false;
       try {
@@ -250,6 +264,9 @@ export default function SessionNotificationServiceTest() {
     });
 
     it('entry without id publishes the default title without action buttons', 0, async () => {
+      if (!notifyEnabled) {
+        return;
+      }
       const noEntry = buildEntry('', '', '', false, false);
       let threw = false;
       try {
@@ -261,11 +278,11 @@ export default function SessionNotificationServiceTest() {
     });
 
     it('cancelSession removes the published notification', 0, async () => {
-      await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, 30);
-      await sleep(500);
       if (!notifyEnabled) {
         return;
       }
+      await SessionNotificationService.getInstance().publishActiveEntry(fullEntry, 30);
+      await sleep(500);
       expect(await hasSessionNotification()).assertTrue();
       await SessionNotificationService.getInstance().cancelSession();
       await sleep(500);
