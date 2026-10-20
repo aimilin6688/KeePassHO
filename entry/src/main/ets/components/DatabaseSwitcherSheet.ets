@@ -319,11 +319,29 @@ export struct DatabaseSwitcherSheet {
 
   build() {
     Column() {
-      Text($r('app.string.database_switcher_title'))
-        .fontSize(18)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('app.color.text_primary'))
-        .margin({ top: 16, bottom: 4 })
+      // 顶部标题栏（与其他对话框统一样式：标题左侧对齐、关闭按钮右侧）
+      Row() {
+        Text($r('app.string.database_switcher_title'))
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('app.color.text_primary'))
+        Blank()
+        Button() {
+          Image($r('sys.media.ohos_ic_public_cancel_filled'))
+            .width(24)
+            .height(24)
+            .fillColor($r('app.color.text_primary'))
+        }
+        .type(ButtonType.Circle)
+        .backgroundColor('transparent')
+        .onClick(() => {
+          this.onRequestClose();
+        })
+      }
+      .width('100%')
+      .height(56)
+      .alignItems(VerticalAlign.Center)
+      .padding({ left: 16, right: 8 })
       Scroll() {
         Column() {
           if (this.openRecords.length > 0) {
