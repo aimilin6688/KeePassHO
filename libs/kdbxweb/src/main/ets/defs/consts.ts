@@ -1,6 +1,7 @@
 export const Signatures = {
     FileMagic: 0x9aa2d903,
     Sig2Kdbx: 0xb54bfb67,
+    Sig2KdbxPreRelease: 0xb54bfb66,
     Sig2Kdb: 0xb54bfb65
 } as const;
 

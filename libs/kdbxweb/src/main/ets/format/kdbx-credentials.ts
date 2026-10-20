@@ -110,7 +110,14 @@ export class KdbxCredentials {
                     break;
                 case 2: {
                     const keyFileData = hexToBytes(dataEl.textContent.replace(/\s+/g, ''));
-                    const keyFileDataHash = dataEl.getAttribute('Hash');
+                    // Official KeePass (KfxFile.VerifyHash): the hash is optional,
+                    // an empty or missing hash means verification is skipped;
+                    // ParseHex is case-insensitive (StrUtil.IsHexString(str, true)).
+                    const keyFileDataHash = (dataEl.getAttribute('Hash') || '').trim().toUpperCase();
+                    if (!keyFileDataHash) {
+                        this.keyFileHash = ProtectedValue.fromBinary(keyFileData);
+                        return Promise.resolve();
+                    }
                     return CryptoEngine.sha256(keyFileData).then((computedHash) => {
                         const computedHashStr = bytesToHex(
                             new Uint8Array(computedHash).subarray(0, 4)

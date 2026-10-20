@@ -998,15 +998,15 @@ export class KdbxFormat {
 
     private getMasterKeyV3(): Promise<ArrayBuffer> {
         return this.kdbx.credentials.getHash().then((credHash) => {
+            const transformRounds = this.kdbx.header.keyEncryptionRounds;
             if (
                 !this.kdbx.header.transformSeed ||
-                !this.kdbx.header.keyEncryptionRounds ||
+                transformRounds === undefined ||
                 !this.kdbx.header.masterSeed
             ) {
                 throw new KdbxError(ErrorCodes.FileCorrupt, 'no header transform parameters');
             }
             const transformSeed = this.kdbx.header.transformSeed;
-            const transformRounds = this.kdbx.header.keyEncryptionRounds;
             const masterSeed = this.kdbx.header.masterSeed;
 
             return this.kdbx.credentials.getChallengeResponse(masterSeed).then((chalResp) => {

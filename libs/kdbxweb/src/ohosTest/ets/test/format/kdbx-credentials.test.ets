@@ -270,6 +270,28 @@ export default function KdbxCredentialsTest() {
             expect().assertFail();
         });
 
+        it('accepts a v2 key file without hash attribute (official: hash is optional)', 0, async () => {
+            const keyFile = ByteUtils.stringToBytes(
+                '<KeyFile><Meta><Version>2.0</Version></Meta><Key><Data>A7007945 D07D54BA 28DF6434 1B4500FC 9750DFB1 D36ADA2D 9C32DC19 4C7AB01B</Data></Key></KeyFile>'
+            );
+            const cred = new KdbxCredentials(null, keyFile);
+            const hash = await cred.getHash();
+            expect(ByteUtils.bytesToHex(hash)).assertEqual(
+                'fe2949b83209abdbd99f049b6a0231282b5854214b0b58f5135148f905ad5a95'
+            );
+        });
+
+        it('accepts a v2 key file with lowercase hash (official: case-insensitive)', 0, async () => {
+            const keyFile = ByteUtils.stringToBytes(
+                '<KeyFile><Meta><Version>2.0</Version></Meta><Key><Data Hash="fe2949b8">A7007945 D07D54BA 28DF6434 1B4500FC 9750DFB1 D36ADA2D 9C32DC19 4C7AB01B</Data></Key></KeyFile>'
+            );
+            const cred = new KdbxCredentials(null, keyFile);
+            const hash = await cred.getHash();
+            expect(ByteUtils.bytesToHex(hash)).assertEqual(
+                'fe2949b83209abdbd99f049b6a0231282b5854214b0b58f5135148f905ad5a95'
+            );
+        });
+
         it('sets passwordHash and keyFileHash',  0,async () => {
             const keyFile = ByteUtils.stringToBytes(
                 '<KeyFile><Meta><Version>2.0</Version></Meta><Key><Data Hash="FE2949B8">A7007945 D07D54BA 28DF6434 1B4500FC 9750DFB1 D36ADA2D 9C32DC19 4C7AB01B</Data></Key></KeyFile>'

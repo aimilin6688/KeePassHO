@@ -87,7 +87,7 @@ export const HeaderConst = {
     DefaultKdfMemory: 6 * 1024 * 1024,
     DefaultKdfVersion: 0x13,
 
-    EndOfHeader: 0x0d0ad0a
+    EndOfHeader: 0x0d0a0d0a
 } as const;
 
 const DefaultMinorVersions = {
@@ -124,7 +124,13 @@ export class KdbxHeader {
         }
         const sig1 = stm.getUint32(true),
             sig2 = stm.getUint32(true);
-        if (!(sig1 === Signatures.FileMagic && sig2 === Signatures.Sig2Kdbx)) {
+        // 官方 KeePass 同时接受正式与预发布签名（KdbxFile.Read.cs）。
+        if (
+            !(
+                sig1 === Signatures.FileMagic &&
+                (sig2 === Signatures.Sig2Kdbx || sig2 === Signatures.Sig2KdbxPreRelease)
+            )
+        ) {
             throw new KdbxError(ErrorCodes.BadSignature);
         }
     }
@@ -143,7 +149,12 @@ export class KdbxHeader {
         ) {
             throw new KdbxError(ErrorCodes.InvalidVersion);
         }
-        if (versionMinor > LastMinorVersions[versionMajor]) {
+        // 官方 KeePass 仅限制最新支持 major 的 minor 版本（KdbxFile.Read.cs）：
+        // 旧 major（KDBX 3.x）的任意 minor 无条件打开；4.x minor 超限时提示确认。
+        if (
+            versionMajor === HeaderConst.MaxSupportedVersion &&
+            versionMinor > LastMinorVersions[versionMajor]
+        ) {
             throw new KdbxError(ErrorCodes.InvalidVersion);
         }
         this.versionMinor = versionMinor;
@@ -216,7 +227,8 @@ export class KdbxHeader {
     }
 
     private writeTransformRounds(stm: BinaryStream): void {
-        if (!this.keyEncryptionRounds) {
+        // rounds = 0 是合法值（官方 AesKdf 允许 0 轮），仅未设置时报错。
+        if (this.keyEncryptionRounds === undefined) {
             throw new KdbxError(ErrorCodes.InvalidState, 'key encryption rounds is not set');
         }
         this.writeFieldSize(stm, 8);
@@ -384,7 +396,9 @@ export class KdbxHeader {
     ): boolean {
         const headerField = fields[headerId];
         if (!headerField) {
-            throw new KdbxError(ErrorCodes.InvalidArg, `bad header field id: ${headerId}`);
+            // 官方 KeePass 对未知头字段仅 Debug.Assert 后跳过继续读
+            // （KdbxFile.Read.cs ReadHeaderField default 分支），不使加载失败。
+            return true;
         }
         switch (headerField.name) {
             case 'EndOfHeader':
@@ -630,7 +644,9 @@ export class KdbxHeader {
         if (this.versionMajor < 4 && !this.transformSeed) {
             throw new KdbxError(ErrorCodes.FileCorrupt, 'no transform seed in header');
         }
-        if (this.versionMajor < 4 && !this.keyEncryptionRounds) {
+        // 官方允许 TransformRounds = 0（AesKdf 0 轮 = 仅最终 SHA256），
+        // 因此只校验字段缺失，不能把 rounds=0 误判为文件损坏。
+        if (this.versionMajor < 4 && this.keyEncryptionRounds === undefined) {
             throw new KdbxError(ErrorCodes.FileCorrupt, 'no key encryption rounds in header');
         }
         if (!this.encryptionIV) {
@@ -642,7 +658,9 @@ export class KdbxHeader {
         if (this.versionMajor < 4 && !this.streamStartBytes) {
             throw new KdbxError(ErrorCodes.FileCorrupt, 'no stream start bytes in header');
         }
-        if (this.versionMajor < 4 && !this.crsAlgorithm) {
+        // CrsAlgorithm = 0（ArcFourVariant）是合法值，缺失才报错；
+        // ArcFour 后续由内流创建处以 Unsupported 报"不支持的算法"。
+        if (this.versionMajor < 4 && this.crsAlgorithm === undefined) {
             throw new KdbxError(ErrorCodes.FileCorrupt, 'no crs algorithm in header');
         }
         if (this.versionMajor >= 4 && !this.kdfParameters) {

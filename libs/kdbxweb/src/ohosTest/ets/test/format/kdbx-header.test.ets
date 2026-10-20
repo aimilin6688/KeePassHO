@@ -378,6 +378,68 @@ export default function KdbxHeaderTest() {
             });
         });
 
+        it('accepts pre-release signature (official behavior)', 0,() => {
+            // sig2 = 0xB54BFB66（官方预发布签名）；签名通过后版本 4.1、
+            // 压缩标志（字段 3）非法处报 Unsupported，证明签名未被拒绝。
+            expects(() => {
+                KdbxHeader.read(
+                    new BinaryStream(
+                        ByteUtils.bytesToBuffer(ByteUtils.hexToBytes('03d9a29a66fb4bb501000400030400000031313131'))
+                    ),
+                    new KdbxContext({ kdbx })
+                );
+            }).assertThrowError((e:KdbxError) => {
+                expect(e.code).assertEqual(Consts.ErrorCodes.Unsupported);
+                expect(e.message).assertContain('compression');
+            });
+        });
+
+        it('accepts v3 header with minor version greater than 1 (official behavior)', 0,() => {
+            // 版本 3.5（官方对旧 major 的任意 minor 无条件打开），
+            // 解析继续至压缩标志（字段 3）非法处报 Unsupported，证明版本未被拒绝。
+            expects(() => {
+                KdbxHeader.read(
+                    new BinaryStream(
+                        ByteUtils.bytesToBuffer(ByteUtils.hexToBytes('03d9a29a67fb4bb50500030003040031313131'))
+                    ),
+                    new KdbxContext({ kdbx })
+                );
+            }).assertThrowError((e:KdbxError) => {
+                expect(e.code).assertEqual(Consts.ErrorCodes.Unsupported);
+                expect(e.message).assertContain('compression');
+            });
+        });
+
+        it('skips unknown header field id instead of failing (official behavior)', 0,() => {
+            // 字段 id 0x70 为未知字段；官方仅跳过继续解析。
+            // 跳过后到达 EndOfHeader（00 0400 0d0a0d0a），
+            // 最终 validate() 报 no cipher，证明解析未被未知字段中断。
+            expects(() => {
+                KdbxHeader.read(
+                    new BinaryStream(
+                        ByteUtils.bytesToBuffer(
+                            ByteUtils.hexToBytes('03d9a29a67fb4bb501000300700200abcd0004000d0a0d0a')
+                        )
+                    ),
+                    new KdbxContext({ kdbx })
+                );
+            }).assertThrowError((e:KdbxError) => {
+                expect(e.code).assertEqual(Consts.ErrorCodes.FileCorrupt);
+                expect(e.message).assertContain('no cipher in header');
+            });
+        });
+
+        it('accepts zero key encryption rounds for v3 (official behavior)', 0,() => {
+            const header = KdbxHeader.create();
+            header.setVersion(3);
+            header.generateSalts();
+            header.keyEncryptionRounds = 0;
+            const stm = new BinaryStream();
+            header.write(stm);
+            const newHeader = KdbxHeader.read(new BinaryStream(stm.getWrittenBytes()), new KdbxContext({ kdbx }));
+            expect(newHeader.keyEncryptionRounds).assertEqual(0);
+        });
+
         it('throws error for bad version', 0,() => {
             expects(() => {
                 KdbxHeader.read(
