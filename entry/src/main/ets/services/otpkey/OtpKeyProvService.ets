@@ -5,20 +5,27 @@ import { OtpInfo } from './OtpInfo';
 import { OtpUtil } from './OtpUtil';
 
 /**
- * OTP 派生结果：secret（hex 交 Worker 构建 customKey）+ 计数器增量（解锁成功后写回辅助文件）
+ * OTP 派生结果：secret（hex 交 Worker 构建 customKey）+ 计数器增量 + 派生可信度
  */
 export class OtpDerivedSecret {
   public secret: Uint8Array = new Uint8Array(0);
   public secretHex: string = '';
   /** v2 = OtpsRequired + 前瞻偏移 i；v1 = OtpsRequired */
   public counterDelta: number = 0;
+  /**
+   * 派生的 secret 是否已被证明正确：
+   * v2 DecryptSecret 命中即 PlainTextHash 校验通过（true，可安全提前写回 Counter）；
+   * v1 DecryptData 无校验（false，须解锁成功后再写回）
+   */
+  public verified: boolean = false;
 }
 
 /**
  * OtpKeyProv 编排服务（对齐 OathHotpKeyProv.cs / PasswordActivity OTP 流程）：
  * - OTP 码模式：辅助文件 OtpInfo（v1/v2 双格式）+ 用户连续输入的 OTP 码 → 派生 secret；
  * - 恢复模式：直接按编码格式（Hex/Base64/Base32/UTF-8/Dec）解析 secret；
- * - Counter 写回：解锁成功后由 UI 调 toXml 持久化（本层仅计算增量）。
+ * - Counter 写回：v2（verified）解锁加载前由 UI 提前写回，失败解锁后重试；
+ *   v1 须解锁成功后写回（本层仅计算增量）。
  */
 export class OtpKeyProvService {
   /** 辅助文件扩展名（对齐 OathHotpKeyProv.AuxFileExt） */
@@ -60,13 +67,14 @@ export class OtpKeyProvService {
       if (!secret) {
         throw new Error('bad encrypted secret data');
       }
-      return OtpKeyProvService.buildResult(secret, otpInfo.otpsRequired);
+      // v1 无 PlainTextHash 校验，secret 正确性未证明
+      return OtpKeyProvService.buildResult(secret, otpInfo.otpsRequired, false);
     }
-    // v2（>= 2.0），支持前瞻窗口
+    // v2（>= 2.0），支持前瞻窗口；命中即 PlainTextHash 校验通过
     for (let i = 0; i < otpInfo.encryptedSecrets.length; i++) {
       const secret = await OtpUtil.decryptSecret(otpInfo.encryptedSecrets[i], otps, 0, otps.length);
       if (secret) {
-        return OtpKeyProvService.buildResult(secret, otpInfo.otpsRequired + i);
+        return OtpKeyProvService.buildResult(secret, otpInfo.otpsRequired + i, true);
       }
     }
     throw new Error('otp verification failed: PlainTextHash mismatch or wrong OTPs');
@@ -111,11 +119,12 @@ export class OtpKeyProvService {
     }
   }
 
-  private static buildResult(secret: Uint8Array, counterDelta: number): OtpDerivedSecret {
+  private static buildResult(secret: Uint8Array, counterDelta: number, verified: boolean): OtpDerivedSecret {
     const result = new OtpDerivedSecret();
     result.secret = secret;
     result.secretHex = ByteUtils.bytesToHex(secret);
     result.counterDelta = counterDelta;
+    result.verified = verified;
     return result;
   }
 }

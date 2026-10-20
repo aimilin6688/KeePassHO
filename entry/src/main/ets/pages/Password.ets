@@ -4,7 +4,8 @@ import { ErrorEvent } from '@ohos.worker';
 
 import { AuthType, AuthTypeInfo, CredentialsParam, DbFileParam, RecentFile } from '../services/TypeDefined';
 import { RecentFilesService } from '../services/RecentFilesService';
-import { FileContentInfo, StorageConfig, StorageType } from '../storage';
+import { StorageConfig, StorageType } from '../storage';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { FileService } from '../services/FileService';
 import { LoadDatabase } from '../workers/DatabaseLoadWorkerParam';
 import { CommonUtils, ConfigDecryptError, CryptoUtils, KdbxUtils, NavigationManager, ResourceManager, WindowUtils } from '../common/utils';
@@ -36,6 +37,7 @@ import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 import { EncodingUtil, OtpDataFmt } from '../services/otpkey/EncodingUtil';
 import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
+import { fileIo } from '@kit.CoreFileKit';
 import {
   KdbxHeaderInfo,
   KdbxHeaderParseError,
@@ -112,6 +114,8 @@ export struct Password {
   private auxLocation: LocationInfo | undefined = undefined;
   // 本次解锁派生结果（解锁成功后写回 Counter）
   private pendingDerived: OtpDerivedSecret | undefined = undefined;
+  // v2 OTP Counter 已在加载前写回辅助文件（解锁成功后跳过二次写回，防双倍前进）
+  private otpCounterWrittenBack: boolean = false;
   // 恢复模式编码格式下拉选项
   private formatOptions: SelectOption[] = [];
   // ===== 挑战-应答（YubiKey NFC + KeePassXC）解锁状态 =====
@@ -354,6 +358,7 @@ export struct Password {
    */
   private onAuthTypeChanged(): void {
     this.pendingDerived = undefined;
+    this.otpCounterWrittenBack = false;
     // 清理上次尝试的派生 secret / 挑战应答（防止换认证方式后残留随 DbFileParam 带出）
     this.otpSecretHex = undefined;
     this.challengeResponseHex = undefined;
@@ -603,6 +608,7 @@ export struct Password {
     this.recoverySecret = '';
     // 派生 secret 属敏感材料，随页面状态清理（otpCodes 为短时效 OTP 码，保留以改善输入体验）
     this.pendingDerived = undefined;
+    this.otpCounterWrittenBack = false;
     this.shouldPreservePassword = false; // 重置保留标志
     this.updateButtonState();
     hilog.info(DOMAIN, TAG, 'Sensitive data cleared for security');
@@ -842,6 +848,11 @@ export struct Password {
       const derived = await OtpKeyProvService.deriveSecretFromOtps(info, otps);
       this.pendingDerived = derived;
       secretHex = derived.secretHex;
+      // v2 派生命中即 PlainTextHash 校验通过：加载前写回 Counter（对齐 KP2A
+      // SaveOtpAuxFileAndLoadDb 先写后加载时序），避免令牌前进而文件未动导致 OTP 锁死
+      if (derived.verified) {
+        await this.advanceOtpCounterBeforeLoad();
+      }
     }
     // 暂存派生 secret：解锁成功后 setFileParam 随 DbFileParam 带入保存链路
     this.otpSecretHex = secretHex;
@@ -886,18 +897,29 @@ export struct Password {
   }
 
   /**
-   * 阶段一：读库字节并预解析 KDBX 头，返回挑战值（KDF seed）字节
+   * 阶段一：下载库文件到临时路径并预解析 KDBX 头，返回挑战值（KDF seed）字节。
+   * 走 readToFile 而非整读：缓存装饰器回填缓存与版本元数据后，
+   * 阶段二 Worker 加载命中同一缓存版本，避免远端文件被二次下载
    */
   private async readChallengeSeed(): Promise<number[]> {
     const manager = new KdbxFileManager(this.storageType, this.storageConfig);
-    const contentInfo: FileContentInfo = await manager.read(this.filePath);
-    const headerInfo: KdbxHeaderInfo = KdbxHeaderReader.readHeader(contentInfo.content);
-    const seedBytes = new Uint8Array(headerInfo.kdfSeed);
-    const seed: number[] = [];
-    for (let i = 0; i < seedBytes.length; i++) {
-      seed.push(seedBytes[i]);
+    const tempPath: string = CommonUtils.getCacheDir() + '/xc_seed_' + Date.now() + '.tmp';
+    try {
+      await manager.readToFile(this.filePath, tempPath);
+      const headerInfo: KdbxHeaderInfo = await KdbxHeaderReader.readHeaderFromFile(tempPath);
+      const seedBytes = new Uint8Array(headerInfo.kdfSeed);
+      const seed: number[] = [];
+      for (let i = 0; i < seedBytes.length; i++) {
+        seed.push(seedBytes[i]);
+      }
+      return seed;
+    } finally {
+      try {
+        await fileIo.unlink(tempPath);
+      } catch (e) {
+        // 临时文件清理失败可忽略
+      }
     }
-    return seed;
   }
 
   /**
@@ -1058,8 +1080,35 @@ export struct Password {
   }
 
   /**
-   * OTP 解锁成功后写回 Counter（对齐 KP2A SaveOtpAuxFileAndLoadDb）：
-   * Counter += OtpsRequired(+i) → 以新 Counter 重新加密 secret → 写回辅助文件；
+   * v2（verified）加载前写回 Counter（对齐 KP2A SaveOtpAuxFileAndLoadDb 先写后加载时序）：
+   * Counter += delta → 新 Counter 重新加密 secret → 写回辅助文件。
+   * 令牌已前进（OTP 码被消耗），文件必须同步前进，否则重试时旧码全部失效导致 OTP 锁死；
+   * 写盘失败不阻断加载——解锁成功后 writeBackOtpCounter 仅重试写盘（不再前进，防双倍消耗）
+   */
+  private async advanceOtpCounterBeforeLoad(): Promise<void> {
+    this.otpCounterWrittenBack = false;
+    const derived = this.pendingDerived;
+    const info = this.otpInfo;
+    const loc = this.auxLocation;
+    if (!derived || !info || !loc) {
+      return;
+    }
+    try {
+      await OtpAuxFileService.saveAfterUnlock(info, derived.secret, derived.counterDelta, loc);
+      this.otpCounterWrittenBack = true;
+      hilog.info(DOMAIN, TAG, 'Otp counter pre-load write-back success');
+    } catch (error) {
+      const err = error as BusinessError;
+      hilog.warn(DOMAIN, TAG, 'Otp counter pre-load write-back failed: %{public}s', err.message);
+      CommonUtils.showToast({ message: $r('app.string.otp_counter_save_failed'), duration: 3000 });
+    }
+  }
+
+  /**
+   * OTP 解锁成功后写回 Counter：
+   * - v2（verified）：加载前已写回（advanceOtpCounterBeforeLoad）——已落盘则跳过，
+   *   曾失败则仅重试写盘（内存 Counter/密文已前进，不得再次前进，防双倍消耗）；
+   * - v1：派生无校验，解锁成功才证明 secret 正确，此处首次前进并写回；
    * fire-and-forget，写回失败仅告警不阻断（远端存储可能只读）
    */
   private writeBackOtpCounter(): void {
@@ -1070,6 +1119,24 @@ export struct Password {
     if (!derived || !info || !loc || AuthType.isRecoveryMode(this.authTypeInfo)) {
       return;
     }
+    if (derived.verified) {
+      if (this.otpCounterWrittenBack) {
+        return;
+      }
+      // 内存 Counter 已前进：重新加密（幂等）+ 重试写盘，不再次前进
+      OtpKeyProvService.encryptOtpInfoSecret(info, derived.secret)
+        .then(() => OtpAuxFileService.writeOtpInfo(info, loc))
+        .then(() => {
+          this.otpCounterWrittenBack = true;
+          hilog.info(DOMAIN, TAG, 'Otp counter write-back retry success');
+        })
+        .catch((error: Error) => {
+          hilog.error(DOMAIN, TAG, 'Otp counter write-back retry failed: %{public}s', error.message);
+          CommonUtils.showToast({ message: $r('app.string.otp_counter_save_failed'), duration: 3000 });
+        });
+      return;
+    }
+    // v1：解锁成功后首次前进（对齐 KP2A v1 成功后写回路径）
     OtpAuxFileService.saveAfterUnlock(info, derived.secret, derived.counterDelta, loc)
       .then(() => {
         hilog.info(DOMAIN, TAG, 'Otp counter write-back success');

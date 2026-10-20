@@ -1,5 +1,7 @@
-import { describe, expect, it } from '@ohos/hypium';
+import { beforeAll, describe, expect, it } from '@ohos/hypium';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
+import { abilityDelegatorRegistry } from '@kit.TestKit';
+import { fileIo } from '@kit.CoreFileKit';
 import { ByteUtils, Kdbx, KdbxCredentials, ProtectedValue } from 'kdbxweb';
 import {
   KdbxHeaderParseError,
@@ -17,6 +19,7 @@ import {
  *
  * E2E：kdbxweb 建带挑战-应答回调的库 → save → 预解析提取 KDF seed →
  * 模拟 YubiKey HMAC-SHA1 应答 → 经 challengeResponseHex 语义（固定应答回调）两阶段重开成功。
+ * 文件路径：readHeaderFromFile 走 64KB 前缀预读 + 超大头部倍增回退 + 截断如实抛错。
  */
 
 /** E2E 测试主密码 */
@@ -135,8 +138,55 @@ function expectParseError(data: ArrayBuffer, expectedCode: KdbxHeaderParseErrorC
   expect(caught).assertEqual(expectedCode);
 }
 
+/** 合成超大 v4 头（> 64KB）：未知字段 99 携带大块数据（读取器跳过），验证倍增回退 */
+function buildOversizedV4Header(padBytes: number, kdfDict: Uint8Array): ArrayBuffer {
+  // 布局：签名/版本 12 + 未知字段(id 99, len=padBytes) 5+padBytes + 字段 11 5+dict + End 9
+  const size = 12 + 5 + padBytes + 5 + kdfDict.length + 9;
+  const buf = new ArrayBuffer(size);
+  const view = new DataView(buf);
+  view.setUint32(0, 0x9aa2d903, true);
+  view.setUint32(4, 0xb54bfb67, true);
+  view.setUint16(8, 1, true);
+  view.setUint16(10, 4, true);
+  let pos = 12;
+  view.setUint8(pos, 99);
+  view.setUint32(pos + 1, padBytes, true);
+  pos += 5 + padBytes; // 填充字节默认 0
+  view.setUint8(pos, 11);
+  view.setUint32(pos + 1, kdfDict.length, true);
+  new Uint8Array(buf, pos + 5).set(kdfDict);
+  pos += 5 + kdfDict.length;
+  view.setUint8(pos, 0);
+  view.setUint32(pos + 1, 4, true);
+  view.setUint32(pos + 5, 0x0d0ad0a, true);
+  return buf;
+}
+
+/** 写临时文件并返回路径（readHeaderFromFile 文件路径用例） */
+async function writeTempFile(dir: string, name: string, data: ArrayBuffer): Promise<string> {
+  const path = dir + '/' + name;
+  const file = await fileIo.open(path,
+    fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC);
+  try {
+    await fileIo.write(file.fd, data);
+  } finally {
+    await fileIo.close(file.fd);
+  }
+  return path;
+}
+
 export default function KdbxHeaderReaderTest() {
   describe('KdbxHeaderReaderTest', () => {
+    let testDir: string;
+
+    beforeAll(() => {
+      const appContext = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      testDir = appContext.filesDir + '/kdbx-header-test';
+      if (!fileIo.accessSync(testDir, fileIo.AccessModeType.EXIST)) {
+        fileIo.mkdirSync(testDir, true);
+      }
+    });
+
     it('synthetic v4 header: extracts seed, uuid and skips non-Bytes entries', 0, () => {
       const seed: number[] = [0xaa, 0xbb, 0xcc, 0xdd];
       const uuid: number[] = [];
@@ -240,6 +290,38 @@ export default function KdbxHeaderReaderTest() {
       const badDict = new Uint8Array([0x00, 0x02, 0x00]);
       expectParseError(buildSyntheticV4Header(badDict),
         KdbxHeaderParseErrorCode.BAD_VAR_DICTIONARY);
+    });
+
+    it('readHeaderFromFile: parses header from small file (prefix read)', 0, async () => {
+      const seed: number[] = [0x11, 0x22, 0x33, 0x44];
+      const header = buildSyntheticV4Header(buildKdfDict(seed, null));
+      const path = await writeTempFile(testDir, 'small-header.kdbx', header);
+      const info = await KdbxHeaderReader.readHeaderFromFile(path);
+      expect(info.versionMajor).assertEqual(4);
+      expect(ByteUtils.bytesToHex(info.kdfSeed)).assertEqual('11223344');
+    });
+
+    it('readHeaderFromFile: oversized header (>64KB) triggers doubled re-read', 0, async () => {
+      const seed: number[] = [0x55, 0x66, 0x77, 0x88];
+      const header = buildOversizedV4Header(70 * 1024, buildKdfDict(seed, null));
+      expect(header.byteLength > 64 * 1024).assertTrue();
+      const path = await writeTempFile(testDir, 'oversized-header.kdbx', header);
+      const info = await KdbxHeaderReader.readHeaderFromFile(path);
+      expect(info.versionMajor).assertEqual(4);
+      expect(ByteUtils.bytesToHex(info.kdfSeed)).assertEqual('55667788');
+    });
+
+    it('readHeaderFromFile: truncated file rethrows TRUNCATED (no fallback)', 0, async () => {
+      const full = buildSyntheticV4Header(buildKdfDict([0xaa], null));
+      // 截取前 20 字节：签名/版本完整，外层字段截断
+      const path = await writeTempFile(testDir, 'truncated-header.kdbx', full.slice(0, 20));
+      let code: KdbxHeaderParseErrorCode | null = null;
+      try {
+        await KdbxHeaderReader.readHeaderFromFile(path);
+      } catch (e) {
+        code = (e as KdbxHeaderParseError).code;
+      }
+      expect(code).assertEqual(KdbxHeaderParseErrorCode.TRUNCATED);
     });
   });
 }

@@ -36,6 +36,8 @@ export default function OtpKeyProvServiceTest() {
       expect(result.secretHex).assertEqual(
         '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f');
       expect(result.counterDelta).assertEqual(2);
+      // v2 命中即 PlainTextHash 校验通过：加载前可安全写回 Counter
+      expect(result.verified).assertTrue();
     });
 
     it('v1 fixture: derive secret from otps (no hash verification path)', 0, async () => {
@@ -54,6 +56,8 @@ export default function OtpKeyProvServiceTest() {
       const result = await OtpKeyProvService.deriveSecretFromOtps(info, ['11111111', '22222222']);
       expect(result.secretHex).assertEqual('76312073656372657420627974657321');
       expect(result.counterDelta).assertEqual(2);
+      // v1 派生无 PlainTextHash 校验：解锁成功前不得提前写回 Counter
+      expect(result.verified).assertFalse();
     });
 
     it('v2 look-ahead: user enters 2nd/3rd codes → hits item i=1, delta = otpsRequired + 1', 0, async () => {
@@ -75,6 +79,8 @@ export default function OtpKeyProvServiceTest() {
       const result = await OtpKeyProvService.deriveSecretFromOtps(info, ['2320446', '1963236']);
       expect(result.secretHex).assertEqual(ByteUtils.bytesToHex(secret));
       expect(result.counterDelta).assertEqual(3);
+      // 前瞻窗口命中同样经过 PlainTextHash 校验
+      expect(result.verified).assertTrue();
     });
 
     it('wrong otps: v2 derive throws (all look-ahead items fail)', 0, async () => {

@@ -1,4 +1,5 @@
 import { ByteUtils } from 'kdbxweb';
+import { fileIo } from '@kit.CoreFileKit';
 
 /**
  * KDBX 文件头解析失败错误（携带原因码，供 UI 映射 i18n 提示）
@@ -69,10 +70,39 @@ const KDF_KEY_UUID: number[] = [0x24, 0x55, 0x55, 0x49, 0x44];
  * - VarDictionary：版本 u16 LE（主版本须为 1）+ 条目流（type u8，0 结束；
  *   keyLen i32 LE + key + valLen i32 LE + value）
  *
- * 不做文件 IO：调用方传入与阶段二加载相同的字节（同一读取会话/缓存），
- * 避免两阶段读到不同版本文件导致应答失配（见解锁方式计划风险表）。
+ * 两阶段一致性由调用方保证：阶段一经 readToFile 落盘（缓存回填 + 版本元数据），
+ * 阶段二命中同一缓存版本，避免读到不同版本文件导致应答失配（见解锁方式计划风险表）。
  */
 export class KdbxHeaderReader {
+  /** 文件头预读前缀长度（KDBX4 外层头部通常远小于该值，超出时倍增重读） */
+  private static readonly HEADER_PREFIX_BYTES: number = 64 * 1024;
+
+  /**
+   * 从文件预读并解析 KDBX 文件头（先读 64KB 前缀，超大头部倍增重试）
+   * @param filePath KDBX 文件本地路径（如缓存落盘的临时文件）
+   * @returns 头部信息（版本 + KDF seed + 算法 UUID）
+   * @throws KdbxHeaderParseError 解析失败（原因见 KdbxHeaderParseErrorCode）
+   */
+  public static async readHeaderFromFile(filePath: string): Promise<KdbxHeaderInfo> {
+    const stat = await fileIo.stat(filePath);
+    const fileSize = stat.size;
+    let readLen = Math.min(fileSize, KdbxHeaderReader.HEADER_PREFIX_BYTES);
+    while (true) {
+      const prefix = await KdbxHeaderReader.readFilePrefix(filePath, readLen);
+      try {
+        return KdbxHeaderReader.readHeader(prefix);
+      } catch (e) {
+        // 前缀内截断且文件还有剩余：超大头部，倍增前缀重试；文件本身截断则如实抛出
+        if (e instanceof KdbxHeaderParseError && e.code === KdbxHeaderParseErrorCode.TRUNCATED
+          && readLen < fileSize) {
+          readLen = Math.min(fileSize, readLen * 2);
+          continue;
+        }
+        throw e as KdbxHeaderParseError;
+      }
+    }
+  }
+
   /**
    * 解析 KDBX 文件头，提取 KDF seed
    * @param data KDBX 文件完整字节（与后续加载共用同一份）
@@ -193,6 +223,18 @@ export class KdbxHeaderReader {
       kdfSeed: seed,
       kdfUuidHex: uuidHex,
     };
+  }
+
+  /** 读取文件前 length 字节（从 0 开始，length ≤ 文件大小） */
+  private static async readFilePrefix(filePath: string, length: number): Promise<ArrayBuffer> {
+    const file = await fileIo.open(filePath, fileIo.OpenMode.READ_ONLY);
+    try {
+      const buffer = new ArrayBuffer(length);
+      await fileIo.read(file.fd, buffer);
+      return buffer;
+    } finally {
+      await fileIo.close(file.fd);
+    }
   }
 
   private static bytesEqual(source: ArrayBuffer, offset: number, length: number,

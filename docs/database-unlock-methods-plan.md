@@ -22,6 +22,7 @@
 | M4 快速解锁与收尾 | 已完成 | 快速解锁语义确认：应用内锁屏（UnLockDatabase）库保持内存解密态，生物识别/快速密码仅恢复界面，OTP/XC 无需重派生密钥，无需改动；Password.ets 生物识别对 XC 挑战-应答库改为仅代填密码分量（不自动弹 NFC 层，由用户按解锁键触发，与 OTP 行为一致）；`RecentFile.otpAuxLocation` OTP 辅助文件位置记忆（手动选择/自动定位结果持久化，重开免重新定位）；设置页验证无需改动（不枚举数据库认证方式）；新增用户使用说明 `docs/unlock-methods-guide.md`；6 套件回归 58/58 |
 | 缺口复查修复（M4 后全链路复查） | 已完成 | ① OTP 库无法保存：`setFileParam` 的 DbFileParam/credentialsParam 从未携带 `otpSecretHex` → 保存时策略抛 `error_otp_secret_missing`；修复：Password.ets 解锁时暂存 `otpSecretHex`/`challengeResponseHex`（页面状态，切换认证方式即清理），`setFileParam` 双路透传（successMessageToKdbx 还原 + FileService.setDbFileParam），保存/重载/下拉刷新链路打通。② 大库（>4MB）Worker 容器路径：主线程 `successMessageToKdbx` 重建凭证缺 secret 而失败（"Database open failed"）；XC 模型路径 `fixedResponse` 函数随 Kdbx 实例 postMessage 触发结构化克隆 DataCloneError；修复：容器路径由 ① 提供 secret；DatabaseLoad 模型路径 XC 传输前 `setChallengeResponse(undefined)` 剥离挑战回调（`kdbxweb` setter 改 public）。③ XC 保存语义缺失：kdbxweb `save()` 必重新生成 KDF seed，解锁应答仅对当前 seed 有效，直接保存将产生无法回开的文件；修复：`KdbxSaveService.saveDatabase` 入口拦截（`error_challenge_response_save_unsupported`，覆盖手动/自动/合并全路径；RELOAD 不拦截——seed 未变应答仍有效，`byDbFileParam` 透传 challengeResponseHex 支持重载/下拉刷新）；两阶段「保存前重贴卡」列入 P2 backlog。新增 E2E 回归 `UnlockSecretsSaveReload`（OTP Worker 容器解锁→保存→重开、缺 secret 负例、XC 挑战剥离、XC 缺应答负例、XC 保存拦截文件零变更）；待验证：KeePass 桌面 OtpKeyProv / KeePassXC+YubiKey 实体钥互操作、反向保存后回开 |
 | 互操作复查与修复（对照 keepass2android / KeePassXC / KeePass 源码全量复查） | 已完成 | ① **挑战补位修正（关键互操作缺陷）**：`YubiKeyNfcService.padChallengeTo64` 由补零改为 **PKCS#7 风格补位**（补位字节值 = 64−len），对齐 KeePassXC `YubiKeyInterfaceUSB.cpp:278-281` / `YubiKeyInterfacePCSC.cpp:752-755` 与 KP2A `ChallengeXCKey.cs:39-52`。依据：补零仅当 YubiKey HMAC 槽位配置了「消息 <64 字节」（`CFGFLAG_HMAC_LT64`）标志时等价（此时卡端剥离尾部同值字节），而 KeePassXC 标准配置为定长 64 字节 HMAC（LT64 未设置），补零会导致真实 YubiKey HMAC 输入不同 → 应答不同 → 实体钥解锁失败。PKCS#7 补位对两种槽位配置均兼容。同步更新 `YubiKeyNfcService.test`（12 用例）与 `KdbxHeaderReader.test`（10 用例）模拟卡侧补位。② **密钥文件防误选 KDBX**：`KeyFileReader` 新增 `isKdbxDatabaseBytes` 前 8 字节签名检查（0x9AA2D903 + {0xB54BFB67 / 0xB54BFB66 / 0xB54BFB65}），对齐 KeePass 桌面 `KcpKeyFile(bThrowIfDbFile)`（KcpKeyFile.cs:75-91），误选数据库文件时以 `error_keyfile_is_database`（zh/en）明确报错；新增 `KeyFileReader.test` 7 用例。③ 全量差距分析定稿见 §8（未实现功能清单与优先级）。待验证项不变：YubiKey 5 NFC 实体钥、KeePass 桌面 OtpKeyProv、反向保存回开 |
+| 实现评审修复（P0/P1/P2，对照 yubikit / ykDroid / KeePassXC / KP2A 权威实现） | 已完成 | **P0-1 HMAC 挑战 APDU 布局**：槽位字节误占 INS 位（`00 (0x30\|0x38) 00 00 40`），真实 YubiKey 全部拒答；修正为三方一致布局 `00 01 <槽位> 00 40`（INS=0x01 API 请求，P1=槽位 0x30/0x38，依据 yubikit `send_apdu(0, INS_CONFIG=0x01, slot, 0, data)`、ykDroid PutApdu、KeePassXC `{CLA_ISO, INS_API_REQ=0x01, slot_cmd, 0, 64}`）。**P0-2 onSuccess 死代码**：成功路径先 `stopSession()`（清空 callbacks）再读 `this.callbacks` → 恒 null，挑战成功永不回调；修复：完成路径抽出 `onExchangeSuccess`/`onExchangeFailed`（protected，供测试子类驱动），成功路径先捕获回调再停会话，取消后迟到结果丢弃。**P1 Counter 写回时机**：v2 由解锁成功后写回提前至派生验证通过后、加载前（对齐 KP2A `SaveOtpAuxFileAndLoadDb` 先写后加载），避免加载失败令牌前进而文件未动 → 重试旧码全失效 OTP 锁死；实现：`OtpDerivedSecret.verified`（v2=PlainTextHash 校验通过，v1=false）、`advanceOtpCounterBeforeLoad`（await，失败告警不阻断）、`writeBackOtpCounter` 拆分——v2 已写回跳过 / 写回失败仅重试写盘不再次前进（防双倍消耗）/ v1 维持成功后写回。**P2 XC 双倍下载**：阶段一 `manager.read()` 整读远端文件仅取头部，阶段二再次全量下载；改为 `readToFile` 落盘临时文件（缓存装饰器回填缓存+版本元数据 → 阶段二命中快速路径免二次下载）+ 新增 `KdbxHeaderReader.readHeaderFromFile`（64KB 前缀预读，超大头部倍增回退，文件截断如实抛 TRUNCATED）。同步更新测试：`YubiKeyNfcService.test` APDU 断言修正 + 会话状态机 4 用例（Testable 子类，成功停会话/失败保持可重贴/非 YubiKeyNfcError 包装/取消丢迟到结果）、`OtpKeyProvService.test` verified 断言 ×3、`KdbxHeaderReader.test` readHeaderFromFile 3 用例（小文件/超大头回退/截断）。待验证：YubiKey 5 NFC 实体钥互操作 |
 | M5 KeeChallenge 旧版（可选 P2） | 待开始 | — |
 
 ---
@@ -68,7 +69,7 @@ enum KeyProviders {
   3. `DecryptData`：`CipherText` 以 `s20://` 前缀 + Base64 存储，用 Salsa20（IV 取 `IV` 前 8 字节）解密出 secret；
   4. `HashAndTransform(secret, PlainTextHashTransformationKey, rounds)` 与 `PlainTextHash` 比对校验；
   5. secret（`OtpInfo.Secret`）作为 `KcpCustomKey(OathHotpKeyProv.Name, secret, true)` 并入复合密钥；
-  6. 成功后把 `Counter += OtpsRequired(+i)` 写回辅助文件（`SaveOtpAuxFileAndLoadDb`）。
+   6. 派生校验通过（v2 PlainTextHash 比对命中）后、加载数据库前把 `Counter += OtpsRequired(+i)` 写回辅助文件（`SaveOtpAuxFileAndLoadDb`，先写后加载）。
 - 恢复模式（`EncodingUtil.ParseKey`）：令牌丢失时直接输入 secret，支持 `Hex/Base64/Base32/Utf8/Dec` 五种编码。
 
 **挑战-应答（KeePassXC 兼容）机制**（`ChallengeXCKey.cs`、KeePassXC `src/keys/ChallengeResponseKey.h`）：
@@ -89,7 +90,7 @@ enum KeyProviders {
 
 - **NFC**：`@kit.ConnectivityKit` 的 `@ohos.nfcTag` 支持 `IsoDepTag`（ISO 14443-4），可发 APDU；
   需在 `module.json5` 声明 `ohos.permission.NFC_TAG`（system_grant，无需运行时弹窗）；
-  YubiKey 5 NFC 的 OTP 应用 AID 为 `A000000527200101`，HMAC 槽位指令：slot1=`0x30`、slot2=`0x38`（与 ykDroid 实现一致）；
+  YubiKey 5 NFC 的 OTP 应用 AID 为 `A0000005272001`（7 字节：A0 00 00 05 27 20 01），HMAC 挑战 APDU：`00 01 <槽位> 00 40`，INS=0x01（API 请求）、P1=槽位（slot1=`0x30`、slot2=`0x38`，对齐 yubikit / ykDroid / KeePassXC）；
 - **本机无 ykDroid 类外部 App**，需在应用内原生实现 NFC APDU 读写（`entry/src/main/ets/services/yubikey/`）。
 
 ---
@@ -165,7 +166,7 @@ Password.ets (UI 收集)
 ### 3.5 辅助文件与最近记录
 
 - **OTP 辅助文件定位**：与数据库同目录同名 + `.otp.xml`；本地/远端存储统一经 `IFileStorage` 抽象读取（复用 `KdbxFileManager`/`FileService` 的存储访问层）；
-- **Counter 写回**：解锁成功后 `Counter += OtpsRequired(+i)` 写回 `.otp.xml`（对齐 `SaveOtpAuxFileAndLoadDb`）；写回失败仅告警不阻断（远端存储可能只读）；
+- **Counter 写回**：v2（PlainTextHash 校验通过）在派生后、加载前把 `Counter += OtpsRequired(+i)` 写回 `.otp.xml`（对齐 `SaveOtpAuxFileAndLoadDb` 先写后加载），写回失败不阻断加载、解锁成功后仅重试写盘（不再次前进，防双倍消耗）；v1（派生无校验）在解锁成功后写回；写回失败均仅告警不阻断（远端存储可能只读）；
 - **RecentFile 扩展**（`TypeDefined.ets:334`）：新增可选字段 `otpAuxLocation?: LocationInfo`（恢复模式/重开时免重新定位）、`yubikeySlot?: number`（记忆槽位）；OTP secret **不持久化**（每次解锁重新由 OTP 码派生）；
 - **快速解锁/生物识别适配**（M4 实测确认）：应用内锁屏（UnLockDatabase）下库保持内存解密态，快速密码/生物识别仅恢复界面遮罩，不重新派生密钥——OTP/挑战库无需补齐硬件因子，原方案（锁屏后重新输入 OTP 码/贴卡）不再需要；冷启动完整解锁流程中，生物识别仅代填密码分量，OTP 码 / YubiKey 贴卡仍需手动完成（KDF seed 每次保存后变化，应答不可复用，对齐 KP2A 行为）；仅密码分量可走既有快速密码/生物识别通道。
 

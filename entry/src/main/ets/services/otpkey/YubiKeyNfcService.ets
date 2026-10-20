@@ -104,12 +104,15 @@ export function padChallengeTo64(challenge: number[]): number[] {
 }
 
 /**
- * 构造 HMAC 挑战 APDU：00 INS 00 00 40 <64 字节 PKCS#7 补位挑战>
- * INS：槽位 1 = 0x30，槽位 2 = 0x38
+ * 构造 HMAC 挑战 APDU：00 01 <槽位> 00 40 <64 字节 PKCS#7 补位挑战>
+ * CLA=00，INS=0x01（API 请求），P1=槽位（0x30=槽位1 / 0x38=槽位2），P2=00，Lc=64。
+ * 布局对齐三方权威实现：Yubico yubikit send_apdu(0, INS_CONFIG=0x01, slot, 0, data)、
+ * ykDroid PutApdu（INS=0x01，P1=slot）、KeePassXC YubiKeyInterfacePCSC
+ * {CLA_ISO, INS_API_REQ=0x01, slot_cmd, 0, 64}——槽位字节在 P1 而非 INS
  */
 export function buildChallengeApdu(slot: YubiKeySlot, challenge: number[]): number[] {
-  const ins = slot === YubiKeySlot.SLOT_1 ? 0x30 : 0x38;
-  const apdu: number[] = [0x00, ins, 0x00, 0x00, CHALLENGE_PAD_LENGTH];
+  const slotByte = slot === YubiKeySlot.SLOT_1 ? 0x30 : 0x38;
+  const apdu: number[] = [0x00, 0x01, slotByte, 0x00, CHALLENGE_PAD_LENGTH];
   return apdu.concat(padChallengeTo64(challenge));
 }
 
@@ -186,14 +189,15 @@ function mapBusinessError(error: BusinessError): YubiKeyNfcError {
 export class YubiKeyNfcService {
   private static instance: YubiKeyNfcService = new YubiKeyNfcService();
 
-  /** 会话是否处于读卡器模式 */
-  private sessionActive: boolean = false;
-  /** 单次 APDU 交换进行中（防同卡重复分发重入） */
-  private busy: boolean = false;
+  /** 会话是否处于读卡器模式（protected：测试子类可观测会话状态） */
+  protected sessionActive: boolean = false;
+  /** 单次 APDU 交换进行中（防同卡重复分发重入）（protected：测试子类可复位） */
+  protected busy: boolean = false;
   private elementName: bundleManager.ElementName | null = null;
   private challenge: number[] = [];
   private slot: YubiKeySlot = YubiKeySlot.SLOT_2;
-  private callbacks: YubiKeyChallengeCallbacks | null = null;
+  /** 会话回调（protected：测试子类可注入桩回调） */
+  protected callbacks: YubiKeyChallengeCallbacks | null = null;
 
   public static getInstance(): YubiKeyNfcService {
     return YubiKeyNfcService.instance;
@@ -287,25 +291,41 @@ export class YubiKeyNfcService {
     callbacks.onTagDetected();
     this.exchangeWithYubiKey(tagInfo)
       .then((responseHex: string) => {
-        // 成功即结束会话（恢复卡模拟）
-        this.stopSession();
-        const cb = this.callbacks;
-        if (cb !== null) {
-          cb.onSuccess(responseHex);
-        }
+        this.onExchangeSuccess(responseHex);
       })
       .catch((e: object) => {
         // 会话保持注册：瞬时错误（移卡）可直接重贴重试
-        this.busy = false;
-        const yubikeyError: YubiKeyNfcError = e instanceof YubiKeyNfcError
-          ? e as YubiKeyNfcError
-          : new YubiKeyNfcError(YubiKeyNfcErrorCode.CHALLENGE_FAILED, `${e}`);
-        hilog.warn(DOMAIN, TAG, 'YubiKey exchange failed: %{public}s', yubikeyError.message);
-        const cb = this.callbacks;
-        if (cb !== null) {
-          cb.onError(yubikeyError);
-        }
+        this.onExchangeFailed(e);
       });
+  }
+
+  /**
+   * APDU 交换成功：先捕获回调再结束会话（stopSession 会清空 callbacks），
+   * 且回调触发时会话已停（card emulation 已恢复）；取消后迟到结果不触发回调
+   */
+  protected onExchangeSuccess(responseHex: string): void {
+    const cb = this.callbacks;
+    // 成功即结束会话（恢复卡模拟）
+    this.stopSession();
+    if (cb !== null) {
+      cb.onSuccess(responseHex);
+    }
+  }
+
+  /**
+   * APDU 交换失败：复位 busy 允许重贴重试，会话保持注册；
+   * 非 YubiKeyNfcError 统一包装为 CHALLENGE_FAILED；取消后迟到失败不触发回调
+   */
+  protected onExchangeFailed(e: object): void {
+    this.busy = false;
+    const yubikeyError: YubiKeyNfcError = e instanceof YubiKeyNfcError
+      ? e as YubiKeyNfcError
+      : new YubiKeyNfcError(YubiKeyNfcErrorCode.CHALLENGE_FAILED, `${e}`);
+    hilog.warn(DOMAIN, TAG, 'YubiKey exchange failed: %{public}s', yubikeyError.message);
+    const cb = this.callbacks;
+    if (cb !== null) {
+      cb.onError(yubikeyError);
+    }
   }
 
   /**

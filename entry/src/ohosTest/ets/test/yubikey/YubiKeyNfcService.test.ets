@@ -6,17 +6,20 @@ import {
   padChallengeTo64,
   parseChallengeResponse,
   parseSelectResponse,
+  YubiKeyChallengeCallbacks,
   YubiKeyNfcError,
   YubiKeyNfcErrorCode,
+  YubiKeyNfcService,
   YubiKeySlot
 } from '../../../../main/ets/services/otpkey/YubiKeyNfcService';
 
 /**
- * YubiKeyNfcService 纯函数单元测试（APDU 构造 / 应答解析，无需 NFC 硬件）。
+ * YubiKeyNfcService 单元测试（APDU 构造 / 应答解析 / 会话状态机，无需 NFC 硬件）。
  *
  * 协议对齐 Yubico OTP/HMAC 规范与 KeePassXC 挑战-应答语义：
  * - SELECT：00 A4 04 00 07 A0 00 00 05 27 20 01（按 AID 选择 YubiKey OTP 应用）
- * - HMAC 挑战：00 (0x30|0x38) 00 00 40 <64 字节 PKCS#7 补位挑战>，INS 0x30=槽位1 / 0x38=槽位2
+ * - HMAC 挑战：00 01 (0x30|0x38) 00 40 <64 字节 PKCS#7 补位挑战>，
+ *   INS=0x01（API 请求），P1=槽位 0x30=槽位1 / 0x38=槽位2（对齐 yubikit/ykDroid/KeePassXC）
  * - 应答：20 字节 HMAC + SW 9000
  */
 
@@ -43,6 +46,62 @@ function catchCode(action: () => void): YubiKeyNfcErrorCode {
     return err.code;
   }
   throw new Error('expected throw but no error raised');
+}
+
+/** 回调记录器（会话状态机测试用） */
+class CallbackRecorder implements YubiKeyChallengeCallbacks {
+  public tagDetectedCount: number = 0;
+  public successCount: number = 0;
+  public successHex: string = '';
+  public errorCount: number = 0;
+  public lastError: YubiKeyNfcError | null = null;
+
+  onTagDetected(): void {
+    this.tagDetectedCount++;
+  }
+
+  onSuccess(responseHex: string): void {
+    this.successCount++;
+    this.successHex = responseHex;
+  }
+
+  onError(error: YubiKeyNfcError): void {
+    this.errorCount++;
+    this.lastError = error;
+  }
+}
+
+/**
+ * 可测子类：仅操作内存会话状态（不触 NFC SDK；elementName 保持 null，
+ * stopSession 跳过 tag.off），用于验证会话状态机与回调时序
+ */
+class TestableYubiKeyNfcService extends YubiKeyNfcService {
+  public armSession(callbacks: YubiKeyChallengeCallbacks): void {
+    this.callbacks = callbacks;
+    this.sessionActive = true;
+    this.busy = false;
+  }
+
+  /** 模拟 APDU 交换进行中 */
+  public armBusy(): void {
+    this.busy = true;
+  }
+
+  public completeExchangeSuccess(responseHex: string): void {
+    this.onExchangeSuccess(responseHex);
+  }
+
+  public completeExchangeFailed(e: object): void {
+    this.onExchangeFailed(e);
+  }
+
+  public isSessionActive(): boolean {
+    return this.sessionActive;
+  }
+
+  public isBusy(): boolean {
+    return this.busy;
+  }
 }
 
 export default function YubiKeyNfcServiceTest() {
@@ -94,14 +153,14 @@ export default function YubiKeyNfcServiceTest() {
       }
     });
 
-    it('buildChallengeApdu_slot1UsesIns30', 0, () => {
+    it('buildChallengeApdu_slot1UsesP1_30', 0, () => {
       const apdu: number[] = buildChallengeApdu(YubiKeySlot.SLOT_1, SEED_32);
       expect(apdu.length).assertEqual(5 + 64);
-      expect(apdu[0]).assertEqual(0x00);
-      expect(apdu[1]).assertEqual(0x30);
-      expect(apdu[2]).assertEqual(0x00);
-      expect(apdu[3]).assertEqual(0x00);
-      expect(apdu[4]).assertEqual(0x40);
+      expect(apdu[0]).assertEqual(0x00); // CLA
+      expect(apdu[1]).assertEqual(0x01); // INS = API 请求
+      expect(apdu[2]).assertEqual(0x30); // P1 = 槽位 1
+      expect(apdu[3]).assertEqual(0x00); // P2
+      expect(apdu[4]).assertEqual(0x40); // Lc
       // 数据区前 32 字节 = seed 原文
       for (let i = 0; i < 32; i++) {
         expect(apdu[5 + i]).assertEqual(SEED_32[i]);
@@ -110,10 +169,13 @@ export default function YubiKeyNfcServiceTest() {
       expect(apdu[5 + 63]).assertEqual(0x20);
     });
 
-    it('buildChallengeApdu_slot2UsesIns38', 0, () => {
+    it('buildChallengeApdu_slot2UsesP1_38', 0, () => {
       const apdu: number[] = buildChallengeApdu(YubiKeySlot.SLOT_2, SEED_32);
-      expect(apdu[1]).assertEqual(0x38);
       expect(apdu.length).assertEqual(69);
+      expect(apdu[1]).assertEqual(0x01);
+      expect(apdu[2]).assertEqual(0x38); // P1 = 槽位 2
+      expect(apdu[3]).assertEqual(0x00);
+      expect(apdu[4]).assertEqual(0x40);
     });
 
     it('parseSelectResponse_accepts9000', 0, () => {
@@ -166,6 +228,59 @@ export default function YubiKeyNfcServiceTest() {
       expect(error.name).assertEqual('YubiKeyNfcError');
       expect(error.code).assertEqual(YubiKeyNfcErrorCode.NFC_DISABLED);
       expect(error.message).assertEqual('off');
+    });
+
+    it('onExchangeSuccess_firesCallbackAndStopsSession', 0, () => {
+      const service = new TestableYubiKeyNfcService();
+      const recorder = new CallbackRecorder();
+      service.armSession(recorder);
+      service.armBusy();
+      service.completeExchangeSuccess('aabbcc');
+      // 回调触发且回调时会话已停（恢复卡模拟）
+      expect(recorder.successCount).assertEqual(1);
+      expect(recorder.successHex).assertEqual('aabbcc');
+      expect(service.isSessionActive()).assertFalse();
+      expect(service.isBusy()).assertFalse();
+    });
+
+    it('onExchangeFailed_keepsSessionAndResetsBusy', 0, () => {
+      const service = new TestableYubiKeyNfcService();
+      const recorder = new CallbackRecorder();
+      service.armSession(recorder);
+      service.armBusy();
+      service.completeExchangeFailed(new YubiKeyNfcError(YubiKeyNfcErrorCode.TAG_DISCONNECTED, 'gone'));
+      // 瞬时错误（移卡）：会话保持注册允许重贴，busy 复位
+      expect(recorder.errorCount).assertEqual(1);
+      expect(recorder.lastError?.code).assertEqual(YubiKeyNfcErrorCode.TAG_DISCONNECTED);
+      expect(service.isBusy()).assertFalse();
+      expect(service.isSessionActive()).assertTrue();
+    });
+
+    it('onExchangeFailed_wrapsNonYubikeyErrorAsChallengeFailed', 0, () => {
+      const service = new TestableYubiKeyNfcService();
+      const recorder = new CallbackRecorder();
+      service.armSession(recorder);
+      service.completeExchangeFailed(new Error('boom'));
+      expect(recorder.errorCount).assertEqual(1);
+      expect(recorder.lastError instanceof YubiKeyNfcError).assertTrue();
+      expect(recorder.lastError?.code).assertEqual(YubiKeyNfcErrorCode.CHALLENGE_FAILED);
+      // 会话保持，可重试
+      expect(service.isSessionActive()).assertTrue();
+    });
+
+    it('cancel_dropsLateExchangeResults', 0, () => {
+      const service = new TestableYubiKeyNfcService();
+      const recorder = new CallbackRecorder();
+      service.armSession(recorder);
+      service.armBusy();
+      // 用户取消会话后，迟到的成功/失败结果不得触发回调
+      service.cancel();
+      service.completeExchangeSuccess('aabbcc');
+      service.completeExchangeFailed(new Error('late'));
+      expect(recorder.successCount).assertEqual(0);
+      expect(recorder.errorCount).assertEqual(0);
+      expect(service.isSessionActive()).assertFalse();
+      expect(service.isBusy()).assertFalse();
     });
   });
 }
