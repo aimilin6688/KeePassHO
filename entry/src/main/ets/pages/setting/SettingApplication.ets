@@ -4,6 +4,7 @@ import { LoadingDialog } from '../../components/loading/LoadingDialogUtils';
 import { SyncSettingsService } from '../../services/store/SyncSettingsService';
 import { CommonUtils } from '../../common/utils';
 import { common } from '@kit.AbilityKit';
+import { AutoOpenCoordinator } from '../../services/autoopen/AutoOpenCoordinator';
 
 @Builder
 export function SettingApplicationBuilder(name: string, param: Object): void {
@@ -23,6 +24,7 @@ struct SettingApplicationContent {
   @State isEnableLocalCache: boolean = SettingsService.KEY_APP_ENABLE_LOCAL_CACHE_DEFAULT;
   @State isBreadcrumbVisible: boolean = SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT;
   @State breadcrumbPosition: BreadcrumbPosition = SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT;
+  @State isChildDbEnable: boolean = SettingsService.KEY_APP_CHILD_DB_ENABLE_DEFAULT;
   private settingsService: SettingsService = SettingsService.getInstance();
   // 面包屑位置选项
   private breadcrumbPositionOptions: SelectOption[] = [
@@ -52,6 +54,8 @@ struct SettingApplicationContent {
     this.isBreadcrumbVisible = this.settingsService.getSync(SettingsService.KEY_APP_BREADCRUMB_VISIBLE, SettingsService.KEY_APP_BREADCRUMB_VISIBLE_DEFAULT);
     // 面包屑位置
     this.breadcrumbPosition = this.settingsService.getSync(SettingsService.KEY_APP_BREADCRUMB_POSITION, SettingsService.KEY_APP_BREADCRUMB_POSITION_DEFAULT);
+    // 启用子数据库功能
+    this.isChildDbEnable = this.settingsService.getSync(SettingsService.KEY_APP_CHILD_DB_ENABLE, SettingsService.KEY_APP_CHILD_DB_ENABLE_DEFAULT);
   }
 
   // 隐藏支持弹框
@@ -249,6 +253,39 @@ struct SettingApplicationContent {
                 .onChange((isOn: boolean) => {
                   this.isEnableLocalCache = isOn;
                   this.settingsService.put(SettingsService.KEY_APP_ENABLE_LOCAL_CACHE, isOn);
+                })
+            }
+            .width('100%')
+            .padding(16)
+          }
+
+          // 启用子数据库功能
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.application_child_db_enable"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.application_child_db_enable_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+              .layoutWeight(1)
+
+              Blank()
+              Toggle({ type: ToggleType.Switch, isOn: this.isChildDbEnable })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.isChildDbEnable = isOn;
+                  this.settingsService.put(SettingsService.KEY_APP_CHILD_DB_ENABLE, isOn);
+                  // 禁用时立即关闭全部已打开子库
+                  if (!isOn) {
+                    AutoOpenCoordinator.getInstance().closeAllChildDatabases();
+                  }
                 })
             }
             .width('100%')

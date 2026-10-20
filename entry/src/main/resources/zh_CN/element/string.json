@@ -1997,6 +1997,14 @@
       "value": "启用时首页面按钮会跟随握姿自动调整位置"
     },
     {
+      "name": "application_child_db_enable",
+      "value": "启用子数据库"
+    },
+    {
+      "name": "application_child_db_enable_tips",
+      "value": "禁用后不再自动打开子数据库，且隐藏全部子数据库相关功能"
+    },
+    {
       "name": "security_privacy_window",
       "value": "启用隐私窗口"
     },

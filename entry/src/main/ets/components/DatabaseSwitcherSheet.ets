@@ -9,6 +9,7 @@ import { SchemeMapper } from '../services/autoopen/SchemeMapper';
 import { DatabaseRegistry, OpenDatabaseRecord } from '../services/kdbx/DatabaseRegistry';
 import { FileService } from '../services/FileService';
 import { EventBus } from '../services/EventBus';
+import { SettingsService } from '../services/SettingsService';
 import { NavigationManager } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
 import { FileStorage } from '../storage';
@@ -77,9 +78,13 @@ export struct DatabaseSwitcherSheet {
 
   /**
    * 收集区块 2 子库条目：当前库 AutoOpen 条目中
-   * 可见（Visible）+ 本设备启用（IfDevice）+ 未打开（不在注册表）的条目
+   * 可见（Visible）+ 本设备启用（IfDevice）+ 未打开（不在注册表）的条目；
+   * 子数据库功能禁用时返回空（区块隐藏）
    */
   private collectChildItems(): AutoOpenItem[] {
+    if (!SettingsService.isChildDbEnable()) {
+      return [];
+    }
     const currentParam = this.registry.getCurrent();
     const parentIocKey = this.registry.getCurrentKey();
     if (currentParam === undefined || !currentParam.database || parentIocKey === null) {
@@ -333,7 +338,10 @@ export struct DatabaseSwitcherSheet {
             }, (item: AutoOpenItem) => item.entryUuid)
           }
           this.OpenOtherRow()
-          this.ManageChildDatabasesRow()
+          // 子数据库功能启用时才显示管理入口
+          if (SettingsService.isChildDbEnable()) {
+            this.ManageChildDatabasesRow()
+          }
         }
         .width('100%')
         .padding({ left: 8, right: 8, bottom: 24 })

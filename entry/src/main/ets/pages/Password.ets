@@ -1005,10 +1005,13 @@ export struct Password {
       this.closeLoadingDialog();
       // 通知解锁会话：与 UnLockDatabase 页保持同一事件流（冷启动/换库路径此前缺失）
       EventBus.emit(LockScreenService.EVENT_LOCK_ACTION, 'unlock');
-      // 子数据库：父库解锁成功后后台扫描并串行打开 AutoOpen 子库（不抢当前库）
-      const parentIocKey: string = DatabaseRegistry.buildIocKey(
-        this.storageType ?? StorageType.LOCAL, this.filePath);
-      AutoOpenCoordinator.getInstance().onParentUnlocked(parentIocKey);
+      // 子数据库：父库解锁成功后后台扫描并串行打开 AutoOpen 子库（不抢当前库）；
+      // 子数据库功能禁用时跳过（不自动打开）
+      if (SettingsService.isChildDbEnable()) {
+        const parentIocKey: string = DatabaseRegistry.buildIocKey(
+          this.storageType ?? StorageType.LOCAL, this.filePath);
+        AutoOpenCoordinator.getInstance().onParentUnlocked(parentIocKey);
+      }
     }).catch((error: Error) => {
       hilog.error(DOMAIN, TAG, 'Database open failed: %{public}s', error.message);
       CommonUtils.showToast({ message: error.message, duration: 3000 });

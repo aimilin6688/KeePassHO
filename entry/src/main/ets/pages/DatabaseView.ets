@@ -784,6 +784,10 @@ export struct DatabaseView {
    */
   private updateChildDbHint(): void {
     this.showChildDbHint = false;
+    // 子数据库功能禁用时不显示配置提示条
+    if (!SettingsService.isChildDbEnable()) {
+      return;
+    }
     if (this.database === null || this.currentGroup === undefined) {
       return;
     }

@@ -94,6 +94,10 @@ export class SettingsService {
   public static readonly KEY_APP_BREADCRUMB_VISIBLE = "app_breadcrumb_visible";
   public static readonly KEY_APP_BREADCRUMB_VISIBLE_DEFAULT = true;
 
+  // 启用子数据库功能（AutoOpen 子库自动打开 / 切换面板子库区块 / 子库管理页入口）
+  public static readonly KEY_APP_CHILD_DB_ENABLE = "app_child_db_enable";
+  public static readonly KEY_APP_CHILD_DB_ENABLE_DEFAULT = true;
+
   // 面包屑导航位置
   public static readonly KEY_APP_BREADCRUMB_POSITION = "app_breadcrumb_position";
   public static readonly KEY_APP_BREADCRUMB_POSITION_DEFAULT = BreadcrumbPosition.BOTTOM;
@@ -390,5 +394,14 @@ export class SettingsService {
   public static isSearchHistoryEnable(): boolean {
     return SettingsService.getInstance()
       .getSync(SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE, SettingsService.KEY_SECURITY_SEARCH_HISTORY_ENABLE_DEFAULT);
+  }
+
+  /**
+   * 子数据库功能是否启用（默认启用）：禁用时隐藏全部子库相关 UI，
+   * 父库解锁后不再自动扫描/打开 AutoOpen 子库
+   */
+  public static isChildDbEnable(): boolean {
+    return SettingsService.getInstance()
+      .getSync(SettingsService.KEY_APP_CHILD_DB_ENABLE, SettingsService.KEY_APP_CHILD_DB_ENABLE_DEFAULT);
   }
 }

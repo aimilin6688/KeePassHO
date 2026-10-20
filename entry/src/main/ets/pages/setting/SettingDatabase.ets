@@ -11,6 +11,7 @@ import {
   FormatInfo
 } from '../../services/importExport';
 import { LocationParam, LocationInfo, LocationMode } from '../../services/beans/LocationParam';
+import { SettingsService } from '../../services/SettingsService';
 // SettingDatabase页面的Builder函数
 @Builder
 export function SettingDatabaseBuilder(name: string, param: Object): void {
@@ -296,23 +297,25 @@ struct SettingDatabaseContent {
               })
             }
 
-            // 子数据库管理
-            ListItem() {
-              Row() {
-                Text($r("app.string.child_dbs_title"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Image($r('app.media.ic_arrow_right'))
-                  .width(20)
-                  .height(20)
-                  .fillColor($r('app.color.text_primary'))
+            // 子数据库管理（子数据库功能禁用时隐藏）
+            if (SettingsService.isChildDbEnable()) {
+              ListItem() {
+                Row() {
+                  Text($r("app.string.child_dbs_title"))
+                    .fontSize(16)
+                    .flexGrow(1)
+                  Image($r('app.media.ic_arrow_right'))
+                    .width(20)
+                    .height(20)
+                    .fillColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+                .padding(16)
+                .onClick(() => {
+                  // 导航到子数据库管理页面（右侧分栏展示）
+                  this.navPathStack.pushPathByName(PageConstants.PAGE_CHILD_DATABASES, null);
+                })
               }
-              .width('100%')
-              .padding(16)
-              .onClick(() => {
-                // 导航到子数据库管理页面（右侧分栏展示）
-                this.navPathStack.pushPathByName(PageConstants.PAGE_CHILD_DATABASES, null);
-              })
             }
           }
           .margin({ top: 12, bottom: 12 })

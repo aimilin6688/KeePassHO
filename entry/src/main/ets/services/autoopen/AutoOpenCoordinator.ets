@@ -10,7 +10,7 @@ import { ChildTarget, SchemeMapper } from './SchemeMapper';
 import { AutoOpenConfigRebuilder, ConfigRebuildResult } from './AutoOpenConfigRebuilder';
 import { DeviceIdentity } from './DeviceIdentity';
 import { IfDeviceParser } from './IfDeviceParser';
-import { DatabaseRegistry, PutDatabaseOptions } from '../kdbx/DatabaseRegistry';
+import { DatabaseRegistry, OpenDatabaseRecord, PutDatabaseOptions } from '../kdbx/DatabaseRegistry';
 import { FileService } from '../FileService';
 import { EventBus } from '../EventBus';
 import { RecentFilesService } from '../RecentFilesService';
@@ -104,6 +104,28 @@ export class AutoOpenCoordinator {
    */
   reset(): void {
     this.pendingByParent.clear();
+  }
+
+  /**
+   * 关闭全部已打开子库（禁用「子数据库功能」设置时调用）：
+   * 从注册表移除所有 isChild 标记的记录；移除当前库时注册表自动切换到剩余库。
+   * 不清理 attempted 标记——重新启用后由用户手动触发打开。
+   */
+  closeAllChildDatabases(): void {
+    const registry: DatabaseRegistry = FileService.getRegistry();
+    const childRecords: OpenDatabaseRecord[] = [];
+    for (const record of registry.all()) {
+      if (record.isChild) {
+        childRecords.push(record);
+      }
+    }
+    for (const record of childRecords) {
+      registry.remove(record.iocKey);
+    }
+    if (childRecords.length > 0) {
+      hilog.info(DOMAIN, TAG, 'Closed %{public}d opened child database(s) after disabling child db feature',
+        childRecords.length);
+    }
   }
 
   /**

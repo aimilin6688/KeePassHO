@@ -2069,6 +2069,14 @@
       "value": "When enabled, the button on the home page will automatically adjust its position according to the grip posture"
     },
     {
+      "name": "application_child_db_enable",
+      "value": "Enable child databases"
+    },
+    {
+      "name": "application_child_db_enable_tips",
+      "value": "When disabled, AutoOpen child databases are no longer opened automatically and all child database features are hidden"
+    },
+    {
       "name": "security_privacy_window",
       "value": "Enable the privacy window"
     },
