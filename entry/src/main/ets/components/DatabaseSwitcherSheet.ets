@@ -232,6 +232,7 @@ export struct DatabaseSwitcherSheet {
       Image(this.getChildItemIcon(item))
         .width(28)
         .height(28)
+        .fillColor($r('app.color.text_primary'))
         .margin({ left: 12, right: 12 })
       Column() {
         Text(item.title.length > 0 ? item.title : item.url)

@@ -118,6 +118,7 @@ export struct DatabaseView {
   @State showDatabaseSwitcher: boolean = false;
   @State switcherRefreshTick: number = 0;
   @State showChildDbHint: boolean = false; // 子数据库配置提示条（M5）
+  @State isCurrentDbChild: boolean = false; // 当前库是否为子库（标题行显示子库标识图标）
   // 批量操作相关状态
   @State isSelectionMode: boolean = false; // 是否处于选择模式
   @State selectedItems: Map<string, KdbxGroup | KdbxEntry> = new Map(); // 选中的条目或分组
@@ -535,6 +536,11 @@ export struct DatabaseView {
     const params = FileService.getDbFileParam();
     this.database = params.database ?? null;
     this.filePath = params.filePath ?? '';
+
+    // 当前库是否为子库：注册表 isChild 标记（母库不显示标识）
+    const registry = FileService.getRegistry();
+    const currentIocKey = registry.getCurrentKey();
+    this.isCurrentDbChild = currentIocKey !== null && registry.isChild(currentIocKey);
 
     // 重新读取设置：组件在应用启动阶段即创建，此时 SettingsService 可能尚未初始化完成，
     // 首次 initSettings 读到的可能是默认值，打开数据库时再次读取确保使用真实配置
@@ -2246,6 +2252,14 @@ export struct DatabaseView {
                 // 数据库切换面板入口（M3）：标题与下拉箭头整体可点击，展开已打开库/子库切换半模态
                 if (!this.isSelectionMode) {
                   Row() {
+                    // 当前库为子库时显示链接标识图标（母库不显示）
+                    if (this.isCurrentDbChild) {
+                      Image($r('app.media.ic_link'))
+                        .width(16)
+                        .height(16)
+                        .fillColor($r('app.color.text_primary'))
+                        .margin({ left: 6 })
+                    }
                     Text(this.titleName)
                       .fontSize(22)
                       .fontWeight(FontWeight.Medium)
@@ -2253,6 +2267,7 @@ export struct DatabaseView {
                       .fontColor($r('app.color.text_primary'))
                       .maxLines(1)
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
+
                     Image($r('app.media.ic_angle_down'))
                       .width(18)
                       .height(18)
