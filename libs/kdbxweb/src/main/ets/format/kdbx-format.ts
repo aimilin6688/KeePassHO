@@ -24,6 +24,7 @@ import * as CryptoEngine from '../crypto/crypto-engine';
 import * as KeyEncryptorAes from '../crypto/key-encryptor-aes';
 import * as KeyEncryptorKdf from '../crypto/key-encryptor-kdf';
 import { Int64 } from '../utils/int64';
+import { ValueType } from '../utils/var-dictionary';
 import * as ZlibFile from '../utils/zlib-file';
 import {
     FileChunkReader,
@@ -37,6 +38,17 @@ import { KdbxSnapshot } from './kdbx-snapshot';
  */
 export interface ContainerChunkWriter {
     writeChunk(data: Uint8Array): Promise<void>;
+}
+
+/**
+ * 保存选项（XC 挑战-应答两阶段保存，方案 §9.3）：
+ * kdfSalt 由调用方在保存入口预生成并完成 NFC 挑战后注入——
+ * generateSalts() 之后覆盖 KDF seed 'S'，使写出的 seed 与
+ * 已取得的挑战应答严格配对（KeePassXC 为保存内嵌挑战，本项目
+ * Worker 架构下等价实现）。不传时行为与现状完全一致。
+ */
+export interface SaveOptions {
+    kdfSalt?: ArrayBuffer;
 }
 
 export class KdbxFormat {
@@ -676,10 +688,11 @@ export class KdbxFormat {
         });
     }
 
-    save(): Promise<ArrayBuffer> {
+    save(opts?: SaveOptions): Promise<ArrayBuffer> {
         return this.kdbx.credentials.ready.then(() => {
             const stm = new BinaryStream();
             this.kdbx.header.generateSalts();
+            KdbxFormat.applyKdfSaltOverride(this.kdbx, opts);
             this.kdbx.header.write(stm);
             if (this.kdbx.versionMajor === 3) {
                 // v3 附件池内联写入 Meta，磁盘引用必须先物化回内存
@@ -775,7 +788,7 @@ export class KdbxFormat {
      * @param x1Path X1 inner 明文临时文件路径（调用方管理）
      * @param x2Path X2 inner.gz 临时文件路径（调用方管理；未压缩时未使用）
      */
-    saveToFile(outPath: string, x1Path: string, x2Path: string): Promise<void> {
+    saveToFile(outPath: string, x1Path: string, x2Path: string, opts?: SaveOptions): Promise<void> {
         return this.kdbx.credentials.ready.then(() => {
             if (this.kdbx.versionMajor !== 4) {
                 throw new KdbxError(ErrorCodes.InvalidVersion, 'saveToFile requires kdbx v4');
@@ -786,6 +799,7 @@ export class KdbxFormat {
             }
             const stm = new BinaryStream();
             this.kdbx.header.generateSalts();
+            KdbxFormat.applyKdfSaltOverride(this.kdbx, opts);
             this.kdbx.header.write(stm);
             return this.saveV4ToFile(stm, outPath, x1Path, x2Path);
         });
@@ -1095,6 +1109,31 @@ export class KdbxFormat {
         } else {
             return Promise.resolve();
         }
+    }
+
+    /**
+     * XC 两阶段保存：注入预挑战 KDF salt（§9.3）。
+     * generateSalts() 之后用调用方预生成（已完成 NFC 挑战取应答）的 salt
+     * 覆盖 kdfParameters 'S'，保证写出的 KDF seed 与挑战应答配对一致。
+     * 仅 KDBX4（'S' 仅存在于 v4 KDF 参数）；salt 必须 32 字节。
+     * 不传 kdfSalt 时无操作（保存行为与现状一致）。
+     */
+    private static applyKdfSaltOverride(kdbx: Kdbx, opts?: SaveOptions): void {
+        const kdfSalt: ArrayBuffer | undefined = opts?.kdfSalt;
+        if (!kdfSalt) {
+            return;
+        }
+        if (kdbx.versionMajor !== 4) {
+            throw new KdbxError(ErrorCodes.Unsupported, 'kdfSalt override requires kdbx v4');
+        }
+        if (kdfSalt.byteLength !== 32) {
+            throw new KdbxError(ErrorCodes.InvalidArg, 'kdfSalt must be 32 bytes');
+        }
+        const kdfParameters = kdbx.header.kdfParameters;
+        if (!kdfParameters) {
+            throw new KdbxError(ErrorCodes.InvalidState, 'no kdf params');
+        }
+        kdfParameters.set('S', ValueType.Bytes, kdfSalt);
     }
 
     private computeKeysV4() {

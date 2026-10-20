@@ -39,7 +39,7 @@ import {
     KdbxEntryEditState,
     KdbxEntryField
 } from './format/kdbx-entry';
-import { ContainerChunkWriter, KdbxFormat } from './format/kdbx-format';
+import { ContainerChunkWriter, KdbxFormat, SaveOptions } from './format/kdbx-format';
 import {
     SequentialByteReader,
     SequentialReaderChunkReader
@@ -113,6 +113,7 @@ export {
     KdbxEntryAutoType,
     KdbxFormat,
     ContainerChunkWriter,
+    SaveOptions,
     SequentialByteReader,
     SequentialReaderChunkReader,
     KdbxGroup,

@@ -23,6 +23,7 @@
 | 缺口复查修复（M4 后全链路复查） | 已完成 | ① OTP 库无法保存：`setFileParam` 的 DbFileParam/credentialsParam 从未携带 `otpSecretHex` → 保存时策略抛 `error_otp_secret_missing`；修复：Password.ets 解锁时暂存 `otpSecretHex`/`challengeResponseHex`（页面状态，切换认证方式即清理），`setFileParam` 双路透传（successMessageToKdbx 还原 + FileService.setDbFileParam），保存/重载/下拉刷新链路打通。② 大库（>4MB）Worker 容器路径：主线程 `successMessageToKdbx` 重建凭证缺 secret 而失败（"Database open failed"）；XC 模型路径 `fixedResponse` 函数随 Kdbx 实例 postMessage 触发结构化克隆 DataCloneError；修复：容器路径由 ① 提供 secret；DatabaseLoad 模型路径 XC 传输前 `setChallengeResponse(undefined)` 剥离挑战回调（`kdbxweb` setter 改 public）。③ XC 保存语义缺失：kdbxweb `save()` 必重新生成 KDF seed，解锁应答仅对当前 seed 有效，直接保存将产生无法回开的文件；修复：`KdbxSaveService.saveDatabase` 入口拦截（`error_challenge_response_save_unsupported`，覆盖手动/自动/合并全路径；RELOAD 不拦截——seed 未变应答仍有效，`byDbFileParam` 透传 challengeResponseHex 支持重载/下拉刷新）；两阶段「保存前重贴卡」列入 P2 backlog。新增 E2E 回归 `UnlockSecretsSaveReload`（OTP Worker 容器解锁→保存→重开、缺 secret 负例、XC 挑战剥离、XC 缺应答负例、XC 保存拦截文件零变更）；待验证：KeePass 桌面 OtpKeyProv / KeePassXC+YubiKey 实体钥互操作、反向保存后回开 |
 | 互操作复查与修复（对照 keepass2android / KeePassXC / KeePass 源码全量复查） | 已完成 | ① **挑战补位修正（关键互操作缺陷）**：`YubiKeyNfcService.padChallengeTo64` 由补零改为 **PKCS#7 风格补位**（补位字节值 = 64−len），对齐 KeePassXC `YubiKeyInterfaceUSB.cpp:278-281` / `YubiKeyInterfacePCSC.cpp:752-755` 与 KP2A `ChallengeXCKey.cs:39-52`。依据：补零仅当 YubiKey HMAC 槽位配置了「消息 <64 字节」（`CFGFLAG_HMAC_LT64`）标志时等价（此时卡端剥离尾部同值字节），而 KeePassXC 标准配置为定长 64 字节 HMAC（LT64 未设置），补零会导致真实 YubiKey HMAC 输入不同 → 应答不同 → 实体钥解锁失败。PKCS#7 补位对两种槽位配置均兼容。同步更新 `YubiKeyNfcService.test`（12 用例）与 `KdbxHeaderReader.test`（10 用例）模拟卡侧补位。② **密钥文件防误选 KDBX**：`KeyFileReader` 新增 `isKdbxDatabaseBytes` 前 8 字节签名检查（0x9AA2D903 + {0xB54BFB67 / 0xB54BFB66 / 0xB54BFB65}），对齐 KeePass 桌面 `KcpKeyFile(bThrowIfDbFile)`（KcpKeyFile.cs:75-91），误选数据库文件时以 `error_keyfile_is_database`（zh/en）明确报错；新增 `KeyFileReader.test` 7 用例。③ 全量差距分析定稿见 §8（未实现功能清单与优先级）。待验证项不变：YubiKey 5 NFC 实体钥、KeePass 桌面 OtpKeyProv、反向保存回开 |
 | 实现评审修复（P0/P1/P2，对照 yubikit / ykDroid / KeePassXC / KP2A 权威实现） | 已完成 | **P0-1 HMAC 挑战 APDU 布局**：槽位字节误占 INS 位（`00 (0x30\|0x38) 00 00 40`），真实 YubiKey 全部拒答；修正为三方一致布局 `00 01 <槽位> 00 40`（INS=0x01 API 请求，P1=槽位 0x30/0x38，依据 yubikit `send_apdu(0, INS_CONFIG=0x01, slot, 0, data)`、ykDroid PutApdu、KeePassXC `{CLA_ISO, INS_API_REQ=0x01, slot_cmd, 0, 64}`）。**P0-2 onSuccess 死代码**：成功路径先 `stopSession()`（清空 callbacks）再读 `this.callbacks` → 恒 null，挑战成功永不回调；修复：完成路径抽出 `onExchangeSuccess`/`onExchangeFailed`（protected，供测试子类驱动），成功路径先捕获回调再停会话，取消后迟到结果丢弃。**P1 Counter 写回时机**：v2 由解锁成功后写回提前至派生验证通过后、加载前（对齐 KP2A `SaveOtpAuxFileAndLoadDb` 先写后加载），避免加载失败令牌前进而文件未动 → 重试旧码全失效 OTP 锁死；实现：`OtpDerivedSecret.verified`（v2=PlainTextHash 校验通过，v1=false）、`advanceOtpCounterBeforeLoad`（await，失败告警不阻断）、`writeBackOtpCounter` 拆分——v2 已写回跳过 / 写回失败仅重试写盘不再次前进（防双倍消耗）/ v1 维持成功后写回。**P2 XC 双倍下载**：阶段一 `manager.read()` 整读远端文件仅取头部，阶段二再次全量下载；改为 `readToFile` 落盘临时文件（缓存装饰器回填缓存+版本元数据 → 阶段二命中快速路径免二次下载）+ 新增 `KdbxHeaderReader.readHeaderFromFile`（64KB 前缀预读，超大头部倍增回退，文件截断如实抛 TRUNCATED）。同步更新测试：`YubiKeyNfcService.test` APDU 断言修正 + 会话状态机 4 用例（Testable 子类，成功停会话/失败保持可重贴/非 YubiKeyNfcError 包装/取消丢迟到结果）、`OtpKeyProvService.test` verified 断言 ×3、`KdbxHeaderReader.test` readHeaderFromFile 3 用例（小文件/超大头回退/截断）。待验证：YubiKey 5 NFC 实体钥互操作 |
+| XC 两阶段保存（预挑战注入，解除保存拦截） | 待开始（方案定稿 §9，排期 M1→M5） | — |
 | M5 KeeChallenge 旧版（可选 P2） | 待开始 | — |
 
 ---
@@ -265,6 +266,7 @@ Password.ets (UI 收集)
 | 复合密钥拼接顺序 | `其他库/KeePass-2.61.1-Source/KeePassLib/Keys/CompositeKey.cs:87` |
 | 本项目 kdbxweb 挑战-应答支持 | `libs/kdbxweb/src/main/ets/format/kdbx-credentials.ts:18,143,172`；`kdbx-format.ts:1113` |
 | 本项目现有认证链路 | `entry/src/main/ets/services/TypeDefined.ets:167`、`services/CredentialsService.ets`、`workers/DatabaseLoad.ets:38`、`pages/Password.ets` |
+| KeePassXC 保存模型（挑战内嵌） | `其他库/keepassxc/src/format/Kdbx4Writer.cpp:51`、`src/core/Database.cpp:909-996`、`src/keys/CompositeKey.cpp:85-160`、`src/keys/ChallengeResponseKey.cpp`、`src/keys/drivers/YubiKey.cpp:148-178`、`src/gui/DatabaseWidget.cpp:2486-2540`、`src/gui/MainWindow.cpp:1851` |
 
 ---
 
@@ -297,7 +299,7 @@ Password.ets (UI 收集)
 | 优先级 | 功能 | KP2A 参考 | 说明 |
 |---|---|---|---|
 | P2 | **M5 KeeChallenge 旧版挑战-应答**（`password_challenge_response` / `password_challenge_response_recovery`） | `KeeChallenge.cs`、`ChallengeInfo.cs` | `.ChallengeInfo.xml` 辅助文件（data/aes/encrypted/iv/challenge/verification/lt64）；64 字节 challenge（LT64 时 63）、HMAC-SHA1 应答；secret 以 AES 加密存辅助文件；**每次成功解锁须重新生成 challenge 写回防重放**（与 XC 的只读语义不同，保存链路须额外设计）；恢复模式直接输入 secret。枚举/资源串/凭证策略占位已预留（`OtpSecretStrategy.useChallengeAuth` 走 customKey 路径）。仅在明确存量用户需求时排期 |
-| P2 | XC 库「保存前重贴卡」两阶段保存 | KeePassXC 支持保存时重新挑战 | 现状为保存拦截（`error_challenge_response_save_unsupported`）。实现要点：保存流程在 `save()` 前先序列化出新 KDF seed → NFC 重贴卡取新应答 → 注入应答回调后再落盘 |
+| P2 | XC 库「保存前重贴卡」两阶段保存 | KeePassXC 支持保存时重新挑战 | **方案定稿见 §9（预挑战注入）**：保存入口生成新 KDF salt → NFC 贴卡取应答 → kdbxweb `save({ kdfSalt })` 注入写出 → 成功后更新会话应答。现状仍为保存拦截（`error_challenge_response_save_unsupported`），§9 M1–M5 实施后解除 |
 | P3 | OTP 码剪贴板自动读取 | `PasswordActivity.cs:1929-1976` | KP2A 监听剪贴板：令牌 App 复制 OTP 码后切回，自动填入（5 秒新鲜度 + 长度/纯数字校验 + 去重）。KeePassHO 现需手动输入 |
 | P3 | OTP 辅助文件随库同步 + Counter 冲突合并 | `SyncUtil.cs:119-124`、`OtpAuxCachingFileStorage.cs:29-93` | KP2A 数据库同步后同步 `.otp.xml`，双端并发修改时按 **Counter 较大者胜出** 合并。KeePassHO 现为解锁时直读 + 写回（last-writer-wins），多设备并发极端场景 Counter 可能回退 |
 | P3 | 空密码重试语义 | `LoadDB.cs:212-225` | KP2A：复合密钥含**空密码分量**且多因子加载失败时，移除空密码分量重试一次（区分「空密码」与「无密码」）。KeePassHO 需用户显式选择正确认证方式（KEYFILE vs PASSWORD_KEYFILE） |
@@ -307,6 +309,119 @@ Password.ets (UI 收集)
 
 | 差异 | KeePassHO | KP2A | 取舍原因 |
 |---|---|---|---|
-| XC 挑战-应答保存 | 拦截并明确提示 | 支持（经 ykDroid 重挑战） | 两阶段保存列入 P2；拦截优先保证不产生无法回开的文件 |
+| XC 挑战-应答保存 | 拦截并明确提示（§9 方案实施后解除） | 支持（保存内重新挑战） | 两阶段保存方案定稿见 §9；拦截期优先保证不产生无法回开的文件 |
 | 生物识别 | 仅代填密码分量，硬件因子手动触发 | 同（OTP/XC 因子不自动提交） | 一致 |
 | OTP secret / XC 应答持久化 | 不持久化，每次重新派生/采集 | 同 | 安全设计一致 |
+
+---
+
+## 9. XC 库两阶段保存整改方案（预挑战注入，2026-10 定稿）
+
+> 对照 KeePassXC 源码（`其他库/keepassxc`）分析其挑战-应答保存模型，结合本项目 Worker 架构定稿。
+> 目标：解除 XC 库保存拦截（`KdbxSaveService.ets:98`），实现「保存前贴卡」两阶段保存，
+> 使 XC 库从只读升级为完整读写闭环。
+
+### 9.1 KeePassXC 保存模型（源码结论）
+
+严格说 KeePassXC **没有「两阶段」保存**——它是**单次保存内嵌挑战**，顺序由代码结构保证：
+
+1. **应答永不缓存**：`ChallengeResponseKey` 只存槽位（serial, slot），`rawKey()` 返回刚算出的应答
+   （`ChallengeResponseKey.cpp:25-64`）；应答不持久化、不跨阶段传递；
+2. **挑战点在保存管道内、新 KDF seed 生成之后**：`Kdbx4Writer.cpp:51` →
+   `db->setKey(key, false, /*updateTransformSalt=*/true)` → `kdf->randomizeSeed()`
+   （`Database.cpp:965-968`）→ `CompositeKey::rawKey(&newSeed)` → `challenge(newSeed)`
+   （`CompositeKey.cpp:97-104, 135-160`）→ 阻塞等待贴卡（`AsyncTask::runAndWaitForFuture`）→
+   应答哈进复合密钥 → KDF 变换 → 加密写出。**seed 生成 → 挑战 → 加密的顺序在结构上不可能错配**；
+3. **UX**：需交互时 500ms 定时器触发 `userInteractionRequest` 信号（`YubiKey.cpp:53`）→
+   `MainWindow::showYubiKeyPopup()` 全局提示（`MainWindow.cpp:1851`）；`challengeCompleted` → 隐藏；
+4. **失败语义**（`DatabaseWidget.cpp:2511-2539`、`Database.cpp:335-355`）：无卡/贴卡失败 →
+   保存失败（"Unable to calculate database key"）；`markAsModified()` 保持修改态不丢数据，
+   用户贴卡后重试即可；
+5. 每次保存都重新贴卡（新 seed 必然新挑战）；快速解锁只用缓存的 `transformedDatabaseKey`，与保存无关。
+
+### 9.2 与本项目现状差距
+
+| 维度 | KeePassXC | 本项目现状 | 评估 |
+|---|---|---|---|
+| XC 库保存 | 保存内重新挑战 | 入口硬拦截（`KdbxSaveService.ets:98`），完全不能保存 | **核心缺口** |
+| 线程模型 | 挑战与保存同线程，同步回调 | 保存跑在 Worker，NFC 只能在主线程；challenge 回调是函数，不可跨 Worker 结构化克隆（`kdbx-credentials.ts:140-143` 注释） | 不能照搬，需适配 |
+| 应答生命周期 | 永不缓存 | 会话内存 `challengeResponseHex` 仅供 RELOAD（seed 未变，重用安全） | 可保留的取舍 |
+| 失败语义 | modified 保留可重试 | 拦截 + toast + 清 pending changes | 随新方案重做 |
+
+**为什么不能照搬内嵌挑战**：Worker 内 `save()` → `getHash(newSalt)` → challenge 回调需要跨线程
+请求主线程贴卡再回传，需建立 worker→main→worker 双向 RPC（挂起 Promise + 消息关联），改动面大
+且时序复杂。
+
+### 9.3 选定方案：两阶段预挑战（Pre-challenged save）
+
+- **阶段一（主线程）**：保存入口发现 XC 库 → 生成新 KDF salt（`CryptoEngine.random(32)`，与
+  `generateSalts` 同源同强度）→ 弹 `NfcChallengeDialog` 贴卡（challenge=salt）→
+  得到 (saltHex, responseHex) 挑战对；
+- **阶段二（Worker）**：kdbxweb `save()/saveToFile()` 接受 `kdfSalt` 注入——`generateSalts()`
+  之后用注入 salt 覆盖 `kdfParameters 'S'`；凭证用固定应答回调（现有策略机制扩展）；
+- **安全等价性**：salt 仍是 32 字节 CSPRNG，仅生成时机从「写文件前一刻」提前到「保存入口」，
+  加密强度无差；未用完的挑战对随保存失败作废；
+- **MERGE 路径**：`mergeDatabase` 仍用旧凭证+旧应答加载远端（seed 未变），合并后 save 用新对；
+- **冲突重试**：VERSION_CONFLICT 重试循环中每次 `buildSavedContent` 重新反序列化 →
+  `generateSalts` → 注入覆盖 → 固定应答可重复调用，**同一挑战对可安全复用**；
+- **关键新增不变量**：保存成功后必须把 `DbFileParam.challengeResponseHex` 更新为本次新应答
+  （文件 seed 已变为新 salt，否则后续 RELOAD 报 InvalidKey）——KeePassXC 每次实时挑战无此簿记，
+  是本方案唯一的会话状态维护点。
+
+### 9.4 实施计划（M1→M5）
+
+#### M1 kdbxweb：注入 KDF salt（约 1 人日）
+
+| 任务 | 文件 | 说明 |
+|---|---|---|
+| `SaveOptions` + `save()`/`saveToFile()` 支持 `kdfSalt?: ArrayBuffer` | `libs/kdbxweb/.../format/kdbx-format.ts` | `generateSalts()`（:682/:788）之后若提供则覆盖 `kdfParameters 'S'`（校验 32 字节）；`:927`（saveXml 导出）不涉及 |
+| `Kdbx.save(opts)` 透传 | `libs/kdbxweb/.../format/kdbx.ts` | 不传 opts 行为完全不变 |
+| 单测 | `libs/kdbxweb/src/ohosTest/` | 注入 salt 保存 → 重读文件头 'S' == 注入值；无 opts 行为不变 |
+
+#### M2 保存链路：透传挑战对（约 2 人日）
+
+| 任务 | 文件 | 说明 |
+|---|---|---|
+| `SaveDatabaseMessage` 增加 `saveKdfSaltHex?`/`saveChallengeResponseHex?` | `workers/DatabaseSaveWorkerParam.ets` | 单次保存专用，勿与 `challengeResponseHex`（当前文件 seed 的应答）语义混淆 |
+| XC 策略消费挑战对 | `services/credentials/ChallengeResponseXcStrategy.ets`、`workers/DatabaseSave.ets` | `buildSavedContent` 用 `saveChallengeResponseHex` 构建固定应答凭证；`database.save({ kdfSalt })` / `saveToFile` 带注入 |
+| 成功后更新会话应答 | `services/kdbx/KdbxSaveService.ets` 成功回调 | `DbFileParam.challengeResponseHex` = 本次新应答（§9.3 不变量），单点更新 |
+
+#### M3 编排层：两阶段入口（约 2 人日）
+
+| 任务 | 文件 | 说明 |
+|---|---|---|
+| 移除硬拦截，改为两阶段编排 | `services/kdbx/KdbxSaveService.ets:98` | XC 库 && strategy != RELOAD：无 pending 对时主线程生成 salt → 弹 `NfcChallengeDialog` → 得对后 `executeSave`；取消/失败 → 保存中止（modified 保留，提示可重试） |
+| 挑战对生命周期 | 同上 | 成功即消费并更新会话应答；失败/取消即作废（下次保存重新贴卡）；每次保存都贴卡（对齐 XC） |
+| RELOAD 策略 | 同上 | 继续放行不贴卡（seed 未变应答仍有效，现有行为不变） |
+
+#### M4 边界语义（约 1 人日）
+
+- **ChangePassword/换认证**：保留或新增 XC 分量 → 走同一贴卡机制；移除 XC 分量（转纯密码）→
+  不需贴卡（新凭证无 challenge 分量）；验证 pending credential changes 与新机制组合；
+- 应用切后台 → NFC 会话取消 → 保存中止数据保留；
+- 确认 `challengeResponseHex` 只在内存 `DbFileParam`，不进 RecentFiles 持久层（保持现状）；
+- 用户文档 `docs/unlock-methods-guide.md` 同步更新（解除「XC 库暂不能保存」描述）。
+
+#### M5 测试（约 2 人日）
+
+- kdbxweb 单测：salt 注入一致性（重读 'S'）、注入 seed + 固定应答复合密钥向量（对拍 KeePassXC 文件）；
+- Worker 链路单测：消息透传、MERGE 重试复用对、成功后会话应答更新、取消/失败作废；
+- 设备 E2E：解锁→改→保存（贴卡）→RELOAD（不贴卡）→再保存（再贴卡）；MERGE 冲突；取消贴卡；
+- 回归：现有保存/加载/OTP 全量套件。
+
+### 9.5 风险与对策
+
+| 风险 | 影响 | 对策 |
+|---|---|---|
+| 注入 seed 与应答错配（编排 bug 旧应答配新 seed） | 保存出无法回开的文件（数据损坏） | 挑战对原子化（salt+response 成对传递/成对作废）；M5 对拍 KeePassXC 文件回开；无对时保留拦截兜底（不裸保存） |
+| 保存成功但会话应答未更新 | 后续 RELOAD 报 InvalidKey | 成功回调单点更新；E2E 覆盖「保存→重载」 |
+| 贴卡弹层跨页面触发（保存入口分散） | UI 上下文获取失败 | 保存编排统一走 `KdbxSaveService`；弹层经 UIAbility window 弹出；失败路径降级为明确报错（modified 保留） |
+| 自动保存场景频繁弹卡 | 打扰 | 对齐 KeePassXC 行为（其 autosave 同样触发贴卡提示）；后续可按反馈加设置项 |
+
+### 9.6 收益与不改的影响
+
+- **不改**：XC 库实质只读（解锁/浏览可用，一切修改保存被拦）；应用内编辑作废（观感等同丢数据）；
+  无脱困路径（改密/换认证不可用）；YubiKey+KeePassXC 安全敏感核心用户群只能当查看器。
+- **改**：XC 库完整读写闭环（解锁→编辑→保存贴卡→重载），与桌面端体验对齐；安全语义不降级
+  （每次保存新 seed+新挑战、应答不持久化）；就地改密/换认证可用；挑战对机制可复用于后续
+  KeeChallenge 等其它 CR 变体。
