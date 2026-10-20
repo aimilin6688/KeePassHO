@@ -74,8 +74,12 @@ export default function KdbxSaveKdfSaltTest() {
          */
         it('save with injected salt round-trips challenge-response credentials', 0, async () => {
             const fixedResponse = kdbxweb.ByteUtils.arrayToBuffer(kdbxweb.ByteUtils.randomData(20));
-            const challengeResponse: kdbxweb.KdbxChallengeResponseFn = (challenge) =>
-                Promise.resolve(new Uint8Array(fixedResponse));
+            // 每次调用返回副本：kdbxweb 哈希后会 zeroBuffer 清零返回的缓冲（与生产侧 fixedResponseFnOf 契约一致）
+            const challengeResponse: kdbxweb.KdbxChallengeResponseFn = (challenge) => {
+                const copy: Uint8Array = new Uint8Array(fixedResponse.byteLength);
+                copy.set(new Uint8Array(fixedResponse));
+                return Promise.resolve(copy);
+            };
             const cred = new kdbxweb.KdbxCredentials(
                 kdbxweb.ProtectedValue.fromString('demo'),
                 null,
