@@ -347,12 +347,11 @@ export struct DatabaseSwitcherSheet {
         .width('100%')
         .padding({ left: 8, right: 8, bottom: 24 })
       }
-      .layoutWeight(1)
       .scrollBar(BarState.Off)
       .align(Alignment.TopStart)
+      .constraintSize({ maxHeight: '90%' })
     }
     .width('100%')
-    .height('100%')
     .padding({ left: 8, right: 8 })
   }
 }

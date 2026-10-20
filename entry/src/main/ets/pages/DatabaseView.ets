@@ -2299,7 +2299,7 @@ export struct DatabaseView {
               .layoutWeight(1)
               .flexShrink(1)
               .bindSheet($$this.showDatabaseSwitcher, this.DatabaseSwitcherBuilder(), {
-                height: SheetSize.MEDIUM,
+                height: SheetSize.FIT_CONTENT,
                 dragBar: true,
                 onAppear: () => {
                   this.switcherRefreshTick++;
