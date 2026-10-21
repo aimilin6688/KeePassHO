@@ -12,6 +12,7 @@ import { common } from '@kit.AbilityKit';
 import { OtpExtractionResult } from '../services/otp';
 import { EventBus } from '../services/EventBus';
 import { SessionManager } from '../services/SessionManager';
+import { SettingsService } from '../services/SettingsService';
 import { BusinessError, emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0xFF00;
@@ -210,7 +211,9 @@ export struct EntryView {
     });
 
     // 添加分组信息
-    this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
+    if (SettingsService.getSync(SettingsService.KEY_SECURITY_ITEM_SHOW_GROUP, SettingsService.KEY_SECURITY_ITEM_SHOW_GROUP_DEFAULT)) {
+      this.fields = [new FieldView(KdbxUtils.GROUP_NAME, this.getGroupName(), false, false), ...this.fields];
+    }
 
     // 展示附件
     this.addBinaries();
@@ -331,6 +334,39 @@ export struct EntryView {
   }
 
   /**
+   * 获取条目头部图标（过期条目沿用列表页约定显示过期图标）
+   */
+  private getEntryHeaderIcon(): ResourceStr {
+    const entry = this.entry;
+    if (entry && DateUtils.isExpired(entry.times.expires === true, entry.times.expiryTime)) {
+      return $r('app.media.C45_Expired');
+    }
+    return KdbxUtils.getIcon(entry?.icon, entry?.customIcon, $r('app.media.ic_file'));
+  }
+
+  /**
+   * 获取条目头部标题
+   */
+  private getEntryHeaderTitle(): string {
+    const entry = this.entry;
+    if (!entry) {
+      return '';
+    }
+    return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE);
+  }
+
+  /**
+   * 获取条目头部用户名
+   */
+  private getEntryHeaderUsername(): string {
+    const entry = this.entry;
+    if (!entry) {
+      return '';
+    }
+    return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
+  }
+
+  /**
    * 删除历史记录
    */
   private deleteHistory() {
@@ -439,6 +475,51 @@ export struct EntryView {
     })
   }
 
+  /**
+   * 构建条目头部（图标 + 标题 + 用户名，当前条目与历史版本共用）
+   */
+  @Builder
+  EntryHeader() {
+    Row() {
+      // 条目图标（含品牌图标等自定义图标，过期沿用列表页约定）
+      Image(this.getEntryHeaderIcon())
+        .width(56)
+        .height(56)
+        .borderRadius(12)
+        .objectFit(ImageFit.Contain)
+
+      // 标题与用户名
+      Column() {
+        Text(this.getEntryHeaderTitle())
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('app.color.text_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .width('100%')
+
+        if (this.getEntryHeaderUsername() !== '') {
+          Text(this.getEntryHeaderUsername())
+            .fontSize(14)
+            .fontColor($r('app.color.text_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .width('100%')
+            .margin({ top: 4 })
+        }
+      }
+      .layoutWeight(1)
+      .margin({ left: 12 })
+      .alignItems(HorizontalAlign.Start)
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .backgroundColor($r("app.color.card_bg"))
+    .borderRadius(8)
+    .padding(12)
+    .margin({ bottom: 8 })
+  }
+
   build() {
     Stack() {
       Column() {
@@ -517,6 +598,10 @@ export struct EntryView {
           .backgroundColor($r("app.color.bg_primary"))
         } else if (this.selectedHistoryIndex >= 0) {
           List() {
+            ListItem() {
+              this.EntryHeader()
+            }
+
             ForEach(this.fields, (field: FieldView) => {
               ListItem() {
                 EntryViewFieldItem({ field: field, entry: this.entry })
@@ -605,6 +690,10 @@ export struct EntryView {
           Tabs() {
             TabContent() {
               List() {
+                ListItem() {
+                  this.EntryHeader()
+                }
+
                 ForEach(this.fields, (field: FieldView) => {
                   ListItem() {
                     EntryViewFieldItem({ field: field, entry: this.entry })

@@ -1533,6 +1533,10 @@
       "value": "Item show TOTP"
     },
     {
+      "name": "security_item_show_group",
+      "value": "Item show group name"
+    },
+    {
       "name": "compression_enabled_tips",
       "value": "Enabling compression will extend the loading and saving speed, but it will reduce the size of the database"
     },

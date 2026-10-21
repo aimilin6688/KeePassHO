@@ -25,6 +25,7 @@ struct SettingSecurityContent {
   @State quickLockPasswordLength: number = SettingsService.KEY_SECURITY_QUICK_LOCK_PASSWORD_LENGTH_DEFAULT;
   @State isListShowTotp: boolean = SettingsService.KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT;
   @State isItemShowTotp: boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT;
+  @State isItemShowGroup: boolean = SettingsService.KEY_SECURITY_ITEM_SHOW_GROUP_DEFAULT;
   @State isPrivacyWindow: boolean = SettingsService.KEY_SECURITY_PRIVACY_WINDOW_DEFAULT;
   // 解锁会话通知
   @State sessionNotifyEnabled: boolean = SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE_DEFAULT;
@@ -107,6 +108,11 @@ struct SettingSecurityContent {
     // 条目是否显示TOTP
     this.settingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, this.isItemShowTotp).then(result => {
       this.isItemShowTotp = result;
+    });
+
+    // 条目是否显示分组名称
+    this.settingsService.get(SettingsService.KEY_SECURITY_ITEM_SHOW_GROUP, this.isItemShowGroup).then(result => {
+      this.isItemShowGroup = result;
     });
 
     // 获取指纹登录
@@ -524,6 +530,28 @@ struct SettingSecurityContent {
                 .switchPointColor('#FFFFFF')
                 .onChange((isOn: boolean) => {
                   this.settingsService.put(SettingsService.KEY_SECURITY_ITEM_SHOW_TOTP, isOn);
+                })
+            }
+            .width('100%')
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
+          }
+
+          // 条目显示分组名称
+          ListItem() {
+            Row() {
+              Text($r("app.string.security_item_show_group"))
+                .fontSize(16)
+                .flexGrow(1)
+              Toggle({ type: ToggleType.Switch, isOn: this.isItemShowGroup })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.settingsService.put(SettingsService.KEY_SECURITY_ITEM_SHOW_GROUP, isOn);
                 })
             }
             .width('100%')

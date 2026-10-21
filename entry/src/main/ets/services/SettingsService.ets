@@ -69,6 +69,9 @@ export class SettingsService {
   public static readonly KEY_SECURITY_LIST_SHOW_TOTP_DEFAULT = true;
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP = "Security_item_show_totp";
   public static readonly KEY_SECURITY_ITEM_SHOW_TOTP_DEFAULT = true;
+  // 条目显示分组名称
+  public static readonly KEY_SECURITY_ITEM_SHOW_GROUP = "Security_item_show_group";
+  public static readonly KEY_SECURITY_ITEM_SHOW_GROUP_DEFAULT = true;
 
   // --------------- APP 设置信息 ---------------------
   // 支持弹框

@@ -1461,6 +1461,10 @@
       "value": "条目显示TOTP字段"
     },
     {
+      "name": "security_item_show_group",
+      "value": "条目显示分组名称"
+    },
+    {
       "name": "compression_enabled_tips",
       "value": "启用压缩会延长加载和保存的速度"
     },
