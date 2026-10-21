@@ -25,7 +25,7 @@ export class BrandIconDef {
 }
 
 /**
- * 品牌图标集：内嵌于 rawfile/brand_icons/*.svg（由 scripts/download-brand-icons.ps1 生成）
+ * 品牌图标集：内嵌于 rawfile/brand_icons/*.svg（由 docs/scripts/download-brand-icons.ps1 生成）
  * 来源（许可均允许内嵌再分发）：
  *   - simple-icons (CC0):       github.com/simple-icons/simple-icons
  *   - lawnicons   (Apache-2.0): github.com/LawnchairLauncher/lawnicons

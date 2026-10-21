@@ -5,16 +5,16 @@
     - simple-icons (CC0):        ..\其他库\simple-icons  (github.com/simple-icons/simple-icons)
     - lawnicons   (Apache-2.0):  ..\其他库\lawnicons     (github.com/LawnchairLauncher/lawnicons)
   输出: entry/src/main/resources/rawfile/brand_icons/*.svg
-  清单数据: scripts/brand-icons-source.json（与跨平台 Node 版 download-brand-icons.mjs 共用）
+  清单数据: docs/scripts/brand-icons-source.json（与跨平台 Node 版 download-brand-icons.mjs 共用）
   用法:
-    pwsh scripts/download-brand-icons.ps1            # 生成全部
-    pwsh scripts/download-brand-icons.ps1 -Find 微信 # 按关键词在两个图标库中查找
-    node scripts/download-brand-icons.mjs 微信       # 跨平台 Node 等价版
+    pwsh docs/scripts/download-brand-icons.ps1            # 生成全部
+    pwsh docs/scripts/download-brand-icons.ps1 -Find 微信 # 按关键词在两个图标库中查找
+    node docs/scripts/download-brand-icons.mjs 微信       # 跨平台 Node 等价版
 #>
 param([string]$Find = '')
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $libRoot = Split-Path -Parent $root
 $siDir = Join-Path $libRoot '其他库\simple-icons'
 $lawnDir = Join-Path $libRoot '其他库\lawnicons'

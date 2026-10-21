@@ -7,15 +7,15 @@
  *   - lawnicons   (Apache-2.0):  ../其他库/lawnicons     (github.com/LawnchairLauncher/lawnicons)
  * 输出: entry/src/main/resources/rawfile/brand_icons/*.svg
  * 用法:
- *   node scripts/download-brand-icons.mjs            # 生成全部
- *   node scripts/download-brand-icons.mjs 微信        # 按关键词在两个图标库中查找
+ *   node docs/scripts/download-brand-icons.mjs            # 生成全部
+ *   node docs/scripts/download-brand-icons.mjs 微信        # 按关键词在两个图标库中查找
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(scriptDir, '..');
+const root = path.resolve(scriptDir, '..', '..');
 const libRoot = path.resolve(root, '..');
 const siDir = path.join(libRoot, '其他库', 'simple-icons');
 const lawnDir = path.join(libRoot, '其他库', 'lawnicons');
