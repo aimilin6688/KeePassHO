@@ -1,0 +1,4735 @@
+[
+  {
+    "file": "wechat",
+    "group": "domestic",
+    "label": "微信",
+    "kw": "wechat weixin",
+    "si": "wechat",
+    "pkg": "com.tencent.mm",
+    "pref": "wechat",
+    "hex": "#07C160"
+  },
+  {
+    "file": "alipay",
+    "group": "domestic",
+    "label": "支付宝",
+    "kw": "alipay zhifubao",
+    "si": "alipay",
+    "pkg": "com.eg.android.AlipayGphone",
+    "pref": "alipay",
+    "hex": "#1677FF"
+  },
+  {
+    "file": "qq",
+    "group": "domestic",
+    "label": "QQ",
+    "kw": "qq tencent",
+    "si": "qq",
+    "pkg": "com.tencent.mobileqq",
+    "pref": "qq",
+    "hex": "#12B7F5"
+  },
+  {
+    "file": "taobao",
+    "group": "domestic",
+    "label": "淘宝",
+    "kw": "taobao",
+    "si": "taobao",
+    "pkg": "com.taobao.taobao",
+    "pref": "taobao",
+    "hex": "#FF5000"
+  },
+  {
+    "file": "jd",
+    "group": "domestic",
+    "label": "京东",
+    "kw": "jd jingdong",
+    "si": "",
+    "pkg": "com.jingdong.app.mall",
+    "pref": "jd",
+    "hex": "#E1251B"
+  },
+  {
+    "file": "douyin",
+    "group": "domestic",
+    "label": "抖音",
+    "kw": "douyin",
+    "si": "tiktok",
+    "pkg": "com.ss.android.ugc.aweme",
+    "pref": "tiktok",
+    "hex": "#FE2C55",
+    "force": true
+  },
+  {
+    "file": "xiaohongshu",
+    "group": "domestic",
+    "label": "小红书",
+    "kw": "xiaohongshu xhs rednote",
+    "si": "xiaohongshu",
+    "pkg": "com.xingin.xhs",
+    "pref": "xiaohongshu",
+    "hex": "#FF2442"
+  },
+  {
+    "file": "weibo",
+    "group": "domestic",
+    "label": "微博",
+    "kw": "weibo",
+    "si": "sinaweibo",
+    "pkg": "com.sina.weibo",
+    "pref": "weibo",
+    "hex": "#E6162D"
+  },
+  {
+    "file": "zhihu",
+    "group": "domestic",
+    "label": "知乎",
+    "kw": "zhihu",
+    "si": "zhihu",
+    "pkg": "com.zhihu.android",
+    "pref": "zhihu",
+    "hex": "#0084FF"
+  },
+  {
+    "file": "bilibili",
+    "group": "domestic",
+    "label": "哔哩哔哩",
+    "kw": "bilibili bili",
+    "si": "bilibili",
+    "pkg": "tv.danmaku.bili",
+    "pref": "bilibili",
+    "hex": "#00A1D6"
+  },
+  {
+    "file": "dingtalk",
+    "group": "domestic",
+    "label": "钉钉",
+    "kw": "dingtalk",
+    "si": "",
+    "pkg": "com.alibaba.android.rimet",
+    "pref": "dingtalk",
+    "hex": "#0089FF"
+  },
+  {
+    "file": "feishu",
+    "group": "domestic",
+    "label": "飞书",
+    "kw": "feishu lark",
+    "si": "",
+    "pkg": "com.ss.android.lark",
+    "pref": "feishu",
+    "hex": "#3370FF"
+  },
+  {
+    "file": "meituan",
+    "group": "domestic",
+    "label": "美团",
+    "kw": "meituan",
+    "si": "",
+    "pkg": "com.sankuai.meituan",
+    "pref": "meituan",
+    "hex": "#FFC300"
+  },
+  {
+    "file": "dianping",
+    "group": "domestic",
+    "label": "大众点评",
+    "kw": "dianping",
+    "si": "",
+    "pkg": "com.dianping.v1",
+    "pref": "dianping",
+    "hex": "#FF6633"
+  },
+  {
+    "file": "eleme",
+    "group": "domestic",
+    "label": "饿了么",
+    "kw": "eleme taobao flash",
+    "si": "",
+    "pkg": "me.ele",
+    "pref": "taobao_flash_shopping",
+    "hex": "#0085FF"
+  },
+  {
+    "file": "pinduoduo",
+    "group": "domestic",
+    "label": "拼多多",
+    "kw": "pinduoduo pdd",
+    "si": "",
+    "pkg": "com.xunmeng.pinduoduo",
+    "pref": "pinduoduo",
+    "hex": "#E02E24"
+  },
+  {
+    "file": "xianyu",
+    "group": "domestic",
+    "label": "闲鱼",
+    "kw": "xianyu",
+    "si": "",
+    "pkg": "com.taobao.idlefish",
+    "pref": "idle_fish",
+    "hex": "#FFD500"
+  },
+  {
+    "file": "baidu",
+    "group": "domestic",
+    "label": "百度",
+    "kw": "baidu",
+    "si": "baidu",
+    "pkg": "com.baidu.searchbox",
+    "pref": "baidu",
+    "hex": "#2932E1"
+  },
+  {
+    "file": "baidu_netdisk",
+    "group": "domestic",
+    "label": "百度网盘",
+    "kw": "baidu netdisk wangpan",
+    "si": "",
+    "pkg": "com.baidu.netdisk",
+    "pref": "baidu_netdisk",
+    "hex": "#06A8FF"
+  },
+  {
+    "file": "uc_browser",
+    "group": "domestic",
+    "label": "UC浏览器",
+    "kw": "uc browser liulanqi",
+    "si": "",
+    "pkg": "com.UCMobile",
+    "pref": "uc_browser",
+    "hex": "#FF6A00"
+  },
+  {
+    "file": "quark",
+    "group": "domestic",
+    "label": "夸克",
+    "kw": "quark",
+    "si": "",
+    "pkg": "com.quark.browser",
+    "pref": "quark",
+    "hex": "#4C6BFF"
+  },
+  {
+    "file": "netease_cloud_music",
+    "group": "domestic",
+    "label": "网易云音乐",
+    "kw": "netease cloudmusic yunyinyue",
+    "si": "neteasecloudmusic",
+    "pkg": "com.netease.cloudmusic",
+    "pref": "netease_music",
+    "hex": "#C20C0C"
+  },
+  {
+    "file": "qq_music",
+    "group": "domestic",
+    "label": "QQ音乐",
+    "kw": "qqmusic",
+    "si": "",
+    "pkg": "com.tencent.qqmusic",
+    "pref": "qqmusic",
+    "hex": "#31C27C"
+  },
+  {
+    "file": "kugou_music",
+    "group": "domestic",
+    "label": "酷狗音乐",
+    "kw": "kugou",
+    "si": "",
+    "pkg": "com.kugou.android",
+    "pref": "kugou",
+    "hex": "#169AF3"
+  },
+  {
+    "file": "iqiyi",
+    "group": "domestic",
+    "label": "爱奇艺",
+    "kw": "iqiyi",
+    "si": "",
+    "pkg": "com.qiyi.video",
+    "pref": "iqiyi",
+    "hex": "#00BE06"
+  },
+  {
+    "file": "youku",
+    "group": "domestic",
+    "label": "优酷",
+    "kw": "youku",
+    "si": "",
+    "pkg": "com.youku.phone",
+    "pref": "youku",
+    "hex": "#1E9BE8"
+  },
+  {
+    "file": "tencent_video",
+    "group": "domestic",
+    "label": "腾讯视频",
+    "kw": "tencentvideo video",
+    "si": "",
+    "pkg": "com.tencent.qqlive",
+    "pref": "tencent_video",
+    "hex": "#FF6022"
+  },
+  {
+    "file": "douban",
+    "group": "domestic",
+    "label": "豆瓣",
+    "kw": "douban",
+    "si": "",
+    "pkg": "com.douban.frodo",
+    "pref": "douban",
+    "hex": "#007722"
+  },
+  {
+    "file": "ctrip",
+    "group": "domestic",
+    "label": "携程旅行",
+    "kw": "ctrip xiecheng",
+    "si": "",
+    "pkg": "ctrip.android.view",
+    "pref": "ctrip",
+    "hex": "#0086F6"
+  },
+  {
+    "file": "railway_12306",
+    "group": "domestic",
+    "label": "铁路12306",
+    "kw": "12306 railway huoche",
+    "si": "",
+    "pkg": "com.MobileTicket",
+    "pref": "railway_12306",
+    "hex": "#3B99FC"
+  },
+  {
+    "file": "amap",
+    "group": "domestic",
+    "label": "高德地图",
+    "kw": "amap gaode map ditu",
+    "si": "",
+    "pkg": "com.autonavi.minimap",
+    "pref": "amap",
+    "hex": "#0091FF"
+  },
+  {
+    "file": "didi",
+    "group": "domestic",
+    "label": "滴滴出行",
+    "kw": "didi chuxing",
+    "si": "",
+    "pkg": "com.sdu.didi.psnger",
+    "pref": "didi",
+    "hex": "#FF7E33"
+  },
+  {
+    "file": "hellobike",
+    "group": "domestic",
+    "label": "哈啰",
+    "kw": "hellobike halo",
+    "si": "",
+    "pkg": "com.jingyao.easybike",
+    "pref": "hello",
+    "hex": "#00BFAB"
+  },
+  {
+    "file": "icbc",
+    "group": "domestic",
+    "label": "中国工商银行",
+    "kw": "icbc gongshang bank yinhang",
+    "si": "",
+    "pkg": "com.icbc",
+    "pref": "icbc",
+    "hex": "#C7000B"
+  },
+  {
+    "file": "ccb",
+    "group": "domestic",
+    "label": "中国建设银行",
+    "kw": "ccb jianshe bank yinhang",
+    "si": "",
+    "pkg": "com.chinamworld.main",
+    "pref": "china_construction_bank",
+    "hex": "#0066B3"
+  },
+  {
+    "file": "boc",
+    "group": "domestic",
+    "label": "中国银行",
+    "kw": "boc zhongguo bank yinhang",
+    "si": "",
+    "pkg": "com.chinamworld.bocmbci",
+    "pref": "bank_of_china",
+    "hex": "#B02A30"
+  },
+  {
+    "file": "abc_bank",
+    "group": "domestic",
+    "label": "中国农业银行",
+    "kw": "abc nongye bank yinhang",
+    "si": "",
+    "pkg": "com.android.bankabc",
+    "pref": "agricultural_bank_of_china",
+    "hex": "#00923F"
+  },
+  {
+    "file": "cmb",
+    "group": "domestic",
+    "label": "招商银行",
+    "kw": "cmb zhaoshang bank yinhang",
+    "si": "",
+    "pkg": "cmb.pb",
+    "pref": "china_merchants_bank",
+    "hex": "#D22630"
+  },
+  {
+    "file": "unionpay",
+    "group": "domestic",
+    "label": "中国银联",
+    "kw": "unionpay yinlian",
+    "si": "",
+    "pkg": "com.unionpay",
+    "pref": "unionpay",
+    "hex": "#0B4EA2"
+  },
+  {
+    "file": "wps_office",
+    "group": "domestic",
+    "label": "WPS Office",
+    "kw": "wps office",
+    "si": "",
+    "pkg": "cn.wps.moffice_eng",
+    "pref": "wps_office",
+    "hex": "#E8362D"
+  },
+  {
+    "file": "xunlei",
+    "group": "domestic",
+    "label": "迅雷",
+    "kw": "xunlei thunder",
+    "si": "",
+    "pkg": "com.xunlei.downloadprovider",
+    "pref": "lixian_xunlei",
+    "hex": "#3079ED"
+  },
+  {
+    "file": "coolapk",
+    "group": "domestic",
+    "label": "酷安",
+    "kw": "coolapk",
+    "si": "",
+    "pkg": "com.coolapk.market",
+    "pref": "coolapk",
+    "hex": "#009688"
+  },
+  {
+    "file": "wecom",
+    "group": "domestic",
+    "label": "企业微信",
+    "kw": "wecom qiye wechat work",
+    "si": "",
+    "pkg": "com.tencent.wework",
+    "pref": "wecom",
+    "hex": "#0082E9"
+  },
+  {
+    "file": "kuaishou",
+    "group": "domestic",
+    "label": "快手",
+    "kw": "kuaishou kwai",
+    "si": "",
+    "pkg": "com.smile.gifmaker",
+    "pref": "kwai",
+    "hex": "#FF4906"
+  },
+  {
+    "file": "baidu_tieba",
+    "group": "domestic",
+    "label": "百度贴吧",
+    "kw": "tieba baidu",
+    "si": "",
+    "pkg": "com.baidu.tieba",
+    "pref": "baidu_tieba",
+    "hex": "#4E6EF2"
+  },
+  {
+    "file": "baidu_map",
+    "group": "domestic",
+    "label": "百度地图",
+    "kw": "baidu map ditu",
+    "si": "",
+    "pkg": "com.baidu.BaiduMap",
+    "pref": "baidu_maps",
+    "hex": "#3385FF"
+  },
+  {
+    "file": "qq_mail",
+    "group": "domestic",
+    "label": "QQ邮箱",
+    "kw": "qqmail mail youxiang",
+    "si": "",
+    "pkg": "com.tencent.androidqqmail",
+    "pref": "qqmail",
+    "hex": "#12B7F5"
+  },
+  {
+    "file": "alibaba_1688",
+    "group": "domestic",
+    "label": "1688",
+    "kw": "1688 alibaba",
+    "si": "",
+    "pkg": "com.alibaba.wireless",
+    "pref": "alibaba_1688",
+    "hex": "#FF6A00"
+  },
+  {
+    "file": "aliyundrive",
+    "group": "domestic",
+    "label": "阿里云盘",
+    "kw": "aliyundrive alipan yunpan",
+    "si": "",
+    "pkg": "com.alicloud.databox",
+    "pref": "aliyundrive",
+    "hex": "#4C84FF"
+  },
+  {
+    "file": "umetrip",
+    "group": "domestic",
+    "label": "航旅纵横",
+    "kw": "umetrip hanglv",
+    "si": "",
+    "pkg": "com.umetrip.android.msky.app",
+    "pref": "umetrip",
+    "hex": "#2A6AE9"
+  },
+  {
+    "file": "wifi_master",
+    "group": "domestic",
+    "label": "WiFi万能钥匙",
+    "kw": "wifi key wifimaster",
+    "si": "",
+    "pkg": "com.snda.wifilocating",
+    "pref": "wifi_master",
+    "hex": "#00A0E9"
+  },
+  {
+    "file": "smzdm",
+    "group": "domestic",
+    "label": "什么值得买",
+    "kw": "smzdm zhide",
+    "si": "",
+    "pkg": "com.smzdm.client.android",
+    "pref": "what_to_buy",
+    "hex": "#E8262C"
+  },
+  {
+    "file": "mafengwo",
+    "group": "domestic",
+    "label": "马蜂窝",
+    "kw": "mafengwo travel",
+    "si": "",
+    "pkg": "com.mfw.roadbook",
+    "pref": "hornets_nest",
+    "hex": "#FF9D00"
+  },
+  {
+    "file": "china_mobile",
+    "group": "domestic",
+    "label": "中国移动",
+    "kw": "china mobile yidong 10086",
+    "si": "",
+    "pkg": "com.greenpoint.android.mc10086.activity",
+    "pref": "china_mobile",
+    "hex": "#0085D0"
+  },
+  {
+    "file": "china_unicom",
+    "group": "domestic",
+    "label": "中国联通",
+    "kw": "china unicom liantong 10010",
+    "si": "",
+    "pkg": "com.sinovatech.unicom.ui",
+    "pref": "china_unicom",
+    "hex": "#E60012"
+  },
+  {
+    "file": "china_telecom",
+    "group": "domestic",
+    "label": "中国电信",
+    "kw": "china telecom dianxin 10000",
+    "si": "",
+    "pkg": "com.ct.client",
+    "pref": "china_telecom",
+    "hex": "#0066B3"
+  },
+  {
+    "file": "weread",
+    "group": "domestic",
+    "label": "微信读书",
+    "kw": "weread weixin dushu reading",
+    "si": "",
+    "pkg": "com.tencent.weread",
+    "pref": "",
+    "hex": "#2CAE96"
+  },
+  {
+    "file": "dragon_read",
+    "group": "domestic",
+    "label": "番茄小说",
+    "kw": "fanqie tomato dragonread novel",
+    "si": "",
+    "pkg": "com.dragon.read",
+    "pref": "",
+    "hex": "#FF6B2B"
+  },
+  {
+    "file": "fliggy",
+    "group": "domestic",
+    "label": "飞猪",
+    "kw": "fliggy feizhu travel",
+    "si": "",
+    "pkg": "com.taobao.trip",
+    "pref": "",
+    "hex": "#FF7D00"
+  },
+  {
+    "file": "cainiao",
+    "group": "domestic",
+    "label": "菜鸟",
+    "kw": "cainiao kuaidi delivery",
+    "si": "",
+    "pkg": "com.cainiao.wireless",
+    "pref": "",
+    "hex": "#1678FF"
+  },
+  {
+    "file": "chaoxing",
+    "group": "domestic",
+    "label": "学习通",
+    "kw": "chaoxing xuexitong study",
+    "si": "",
+    "pkg": "com.chaoxing.mobile",
+    "pref": "",
+    "hex": "#1E88E5"
+  },
+  {
+    "file": "honor_of_kings",
+    "group": "domestic",
+    "label": "王者荣耀",
+    "kw": "honorofkings wangzhe sgame",
+    "si": "",
+    "pkg": "com.tencent.tmgp.sgame",
+    "pref": "",
+    "hex": "#C9A063"
+  },
+  {
+    "file": "genshin_impact",
+    "group": "domestic",
+    "label": "原神",
+    "kw": "genshin yuanshen impact",
+    "si": "",
+    "pkg": "com.miHoYo.Yuanshen",
+    "pref": "genshin_impact",
+    "hex": "#D3BC8E"
+  },
+  {
+    "file": "hoyolab",
+    "group": "domestic",
+    "label": "米游社",
+    "kw": "hoyolab miyoushe mihoyo",
+    "si": "",
+    "pkg": "com.mihoyo.hoyolab",
+    "pref": "",
+    "hex": "#3B6DF2"
+  },
+  {
+    "file": "luckin_coffee",
+    "group": "domestic",
+    "label": "瑞幸咖啡",
+    "kw": "luckin coffee ruixing",
+    "si": "",
+    "pkg": "com.lucky.luckyclient",
+    "pref": "",
+    "hex": "#1E3F9E"
+  },
+  {
+    "file": "meituan_takeaway",
+    "group": "domestic",
+    "label": "美团外卖",
+    "kw": "meituan waimai takeaway",
+    "si": "",
+    "pkg": "com.sankuai.meituan.takeoutnew",
+    "pref": "",
+    "hex": "#FFC300"
+  },
+  {
+    "file": "mi_store",
+    "group": "domestic",
+    "label": "小米商城",
+    "kw": "mishop xiaomi store shangcheng",
+    "si": "",
+    "pkg": "com.xiaomi.shop",
+    "pref": "",
+    "hex": "#FF6900"
+  },
+  {
+    "file": "huawei_health",
+    "group": "domestic",
+    "label": "华为运动健康",
+    "kw": "huawei health yundong jiankang",
+    "si": "",
+    "pkg": "com.huawei.health",
+    "pref": "",
+    "hex": "#00A29A"
+  },
+  {
+    "file": "sunlogin",
+    "group": "domestic",
+    "label": "向日葵远程控制",
+    "kw": "sunlogin xiangrikui remote oray",
+    "si": "",
+    "pkg": "com.oray.sunlogin",
+    "pref": "",
+    "hex": "#FFAA00"
+  },
+  {
+    "file": "boss_recruitment",
+    "group": "domestic",
+    "label": "BOSS直聘",
+    "kw": "boss zhipin recruitment zhaopin",
+    "si": "",
+    "pkg": "com.hpbr.bosszhipin",
+    "pref": "",
+    "hex": "#00BFFF"
+  },
+  {
+    "file": "tencent_meeting",
+    "group": "domestic",
+    "label": "腾讯会议",
+    "kw": "tencentmeeting wemeet huiyi",
+    "si": "",
+    "pkg": "com.tencent.wemeet.app",
+    "pref": "tencent_meeting",
+    "hex": "#00A0E9"
+  },
+  {
+    "file": "tim",
+    "group": "domestic",
+    "label": "TIM",
+    "kw": "tim qq",
+    "si": "",
+    "pkg": "com.tencent.tim",
+    "pref": "tim_qq",
+    "hex": "#12B7F5"
+  },
+  {
+    "file": "wechat_input",
+    "group": "domestic",
+    "label": "微信输入法",
+    "kw": "wetype input shurufa",
+    "si": "",
+    "pkg": "com.tencent.wetype",
+    "pref": "wetype",
+    "hex": "#07C160"
+  },
+  {
+    "file": "wesing",
+    "group": "domestic",
+    "label": "全民K歌",
+    "kw": "wesing karaoke kge",
+    "si": "",
+    "pkg": "com.tencent.wesing",
+    "pref": "wesing",
+    "hex": "#2CC59B"
+  },
+  {
+    "file": "capcut",
+    "group": "domestic",
+    "label": "剪映",
+    "kw": "capcut jianying video",
+    "si": "",
+    "pkg": "com.lemon.lv",
+    "pref": "capcut",
+    "hex": "#000000"
+  },
+  {
+    "file": "meitu",
+    "group": "domestic",
+    "label": "美图秀秀",
+    "kw": "meitu photo",
+    "si": "",
+    "pkg": "com.mt.mtxx.mtxx",
+    "pref": "meitu",
+    "hex": "#FF5C8A"
+  },
+  {
+    "file": "beautycam",
+    "group": "domestic",
+    "label": "美颜相机",
+    "kw": "beautycam meiyancamera",
+    "si": "",
+    "pkg": "com.meitu.meiyancamera",
+    "pref": "beautycam",
+    "hex": "#FF5B9E"
+  },
+  {
+    "file": "baidu_input",
+    "group": "domestic",
+    "label": "百度输入法",
+    "kw": "baiduinput ime shurufa",
+    "si": "",
+    "pkg": "com.baidu.input",
+    "pref": "baidu_ime",
+    "hex": "#2932E1"
+  },
+  {
+    "file": "zuoyebang",
+    "group": "domestic",
+    "label": "作业帮",
+    "kw": "zuoyebang homework",
+    "si": "",
+    "pkg": "com.baidu.homework",
+    "pref": "zuoyebang",
+    "hex": "#2AC5FA"
+  },
+  {
+    "file": "baicizhan",
+    "group": "domestic",
+    "label": "百词斩",
+    "kw": "baicizhan vocabulary",
+    "si": "",
+    "pkg": "com.jiongji.andriod.card",
+    "pref": "baicizhan",
+    "hex": "#FF8A00"
+  },
+  {
+    "file": "mooc",
+    "group": "domestic",
+    "label": "中国大学MOOC",
+    "kw": "mooc icourse study",
+    "si": "",
+    "pkg": "com.netease.edu.ucmooc",
+    "pref": "mooc",
+    "hex": "#D8262C"
+  },
+  {
+    "file": "mixue",
+    "group": "domestic",
+    "label": "蜜雪冰城",
+    "kw": "mixue icecity tea",
+    "si": "",
+    "pkg": "com.mxbc.mxsa",
+    "pref": "mixue_ice_city",
+    "hex": "#D71920"
+  },
+  {
+    "file": "tiger_trade",
+    "group": "domestic",
+    "label": "老虎证券",
+    "kw": "tigerbrokers stock laohu",
+    "si": "",
+    "pkg": "com.tigerbrokers.stock",
+    "pref": "tiger_trade",
+    "hex": "#FF6A00"
+  },
+  {
+    "file": "j_and_t",
+    "group": "domestic",
+    "label": "极兔速递",
+    "kw": "jtexpress express jitu",
+    "si": "",
+    "pkg": "com.jtexpress.MyClient",
+    "pref": "j_and_t",
+    "hex": "#E4002B"
+  },
+  {
+    "file": "xiaoyuzhou",
+    "group": "domestic",
+    "label": "小宇宙",
+    "kw": "xiaoyuzhou podcast yuzhou",
+    "si": "",
+    "pkg": "app.podcast.cosmos",
+    "pref": "small_cosmos",
+    "hex": "#00C4CC"
+  },
+  {
+    "file": "mi_home",
+    "group": "domestic",
+    "label": "米家",
+    "kw": "mihome smarthome mijia",
+    "si": "",
+    "pkg": "com.xiaomi.smarthome",
+    "pref": "mi_home",
+    "hex": "#23B8FF"
+  },
+  {
+    "file": "honkai_star_rail",
+    "group": "domestic",
+    "label": "崩坏：星穹铁道",
+    "kw": "honkai starrail xingqiong",
+    "si": "",
+    "pkg": "com.miHoYo.hkrpg",
+    "pref": "honkai_star_rail",
+    "hex": "#C9A66B"
+  },
+  {
+    "file": "zenless_zone_zero",
+    "group": "domestic",
+    "label": "绝区零",
+    "kw": "zzz zenless juequling",
+    "si": "",
+    "pkg": "com.miHoYo.Nap",
+    "pref": "zenless_zone_zero",
+    "hex": "#F7D64A"
+  },
+  {
+    "file": "pubg_mobile",
+    "group": "domestic",
+    "label": "和平精英",
+    "kw": "pubg game heping",
+    "si": "",
+    "pkg": "com.tencent.tmgp.pubgmhd",
+    "pref": "pubg",
+    "hex": "#F2A900"
+  },
+  {
+    "file": "wuthering_waves",
+    "group": "domestic",
+    "label": "鸣潮",
+    "kw": "wutheringwaves kurogame mingchao",
+    "si": "",
+    "pkg": "com.kurogame.mingchao",
+    "pref": "wuthering_waves",
+    "hex": "#C8A876"
+  },
+  {
+    "file": "huawei_appgallery",
+    "group": "domestic",
+    "label": "华为应用市场",
+    "kw": "appgallery appmarket yingyong",
+    "si": "",
+    "pkg": "com.huawei.appmarket",
+    "pref": "huawei_appgallery",
+    "hex": "#F04141"
+  },
+  {
+    "file": "huawei_browser",
+    "group": "domestic",
+    "label": "华为浏览器",
+    "kw": "huawei browser liulanqi",
+    "si": "",
+    "pkg": "com.huawei.browser",
+    "pref": "huawei_browser",
+    "hex": "#007DFF"
+  },
+  {
+    "file": "huawei_wallet",
+    "group": "domestic",
+    "label": "华为钱包",
+    "kw": "huawei wallet qianbao",
+    "si": "",
+    "pkg": "com.huawei.wallet",
+    "pref": "huawei_wallet",
+    "hex": "#FF6A00"
+  },
+  {
+    "file": "huawei_ai_life",
+    "group": "domestic",
+    "label": "智慧生活",
+    "kw": "huawei ailife smarthome zhihui",
+    "si": "",
+    "pkg": "com.huawei.smarthome",
+    "pref": "huawei_ai_life",
+    "hex": "#4D6CFE"
+  },
+  {
+    "file": "xiaomi",
+    "group": "domestic",
+    "label": "小米",
+    "kw": "xiaomi mi phone",
+    "si": "xiaomi",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "oppo",
+    "group": "domestic",
+    "label": "OPPO",
+    "kw": "oppo phone",
+    "si": "oppo",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "vivo",
+    "group": "domestic",
+    "label": "vivo",
+    "kw": "vivo phone",
+    "si": "vivo",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "oneplus",
+    "group": "domestic",
+    "label": "一加",
+    "kw": "oneplus yijia phone",
+    "si": "oneplus",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "honor",
+    "group": "domestic",
+    "label": "荣耀",
+    "kw": "honor rongyao phone",
+    "si": "honor",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "huawei",
+    "group": "domestic",
+    "label": "华为",
+    "kw": "huawei phone",
+    "si": "huawei",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "meizu",
+    "group": "domestic",
+    "label": "魅族",
+    "kw": "meizu phone",
+    "si": "meizu",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "dji",
+    "group": "domestic",
+    "label": "大疆创新",
+    "kw": "dji drone wurenji",
+    "si": "dji",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "deepseek",
+    "group": "domestic",
+    "label": "DeepSeek",
+    "kw": "deepseek ai llm",
+    "si": "deepseek",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "kimi",
+    "group": "domestic",
+    "label": "Kimi",
+    "kw": "kimi moonshot ai",
+    "si": "kimi",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "qwen",
+    "group": "domestic",
+    "label": "通义千问",
+    "kw": "qwen tongyi ai",
+    "si": "qwen",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "google",
+    "group": "international",
+    "label": "Google",
+    "kw": "google",
+    "si": "google",
+    "pkg": "com.google.android.googlequicksearchbox",
+    "pref": "google",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "apple",
+    "group": "international",
+    "label": "Apple",
+    "kw": "apple iphone ios",
+    "si": "apple",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "github",
+    "group": "international",
+    "label": "GitHub",
+    "kw": "github",
+    "si": "github",
+    "pkg": "com.github.android",
+    "pref": "github",
+    "hex": "#181717"
+  },
+  {
+    "file": "gitlab",
+    "group": "international",
+    "label": "GitLab",
+    "kw": "gitlab",
+    "si": "gitlab",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FC6D26"
+  },
+  {
+    "file": "amazon",
+    "group": "international",
+    "label": "Amazon",
+    "kw": "amazon shopping",
+    "si": "",
+    "pkg": "com.amazon.mShop.android.shopping",
+    "pref": "amazon_shopping",
+    "hex": "#FF9900"
+  },
+  {
+    "file": "facebook",
+    "group": "international",
+    "label": "Facebook",
+    "kw": "facebook meta",
+    "si": "facebook",
+    "pkg": "com.facebook.katana",
+    "pref": "facebook",
+    "hex": "#1877F2"
+  },
+  {
+    "file": "instagram",
+    "group": "international",
+    "label": "Instagram",
+    "kw": "instagram",
+    "si": "instagram",
+    "pkg": "com.instagram.android",
+    "pref": "instagram",
+    "hex": "#E4405F"
+  },
+  {
+    "file": "x",
+    "group": "international",
+    "label": "X",
+    "kw": "x twitter",
+    "si": "x",
+    "pkg": "com.twitter.android",
+    "pref": "x",
+    "hex": "#000000"
+  },
+  {
+    "file": "tiktok",
+    "group": "international",
+    "label": "TikTok",
+    "kw": "tiktok",
+    "si": "tiktok",
+    "pkg": "com.zhiliaoapp.musically",
+    "pref": "tiktok",
+    "hex": "#000000"
+  },
+  {
+    "file": "linkedin",
+    "group": "international",
+    "label": "LinkedIn",
+    "kw": "linkedin",
+    "si": "",
+    "pkg": "com.linkedin.android",
+    "pref": "linkedin",
+    "hex": "#0A66C2"
+  },
+  {
+    "file": "youtube",
+    "group": "international",
+    "label": "YouTube",
+    "kw": "youtube",
+    "si": "youtube",
+    "pkg": "com.google.android.youtube",
+    "pref": "youtube",
+    "hex": "#FF0000"
+  },
+  {
+    "file": "netflix",
+    "group": "international",
+    "label": "Netflix",
+    "kw": "netflix",
+    "si": "netflix",
+    "pkg": "com.netflix.mediaclient",
+    "pref": "netflix",
+    "hex": "#E50914"
+  },
+  {
+    "file": "spotify",
+    "group": "international",
+    "label": "Spotify",
+    "kw": "spotify",
+    "si": "spotify",
+    "pkg": "com.spotify.music",
+    "pref": "spotify",
+    "hex": "#1DB954"
+  },
+  {
+    "file": "discord",
+    "group": "international",
+    "label": "Discord",
+    "kw": "discord",
+    "si": "discord",
+    "pkg": "com.discord",
+    "pref": "discord",
+    "hex": "#5865F2"
+  },
+  {
+    "file": "reddit",
+    "group": "international",
+    "label": "Reddit",
+    "kw": "reddit",
+    "si": "reddit",
+    "pkg": "com.reddit.frontpage",
+    "pref": "reddit",
+    "hex": "#FF4500"
+  },
+  {
+    "file": "steam",
+    "group": "international",
+    "label": "Steam",
+    "kw": "steam valve",
+    "si": "steam",
+    "pkg": "com.valvesoftware.android.steam.community",
+    "pref": "steam",
+    "hex": "#000000"
+  },
+  {
+    "file": "twitch",
+    "group": "international",
+    "label": "Twitch",
+    "kw": "twitch",
+    "si": "twitch",
+    "pkg": "tv.twitch.android.app",
+    "pref": "twitch",
+    "hex": "#9146FF"
+  },
+  {
+    "file": "whatsapp",
+    "group": "international",
+    "label": "WhatsApp",
+    "kw": "whatsapp",
+    "si": "whatsapp",
+    "pkg": "com.whatsapp",
+    "pref": "whatsapp",
+    "hex": "#25D366"
+  },
+  {
+    "file": "telegram",
+    "group": "international",
+    "label": "Telegram",
+    "kw": "telegram",
+    "si": "telegram",
+    "pkg": "org.telegram.messenger",
+    "pref": "telegram",
+    "hex": "#26A5E4"
+  },
+  {
+    "file": "signal",
+    "group": "international",
+    "label": "Signal",
+    "kw": "signal",
+    "si": "signal",
+    "pkg": "org.thoughtcrime.securesms",
+    "pref": "signal",
+    "hex": "#3A76F0"
+  },
+  {
+    "file": "slack",
+    "group": "international",
+    "label": "Slack",
+    "kw": "slack",
+    "si": "",
+    "pkg": "com.Slack",
+    "pref": "slack",
+    "hex": "#4A154B"
+  },
+  {
+    "file": "snapchat",
+    "group": "international",
+    "label": "Snapchat",
+    "kw": "snapchat",
+    "si": "snapchat",
+    "pkg": "com.snapchat.android",
+    "pref": "snapchat",
+    "hex": "#FFFC00"
+  },
+  {
+    "file": "pinterest",
+    "group": "international",
+    "label": "Pinterest",
+    "kw": "pinterest",
+    "si": "pinterest",
+    "pkg": "com.pinterest",
+    "pref": "pinterest",
+    "hex": "#BD081C"
+  },
+  {
+    "file": "line",
+    "group": "international",
+    "label": "LINE",
+    "kw": "line",
+    "si": "line",
+    "pkg": "jp.naver.line.android",
+    "pref": "line",
+    "hex": "#00C300"
+  },
+  {
+    "file": "paypal",
+    "group": "international",
+    "label": "PayPal",
+    "kw": "paypal",
+    "si": "paypal",
+    "pkg": "com.paypal.android.p2pmobile",
+    "pref": "paypal",
+    "hex": "#00457C"
+  },
+  {
+    "file": "stripe",
+    "group": "international",
+    "label": "Stripe",
+    "kw": "stripe",
+    "si": "stripe",
+    "pkg": "com.stripe.android",
+    "pref": "stripe",
+    "hex": "#635BFF"
+  },
+  {
+    "file": "visa",
+    "group": "international",
+    "label": "Visa",
+    "kw": "visa",
+    "si": "visa",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1A1F71"
+  },
+  {
+    "file": "mastercard",
+    "group": "international",
+    "label": "Mastercard",
+    "kw": "mastercard",
+    "si": "mastercard",
+    "pkg": "",
+    "pref": "",
+    "hex": "#EB001B"
+  },
+  {
+    "file": "american_express",
+    "group": "international",
+    "label": "American Express",
+    "kw": "amex americanexpress",
+    "si": "americanexpress",
+    "pkg": "",
+    "pref": "",
+    "hex": "#2E77BC"
+  },
+  {
+    "file": "google_drive",
+    "group": "international",
+    "label": "Google Drive",
+    "kw": "googledrive drive",
+    "si": "googledrive",
+    "pkg": "com.google.android.apps.docs",
+    "pref": "google_drive",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "dropbox",
+    "group": "international",
+    "label": "Dropbox",
+    "kw": "dropbox",
+    "si": "dropbox",
+    "pkg": "com.dropbox.android",
+    "pref": "dropbox",
+    "hex": "#0061FF"
+  },
+  {
+    "file": "onedrive",
+    "group": "international",
+    "label": "OneDrive",
+    "kw": "onedrive",
+    "si": "",
+    "pkg": "com.microsoft.skydrive",
+    "pref": "microsoft_onedrive",
+    "hex": "#0078D4"
+  },
+  {
+    "file": "icloud",
+    "group": "international",
+    "label": "iCloud",
+    "kw": "icloud",
+    "si": "icloud",
+    "pkg": "",
+    "pref": "",
+    "hex": "#3693F3"
+  },
+  {
+    "file": "notion",
+    "group": "international",
+    "label": "Notion",
+    "kw": "notion",
+    "si": "notion",
+    "pkg": "notion.id",
+    "pref": "notion",
+    "hex": "#000000"
+  },
+  {
+    "file": "openai",
+    "group": "international",
+    "label": "OpenAI",
+    "kw": "openai chatgpt",
+    "si": "",
+    "pkg": "com.openai.chatgpt",
+    "pref": "chatgpt",
+    "hex": "#412991"
+  },
+  {
+    "file": "bitwarden",
+    "group": "international",
+    "label": "Bitwarden",
+    "kw": "bitwarden",
+    "si": "bitwarden",
+    "pkg": "com.x8bit.bitwarden",
+    "pref": "bitwarden",
+    "hex": "#175DDC"
+  },
+  {
+    "file": "onepassword",
+    "group": "international",
+    "label": "1Password",
+    "kw": "1password",
+    "si": "1password",
+    "pkg": "com.agilebits.onepassword",
+    "pref": "_1password",
+    "hex": "#1A8CFF"
+  },
+  {
+    "file": "lastpass",
+    "group": "international",
+    "label": "LastPass",
+    "kw": "lastpass",
+    "si": "lastpass",
+    "pkg": "com.lastpass.lpandroid",
+    "pref": "lastpass",
+    "hex": "#D32D27"
+  },
+  {
+    "file": "cloudflare",
+    "group": "international",
+    "label": "Cloudflare",
+    "kw": "cloudflare",
+    "si": "cloudflare",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F38020"
+  },
+  {
+    "file": "firefox",
+    "group": "international",
+    "label": "Firefox",
+    "kw": "firefox browser",
+    "si": "firefoxbrowser",
+    "pkg": "org.mozilla.firefox",
+    "pref": "firefox",
+    "hex": "#FF7139"
+  },
+  {
+    "file": "chrome",
+    "group": "international",
+    "label": "Chrome",
+    "kw": "chrome browser",
+    "si": "googlechrome",
+    "pkg": "com.android.chrome",
+    "pref": "google_chrome",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "safari",
+    "group": "international",
+    "label": "Safari",
+    "kw": "safari browser",
+    "si": "safari",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "linux",
+    "group": "international",
+    "label": "Linux",
+    "kw": "linux",
+    "si": "linux",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FCC624"
+  },
+  {
+    "file": "ubuntu",
+    "group": "international",
+    "label": "Ubuntu",
+    "kw": "ubuntu",
+    "si": "ubuntu",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E95420"
+  },
+  {
+    "file": "docker",
+    "group": "international",
+    "label": "Docker",
+    "kw": "docker",
+    "si": "docker",
+    "pkg": "",
+    "pref": "",
+    "hex": "#2496ED"
+  },
+  {
+    "file": "kubernetes",
+    "group": "international",
+    "label": "Kubernetes",
+    "kw": "kubernetes k8s",
+    "si": "kubernetes",
+    "pkg": "",
+    "pref": "",
+    "hex": "#326CE5"
+  },
+  {
+    "file": "nintendo",
+    "group": "international",
+    "label": "Nintendo Switch",
+    "kw": "nintendo switch",
+    "si": "",
+    "pkg": "com.nintendo.znca",
+    "pref": "nintendo_switch",
+    "hex": "#E60012"
+  },
+  {
+    "file": "playstation",
+    "group": "international",
+    "label": "PlayStation",
+    "kw": "playstation sony ps5",
+    "si": "playstation",
+    "pkg": "com.scee.psxandroid",
+    "pref": "playstation_ps",
+    "hex": "#003791"
+  },
+  {
+    "file": "xbox",
+    "group": "international",
+    "label": "Xbox",
+    "kw": "xbox",
+    "si": "",
+    "pkg": "com.microsoft.xboxone.smartglass",
+    "pref": "xbox",
+    "hex": "#107C10"
+  },
+  {
+    "file": "epic_games",
+    "group": "international",
+    "label": "Epic Games",
+    "kw": "epicgames",
+    "si": "epicgames",
+    "pkg": "",
+    "pref": "",
+    "hex": "#313131"
+  },
+  {
+    "file": "minecraft",
+    "group": "international",
+    "label": "Minecraft",
+    "kw": "minecraft",
+    "si": "",
+    "pkg": "com.mojang.minecraftpe",
+    "pref": "minecraft",
+    "hex": "#62B47A"
+  },
+  {
+    "file": "roblox",
+    "group": "international",
+    "label": "Roblox",
+    "kw": "roblox",
+    "si": "roblox",
+    "pkg": "com.roblox.client",
+    "pref": "roblox",
+    "hex": "#000000"
+  },
+  {
+    "file": "riot_games",
+    "group": "international",
+    "label": "Riot Games",
+    "kw": "riotgames leagueoflegends",
+    "si": "riotgames",
+    "pkg": "",
+    "pref": "",
+    "hex": "#D32936"
+  },
+  {
+    "file": "gitee",
+    "group": "international",
+    "label": "Gitee",
+    "kw": "gitee",
+    "si": "gitee",
+    "pkg": "",
+    "pref": "",
+    "hex": "#C71D23"
+  },
+  {
+    "file": "proton_vpn",
+    "group": "international",
+    "label": "Proton VPN",
+    "kw": "protonvpn vpn",
+    "si": "protonvpn",
+    "pkg": "",
+    "pref": "",
+    "hex": "#6D4AFF"
+  },
+  {
+    "file": "proton_mail",
+    "group": "international",
+    "label": "Proton Mail",
+    "kw": "protonmail mail",
+    "si": "protonmail",
+    "pkg": "",
+    "pref": "",
+    "hex": "#6D4AFF"
+  },
+  {
+    "file": "keepassxc",
+    "group": "international",
+    "label": "KeePassXC",
+    "kw": "keepassxc keepass",
+    "si": "keepassxc",
+    "pkg": "",
+    "pref": "",
+    "hex": "#6CAC4D"
+  },
+  {
+    "file": "stackoverflow",
+    "group": "international",
+    "label": "Stack Overflow",
+    "kw": "stackoverflow",
+    "si": "stackoverflow",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F58025"
+  },
+  {
+    "file": "hackerrank",
+    "group": "international",
+    "label": "HackerRank",
+    "kw": "hackerrank",
+    "si": "hackerrank",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00EA64"
+  },
+  {
+    "file": "leetcode",
+    "group": "international",
+    "label": "LeetCode",
+    "kw": "leetcode",
+    "si": "leetcode",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FFA116"
+  },
+  {
+    "file": "freecodecamp",
+    "group": "international",
+    "label": "freeCodeCamp",
+    "kw": "freecodecamp fcc",
+    "si": "freecodecamp",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0A0A0A"
+  },
+  {
+    "file": "bitcoin",
+    "group": "international",
+    "label": "Bitcoin",
+    "kw": "bitcoin btc crypto",
+    "si": "bitcoin",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F7931A"
+  },
+  {
+    "file": "ethereum",
+    "group": "international",
+    "label": "Ethereum",
+    "kw": "ethereum eth crypto",
+    "si": "ethereum",
+    "pkg": "",
+    "pref": "",
+    "hex": "#3C3C3D"
+  },
+  {
+    "file": "coinbase",
+    "group": "international",
+    "label": "Coinbase",
+    "kw": "coinbase crypto",
+    "si": "coinbase",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0052FF"
+  },
+  {
+    "file": "binance",
+    "group": "international",
+    "label": "Binance",
+    "kw": "binance crypto",
+    "si": "binance",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F0B90B"
+  },
+  {
+    "file": "brave",
+    "group": "international",
+    "label": "Brave",
+    "kw": "brave browser",
+    "si": "brave",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FB542B"
+  },
+  {
+    "file": "opera",
+    "group": "international",
+    "label": "Opera",
+    "kw": "opera browser",
+    "si": "opera",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF1B2D"
+  },
+  {
+    "file": "airbnb",
+    "group": "international",
+    "label": "Airbnb",
+    "kw": "airbnb",
+    "si": "airbnb",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF5A5F"
+  },
+  {
+    "file": "uber",
+    "group": "international",
+    "label": "Uber",
+    "kw": "uber",
+    "si": "uber",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "booking",
+    "group": "international",
+    "label": "Booking.com",
+    "kw": "booking travel",
+    "si": "bookingdotcom",
+    "pkg": "",
+    "pref": "",
+    "hex": "#003580"
+  },
+  {
+    "file": "ebay",
+    "group": "international",
+    "label": "eBay",
+    "kw": "ebay shopping",
+    "si": "ebay",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E53238"
+  },
+  {
+    "file": "shopify",
+    "group": "international",
+    "label": "Shopify",
+    "kw": "shopify",
+    "si": "shopify",
+    "pkg": "",
+    "pref": "",
+    "hex": "#7AB55C"
+  },
+  {
+    "file": "etsy",
+    "group": "international",
+    "label": "Etsy",
+    "kw": "etsy",
+    "si": "etsy",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F1641E"
+  },
+  {
+    "file": "duolingo",
+    "group": "international",
+    "label": "Duolingo",
+    "kw": "duolingo",
+    "si": "duolingo",
+    "pkg": "",
+    "pref": "",
+    "hex": "#58CC02"
+  },
+  {
+    "file": "coursera",
+    "group": "international",
+    "label": "Coursera",
+    "kw": "coursera",
+    "si": "coursera",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0056D2"
+  },
+  {
+    "file": "udemy",
+    "group": "international",
+    "label": "Udemy",
+    "kw": "udemy",
+    "si": "udemy",
+    "pkg": "",
+    "pref": "",
+    "hex": "#A435F0"
+  },
+  {
+    "file": "khan_academy",
+    "group": "international",
+    "label": "Khan Academy",
+    "kw": "khanacademy",
+    "si": "khanacademy",
+    "pkg": "",
+    "pref": "",
+    "hex": "#14BF96"
+  },
+  {
+    "file": "soundcloud",
+    "group": "international",
+    "label": "SoundCloud",
+    "kw": "soundcloud",
+    "si": "soundcloud",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF5500"
+  },
+  {
+    "file": "apple_music",
+    "group": "international",
+    "label": "Apple Music",
+    "kw": "applemusic music",
+    "si": "applemusic",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FA243C"
+  },
+  {
+    "file": "vimeo",
+    "group": "international",
+    "label": "Vimeo",
+    "kw": "vimeo",
+    "si": "vimeo",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1AB7EA"
+  },
+  {
+    "file": "threads",
+    "group": "international",
+    "label": "Threads",
+    "kw": "threads",
+    "si": "threads",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "mastodon",
+    "group": "international",
+    "label": "Mastodon",
+    "kw": "mastodon",
+    "si": "mastodon",
+    "pkg": "",
+    "pref": "",
+    "hex": "#6364FF"
+  },
+  {
+    "file": "bluesky",
+    "group": "international",
+    "label": "Bluesky",
+    "kw": "bluesky bsky",
+    "si": "bluesky",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0285FF"
+  },
+  {
+    "file": "tumblr",
+    "group": "international",
+    "label": "Tumblr",
+    "kw": "tumblr",
+    "si": "tumblr",
+    "pkg": "",
+    "pref": "",
+    "hex": "#36465D"
+  },
+  {
+    "file": "medium",
+    "group": "international",
+    "label": "Medium",
+    "kw": "medium",
+    "si": "medium",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "wordpress",
+    "group": "international",
+    "label": "WordPress",
+    "kw": "wordpress",
+    "si": "wordpress",
+    "pkg": "",
+    "pref": "",
+    "hex": "#21759B"
+  },
+  {
+    "file": "figma",
+    "group": "international",
+    "label": "Figma",
+    "kw": "figma design",
+    "si": "figma",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F24E1E"
+  },
+  {
+    "file": "todoist",
+    "group": "international",
+    "label": "Todoist",
+    "kw": "todoist",
+    "si": "todoist",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E44332"
+  },
+  {
+    "file": "evernote",
+    "group": "international",
+    "label": "Evernote",
+    "kw": "evernote",
+    "si": "evernote",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00A82D"
+  },
+  {
+    "file": "teamviewer",
+    "group": "international",
+    "label": "TeamViewer",
+    "kw": "teamviewer",
+    "si": "teamviewer",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0E8EE9"
+  },
+  {
+    "file": "google_meet",
+    "group": "international",
+    "label": "Google Meet",
+    "kw": "googlemeet meet",
+    "si": "googlemeet",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00832D"
+  },
+  {
+    "file": "gmail",
+    "group": "international",
+    "label": "Gmail",
+    "kw": "gmail mail",
+    "si": "gmail",
+    "pkg": "",
+    "pref": "",
+    "hex": "#EA4335"
+  },
+  {
+    "file": "google_maps",
+    "group": "international",
+    "label": "Google Maps",
+    "kw": "googlemaps map",
+    "si": "googlemaps",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "google_photos",
+    "group": "international",
+    "label": "Google Photos",
+    "kw": "googlephotos photo",
+    "si": "googlephotos",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "google_calendar",
+    "group": "international",
+    "label": "Google Calendar",
+    "kw": "googlecalendar calendar",
+    "si": "googlecalendar",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "youtube_music",
+    "group": "international",
+    "label": "YouTube Music",
+    "kw": "youtubemusic music",
+    "si": "youtubemusic",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF0000"
+  },
+  {
+    "file": "nextcloud",
+    "group": "international",
+    "label": "Nextcloud",
+    "kw": "nextcloud",
+    "si": "nextcloud",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0082C9"
+  },
+  {
+    "file": "jellyfin",
+    "group": "international",
+    "label": "Jellyfin",
+    "kw": "jellyfin",
+    "si": "jellyfin",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00A4DC"
+  },
+  {
+    "file": "home_assistant",
+    "group": "international",
+    "label": "Home Assistant",
+    "kw": "homeassistant hass",
+    "si": "homeassistant",
+    "pkg": "",
+    "pref": "",
+    "hex": "#41BDF5"
+  },
+  {
+    "file": "grafana",
+    "group": "international",
+    "label": "Grafana",
+    "kw": "grafana",
+    "si": "grafana",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F46800"
+  },
+  {
+    "file": "git",
+    "group": "international",
+    "label": "Git",
+    "kw": "git",
+    "si": "git",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F05032"
+  },
+  {
+    "file": "python",
+    "group": "international",
+    "label": "Python",
+    "kw": "python",
+    "si": "python",
+    "pkg": "",
+    "pref": "",
+    "hex": "#3776AB"
+  },
+  {
+    "file": "nodejs",
+    "group": "international",
+    "label": "Node.js",
+    "kw": "nodejs node",
+    "si": "nodedotjs",
+    "pkg": "",
+    "pref": "",
+    "hex": "#5FA04E"
+  },
+  {
+    "file": "rust",
+    "group": "international",
+    "label": "Rust",
+    "kw": "rust",
+    "si": "rust",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "go",
+    "group": "international",
+    "label": "Go",
+    "kw": "go golang",
+    "si": "go",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00ADD8"
+  },
+  {
+    "file": "alibaba_cloud",
+    "group": "international",
+    "label": "Alibaba Cloud",
+    "kw": "alibabacloud alicloud",
+    "si": "alibabacloud",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF6A00"
+  },
+  {
+    "file": "vercel",
+    "group": "international",
+    "label": "Vercel",
+    "kw": "vercel",
+    "si": "vercel",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "netlify",
+    "group": "international",
+    "label": "Netlify",
+    "kw": "netlify",
+    "si": "netlify",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00C7B7"
+  },
+  {
+    "file": "adguard",
+    "group": "international",
+    "label": "AdGuard",
+    "kw": "adguard",
+    "si": "adguard",
+    "pkg": "",
+    "pref": "",
+    "hex": "#68BC71"
+  },
+  {
+    "file": "wise",
+    "group": "international",
+    "label": "Wise",
+    "kw": "wise transferwise",
+    "si": "wise",
+    "pkg": "",
+    "pref": "",
+    "hex": "#9FE870"
+  },
+  {
+    "file": "revolut",
+    "group": "international",
+    "label": "Revolut",
+    "kw": "revolut",
+    "si": "revolut",
+    "pkg": "",
+    "pref": "",
+    "hex": "#191C1F"
+  },
+  {
+    "file": "kakaotalk",
+    "group": "international",
+    "label": "KakaoTalk",
+    "kw": "kakaotalk kakao",
+    "si": "kakaotalk",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FFCD00"
+  },
+  {
+    "file": "naver",
+    "group": "international",
+    "label": "Naver",
+    "kw": "naver",
+    "si": "naver",
+    "pkg": "",
+    "pref": "",
+    "hex": "#03C75A"
+  },
+  {
+    "file": "viber",
+    "group": "international",
+    "label": "Viber",
+    "kw": "viber",
+    "si": "viber",
+    "pkg": "",
+    "pref": "",
+    "hex": "#7360F2"
+  },
+  {
+    "file": "grab",
+    "group": "international",
+    "label": "Grab",
+    "kw": "grab",
+    "si": "grab",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00B14F"
+  },
+  {
+    "file": "gojek",
+    "group": "international",
+    "label": "Gojek",
+    "kw": "gojek",
+    "si": "gojek",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00AA13"
+  },
+  {
+    "file": "shopee",
+    "group": "international",
+    "label": "Shopee",
+    "kw": "shopee",
+    "si": "shopee",
+    "pkg": "",
+    "pref": "",
+    "hex": "#EE4D2D"
+  },
+  {
+    "file": "rakuten",
+    "group": "international",
+    "label": "Rakuten",
+    "kw": "rakuten",
+    "si": "rakuten",
+    "pkg": "",
+    "pref": "",
+    "hex": "#BF0000"
+  },
+  {
+    "file": "tinder",
+    "group": "international",
+    "label": "Tinder",
+    "kw": "tinder",
+    "si": "tinder",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF6B6B"
+  },
+  {
+    "file": "substack",
+    "group": "international",
+    "label": "Substack",
+    "kw": "substack",
+    "si": "substack",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF6719"
+  },
+  {
+    "file": "patreon",
+    "group": "international",
+    "label": "Patreon",
+    "kw": "patreon",
+    "si": "patreon",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF424D"
+  },
+  {
+    "file": "starbucks",
+    "group": "international",
+    "label": "Starbucks",
+    "kw": "starbucks coffee",
+    "si": "starbucks",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00704A"
+  },
+  {
+    "file": "mcdonalds",
+    "group": "international",
+    "label": "McDonald's",
+    "kw": "mcdonalds",
+    "si": "mcdonalds",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FBC817"
+  },
+  {
+    "file": "kfc",
+    "group": "international",
+    "label": "KFC",
+    "kw": "kfc",
+    "si": "kfc",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F40027"
+  },
+  {
+    "file": "burgerking",
+    "group": "international",
+    "label": "Burger King",
+    "kw": "burgerking",
+    "si": "burgerking",
+    "pkg": "",
+    "pref": "",
+    "hex": "#DD1A34"
+  },
+  {
+    "file": "tacobell",
+    "group": "international",
+    "label": "Taco Bell",
+    "kw": "tacobell",
+    "si": "tacobell",
+    "pkg": "",
+    "pref": "",
+    "hex": "#38052C"
+  },
+  {
+    "file": "ikea",
+    "group": "international",
+    "label": "IKEA",
+    "kw": "ikea",
+    "si": "ikea",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0058A3"
+  },
+  {
+    "file": "target",
+    "group": "international",
+    "label": "Target",
+    "kw": "target",
+    "si": "target",
+    "pkg": "",
+    "pref": "",
+    "hex": "#CC0000"
+  },
+  {
+    "file": "aliexpress",
+    "group": "international",
+    "label": "AliExpress",
+    "kw": "aliexpress",
+    "si": "aliexpress",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF4747"
+  },
+  {
+    "file": "ubereats",
+    "group": "international",
+    "label": "Uber Eats",
+    "kw": "ubereats",
+    "si": "ubereats",
+    "pkg": "",
+    "pref": "",
+    "hex": "#06C167"
+  },
+  {
+    "file": "doordash",
+    "group": "international",
+    "label": "DoorDash",
+    "kw": "doordash",
+    "si": "doordash",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF3008"
+  },
+  {
+    "file": "deliveroo",
+    "group": "international",
+    "label": "Deliveroo",
+    "kw": "deliveroo",
+    "si": "deliveroo",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00CCBC"
+  },
+  {
+    "file": "lyft",
+    "group": "international",
+    "label": "Lyft",
+    "kw": "lyft",
+    "si": "lyft",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF00BF"
+  },
+  {
+    "file": "expedia",
+    "group": "international",
+    "label": "Expedia",
+    "kw": "expedia travel",
+    "si": "expedia",
+    "pkg": "",
+    "pref": "",
+    "hex": "#191E3B"
+  },
+  {
+    "file": "tripadvisor",
+    "group": "international",
+    "label": "Tripadvisor",
+    "kw": "tripadvisor travel",
+    "si": "tripadvisor",
+    "pkg": "",
+    "pref": "",
+    "hex": "#34E0A1"
+  },
+  {
+    "file": "lufthansa",
+    "group": "international",
+    "label": "Lufthansa",
+    "kw": "lufthansa airline",
+    "si": "lufthansa",
+    "pkg": "",
+    "pref": "",
+    "hex": "#05164D"
+  },
+  {
+    "file": "emirates",
+    "group": "international",
+    "label": "Emirates",
+    "kw": "emirates airline",
+    "si": "emirates",
+    "pkg": "",
+    "pref": "",
+    "hex": "#D71921"
+  },
+  {
+    "file": "britishairways",
+    "group": "international",
+    "label": "British Airways",
+    "kw": "britishairways airline",
+    "si": "britishairways",
+    "pkg": "",
+    "pref": "",
+    "hex": "#075AAA"
+  },
+  {
+    "file": "qantas",
+    "group": "international",
+    "label": "Qantas",
+    "kw": "qantas airline",
+    "si": "qantas",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E40000"
+  },
+  {
+    "file": "ryanair",
+    "group": "international",
+    "label": "Ryanair",
+    "kw": "ryanair airline",
+    "si": "ryanair",
+    "pkg": "",
+    "pref": "",
+    "hex": "#073590"
+  },
+  {
+    "file": "hbo",
+    "group": "international",
+    "label": "HBO",
+    "kw": "hbo",
+    "si": "hbo",
+    "pkg": "",
+    "pref": "",
+    "hex": "#991EEB"
+  },
+  {
+    "file": "appletv",
+    "group": "international",
+    "label": "Apple TV",
+    "kw": "appletv",
+    "si": "appletv",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "crunchyroll",
+    "group": "international",
+    "label": "Crunchyroll",
+    "kw": "crunchyroll anime",
+    "si": "crunchyroll",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F47521"
+  },
+  {
+    "file": "tidal",
+    "group": "international",
+    "label": "TIDAL",
+    "kw": "tidal music",
+    "si": "tidal",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "deezer",
+    "group": "international",
+    "label": "Deezer",
+    "kw": "deezer music",
+    "si": "deezer",
+    "pkg": "",
+    "pref": "",
+    "hex": "#A238FF"
+  },
+  {
+    "file": "pandora",
+    "group": "international",
+    "label": "Pandora",
+    "kw": "pandora music",
+    "si": "pandora",
+    "pkg": "",
+    "pref": "",
+    "hex": "#3668FF"
+  },
+  {
+    "file": "bandcamp",
+    "group": "international",
+    "label": "Bandcamp",
+    "kw": "bandcamp music",
+    "si": "bandcamp",
+    "pkg": "",
+    "pref": "",
+    "hex": "#629AA9"
+  },
+  {
+    "file": "shazam",
+    "group": "international",
+    "label": "Shazam",
+    "kw": "shazam music",
+    "si": "shazam",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0088FF"
+  },
+  {
+    "file": "audible",
+    "group": "international",
+    "label": "Audible",
+    "kw": "audible book",
+    "si": "audible",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F8991C"
+  },
+  {
+    "file": "goodreads",
+    "group": "international",
+    "label": "Goodreads",
+    "kw": "goodreads book",
+    "si": "goodreads",
+    "pkg": "",
+    "pref": "",
+    "hex": "#382110"
+  },
+  {
+    "file": "archiveofourown",
+    "group": "international",
+    "label": "AO3",
+    "kw": "archiveofourown ao3",
+    "si": "archiveofourown",
+    "pkg": "",
+    "pref": "",
+    "hex": "#990000"
+  },
+  {
+    "file": "myanimelist",
+    "group": "international",
+    "label": "MyAnimeList",
+    "kw": "myanimelist anime mal",
+    "si": "myanimelist",
+    "pkg": "",
+    "pref": "",
+    "hex": "#2E51A2"
+  },
+  {
+    "file": "chessdotcom",
+    "group": "international",
+    "label": "Chess.com",
+    "kw": "chess",
+    "si": "chessdotcom",
+    "pkg": "",
+    "pref": "",
+    "hex": "#81B64C"
+  },
+  {
+    "file": "lichess",
+    "group": "international",
+    "label": "Lichess",
+    "kw": "lichess chess",
+    "si": "lichess",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "edx",
+    "group": "international",
+    "label": "edX",
+    "kw": "edx",
+    "si": "edx",
+    "pkg": "",
+    "pref": "",
+    "hex": "#02262B"
+  },
+  {
+    "file": "skillshare",
+    "group": "international",
+    "label": "Skillshare",
+    "kw": "skillshare",
+    "si": "skillshare",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00FF84"
+  },
+  {
+    "file": "pluralsight",
+    "group": "international",
+    "label": "Pluralsight",
+    "kw": "pluralsight",
+    "si": "pluralsight",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F15B2A"
+  },
+  {
+    "file": "codecademy",
+    "group": "international",
+    "label": "Codecademy",
+    "kw": "codecademy",
+    "si": "codecademy",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1F4056"
+  },
+  {
+    "file": "codewars",
+    "group": "international",
+    "label": "Codewars",
+    "kw": "codewars",
+    "si": "codewars",
+    "pkg": "",
+    "pref": "",
+    "hex": "#B1361E"
+  },
+  {
+    "file": "codeforces",
+    "group": "international",
+    "label": "Codeforces",
+    "kw": "codeforces",
+    "si": "codeforces",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1F8ACB"
+  },
+  {
+    "file": "jetbrains",
+    "group": "international",
+    "label": "JetBrains",
+    "kw": "jetbrains",
+    "si": "jetbrains",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "sublimetext",
+    "group": "international",
+    "label": "Sublime Text",
+    "kw": "sublimetext",
+    "si": "sublimetext",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF9800"
+  },
+  {
+    "file": "neovim",
+    "group": "international",
+    "label": "Neovim",
+    "kw": "neovim",
+    "si": "neovim",
+    "pkg": "",
+    "pref": "",
+    "hex": "#57A143"
+  },
+  {
+    "file": "vim",
+    "group": "international",
+    "label": "Vim",
+    "kw": "vim",
+    "si": "vim",
+    "pkg": "",
+    "pref": "",
+    "hex": "#019733"
+  },
+  {
+    "file": "notepadplusplus",
+    "group": "international",
+    "label": "Notepad++",
+    "kw": "notepadplusplus",
+    "si": "notepadplusplus",
+    "pkg": "",
+    "pref": "",
+    "hex": "#90E59A"
+  },
+  {
+    "file": "monzo",
+    "group": "international",
+    "label": "Monzo",
+    "kw": "monzo bank",
+    "si": "monzo",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF4F40"
+  },
+  {
+    "file": "robinhood",
+    "group": "international",
+    "label": "Robinhood",
+    "kw": "robinhood",
+    "si": "robinhood",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00C805"
+  },
+  {
+    "file": "tradingview",
+    "group": "international",
+    "label": "TradingView",
+    "kw": "tradingview",
+    "si": "tradingview",
+    "pkg": "",
+    "pref": "",
+    "hex": "#131722"
+  },
+  {
+    "file": "imgur",
+    "group": "international",
+    "label": "Imgur",
+    "kw": "imgur",
+    "si": "imgur",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1BB76E"
+  },
+  {
+    "file": "quora",
+    "group": "international",
+    "label": "Quora",
+    "kw": "quora",
+    "si": "quora",
+    "pkg": "",
+    "pref": "",
+    "hex": "#B92B27"
+  },
+  {
+    "file": "vk",
+    "group": "international",
+    "label": "VK",
+    "kw": "vk vkontakte",
+    "si": "vk",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0077FF"
+  },
+  {
+    "file": "nextdoor",
+    "group": "international",
+    "label": "Nextdoor",
+    "kw": "nextdoor",
+    "si": "nextdoor",
+    "pkg": "",
+    "pref": "",
+    "hex": "#8ED500"
+  },
+  {
+    "file": "ecosia",
+    "group": "international",
+    "label": "Ecosia",
+    "kw": "ecosia",
+    "si": "ecosia",
+    "pkg": "",
+    "pref": "",
+    "hex": "#008009"
+  },
+  {
+    "file": "duckduckgo",
+    "group": "international",
+    "label": "DuckDuckGo",
+    "kw": "duckduckgo search",
+    "si": "duckduckgo",
+    "pkg": "",
+    "pref": "",
+    "hex": "#DE5833"
+  },
+  {
+    "file": "huggingface",
+    "group": "international",
+    "label": "Hugging Face",
+    "kw": "huggingface",
+    "si": "huggingface",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FFD21E"
+  },
+  {
+    "file": "plex",
+    "group": "international",
+    "label": "Plex",
+    "kw": "plex",
+    "si": "plex",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E5A00D"
+  },
+  {
+    "file": "emby",
+    "group": "international",
+    "label": "Emby",
+    "kw": "emby",
+    "si": "emby",
+    "pkg": "",
+    "pref": "",
+    "hex": "#52B54B"
+  },
+  {
+    "file": "anydesk",
+    "group": "international",
+    "label": "AnyDesk",
+    "kw": "anydesk remote",
+    "si": "anydesk",
+    "pkg": "",
+    "pref": "",
+    "hex": "#EF4444"
+  },
+  {
+    "file": "dashlane",
+    "group": "international",
+    "label": "Dashlane",
+    "kw": "dashlane",
+    "si": "dashlane",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0E353D"
+  },
+  {
+    "file": "kaspersky",
+    "group": "international",
+    "label": "Kaspersky",
+    "kw": "kaspersky",
+    "si": "kaspersky",
+    "pkg": "",
+    "pref": "",
+    "hex": "#009981"
+  },
+  {
+    "file": "avast",
+    "group": "international",
+    "label": "Avast",
+    "kw": "avast",
+    "si": "avast",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF7800"
+  },
+  {
+    "file": "bitbucket",
+    "group": "international",
+    "label": "Bitbucket",
+    "kw": "bitbucket",
+    "si": "bitbucket",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0052CC"
+  },
+  {
+    "file": "jira",
+    "group": "international",
+    "label": "Jira",
+    "kw": "jira atlassian",
+    "si": "jira",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0052CC"
+  },
+  {
+    "file": "trello",
+    "group": "international",
+    "label": "Trello",
+    "kw": "trello atlassian",
+    "si": "trello",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0079BF"
+  },
+  {
+    "file": "asana",
+    "group": "international",
+    "label": "Asana",
+    "kw": "asana",
+    "si": "asana",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F06A6A"
+  },
+  {
+    "file": "airtable",
+    "group": "international",
+    "label": "Airtable",
+    "kw": "airtable",
+    "si": "airtable",
+    "pkg": "",
+    "pref": "",
+    "hex": "#18BFFF"
+  },
+  {
+    "file": "jenkins",
+    "group": "international",
+    "label": "Jenkins",
+    "kw": "jenkins ci",
+    "si": "jenkins",
+    "pkg": "",
+    "pref": "",
+    "hex": "#D24939"
+  },
+  {
+    "file": "circleci",
+    "group": "international",
+    "label": "CircleCI",
+    "kw": "circleci ci",
+    "si": "circleci",
+    "pkg": "",
+    "pref": "",
+    "hex": "#343434"
+  },
+  {
+    "file": "terraform",
+    "group": "international",
+    "label": "Terraform",
+    "kw": "terraform",
+    "si": "terraform",
+    "pkg": "",
+    "pref": "",
+    "hex": "#7B42BC"
+  },
+  {
+    "file": "ansible",
+    "group": "international",
+    "label": "Ansible",
+    "kw": "ansible",
+    "si": "ansible",
+    "pkg": "",
+    "pref": "",
+    "hex": "#EE0000"
+  },
+  {
+    "file": "prometheus",
+    "group": "international",
+    "label": "Prometheus",
+    "kw": "prometheus",
+    "si": "prometheus",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E6522C"
+  },
+  {
+    "file": "sentry",
+    "group": "international",
+    "label": "Sentry",
+    "kw": "sentry",
+    "si": "sentry",
+    "pkg": "",
+    "pref": "",
+    "hex": "#362D59"
+  },
+  {
+    "file": "postman",
+    "group": "international",
+    "label": "Postman",
+    "kw": "postman api",
+    "si": "postman",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF6C37"
+  },
+  {
+    "file": "nginx",
+    "group": "international",
+    "label": "Nginx",
+    "kw": "nginx",
+    "si": "nginx",
+    "pkg": "",
+    "pref": "",
+    "hex": "#009639"
+  },
+  {
+    "file": "postgresql",
+    "group": "international",
+    "label": "PostgreSQL",
+    "kw": "postgresql postgres db",
+    "si": "postgresql",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4169E1"
+  },
+  {
+    "file": "mysql",
+    "group": "international",
+    "label": "MySQL",
+    "kw": "mysql db",
+    "si": "mysql",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4479A1"
+  },
+  {
+    "file": "mongodb",
+    "group": "international",
+    "label": "MongoDB",
+    "kw": "mongodb db",
+    "si": "mongodb",
+    "pkg": "",
+    "pref": "",
+    "hex": "#47A248"
+  },
+  {
+    "file": "redis",
+    "group": "international",
+    "label": "Redis",
+    "kw": "redis db",
+    "si": "redis",
+    "pkg": "",
+    "pref": "",
+    "hex": "#DC382D"
+  },
+  {
+    "file": "sqlite",
+    "group": "international",
+    "label": "SQLite",
+    "kw": "sqlite db",
+    "si": "sqlite",
+    "pkg": "",
+    "pref": "",
+    "hex": "#003B57"
+  },
+  {
+    "file": "elasticsearch",
+    "group": "international",
+    "label": "Elasticsearch",
+    "kw": "elasticsearch elastic",
+    "si": "elasticsearch",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00BFB3"
+  },
+  {
+    "file": "typescript",
+    "group": "international",
+    "label": "TypeScript",
+    "kw": "typescript ts",
+    "si": "typescript",
+    "pkg": "",
+    "pref": "",
+    "hex": "#3178C6"
+  },
+  {
+    "file": "javascript",
+    "group": "international",
+    "label": "JavaScript",
+    "kw": "javascript js",
+    "si": "javascript",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F7DF1E"
+  },
+  {
+    "file": "kotlin",
+    "group": "international",
+    "label": "Kotlin",
+    "kw": "kotlin",
+    "si": "kotlin",
+    "pkg": "",
+    "pref": "",
+    "hex": "#7F52FF"
+  },
+  {
+    "file": "swift",
+    "group": "international",
+    "label": "Swift",
+    "kw": "swift",
+    "si": "swift",
+    "pkg": "",
+    "pref": "",
+    "hex": "#F05138"
+  },
+  {
+    "file": "dart",
+    "group": "international",
+    "label": "Dart",
+    "kw": "dart",
+    "si": "dart",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0175C2"
+  },
+  {
+    "file": "flutter",
+    "group": "international",
+    "label": "Flutter",
+    "kw": "flutter",
+    "si": "flutter",
+    "pkg": "",
+    "pref": "",
+    "hex": "#02569B"
+  },
+  {
+    "file": "react",
+    "group": "international",
+    "label": "React",
+    "kw": "react",
+    "si": "react",
+    "pkg": "",
+    "pref": "",
+    "hex": "#61DAFB"
+  },
+  {
+    "file": "vuedotjs",
+    "group": "international",
+    "label": "Vue.js",
+    "kw": "vue vuejs",
+    "si": "vuedotjs",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4FC08D"
+  },
+  {
+    "file": "angular",
+    "group": "international",
+    "label": "Angular",
+    "kw": "angular",
+    "si": "angular",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0F0F11"
+  },
+  {
+    "file": "svelte",
+    "group": "international",
+    "label": "Svelte",
+    "kw": "svelte",
+    "si": "svelte",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF3E00"
+  },
+  {
+    "file": "laravel",
+    "group": "international",
+    "label": "Laravel",
+    "kw": "laravel php",
+    "si": "laravel",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF2D20"
+  },
+  {
+    "file": "django",
+    "group": "international",
+    "label": "Django",
+    "kw": "django python",
+    "si": "django",
+    "pkg": "",
+    "pref": "",
+    "hex": "#092E20"
+  },
+  {
+    "file": "rubyonrails",
+    "group": "international",
+    "label": "Ruby on Rails",
+    "kw": "rubyonrails rails",
+    "si": "rubyonrails",
+    "pkg": "",
+    "pref": "",
+    "hex": "#CC0000"
+  },
+  {
+    "file": "spring",
+    "group": "international",
+    "label": "Spring",
+    "kw": "spring java",
+    "si": "spring",
+    "pkg": "",
+    "pref": "",
+    "hex": "#6DB33F"
+  },
+  {
+    "file": "dotnet",
+    "group": "international",
+    "label": ".NET",
+    "kw": "dotnet net",
+    "si": "dotnet",
+    "pkg": "",
+    "pref": "",
+    "hex": "#512BD4"
+  },
+  {
+    "file": "php",
+    "group": "international",
+    "label": "PHP",
+    "kw": "php",
+    "si": "php",
+    "pkg": "",
+    "pref": "",
+    "hex": "#777BB4"
+  },
+  {
+    "file": "c",
+    "group": "international",
+    "label": "C",
+    "kw": "c clang",
+    "si": "c",
+    "pkg": "",
+    "pref": "",
+    "hex": "#A8B9CC"
+  },
+  {
+    "file": "cplusplus",
+    "group": "international",
+    "label": "C++",
+    "kw": "cplusplus cpp",
+    "si": "cplusplus",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00599C"
+  },
+  {
+    "file": "debian",
+    "group": "international",
+    "label": "Debian",
+    "kw": "debian linux",
+    "si": "debian",
+    "pkg": "",
+    "pref": "",
+    "hex": "#A80030"
+  },
+  {
+    "file": "fedora",
+    "group": "international",
+    "label": "Fedora",
+    "kw": "fedora linux",
+    "si": "fedora",
+    "pkg": "",
+    "pref": "",
+    "hex": "#51A2DA"
+  },
+  {
+    "file": "centos",
+    "group": "international",
+    "label": "CentOS",
+    "kw": "centos linux",
+    "si": "centos",
+    "pkg": "",
+    "pref": "",
+    "hex": "#262577"
+  },
+  {
+    "file": "archlinux",
+    "group": "international",
+    "label": "Arch Linux",
+    "kw": "archlinux linux",
+    "si": "archlinux",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1793D1"
+  },
+  {
+    "file": "redhat",
+    "group": "international",
+    "label": "Red Hat",
+    "kw": "redhat linux",
+    "si": "redhat",
+    "pkg": "",
+    "pref": "",
+    "hex": "#EE0000"
+  },
+  {
+    "file": "googlecloud",
+    "group": "international",
+    "label": "Google Cloud",
+    "kw": "googlecloud gcp",
+    "si": "googlecloud",
+    "pkg": "",
+    "pref": "",
+    "hex": "#4285F4"
+  },
+  {
+    "file": "digitalocean",
+    "group": "international",
+    "label": "DigitalOcean",
+    "kw": "digitalocean",
+    "si": "digitalocean",
+    "pkg": "",
+    "pref": "",
+    "hex": "#0080FF"
+  },
+  {
+    "file": "sega",
+    "group": "international",
+    "label": "SEGA",
+    "kw": "sega game",
+    "si": "sega",
+    "pkg": "",
+    "pref": "",
+    "hex": "#250600"
+  },
+  {
+    "file": "ubisoft",
+    "group": "international",
+    "label": "Ubisoft",
+    "kw": "ubisoft game",
+    "si": "ubisoft",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "ea",
+    "group": "international",
+    "label": "EA",
+    "kw": "ea electronicarts game",
+    "si": "ea",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000"
+  },
+  {
+    "file": "rockstargames",
+    "group": "international",
+    "label": "Rockstar Games",
+    "kw": "rockstargames game",
+    "si": "rockstargames",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FCAF23"
+  },
+  {
+    "file": "battledotnet",
+    "group": "international",
+    "label": "Battle.net",
+    "kw": "battledotnet battle blizzard",
+    "si": "battledotnet",
+    "pkg": "",
+    "pref": "",
+    "hex": "#148EFF"
+  },
+  {
+    "file": "kick",
+    "group": "international",
+    "label": "Kick",
+    "kw": "kick streaming",
+    "si": "kick",
+    "pkg": "",
+    "pref": "",
+    "hex": "#53FC18"
+  },
+  {
+    "file": "geeksforgeeks",
+    "group": "international",
+    "label": "GeeksforGeeks",
+    "kw": "geeksforgeeks gfg",
+    "si": "geeksforgeeks",
+    "pkg": "",
+    "pref": "",
+    "hex": "#2F8D46"
+  },
+  {
+    "file": "wireshark",
+    "group": "international",
+    "label": "Wireshark",
+    "kw": "wireshark",
+    "si": "wireshark",
+    "pkg": "",
+    "pref": "",
+    "hex": "#1679A9"
+  },
+  {
+    "file": "filezilla",
+    "group": "international",
+    "label": "FileZilla",
+    "kw": "filezilla ftp",
+    "si": "filezilla",
+    "pkg": "",
+    "pref": "",
+    "hex": "#BF0000"
+  },
+  {
+    "file": "virtualbox",
+    "group": "international",
+    "label": "VirtualBox",
+    "kw": "virtualbox vm",
+    "si": "virtualbox",
+    "pkg": "",
+    "pref": "",
+    "hex": "#183A61"
+  },
+  {
+    "file": "apachekafka",
+    "group": "international",
+    "label": "Apache Kafka",
+    "kw": "apachekafka kafka",
+    "si": "apachekafka",
+    "pkg": "",
+    "pref": "",
+    "hex": "#231F20"
+  },
+  {
+    "file": "rabbitmq",
+    "group": "international",
+    "label": "RabbitMQ",
+    "kw": "rabbitmq mq",
+    "si": "rabbitmq",
+    "pkg": "",
+    "pref": "",
+    "hex": "#FF6600"
+  },
+  {
+    "file": "graphql",
+    "group": "international",
+    "label": "GraphQL",
+    "kw": "graphql api",
+    "si": "graphql",
+    "pkg": "",
+    "pref": "",
+    "hex": "#E10098"
+  },
+  {
+    "file": "swagger",
+    "group": "international",
+    "label": "Swagger",
+    "kw": "swagger openapi",
+    "si": "swagger",
+    "pkg": "",
+    "pref": "",
+    "hex": "#85EA2D"
+  },
+  {
+    "file": "anthropic",
+    "group": "international",
+    "label": "Anthropic",
+    "kw": "anthropic claude",
+    "si": "anthropic",
+    "pkg": "",
+    "pref": "",
+    "hex": "#191919"
+  },
+  {
+    "file": "perplexity",
+    "group": "international",
+    "label": "Perplexity",
+    "kw": "perplexity",
+    "si": "perplexity",
+    "pkg": "",
+    "pref": "",
+    "hex": "#20808D"
+  },
+  {
+    "file": "tesla",
+    "group": "international",
+    "label": "Tesla",
+    "kw": "tesla car",
+    "si": "tesla",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "bmw",
+    "group": "international",
+    "label": "BMW",
+    "kw": "bmw car",
+    "si": "bmw",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "audi",
+    "group": "international",
+    "label": "Audi",
+    "kw": "audi car",
+    "si": "audi",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "volkswagen",
+    "group": "international",
+    "label": "Volkswagen",
+    "kw": "volkswagen vw car",
+    "si": "volkswagen",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "volvo",
+    "group": "international",
+    "label": "Volvo",
+    "kw": "volvo car",
+    "si": "volvo",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "toyota",
+    "group": "international",
+    "label": "Toyota",
+    "kw": "toyota car",
+    "si": "toyota",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "honda",
+    "group": "international",
+    "label": "Honda",
+    "kw": "honda car",
+    "si": "honda",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "porsche",
+    "group": "international",
+    "label": "Porsche",
+    "kw": "porsche car",
+    "si": "porsche",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "ferrari",
+    "group": "international",
+    "label": "Ferrari",
+    "kw": "ferrari car",
+    "si": "ferrari",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "lamborghini",
+    "group": "international",
+    "label": "Lamborghini",
+    "kw": "lamborghini car",
+    "si": "lamborghini",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "maserati",
+    "group": "international",
+    "label": "Maserati",
+    "kw": "maserati car",
+    "si": "maserati",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "bentley",
+    "group": "international",
+    "label": "Bentley",
+    "kw": "bentley car",
+    "si": "bentley",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "rollsroyce",
+    "group": "international",
+    "label": "Rolls-Royce",
+    "kw": "rollsroyce car",
+    "si": "rollsroyce",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "subaru",
+    "group": "international",
+    "label": "Subaru",
+    "kw": "subaru car",
+    "si": "subaru",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "mazda",
+    "group": "international",
+    "label": "Mazda",
+    "kw": "mazda car",
+    "si": "mazda",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "hyundai",
+    "group": "international",
+    "label": "Hyundai",
+    "kw": "hyundai car",
+    "si": "hyundai",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "kia",
+    "group": "international",
+    "label": "Kia",
+    "kw": "kia car",
+    "si": "kia",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "ford",
+    "group": "international",
+    "label": "Ford",
+    "kw": "ford car",
+    "si": "ford",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "chevrolet",
+    "group": "international",
+    "label": "Chevrolet",
+    "kw": "chevrolet car",
+    "si": "chevrolet",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "samsung",
+    "group": "international",
+    "label": "Samsung",
+    "kw": "samsung phone",
+    "si": "samsung",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "nvidia",
+    "group": "international",
+    "label": "NVIDIA",
+    "kw": "nvidia gpu",
+    "si": "nvidia",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "amd",
+    "group": "international",
+    "label": "AMD",
+    "kw": "amd cpu",
+    "si": "amd",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "intel",
+    "group": "international",
+    "label": "Intel",
+    "kw": "intel cpu",
+    "si": "intel",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "raspberrypi",
+    "group": "international",
+    "label": "Raspberry Pi",
+    "kw": "raspberrypi rpi",
+    "si": "raspberrypi",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "sony",
+    "group": "international",
+    "label": "Sony",
+    "kw": "sony",
+    "si": "sony",
+    "pkg": "",
+    "pref": "",
+    "hex": "#000000",
+    "force": true
+  },
+  {
+    "file": "razer",
+    "group": "international",
+    "label": "Razer",
+    "kw": "razer gaming",
+    "si": "razer",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "microsoft_365",
+    "group": "international",
+    "label": "Microsoft 365",
+    "kw": "microsoft365 office",
+    "si": "",
+    "pkg": "com.microsoft.office.officehubrow",
+    "pref": "microsoft_365_copilot",
+    "hex": "#D83B01"
+  },
+  {
+    "file": "microsoft_edge",
+    "group": "international",
+    "label": "Microsoft Edge",
+    "kw": "edge browser",
+    "si": "",
+    "pkg": "com.microsoft.emmx",
+    "pref": "microsoft_edge",
+    "hex": "#0078D7"
+  },
+  {
+    "file": "microsoft_outlook",
+    "group": "international",
+    "label": "Microsoft Outlook",
+    "kw": "outlook mail",
+    "si": "",
+    "pkg": "com.microsoft.office.outlook",
+    "pref": "microsoft_outlook",
+    "hex": "#0F6CBD"
+  },
+  {
+    "file": "microsoft_teams",
+    "group": "international",
+    "label": "Microsoft Teams",
+    "kw": "teams chat",
+    "si": "",
+    "pkg": "com.microsoft.teams",
+    "pref": "microsoft_teams",
+    "hex": "#6264A7"
+  },
+  {
+    "file": "microsoft_onenote",
+    "group": "international",
+    "label": "Microsoft OneNote",
+    "kw": "onenote notes",
+    "si": "",
+    "pkg": "com.microsoft.office.onenote",
+    "pref": "microsoft_onenote",
+    "hex": "#7719AA"
+  },
+  {
+    "file": "microsoft_excel",
+    "group": "international",
+    "label": "Microsoft Excel",
+    "kw": "excel spreadsheet",
+    "si": "",
+    "pkg": "com.microsoft.office.excel",
+    "pref": "microsoft_excel",
+    "hex": "#107C41"
+  },
+  {
+    "file": "microsoft_word",
+    "group": "international",
+    "label": "Microsoft Word",
+    "kw": "word document",
+    "si": "",
+    "pkg": "com.microsoft.office.word",
+    "pref": "microsoft_word",
+    "hex": "#185ABD"
+  },
+  {
+    "file": "microsoft_powerpoint",
+    "group": "international",
+    "label": "Microsoft PowerPoint",
+    "kw": "powerpoint ppt",
+    "si": "",
+    "pkg": "com.microsoft.office.powerpoint",
+    "pref": "microsoft_powerpoint",
+    "hex": "#C43E1C"
+  },
+  {
+    "file": "microsoft_bing",
+    "group": "international",
+    "label": "Microsoft Bing",
+    "kw": "bing search",
+    "si": "",
+    "pkg": "com.microsoft.bing",
+    "pref": "microsoft_bing",
+    "hex": "#008373"
+  },
+  {
+    "file": "microsoft_azure",
+    "group": "international",
+    "label": "Microsoft Azure",
+    "kw": "azure cloud",
+    "si": "",
+    "pkg": "com.microsoft.azure",
+    "pref": "microsoft_azure",
+    "hex": "#0078D4"
+  },
+  {
+    "file": "skype",
+    "group": "international",
+    "label": "Skype",
+    "kw": "skype call",
+    "si": "",
+    "pkg": "com.microsoft.office.lync15",
+    "pref": "skype",
+    "hex": "#00AFF0"
+  },
+  {
+    "file": "microsoft_todo",
+    "group": "international",
+    "label": "Microsoft To Do",
+    "kw": "microsofttodo todo task",
+    "si": "",
+    "pkg": "com.microsoft.todos",
+    "pref": "microsoft_to_do",
+    "hex": "#2564CF"
+  },
+  {
+    "file": "zoom",
+    "group": "international",
+    "label": "Zoom",
+    "kw": "zoom meeting",
+    "si": "zoom",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "confluence",
+    "group": "international",
+    "label": "Confluence",
+    "kw": "confluence wiki atlassian",
+    "si": "confluence",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "clickup",
+    "group": "international",
+    "label": "ClickUp",
+    "kw": "clickup task",
+    "si": "clickup",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "linear",
+    "group": "international",
+    "label": "Linear",
+    "kw": "linear issue",
+    "si": "linear",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "mailchimp",
+    "group": "international",
+    "label": "Mailchimp",
+    "kw": "mailchimp email marketing",
+    "si": "mailchimp",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "zendesk",
+    "group": "international",
+    "label": "Zendesk",
+    "kw": "zendesk support",
+    "si": "zendesk",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "zoho",
+    "group": "international",
+    "label": "Zoho",
+    "kw": "zoho office",
+    "si": "zoho",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "hubspot",
+    "group": "international",
+    "label": "HubSpot",
+    "kw": "hubspot crm",
+    "si": "hubspot",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "openrouter",
+    "group": "international",
+    "label": "OpenRouter",
+    "kw": "openrouter ai api",
+    "si": "openrouter",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "nordvpn",
+    "group": "international",
+    "label": "NordVPN",
+    "kw": "nordvpn vpn",
+    "si": "nordvpn",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "expressvpn",
+    "group": "international",
+    "label": "ExpressVPN",
+    "kw": "expressvpn vpn",
+    "si": "expressvpn",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "surfshark",
+    "group": "international",
+    "label": "Surfshark",
+    "kw": "surfshark vpn",
+    "si": "surfshark",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "mullvad",
+    "group": "international",
+    "label": "Mullvad",
+    "kw": "mullvad vpn",
+    "si": "mullvad",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "yubico",
+    "group": "international",
+    "label": "YubiKey",
+    "kw": "yubikey 2fa",
+    "si": "yubico",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "obsidian",
+    "group": "international",
+    "label": "Obsidian",
+    "kw": "obsidian notes markdown",
+    "si": "obsidian",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "logseq",
+    "group": "international",
+    "label": "Logseq",
+    "kw": "logseq notes",
+    "si": "logseq",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "ticktick",
+    "group": "international",
+    "label": "TickTick",
+    "kw": "ticktick todo",
+    "si": "ticktick",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "anki",
+    "group": "international",
+    "label": "Anki",
+    "kw": "anki flashcard",
+    "si": "anki",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "quizlet",
+    "group": "international",
+    "label": "Quizlet",
+    "kw": "quizlet flashcard",
+    "si": "quizlet",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "grammarly",
+    "group": "international",
+    "label": "Grammarly",
+    "kw": "grammarly writing",
+    "si": "grammarly",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "deepl",
+    "group": "international",
+    "label": "DeepL",
+    "kw": "deepl translate",
+    "si": "deepl",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "vlcmediaplayer",
+    "group": "international",
+    "label": "VLC",
+    "kw": "vlc media player",
+    "si": "vlcmediaplayer",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "mpv",
+    "group": "international",
+    "label": "mpv",
+    "kw": "mpv media player",
+    "si": "mpv",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "obsstudio",
+    "group": "international",
+    "label": "OBS Studio",
+    "kw": "obs streaming",
+    "si": "obsstudio",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "krita",
+    "group": "international",
+    "label": "Krita",
+    "kw": "krita painting",
+    "si": "krita",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "inkscape",
+    "group": "international",
+    "label": "Inkscape",
+    "kw": "inkscape vector",
+    "si": "inkscape",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "gimp",
+    "group": "international",
+    "label": "GIMP",
+    "kw": "gimp image",
+    "si": "gimp",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "blender",
+    "group": "international",
+    "label": "Blender",
+    "kw": "blender 3d",
+    "si": "blender",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "audacity",
+    "group": "international",
+    "label": "Audacity",
+    "kw": "audacity audio",
+    "si": "audacity",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "disneyplus",
+    "group": "international",
+    "label": "Disney+",
+    "kw": "disney streaming",
+    "si": "",
+    "pkg": "com.disney.disneyplus",
+    "pref": "disney_plus",
+    "hex": "#0C1B51"
+  },
+  {
+    "file": "hulu",
+    "group": "international",
+    "label": "Hulu",
+    "kw": "hulu streaming",
+    "si": "",
+    "pkg": "com.hulu.plus",
+    "pref": "hulu",
+    "hex": "#1CE783"
+  },
+  {
+    "file": "primevideo",
+    "group": "international",
+    "label": "Prime Video",
+    "kw": "primevideo amazon streaming",
+    "si": "",
+    "pkg": "com.amazon.avod.thirdpartyclient",
+    "pref": "amazon_prime_video",
+    "hex": "#00A8E1"
+  },
+  {
+    "file": "paramountplus",
+    "group": "international",
+    "label": "Paramount+",
+    "kw": "paramount streaming",
+    "si": "paramountplus",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "imdb",
+    "group": "international",
+    "label": "IMDb",
+    "kw": "imdb movie",
+    "si": "imdb",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "letterboxd",
+    "group": "international",
+    "label": "Letterboxd",
+    "kw": "letterboxd movie",
+    "si": "letterboxd",
+    "pkg": "",
+    "pref": "",
+    "hex": "#00E054",
+    "force": true
+  },
+  {
+    "file": "okx",
+    "group": "international",
+    "label": "OKX",
+    "kw": "okx crypto",
+    "si": "okx",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "kucoin",
+    "group": "international",
+    "label": "KuCoin",
+    "kw": "kucoin crypto",
+    "si": "kucoin",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "coinmarketcap",
+    "group": "international",
+    "label": "CoinMarketCap",
+    "kw": "coinmarketcap crypto",
+    "si": "coinmarketcap",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "opensea",
+    "group": "international",
+    "label": "OpenSea",
+    "kw": "opensea nft",
+    "si": "opensea",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "trezor",
+    "group": "international",
+    "label": "Trezor",
+    "kw": "trezor wallet",
+    "si": "trezor",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "walmart",
+    "group": "international",
+    "label": "Walmart",
+    "kw": "walmart shopping",
+    "si": "",
+    "pkg": "com.walmart.android",
+    "pref": "walmart",
+    "hex": "#0071CE"
+  },
+  {
+    "file": "costco",
+    "group": "international",
+    "label": "Costco",
+    "kw": "costco shopping",
+    "si": "",
+    "pkg": "com.costco.app.android",
+    "pref": "costco",
+    "hex": "#005DAA"
+  },
+  {
+    "file": "bestbuy",
+    "group": "international",
+    "label": "Best Buy",
+    "kw": "bestbuy shopping",
+    "si": "",
+    "pkg": "com.bestbuy.android",
+    "pref": "best_buy",
+    "hex": "#0046BE"
+  },
+  {
+    "file": "lowes",
+    "group": "international",
+    "label": "Lowe's",
+    "kw": "lowes shopping",
+    "si": "",
+    "pkg": "com.lowes.android",
+    "pref": "lowes",
+    "hex": "#004990"
+  },
+  {
+    "file": "carrefour",
+    "group": "international",
+    "label": "Carrefour",
+    "kw": "carrefour shopping",
+    "si": "",
+    "pkg": "com.carrefour.carrefourapp",
+    "pref": "carrefour",
+    "hex": "#004E9D"
+  },
+  {
+    "file": "subway",
+    "group": "international",
+    "label": "SUBWAY",
+    "kw": "subway food",
+    "si": "",
+    "pkg": "com.subway.mobile.subwayapp03",
+    "pref": "subway",
+    "hex": "#008C15"
+  },
+  {
+    "file": "pizzahut",
+    "group": "international",
+    "label": "Pizza Hut",
+    "kw": "pizzahut food",
+    "si": "",
+    "pkg": "com.pizzahut",
+    "pref": "pizza_hut",
+    "hex": "#EE3124"
+  },
+  {
+    "file": "dominos",
+    "group": "international",
+    "label": "Domino's Pizza",
+    "kw": "dominos food",
+    "si": "",
+    "pkg": "com.Dominos",
+    "pref": "dominos_pizza",
+    "hex": "#006491"
+  },
+  {
+    "file": "marriott",
+    "group": "international",
+    "label": "Marriott Bonvoy",
+    "kw": "marriott hotel",
+    "si": "",
+    "pkg": "com.marriott.mrt",
+    "pref": "marriott_bonvoy",
+    "hex": "#A70023"
+  },
+  {
+    "file": "hilton",
+    "group": "international",
+    "label": "Hilton Honors",
+    "kw": "hilton hotel",
+    "si": "",
+    "pkg": "com.hilton.android.hhonors",
+    "pref": "hilton_honors",
+    "hex": "#104C97"
+  },
+  {
+    "file": "keeweb",
+    "group": "international",
+    "label": "KeeWeb",
+    "kw": "keeweb keepass",
+    "si": "keeweb",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "passbolt",
+    "group": "international",
+    "label": "Passbolt",
+    "kw": "passbolt password",
+    "si": "passbolt",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "enpass",
+    "group": "international",
+    "label": "Enpass",
+    "kw": "enpass password",
+    "si": "enpass",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "ollama",
+    "group": "international",
+    "label": "Ollama",
+    "kw": "ollama ai llm",
+    "si": "ollama",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "gitkraken",
+    "group": "international",
+    "label": "GitKraken",
+    "kw": "gitkraken git",
+    "si": "gitkraken",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "gitea",
+    "group": "international",
+    "label": "Gitea",
+    "kw": "gitea git",
+    "si": "gitea",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "codeberg",
+    "group": "international",
+    "label": "Codeberg",
+    "kw": "codeberg git",
+    "si": "codeberg",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "datadog",
+    "group": "international",
+    "label": "Datadog",
+    "kw": "datadog monitoring",
+    "si": "datadog",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "splunk",
+    "group": "international",
+    "label": "Splunk",
+    "kw": "splunk monitoring",
+    "si": "splunk",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "snyk",
+    "group": "international",
+    "label": "Snyk",
+    "kw": "snyk security",
+    "si": "snyk",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "clickhouse",
+    "group": "international",
+    "label": "ClickHouse",
+    "kw": "clickhouse db",
+    "si": "clickhouse",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "supabase",
+    "group": "international",
+    "label": "Supabase",
+    "kw": "supabase db",
+    "si": "supabase",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "firebase",
+    "group": "international",
+    "label": "Firebase",
+    "kw": "firebase google",
+    "si": "firebase",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "neo4j",
+    "group": "international",
+    "label": "Neo4j",
+    "kw": "neo4j graph db",
+    "si": "neo4j",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "influxdb",
+    "group": "international",
+    "label": "InfluxDB",
+    "kw": "influxdb db",
+    "si": "influxdb",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "tidb",
+    "group": "international",
+    "label": "TiDB",
+    "kw": "tidb db",
+    "si": "tidb",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "snowflake",
+    "group": "international",
+    "label": "Snowflake",
+    "kw": "snowflake db",
+    "si": "snowflake",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "databricks",
+    "group": "international",
+    "label": "Databricks",
+    "kw": "databricks data",
+    "si": "databricks",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "helm",
+    "group": "international",
+    "label": "Helm",
+    "kw": "helm kubernetes",
+    "si": "helm",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "istio",
+    "group": "international",
+    "label": "Istio",
+    "kw": "istio kubernetes",
+    "si": "istio",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "traefikproxy",
+    "group": "international",
+    "label": "Traefik",
+    "kw": "traefik proxy",
+    "si": "traefikproxy",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "caddy",
+    "group": "international",
+    "label": "Caddy",
+    "kw": "caddy webserver",
+    "si": "caddy",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "etcd",
+    "group": "international",
+    "label": "etcd",
+    "kw": "etcd db",
+    "si": "etcd",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "apachecouchdb",
+    "group": "international",
+    "label": "CouchDB",
+    "kw": "couchdb db",
+    "si": "apachecouchdb",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "backblaze",
+    "group": "international",
+    "label": "Backblaze",
+    "kw": "backblaze backup",
+    "si": "backblaze",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "rclone",
+    "group": "international",
+    "label": "Rclone",
+    "kw": "rclone sync",
+    "si": "rclone",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "syncthing",
+    "group": "international",
+    "label": "Syncthing",
+    "kw": "syncthing sync",
+    "si": "syncthing",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "qbittorrent",
+    "group": "international",
+    "label": "qBittorrent",
+    "kw": "qbittorrent torrent",
+    "si": "qbittorrent",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "transmission",
+    "group": "international",
+    "label": "Transmission",
+    "kw": "transmission torrent",
+    "si": "transmission",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "pihole",
+    "group": "international",
+    "label": "Pi-hole",
+    "kw": "pihole dns",
+    "si": "pihole",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "openwrt",
+    "group": "international",
+    "label": "OpenWrt",
+    "kw": "openwrt router",
+    "si": "openwrt",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "wireguard",
+    "group": "international",
+    "label": "WireGuard",
+    "kw": "wireguard vpn",
+    "si": "wireguard",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "openvpn",
+    "group": "international",
+    "label": "OpenVPN",
+    "kw": "openvpn vpn",
+    "si": "openvpn",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "onlyoffice",
+    "group": "international",
+    "label": "ONLYOFFICE",
+    "kw": "onlyoffice office",
+    "si": "onlyoffice",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "libreoffice",
+    "group": "international",
+    "label": "LibreOffice",
+    "kw": "libreoffice office",
+    "si": "libreoffice",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "zotero",
+    "group": "international",
+    "label": "Zotero",
+    "kw": "zotero research",
+    "si": "zotero",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "kde",
+    "group": "international",
+    "label": "KDE",
+    "kw": "kde linux",
+    "si": "kde",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "gnome",
+    "group": "international",
+    "label": "GNOME",
+    "kw": "gnome linux",
+    "si": "gnome",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  },
+  {
+    "file": "android",
+    "group": "international",
+    "label": "Android",
+    "kw": "android google",
+    "si": "android",
+    "pkg": "",
+    "pref": "",
+    "hex": ""
+  }
+]

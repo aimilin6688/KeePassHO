@@ -490,6 +490,251 @@
     "source": "lawn:boss_recruitment"
   },
   {
+    "file": "tencent_meeting",
+    "group": "domestic",
+    "label": "腾讯会议",
+    "kw": "tencentmeeting wemeet huiyi",
+    "source": "lawn:tencent_meeting"
+  },
+  {
+    "file": "tim",
+    "group": "domestic",
+    "label": "TIM",
+    "kw": "tim qq",
+    "source": "lawn:tim_qq"
+  },
+  {
+    "file": "wechat_input",
+    "group": "domestic",
+    "label": "微信输入法",
+    "kw": "wetype input shurufa",
+    "source": "lawn:wetype"
+  },
+  {
+    "file": "wesing",
+    "group": "domestic",
+    "label": "全民K歌",
+    "kw": "wesing karaoke kge",
+    "source": "lawn:wesing"
+  },
+  {
+    "file": "capcut",
+    "group": "domestic",
+    "label": "剪映",
+    "kw": "capcut jianying video",
+    "source": "lawn:capcut"
+  },
+  {
+    "file": "meitu",
+    "group": "domestic",
+    "label": "美图秀秀",
+    "kw": "meitu photo",
+    "source": "lawn:meitu"
+  },
+  {
+    "file": "beautycam",
+    "group": "domestic",
+    "label": "美颜相机",
+    "kw": "beautycam meiyancamera",
+    "source": "lawn:beautycam"
+  },
+  {
+    "file": "baidu_input",
+    "group": "domestic",
+    "label": "百度输入法",
+    "kw": "baiduinput ime shurufa",
+    "source": "lawn:baidu_ime"
+  },
+  {
+    "file": "zuoyebang",
+    "group": "domestic",
+    "label": "作业帮",
+    "kw": "zuoyebang homework",
+    "source": "lawn:zuoyebang"
+  },
+  {
+    "file": "baicizhan",
+    "group": "domestic",
+    "label": "百词斩",
+    "kw": "baicizhan vocabulary",
+    "source": "lawn:baicizhan"
+  },
+  {
+    "file": "mooc",
+    "group": "domestic",
+    "label": "中国大学MOOC",
+    "kw": "mooc icourse study",
+    "source": "lawn:mooc"
+  },
+  {
+    "file": "mixue",
+    "group": "domestic",
+    "label": "蜜雪冰城",
+    "kw": "mixue icecity tea",
+    "source": "lawn:mixue_ice_city"
+  },
+  {
+    "file": "tiger_trade",
+    "group": "domestic",
+    "label": "老虎证券",
+    "kw": "tigerbrokers stock laohu",
+    "source": "lawn:tiger_trade"
+  },
+  {
+    "file": "j_and_t",
+    "group": "domestic",
+    "label": "极兔速递",
+    "kw": "jtexpress express jitu",
+    "source": "lawn:j_and_t"
+  },
+  {
+    "file": "xiaoyuzhou",
+    "group": "domestic",
+    "label": "小宇宙",
+    "kw": "xiaoyuzhou podcast yuzhou",
+    "source": "lawn:small_cosmos"
+  },
+  {
+    "file": "mi_home",
+    "group": "domestic",
+    "label": "米家",
+    "kw": "mihome smarthome mijia",
+    "source": "lawn:mi_home"
+  },
+  {
+    "file": "honkai_star_rail",
+    "group": "domestic",
+    "label": "崩坏：星穹铁道",
+    "kw": "honkai starrail xingqiong",
+    "source": "lawn:honkai_star_rail"
+  },
+  {
+    "file": "zenless_zone_zero",
+    "group": "domestic",
+    "label": "绝区零",
+    "kw": "zzz zenless juequling",
+    "source": "lawn:zenless_zone_zero"
+  },
+  {
+    "file": "pubg_mobile",
+    "group": "domestic",
+    "label": "和平精英",
+    "kw": "pubg game heping",
+    "source": "lawn:pubg"
+  },
+  {
+    "file": "wuthering_waves",
+    "group": "domestic",
+    "label": "鸣潮",
+    "kw": "wutheringwaves kurogame mingchao",
+    "source": "lawn:wuthering_waves"
+  },
+  {
+    "file": "huawei_appgallery",
+    "group": "domestic",
+    "label": "华为应用市场",
+    "kw": "appgallery appmarket yingyong",
+    "source": "lawn:huawei_appgallery"
+  },
+  {
+    "file": "huawei_browser",
+    "group": "domestic",
+    "label": "华为浏览器",
+    "kw": "huawei browser liulanqi",
+    "source": "lawn:huawei_browser"
+  },
+  {
+    "file": "huawei_wallet",
+    "group": "domestic",
+    "label": "华为钱包",
+    "kw": "huawei wallet qianbao",
+    "source": "lawn:huawei_wallet"
+  },
+  {
+    "file": "huawei_ai_life",
+    "group": "domestic",
+    "label": "智慧生活",
+    "kw": "huawei ailife smarthome zhihui",
+    "source": "lawn:huawei_ai_life"
+  },
+  {
+    "file": "xiaomi",
+    "group": "domestic",
+    "label": "小米",
+    "kw": "xiaomi mi phone",
+    "source": "si:xiaomi"
+  },
+  {
+    "file": "oppo",
+    "group": "domestic",
+    "label": "OPPO",
+    "kw": "oppo phone",
+    "source": "si:oppo"
+  },
+  {
+    "file": "vivo",
+    "group": "domestic",
+    "label": "vivo",
+    "kw": "vivo phone",
+    "source": "si:vivo"
+  },
+  {
+    "file": "oneplus",
+    "group": "domestic",
+    "label": "一加",
+    "kw": "oneplus yijia phone",
+    "source": "si:oneplus"
+  },
+  {
+    "file": "honor",
+    "group": "domestic",
+    "label": "荣耀",
+    "kw": "honor rongyao phone",
+    "source": "si:honor"
+  },
+  {
+    "file": "huawei",
+    "group": "domestic",
+    "label": "华为",
+    "kw": "huawei phone",
+    "source": "si:huawei"
+  },
+  {
+    "file": "meizu",
+    "group": "domestic",
+    "label": "魅族",
+    "kw": "meizu phone",
+    "source": "si:meizu"
+  },
+  {
+    "file": "dji",
+    "group": "domestic",
+    "label": "大疆创新",
+    "kw": "dji drone wurenji",
+    "source": "si:dji"
+  },
+  {
+    "file": "deepseek",
+    "group": "domestic",
+    "label": "DeepSeek",
+    "kw": "deepseek ai llm",
+    "source": "si:deepseek"
+  },
+  {
+    "file": "kimi",
+    "group": "domestic",
+    "label": "Kimi",
+    "kw": "kimi moonshot ai",
+    "source": "si:kimi"
+  },
+  {
+    "file": "qwen",
+    "group": "domestic",
+    "label": "通义千问",
+    "kw": "qwen tongyi ai",
+    "source": "si:qwen"
+  },
+  {
     "file": "google",
     "group": "international",
     "label": "Google",
@@ -2175,5 +2420,894 @@
     "label": "Perplexity",
     "kw": "perplexity",
     "source": "si:perplexity"
+  },
+  {
+    "file": "tesla",
+    "group": "international",
+    "label": "Tesla",
+    "kw": "tesla car",
+    "source": "si:tesla"
+  },
+  {
+    "file": "bmw",
+    "group": "international",
+    "label": "BMW",
+    "kw": "bmw car",
+    "source": "si:bmw"
+  },
+  {
+    "file": "audi",
+    "group": "international",
+    "label": "Audi",
+    "kw": "audi car",
+    "source": "si:audi"
+  },
+  {
+    "file": "volkswagen",
+    "group": "international",
+    "label": "Volkswagen",
+    "kw": "volkswagen vw car",
+    "source": "si:volkswagen"
+  },
+  {
+    "file": "volvo",
+    "group": "international",
+    "label": "Volvo",
+    "kw": "volvo car",
+    "source": "si:volvo"
+  },
+  {
+    "file": "toyota",
+    "group": "international",
+    "label": "Toyota",
+    "kw": "toyota car",
+    "source": "si:toyota"
+  },
+  {
+    "file": "honda",
+    "group": "international",
+    "label": "Honda",
+    "kw": "honda car",
+    "source": "si:honda"
+  },
+  {
+    "file": "porsche",
+    "group": "international",
+    "label": "Porsche",
+    "kw": "porsche car",
+    "source": "si:porsche"
+  },
+  {
+    "file": "ferrari",
+    "group": "international",
+    "label": "Ferrari",
+    "kw": "ferrari car",
+    "source": "si:ferrari"
+  },
+  {
+    "file": "lamborghini",
+    "group": "international",
+    "label": "Lamborghini",
+    "kw": "lamborghini car",
+    "source": "si:lamborghini"
+  },
+  {
+    "file": "maserati",
+    "group": "international",
+    "label": "Maserati",
+    "kw": "maserati car",
+    "source": "si:maserati"
+  },
+  {
+    "file": "bentley",
+    "group": "international",
+    "label": "Bentley",
+    "kw": "bentley car",
+    "source": "si:bentley"
+  },
+  {
+    "file": "rollsroyce",
+    "group": "international",
+    "label": "Rolls-Royce",
+    "kw": "rollsroyce car",
+    "source": "si:rollsroyce"
+  },
+  {
+    "file": "subaru",
+    "group": "international",
+    "label": "Subaru",
+    "kw": "subaru car",
+    "source": "si:subaru"
+  },
+  {
+    "file": "mazda",
+    "group": "international",
+    "label": "Mazda",
+    "kw": "mazda car",
+    "source": "si:mazda"
+  },
+  {
+    "file": "hyundai",
+    "group": "international",
+    "label": "Hyundai",
+    "kw": "hyundai car",
+    "source": "si:hyundai"
+  },
+  {
+    "file": "kia",
+    "group": "international",
+    "label": "Kia",
+    "kw": "kia car",
+    "source": "si:kia"
+  },
+  {
+    "file": "ford",
+    "group": "international",
+    "label": "Ford",
+    "kw": "ford car",
+    "source": "si:ford"
+  },
+  {
+    "file": "chevrolet",
+    "group": "international",
+    "label": "Chevrolet",
+    "kw": "chevrolet car",
+    "source": "si:chevrolet"
+  },
+  {
+    "file": "samsung",
+    "group": "international",
+    "label": "Samsung",
+    "kw": "samsung phone",
+    "source": "si:samsung"
+  },
+  {
+    "file": "nvidia",
+    "group": "international",
+    "label": "NVIDIA",
+    "kw": "nvidia gpu",
+    "source": "si:nvidia"
+  },
+  {
+    "file": "amd",
+    "group": "international",
+    "label": "AMD",
+    "kw": "amd cpu",
+    "source": "si:amd"
+  },
+  {
+    "file": "intel",
+    "group": "international",
+    "label": "Intel",
+    "kw": "intel cpu",
+    "source": "si:intel"
+  },
+  {
+    "file": "raspberrypi",
+    "group": "international",
+    "label": "Raspberry Pi",
+    "kw": "raspberrypi rpi",
+    "source": "si:raspberrypi"
+  },
+  {
+    "file": "sony",
+    "group": "international",
+    "label": "Sony",
+    "kw": "sony",
+    "source": "si:sony"
+  },
+  {
+    "file": "razer",
+    "group": "international",
+    "label": "Razer",
+    "kw": "razer gaming",
+    "source": "si:razer"
+  },
+  {
+    "file": "microsoft_365",
+    "group": "international",
+    "label": "Microsoft 365",
+    "kw": "microsoft365 office",
+    "source": "lawn:microsoft_365_copilot"
+  },
+  {
+    "file": "microsoft_edge",
+    "group": "international",
+    "label": "Microsoft Edge",
+    "kw": "edge browser",
+    "source": "lawn:microsoft_edge"
+  },
+  {
+    "file": "microsoft_outlook",
+    "group": "international",
+    "label": "Microsoft Outlook",
+    "kw": "outlook mail",
+    "source": "lawn:microsoft_outlook"
+  },
+  {
+    "file": "microsoft_teams",
+    "group": "international",
+    "label": "Microsoft Teams",
+    "kw": "teams chat",
+    "source": "lawn:microsoft_teams"
+  },
+  {
+    "file": "microsoft_onenote",
+    "group": "international",
+    "label": "Microsoft OneNote",
+    "kw": "onenote notes",
+    "source": "lawn:microsoft_onenote"
+  },
+  {
+    "file": "microsoft_excel",
+    "group": "international",
+    "label": "Microsoft Excel",
+    "kw": "excel spreadsheet",
+    "source": "lawn:microsoft_excel"
+  },
+  {
+    "file": "microsoft_word",
+    "group": "international",
+    "label": "Microsoft Word",
+    "kw": "word document",
+    "source": "lawn:microsoft_word"
+  },
+  {
+    "file": "microsoft_powerpoint",
+    "group": "international",
+    "label": "Microsoft PowerPoint",
+    "kw": "powerpoint ppt",
+    "source": "lawn:microsoft_powerpoint"
+  },
+  {
+    "file": "microsoft_bing",
+    "group": "international",
+    "label": "Microsoft Bing",
+    "kw": "bing search",
+    "source": "lawn:microsoft_bing"
+  },
+  {
+    "file": "microsoft_azure",
+    "group": "international",
+    "label": "Microsoft Azure",
+    "kw": "azure cloud",
+    "source": "lawn:microsoft_azure"
+  },
+  {
+    "file": "skype",
+    "group": "international",
+    "label": "Skype",
+    "kw": "skype call",
+    "source": "lawn:skype"
+  },
+  {
+    "file": "microsoft_todo",
+    "group": "international",
+    "label": "Microsoft To Do",
+    "kw": "microsofttodo todo task",
+    "source": "lawn:microsoft_to_do"
+  },
+  {
+    "file": "zoom",
+    "group": "international",
+    "label": "Zoom",
+    "kw": "zoom meeting",
+    "source": "si:zoom"
+  },
+  {
+    "file": "confluence",
+    "group": "international",
+    "label": "Confluence",
+    "kw": "confluence wiki atlassian",
+    "source": "si:confluence"
+  },
+  {
+    "file": "clickup",
+    "group": "international",
+    "label": "ClickUp",
+    "kw": "clickup task",
+    "source": "si:clickup"
+  },
+  {
+    "file": "linear",
+    "group": "international",
+    "label": "Linear",
+    "kw": "linear issue",
+    "source": "si:linear"
+  },
+  {
+    "file": "mailchimp",
+    "group": "international",
+    "label": "Mailchimp",
+    "kw": "mailchimp email marketing",
+    "source": "si:mailchimp"
+  },
+  {
+    "file": "zendesk",
+    "group": "international",
+    "label": "Zendesk",
+    "kw": "zendesk support",
+    "source": "si:zendesk"
+  },
+  {
+    "file": "zoho",
+    "group": "international",
+    "label": "Zoho",
+    "kw": "zoho office",
+    "source": "si:zoho"
+  },
+  {
+    "file": "hubspot",
+    "group": "international",
+    "label": "HubSpot",
+    "kw": "hubspot crm",
+    "source": "si:hubspot"
+  },
+  {
+    "file": "openrouter",
+    "group": "international",
+    "label": "OpenRouter",
+    "kw": "openrouter ai api",
+    "source": "si:openrouter"
+  },
+  {
+    "file": "nordvpn",
+    "group": "international",
+    "label": "NordVPN",
+    "kw": "nordvpn vpn",
+    "source": "si:nordvpn"
+  },
+  {
+    "file": "expressvpn",
+    "group": "international",
+    "label": "ExpressVPN",
+    "kw": "expressvpn vpn",
+    "source": "si:expressvpn"
+  },
+  {
+    "file": "surfshark",
+    "group": "international",
+    "label": "Surfshark",
+    "kw": "surfshark vpn",
+    "source": "si:surfshark"
+  },
+  {
+    "file": "mullvad",
+    "group": "international",
+    "label": "Mullvad",
+    "kw": "mullvad vpn",
+    "source": "si:mullvad"
+  },
+  {
+    "file": "yubico",
+    "group": "international",
+    "label": "YubiKey",
+    "kw": "yubikey 2fa",
+    "source": "si:yubico"
+  },
+  {
+    "file": "obsidian",
+    "group": "international",
+    "label": "Obsidian",
+    "kw": "obsidian notes markdown",
+    "source": "si:obsidian"
+  },
+  {
+    "file": "logseq",
+    "group": "international",
+    "label": "Logseq",
+    "kw": "logseq notes",
+    "source": "si:logseq"
+  },
+  {
+    "file": "ticktick",
+    "group": "international",
+    "label": "TickTick",
+    "kw": "ticktick todo",
+    "source": "si:ticktick"
+  },
+  {
+    "file": "anki",
+    "group": "international",
+    "label": "Anki",
+    "kw": "anki flashcard",
+    "source": "si:anki"
+  },
+  {
+    "file": "quizlet",
+    "group": "international",
+    "label": "Quizlet",
+    "kw": "quizlet flashcard",
+    "source": "si:quizlet"
+  },
+  {
+    "file": "grammarly",
+    "group": "international",
+    "label": "Grammarly",
+    "kw": "grammarly writing",
+    "source": "si:grammarly"
+  },
+  {
+    "file": "deepl",
+    "group": "international",
+    "label": "DeepL",
+    "kw": "deepl translate",
+    "source": "si:deepl"
+  },
+  {
+    "file": "vlcmediaplayer",
+    "group": "international",
+    "label": "VLC",
+    "kw": "vlc media player",
+    "source": "si:vlcmediaplayer"
+  },
+  {
+    "file": "mpv",
+    "group": "international",
+    "label": "mpv",
+    "kw": "mpv media player",
+    "source": "si:mpv"
+  },
+  {
+    "file": "obsstudio",
+    "group": "international",
+    "label": "OBS Studio",
+    "kw": "obs streaming",
+    "source": "si:obsstudio"
+  },
+  {
+    "file": "krita",
+    "group": "international",
+    "label": "Krita",
+    "kw": "krita painting",
+    "source": "si:krita"
+  },
+  {
+    "file": "inkscape",
+    "group": "international",
+    "label": "Inkscape",
+    "kw": "inkscape vector",
+    "source": "si:inkscape"
+  },
+  {
+    "file": "gimp",
+    "group": "international",
+    "label": "GIMP",
+    "kw": "gimp image",
+    "source": "si:gimp"
+  },
+  {
+    "file": "blender",
+    "group": "international",
+    "label": "Blender",
+    "kw": "blender 3d",
+    "source": "si:blender"
+  },
+  {
+    "file": "audacity",
+    "group": "international",
+    "label": "Audacity",
+    "kw": "audacity audio",
+    "source": "si:audacity"
+  },
+  {
+    "file": "disneyplus",
+    "group": "international",
+    "label": "Disney+",
+    "kw": "disney streaming",
+    "source": "lawn:disney_plus"
+  },
+  {
+    "file": "hulu",
+    "group": "international",
+    "label": "Hulu",
+    "kw": "hulu streaming",
+    "source": "lawn:hulu"
+  },
+  {
+    "file": "primevideo",
+    "group": "international",
+    "label": "Prime Video",
+    "kw": "primevideo amazon streaming",
+    "source": "lawn:amazon_prime_video"
+  },
+  {
+    "file": "paramountplus",
+    "group": "international",
+    "label": "Paramount+",
+    "kw": "paramount streaming",
+    "source": "si:paramountplus"
+  },
+  {
+    "file": "imdb",
+    "group": "international",
+    "label": "IMDb",
+    "kw": "imdb movie",
+    "source": "si:imdb"
+  },
+  {
+    "file": "letterboxd",
+    "group": "international",
+    "label": "Letterboxd",
+    "kw": "letterboxd movie",
+    "source": "si:letterboxd"
+  },
+  {
+    "file": "okx",
+    "group": "international",
+    "label": "OKX",
+    "kw": "okx crypto",
+    "source": "si:okx"
+  },
+  {
+    "file": "kucoin",
+    "group": "international",
+    "label": "KuCoin",
+    "kw": "kucoin crypto",
+    "source": "si:kucoin"
+  },
+  {
+    "file": "coinmarketcap",
+    "group": "international",
+    "label": "CoinMarketCap",
+    "kw": "coinmarketcap crypto",
+    "source": "si:coinmarketcap"
+  },
+  {
+    "file": "opensea",
+    "group": "international",
+    "label": "OpenSea",
+    "kw": "opensea nft",
+    "source": "si:opensea"
+  },
+  {
+    "file": "trezor",
+    "group": "international",
+    "label": "Trezor",
+    "kw": "trezor wallet",
+    "source": "si:trezor"
+  },
+  {
+    "file": "walmart",
+    "group": "international",
+    "label": "Walmart",
+    "kw": "walmart shopping",
+    "source": "lawn:walmart"
+  },
+  {
+    "file": "costco",
+    "group": "international",
+    "label": "Costco",
+    "kw": "costco shopping",
+    "source": "lawn:costco"
+  },
+  {
+    "file": "bestbuy",
+    "group": "international",
+    "label": "Best Buy",
+    "kw": "bestbuy shopping",
+    "source": "lawn:best_buy"
+  },
+  {
+    "file": "lowes",
+    "group": "international",
+    "label": "Lowe's",
+    "kw": "lowes shopping",
+    "source": "lawn:lowes"
+  },
+  {
+    "file": "carrefour",
+    "group": "international",
+    "label": "Carrefour",
+    "kw": "carrefour shopping",
+    "source": "lawn:carrefour"
+  },
+  {
+    "file": "subway",
+    "group": "international",
+    "label": "SUBWAY",
+    "kw": "subway food",
+    "source": "lawn:subway"
+  },
+  {
+    "file": "pizzahut",
+    "group": "international",
+    "label": "Pizza Hut",
+    "kw": "pizzahut food",
+    "source": "lawn:pizza_hut"
+  },
+  {
+    "file": "dominos",
+    "group": "international",
+    "label": "Domino's Pizza",
+    "kw": "dominos food",
+    "source": "lawn:dominos_pizza"
+  },
+  {
+    "file": "marriott",
+    "group": "international",
+    "label": "Marriott Bonvoy",
+    "kw": "marriott hotel",
+    "source": "lawn:marriott_bonvoy"
+  },
+  {
+    "file": "hilton",
+    "group": "international",
+    "label": "Hilton Honors",
+    "kw": "hilton hotel",
+    "source": "lawn:hilton_honors"
+  },
+  {
+    "file": "keeweb",
+    "group": "international",
+    "label": "KeeWeb",
+    "kw": "keeweb keepass",
+    "source": "si:keeweb"
+  },
+  {
+    "file": "passbolt",
+    "group": "international",
+    "label": "Passbolt",
+    "kw": "passbolt password",
+    "source": "si:passbolt"
+  },
+  {
+    "file": "enpass",
+    "group": "international",
+    "label": "Enpass",
+    "kw": "enpass password",
+    "source": "si:enpass"
+  },
+  {
+    "file": "ollama",
+    "group": "international",
+    "label": "Ollama",
+    "kw": "ollama ai llm",
+    "source": "si:ollama"
+  },
+  {
+    "file": "gitkraken",
+    "group": "international",
+    "label": "GitKraken",
+    "kw": "gitkraken git",
+    "source": "si:gitkraken"
+  },
+  {
+    "file": "gitea",
+    "group": "international",
+    "label": "Gitea",
+    "kw": "gitea git",
+    "source": "si:gitea"
+  },
+  {
+    "file": "codeberg",
+    "group": "international",
+    "label": "Codeberg",
+    "kw": "codeberg git",
+    "source": "si:codeberg"
+  },
+  {
+    "file": "datadog",
+    "group": "international",
+    "label": "Datadog",
+    "kw": "datadog monitoring",
+    "source": "si:datadog"
+  },
+  {
+    "file": "splunk",
+    "group": "international",
+    "label": "Splunk",
+    "kw": "splunk monitoring",
+    "source": "si:splunk"
+  },
+  {
+    "file": "snyk",
+    "group": "international",
+    "label": "Snyk",
+    "kw": "snyk security",
+    "source": "si:snyk"
+  },
+  {
+    "file": "clickhouse",
+    "group": "international",
+    "label": "ClickHouse",
+    "kw": "clickhouse db",
+    "source": "si:clickhouse"
+  },
+  {
+    "file": "supabase",
+    "group": "international",
+    "label": "Supabase",
+    "kw": "supabase db",
+    "source": "si:supabase"
+  },
+  {
+    "file": "firebase",
+    "group": "international",
+    "label": "Firebase",
+    "kw": "firebase google",
+    "source": "si:firebase"
+  },
+  {
+    "file": "neo4j",
+    "group": "international",
+    "label": "Neo4j",
+    "kw": "neo4j graph db",
+    "source": "si:neo4j"
+  },
+  {
+    "file": "influxdb",
+    "group": "international",
+    "label": "InfluxDB",
+    "kw": "influxdb db",
+    "source": "si:influxdb"
+  },
+  {
+    "file": "tidb",
+    "group": "international",
+    "label": "TiDB",
+    "kw": "tidb db",
+    "source": "si:tidb"
+  },
+  {
+    "file": "snowflake",
+    "group": "international",
+    "label": "Snowflake",
+    "kw": "snowflake db",
+    "source": "si:snowflake"
+  },
+  {
+    "file": "databricks",
+    "group": "international",
+    "label": "Databricks",
+    "kw": "databricks data",
+    "source": "si:databricks"
+  },
+  {
+    "file": "helm",
+    "group": "international",
+    "label": "Helm",
+    "kw": "helm kubernetes",
+    "source": "si:helm"
+  },
+  {
+    "file": "istio",
+    "group": "international",
+    "label": "Istio",
+    "kw": "istio kubernetes",
+    "source": "si:istio"
+  },
+  {
+    "file": "traefikproxy",
+    "group": "international",
+    "label": "Traefik",
+    "kw": "traefik proxy",
+    "source": "si:traefikproxy"
+  },
+  {
+    "file": "caddy",
+    "group": "international",
+    "label": "Caddy",
+    "kw": "caddy webserver",
+    "source": "si:caddy"
+  },
+  {
+    "file": "etcd",
+    "group": "international",
+    "label": "etcd",
+    "kw": "etcd db",
+    "source": "si:etcd"
+  },
+  {
+    "file": "apachecouchdb",
+    "group": "international",
+    "label": "CouchDB",
+    "kw": "couchdb db",
+    "source": "si:apachecouchdb"
+  },
+  {
+    "file": "backblaze",
+    "group": "international",
+    "label": "Backblaze",
+    "kw": "backblaze backup",
+    "source": "si:backblaze"
+  },
+  {
+    "file": "rclone",
+    "group": "international",
+    "label": "Rclone",
+    "kw": "rclone sync",
+    "source": "si:rclone"
+  },
+  {
+    "file": "syncthing",
+    "group": "international",
+    "label": "Syncthing",
+    "kw": "syncthing sync",
+    "source": "si:syncthing"
+  },
+  {
+    "file": "qbittorrent",
+    "group": "international",
+    "label": "qBittorrent",
+    "kw": "qbittorrent torrent",
+    "source": "si:qbittorrent"
+  },
+  {
+    "file": "transmission",
+    "group": "international",
+    "label": "Transmission",
+    "kw": "transmission torrent",
+    "source": "si:transmission"
+  },
+  {
+    "file": "pihole",
+    "group": "international",
+    "label": "Pi-hole",
+    "kw": "pihole dns",
+    "source": "si:pihole"
+  },
+  {
+    "file": "openwrt",
+    "group": "international",
+    "label": "OpenWrt",
+    "kw": "openwrt router",
+    "source": "si:openwrt"
+  },
+  {
+    "file": "wireguard",
+    "group": "international",
+    "label": "WireGuard",
+    "kw": "wireguard vpn",
+    "source": "si:wireguard"
+  },
+  {
+    "file": "openvpn",
+    "group": "international",
+    "label": "OpenVPN",
+    "kw": "openvpn vpn",
+    "source": "si:openvpn"
+  },
+  {
+    "file": "onlyoffice",
+    "group": "international",
+    "label": "ONLYOFFICE",
+    "kw": "onlyoffice office",
+    "source": "si:onlyoffice"
+  },
+  {
+    "file": "libreoffice",
+    "group": "international",
+    "label": "LibreOffice",
+    "kw": "libreoffice office",
+    "source": "si:libreoffice"
+  },
+  {
+    "file": "zotero",
+    "group": "international",
+    "label": "Zotero",
+    "kw": "zotero research",
+    "source": "si:zotero"
+  },
+  {
+    "file": "kde",
+    "group": "international",
+    "label": "KDE",
+    "kw": "kde linux",
+    "source": "si:kde"
+  },
+  {
+    "file": "gnome",
+    "group": "international",
+    "label": "GNOME",
+    "kw": "gnome linux",
+    "source": "si:gnome"
+  },
+  {
+    "file": "android",
+    "group": "international",
+    "label": "Android",
+    "kw": "android google",
+    "source": "si:android"
   }
 ]
