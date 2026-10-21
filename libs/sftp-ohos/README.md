@@ -26,7 +26,7 @@ NO_SUCH_FILE 时返回 false，网络/超时错误一律上抛（错误消息编
 # host 单测（无需设备）
 source ~/.cargo/env && cargo test
 
-# 三 ABI 交叉编译 + 拷贝到 ../../libs/sftp/libs/<abi>/ + 打包 ../../libs/sftp-ohos.har
+# 三 ABI 交叉编译 + 拷贝到 ../sftp/libs/<abi>/ + 打包 ../sftp-ohos.har
 ./build.sh
 ```
 

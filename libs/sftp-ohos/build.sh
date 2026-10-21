@@ -6,7 +6,7 @@
 #      rustup target add aarch64-unknown-linux-ohos armv7-unknown-linux-ohos x86_64-unknown-linux-ohos
 #   2. .cargo/config.toml 已按本机 NDK 路径配置（参见 .cargo/config.toml.example）
 #
-# 产物：../../libs/sftp/libs/{arm64-v8a,armeabi-v7a,x86_64}/libsftp_ohos.so
+# 产物：../sftp/libs/{arm64-v8a,armeabi-v7a,x86_64}/libsftp_ohos.so
 # 命名约束：crate 名 sftp-ohos → napi-ohos 以 libsftp_ohos.so 注册模块名，
 # ArkTS import 路径必须与文件名逐字符一致：import ... from 'libsftp_ohos.so'
 set -euo pipefail
@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 SCRIPT_DIR="$(pwd)"
-HAR_LIBS_DIR="${SCRIPT_DIR}/../../libs/sftp/libs"
+HAR_LIBS_DIR="${SCRIPT_DIR}/../sftp/libs"
 NDK_BIN="${NDK_BIN:-$(grep -m1 'linker = ' .cargo/config.toml | sed 's|.*llvm/bin/.*|&|; s|linker = "||; s|/aarch64-unknown-linux-ohos-clang"||')}"
 
 TARGETS=(
@@ -45,8 +45,8 @@ done
 # 打包 ohpm HAR 归档：.har 必须是 gzip tar，且根目录前缀为 package/
 # （zip 布局会被 ohpm readPkgJsonFromTarball 拒绝；目录 file: 依赖是符号链接，
 #   不属于任何 hvigor 模块导致 "Failed to resolve OhmUrl ... imported by undefined"）
-HAR_SRC_DIR="${SCRIPT_DIR}/../../libs/sftp"
-HAR_OUT="${SCRIPT_DIR}/../../libs/sftp-ohos.har"
+HAR_SRC_DIR="${SCRIPT_DIR}/../sftp"
+HAR_OUT="${SCRIPT_DIR}/../sftp-ohos.har"
 STAGE="$(mktemp -d)/package"
 mkdir -p "${STAGE}"
 cp "${HAR_SRC_DIR}/oh-package.json5" "${HAR_SRC_DIR}/index.ets" "${STAGE}/"

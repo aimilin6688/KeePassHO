@@ -1,7 +1,7 @@
 /*
  * sftp-ohos native module type declarations.
  *
- * Hand-written to match `native/sftp-ohos/src/lib.rs` (napi-ohos binding).
+ * Hand-written to match `libs/sftp-ohos/src/lib.rs` (napi-ohos binding).
  * On OHOS, napi Buffer values are surfaced as ArrayBuffer.
  *
  * Error convention: all rejected Promises throw `Error` whose message is

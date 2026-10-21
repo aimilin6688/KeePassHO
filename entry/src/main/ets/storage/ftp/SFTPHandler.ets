@@ -13,7 +13,7 @@ const DEFAULT_TIMEOUT_MS = 30000;
 const TRANSFER_CHUNK_SIZE = 256 * 1024; // 256KB
 
 /**
- * SFTP 错误码（与 native/sftp-ohos/src/error.rs 保持一致）
+ * SFTP 错误码（与 libs/sftp-ohos/src/error.rs 保持一致）
  */
 export enum SftpErrorCode {
   UNKNOWN = 0,
