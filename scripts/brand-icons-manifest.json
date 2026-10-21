@@ -1,0 +1,2179 @@
+[
+  {
+    "file": "wechat",
+    "group": "domestic",
+    "label": "微信",
+    "kw": "wechat weixin",
+    "source": "si:wechat"
+  },
+  {
+    "file": "alipay",
+    "group": "domestic",
+    "label": "支付宝",
+    "kw": "alipay zhifubao",
+    "source": "si:alipay"
+  },
+  {
+    "file": "qq",
+    "group": "domestic",
+    "label": "QQ",
+    "kw": "qq tencent",
+    "source": "si:qq"
+  },
+  {
+    "file": "taobao",
+    "group": "domestic",
+    "label": "淘宝",
+    "kw": "taobao",
+    "source": "si:taobao"
+  },
+  {
+    "file": "jd",
+    "group": "domestic",
+    "label": "京东",
+    "kw": "jd jingdong",
+    "source": "lawn:jd"
+  },
+  {
+    "file": "douyin",
+    "group": "domestic",
+    "label": "抖音",
+    "kw": "douyin",
+    "source": "si:tiktok"
+  },
+  {
+    "file": "xiaohongshu",
+    "group": "domestic",
+    "label": "小红书",
+    "kw": "xiaohongshu xhs rednote",
+    "source": "si:xiaohongshu"
+  },
+  {
+    "file": "weibo",
+    "group": "domestic",
+    "label": "微博",
+    "kw": "weibo",
+    "source": "si:sinaweibo"
+  },
+  {
+    "file": "zhihu",
+    "group": "domestic",
+    "label": "知乎",
+    "kw": "zhihu",
+    "source": "si:zhihu"
+  },
+  {
+    "file": "bilibili",
+    "group": "domestic",
+    "label": "哔哩哔哩",
+    "kw": "bilibili bili",
+    "source": "si:bilibili"
+  },
+  {
+    "file": "dingtalk",
+    "group": "domestic",
+    "label": "钉钉",
+    "kw": "dingtalk",
+    "source": "lawn:dingtalk"
+  },
+  {
+    "file": "feishu",
+    "group": "domestic",
+    "label": "飞书",
+    "kw": "feishu lark",
+    "source": "lawn:feishu"
+  },
+  {
+    "file": "meituan",
+    "group": "domestic",
+    "label": "美团",
+    "kw": "meituan",
+    "source": "lawn:meituan"
+  },
+  {
+    "file": "dianping",
+    "group": "domestic",
+    "label": "大众点评",
+    "kw": "dianping",
+    "source": "lawn:dianping"
+  },
+  {
+    "file": "eleme",
+    "group": "domestic",
+    "label": "饿了么",
+    "kw": "eleme taobao flash",
+    "source": "lawn:taobao_flash_shopping"
+  },
+  {
+    "file": "pinduoduo",
+    "group": "domestic",
+    "label": "拼多多",
+    "kw": "pinduoduo pdd",
+    "source": "lawn:pinduoduo"
+  },
+  {
+    "file": "xianyu",
+    "group": "domestic",
+    "label": "闲鱼",
+    "kw": "xianyu",
+    "source": "lawn:idle_fish"
+  },
+  {
+    "file": "baidu",
+    "group": "domestic",
+    "label": "百度",
+    "kw": "baidu",
+    "source": "si:baidu"
+  },
+  {
+    "file": "baidu_netdisk",
+    "group": "domestic",
+    "label": "百度网盘",
+    "kw": "baidu netdisk wangpan",
+    "source": "lawn:baidu_netdisk"
+  },
+  {
+    "file": "uc_browser",
+    "group": "domestic",
+    "label": "UC浏览器",
+    "kw": "uc browser liulanqi",
+    "source": "lawn:uc_browser"
+  },
+  {
+    "file": "quark",
+    "group": "domestic",
+    "label": "夸克",
+    "kw": "quark",
+    "source": "lawn:quark"
+  },
+  {
+    "file": "netease_cloud_music",
+    "group": "domestic",
+    "label": "网易云音乐",
+    "kw": "netease cloudmusic yunyinyue",
+    "source": "si:neteasecloudmusic"
+  },
+  {
+    "file": "qq_music",
+    "group": "domestic",
+    "label": "QQ音乐",
+    "kw": "qqmusic",
+    "source": "lawn:qqmusic"
+  },
+  {
+    "file": "kugou_music",
+    "group": "domestic",
+    "label": "酷狗音乐",
+    "kw": "kugou",
+    "source": "lawn:kugou"
+  },
+  {
+    "file": "iqiyi",
+    "group": "domestic",
+    "label": "爱奇艺",
+    "kw": "iqiyi",
+    "source": "lawn:iqiyi"
+  },
+  {
+    "file": "youku",
+    "group": "domestic",
+    "label": "优酷",
+    "kw": "youku",
+    "source": "lawn:youku"
+  },
+  {
+    "file": "tencent_video",
+    "group": "domestic",
+    "label": "腾讯视频",
+    "kw": "tencentvideo video",
+    "source": "lawn:tencent_video"
+  },
+  {
+    "file": "douban",
+    "group": "domestic",
+    "label": "豆瓣",
+    "kw": "douban",
+    "source": "lawn:douban"
+  },
+  {
+    "file": "ctrip",
+    "group": "domestic",
+    "label": "携程旅行",
+    "kw": "ctrip xiecheng",
+    "source": "lawn:ctrip"
+  },
+  {
+    "file": "railway_12306",
+    "group": "domestic",
+    "label": "铁路12306",
+    "kw": "12306 railway huoche",
+    "source": "lawn:railway_12306"
+  },
+  {
+    "file": "amap",
+    "group": "domestic",
+    "label": "高德地图",
+    "kw": "amap gaode map ditu",
+    "source": "lawn:amap"
+  },
+  {
+    "file": "didi",
+    "group": "domestic",
+    "label": "滴滴出行",
+    "kw": "didi chuxing",
+    "source": "lawn:didi"
+  },
+  {
+    "file": "hellobike",
+    "group": "domestic",
+    "label": "哈啰",
+    "kw": "hellobike halo",
+    "source": "lawn:hello"
+  },
+  {
+    "file": "icbc",
+    "group": "domestic",
+    "label": "中国工商银行",
+    "kw": "icbc gongshang bank yinhang",
+    "source": "lawn:icbc"
+  },
+  {
+    "file": "ccb",
+    "group": "domestic",
+    "label": "中国建设银行",
+    "kw": "ccb jianshe bank yinhang",
+    "source": "lawn:china_construction_bank"
+  },
+  {
+    "file": "boc",
+    "group": "domestic",
+    "label": "中国银行",
+    "kw": "boc zhongguo bank yinhang",
+    "source": "lawn:bank_of_china"
+  },
+  {
+    "file": "abc_bank",
+    "group": "domestic",
+    "label": "中国农业银行",
+    "kw": "abc nongye bank yinhang",
+    "source": "lawn:agricultural_bank_of_china"
+  },
+  {
+    "file": "cmb",
+    "group": "domestic",
+    "label": "招商银行",
+    "kw": "cmb zhaoshang bank yinhang",
+    "source": "lawn:china_merchants_bank"
+  },
+  {
+    "file": "unionpay",
+    "group": "domestic",
+    "label": "中国银联",
+    "kw": "unionpay yinlian",
+    "source": "lawn:unionpay"
+  },
+  {
+    "file": "wps_office",
+    "group": "domestic",
+    "label": "WPS Office",
+    "kw": "wps office",
+    "source": "lawn:wps_office"
+  },
+  {
+    "file": "xunlei",
+    "group": "domestic",
+    "label": "迅雷",
+    "kw": "xunlei thunder",
+    "source": "lawn:lixian_xunlei"
+  },
+  {
+    "file": "coolapk",
+    "group": "domestic",
+    "label": "酷安",
+    "kw": "coolapk",
+    "source": "lawn:coolapk"
+  },
+  {
+    "file": "wecom",
+    "group": "domestic",
+    "label": "企业微信",
+    "kw": "wecom qiye wechat work",
+    "source": "lawn:wecom"
+  },
+  {
+    "file": "kuaishou",
+    "group": "domestic",
+    "label": "快手",
+    "kw": "kuaishou kwai",
+    "source": "lawn:kwai"
+  },
+  {
+    "file": "baidu_tieba",
+    "group": "domestic",
+    "label": "百度贴吧",
+    "kw": "tieba baidu",
+    "source": "lawn:baidu_tieba"
+  },
+  {
+    "file": "baidu_map",
+    "group": "domestic",
+    "label": "百度地图",
+    "kw": "baidu map ditu",
+    "source": "lawn:baidu_maps"
+  },
+  {
+    "file": "qq_mail",
+    "group": "domestic",
+    "label": "QQ邮箱",
+    "kw": "qqmail mail youxiang",
+    "source": "lawn:qqmail"
+  },
+  {
+    "file": "alibaba_1688",
+    "group": "domestic",
+    "label": "1688",
+    "kw": "1688 alibaba",
+    "source": "lawn:alibaba_1688"
+  },
+  {
+    "file": "aliyundrive",
+    "group": "domestic",
+    "label": "阿里云盘",
+    "kw": "aliyundrive alipan yunpan",
+    "source": "lawn:aliyundrive"
+  },
+  {
+    "file": "umetrip",
+    "group": "domestic",
+    "label": "航旅纵横",
+    "kw": "umetrip hanglv",
+    "source": "lawn:umetrip"
+  },
+  {
+    "file": "wifi_master",
+    "group": "domestic",
+    "label": "WiFi万能钥匙",
+    "kw": "wifi key wifimaster",
+    "source": "lawn:wifi_master"
+  },
+  {
+    "file": "smzdm",
+    "group": "domestic",
+    "label": "什么值得买",
+    "kw": "smzdm zhide",
+    "source": "lawn:what_to_buy"
+  },
+  {
+    "file": "mafengwo",
+    "group": "domestic",
+    "label": "马蜂窝",
+    "kw": "mafengwo travel",
+    "source": "lawn:hornets_nest"
+  },
+  {
+    "file": "china_mobile",
+    "group": "domestic",
+    "label": "中国移动",
+    "kw": "china mobile yidong 10086",
+    "source": "lawn:china_mobile"
+  },
+  {
+    "file": "china_unicom",
+    "group": "domestic",
+    "label": "中国联通",
+    "kw": "china unicom liantong 10010",
+    "source": "lawn:china_unicom"
+  },
+  {
+    "file": "china_telecom",
+    "group": "domestic",
+    "label": "中国电信",
+    "kw": "china telecom dianxin 10000",
+    "source": "lawn:china_telecom"
+  },
+  {
+    "file": "weread",
+    "group": "domestic",
+    "label": "微信读书",
+    "kw": "weread weixin dushu reading",
+    "source": "lawn:weread"
+  },
+  {
+    "file": "dragon_read",
+    "group": "domestic",
+    "label": "番茄小说",
+    "kw": "fanqie tomato dragonread novel",
+    "source": "lawn:dragon_read"
+  },
+  {
+    "file": "fliggy",
+    "group": "domestic",
+    "label": "飞猪",
+    "kw": "fliggy feizhu travel",
+    "source": "lawn:fliggy"
+  },
+  {
+    "file": "cainiao",
+    "group": "domestic",
+    "label": "菜鸟",
+    "kw": "cainiao kuaidi delivery",
+    "source": "lawn:cainiao"
+  },
+  {
+    "file": "chaoxing",
+    "group": "domestic",
+    "label": "学习通",
+    "kw": "chaoxing xuexitong study",
+    "source": "lawn:chaoxing"
+  },
+  {
+    "file": "honor_of_kings",
+    "group": "domestic",
+    "label": "王者荣耀",
+    "kw": "honorofkings wangzhe sgame",
+    "source": "lawn:honor_of_kings"
+  },
+  {
+    "file": "genshin_impact",
+    "group": "domestic",
+    "label": "原神",
+    "kw": "genshin yuanshen impact",
+    "source": "lawn:genshin_impact"
+  },
+  {
+    "file": "hoyolab",
+    "group": "domestic",
+    "label": "米游社",
+    "kw": "hoyolab miyoushe mihoyo",
+    "source": "lawn:hoyolab"
+  },
+  {
+    "file": "luckin_coffee",
+    "group": "domestic",
+    "label": "瑞幸咖啡",
+    "kw": "luckin coffee ruixing",
+    "source": "lawn:luckin_coffee"
+  },
+  {
+    "file": "meituan_takeaway",
+    "group": "domestic",
+    "label": "美团外卖",
+    "kw": "meituan waimai takeaway",
+    "source": "lawn:meituan_takeaway"
+  },
+  {
+    "file": "mi_store",
+    "group": "domestic",
+    "label": "小米商城",
+    "kw": "mishop xiaomi store shangcheng",
+    "source": "lawn:mi_store"
+  },
+  {
+    "file": "huawei_health",
+    "group": "domestic",
+    "label": "华为运动健康",
+    "kw": "huawei health yundong jiankang",
+    "source": "lawn:huawei_health"
+  },
+  {
+    "file": "sunlogin",
+    "group": "domestic",
+    "label": "向日葵远程控制",
+    "kw": "sunlogin xiangrikui remote oray",
+    "source": "lawn:sunlogin"
+  },
+  {
+    "file": "boss_recruitment",
+    "group": "domestic",
+    "label": "BOSS直聘",
+    "kw": "boss zhipin recruitment zhaopin",
+    "source": "lawn:boss_recruitment"
+  },
+  {
+    "file": "google",
+    "group": "international",
+    "label": "Google",
+    "kw": "google",
+    "source": "si:google"
+  },
+  {
+    "file": "apple",
+    "group": "international",
+    "label": "Apple",
+    "kw": "apple iphone ios",
+    "source": "si:apple"
+  },
+  {
+    "file": "github",
+    "group": "international",
+    "label": "GitHub",
+    "kw": "github",
+    "source": "si:github"
+  },
+  {
+    "file": "gitlab",
+    "group": "international",
+    "label": "GitLab",
+    "kw": "gitlab",
+    "source": "si:gitlab"
+  },
+  {
+    "file": "amazon",
+    "group": "international",
+    "label": "Amazon",
+    "kw": "amazon shopping",
+    "source": "lawn:amazon_shopping"
+  },
+  {
+    "file": "facebook",
+    "group": "international",
+    "label": "Facebook",
+    "kw": "facebook meta",
+    "source": "si:facebook"
+  },
+  {
+    "file": "instagram",
+    "group": "international",
+    "label": "Instagram",
+    "kw": "instagram",
+    "source": "si:instagram"
+  },
+  {
+    "file": "x",
+    "group": "international",
+    "label": "X",
+    "kw": "x twitter",
+    "source": "si:x"
+  },
+  {
+    "file": "tiktok",
+    "group": "international",
+    "label": "TikTok",
+    "kw": "tiktok",
+    "source": "si:tiktok"
+  },
+  {
+    "file": "linkedin",
+    "group": "international",
+    "label": "LinkedIn",
+    "kw": "linkedin",
+    "source": "lawn:linkedin"
+  },
+  {
+    "file": "youtube",
+    "group": "international",
+    "label": "YouTube",
+    "kw": "youtube",
+    "source": "si:youtube"
+  },
+  {
+    "file": "netflix",
+    "group": "international",
+    "label": "Netflix",
+    "kw": "netflix",
+    "source": "si:netflix"
+  },
+  {
+    "file": "spotify",
+    "group": "international",
+    "label": "Spotify",
+    "kw": "spotify",
+    "source": "si:spotify"
+  },
+  {
+    "file": "discord",
+    "group": "international",
+    "label": "Discord",
+    "kw": "discord",
+    "source": "si:discord"
+  },
+  {
+    "file": "reddit",
+    "group": "international",
+    "label": "Reddit",
+    "kw": "reddit",
+    "source": "si:reddit"
+  },
+  {
+    "file": "steam",
+    "group": "international",
+    "label": "Steam",
+    "kw": "steam valve",
+    "source": "si:steam"
+  },
+  {
+    "file": "twitch",
+    "group": "international",
+    "label": "Twitch",
+    "kw": "twitch",
+    "source": "si:twitch"
+  },
+  {
+    "file": "whatsapp",
+    "group": "international",
+    "label": "WhatsApp",
+    "kw": "whatsapp",
+    "source": "si:whatsapp"
+  },
+  {
+    "file": "telegram",
+    "group": "international",
+    "label": "Telegram",
+    "kw": "telegram",
+    "source": "si:telegram"
+  },
+  {
+    "file": "signal",
+    "group": "international",
+    "label": "Signal",
+    "kw": "signal",
+    "source": "si:signal"
+  },
+  {
+    "file": "slack",
+    "group": "international",
+    "label": "Slack",
+    "kw": "slack",
+    "source": "lawn:slack"
+  },
+  {
+    "file": "snapchat",
+    "group": "international",
+    "label": "Snapchat",
+    "kw": "snapchat",
+    "source": "si:snapchat"
+  },
+  {
+    "file": "pinterest",
+    "group": "international",
+    "label": "Pinterest",
+    "kw": "pinterest",
+    "source": "si:pinterest"
+  },
+  {
+    "file": "line",
+    "group": "international",
+    "label": "LINE",
+    "kw": "line",
+    "source": "si:line"
+  },
+  {
+    "file": "paypal",
+    "group": "international",
+    "label": "PayPal",
+    "kw": "paypal",
+    "source": "si:paypal"
+  },
+  {
+    "file": "stripe",
+    "group": "international",
+    "label": "Stripe",
+    "kw": "stripe",
+    "source": "si:stripe"
+  },
+  {
+    "file": "visa",
+    "group": "international",
+    "label": "Visa",
+    "kw": "visa",
+    "source": "si:visa"
+  },
+  {
+    "file": "mastercard",
+    "group": "international",
+    "label": "Mastercard",
+    "kw": "mastercard",
+    "source": "si:mastercard"
+  },
+  {
+    "file": "american_express",
+    "group": "international",
+    "label": "American Express",
+    "kw": "amex americanexpress",
+    "source": "si:americanexpress"
+  },
+  {
+    "file": "google_drive",
+    "group": "international",
+    "label": "Google Drive",
+    "kw": "googledrive drive",
+    "source": "si:googledrive"
+  },
+  {
+    "file": "dropbox",
+    "group": "international",
+    "label": "Dropbox",
+    "kw": "dropbox",
+    "source": "si:dropbox"
+  },
+  {
+    "file": "onedrive",
+    "group": "international",
+    "label": "OneDrive",
+    "kw": "onedrive",
+    "source": "lawn:microsoft_onedrive"
+  },
+  {
+    "file": "icloud",
+    "group": "international",
+    "label": "iCloud",
+    "kw": "icloud",
+    "source": "si:icloud"
+  },
+  {
+    "file": "notion",
+    "group": "international",
+    "label": "Notion",
+    "kw": "notion",
+    "source": "si:notion"
+  },
+  {
+    "file": "openai",
+    "group": "international",
+    "label": "OpenAI",
+    "kw": "openai chatgpt",
+    "source": "lawn:chatgpt"
+  },
+  {
+    "file": "bitwarden",
+    "group": "international",
+    "label": "Bitwarden",
+    "kw": "bitwarden",
+    "source": "si:bitwarden"
+  },
+  {
+    "file": "onepassword",
+    "group": "international",
+    "label": "1Password",
+    "kw": "1password",
+    "source": "si:1password"
+  },
+  {
+    "file": "lastpass",
+    "group": "international",
+    "label": "LastPass",
+    "kw": "lastpass",
+    "source": "si:lastpass"
+  },
+  {
+    "file": "cloudflare",
+    "group": "international",
+    "label": "Cloudflare",
+    "kw": "cloudflare",
+    "source": "si:cloudflare"
+  },
+  {
+    "file": "firefox",
+    "group": "international",
+    "label": "Firefox",
+    "kw": "firefox browser",
+    "source": "si:firefoxbrowser"
+  },
+  {
+    "file": "chrome",
+    "group": "international",
+    "label": "Chrome",
+    "kw": "chrome browser",
+    "source": "si:googlechrome"
+  },
+  {
+    "file": "safari",
+    "group": "international",
+    "label": "Safari",
+    "kw": "safari browser",
+    "source": "si:safari"
+  },
+  {
+    "file": "linux",
+    "group": "international",
+    "label": "Linux",
+    "kw": "linux",
+    "source": "si:linux"
+  },
+  {
+    "file": "ubuntu",
+    "group": "international",
+    "label": "Ubuntu",
+    "kw": "ubuntu",
+    "source": "si:ubuntu"
+  },
+  {
+    "file": "docker",
+    "group": "international",
+    "label": "Docker",
+    "kw": "docker",
+    "source": "si:docker"
+  },
+  {
+    "file": "kubernetes",
+    "group": "international",
+    "label": "Kubernetes",
+    "kw": "kubernetes k8s",
+    "source": "si:kubernetes"
+  },
+  {
+    "file": "nintendo",
+    "group": "international",
+    "label": "Nintendo Switch",
+    "kw": "nintendo switch",
+    "source": "lawn:nintendo_switch"
+  },
+  {
+    "file": "playstation",
+    "group": "international",
+    "label": "PlayStation",
+    "kw": "playstation sony ps5",
+    "source": "si:playstation"
+  },
+  {
+    "file": "xbox",
+    "group": "international",
+    "label": "Xbox",
+    "kw": "xbox",
+    "source": "lawn:xbox"
+  },
+  {
+    "file": "epic_games",
+    "group": "international",
+    "label": "Epic Games",
+    "kw": "epicgames",
+    "source": "si:epicgames"
+  },
+  {
+    "file": "minecraft",
+    "group": "international",
+    "label": "Minecraft",
+    "kw": "minecraft",
+    "source": "lawn:minecraft"
+  },
+  {
+    "file": "roblox",
+    "group": "international",
+    "label": "Roblox",
+    "kw": "roblox",
+    "source": "si:roblox"
+  },
+  {
+    "file": "riot_games",
+    "group": "international",
+    "label": "Riot Games",
+    "kw": "riotgames leagueoflegends",
+    "source": "si:riotgames"
+  },
+  {
+    "file": "gitee",
+    "group": "international",
+    "label": "Gitee",
+    "kw": "gitee",
+    "source": "si:gitee"
+  },
+  {
+    "file": "proton_vpn",
+    "group": "international",
+    "label": "Proton VPN",
+    "kw": "protonvpn vpn",
+    "source": "si:protonvpn"
+  },
+  {
+    "file": "proton_mail",
+    "group": "international",
+    "label": "Proton Mail",
+    "kw": "protonmail mail",
+    "source": "si:protonmail"
+  },
+  {
+    "file": "keepassxc",
+    "group": "international",
+    "label": "KeePassXC",
+    "kw": "keepassxc keepass",
+    "source": "si:keepassxc"
+  },
+  {
+    "file": "stackoverflow",
+    "group": "international",
+    "label": "Stack Overflow",
+    "kw": "stackoverflow",
+    "source": "si:stackoverflow"
+  },
+  {
+    "file": "hackerrank",
+    "group": "international",
+    "label": "HackerRank",
+    "kw": "hackerrank",
+    "source": "si:hackerrank"
+  },
+  {
+    "file": "leetcode",
+    "group": "international",
+    "label": "LeetCode",
+    "kw": "leetcode",
+    "source": "si:leetcode"
+  },
+  {
+    "file": "freecodecamp",
+    "group": "international",
+    "label": "freeCodeCamp",
+    "kw": "freecodecamp fcc",
+    "source": "si:freecodecamp"
+  },
+  {
+    "file": "bitcoin",
+    "group": "international",
+    "label": "Bitcoin",
+    "kw": "bitcoin btc crypto",
+    "source": "si:bitcoin"
+  },
+  {
+    "file": "ethereum",
+    "group": "international",
+    "label": "Ethereum",
+    "kw": "ethereum eth crypto",
+    "source": "si:ethereum"
+  },
+  {
+    "file": "coinbase",
+    "group": "international",
+    "label": "Coinbase",
+    "kw": "coinbase crypto",
+    "source": "si:coinbase"
+  },
+  {
+    "file": "binance",
+    "group": "international",
+    "label": "Binance",
+    "kw": "binance crypto",
+    "source": "si:binance"
+  },
+  {
+    "file": "brave",
+    "group": "international",
+    "label": "Brave",
+    "kw": "brave browser",
+    "source": "si:brave"
+  },
+  {
+    "file": "opera",
+    "group": "international",
+    "label": "Opera",
+    "kw": "opera browser",
+    "source": "si:opera"
+  },
+  {
+    "file": "airbnb",
+    "group": "international",
+    "label": "Airbnb",
+    "kw": "airbnb",
+    "source": "si:airbnb"
+  },
+  {
+    "file": "uber",
+    "group": "international",
+    "label": "Uber",
+    "kw": "uber",
+    "source": "si:uber"
+  },
+  {
+    "file": "booking",
+    "group": "international",
+    "label": "Booking.com",
+    "kw": "booking travel",
+    "source": "si:bookingdotcom"
+  },
+  {
+    "file": "ebay",
+    "group": "international",
+    "label": "eBay",
+    "kw": "ebay shopping",
+    "source": "si:ebay"
+  },
+  {
+    "file": "shopify",
+    "group": "international",
+    "label": "Shopify",
+    "kw": "shopify",
+    "source": "si:shopify"
+  },
+  {
+    "file": "etsy",
+    "group": "international",
+    "label": "Etsy",
+    "kw": "etsy",
+    "source": "si:etsy"
+  },
+  {
+    "file": "duolingo",
+    "group": "international",
+    "label": "Duolingo",
+    "kw": "duolingo",
+    "source": "si:duolingo"
+  },
+  {
+    "file": "coursera",
+    "group": "international",
+    "label": "Coursera",
+    "kw": "coursera",
+    "source": "si:coursera"
+  },
+  {
+    "file": "udemy",
+    "group": "international",
+    "label": "Udemy",
+    "kw": "udemy",
+    "source": "si:udemy"
+  },
+  {
+    "file": "khan_academy",
+    "group": "international",
+    "label": "Khan Academy",
+    "kw": "khanacademy",
+    "source": "si:khanacademy"
+  },
+  {
+    "file": "soundcloud",
+    "group": "international",
+    "label": "SoundCloud",
+    "kw": "soundcloud",
+    "source": "si:soundcloud"
+  },
+  {
+    "file": "apple_music",
+    "group": "international",
+    "label": "Apple Music",
+    "kw": "applemusic music",
+    "source": "si:applemusic"
+  },
+  {
+    "file": "vimeo",
+    "group": "international",
+    "label": "Vimeo",
+    "kw": "vimeo",
+    "source": "si:vimeo"
+  },
+  {
+    "file": "threads",
+    "group": "international",
+    "label": "Threads",
+    "kw": "threads",
+    "source": "si:threads"
+  },
+  {
+    "file": "mastodon",
+    "group": "international",
+    "label": "Mastodon",
+    "kw": "mastodon",
+    "source": "si:mastodon"
+  },
+  {
+    "file": "bluesky",
+    "group": "international",
+    "label": "Bluesky",
+    "kw": "bluesky bsky",
+    "source": "si:bluesky"
+  },
+  {
+    "file": "tumblr",
+    "group": "international",
+    "label": "Tumblr",
+    "kw": "tumblr",
+    "source": "si:tumblr"
+  },
+  {
+    "file": "medium",
+    "group": "international",
+    "label": "Medium",
+    "kw": "medium",
+    "source": "si:medium"
+  },
+  {
+    "file": "wordpress",
+    "group": "international",
+    "label": "WordPress",
+    "kw": "wordpress",
+    "source": "si:wordpress"
+  },
+  {
+    "file": "figma",
+    "group": "international",
+    "label": "Figma",
+    "kw": "figma design",
+    "source": "si:figma"
+  },
+  {
+    "file": "todoist",
+    "group": "international",
+    "label": "Todoist",
+    "kw": "todoist",
+    "source": "si:todoist"
+  },
+  {
+    "file": "evernote",
+    "group": "international",
+    "label": "Evernote",
+    "kw": "evernote",
+    "source": "si:evernote"
+  },
+  {
+    "file": "teamviewer",
+    "group": "international",
+    "label": "TeamViewer",
+    "kw": "teamviewer",
+    "source": "si:teamviewer"
+  },
+  {
+    "file": "google_meet",
+    "group": "international",
+    "label": "Google Meet",
+    "kw": "googlemeet meet",
+    "source": "si:googlemeet"
+  },
+  {
+    "file": "gmail",
+    "group": "international",
+    "label": "Gmail",
+    "kw": "gmail mail",
+    "source": "si:gmail"
+  },
+  {
+    "file": "google_maps",
+    "group": "international",
+    "label": "Google Maps",
+    "kw": "googlemaps map",
+    "source": "si:googlemaps"
+  },
+  {
+    "file": "google_photos",
+    "group": "international",
+    "label": "Google Photos",
+    "kw": "googlephotos photo",
+    "source": "si:googlephotos"
+  },
+  {
+    "file": "google_calendar",
+    "group": "international",
+    "label": "Google Calendar",
+    "kw": "googlecalendar calendar",
+    "source": "si:googlecalendar"
+  },
+  {
+    "file": "youtube_music",
+    "group": "international",
+    "label": "YouTube Music",
+    "kw": "youtubemusic music",
+    "source": "si:youtubemusic"
+  },
+  {
+    "file": "nextcloud",
+    "group": "international",
+    "label": "Nextcloud",
+    "kw": "nextcloud",
+    "source": "si:nextcloud"
+  },
+  {
+    "file": "jellyfin",
+    "group": "international",
+    "label": "Jellyfin",
+    "kw": "jellyfin",
+    "source": "si:jellyfin"
+  },
+  {
+    "file": "home_assistant",
+    "group": "international",
+    "label": "Home Assistant",
+    "kw": "homeassistant hass",
+    "source": "si:homeassistant"
+  },
+  {
+    "file": "grafana",
+    "group": "international",
+    "label": "Grafana",
+    "kw": "grafana",
+    "source": "si:grafana"
+  },
+  {
+    "file": "git",
+    "group": "international",
+    "label": "Git",
+    "kw": "git",
+    "source": "si:git"
+  },
+  {
+    "file": "python",
+    "group": "international",
+    "label": "Python",
+    "kw": "python",
+    "source": "si:python"
+  },
+  {
+    "file": "nodejs",
+    "group": "international",
+    "label": "Node.js",
+    "kw": "nodejs node",
+    "source": "si:nodedotjs"
+  },
+  {
+    "file": "rust",
+    "group": "international",
+    "label": "Rust",
+    "kw": "rust",
+    "source": "si:rust"
+  },
+  {
+    "file": "go",
+    "group": "international",
+    "label": "Go",
+    "kw": "go golang",
+    "source": "si:go"
+  },
+  {
+    "file": "alibaba_cloud",
+    "group": "international",
+    "label": "Alibaba Cloud",
+    "kw": "alibabacloud alicloud",
+    "source": "si:alibabacloud"
+  },
+  {
+    "file": "vercel",
+    "group": "international",
+    "label": "Vercel",
+    "kw": "vercel",
+    "source": "si:vercel"
+  },
+  {
+    "file": "netlify",
+    "group": "international",
+    "label": "Netlify",
+    "kw": "netlify",
+    "source": "si:netlify"
+  },
+  {
+    "file": "adguard",
+    "group": "international",
+    "label": "AdGuard",
+    "kw": "adguard",
+    "source": "si:adguard"
+  },
+  {
+    "file": "wise",
+    "group": "international",
+    "label": "Wise",
+    "kw": "wise transferwise",
+    "source": "si:wise"
+  },
+  {
+    "file": "revolut",
+    "group": "international",
+    "label": "Revolut",
+    "kw": "revolut",
+    "source": "si:revolut"
+  },
+  {
+    "file": "kakaotalk",
+    "group": "international",
+    "label": "KakaoTalk",
+    "kw": "kakaotalk kakao",
+    "source": "si:kakaotalk"
+  },
+  {
+    "file": "naver",
+    "group": "international",
+    "label": "Naver",
+    "kw": "naver",
+    "source": "si:naver"
+  },
+  {
+    "file": "viber",
+    "group": "international",
+    "label": "Viber",
+    "kw": "viber",
+    "source": "si:viber"
+  },
+  {
+    "file": "grab",
+    "group": "international",
+    "label": "Grab",
+    "kw": "grab",
+    "source": "si:grab"
+  },
+  {
+    "file": "gojek",
+    "group": "international",
+    "label": "Gojek",
+    "kw": "gojek",
+    "source": "si:gojek"
+  },
+  {
+    "file": "shopee",
+    "group": "international",
+    "label": "Shopee",
+    "kw": "shopee",
+    "source": "si:shopee"
+  },
+  {
+    "file": "rakuten",
+    "group": "international",
+    "label": "Rakuten",
+    "kw": "rakuten",
+    "source": "si:rakuten"
+  },
+  {
+    "file": "tinder",
+    "group": "international",
+    "label": "Tinder",
+    "kw": "tinder",
+    "source": "si:tinder"
+  },
+  {
+    "file": "substack",
+    "group": "international",
+    "label": "Substack",
+    "kw": "substack",
+    "source": "si:substack"
+  },
+  {
+    "file": "patreon",
+    "group": "international",
+    "label": "Patreon",
+    "kw": "patreon",
+    "source": "si:patreon"
+  },
+  {
+    "file": "starbucks",
+    "group": "international",
+    "label": "Starbucks",
+    "kw": "starbucks coffee",
+    "source": "si:starbucks"
+  },
+  {
+    "file": "mcdonalds",
+    "group": "international",
+    "label": "McDonald's",
+    "kw": "mcdonalds",
+    "source": "si:mcdonalds"
+  },
+  {
+    "file": "kfc",
+    "group": "international",
+    "label": "KFC",
+    "kw": "kfc",
+    "source": "si:kfc"
+  },
+  {
+    "file": "burgerking",
+    "group": "international",
+    "label": "Burger King",
+    "kw": "burgerking",
+    "source": "si:burgerking"
+  },
+  {
+    "file": "tacobell",
+    "group": "international",
+    "label": "Taco Bell",
+    "kw": "tacobell",
+    "source": "si:tacobell"
+  },
+  {
+    "file": "ikea",
+    "group": "international",
+    "label": "IKEA",
+    "kw": "ikea",
+    "source": "si:ikea"
+  },
+  {
+    "file": "target",
+    "group": "international",
+    "label": "Target",
+    "kw": "target",
+    "source": "si:target"
+  },
+  {
+    "file": "aliexpress",
+    "group": "international",
+    "label": "AliExpress",
+    "kw": "aliexpress",
+    "source": "si:aliexpress"
+  },
+  {
+    "file": "ubereats",
+    "group": "international",
+    "label": "Uber Eats",
+    "kw": "ubereats",
+    "source": "si:ubereats"
+  },
+  {
+    "file": "doordash",
+    "group": "international",
+    "label": "DoorDash",
+    "kw": "doordash",
+    "source": "si:doordash"
+  },
+  {
+    "file": "deliveroo",
+    "group": "international",
+    "label": "Deliveroo",
+    "kw": "deliveroo",
+    "source": "si:deliveroo"
+  },
+  {
+    "file": "lyft",
+    "group": "international",
+    "label": "Lyft",
+    "kw": "lyft",
+    "source": "si:lyft"
+  },
+  {
+    "file": "expedia",
+    "group": "international",
+    "label": "Expedia",
+    "kw": "expedia travel",
+    "source": "si:expedia"
+  },
+  {
+    "file": "tripadvisor",
+    "group": "international",
+    "label": "Tripadvisor",
+    "kw": "tripadvisor travel",
+    "source": "si:tripadvisor"
+  },
+  {
+    "file": "lufthansa",
+    "group": "international",
+    "label": "Lufthansa",
+    "kw": "lufthansa airline",
+    "source": "si:lufthansa"
+  },
+  {
+    "file": "emirates",
+    "group": "international",
+    "label": "Emirates",
+    "kw": "emirates airline",
+    "source": "si:emirates"
+  },
+  {
+    "file": "britishairways",
+    "group": "international",
+    "label": "British Airways",
+    "kw": "britishairways airline",
+    "source": "si:britishairways"
+  },
+  {
+    "file": "qantas",
+    "group": "international",
+    "label": "Qantas",
+    "kw": "qantas airline",
+    "source": "si:qantas"
+  },
+  {
+    "file": "ryanair",
+    "group": "international",
+    "label": "Ryanair",
+    "kw": "ryanair airline",
+    "source": "si:ryanair"
+  },
+  {
+    "file": "hbo",
+    "group": "international",
+    "label": "HBO",
+    "kw": "hbo",
+    "source": "si:hbo"
+  },
+  {
+    "file": "appletv",
+    "group": "international",
+    "label": "Apple TV",
+    "kw": "appletv",
+    "source": "si:appletv"
+  },
+  {
+    "file": "crunchyroll",
+    "group": "international",
+    "label": "Crunchyroll",
+    "kw": "crunchyroll anime",
+    "source": "si:crunchyroll"
+  },
+  {
+    "file": "tidal",
+    "group": "international",
+    "label": "TIDAL",
+    "kw": "tidal music",
+    "source": "si:tidal"
+  },
+  {
+    "file": "deezer",
+    "group": "international",
+    "label": "Deezer",
+    "kw": "deezer music",
+    "source": "si:deezer"
+  },
+  {
+    "file": "pandora",
+    "group": "international",
+    "label": "Pandora",
+    "kw": "pandora music",
+    "source": "si:pandora"
+  },
+  {
+    "file": "bandcamp",
+    "group": "international",
+    "label": "Bandcamp",
+    "kw": "bandcamp music",
+    "source": "si:bandcamp"
+  },
+  {
+    "file": "shazam",
+    "group": "international",
+    "label": "Shazam",
+    "kw": "shazam music",
+    "source": "si:shazam"
+  },
+  {
+    "file": "audible",
+    "group": "international",
+    "label": "Audible",
+    "kw": "audible book",
+    "source": "si:audible"
+  },
+  {
+    "file": "goodreads",
+    "group": "international",
+    "label": "Goodreads",
+    "kw": "goodreads book",
+    "source": "si:goodreads"
+  },
+  {
+    "file": "archiveofourown",
+    "group": "international",
+    "label": "AO3",
+    "kw": "archiveofourown ao3",
+    "source": "si:archiveofourown"
+  },
+  {
+    "file": "myanimelist",
+    "group": "international",
+    "label": "MyAnimeList",
+    "kw": "myanimelist anime mal",
+    "source": "si:myanimelist"
+  },
+  {
+    "file": "chessdotcom",
+    "group": "international",
+    "label": "Chess.com",
+    "kw": "chess",
+    "source": "si:chessdotcom"
+  },
+  {
+    "file": "lichess",
+    "group": "international",
+    "label": "Lichess",
+    "kw": "lichess chess",
+    "source": "si:lichess"
+  },
+  {
+    "file": "edx",
+    "group": "international",
+    "label": "edX",
+    "kw": "edx",
+    "source": "si:edx"
+  },
+  {
+    "file": "skillshare",
+    "group": "international",
+    "label": "Skillshare",
+    "kw": "skillshare",
+    "source": "si:skillshare"
+  },
+  {
+    "file": "pluralsight",
+    "group": "international",
+    "label": "Pluralsight",
+    "kw": "pluralsight",
+    "source": "si:pluralsight"
+  },
+  {
+    "file": "codecademy",
+    "group": "international",
+    "label": "Codecademy",
+    "kw": "codecademy",
+    "source": "si:codecademy"
+  },
+  {
+    "file": "codewars",
+    "group": "international",
+    "label": "Codewars",
+    "kw": "codewars",
+    "source": "si:codewars"
+  },
+  {
+    "file": "codeforces",
+    "group": "international",
+    "label": "Codeforces",
+    "kw": "codeforces",
+    "source": "si:codeforces"
+  },
+  {
+    "file": "jetbrains",
+    "group": "international",
+    "label": "JetBrains",
+    "kw": "jetbrains",
+    "source": "si:jetbrains"
+  },
+  {
+    "file": "sublimetext",
+    "group": "international",
+    "label": "Sublime Text",
+    "kw": "sublimetext",
+    "source": "si:sublimetext"
+  },
+  {
+    "file": "neovim",
+    "group": "international",
+    "label": "Neovim",
+    "kw": "neovim",
+    "source": "si:neovim"
+  },
+  {
+    "file": "vim",
+    "group": "international",
+    "label": "Vim",
+    "kw": "vim",
+    "source": "si:vim"
+  },
+  {
+    "file": "notepadplusplus",
+    "group": "international",
+    "label": "Notepad++",
+    "kw": "notepadplusplus",
+    "source": "si:notepadplusplus"
+  },
+  {
+    "file": "monzo",
+    "group": "international",
+    "label": "Monzo",
+    "kw": "monzo bank",
+    "source": "si:monzo"
+  },
+  {
+    "file": "robinhood",
+    "group": "international",
+    "label": "Robinhood",
+    "kw": "robinhood",
+    "source": "si:robinhood"
+  },
+  {
+    "file": "tradingview",
+    "group": "international",
+    "label": "TradingView",
+    "kw": "tradingview",
+    "source": "si:tradingview"
+  },
+  {
+    "file": "imgur",
+    "group": "international",
+    "label": "Imgur",
+    "kw": "imgur",
+    "source": "si:imgur"
+  },
+  {
+    "file": "quora",
+    "group": "international",
+    "label": "Quora",
+    "kw": "quora",
+    "source": "si:quora"
+  },
+  {
+    "file": "vk",
+    "group": "international",
+    "label": "VK",
+    "kw": "vk vkontakte",
+    "source": "si:vk"
+  },
+  {
+    "file": "nextdoor",
+    "group": "international",
+    "label": "Nextdoor",
+    "kw": "nextdoor",
+    "source": "si:nextdoor"
+  },
+  {
+    "file": "ecosia",
+    "group": "international",
+    "label": "Ecosia",
+    "kw": "ecosia",
+    "source": "si:ecosia"
+  },
+  {
+    "file": "duckduckgo",
+    "group": "international",
+    "label": "DuckDuckGo",
+    "kw": "duckduckgo search",
+    "source": "si:duckduckgo"
+  },
+  {
+    "file": "huggingface",
+    "group": "international",
+    "label": "Hugging Face",
+    "kw": "huggingface",
+    "source": "si:huggingface"
+  },
+  {
+    "file": "plex",
+    "group": "international",
+    "label": "Plex",
+    "kw": "plex",
+    "source": "si:plex"
+  },
+  {
+    "file": "emby",
+    "group": "international",
+    "label": "Emby",
+    "kw": "emby",
+    "source": "si:emby"
+  },
+  {
+    "file": "anydesk",
+    "group": "international",
+    "label": "AnyDesk",
+    "kw": "anydesk remote",
+    "source": "si:anydesk"
+  },
+  {
+    "file": "dashlane",
+    "group": "international",
+    "label": "Dashlane",
+    "kw": "dashlane",
+    "source": "si:dashlane"
+  },
+  {
+    "file": "kaspersky",
+    "group": "international",
+    "label": "Kaspersky",
+    "kw": "kaspersky",
+    "source": "si:kaspersky"
+  },
+  {
+    "file": "avast",
+    "group": "international",
+    "label": "Avast",
+    "kw": "avast",
+    "source": "si:avast"
+  },
+  {
+    "file": "bitbucket",
+    "group": "international",
+    "label": "Bitbucket",
+    "kw": "bitbucket",
+    "source": "si:bitbucket"
+  },
+  {
+    "file": "jira",
+    "group": "international",
+    "label": "Jira",
+    "kw": "jira atlassian",
+    "source": "si:jira"
+  },
+  {
+    "file": "trello",
+    "group": "international",
+    "label": "Trello",
+    "kw": "trello atlassian",
+    "source": "si:trello"
+  },
+  {
+    "file": "asana",
+    "group": "international",
+    "label": "Asana",
+    "kw": "asana",
+    "source": "si:asana"
+  },
+  {
+    "file": "airtable",
+    "group": "international",
+    "label": "Airtable",
+    "kw": "airtable",
+    "source": "si:airtable"
+  },
+  {
+    "file": "jenkins",
+    "group": "international",
+    "label": "Jenkins",
+    "kw": "jenkins ci",
+    "source": "si:jenkins"
+  },
+  {
+    "file": "circleci",
+    "group": "international",
+    "label": "CircleCI",
+    "kw": "circleci ci",
+    "source": "si:circleci"
+  },
+  {
+    "file": "terraform",
+    "group": "international",
+    "label": "Terraform",
+    "kw": "terraform",
+    "source": "si:terraform"
+  },
+  {
+    "file": "ansible",
+    "group": "international",
+    "label": "Ansible",
+    "kw": "ansible",
+    "source": "si:ansible"
+  },
+  {
+    "file": "prometheus",
+    "group": "international",
+    "label": "Prometheus",
+    "kw": "prometheus",
+    "source": "si:prometheus"
+  },
+  {
+    "file": "sentry",
+    "group": "international",
+    "label": "Sentry",
+    "kw": "sentry",
+    "source": "si:sentry"
+  },
+  {
+    "file": "postman",
+    "group": "international",
+    "label": "Postman",
+    "kw": "postman api",
+    "source": "si:postman"
+  },
+  {
+    "file": "nginx",
+    "group": "international",
+    "label": "Nginx",
+    "kw": "nginx",
+    "source": "si:nginx"
+  },
+  {
+    "file": "postgresql",
+    "group": "international",
+    "label": "PostgreSQL",
+    "kw": "postgresql postgres db",
+    "source": "si:postgresql"
+  },
+  {
+    "file": "mysql",
+    "group": "international",
+    "label": "MySQL",
+    "kw": "mysql db",
+    "source": "si:mysql"
+  },
+  {
+    "file": "mongodb",
+    "group": "international",
+    "label": "MongoDB",
+    "kw": "mongodb db",
+    "source": "si:mongodb"
+  },
+  {
+    "file": "redis",
+    "group": "international",
+    "label": "Redis",
+    "kw": "redis db",
+    "source": "si:redis"
+  },
+  {
+    "file": "sqlite",
+    "group": "international",
+    "label": "SQLite",
+    "kw": "sqlite db",
+    "source": "si:sqlite"
+  },
+  {
+    "file": "elasticsearch",
+    "group": "international",
+    "label": "Elasticsearch",
+    "kw": "elasticsearch elastic",
+    "source": "si:elasticsearch"
+  },
+  {
+    "file": "typescript",
+    "group": "international",
+    "label": "TypeScript",
+    "kw": "typescript ts",
+    "source": "si:typescript"
+  },
+  {
+    "file": "javascript",
+    "group": "international",
+    "label": "JavaScript",
+    "kw": "javascript js",
+    "source": "si:javascript"
+  },
+  {
+    "file": "kotlin",
+    "group": "international",
+    "label": "Kotlin",
+    "kw": "kotlin",
+    "source": "si:kotlin"
+  },
+  {
+    "file": "swift",
+    "group": "international",
+    "label": "Swift",
+    "kw": "swift",
+    "source": "si:swift"
+  },
+  {
+    "file": "dart",
+    "group": "international",
+    "label": "Dart",
+    "kw": "dart",
+    "source": "si:dart"
+  },
+  {
+    "file": "flutter",
+    "group": "international",
+    "label": "Flutter",
+    "kw": "flutter",
+    "source": "si:flutter"
+  },
+  {
+    "file": "react",
+    "group": "international",
+    "label": "React",
+    "kw": "react",
+    "source": "si:react"
+  },
+  {
+    "file": "vuedotjs",
+    "group": "international",
+    "label": "Vue.js",
+    "kw": "vue vuejs",
+    "source": "si:vuedotjs"
+  },
+  {
+    "file": "angular",
+    "group": "international",
+    "label": "Angular",
+    "kw": "angular",
+    "source": "si:angular"
+  },
+  {
+    "file": "svelte",
+    "group": "international",
+    "label": "Svelte",
+    "kw": "svelte",
+    "source": "si:svelte"
+  },
+  {
+    "file": "laravel",
+    "group": "international",
+    "label": "Laravel",
+    "kw": "laravel php",
+    "source": "si:laravel"
+  },
+  {
+    "file": "django",
+    "group": "international",
+    "label": "Django",
+    "kw": "django python",
+    "source": "si:django"
+  },
+  {
+    "file": "rubyonrails",
+    "group": "international",
+    "label": "Ruby on Rails",
+    "kw": "rubyonrails rails",
+    "source": "si:rubyonrails"
+  },
+  {
+    "file": "spring",
+    "group": "international",
+    "label": "Spring",
+    "kw": "spring java",
+    "source": "si:spring"
+  },
+  {
+    "file": "dotnet",
+    "group": "international",
+    "label": ".NET",
+    "kw": "dotnet net",
+    "source": "si:dotnet"
+  },
+  {
+    "file": "php",
+    "group": "international",
+    "label": "PHP",
+    "kw": "php",
+    "source": "si:php"
+  },
+  {
+    "file": "c",
+    "group": "international",
+    "label": "C",
+    "kw": "c clang",
+    "source": "si:c"
+  },
+  {
+    "file": "cplusplus",
+    "group": "international",
+    "label": "C++",
+    "kw": "cplusplus cpp",
+    "source": "si:cplusplus"
+  },
+  {
+    "file": "debian",
+    "group": "international",
+    "label": "Debian",
+    "kw": "debian linux",
+    "source": "si:debian"
+  },
+  {
+    "file": "fedora",
+    "group": "international",
+    "label": "Fedora",
+    "kw": "fedora linux",
+    "source": "si:fedora"
+  },
+  {
+    "file": "centos",
+    "group": "international",
+    "label": "CentOS",
+    "kw": "centos linux",
+    "source": "si:centos"
+  },
+  {
+    "file": "archlinux",
+    "group": "international",
+    "label": "Arch Linux",
+    "kw": "archlinux linux",
+    "source": "si:archlinux"
+  },
+  {
+    "file": "redhat",
+    "group": "international",
+    "label": "Red Hat",
+    "kw": "redhat linux",
+    "source": "si:redhat"
+  },
+  {
+    "file": "googlecloud",
+    "group": "international",
+    "label": "Google Cloud",
+    "kw": "googlecloud gcp",
+    "source": "si:googlecloud"
+  },
+  {
+    "file": "digitalocean",
+    "group": "international",
+    "label": "DigitalOcean",
+    "kw": "digitalocean",
+    "source": "si:digitalocean"
+  },
+  {
+    "file": "sega",
+    "group": "international",
+    "label": "SEGA",
+    "kw": "sega game",
+    "source": "si:sega"
+  },
+  {
+    "file": "ubisoft",
+    "group": "international",
+    "label": "Ubisoft",
+    "kw": "ubisoft game",
+    "source": "si:ubisoft"
+  },
+  {
+    "file": "ea",
+    "group": "international",
+    "label": "EA",
+    "kw": "ea electronicarts game",
+    "source": "si:ea"
+  },
+  {
+    "file": "rockstargames",
+    "group": "international",
+    "label": "Rockstar Games",
+    "kw": "rockstargames game",
+    "source": "si:rockstargames"
+  },
+  {
+    "file": "battledotnet",
+    "group": "international",
+    "label": "Battle.net",
+    "kw": "battledotnet battle blizzard",
+    "source": "si:battledotnet"
+  },
+  {
+    "file": "kick",
+    "group": "international",
+    "label": "Kick",
+    "kw": "kick streaming",
+    "source": "si:kick"
+  },
+  {
+    "file": "geeksforgeeks",
+    "group": "international",
+    "label": "GeeksforGeeks",
+    "kw": "geeksforgeeks gfg",
+    "source": "si:geeksforgeeks"
+  },
+  {
+    "file": "wireshark",
+    "group": "international",
+    "label": "Wireshark",
+    "kw": "wireshark",
+    "source": "si:wireshark"
+  },
+  {
+    "file": "filezilla",
+    "group": "international",
+    "label": "FileZilla",
+    "kw": "filezilla ftp",
+    "source": "si:filezilla"
+  },
+  {
+    "file": "virtualbox",
+    "group": "international",
+    "label": "VirtualBox",
+    "kw": "virtualbox vm",
+    "source": "si:virtualbox"
+  },
+  {
+    "file": "apachekafka",
+    "group": "international",
+    "label": "Apache Kafka",
+    "kw": "apachekafka kafka",
+    "source": "si:apachekafka"
+  },
+  {
+    "file": "rabbitmq",
+    "group": "international",
+    "label": "RabbitMQ",
+    "kw": "rabbitmq mq",
+    "source": "si:rabbitmq"
+  },
+  {
+    "file": "graphql",
+    "group": "international",
+    "label": "GraphQL",
+    "kw": "graphql api",
+    "source": "si:graphql"
+  },
+  {
+    "file": "swagger",
+    "group": "international",
+    "label": "Swagger",
+    "kw": "swagger openapi",
+    "source": "si:swagger"
+  },
+  {
+    "file": "anthropic",
+    "group": "international",
+    "label": "Anthropic",
+    "kw": "anthropic claude",
+    "source": "si:anthropic"
+  },
+  {
+    "file": "perplexity",
+    "group": "international",
+    "label": "Perplexity",
+    "kw": "perplexity",
+    "source": "si:perplexity"
+  }
+]

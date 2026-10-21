@@ -3595,6 +3595,30 @@
     {
       "name": "s3_button_title",
       "value": "S3 存储"
+    },
+    {
+      "name": "tab_standard_icons",
+      "value": "标准图标"
+    },
+    {
+      "name": "tab_domestic_icons",
+      "value": "国内常用"
+    },
+    {
+      "name": "tab_international_icons",
+      "value": "国外常用"
+    },
+    {
+      "name": "search_brand_icon_placeholder",
+      "value": "搜索图标名称"
+    },
+    {
+      "name": "brand_icon_apply_failed",
+      "value": "图标应用失败"
+    },
+    {
+      "name": "brand_icon_no_match",
+      "value": "没有匹配的图标"
     }
   ]
 }

@@ -3595,6 +3595,30 @@
     {
       "name": "security_session_notify_enable_tips",
       "value": "Quick copy buttons in the notification panel after unlock"
+    },
+    {
+      "name": "tab_standard_icons",
+      "value": "Standard"
+    },
+    {
+      "name": "tab_domestic_icons",
+      "value": "Popular Apps"
+    },
+    {
+      "name": "tab_international_icons",
+      "value": "Global Apps"
+    },
+    {
+      "name": "search_brand_icon_placeholder",
+      "value": "Search icon name"
+    },
+    {
+      "name": "brand_icon_apply_failed",
+      "value": "Failed to apply icon"
+    },
+    {
+      "name": "brand_icon_no_match",
+      "value": "No matching icon"
     }
   ]
 }

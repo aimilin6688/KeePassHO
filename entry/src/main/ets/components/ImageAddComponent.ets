@@ -17,6 +17,9 @@ const TAG = 'ImageAddComponent';
 export struct ImageAddComponent {
   // 是否正在上传
   @State isUploading: boolean = false;
+  // 添加后是否自动保存数据库：图标管理页无保存按钮需自动保存（true）；
+  // 图标选择弹窗内由编辑页保存按钮统一持久化，传 false 不自动保存
+  autoSave: boolean = true;
   // 成功回调
   onSuccess: () => void = () => {
   };
@@ -60,37 +63,53 @@ export struct ImageAddComponent {
   }
 
   /**
-   * 保存图标
+   * 保存图标（写入内存库，含去重复用；autoSave 为 true 时追加保存数据库）
    * @param images 图片BASE64数组
    */
-  private async saveCustomIcon(images: string[] | null) {
+  private saveCustomIcon(images: string[] | null): void {
     try {
       if (!images || images.length === 0) {
+        this.isUploading = false;
         return;
       }
-      // 添加自定义图标到数据库
-      KdbxSaveService.addCustomIcon(FileService.getDatabase(), images, ToastSaveDatabaseCallback.wrap({
-        onSuccess: () => {
-          this.isUploading = false;
-          if (this.onSuccess) {
-            this.onSuccess();
-          }
-        },
-        onError: (error: string) => {
-          this.isUploading = false;
-          if (this.onError) {
-            this.onError(new Error(error));
-          }
+      // 添加自定义图标到数据库（仅内存库，不触发保存）
+      const uuids: string[] = KdbxSaveService.addCustomIcon(FileService.getDatabase(), images);
+      if (uuids.length === 0 || uuids[0] === '') {
+        this.isUploading = false;
+        if (this.onError) {
+          this.onError(new Error('Invalid base64 image'));
         }
-      }));
+        return;
+      }
+      if (this.autoSave) {
+        // 保存数据库
+        KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
+          onSuccess: () => {
+            this.isUploading = false;
+            if (this.onSuccess) {
+              this.onSuccess();
+            }
+          },
+          onError: (error: string) => {
+            this.isUploading = false;
+            if (this.onError) {
+              this.onError(new Error(error));
+            }
+          }
+        }));
+      } else {
+        this.isUploading = false;
+        if (this.onSuccess) {
+          this.onSuccess();
+        }
+      }
     } catch (error) {
       hilog.error(DOMAIN, TAG, 'Save web icon failed：' + error.message);
       CommonUtils.showToast(error.message);
+      this.isUploading = false;
       if (this.onError) {
         this.onError(error);
       }
-    } finally {
-      this.isUploading = false;
     }
   }
 

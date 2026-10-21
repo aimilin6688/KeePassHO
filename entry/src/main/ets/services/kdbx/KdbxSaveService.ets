@@ -355,37 +355,75 @@ export default class KdbxSaveService {
   }
 
   /**
-   * 添加自定义图标到数据库并保存
+   * 添加自定义图标到数据库（仅写入内存库，不触发保存；由调用方在合适时机统一持久化）
+   * 图标数据与库中已有自定义图标逐字节比较，相同则复用已有 UUID，不重复入库
    * @param database 数据库实例
    * @param base64Images base64编码的图像数据（格式：data:image/png;base64,...)
-   * @param callback 保存回调
+   * @returns 新增（或复用）图标的 UUID 列表，与入参一一对应；数据非法的项为空字符串
    */
-  public static async addCustomIcon(database: Kdbx, base64Images: string[], callback?: SaveDatabaseCallback): Promise<void> {
-    try {
-      if (!database || !base64Images || base64Images.length === 0) {
-        callback?.onError?.('Invalid database or base64 image');
-        return;
-      }
-      for (const base64Image of base64Images) {
-        // 从base64字符串中提取实际的base64数据部分
-        const base64Data = base64Image.split(',')[1];
-        if (!base64Data) {
-          callback?.onError?.('Invalid base64 image');
-          continue;
-        }
-        // 将base64转换为ArrayBuffer
-        const iconData = ByteUtils.base64ToBytes(base64Data);
-        // 添加自定义图标到数据库
-        database.meta.customIcons.set(KdbxUuid.random().id, { data: iconData } as KdbxCustomIcon);
-      }
-      // 清除缓存，确保新图标可见
-      KdbxUtils.clearCustomIconMap();
-      // 保存数据库
-      KdbxSaveService.saveDatabase(callback ?? new ToastSaveDatabaseCallback());
-    } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Add custom icon error: %{public}s', error);
-      callback?.onError?.(error.message);
+  public static addCustomIcon(database: Kdbx, base64Images: string[]): string[] {
+    const uuids: string[] = [];
+    if (!database || !base64Images || base64Images.length === 0) {
+      return uuids;
     }
+    for (const base64Image of base64Images) {
+      // 从base64字符串中提取实际的base64数据部分
+      const base64Data = base64Image.split(',')[1];
+      if (!base64Data) {
+        uuids.push('');
+        continue;
+      }
+      // 将base64转换为字节数组
+      const iconData = ByteUtils.base64ToBytes(base64Data);
+      // 去重：与已有图标逐字节比较，相同则复用已有 UUID
+      const existingUuid = KdbxSaveService.findSameIconUuid(database, iconData);
+      if (existingUuid !== undefined) {
+        uuids.push(existingUuid);
+        continue;
+      }
+      // 添加自定义图标到数据库
+      const uuid = KdbxUuid.random();
+      database.meta.customIcons.set(uuid.id, { data: iconData } as KdbxCustomIcon);
+      uuids.push(uuid.id);
+    }
+    // 清除缓存，确保新图标可见
+    KdbxUtils.clearCustomIconMap();
+    return uuids;
+  }
+
+  /**
+   * 在数据库已有自定义图标中查找与新数据逐字节相同的图标，返回其 UUID；未找到返回 undefined
+   */
+  private static findSameIconUuid(database: Kdbx, iconData: Uint8Array): string | undefined {
+    let foundUuid: string | undefined = undefined;
+    database.meta.customIcons.forEach((icon: KdbxCustomIcon, uuid: string) => {
+      if (foundUuid === undefined && KdbxSaveService.isSameIconData(icon, iconData)) {
+        foundUuid = uuid;
+      }
+    });
+    return foundUuid;
+  }
+
+  /**
+   * 比较已有图标数据与新图标数据是否逐字节相同
+   * 已有图标 data 声明为 ArrayBuffer，运行时可能为 Uint8Array（历史写入路径），统一归一化后比较
+   */
+  private static isSameIconData(existing: KdbxCustomIcon, newData: Uint8Array): boolean {
+    const data = existing.data;
+    if (!data) {
+      return false;
+    }
+    const existingBytes: Uint8Array = data instanceof Uint8Array ?
+      new Uint8Array(data.buffer, data.byteOffset, data.length) : new Uint8Array(data);
+    if (existingBytes.length !== newData.length) {
+      return false;
+    }
+    for (let i = 0; i < existingBytes.length; i++) {
+      if (existingBytes[i] !== newData[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**

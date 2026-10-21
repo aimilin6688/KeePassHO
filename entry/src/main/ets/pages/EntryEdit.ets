@@ -100,7 +100,9 @@ export struct EntryEdit {
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
-    autoCancel: false
+    autoCancel: false,
+    // 关闭系统自动避让，由弹窗内监听键盘高度手动贴边，消除与键盘的间隙
+    keyboardAvoidMode: KeyboardAvoidMode.NONE
   });
   // 密码生成器弹框
   private passwordGeneratorController: CustomDialogController = new CustomDialogController({

@@ -1,0 +1,429 @@
+import { image } from '@kit.ImageKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ByteUtils } from 'kdbxweb';
+import { CommonUtils } from './CommonUtils';
+
+const DOMAIN = 0x0000;
+const TAG = 'BrandIcons';
+
+/**
+ * 品牌图标定义
+ */
+export class BrandIconDef {
+  /** rawfile 文件名（不含目录与扩展名） */
+  readonly file: string;
+  /** 显示名 */
+  readonly label: string;
+  /** 搜索关键词（小写，空格分隔，拼音/英文） */
+  readonly keywords: string;
+
+  constructor(file: string, label: string, keywords: string) {
+    this.file = file;
+    this.label = label;
+    this.keywords = keywords;
+  }
+}
+
+/**
+ * 品牌图标集：内嵌于 rawfile/brand_icons/*.svg（由 scripts/download-brand-icons.ps1 生成）
+ * 来源（许可均允许内嵌再分发）：
+ *   - simple-icons (CC0):       github.com/simple-icons/simple-icons
+ *   - lawnicons   (Apache-2.0): github.com/LawnchairLauncher/lawnicons
+ * 单色品牌图形 + 品牌色（128x128，透明背景）
+ */
+export class BrandIcons {
+  private static readonly DIR = 'brand_icons';
+
+  /** 国内常用品牌图标 */
+  static readonly DOMESTIC: BrandIconDef[] = [
+    new BrandIconDef('wechat', '微信', 'wechat weixin'),
+    new BrandIconDef('alipay', '支付宝', 'alipay zhifubao'),
+    new BrandIconDef('qq', 'QQ', 'qq tencent'),
+    new BrandIconDef('taobao', '淘宝', 'taobao'),
+    new BrandIconDef('jd', '京东', 'jd jingdong'),
+    new BrandIconDef('douyin', '抖音', 'douyin'),
+    new BrandIconDef('xiaohongshu', '小红书', 'xiaohongshu xhs rednote'),
+    new BrandIconDef('weibo', '微博', 'weibo'),
+    new BrandIconDef('zhihu', '知乎', 'zhihu'),
+    new BrandIconDef('bilibili', '哔哩哔哩', 'bilibili bili'),
+    new BrandIconDef('dingtalk', '钉钉', 'dingtalk'),
+    new BrandIconDef('feishu', '飞书', 'feishu lark'),
+    new BrandIconDef('meituan', '美团', 'meituan'),
+    new BrandIconDef('dianping', '大众点评', 'dianping'),
+    new BrandIconDef('eleme', '饿了么', 'eleme taobao flash'),
+    new BrandIconDef('pinduoduo', '拼多多', 'pinduoduo pdd'),
+    new BrandIconDef('xianyu', '闲鱼', 'xianyu'),
+    new BrandIconDef('baidu', '百度', 'baidu'),
+    new BrandIconDef('baidu_netdisk', '百度网盘', 'baidu netdisk wangpan'),
+    new BrandIconDef('uc_browser', 'UC浏览器', 'uc browser liulanqi'),
+    new BrandIconDef('quark', '夸克', 'quark'),
+    new BrandIconDef('netease_cloud_music', '网易云音乐', 'netease cloudmusic yunyinyue'),
+    new BrandIconDef('qq_music', 'QQ音乐', 'qqmusic'),
+    new BrandIconDef('kugou_music', '酷狗音乐', 'kugou'),
+    new BrandIconDef('iqiyi', '爱奇艺', 'iqiyi'),
+    new BrandIconDef('youku', '优酷', 'youku'),
+    new BrandIconDef('tencent_video', '腾讯视频', 'tencentvideo video'),
+    new BrandIconDef('douban', '豆瓣', 'douban'),
+    new BrandIconDef('ctrip', '携程旅行', 'ctrip xiecheng'),
+    new BrandIconDef('railway_12306', '铁路12306', '12306 railway huoche'),
+    new BrandIconDef('amap', '高德地图', 'amap gaode map ditu'),
+    new BrandIconDef('didi', '滴滴出行', 'didi chuxing'),
+    new BrandIconDef('hellobike', '哈啰', 'hellobike halo'),
+    new BrandIconDef('icbc', '中国工商银行', 'icbc gongshang bank yinhang'),
+    new BrandIconDef('ccb', '中国建设银行', 'ccb jianshe bank yinhang'),
+    new BrandIconDef('boc', '中国银行', 'boc zhongguo bank yinhang'),
+    new BrandIconDef('abc_bank', '中国农业银行', 'abc nongye bank yinhang'),
+    new BrandIconDef('cmb', '招商银行', 'cmb zhaoshang bank yinhang'),
+    new BrandIconDef('unionpay', '中国银联', 'unionpay yinlian'),
+    new BrandIconDef('wps_office', 'WPS Office', 'wps office'),
+    new BrandIconDef('xunlei', '迅雷', 'xunlei thunder'),
+    new BrandIconDef('coolapk', '酷安', 'coolapk'),
+    new BrandIconDef('wecom', '企业微信', 'wecom qiye wechat work'),
+    new BrandIconDef('kuaishou', '快手', 'kuaishou kwai'),
+    new BrandIconDef('baidu_tieba', '百度贴吧', 'tieba baidu'),
+    new BrandIconDef('baidu_map', '百度地图', 'baidu map ditu'),
+    new BrandIconDef('qq_mail', 'QQ邮箱', 'qqmail mail youxiang'),
+    new BrandIconDef('alibaba_1688', '1688', '1688 alibaba'),
+    new BrandIconDef('aliyundrive', '阿里云盘', 'aliyundrive alipan yunpan'),
+    new BrandIconDef('umetrip', '航旅纵横', 'umetrip hanglv'),
+    new BrandIconDef('wifi_master', 'WiFi万能钥匙', 'wifi key wifimaster'),
+    new BrandIconDef('smzdm', '什么值得买', 'smzdm zhide'),
+    new BrandIconDef('mafengwo', '马蜂窝', 'mafengwo travel'),
+    new BrandIconDef('china_mobile', '中国移动', 'china mobile yidong 10086'),
+    new BrandIconDef('china_unicom', '中国联通', 'china unicom liantong 10010'),
+    new BrandIconDef('china_telecom', '中国电信', 'china telecom dianxin 10000'),
+    new BrandIconDef('weread', '微信读书', 'weread weixin dushu reading'),
+    new BrandIconDef('dragon_read', '番茄小说', 'fanqie tomato dragonread novel'),
+    new BrandIconDef('fliggy', '飞猪', 'fliggy feizhu travel'),
+    new BrandIconDef('cainiao', '菜鸟', 'cainiao kuaidi delivery'),
+    new BrandIconDef('chaoxing', '学习通', 'chaoxing xuexitong study'),
+    new BrandIconDef('honor_of_kings', '王者荣耀', 'honorofkings wangzhe sgame'),
+    new BrandIconDef('genshin_impact', '原神', 'genshin yuanshen impact'),
+    new BrandIconDef('hoyolab', '米游社', 'hoyolab miyoushe mihoyo'),
+    new BrandIconDef('luckin_coffee', '瑞幸咖啡', 'luckin coffee ruixing'),
+    new BrandIconDef('meituan_takeaway', '美团外卖', 'meituan waimai takeaway'),
+    new BrandIconDef('mi_store', '小米商城', 'mishop xiaomi store shangcheng'),
+    new BrandIconDef('huawei_health', '华为运动健康', 'huawei health yundong jiankang'),
+    new BrandIconDef('sunlogin', '向日葵远程控制', 'sunlogin xiangrikui remote oray'),
+    new BrandIconDef('boss_recruitment', 'BOSS直聘', 'boss zhipin recruitment zhaopin')
+  ];
+
+  /** 国外常用品牌图标 */
+  static readonly INTERNATIONAL: BrandIconDef[] = [
+    new BrandIconDef('google', 'Google', 'google'),
+    new BrandIconDef('apple', 'Apple', 'apple iphone ios'),
+    new BrandIconDef('github', 'GitHub', 'github'),
+    new BrandIconDef('gitlab', 'GitLab', 'gitlab'),
+    new BrandIconDef('amazon', 'Amazon', 'amazon shopping'),
+    new BrandIconDef('facebook', 'Facebook', 'facebook meta'),
+    new BrandIconDef('instagram', 'Instagram', 'instagram'),
+    new BrandIconDef('x', 'X', 'x twitter'),
+    new BrandIconDef('tiktok', 'TikTok', 'tiktok'),
+    new BrandIconDef('linkedin', 'LinkedIn', 'linkedin'),
+    new BrandIconDef('youtube', 'YouTube', 'youtube'),
+    new BrandIconDef('netflix', 'Netflix', 'netflix'),
+    new BrandIconDef('spotify', 'Spotify', 'spotify'),
+    new BrandIconDef('discord', 'Discord', 'discord'),
+    new BrandIconDef('reddit', 'Reddit', 'reddit'),
+    new BrandIconDef('steam', 'Steam', 'steam valve'),
+    new BrandIconDef('twitch', 'Twitch', 'twitch'),
+    new BrandIconDef('whatsapp', 'WhatsApp', 'whatsapp'),
+    new BrandIconDef('telegram', 'Telegram', 'telegram'),
+    new BrandIconDef('signal', 'Signal', 'signal'),
+    new BrandIconDef('slack', 'Slack', 'slack'),
+    new BrandIconDef('snapchat', 'Snapchat', 'snapchat'),
+    new BrandIconDef('pinterest', 'Pinterest', 'pinterest'),
+    new BrandIconDef('line', 'LINE', 'line'),
+    new BrandIconDef('paypal', 'PayPal', 'paypal'),
+    new BrandIconDef('stripe', 'Stripe', 'stripe'),
+    new BrandIconDef('visa', 'Visa', 'visa'),
+    new BrandIconDef('mastercard', 'Mastercard', 'mastercard'),
+    new BrandIconDef('american_express', 'American Express', 'amex americanexpress'),
+    new BrandIconDef('google_drive', 'Google Drive', 'googledrive drive'),
+    new BrandIconDef('dropbox', 'Dropbox', 'dropbox'),
+    new BrandIconDef('onedrive', 'OneDrive', 'onedrive'),
+    new BrandIconDef('icloud', 'iCloud', 'icloud'),
+    new BrandIconDef('notion', 'Notion', 'notion'),
+    new BrandIconDef('openai', 'OpenAI', 'openai chatgpt'),
+    new BrandIconDef('bitwarden', 'Bitwarden', 'bitwarden'),
+    new BrandIconDef('onepassword', '1Password', '1password'),
+    new BrandIconDef('lastpass', 'LastPass', 'lastpass'),
+    new BrandIconDef('cloudflare', 'Cloudflare', 'cloudflare'),
+    new BrandIconDef('firefox', 'Firefox', 'firefox browser'),
+    new BrandIconDef('chrome', 'Chrome', 'chrome browser'),
+    new BrandIconDef('safari', 'Safari', 'safari browser'),
+    new BrandIconDef('linux', 'Linux', 'linux'),
+    new BrandIconDef('ubuntu', 'Ubuntu', 'ubuntu'),
+    new BrandIconDef('docker', 'Docker', 'docker'),
+    new BrandIconDef('kubernetes', 'Kubernetes', 'kubernetes k8s'),
+    new BrandIconDef('nintendo', 'Nintendo Switch', 'nintendo switch'),
+    new BrandIconDef('playstation', 'PlayStation', 'playstation sony ps5'),
+    new BrandIconDef('xbox', 'Xbox', 'xbox'),
+    new BrandIconDef('epic_games', 'Epic Games', 'epicgames'),
+    new BrandIconDef('minecraft', 'Minecraft', 'minecraft'),
+    new BrandIconDef('roblox', 'Roblox', 'roblox'),
+    new BrandIconDef('riot_games', 'Riot Games', 'riotgames leagueoflegends'),
+    new BrandIconDef('gitee', 'Gitee', 'gitee'),
+    new BrandIconDef('proton_vpn', 'Proton VPN', 'protonvpn vpn'),
+    new BrandIconDef('proton_mail', 'Proton Mail', 'protonmail mail'),
+    new BrandIconDef('keepassxc', 'KeePassXC', 'keepassxc keepass'),
+    new BrandIconDef('stackoverflow', 'Stack Overflow', 'stackoverflow'),
+    new BrandIconDef('hackerrank', 'HackerRank', 'hackerrank'),
+    new BrandIconDef('leetcode', 'LeetCode', 'leetcode'),
+    new BrandIconDef('freecodecamp', 'freeCodeCamp', 'freecodecamp fcc'),
+    new BrandIconDef('bitcoin', 'Bitcoin', 'bitcoin btc crypto'),
+    new BrandIconDef('ethereum', 'Ethereum', 'ethereum eth crypto'),
+    new BrandIconDef('coinbase', 'Coinbase', 'coinbase crypto'),
+    new BrandIconDef('binance', 'Binance', 'binance crypto'),
+    new BrandIconDef('brave', 'Brave', 'brave browser'),
+    new BrandIconDef('opera', 'Opera', 'opera browser'),
+    new BrandIconDef('airbnb', 'Airbnb', 'airbnb'),
+    new BrandIconDef('uber', 'Uber', 'uber'),
+    new BrandIconDef('booking', 'Booking.com', 'booking travel'),
+    new BrandIconDef('ebay', 'eBay', 'ebay shopping'),
+    new BrandIconDef('shopify', 'Shopify', 'shopify'),
+    new BrandIconDef('etsy', 'Etsy', 'etsy'),
+    new BrandIconDef('duolingo', 'Duolingo', 'duolingo'),
+    new BrandIconDef('coursera', 'Coursera', 'coursera'),
+    new BrandIconDef('udemy', 'Udemy', 'udemy'),
+    new BrandIconDef('khan_academy', 'Khan Academy', 'khanacademy'),
+    new BrandIconDef('soundcloud', 'SoundCloud', 'soundcloud'),
+    new BrandIconDef('apple_music', 'Apple Music', 'applemusic music'),
+    new BrandIconDef('vimeo', 'Vimeo', 'vimeo'),
+    new BrandIconDef('threads', 'Threads', 'threads'),
+    new BrandIconDef('mastodon', 'Mastodon', 'mastodon'),
+    new BrandIconDef('bluesky', 'Bluesky', 'bluesky bsky'),
+    new BrandIconDef('tumblr', 'Tumblr', 'tumblr'),
+    new BrandIconDef('medium', 'Medium', 'medium'),
+    new BrandIconDef('wordpress', 'WordPress', 'wordpress'),
+    new BrandIconDef('figma', 'Figma', 'figma design'),
+    new BrandIconDef('todoist', 'Todoist', 'todoist'),
+    new BrandIconDef('evernote', 'Evernote', 'evernote'),
+    new BrandIconDef('teamviewer', 'TeamViewer', 'teamviewer'),
+    new BrandIconDef('google_meet', 'Google Meet', 'googlemeet meet'),
+    new BrandIconDef('gmail', 'Gmail', 'gmail mail'),
+    new BrandIconDef('google_maps', 'Google Maps', 'googlemaps map'),
+    new BrandIconDef('google_photos', 'Google Photos', 'googlephotos photo'),
+    new BrandIconDef('google_calendar', 'Google Calendar', 'googlecalendar calendar'),
+    new BrandIconDef('youtube_music', 'YouTube Music', 'youtubemusic music'),
+    new BrandIconDef('nextcloud', 'Nextcloud', 'nextcloud'),
+    new BrandIconDef('jellyfin', 'Jellyfin', 'jellyfin'),
+    new BrandIconDef('home_assistant', 'Home Assistant', 'homeassistant hass'),
+    new BrandIconDef('grafana', 'Grafana', 'grafana'),
+    new BrandIconDef('git', 'Git', 'git'),
+    new BrandIconDef('python', 'Python', 'python'),
+    new BrandIconDef('nodejs', 'Node.js', 'nodejs node'),
+    new BrandIconDef('rust', 'Rust', 'rust'),
+    new BrandIconDef('go', 'Go', 'go golang'),
+    new BrandIconDef('alibaba_cloud', 'Alibaba Cloud', 'alibabacloud alicloud'),
+    new BrandIconDef('vercel', 'Vercel', 'vercel'),
+    new BrandIconDef('netlify', 'Netlify', 'netlify'),
+    new BrandIconDef('adguard', 'AdGuard', 'adguard'),
+    new BrandIconDef('wise', 'Wise', 'wise transferwise'),
+    new BrandIconDef('revolut', 'Revolut', 'revolut'),
+    new BrandIconDef('kakaotalk', 'KakaoTalk', 'kakaotalk kakao'),
+    new BrandIconDef('naver', 'Naver', 'naver'),
+    new BrandIconDef('viber', 'Viber', 'viber'),
+    new BrandIconDef('grab', 'Grab', 'grab'),
+    new BrandIconDef('gojek', 'Gojek', 'gojek'),
+    new BrandIconDef('shopee', 'Shopee', 'shopee'),
+    new BrandIconDef('rakuten', 'Rakuten', 'rakuten'),
+    new BrandIconDef('tinder', 'Tinder', 'tinder'),
+    new BrandIconDef('substack', 'Substack', 'substack'),
+    new BrandIconDef('patreon', 'Patreon', 'patreon'),
+    new BrandIconDef('starbucks', 'Starbucks', 'starbucks coffee'),
+    new BrandIconDef('mcdonalds', "McDonald's", 'mcdonalds'),
+    new BrandIconDef('kfc', 'KFC', 'kfc'),
+    new BrandIconDef('burgerking', 'Burger King', 'burgerking'),
+    new BrandIconDef('tacobell', 'Taco Bell', 'tacobell'),
+    new BrandIconDef('ikea', 'IKEA', 'ikea'),
+    new BrandIconDef('target', 'Target', 'target'),
+    new BrandIconDef('aliexpress', 'AliExpress', 'aliexpress'),
+    new BrandIconDef('ubereats', 'Uber Eats', 'ubereats'),
+    new BrandIconDef('doordash', 'DoorDash', 'doordash'),
+    new BrandIconDef('deliveroo', 'Deliveroo', 'deliveroo'),
+    new BrandIconDef('lyft', 'Lyft', 'lyft'),
+    new BrandIconDef('expedia', 'Expedia', 'expedia travel'),
+    new BrandIconDef('tripadvisor', 'Tripadvisor', 'tripadvisor travel'),
+    new BrandIconDef('lufthansa', 'Lufthansa', 'lufthansa airline'),
+    new BrandIconDef('emirates', 'Emirates', 'emirates airline'),
+    new BrandIconDef('britishairways', 'British Airways', 'britishairways airline'),
+    new BrandIconDef('qantas', 'Qantas', 'qantas airline'),
+    new BrandIconDef('ryanair', 'Ryanair', 'ryanair airline'),
+    new BrandIconDef('hbo', 'HBO', 'hbo'),
+    new BrandIconDef('appletv', 'Apple TV', 'appletv'),
+    new BrandIconDef('crunchyroll', 'Crunchyroll', 'crunchyroll anime'),
+    new BrandIconDef('tidal', 'TIDAL', 'tidal music'),
+    new BrandIconDef('deezer', 'Deezer', 'deezer music'),
+    new BrandIconDef('pandora', 'Pandora', 'pandora music'),
+    new BrandIconDef('bandcamp', 'Bandcamp', 'bandcamp music'),
+    new BrandIconDef('shazam', 'Shazam', 'shazam music'),
+    new BrandIconDef('audible', 'Audible', 'audible book'),
+    new BrandIconDef('goodreads', 'Goodreads', 'goodreads book'),
+    new BrandIconDef('archiveofourown', 'AO3', 'archiveofourown ao3'),
+    new BrandIconDef('myanimelist', 'MyAnimeList', 'myanimelist anime mal'),
+    new BrandIconDef('chessdotcom', 'Chess.com', 'chess'),
+    new BrandIconDef('lichess', 'Lichess', 'lichess chess'),
+    new BrandIconDef('edx', 'edX', 'edx'),
+    new BrandIconDef('skillshare', 'Skillshare', 'skillshare'),
+    new BrandIconDef('pluralsight', 'Pluralsight', 'pluralsight'),
+    new BrandIconDef('codecademy', 'Codecademy', 'codecademy'),
+    new BrandIconDef('codewars', 'Codewars', 'codewars'),
+    new BrandIconDef('codeforces', 'Codeforces', 'codeforces'),
+    new BrandIconDef('jetbrains', 'JetBrains', 'jetbrains'),
+    new BrandIconDef('sublimetext', 'Sublime Text', 'sublimetext'),
+    new BrandIconDef('neovim', 'Neovim', 'neovim'),
+    new BrandIconDef('vim', 'Vim', 'vim'),
+    new BrandIconDef('notepadplusplus', 'Notepad++', 'notepadplusplus'),
+    new BrandIconDef('monzo', 'Monzo', 'monzo bank'),
+    new BrandIconDef('robinhood', 'Robinhood', 'robinhood'),
+    new BrandIconDef('tradingview', 'TradingView', 'tradingview'),
+    new BrandIconDef('imgur', 'Imgur', 'imgur'),
+    new BrandIconDef('quora', 'Quora', 'quora'),
+    new BrandIconDef('vk', 'VK', 'vk vkontakte'),
+    new BrandIconDef('nextdoor', 'Nextdoor', 'nextdoor'),
+    new BrandIconDef('ecosia', 'Ecosia', 'ecosia'),
+    new BrandIconDef('duckduckgo', 'DuckDuckGo', 'duckduckgo search'),
+    new BrandIconDef('huggingface', 'Hugging Face', 'huggingface'),
+    new BrandIconDef('plex', 'Plex', 'plex'),
+    new BrandIconDef('emby', 'Emby', 'emby'),
+    new BrandIconDef('anydesk', 'AnyDesk', 'anydesk remote'),
+    new BrandIconDef('dashlane', 'Dashlane', 'dashlane'),
+    new BrandIconDef('kaspersky', 'Kaspersky', 'kaspersky'),
+    new BrandIconDef('avast', 'Avast', 'avast'),
+    new BrandIconDef('bitbucket', 'Bitbucket', 'bitbucket'),
+    new BrandIconDef('jira', 'Jira', 'jira atlassian'),
+    new BrandIconDef('trello', 'Trello', 'trello atlassian'),
+    new BrandIconDef('asana', 'Asana', 'asana'),
+    new BrandIconDef('airtable', 'Airtable', 'airtable'),
+    new BrandIconDef('jenkins', 'Jenkins', 'jenkins ci'),
+    new BrandIconDef('circleci', 'CircleCI', 'circleci ci'),
+    new BrandIconDef('terraform', 'Terraform', 'terraform'),
+    new BrandIconDef('ansible', 'Ansible', 'ansible'),
+    new BrandIconDef('prometheus', 'Prometheus', 'prometheus'),
+    new BrandIconDef('sentry', 'Sentry', 'sentry'),
+    new BrandIconDef('postman', 'Postman', 'postman api'),
+    new BrandIconDef('nginx', 'Nginx', 'nginx'),
+    new BrandIconDef('postgresql', 'PostgreSQL', 'postgresql postgres db'),
+    new BrandIconDef('mysql', 'MySQL', 'mysql db'),
+    new BrandIconDef('mongodb', 'MongoDB', 'mongodb db'),
+    new BrandIconDef('redis', 'Redis', 'redis db'),
+    new BrandIconDef('sqlite', 'SQLite', 'sqlite db'),
+    new BrandIconDef('elasticsearch', 'Elasticsearch', 'elasticsearch elastic'),
+    new BrandIconDef('typescript', 'TypeScript', 'typescript ts'),
+    new BrandIconDef('javascript', 'JavaScript', 'javascript js'),
+    new BrandIconDef('kotlin', 'Kotlin', 'kotlin'),
+    new BrandIconDef('swift', 'Swift', 'swift'),
+    new BrandIconDef('dart', 'Dart', 'dart'),
+    new BrandIconDef('flutter', 'Flutter', 'flutter'),
+    new BrandIconDef('react', 'React', 'react'),
+    new BrandIconDef('vuedotjs', 'Vue.js', 'vue vuejs'),
+    new BrandIconDef('angular', 'Angular', 'angular'),
+    new BrandIconDef('svelte', 'Svelte', 'svelte'),
+    new BrandIconDef('laravel', 'Laravel', 'laravel php'),
+    new BrandIconDef('django', 'Django', 'django python'),
+    new BrandIconDef('rubyonrails', 'Ruby on Rails', 'rubyonrails rails'),
+    new BrandIconDef('spring', 'Spring', 'spring java'),
+    new BrandIconDef('dotnet', '.NET', 'dotnet net'),
+    new BrandIconDef('php', 'PHP', 'php'),
+    new BrandIconDef('c', 'C', 'c clang'),
+    new BrandIconDef('cplusplus', 'C++', 'cplusplus cpp'),
+    new BrandIconDef('debian', 'Debian', 'debian linux'),
+    new BrandIconDef('fedora', 'Fedora', 'fedora linux'),
+    new BrandIconDef('centos', 'CentOS', 'centos linux'),
+    new BrandIconDef('archlinux', 'Arch Linux', 'archlinux linux'),
+    new BrandIconDef('redhat', 'Red Hat', 'redhat linux'),
+    new BrandIconDef('googlecloud', 'Google Cloud', 'googlecloud gcp'),
+    new BrandIconDef('digitalocean', 'DigitalOcean', 'digitalocean'),
+    new BrandIconDef('sega', 'SEGA', 'sega game'),
+    new BrandIconDef('ubisoft', 'Ubisoft', 'ubisoft game'),
+    new BrandIconDef('ea', 'EA', 'ea electronicarts game'),
+    new BrandIconDef('rockstargames', 'Rockstar Games', 'rockstargames game'),
+    new BrandIconDef('battledotnet', 'Battle.net', 'battledotnet battle blizzard'),
+    new BrandIconDef('kick', 'Kick', 'kick streaming'),
+    new BrandIconDef('geeksforgeeks', 'GeeksforGeeks', 'geeksforgeeks gfg'),
+    new BrandIconDef('wireshark', 'Wireshark', 'wireshark'),
+    new BrandIconDef('filezilla', 'FileZilla', 'filezilla ftp'),
+    new BrandIconDef('virtualbox', 'VirtualBox', 'virtualbox vm'),
+    new BrandIconDef('apachekafka', 'Apache Kafka', 'apachekafka kafka'),
+    new BrandIconDef('rabbitmq', 'RabbitMQ', 'rabbitmq mq'),
+    new BrandIconDef('graphql', 'GraphQL', 'graphql api'),
+    new BrandIconDef('swagger', 'Swagger', 'swagger openapi'),
+    new BrandIconDef('anthropic', 'Anthropic', 'anthropic claude'),
+    new BrandIconDef('perplexity', 'Perplexity', 'perplexity')
+  ];
+
+  /**
+   * 品牌图标 rawfile 路径（$rawfile 用）
+   */
+  static rawfilePath(def: BrandIconDef): string {
+    return BrandIcons.DIR + '/' + def.file + '.svg';
+  }
+
+  /**
+   * 按关键词过滤（显示名 + 拼音/英文关键词，不区分大小写包含匹配）
+   */
+  static search(list: BrandIconDef[], keyword: string): BrandIconDef[] {
+    const k = keyword.trim().toLowerCase();
+    if (!k) {
+      return list;
+    }
+    return list.filter((def: BrandIconDef) => def.label.toLowerCase().includes(k) || def.keywords.includes(k));
+  }
+
+  /**
+   * 将品牌图标 SVG 解码为 PNG dataUrl（data:image/png;base64,...），
+   * 用于经 KdbxSaveService.addCustomIcon 存入数据库自定义图标
+   * @param def 品牌图标定义
+   * @param size 输出尺寸（像素，默认 128）
+   */
+  static async toPngDataUrl(def: BrandIconDef, size: number = 128): Promise<string | null> {
+    let imageSource: image.ImageSource | null = null;
+    let pixelMap: image.PixelMap | null = null;
+    let packer: image.ImagePacker | null = null;
+    try {
+      const content: Uint8Array = await CommonUtils.getContext()
+        .resourceManager.getRawFileContent(BrandIcons.DIR + '/' + def.file + '.svg');
+      if (!content || content.byteLength === 0) {
+        return null;
+      }
+      imageSource = image.createImageSource(content.buffer);
+      if (!imageSource) {
+        return null;
+      }
+      const decodingOptions: image.DecodingOptions = {
+        editable: false,
+        desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
+        desiredSize: { width: size, height: size }
+      };
+      pixelMap = await imageSource.createPixelMap(decodingOptions);
+      if (!pixelMap) {
+        return null;
+      }
+      packer = image.createImagePacker();
+      const packingOption: image.PackingOption = {
+        format: 'image/png',
+        quality: 100
+      };
+      const pngData: ArrayBuffer = await packer.packToData(pixelMap, packingOption);
+      return 'data:image/png;base64,' + ByteUtils.bytesToBase64(pngData);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Convert brand icon %{public}s failed: %{public}s', def.file,
+        JSON.stringify(error));
+      return null;
+    } finally {
+      if (pixelMap) {
+        pixelMap.release().catch(() => {
+        });
+      }
+      if (packer) {
+        packer.release().catch(() => {
+        });
+      }
+      if (imageSource) {
+        imageSource.release().catch(() => {
+        });
+      }
+    }
+  }
+}
