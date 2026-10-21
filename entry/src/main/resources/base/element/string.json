@@ -2213,12 +2213,12 @@
       "value": "Free space"
     },
     {
-      "name": "baidu_netdisk_load_account_failed",
-      "value": "Failed to load account info: %s"
-    },
-    {
       "name": "baidu_netdisk_login_prompt",
       "value": "Please sign in to your Baidu Netdisk account to access your files"
+    },
+    {
+      "name": "baidu_netdisk_permission_notice",
+      "value": "After authorization, the app will read the file list in your Baidu Netdisk and may download and upload file contents"
     },
     {
       "name": "baidu_netdisk_login_button",

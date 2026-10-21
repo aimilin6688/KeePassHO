@@ -2141,12 +2141,12 @@
       "value": "剩余容量"
     },
     {
-      "name": "baidu_netdisk_load_account_failed",
-      "value": "获取账户信息失败: %s"
-    },
-    {
       "name": "baidu_netdisk_login_prompt",
       "value": "请登录百度网盘账号以访问您的文件"
+    },
+    {
+      "name": "baidu_netdisk_permission_notice",
+      "value": "授权后，应用将读取您百度网盘中的文件列表，并可下载、上传文件内容"
     },
     {
       "name": "baidu_netdisk_login_button",

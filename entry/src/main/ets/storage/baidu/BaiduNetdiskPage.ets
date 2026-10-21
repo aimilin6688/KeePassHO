@@ -127,12 +127,10 @@ struct BaiduNetdiskPage {
         this.userInfo.netdiskName || this.userInfo.baiduName, this.userInfo.vipType,
         this.quotaInfo.total, this.quotaInfo.used);
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to load account info: %{public}s', (error as Error).message);
+      // 获取账户信息失败时静默处理：不展示账号与容量信息，也不提示错误
+      hilog.warn(DOMAIN, TAG, 'Failed to load account info (silent): %{public}s', (error as Error).message);
       this.userInfo = null;
       this.quotaInfo = null;
-      this.connectionStatus = ResourceManager.getString($r('app.string.baidu_netdisk_load_account_failed'),
-        (error as Error).message);
-      this.isErrorStatus = true;
     }
   }
 
@@ -596,6 +594,16 @@ struct BaiduNetdiskPage {
                 .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
                 .margin({ top: 20 })
+
+              // 权限提示：明确告知用户应用将执行的网盘操作
+              Text($r('app.string.baidu_netdisk_permission_notice'))
+                .fontSize(12)
+                .fontColor($r('app.color.warn'))
+                .margin({ top: 8 })
+                .padding(8)
+                .width('100%')
+                .backgroundColor($r('app.color.card_bg'))
+                .borderRadius(8)
 
               Button($r('app.string.baidu_netdisk_login_button'))
                 .width('100%')
