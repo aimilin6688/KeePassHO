@@ -1,6 +1,6 @@
 /**
  * 条目到期提醒条组件（M1）
- * 封装：解锁后到期评估（防打扰判定）、根组可见性、「今日不再提示」与提示条 UI
+ * 封装：解锁后到期评估（防打扰判定）、根组可见性、「关闭」与提示条 UI
  * 父组件在解锁完成后通过 ExpiryHintBarController.evaluateExpiry() 触发评估
  */
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -48,12 +48,12 @@ export struct ExpiryHintBar {
       HintBanner({
         message: ResourceManager.getString($r('app.string.expiry_remind_banner_text'), this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays),
         actionLabel: $r('app.string.expiry_remind_view'),
-        dismissLabel: $r('app.string.expiry_remind_dismiss_today'),
+        dismissLabel: $r('app.string.close_button_text'),
         onAction: (): void => {
           NavigationManager.getInstance().navigateTo(PageConstants.PAGE_EXPIRY_REPORT);
         },
-        onDismiss: (): void => {
-          this.dismissExpiryHint();
+        onDismiss: ():void => {
+          this.closeExpiryHint();
         }
       })
     }
@@ -89,12 +89,14 @@ export struct ExpiryHintBar {
   }
 
   /**
-   * 「今日不再提示」到期提醒：按库记忆并立即隐藏
+   * 「关闭」到期提醒条：仅隐藏当前提示条。
+   * 每 24 小时频率：记录关闭时间（下次解锁按 24h 间隔判断是否再次提醒）；
+   * 每次解锁频率：不记录，下次解锁仍会提醒
    */
-  private dismissExpiryHint(): void {
+  private closeExpiryHint(): void {
     const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
-    ExpiryRemindService.getInstance().hideToday(iocKey).catch((): void => {
-      hilog.warn(DOMAIN, TAG, 'Failed to persist expiry hint hidden flag');
+    ExpiryRemindService.getInstance().closeRemind(iocKey).catch((): void => {
+      hilog.warn(DOMAIN, TAG, 'Failed to persist expiry remind close time');
     });
     this.showExpiryHint = false;
   }

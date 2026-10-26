@@ -757,10 +757,6 @@
       "value": "View"
     },
     {
-      "name": "expiry_remind_dismiss_today",
-      "value": "Don't remind today"
-    },
-    {
       "name": "expiry_report_title",
       "value": "Expiring entries"
     },

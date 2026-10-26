@@ -9,7 +9,7 @@ import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 /**
  * ExpiryRemindService 单元测试（M1 条目到期提醒）
  * 覆盖：收集分组（已过期/N天内到期）/ 回收站排除 / 子分组包含 /
- *       防打扰 24h 边界（23h/25h）/ 每次解锁频率 / 多库隔离 / 今日隐藏 / 开关关闭
+ *       防打扰 24h 边界（23h/25h）/ 每次解锁频率 / 多库隔离 / 关闭记录时间 / 开关关闭
  */
 export default function ExpiryRemindServiceTest() {
   describe('ExpiryRemindService', () => {
@@ -47,8 +47,6 @@ export default function ExpiryRemindServiceTest() {
       const instance = SettingsService.getInstance();
       instance.deleteSync(SettingsService.expiryRemindLastTimeKey(IOC_KEY_A));
       instance.deleteSync(SettingsService.expiryRemindLastTimeKey(IOC_KEY_B));
-      instance.deleteSync(SettingsService.expiryRemindHiddenKey(IOC_KEY_A));
-      instance.deleteSync(SettingsService.expiryRemindHiddenKey(IOC_KEY_B));
       instance.deleteSync(SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE);
       instance.deleteSync(SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS);
       instance.deleteSync(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY);
@@ -210,15 +208,37 @@ export default function ExpiryRemindServiceTest() {
       expect(resultB !== null).assertTrue();
     });
 
-    // ---------------- 今日隐藏（不再提示） ----------------
+    // ---------------- closeRemind 关闭提醒条（DAILY 记录关闭时间 / EVERY_UNLOCK 仅隐藏） ----------------
 
-    it('hideToday makes isHiddenToday true and evaluate return null', 0, async () => {
+    it('closeRemind records close time for DAILY frequency and suppresses next evaluate', 0, async () => {
       const db = await createDbWithExpiringEntries();
-      expect(ExpiryRemindService.getInstance().isHiddenToday(IOC_KEY_A)).assertFalse();
-      await ExpiryRemindService.getInstance().hideToday(IOC_KEY_A);
-      expect(ExpiryRemindService.getInstance().isHiddenToday(IOC_KEY_A)).assertTrue();
-      const result = ExpiryRemindService.getInstance().evaluate(db, IOC_KEY_A);
-      expect(result === null).assertTrue();
+      const lastTimeKey = SettingsService.expiryRemindLastTimeKey(IOC_KEY_A);
+      // 首次评估：正常提醒
+      expect(ExpiryRemindService.getInstance().evaluate(db, IOC_KEY_A) !== null).assertTrue();
+      const before = Date.now();
+      await ExpiryRemindService.getInstance().closeRemind(IOC_KEY_A);
+      const recorded = SettingsService.getInstance().getSync(lastTimeKey, 0);
+      expect(recorded >= before).assertTrue();
+      // 关闭后 24h 内不再提醒
+      expect(ExpiryRemindService.getInstance().evaluate(db, IOC_KEY_A) === null).assertTrue();
+    });
+
+    it('closeRemind keeps zero timestamp for EVERY_UNLOCK frequency', 0, async () => {
+      await SettingsService.getInstance().put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, ExpiryRemindFrequency.EVERY_UNLOCK);
+      const lastTimeKey = SettingsService.expiryRemindLastTimeKey(IOC_KEY_A);
+      const before = Date.now();
+      await ExpiryRemindService.getInstance().closeRemind(IOC_KEY_A);
+      expect(SettingsService.getInstance().getSync(lastTimeKey, 0)).assertEqual(0);
+      expect(Date.now() >= before).assertTrue();
+    });
+
+    it('evaluate still reminds after close for EVERY_UNLOCK frequency', 0, async () => {
+      const db = await createDbWithExpiringEntries();
+      await SettingsService.getInstance().put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, ExpiryRemindFrequency.EVERY_UNLOCK);
+      expect(ExpiryRemindService.getInstance().evaluate(db, IOC_KEY_A) !== null).assertTrue();
+      await ExpiryRemindService.getInstance().closeRemind(IOC_KEY_A);
+      // 每次解锁都提醒：关闭不产生静默期
+      expect(ExpiryRemindService.getInstance().evaluate(db, IOC_KEY_A) !== null).assertTrue();
     });
   });
 }

@@ -68,7 +68,6 @@ export class SettingsService {
   public static readonly KEY_SECURITY_EXPIRE_REMIND_FREQUENCY = 'Security_expire_remind_frequency';
   public static readonly KEY_SECURITY_EXPIRE_REMIND_FREQUENCY_DEFAULT = ExpiryRemindFrequency.DAILY;
   public static readonly KEY_EXPIRE_REMIND_LAST_TIME_PREFIX = 'Expire_remind_last_time_';
-  public static readonly KEY_EXPIRE_REMIND_HIDDEN_PREFIX = 'Expire_remind_hidden_';
 
   // 认证方式
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
@@ -326,14 +325,6 @@ export class SettingsService {
    */
   public static expiryRemindLastTimeKey(iocKey: string): string {
     return `${SettingsService.KEY_EXPIRE_REMIND_LAST_TIME_PREFIX}${SettingsService.hashIocKey(iocKey)}`;
-  }
-
-  /**
-   * 生成到期提醒「今日不再提示」的按库记忆键（M1）
-   * @param iocKey 库会话键（storageType::filePath）
-   */
-  public static expiryRemindHiddenKey(iocKey: string): string {
-    return `${SettingsService.KEY_EXPIRE_REMIND_HIDDEN_PREFIX}${SettingsService.hashIocKey(iocKey)}`;
   }
 
   // 读取数据

@@ -745,10 +745,6 @@
       "value": "查看"
     },
     {
-      "name": "expiry_remind_dismiss_today",
-      "value": "今日不再提示"
-    },
-    {
       "name": "expiry_report_title",
       "value": "到期条目"
     },

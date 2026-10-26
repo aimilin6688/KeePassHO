@@ -33,7 +33,7 @@ export class ExpiryRemindResult {
 
 /**
  * 到期提醒服务（M1）：解锁后收集已过期 / N 天内到期条目，
- * 结合防打扰策略（每库 24h 间隔 / 每次解锁 / 今日不再提示）决定是否提醒。
+ * 结合防打扰策略（每库 24h 间隔 / 每次解锁 / 关闭记录时间）决定是否提醒。
  */
 export class ExpiryRemindService {
   private static instance: ExpiryRemindService = new ExpiryRemindService();
@@ -97,7 +97,7 @@ export class ExpiryRemindService {
   }
 
   /**
-   * 解锁后评估到期提醒：开关 → 今日隐藏 → 防打扰 → 收集。
+   * 解锁后评估到期提醒：开关 → 防打扰 → 收集。
    * 存在临期条目且通过全部判定时记录本次提醒时间并返回结果，否则返回 null。
    * @param database 当前数据库
    * @param iocKey 库会话键（storageType::filePath）
@@ -108,9 +108,6 @@ export class ExpiryRemindService {
         return null;
       }
       if (iocKey.length === 0) {
-        return null;
-      }
-      if (this.isHiddenToday(iocKey)) {
         return null;
       }
       const frequency: ExpiryRemindFrequency = SettingsService.getExpireRemindFrequency();
@@ -136,28 +133,19 @@ export class ExpiryRemindService {
   }
 
   /**
-   * 「今日不再提示」是否生效（按库记忆，仅当日有效）
-   * @param iocKey 库会话键
+   * 「关闭」到期提醒条：仅隐藏当前提示条。
+   * 每 24 小时频率：记录关闭时间，下次解锁按 24h 间隔判断是否再次提醒；
+   * 每次解锁频率：不记录（每次解锁都提醒，关闭不产生静默期）。
+   * @param iocKey 库会话键（storageType::filePath）
    */
-  public isHiddenToday(iocKey: string): boolean {
-    if (iocKey.length === 0) {
-      return false;
-    }
-    const hiddenTime: number = SettingsService.getInstance().getSync(SettingsService.expiryRemindHiddenKey(iocKey), 0);
-    if (hiddenTime <= 0) {
-      return false;
-    }
-    return DateUtils.isToday(new Date(hiddenTime));
-  }
-
-  /**
-   * 标记「今日不再提示」（按库记忆）
-   * @param iocKey 库会话键
-   */
-  public async hideToday(iocKey: string): Promise<void> {
+  public async closeRemind(iocKey: string): Promise<void> {
     if (iocKey.length === 0) {
       return;
     }
-    await SettingsService.getInstance().put(SettingsService.expiryRemindHiddenKey(iocKey), Date.now());
+    const frequency: ExpiryRemindFrequency = SettingsService.getExpireRemindFrequency();
+    if (frequency !== ExpiryRemindFrequency.DAILY) {
+      return;
+    }
+    await SettingsService.getInstance().put(SettingsService.expiryRemindLastTimeKey(iocKey), Date.now());
   }
 }
