@@ -1,6 +1,6 @@
 import { Kdbx, KdbxEntry } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { KdbxUtils, NavigationManager, ResourceManager } from '../common/utils';
+import { DateUtils, KdbxUtils, NavigationManager, ResourceManager } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
@@ -36,20 +36,21 @@ export function ExpiryReportBuilder(name: string, param: Object): void {
   NavDestination() {
     ExpiryReport()
   }
-  .title($r('app.string.expiry_report_title'))
   .backgroundColor($r('app.color.bg_primary'))
+  .hideTitleBar(true)
 }
 
 /**
  * 到期报表页（M1 条目到期提醒）：解锁横幅「查看」进入，
  * 分「已过期 / 即将到期」两段展示，按剩余天数排序，支持搜索过滤，
- * 点击条目跳转条目详情。
+ * 点击条目跳转条目详情。条目卡片样式与边距对齐 TotpView。
  */
 @Component
 struct ExpiryReport {
   private static readonly DAY_MS: number = 24 * 60 * 60 * 1000;
   private navPathStack: NavPathStack = NavigationManager.getInstance().getNavPathStack()!;
   @State isLoading: boolean = true;
+  @State isSearching: boolean = false;
   @State searchText: string = '';
   /** 0=已过期 1=即将到期 */
   @State activeTab: number = 0;
@@ -148,105 +149,223 @@ struct ExpiryReport {
   }
 
   build() {
-    Column() {
-      // 搜索框
-      TextInput({ placeholder: $r('app.string.expiry_report_search_hint'), text: this.searchText })
-        .onChange((value: string) => {
-          this.searchText = value;
-          this.applyFilter();
-        })
+    Stack() {
+      Column() {
+        // 顶部导航栏：返回 + 标题 + 搜索（对齐 TotpView）
+        Row() {
+          if (this.isSearching) {
+            Row() {
+              Search({ placeholder: $r('app.string.expiry_report_search_hint'), value: this.searchText })
+                .margin({ left: 16 })
+                .height(36)
+                .layoutWeight(1)
+                .flexShrink(1)
+                .searchIcon({
+                  src: $r('sys.media.ohos_ic_public_search_filled')
+                })
+                .cancelButton({
+                  style: CancelButtonStyle.CONSTANT,
+                  icon: {
+                    src: $r('sys.media.ohos_ic_public_cancel_filled')
+                  },
+                })
+                .enterKeyType(EnterKeyType.Search)
+                .padding({ left: 10, right: 10 })
+                .onChange((value: string) => {
+                  this.searchText = value;
+                  this.applyFilter();
+                })
+              Button($r('app.string.cancel_button_text'))
+                .width(70)
+                .height(36)
+                .fontSize(16)
+                .flexShrink(0)
+                .fontColor($r('app.color.text_primary'))
+                .backgroundColor($r('app.color.card_bg'))
+                .margin({ right: 16 })
+                .padding({ left: 5, right: 5 })
+                .onClick(() => {
+                  this.isSearching = false;
+                  this.searchText = '';
+                  this.applyFilter();
+                })
+            }
+            .width('100%')
+          } else {
+            Image($r('app.media.ic_angle_left'))
+              .width(28)
+              .height(28)
+              .margin({ left: 16 })
+              .fillColor($r('app.color.text_primary'))
+              .onClick(() => {
+                this.navPathStack.pop();
+              })
+            Text($r('app.string.expiry_report_title'))
+              .fontSize(20)
+              .fontWeight(FontWeight.Medium)
+              .margin({ left: 16 })
+              .fontColor($r('app.color.text_primary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .width('55%')
+            Blank()
+            Image($r('app.media.ic_search'))
+              .width(24)
+              .height(24)
+              .margin({ right: 16 })
+              .onClick(() => {
+                this.isSearching = true;
+              })
+          }
+        }
+        .width('100%')
         .height(40)
-        .fontSize(14)
-        .backgroundColor($r('app.color.card_bg'))
-        .borderRadius(8)
-        .margin({ left: 12, right: 12, top: 8 })
 
-      // 分段切换：已过期 / 即将到期
-      Row({ space: 8 }) {
-        Text(this.expiredTabText)
-          .fontSize(14)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.activeTab === 0 ? Color.White : $r('app.color.text_primary'))
-          .textAlign(TextAlign.Center)
+        // 分段切换：已过期 / 即将到期（边距对齐列表内容区）
+        Row({ space: 8 }) {
+          Text(this.expiredTabText)
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.activeTab === 0 ? Color.White : $r('app.color.text_primary'))
+            .textAlign(TextAlign.Center)
+            .layoutWeight(1)
+            .height(36)
+            .borderRadius(8)
+            .backgroundColor(this.activeTab === 0 ? $r('app.color.button_bg_blue') : $r('app.color.bg_secondary'))
+            .onClick(() => {
+              this.activeTab = 0;
+              this.applyFilter();
+            })
+          Text(this.expiringTabText)
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.activeTab === 1 ? Color.White : $r('app.color.text_primary'))
+            .textAlign(TextAlign.Center)
+            .layoutWeight(1)
+            .height(36)
+            .borderRadius(8)
+            .backgroundColor(this.activeTab === 1 ? $r('app.color.button_bg_blue') : $r('app.color.bg_secondary'))
+            .onClick(() => {
+              this.activeTab = 1;
+              this.applyFilter();
+            })
+        }
+        .width('100%')
+        .padding({ left: 12, right: 12, top: 4 })
+
+        // 加载中 / 空态 / 列表
+        if (this.isLoading) {
+          Column() {
+            LoadingProgress()
+              .width(50)
+              .height(50)
+              .color($r('app.color.primary'))
+          }
+          .width('100%')
           .layoutWeight(1)
-          .height(36)
-          .borderRadius(8)
-          .backgroundColor(this.activeTab === 0 ? $r('app.color.button_bg_blue') : $r('app.color.bg_secondary'))
-          .onClick(() => {
-            this.activeTab = 0;
-            this.applyFilter();
-          })
-        Text(this.expiringTabText)
-          .fontSize(14)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.activeTab === 1 ? Color.White : $r('app.color.text_primary'))
-          .textAlign(TextAlign.Center)
+          .justifyContent(FlexAlign.Center)
+        } else if (this.visibleRows.length === 0) {
+          Column() {
+            Image($r('app.media.ic_empty'))
+              .width(100)
+              .height(100)
+              .margin({ bottom: 16 })
+              .fillColor(Color.Gray)
+            Text($r('app.string.expiry_report_empty'))
+              .fontSize(16)
+              .fontColor(Color.Gray)
+          }
+          .width('100%')
           .layoutWeight(1)
-          .height(36)
-          .borderRadius(8)
-          .backgroundColor(this.activeTab === 1 ? $r('app.color.button_bg_blue') : $r('app.color.bg_secondary'))
-          .onClick(() => {
-            this.activeTab = 1;
-            this.applyFilter();
+          .justifyContent(FlexAlign.Center)
+        } else {
+          List({ space: 8 }) {
+            ForEach(this.visibleRows, (row: ExpiryReportRow) => {
+              ListItem() {
+                Stack({ alignContent: Alignment.TopEnd }) {
+                  Row() {
+                    Image(DateUtils.isExpired(row.entry.times.expires, row.entry.times.expiryTime) ? $r('app.media.C45_Expired') :
+                      KdbxUtils.getIcon(row.entry.icon, row.entry.customIcon, $r('app.media.ic_file')))
+                      .width(36)
+                      .height(36)
+                      .margin({
+                        left: 6,
+                        right: 16,
+                        top: 10,
+                        bottom: 10
+                      })
+                      .borderRadius(4)
+                    Column() {
+                      Text(row.title)
+                        .fontSize(18)
+                        .textAlign(TextAlign.Start)
+                        .flexGrow(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        .maxLines(1)
+                        .fontColor(row.entry.fgColor || $r('app.color.text_primary'))
+                        .decoration({
+                          type: (DateUtils.isExpired(row.entry.times.expires, row.entry.times.expiryTime) ?
+                            TextDecorationType.LineThrough : TextDecorationType.None)
+                        })
+                      if (row.username.length > 0) {
+                        Text(row.username)
+                          .fontSize(12)
+                          .fontColor($r('app.color.text_secondary'))
+                          .maxLines(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .margin({ top: 2 })
+                          .width('100%')
+                      }
+                    }
+                    .alignItems(HorizontalAlign.Start)
+                    .layoutWeight(1)
+
+                    Text(row.remainingText)
+                      .fontSize(12)
+                      .fontColor(this.activeTab === 0 ? $r('app.color.error') : $r('app.color.warn'))
+                      .margin({ right: 4 })
+
+                    Image($r('app.media.ic_arrow_right'))
+                      .width(28)
+                      .height(28)
+                      .fillColor(row.entry.fgColor || $r('app.color.text_primary'))
+                  }
+                  .padding({ left: 2 })
+                  .width('100%')
+                }
+                .borderRadius(8)
+                .backgroundColor(row.entry.bgColor || $r('app.color.card_bg'))
+                .padding({
+                  left: 6,
+                  right: 6,
+                  top: 6,
+                  bottom: 6
+                })
+                .onClick(() => {
+                  this.openEntry(row);
+                })
+              }
+            }, (row: ExpiryReportRow) => row.entry.uuid.id)
+          }
+          .width('100%')
+          .layoutWeight(1)
+          .backgroundColor($r('app.color.bg_primary'))
+          .padding({
+            left: 12,
+            right: 12,
+            top: 4,
+            bottom: 0
           })
+          .scrollBar(BarState.Auto)
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
+        }
       }
       .width('100%')
-      .margin({ left: 12, right: 12, top: 8 })
-
-      // 空态 / 列表
-      if (this.visibleRows.length === 0) {
-        Column() {
-          Text(this.isLoading ? '' : $r('app.string.expiry_report_empty'))
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .justifyContent(FlexAlign.Center)
-      } else {
-        List({ space: 0 }) {
-          ForEach(this.visibleRows, (row: ExpiryReportRow) => {
-            ListItem() {
-              Row({ space: 12 }) {
-                Column({ space: 2 }) {
-                  Text(row.title)
-                    .fontSize(15)
-                    .fontColor($r('app.color.text_primary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  if (row.username.length > 0) {
-                    Text(row.username)
-                      .fontSize(12)
-                      .fontColor($r('app.color.text_secondary'))
-                      .maxLines(1)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  }
-                }
-                .alignItems(HorizontalAlign.Start)
-                .layoutWeight(1)
-
-                Text(row.remainingText)
-                  .fontSize(12)
-                  .fontColor(this.activeTab === 0 ? $r('app.color.error') : $r('app.color.warn'))
-              }
-              .width('100%')
-              .padding({ left: 16, right: 16, top: 10, bottom: 10 })
-              .onClick(() => {
-                this.openEntry(row);
-              })
-            }
-          }, (row: ExpiryReportRow) => row.entry.uuid.id)
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .backgroundColor($r('app.color.card_bg'))
-        .borderRadius(12)
-        .divider({ strokeWidth: 0.5, color: $r('app.color.divider') })
-        .margin({ left: 12, right: 12, top: 8 })
-      }
+      .height('100%')
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }

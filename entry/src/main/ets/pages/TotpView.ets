@@ -221,7 +221,6 @@ export struct TotpView {
               }
               .width('100%')
             }
-            .margin({ top: 4 })
             .width('100%')
           } else {
             Image($r("app.media.ic_angle_left"))
@@ -354,13 +353,6 @@ export struct TotpView {
                   })
                 }
               }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
-
-              ListItem() {
-                Row()
-                  .height(100)
-                  .width('100%')
-                  .backgroundColor(Color.Transparent)
-              }
             }
           }
           .width('100%')
