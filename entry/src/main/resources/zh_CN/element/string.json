@@ -781,6 +781,10 @@
       "value": "今天到期"
     },
     {
+      "name": "search_chip_expired",
+      "value": "已过期"
+    },
+    {
       "name": "settings_security_expire_remind",
       "value": "条目到期提醒"
     },

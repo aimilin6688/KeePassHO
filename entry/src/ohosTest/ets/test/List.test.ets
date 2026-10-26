@@ -175,6 +175,7 @@ import UIUtilsTest from './utils/UIUtils.test';
 import HashUtilsTest from './utils/HashUtils.test';
 import DateUtilsTest from './utils/DateUtils.test';
 import DateUtilsWillExpireTest from './utils/DateUtilsWillExpire.test';
+import KdbxUtilsExpiredSearchTest from './utils/KdbxUtilsExpiredSearch.test';
 import FilenameUtilsTest from './utils/FilenameUtils.test';
 
 // ===== 新增：services 顶层服务单元测试 =====
@@ -488,6 +489,7 @@ export default function testsuite() {
   HashUtilsTest();
   DateUtilsTest();
   DateUtilsWillExpireTest();
+  KdbxUtilsExpiredSearchTest();
   FilenameUtilsTest();
 
   // ===== services 顶层 =====

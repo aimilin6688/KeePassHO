@@ -2266,6 +2266,26 @@ export struct DatabaseView {
               }
               .width('100%')
 
+              // 到期搜索快捷 chip（M2）：一键填入 is:expired 语法
+              if (this.searchText.trim().length === 0) {
+                Row() {
+                  Text($r('app.string.search_chip_expired'))
+                    .fontSize(14)
+                    .fontColor($r('app.color.error'))
+                    .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                    .borderRadius(14)
+                    .backgroundColor($r('app.color.card_bg'))
+                    .margin({ left: 16 })
+                    .onClick(() => {
+                      this.searchText = 'is:expired';
+                      this.performSearch();
+                    })
+                }
+                .width('100%')
+                .margin({ top: 8 })
+                .alignItems(VerticalAlign.Center)
+              }
+
               // 显示搜索历史
               if (this.isShowHistory()) {
                 Row() {

@@ -2,7 +2,7 @@ import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { PromptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { ByteUtils, Kdbx, KdbxBinaries, KdbxBinary, KdbxBinaryDiskRef, KdbxBinaryWithHash, KdbxEntry, ProtectedValue } from 'kdbxweb';
-import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, NavigationManager, StringUtils } from '../common/utils';
+import { KdbxUtils, DateUtils, WindowUtils, CommonUtils, NavigationManager, StringUtils, ResourceManager } from '../common/utils';
 import { PageConstants } from '../common/constants/PageConstants';
 import { FileService } from '../services/FileService';
 import { EntryParam } from '../services/TypeDefined';
@@ -17,6 +17,7 @@ import { BusinessError, emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0xFF00;
 const TAG = 'EntryView';
+const DAY_MS: number = 24 * 60 * 60 * 1000;
 
 interface EntryHistoryView {
   index: number;
@@ -218,9 +219,29 @@ export struct EntryView {
     // 展示附件
     this.addBinaries();
 
-    // 过期时间
+    // 过期时间（M2：附带剩余天数提示，已过期红 / 临期橙 / 远期次级色）
     if (this.entry.times.expires) {
-      this.fields.push(new FieldView(KdbxUtils.FIELD_EXPIRY_TIME, DateUtils.format(this.entry.times.expiryTime), false, false));
+      const expiryTime: Date | undefined = this.entry.times.expiryTime;
+      const expiryField: FieldView = new FieldView(KdbxUtils.FIELD_EXPIRY_TIME,
+        expiryTime ? DateUtils.format(expiryTime) : '', false, false);
+      if (expiryTime) {
+        const now: number = Date.now();
+        const remainingDays: number = Math.ceil((expiryTime.getTime() - now) / DAY_MS);
+        if (remainingDays < 0) {
+          expiryField.warningText = ResourceManager.getString($r('app.string.expiry_report_expired_days'),
+            Math.max(1, -remainingDays));
+          expiryField.warningColor = $r('app.color.error');
+        } else if (remainingDays === 0) {
+          expiryField.warningText = ResourceManager.getString($r('app.string.expiry_report_expires_today'));
+          expiryField.warningColor = $r('app.color.warn');
+        } else {
+          expiryField.warningText = ResourceManager.getString($r('app.string.expiry_report_expiring_days'),
+            remainingDays);
+          expiryField.warningColor = remainingDays <= SettingsService.getExpireRemindDays() ?
+            $r('app.color.warn') : $r('app.color.text_secondary');
+        }
+      }
+      this.fields.push(expiryField);
     }
 
     // 增加创建时间和更新时间

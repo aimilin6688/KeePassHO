@@ -793,6 +793,10 @@
       "value": "Expires today"
     },
     {
+      "name": "search_chip_expired",
+      "value": "Expired"
+    },
+    {
       "name": "settings_security_expire_remind",
       "value": "Entry expiry reminder"
     },

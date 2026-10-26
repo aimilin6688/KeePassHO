@@ -27,6 +27,10 @@ export class FieldView {
   otpValue: string = '';
   fileSizeStr: string = '';
   isImageFile: boolean = false;
+  /** 值下方补充提示文本（如到期剩余天数），空串不渲染 */
+  warningText: string = '';
+  /** 提示文本颜色（已过期红 error / 临期橙 warn / 普通次级 text_secondary） */
+  warningColor: ResourceColor = $r('app.color.warn');
 
   constructor(key: string, value: string, isProtected: boolean, isCopy: boolean,
     binaryFile?: ArrayBuffer, fileSize?: number) {
@@ -222,6 +226,16 @@ export struct EntryViewFieldItem {
             .copyOption(this.field.showPlanText ? CopyOptions.LocalDevice : CopyOptions.None)
             .textAlign(TextAlign.Start)
             .enableDataDetector(this.field.isProtected ? false : true)
+        }
+
+        // 到期剩余天数提示（M2）：已过期红色 / 临期橙色 / 远期次级色
+        if (this.field.warningText !== '') {
+          Text(this.field.warningText)
+            .fontSize(14)
+            .fontColor(this.field.warningColor)
+            .width('100%')
+            .textAlign(TextAlign.Start)
+            .margin({ top: 2 })
         }
       }
       .layoutWeight(1)

@@ -22,7 +22,7 @@ import { SessionFileService } from '../../services/kdbx/SessionFileService';
 import { SuccessMessage } from '../../workers/WorkerParam';
 import { StorageError, StorageErrorCodes } from '../../storage/StorageError';
 import { SortMode } from '../constants/SortConstants';
-import { IconUtils, ResourceManager, StringUtils } from '.';
+import { IconUtils, ResourceManager, StringUtils, DateUtils } from '.';
 import { ConfigDecryptError, STORAGE_CONFIG_DECRYPT_FAILED_RES } from './ConfigDecryptError';
 import { OtpCompatibilityManager, OtpExtractionResult } from '../../services/otp';
 
@@ -210,12 +210,35 @@ export class KdbxUtils {
   }
 
   /**
+   * 解析到期搜索语法的天数（对齐 KeePassXC is:expired / is:expired-N）
+   * @param searchText 搜索文本（已小写）
+   * @returns is:expired 返回 0；is:expired-N 返回 N；非该语法返回 undefined
+   */
+  public static parseExpiredSearchDays(searchText: string): number | undefined {
+    const text: string = searchText.trim().toLowerCase();
+    if (text === 'is:expired') {
+      return 0;
+    }
+    const match = /^is:expired-(\d+)$/.exec(text);
+    if (match !== null) {
+      return parseInt(match[1], 10);
+    }
+    return undefined;
+  }
+
+  /**
    * 检查条目是否匹配搜索文本
    * @param entry 要检查的条目
    * @param searchText 搜索文本（小写）
    * @returns 是否匹配
    */
   private static entryMatchesSearch(entry: KdbxEntry, searchText: string): boolean {
+    // 到期搜索语法：is:expired（仅已过期）/ is:expired-N（已过期或 N 天内到期）
+    const expiredSearchDays: number | undefined = KdbxUtils.parseExpiredSearchDays(searchText);
+    if (expiredSearchDays !== undefined) {
+      const expires: boolean = entry.times.expires === true;
+      return DateUtils.willExpireInDays(expires, entry.times.expiryTime, expiredSearchDays);
+    }
     // 搜索标准字段
     const standardFields = [
       KdbxUtils.FIELD_TITLE,
