@@ -3457,6 +3457,10 @@
       "value": "Missing required column: %s"
     },
     {
+      "name": "import_export_fallback_entry_title",
+      "value": "Entry %d"
+    },
+    {
       "name": "import_export_database_empty",
       "value": "Database is empty"
     },

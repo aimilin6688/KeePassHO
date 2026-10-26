@@ -1,7 +1,7 @@
 // services/importExport/index.ets
 
 import { FormatHandlerRegistry } from './FormatHandlerRegistry';
-import { CsvImportHandler } from './handlers/import/CsvImportHandler';
+import { CsvFamilyDispatcherImportHandler } from './handlers/import/CsvFamilyDispatcherImportHandler';
 import { XmlImportHandler } from './handlers/import/XmlImportHandler';
 import { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
 import { CsvExportHandler } from './handlers/export/CsvExportHandler';
@@ -33,6 +33,7 @@ export { ImportExportViewModel } from './ImportExportViewModel';
 
 // 导入处理器
 export { CsvImportHandler } from './handlers/import/CsvImportHandler';
+export { CsvFamilyDispatcherImportHandler } from './handlers/import/CsvFamilyDispatcherImportHandler';
 export { XmlImportHandler } from './handlers/import/XmlImportHandler';
 export { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
 
@@ -50,7 +51,7 @@ export function registerDefaultHandlers(): void {
   const registry = FormatHandlerRegistry.getInstance();
 
   // 注册导入处理器
-  registry.registerImportHandler(new CsvImportHandler());
+  registry.registerImportHandler(new CsvFamilyDispatcherImportHandler());
   registry.registerImportHandler(new XmlImportHandler());
   registry.registerImportHandler(new BitwardenJsonImportHandler());
 

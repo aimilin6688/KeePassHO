@@ -233,6 +233,15 @@ import ExportServiceTest from './importExport/ExportService.test';
 import ImportExportFacadeTest from './importExport/ImportExportFacade.test';
 import ImportExportViewModelTest from './importExport/ImportExportViewModel.test';
 import ImportExportIndexTest from './importExport/Index.test';
+// ===== M1：CSV 导入格式扩展（解析器/列映射/嗅探调度/格式 handler）=====
+import CsvParserTest from './importExport/CsvParser.test';
+import ColumnNameMapperTest from './importExport/ColumnNameMapper.test';
+import CsvColumnMappingEngineTest from './importExport/CsvColumnMappingEngine.test';
+import ChromeCsvImportHandlerTest from './importExport/ChromeCsvImportHandler.test';
+import FirefoxCsvImportHandlerTest from './importExport/FirefoxCsvImportHandler.test';
+import LastPassCsvImportHandlerTest from './importExport/LastPassCsvImportHandler.test';
+import GenericCsvImportHandlerTest from './importExport/GenericCsvImportHandler.test';
+import CsvFamilyDispatcherTest from './importExport/CsvFamilyDispatcher.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -547,6 +556,16 @@ export default function testsuite() {
   ImportExportFacadeTest();
   ImportExportViewModelTest();
   ImportExportIndexTest();
+
+  // ===== M1：CSV 导入格式扩展 =====
+  CsvParserTest();
+  ColumnNameMapperTest();
+  CsvColumnMappingEngineTest();
+  ChromeCsvImportHandlerTest();
+  FirefoxCsvImportHandlerTest();
+  LastPassCsvImportHandlerTest();
+  GenericCsvImportHandlerTest();
+  CsvFamilyDispatcherTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();
