@@ -436,96 +436,6 @@ struct SettingSecurityContent {
             })
           }
 
-          // 条目到期提醒开关（M1）
-          ListItem() {
-            Row() {
-              Column() {
-                Text($r("app.string.settings_security_expire_remind"))
-                  .fontSize(16)
-                  .flexGrow(1)
-                Text($r("app.string.settings_security_expire_remind_tips"))
-                  .fontSize(12)
-                  .fontColor($r("app.color.text_secondary"))
-                  .margin({ top: 4 })
-              }
-              .alignItems(HorizontalAlign.Start)
-              .flexGrow(1)
-
-              Toggle({ type: ToggleType.Switch, isOn: this.expireRemindEnabled })
-                .selectedColor('#007DFF')
-                .switchPointColor('#FFFFFF')
-                .onChange((isOn: boolean) => {
-                  this.expireRemindEnabled = isOn;
-                  this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE, isOn);
-                })
-            }
-            .width('100%')
-            .padding({
-              left: 16,
-              right: 16,
-              top: 12,
-              bottom: 12
-            })
-          }
-
-          // 到期提醒提前天数
-          if (this.expireRemindEnabled) {
-            ListItem() {
-              Row() {
-                Text($r("app.string.settings_security_expire_remind_days"))
-                  .fontSize(16)
-                  .flexGrow(1)
-
-                Select(this.expireRemindDaysOptions)
-                  .value(this.expireRemindDaysOptions[this.expireRemindDaysOptions.findIndex((item: TimeOption) => item.time === this.expireRemindDays)].value)
-                  .font({ size: 16 })
-                  .selectedOptionFont({ size: 16 })
-                  .optionFont({ size: 16 })
-                  .backgroundColor($r("app.color.card_bg"))
-                  .onSelect(async (index: number) => {
-                    this.expireRemindDays = this.expireRemindDaysOptions[index].time;
-                    this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS, this.expireRemindDays);
-                  })
-              }
-              .width('100%')
-              .padding({
-                left: 16,
-                right: 16,
-                top: 12,
-                bottom: 12
-              })
-            }
-          }
-
-          // 到期提醒频率
-          if (this.expireRemindEnabled) {
-            ListItem() {
-              Row() {
-                Text($r("app.string.settings_security_expire_remind_frequency"))
-                  .fontSize(16)
-                  .flexGrow(1)
-
-                Select(this.expireRemindFrequencyOptions)
-                  .value(this.expireRemindFrequencyOptions[this.expireRemindFrequencyOptions.findIndex((item: ExpiryRemindFrequencyOption) => item.frequency === this.expireRemindFrequency)].value)
-                  .font({ size: 16 })
-                  .selectedOptionFont({ size: 16 })
-                  .optionFont({ size: 16 })
-                  .backgroundColor($r("app.color.card_bg"))
-                  .onSelect(async (index: number) => {
-                    this.expireRemindFrequency = this.expireRemindFrequencyOptions[index].frequency;
-                    this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, this.expireRemindFrequency);
-                  })
-              }
-              .width('100%')
-              .padding({
-                left: 16,
-                right: 16,
-                top: 12,
-                bottom: 12
-              })
-            }
-          }
-
           // 剪切板自动清理时间
           ListItem() {
             Row() {
@@ -681,6 +591,106 @@ struct SettingSecurityContent {
               top: 12,
               bottom: 12
             })
+          }
+        }
+        .margin({ top: 12, bottom: 12 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+        // 条目到期提醒设置（M1）
+        ListItemGroup() {
+          // 条目到期提醒开关
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.settings_security_expire_remind"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.settings_security_expire_remind_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+
+              Toggle({ type: ToggleType.Switch, isOn: this.expireRemindEnabled })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.expireRemindEnabled = isOn;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE, isOn);
+                })
+            }
+            .width('100%')
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
+          }
+
+          // 到期提醒提前天数
+          if (this.expireRemindEnabled) {
+            ListItem() {
+              Row() {
+                Text($r("app.string.settings_security_expire_remind_days"))
+                  .fontSize(16)
+                  .flexGrow(1)
+
+                Select(this.expireRemindDaysOptions)
+                  .value(this.expireRemindDaysOptions[this.expireRemindDaysOptions.findIndex((item: TimeOption) => item.time === this.expireRemindDays)].value)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.expireRemindDays = this.expireRemindDaysOptions[index].time;
+                    this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS, this.expireRemindDays);
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 12
+              })
+            }
+          }
+
+          // 到期提醒频率
+          if (this.expireRemindEnabled) {
+            ListItem() {
+              Row() {
+                Text($r("app.string.settings_security_expire_remind_frequency"))
+                  .fontSize(16)
+                  .flexGrow(1)
+
+                Select(this.expireRemindFrequencyOptions)
+                  .value(this.expireRemindFrequencyOptions[this.expireRemindFrequencyOptions.findIndex((item: ExpiryRemindFrequencyOption) => item.frequency === this.expireRemindFrequency)].value)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.expireRemindFrequency = this.expireRemindFrequencyOptions[index].frequency;
+                    this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, this.expireRemindFrequency);
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 12
+              })
+            }
           }
         }
         .margin({ top: 12, bottom: 12 })
