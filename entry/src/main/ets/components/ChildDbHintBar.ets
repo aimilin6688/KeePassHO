@@ -43,8 +43,7 @@ export struct ChildDbHintBar {
   }
 
   build() {
-    if (this.showHint && !this.moveMode && !this.selectionMode
-      && this.currentGroup !== undefined && this.currentGroup.parentGroup === undefined) {
+    if (this.isEffectivelyVisible()) {
       HintBanner({
         message: $r('app.string.unconfigured_child_dbs'),
         actionLabel: $r('app.string.child_dbs_go_configure'),
@@ -57,6 +56,14 @@ export struct ChildDbHintBar {
         }
       })
     }
+  }
+
+  /**
+   * 实际可见性判定：与 build() 渲染条件保持一致
+   */
+  private isEffectivelyVisible(): boolean {
+    return this.showHint && !this.moveMode && !this.selectionMode
+      && this.currentGroup !== undefined && this.currentGroup.parentGroup === undefined;
   }
 
   /**

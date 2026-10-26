@@ -30,16 +30,14 @@ import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
 import { ExpiryHintBar, ExpiryHintBarController } from '../components/ExpiryHintBar';
 import { ChildDbHintBar, ChildDbHintBarController } from '../components/ChildDbHintBar';
+import { BreadcrumbBar, NavigationPathItem } from '../components/BreadcrumbBar';
+import { MoveModeBar } from '../components/MoveModeBar';
+import { SelectionModeBar } from '../components/SelectionModeBar';
+import { DraggableFabCluster } from '../components/DraggableFabCluster';
 import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
 import window from '@ohos.window';
-
-// 面包屑导航路径项接口
-interface NavigationPathItem {
-  id: string;
-  name: string;
-}
 
 const DOMAIN = 0x0000;
 const TAG = 'DatabaseView';
@@ -130,17 +128,14 @@ export struct DatabaseView {
   @StorageLink("containerX") containerX: number = 0; // 容器X坐标
   @StorageLink("containerY") containerY: number = 0; // 容器Y坐标
   @StorageLink("navBarWidth") @Watch('onNavBarWidthChanged') currentNavBarWidth: number = NavigationConstants.DEFAULT_NAV_BAR_WIDTH; // 当前导航栏实际宽度
-  @State isDragging: boolean = false; // 是否正在拖拽
-  private screenWidth: number = 360; // 屏幕宽度（默认值）
-  private screenHeight: number = 640; // 屏幕高度（默认值）
   // 订阅响应式窗口信息：分栏/单栏判定的单一事实来源（与 Navigation 显示模式保持一致）
   @State windowInfo: WindowInfo = WindowService.getInstance().info;
-  private maxX: number = 0; // 可移动x轴最大值
-  private maxY: number = 0; // 可移动y轴最大值
+  @State maxX: number = 0; // 可移动x轴最大值（传入 DraggableFabCluster）
+  @State maxY: number = 0; // 可移动y轴最大值（传入 DraggableFabCluster）
+  private screenWidth: number = 360; // 屏幕宽度（默认值）
+  private screenHeight: number = 640; // 屏幕高度（默认值）
   private containerWidth: number = 75; // 容器宽度
   private containerHeight: number = 135; // 容器高度
-  private oldContainerX: number = 0; // 容器X坐标
-  private oldContainerY: number = 0; // 容器Y坐标
   // 其他参数
   private database: Kdbx | null = null;
   private filePath: string = '';
@@ -2099,7 +2094,8 @@ export struct DatabaseView {
   }
 
   build() {
-    Stack() {
+    // alignContent: Bottom——悬浮提示条（未定位子节点）自动贴容器底部，免手动定位
+    Stack({ alignContent: Alignment.Bottom }) {
       // 更多操作菜单
       if (this.showMoreMenu) {
         this.MoreActionsMenu()
@@ -2343,39 +2339,13 @@ export struct DatabaseView {
         // 顶部面包屑导航条（进入布局流，内容区自动下移，不遮挡条目）
         if (this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.TOP
           && !this.moveParam && !this.isSelectionMode) {
-          Scroll(this.breadcrumbScroller) {
-            Row() {
-              ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
-                Row() {
-                  Text(pathItem.name)
-                    .fontSize(14)
-                    .fontColor(index === this.navigationPath.length - 1 ? $r('app.color.text_primary') : $r('app.color.button_bg_blue'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .onClick(() => {
-                      if (index < this.navigationPath.length - 1) {
-                        this.navigateToBreadcrumb(pathItem.id);
-                      }
-                    })
-
-                  if (index < this.navigationPath.length - 1) {
-                    Text(' > ')
-                      .fontSize(14)
-                      .fontColor($r('app.color.text_secondary'))
-                  }
-                }
-              })
+          BreadcrumbBar({
+            navigationPath: this.navigationPath,
+            scroller: this.breadcrumbScroller,
+            onNavigate: (groupId: string) => {
+              this.navigateToBreadcrumb(groupId);
             }
-            .justifyContent(FlexAlign.Start)
-            .alignItems(VerticalAlign.Center)
-          }
-          .width('100%')
-          .height(36)
-          .padding({ left: 16, right: 16 })
-          .backgroundColor($r("app.color.bg_secondary"))
-          .scrollable(ScrollDirection.Horizontal)
-          .scrollBar(BarState.Off)
-          .align(Alignment.Start)
+          })
         }
 
         if (this.isLoading) {
@@ -2674,30 +2644,6 @@ export struct DatabaseView {
           .width('100%')
           .layoutWeight(1)
         }
-
-        // 底部提示区（M1 到期提醒 + M5 子数据库配置提示条）
-        // 底部悬浮面包屑（默认可见）为 36vp 绝对定位浮层，提示区需上移避让；移动/选择模式下与面包屑一致隐藏
-        Column({ space: 8 }) {
-          // 条目到期提醒条（M1）：评估/显示/隐藏逻辑均封装在组件内
-          ExpiryHintBar({
-            controller: this.expiryHintBarController,
-            currentGroup: this.currentGroup,
-            moveMode: this.moveParam !== undefined,
-            selectionMode: this.isSelectionMode
-          })
-
-          // 子数据库配置提示条（M5）：判定/显示/隐藏逻辑均封装在组件内
-          ChildDbHintBar({
-            controller: this.childDbHintBarController,
-            currentGroup: this.currentGroup,
-            moveMode: this.moveParam !== undefined,
-            selectionMode: this.isSelectionMode
-          })
-        }
-        .width('100%')
-        .margin({
-          bottom: this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM ? 36 : 0
-        })
       }
       .width('100%')
       .height('100%')
@@ -2735,6 +2681,32 @@ export struct DatabaseView {
         }
       })
 
+      // 底部提示条浮层（M1 到期提醒 + M5 子数据库配置提示条）
+      // 未定位子节点 + 根 Stack alignContent: Bottom → 贴容器底部悬浮，不占布局：
+      // 列表满高、经 expandSafeArea 延伸到安全区，条目从提示条后方穿过；
+      // 面包屑在底部时整体上移 36vp 避让
+      Column({ space: 8 }) {
+        // 条目到期提醒条（M1）：评估/显示/隐藏逻辑均封装在组件内
+        ExpiryHintBar({
+          controller: this.expiryHintBarController,
+          currentGroup: this.currentGroup,
+          moveMode: this.moveParam !== undefined,
+          selectionMode: this.isSelectionMode
+        })
+
+        // 子数据库配置提示条（M5）：判定/显示/隐藏逻辑均封装在组件内
+        ChildDbHintBar({
+          controller: this.childDbHintBarController,
+          currentGroup: this.currentGroup,
+          moveMode: this.moveParam !== undefined,
+          selectionMode: this.isSelectionMode
+        })
+      }
+      .width('100%')
+      .translate({
+        y: this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM ? -36 : 0
+      })
+
       // 点击空白区域隐藏添加按钮
       Column()
         .width('100%')
@@ -2744,107 +2716,29 @@ export struct DatabaseView {
         })
         .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
 
-      // 可以拖拽的控制按钮
-      Column() {
-        // 添加分组按钮
-        Button() {
-          Row() {
-            Image($r('app.media.ic_folder'))
-              .width(20)
-              .height(20)
-              .fillColor($r('app.color.button_text_blue'))
-            Text($r('app.string.add_group_button'))
-              .fontSize(14)
-              .fontColor($r('app.color.button_text_blue'))
-              .margin({ left: 8 })
-          }
-        }
-        .width(120)
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .margin({ bottom: 8, top: 12 })
-        .enabled(!this.isLoading)
-        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-        .id('btn_add_group')
-        .onClick(() => {
-          this.showAddButtons = false;
+      // 可拖拽的悬浮按钮组（拖拽/展开状态封装在组件内）
+      DraggableFabCluster({
+        showAddButtons: this.showAddButtons,
+        maxX: this.maxX,
+        maxY: this.maxY,
+        visible: !this.moveParam && !this.isSelectionMode,
+        isLoading: this.isLoading,
+        onAddGroup: () => {
           this.editingGroupIndex = -1;
           this.newGroupName = "";
           this.dialogController.open();
-        })
-
-        // 添加条目按钮
-        Button() {
-          Row() {
-            Image($r('app.media.ic_file'))
-              .width(20)
-              .height(20)
-              .fillColor($r("app.color.button_text_blue"))
-            Text($r('app.string.add_entry_button'))
-              .fontSize(14)
-              .fontColor($r("app.color.button_text_blue"))
-              .margin({ left: 8 })
-          }
-        }
-        .width(120)
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .margin({ bottom: 8, top: 4 })
-        .enabled(!this.isLoading)
-        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-        .id('btn_add_entry')
-        .onClick(() => {
-          this.showAddButtons = false;
+        },
+        onAddEntry: () => {
           // 使用 Navigation 导航，在分栏模式下会在右侧内容区显示
           const entryParam: EntryParam = {
             groupId: this.currentGroup?.uuid.id
           };
           this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_EDIT, entryParam);
-        })
-
-        // 从模板创建按钮
-        Button() {
-          Row() {
-            Image($r('app.media.ic_copy'))
-              .width(20)
-              .height(20)
-              .fillColor($r("app.color.button_text_blue"))
-            Text($r('app.string.template_from_template'))
-              .fontSize(14)
-              .fontColor($r("app.color.button_text_blue"))
-              .margin({ left: 8 })
-          }
-        }
-        .width(120)
-        .height(40)
-        .borderRadius(20)
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .margin({ bottom: 8, top: 4 })
-        .enabled(!this.isLoading)
-        .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
-        .onClick(() => {
-          this.showAddButtons = false;
+        },
+        onCreateFromTemplate: () => {
           this.openTemplateSelector();
-        })
-
-        // 显示TOTP
-        Button() {
-          Image($r('app.media.ic_clock'))
-            .width(28)
-            .height(28)
-            .fillColor(Color.White)
-        }
-        .width(56)
-        .height(56)
-        .borderRadius(28)
-        .backgroundColor($r("app.color.button_bg_blue"))
-        .margin({ bottom: 8, top: 8 })
-        .enabled(!this.isLoading)
-        .opacity(this.isLoading ? 0.5 : 1)
-        .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
-        .onClick(() => {
+        },
+        onShowTotp: () => {
           // 清空 TotpView 的导航栈，确保右侧分栏为空
           const totpNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('TotpView');
           if (totpNavPathStack) {
@@ -2852,96 +2746,18 @@ export struct DatabaseView {
           }
           // 切换到 TOTP 根页面
           NavigationManager.getInstance().navigateBackToRoot('TotpView');
-        })
-
-        // 主添加按钮
-        Button() {
-          Image(this.showAddButtons ? $r('app.media.ic_clear') : $r('app.media.ic_add'))
-            .width(28)
-            .height(28)
-            .fillColor(Color.White)
         }
-        .width(56)
-        .height(56)
-        .borderRadius(28)
-        .backgroundColor(this.showAddButtons ? $r("app.color.error") : $r("app.color.button_bg_blue"))
-        .enabled(!this.isLoading)
-        .opacity(this.isLoading ? 0.5 : 1)
-        .visibility(this.showAddButtons ? Visibility.Hidden : Visibility.Visible)
-        .id('btn_add_fab')
-        .onClick(() => {
-          this.showAddButtons = true;
-        })
-      }
-      .width(this.containerWidth)
-      .height(this.showAddButtons ? 200 : this.containerHeight)
-      .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
-      .zIndex(999)
-      .gesture(
-        // 拖拽手势（展开状态下禁用）
-        PanGesture({ fingers: 1, direction: PanDirection.All })
-          .onActionStart(() => {
-            if (!this.showAddButtons) {
-              this.isDragging = true;
-              this.oldContainerX = this.containerX;
-              this.oldContainerY = this.containerY;
-            }
-          })
-          .onActionUpdate((event: GestureEvent) => {
-            // 计算新位置
-            if (this.isDragging) {
-              this.containerX = Math.max(0, Math.min(this.oldContainerX + event.offsetX, this.maxX));
-              this.containerY = Math.max(0, Math.min(this.oldContainerY + event.offsetY, this.maxY));
-            }
-          })
-          .onActionEnd(() => {
-            this.isDragging = false;
-          })
-      )
-      .position({ x: this.containerX, y: this.containerY })
-      .animation({
-        duration: 200,
-        curve: Curve.EaseInOut
       })
 
       // 底部面包屑导航条（绝对定位浮层，贴容器底部上方 36vp，不影响内容区起点）
       if (this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM) {
-        Scroll(this.breadcrumbScroller) {
-          Row() {
-            ForEach(this.navigationPath, (pathItem: NavigationPathItem, index: number) => {
-              Row() {
-                // 路径项
-                Text(pathItem.name)
-                  .fontSize(14)
-                  .fontColor(index === this.navigationPath.length - 1 ? $r('app.color.text_primary') : $r('app.color.button_bg_blue'))
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  .onClick(() => {
-                    // 点击路径项导航到对应分组
-                    if (index < this.navigationPath.length - 1) {
-                      this.navigateToBreadcrumb(pathItem.id);
-                    }
-                  })
-
-                // 分隔符（最后一项不显示）
-                if (index < this.navigationPath.length - 1) {
-                  Text(' > ')
-                    .fontSize(14)
-                    .fontColor($r('app.color.text_secondary'))
-                }
-              }
-            })
+        BreadcrumbBar({
+          navigationPath: this.navigationPath,
+          scroller: this.breadcrumbScroller,
+          onNavigate: (groupId: string) => {
+            this.navigateToBreadcrumb(groupId);
           }
-          .justifyContent(FlexAlign.Start)
-          .alignItems(VerticalAlign.Center)
-        }
-        .width('100%')
-        .height(36)
-        .padding({ left: 16, right: 16 })
-        .backgroundColor($r("app.color.bg_secondary"))
-        .scrollable(ScrollDirection.Horizontal)
-        .scrollBar(BarState.Off) // 隐藏滚动条，保持美观
-        .align(Alignment.Start) // 内容居左对齐
+        })
         .position({ x: 0, y: '100%' })
         .translate({ y: -36 })
         .visibility((this.moveParam || this.isSelectionMode) ? Visibility.None : Visibility.Visible)
@@ -2949,108 +2765,31 @@ export struct DatabaseView {
 
       // 移动模式下的底部浮动按钮
       if (this.moveParam) {
-        Column() {
-          Row() {
-            Button($r('app.string.move_here'), { type: ButtonType.Normal })
-              .layoutWeight(1)
-              .height(40)
-              .margin({ right: 8 })
-              .borderRadius(20)
-              .backgroundColor($r("app.color.button_bg_blue"))
-              .fontColor($r("app.color.button_text_blue"))
-              .id('btn_move_here')
-              .onClick(() => {
-                this.moveItemToCurrentGroup();
-              })
-
-            Button($r('app.string.cancel_button_text'), { type: ButtonType.Normal })
-              .layoutWeight(1)
-              .height(40)
-              .borderRadius(20)
-              .backgroundColor(Color.Gray)
-              .fontColor(Color.White)
-              .id('btn_cancel_move')
-              .onClick(() => {
-                // 取消移动模式并返回源分组
-                this.exitMoveMode();
-              })
+        MoveModeBar({
+          onMoveHere: () => {
+            this.moveItemToCurrentGroup();
+          },
+          onCancel: () => {
+            // 取消移动模式并返回源分组
+            this.exitMoveMode();
           }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-        }
-        .width('100%')
-        .height(60)
-        .padding({
-          top: 8,
-          bottom: 8,
-          left: 16,
-          right: 16
         })
-        .position({ x: 0, y: '100%' })
-        .translate({ y: -60 })
-        .justifyContent(FlexAlign.Center)
       }
 
       // 批量选择模式下的底部操作栏
       if (this.isSelectionMode) {
-        Column() {
-          Row() {
-            // 移动按钮
-            Button($r('app.string.move_button_text'))
-              .layoutWeight(1)
-              .height(40)
-              .margin({ right: 8 })
-              .borderRadius(20)
-              .backgroundColor($r("app.color.button_bg_blue"))
-              .fontColor($r("app.color.button_text_blue"))
-              .enabled(this.selectedItems.size > 0)
-              .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
-              .id('btn_batch_move')
-              .onClick(() => {
-                this.startBatchMove();
-              })
-
-            // 删除按钮
-            Button($r('app.string.delete_button_text'))
-              .layoutWeight(1)
-              .height(40)
-              .margin({ right: 8 })
-              .borderRadius(20)
-              .backgroundColor($r("app.color.error"))
-              .fontColor(Color.White)
-              .enabled(this.selectedItems.size > 0)
-              .opacity(this.selectedItems.size > 0 ? 1 : 0.5)
-              .id('btn_batch_delete')
-              .onClick(() => {
-                this.confirmBatchDelete();
-              })
-
-            // 取消按钮
-            Button($r('app.string.cancel_button_text'))
-              .layoutWeight(1)
-              .height(40)
-              .borderRadius(20)
-              .backgroundColor(Color.Gray)
-              .fontColor(Color.White)
-              .id('btn_cancel_selection')
-              .onClick(() => {
-                this.exitSelectionMode();
-              })
+        SelectionModeBar({
+          hasSelection: this.selectedItems.size > 0,
+          onBatchMove: () => {
+            this.startBatchMove();
+          },
+          onBatchDelete: () => {
+            this.confirmBatchDelete();
+          },
+          onCancel: () => {
+            this.exitSelectionMode();
           }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-        }
-        .width('100%')
-        .height(60)
-        .padding({
-          top: 8,
-          bottom: 8,
-          left: 16,
-          right: 16
         })
-        .position({ x: 0, y: '100%' })
-        .translate({ y: -60 })
-        .justifyContent(FlexAlign.Center)
       }
     }
     .width('100%')

@@ -32,8 +32,8 @@ export struct ExpiryHintBar {
   @Prop moveMode: boolean = false;
   /** 选择模式下隐藏 */
   @Prop selectionMode: boolean = false;
-  /** 解锁评估结果与显示状态 */
-  @State expiryRemindResult: ExpiryRemindResult | null = null;
+  /** 解锁评估结果与显示状态（消息在评估时预格式化，避免 build 内 null 收窄问题） */
+  @State expiryBannerMessage: string = '';
   @State showExpiryHint: boolean = false;
 
   aboutToAppear(): void {
@@ -43,10 +43,9 @@ export struct ExpiryHintBar {
   }
 
   build() {
-    if (this.showExpiryHint && this.expiryRemindResult !== null && !this.moveMode && !this.selectionMode
-      && this.currentGroup !== undefined && this.currentGroup.parentGroup === undefined) {
+    if (this.isEffectivelyVisible()) {
       HintBanner({
-        message: ResourceManager.getString($r('app.string.expiry_remind_banner_text'), this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays),
+        message: this.expiryBannerMessage,
         actionLabel: $r('app.string.expiry_remind_view'),
         dismissLabel: $r('app.string.close_button_text'),
         onAction: (): void => {
@@ -60,12 +59,20 @@ export struct ExpiryHintBar {
   }
 
   /**
+   * 实际可见性判定：与 build() 渲染条件保持一致
+   */
+  private isEffectivelyVisible(): boolean {
+    return this.showExpiryHint && this.expiryBannerMessage.length > 0 && !this.moveMode && !this.selectionMode
+      && this.currentGroup !== undefined && this.currentGroup.parentGroup === undefined;
+  }
+
+  /**
    * 条目到期提醒（M1）：解锁完成后评估一次。
    * 通过防打扰判定（开关 → 今日隐藏 → 24h 间隔/每次解锁）后生成提醒数据并显示提示条；
    * lastRemindTime 仅在此处写入，刷新/重载路径不重复计时
    */
   private evaluateExpiryHint = (): void => {
-    this.expiryRemindResult = null;
+    this.expiryBannerMessage = '';
     this.showExpiryHint = false;
     try {
       const database: Kdbx | null = FileService.getDbFileParam().database ?? null;
@@ -80,7 +87,7 @@ export struct ExpiryHintBar {
       if (result === null || result.totalCount === 0) {
         return;
       }
-      this.expiryRemindResult = result;
+      this.expiryBannerMessage = ResourceManager.getString($r('app.string.expiry_remind_banner_text'), result.totalCount, result.remindDays);
       this.showExpiryHint = true;
       hilog.info(DOMAIN, TAG, 'Expiry remind shown: expired=%{public}d, expiring=%{public}d', result.expiredCount, result.expiringCount);
     } catch (error) {
