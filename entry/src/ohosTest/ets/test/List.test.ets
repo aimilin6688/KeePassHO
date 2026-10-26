@@ -174,11 +174,13 @@ import DialogWindowHelperTest from './utils/DialogWindowHelper.test';
 import UIUtilsTest from './utils/UIUtils.test';
 import HashUtilsTest from './utils/HashUtils.test';
 import DateUtilsTest from './utils/DateUtils.test';
+import DateUtilsWillExpireTest from './utils/DateUtilsWillExpire.test';
 import FilenameUtilsTest from './utils/FilenameUtils.test';
 
 // ===== 新增：services 顶层服务单元测试 =====
 import EventBusTest from './services/EventBus.test';
 import SettingsServiceTest from './services/SettingsService.test';
+import ExpiryRemindServiceTest from './services/ExpiryRemindService.test';
 import AuthServiceTest from './services/AuthService.test';
 import CrashLogServiceTest from './services/CrashLogService.test';
 import SessionManagerTest from './services/SessionManager.test';
@@ -485,11 +487,13 @@ export default function testsuite() {
   UIUtilsTest();
   HashUtilsTest();
   DateUtilsTest();
+  DateUtilsWillExpireTest();
   FilenameUtilsTest();
 
   // ===== services 顶层 =====
   EventBusTest();
   SettingsServiceTest();
+  ExpiryRemindServiceTest();
   AuthServiceTest();
   CrashLogServiceTest();
   SessionManagerTest();

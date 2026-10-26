@@ -25,6 +25,16 @@ export enum BreadcrumbPosition {
   BOTTOM = "BOTTOM"
 }
 
+/**
+ * 到期提醒频率（M1 条目到期提醒）
+ */
+export enum ExpiryRemindFrequency {
+  /** 每次解锁都提醒 */
+  EVERY_UNLOCK = "EVERY_UNLOCK",
+  /** 每 24 小时最多提醒一次（默认） */
+  DAILY = "DAILY"
+}
+
 export class SettingsService {
   private static instance: SettingsService = new SettingsService();
   private preferences: preferences.Preferences | null = null;
@@ -49,6 +59,16 @@ export class SettingsService {
   // 解锁会话通知
   public static readonly KEY_SECURITY_SESSION_NOTIFY_ENABLE = 'Security_session_notify_enable';
   public static readonly KEY_SECURITY_SESSION_NOTIFY_ENABLE_DEFAULT = true;
+
+  // 条目到期提醒（M1）：解锁后提示已过期 / N 天内到期条目
+  public static readonly KEY_SECURITY_EXPIRE_REMIND_ENABLE = 'Security_expire_remind_enable';
+  public static readonly KEY_SECURITY_EXPIRE_REMIND_ENABLE_DEFAULT = true;
+  public static readonly KEY_SECURITY_EXPIRE_REMIND_DAYS = 'Security_expire_remind_days';
+  public static readonly KEY_SECURITY_EXPIRE_REMIND_DAYS_DEFAULT = 7;
+  public static readonly KEY_SECURITY_EXPIRE_REMIND_FREQUENCY = 'Security_expire_remind_frequency';
+  public static readonly KEY_SECURITY_EXPIRE_REMIND_FREQUENCY_DEFAULT = ExpiryRemindFrequency.DAILY;
+  public static readonly KEY_EXPIRE_REMIND_LAST_TIME_PREFIX = 'Expire_remind_last_time_';
+  public static readonly KEY_EXPIRE_REMIND_HIDDEN_PREFIX = 'Expire_remind_hidden_';
 
   // 认证方式
   public static readonly KEY_SECURITY_FINGERPRINT_LOGIN = 'Database_fingerprint_login';
@@ -285,11 +305,35 @@ export class SettingsService {
    * @param iocKey 库会话键（storageType::filePath）
    */
   public static childDbHintHiddenKey(iocKey: string): string {
+    return `${SettingsService.KEY_CHILD_DB_HINT_HIDDEN_PREFIX}${SettingsService.hashIocKey(iocKey)}`;
+  }
+
+  /**
+   * iocKey 确定性哈希（djb2 变体：乘子 31、模 2^31-1，全程 2^53 内精确运算）
+   * @param iocKey 库会话键（storageType::filePath）
+   */
+  private static hashIocKey(iocKey: string): string {
     let hash = 5381;
     for (let i = 0; i < iocKey.length; i++) {
       hash = (hash * 31 + iocKey.charCodeAt(i)) % 2147483647;
     }
-    return `${SettingsService.KEY_CHILD_DB_HINT_HIDDEN_PREFIX}${hash.toString(16)}`;
+    return hash.toString(16);
+  }
+
+  /**
+   * 生成到期提醒「上次提醒时间」的按库记忆键（M1）
+   * @param iocKey 库会话键（storageType::filePath）
+   */
+  public static expiryRemindLastTimeKey(iocKey: string): string {
+    return `${SettingsService.KEY_EXPIRE_REMIND_LAST_TIME_PREFIX}${SettingsService.hashIocKey(iocKey)}`;
+  }
+
+  /**
+   * 生成到期提醒「今日不再提示」的按库记忆键（M1）
+   * @param iocKey 库会话键（storageType::filePath）
+   */
+  public static expiryRemindHiddenKey(iocKey: string): string {
+    return `${SettingsService.KEY_EXPIRE_REMIND_HIDDEN_PREFIX}${SettingsService.hashIocKey(iocKey)}`;
   }
 
   // 读取数据
@@ -406,5 +450,29 @@ export class SettingsService {
   public static isChildDbEnable(): boolean {
     return SettingsService.getInstance()
       .getSync(SettingsService.KEY_APP_CHILD_DB_ENABLE, SettingsService.KEY_APP_CHILD_DB_ENABLE_DEFAULT);
+  }
+
+  /**
+   * 条目到期提醒是否启用（M1，默认启用）
+   */
+  public static isExpireRemindEnable(): boolean {
+    return SettingsService.getInstance()
+      .getSync(SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE, SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE_DEFAULT);
+  }
+
+  /**
+   * 到期提醒提前天数窗口（默认 7 天）
+   */
+  public static getExpireRemindDays(): number {
+    return SettingsService.getInstance()
+      .getSync(SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS, SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS_DEFAULT);
+  }
+
+  /**
+   * 到期提醒频率（默认每 24 小时一次）
+   */
+  public static getExpireRemindFrequency(): ExpiryRemindFrequency {
+    return SettingsService.getInstance()
+      .getSync(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY_DEFAULT);
   }
 }

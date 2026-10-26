@@ -101,6 +101,11 @@
       "buildFunction": "TotpViewBuilder"
     },
     {
+      "name": "ExpiryReport",
+      "pageSourceFile": "src/main/ets/pages/ExpiryReport.ets",
+      "buildFunction": "ExpiryReportBuilder"
+    },
+    {
       "name": "TemplateEntryCreate",
       "pageSourceFile": "src/main/ets/pages/TemplateEntryCreate.ets",
       "buildFunction": "TemplateEntryCreateBuilder"

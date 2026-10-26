@@ -94,6 +94,7 @@ export class PageConfigManager {
       { name: PageConstants.PAGE_ENTRY_EDIT, padding: PageConstants.ENTRY_PAGE_PADDING },
       { name: PageConstants.PAGE_TOTP_VIEW, padding: PageConstants.ENTRY_PAGE_PADDING },
       { name: PageConstants.PAGE_TEMPLATE_ENTRY_CREATE, padding: PageConstants.ENTRY_PAGE_PADDING },
+      { name: PageConstants.PAGE_EXPIRY_REPORT, padding: PageConstants.ENTRY_PAGE_PADDING },
     ];
 
     databasePages.forEach((page: DatabasePageConfig) => {

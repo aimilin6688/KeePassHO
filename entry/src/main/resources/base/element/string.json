@@ -749,6 +749,78 @@
       "value": "Child databases are other databases which can be opened automatically when you open the parent database. Therefore, the child's master password and file location are stored in the parent. This feature allows to share some of your passwords with another person."
     },
     {
+      "name": "expiry_remind_banner_text",
+      "value": "%d entries are expired or expiring within %d days"
+    },
+    {
+      "name": "expiry_remind_view",
+      "value": "View"
+    },
+    {
+      "name": "expiry_remind_dismiss_today",
+      "value": "Don't remind today"
+    },
+    {
+      "name": "expiry_report_title",
+      "value": "Expiring entries"
+    },
+    {
+      "name": "expiry_report_tab_expired",
+      "value": "Expired (%d)"
+    },
+    {
+      "name": "expiry_report_tab_expiring",
+      "value": "Expiring soon (%d)"
+    },
+    {
+      "name": "expiry_report_search_hint",
+      "value": "Search title or username"
+    },
+    {
+      "name": "expiry_report_empty",
+      "value": "No expiring entries"
+    },
+    {
+      "name": "expiry_report_expired_days",
+      "value": "Expired %d day(s) ago"
+    },
+    {
+      "name": "expiry_report_expiring_days",
+      "value": "Expires in %d day(s)"
+    },
+    {
+      "name": "expiry_report_expires_today",
+      "value": "Expires today"
+    },
+    {
+      "name": "settings_security_expire_remind",
+      "value": "Entry expiry reminder"
+    },
+    {
+      "name": "settings_security_expire_remind_tips",
+      "value": "Remind after unlock when entries are expired or expiring soon"
+    },
+    {
+      "name": "settings_security_expire_remind_days",
+      "value": "Remind days ahead"
+    },
+    {
+      "name": "settings_security_expire_remind_days_option",
+      "value": "%d days"
+    },
+    {
+      "name": "settings_security_expire_remind_frequency",
+      "value": "Remind frequency"
+    },
+    {
+      "name": "settings_security_expire_remind_every_unlock",
+      "value": "Every unlock"
+    },
+    {
+      "name": "settings_security_expire_remind_daily",
+      "value": "Every 24 hours"
+    },
+    {
       "name": "clear_all_button",
       "value": "Clear all"
     },

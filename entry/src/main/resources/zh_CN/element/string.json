@@ -737,6 +737,78 @@
       "value": "子数据库是可以在打开父数据库时自动打开的其他数据库。因此，子数据库的主密码和文件位置存储在父数据库中。此功能允许与其他人共享您的一些密码。"
     },
     {
+      "name": "expiry_remind_banner_text",
+      "value": "%d 个条目已过期或将在 %d 天内到期"
+    },
+    {
+      "name": "expiry_remind_view",
+      "value": "查看"
+    },
+    {
+      "name": "expiry_remind_dismiss_today",
+      "value": "今日不再提示"
+    },
+    {
+      "name": "expiry_report_title",
+      "value": "到期条目"
+    },
+    {
+      "name": "expiry_report_tab_expired",
+      "value": "已过期 (%d)"
+    },
+    {
+      "name": "expiry_report_tab_expiring",
+      "value": "即将到期 (%d)"
+    },
+    {
+      "name": "expiry_report_search_hint",
+      "value": "搜索标题或用户名"
+    },
+    {
+      "name": "expiry_report_empty",
+      "value": "暂无到期条目"
+    },
+    {
+      "name": "expiry_report_expired_days",
+      "value": "已过期 %d 天"
+    },
+    {
+      "name": "expiry_report_expiring_days",
+      "value": "%d 天内到期"
+    },
+    {
+      "name": "expiry_report_expires_today",
+      "value": "今天到期"
+    },
+    {
+      "name": "settings_security_expire_remind",
+      "value": "条目到期提醒"
+    },
+    {
+      "name": "settings_security_expire_remind_tips",
+      "value": "解锁后提示已过期或即将过期的条目"
+    },
+    {
+      "name": "settings_security_expire_remind_days",
+      "value": "提前提醒天数"
+    },
+    {
+      "name": "settings_security_expire_remind_days_option",
+      "value": "%d 天"
+    },
+    {
+      "name": "settings_security_expire_remind_frequency",
+      "value": "提醒频率"
+    },
+    {
+      "name": "settings_security_expire_remind_every_unlock",
+      "value": "每次解锁"
+    },
+    {
+      "name": "settings_security_expire_remind_daily",
+      "value": "每 24 小时"
+    },
+    {
       "name": "clear_all_button",
       "value": "清除全部"
     },

@@ -50,15 +50,28 @@ export class DateUtils {
   }
 
   /**
-   * 判断是否过期
-   * @param date
+   * 判断是否过期（委托 willExpireInDays，窗口 0 天）
+   * @param isEnableExpire 是否启用到期
+   * @param date 到期时间
    * @returns
    */
-  public static isExpired(isEnableExpire: boolean, date: Date | undefined): boolean {
-    if (isEnableExpire == false || !date) {
+  public static isExpired(isEnableExpire: boolean | undefined, date: Date | undefined): boolean {
+    return DateUtils.willExpireInDays(isEnableExpire, date, 0);
+  }
+
+  /**
+   * 判断条目是否已过期或将在 N 天内到期（M1 条目到期提醒）
+   * 语义：expiryTime <= now + N 天 视为到期（与旧 isExpired 的 >= 0 边界保持一致）
+   * @param expires 是否启用到期
+   * @param expiryTime 到期时间
+   * @param days 提前提醒天数窗口
+   * @returns true 表示已过期或将在 N 天内到期
+   */
+  public static willExpireInDays(expires: boolean | undefined, expiryTime: Date | undefined, days: number): boolean {
+    if (!expires || !expiryTime) {
       return false;
     }
-    return new Date().getTime() - date.getTime() >= 0;
+    return expiryTime.getTime() <= new Date().getTime() + days * 24 * 60 * 60 * 1000;
   }
 
   /**

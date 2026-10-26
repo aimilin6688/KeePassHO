@@ -1,4 +1,4 @@
-import { SettingsService, UnlockAuthType } from '../../services/SettingsService';
+import { SettingsService, UnlockAuthType, ExpiryRemindFrequency } from '../../services/SettingsService';
 import { CommonUtils, ResourceManager } from '../../common/utils';
 import { FileService } from '../../services/FileService';
 import { AuthService } from '../../services/AuthService';
@@ -29,6 +29,10 @@ struct SettingSecurityContent {
   @State isPrivacyWindow: boolean = SettingsService.KEY_SECURITY_PRIVACY_WINDOW_DEFAULT;
   // 解锁会话通知
   @State sessionNotifyEnabled: boolean = SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE_DEFAULT;
+  // 条目到期提醒（M1）
+  @State expireRemindEnabled: boolean = SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE_DEFAULT;
+  @State expireRemindDays: number = SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS_DEFAULT;
+  @State expireRemindFrequency: ExpiryRemindFrequency = SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY_DEFAULT;
   // 认证方式
   @State fingerprintLogin: boolean = SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT;
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
@@ -66,6 +70,19 @@ struct SettingSecurityContent {
     { value: "6" },
     { value: "7" },
     { value: "8" }
+  ];
+  // 到期提醒提前天数（M1）
+  private expireRemindDaysOptions: Array<TimeOption> = [
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_days_option"), 1), time: 1 },
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_days_option"), 3), time: 3 },
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_days_option"), 7), time: 7 },
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_days_option"), 14), time: 14 },
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_days_option"), 30), time: 30 },
+  ];
+  // 到期提醒频率（M1）
+  private expireRemindFrequencyOptions: Array<ExpiryRemindFrequencyOption> = [
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_every_unlock")), frequency: ExpiryRemindFrequency.EVERY_UNLOCK },
+    { value: ResourceManager.getString($r("app.string.settings_security_expire_remind_daily")), frequency: ExpiryRemindFrequency.DAILY },
   ];
   private settingsService: SettingsService = SettingsService.getInstance();
 
@@ -142,6 +159,19 @@ struct SettingSecurityContent {
     // 解锁会话通知开关
     this.settingsService.get(SettingsService.KEY_SECURITY_SESSION_NOTIFY_ENABLE, this.sessionNotifyEnabled).then(result => {
       this.sessionNotifyEnabled = result;
+    });
+
+    // 条目到期提醒开关（M1）
+    this.settingsService.get(SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE, this.expireRemindEnabled).then(result => {
+      this.expireRemindEnabled = result;
+    });
+    // 到期提醒提前天数
+    this.settingsService.get(SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS, this.expireRemindDays).then(result => {
+      this.expireRemindDays = result;
+    });
+    // 到期提醒频率
+    this.settingsService.get(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, this.expireRemindFrequency).then(result => {
+      this.expireRemindFrequency = result;
     });
   }
 
@@ -406,6 +436,96 @@ struct SettingSecurityContent {
             })
           }
 
+          // 条目到期提醒开关（M1）
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.settings_security_expire_remind"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.settings_security_expire_remind_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+
+              Toggle({ type: ToggleType.Switch, isOn: this.expireRemindEnabled })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.expireRemindEnabled = isOn;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE, isOn);
+                })
+            }
+            .width('100%')
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
+          }
+
+          // 到期提醒提前天数
+          if (this.expireRemindEnabled) {
+            ListItem() {
+              Row() {
+                Text($r("app.string.settings_security_expire_remind_days"))
+                  .fontSize(16)
+                  .flexGrow(1)
+
+                Select(this.expireRemindDaysOptions)
+                  .value(this.expireRemindDaysOptions[this.expireRemindDaysOptions.findIndex((item: TimeOption) => item.time === this.expireRemindDays)].value)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.expireRemindDays = this.expireRemindDaysOptions[index].time;
+                    this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS, this.expireRemindDays);
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 12
+              })
+            }
+          }
+
+          // 到期提醒频率
+          if (this.expireRemindEnabled) {
+            ListItem() {
+              Row() {
+                Text($r("app.string.settings_security_expire_remind_frequency"))
+                  .fontSize(16)
+                  .flexGrow(1)
+
+                Select(this.expireRemindFrequencyOptions)
+                  .value(this.expireRemindFrequencyOptions[this.expireRemindFrequencyOptions.findIndex((item: ExpiryRemindFrequencyOption) => item.frequency === this.expireRemindFrequency)].value)
+                  .font({ size: 16 })
+                  .selectedOptionFont({ size: 16 })
+                  .optionFont({ size: 16 })
+                  .backgroundColor($r("app.color.card_bg"))
+                  .onSelect(async (index: number) => {
+                    this.expireRemindFrequency = this.expireRemindFrequencyOptions[index].frequency;
+                    this.settingsService.put(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, this.expireRemindFrequency);
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 12
+              })
+            }
+          }
+
           // 剪切板自动清理时间
           ListItem() {
             Row() {
@@ -605,4 +725,12 @@ export interface LengthOption {
 export interface AuthTypeOptions {
   value: string;
   type: UnlockAuthType;
+}
+
+/**
+ * 到期提醒频率选项（M1）
+ */
+export interface ExpiryRemindFrequencyOption {
+  value: string;
+  frequency: ExpiryRemindFrequency;
 }

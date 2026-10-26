@@ -93,6 +93,7 @@ export class PageConstants {
   static readonly PAGE_ENTRY_EDIT: string = 'EntryEdit';
   static readonly PAGE_TOTP_VIEW: string = 'TotpView';
   static readonly PAGE_TEMPLATE_ENTRY_CREATE: string = 'TemplateEntryCreate';
+  static readonly PAGE_EXPIRY_REPORT: string = 'ExpiryReport';
 
   /**
    * 设置相关页面名称

@@ -31,6 +31,7 @@ import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
 import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
 import { AutoOpenService } from '../services/autoopen/AutoOpenService';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
+import { ExpiryRemindResult, ExpiryRemindService } from '../services/ExpiryRemindService';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
 import window from '@ohos.window';
@@ -118,6 +119,9 @@ export struct DatabaseView {
   @State showDatabaseSwitcher: boolean = false;
   @State switcherRefreshTick: number = 0;
   @State showChildDbHint: boolean = false; // 子数据库配置提示条（M5）
+  // 条目到期提醒（M1）：解锁评估结果与提示条显示状态
+  @State expiryRemindResult: ExpiryRemindResult | null = null;
+  @State showExpiryHint: boolean = false;
   @State isCurrentDbChild: boolean = false; // 当前库是否为子库（标题行显示子库标识图标）
   // 批量操作相关状态
   @State isSelectionMode: boolean = false; // 是否处于选择模式
@@ -558,6 +562,9 @@ export struct DatabaseView {
     return this.settingsService.getSortBy().then((sortBy: SortMode): void => {
       this.sortBy = sortBy;
       return this.initData(this.databaseShowParam);
+    }).then((): void => {
+      // 条目到期提醒（M1）：解锁完成后评估一次（防打扰判定仅在此触发）
+      this.evaluateExpiryHint();
     });
   }
 
@@ -672,6 +679,7 @@ export struct DatabaseView {
       KdbxUtils.sortBy(this.items, this.sortBy);
       this.addFavorite();
       this.updateChildDbHint();
+      this.updateExpiryHintVisibility();
       hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.items.length} items`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
@@ -721,6 +729,7 @@ export struct DatabaseView {
       this.updateBreadcrumb(group);
     }
     this.updateChildDbHint();
+    this.updateExpiryHintVisibility();
   }
 
   /**
@@ -788,6 +797,7 @@ export struct DatabaseView {
         KdbxUtils.sortBy(this.items, this.sortBy);
         this.addFavorite();
         this.updateChildDbHint();
+        this.updateExpiryHintVisibility();
       }
     }
   }
@@ -832,6 +842,63 @@ export struct DatabaseView {
   }
 
   /**
+   * 条目到期提醒（M1）：解锁完成后评估一次。
+   * 通过防打扰判定（开关 → 今日隐藏 → 24h 间隔/每次解锁）后生成提醒数据并显示提示条；
+   * lastRemindTime 仅在此处写入，刷新/重载路径不重复计时
+   */
+  private evaluateExpiryHint(): void {
+    this.expiryRemindResult = null;
+    this.showExpiryHint = false;
+    try {
+      if (this.database === null) {
+        return;
+      }
+      const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
+      if (iocKey.length === 0) {
+        return;
+      }
+      const result: ExpiryRemindResult | null = ExpiryRemindService.getInstance().evaluate(this.database, iocKey);
+      if (result === null || result.totalCount === 0) {
+        return;
+      }
+      this.expiryRemindResult = result;
+      this.updateExpiryHintVisibility();
+      hilog.info(DOMAIN, TAG, 'Expiry remind shown: expired=%{public}d, expiring=%{public}d',
+        result.expiredCount, result.expiringCount);
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to evaluate expiry hint: %{public}s', `${error}`);
+    }
+  }
+
+  /**
+   * 刷新到期提示条可见性：提醒数据在解锁评估时生成，
+   * 此处仅按当前分组/视图状态刷新显示（与子库提示条同位置调用）
+   */
+  private updateExpiryHintVisibility(): void {
+    if (this.expiryRemindResult === null) {
+      this.showExpiryHint = false;
+      return;
+    }
+    // 仅根组视图显示
+    if (this.currentGroup === undefined || this.currentGroup.parentGroup !== undefined) {
+      this.showExpiryHint = false;
+      return;
+    }
+    this.showExpiryHint = true;
+  }
+
+  /**
+   * 「今日不再提示」到期提醒：按库记忆并立即隐藏
+   */
+  private dismissExpiryHint(): void {
+    const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
+    ExpiryRemindService.getInstance().hideToday(iocKey).catch(() => {
+      hilog.warn(DOMAIN, TAG, 'Failed to persist expiry hint hidden flag');
+    });
+    this.showExpiryHint = false;
+  }
+
+  /**
    * 返回到父分组
    * 在分栏模式下，左侧列表返回到上一级分组
    */
@@ -855,6 +922,7 @@ export struct DatabaseView {
       // 更新面包屑导航
       this.updateBreadcrumb(parentGroup);
       this.updateChildDbHint();
+      this.updateExpiryHintVisibility();
     } else {
       // 没有父分组，返回到根分组
       const rootGroup = this.database?.getDefaultGroup();
@@ -870,6 +938,7 @@ export struct DatabaseView {
         // 更新面包屑导航
         this.updateBreadcrumb(rootGroup);
         this.updateChildDbHint();
+        this.updateExpiryHintVisibility();
       }
     }
   }
@@ -1951,6 +2020,7 @@ export struct DatabaseView {
         this.addFavorite();
       }
       this.updateChildDbHint();
+      this.updateExpiryHintVisibility();
       // 恢复滚动位置
       setTimeout(() => {
         this.listScroller.scrollTo({ xOffset: 0, yOffset: savedScrollOffset, animation: { duration: 0 } });
@@ -2708,43 +2778,82 @@ export struct DatabaseView {
           .layoutWeight(1)
         }
 
-        // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
-        // 底部悬浮面包屑（默认可见）为 36vp 绝对定位浮层，提示条需上移避让；移动/选择模式下与面包屑一致隐藏
-        if (this.showChildDbHint && !this.moveParam && !this.isSelectionMode) {
-          Row({ space: 12 }) {
-            Text($r('app.string.unconfigured_child_dbs'))
-              .fontSize(12)
-              .fontColor($r('app.color.text_secondary'))
-              .layoutWeight(1)
-              .lineHeight(16)
-            Column({ space: 2 }) {
-              Button($r('app.string.child_dbs_go_configure'))
-                .fontSize(13)
-                .fontWeight(FontWeight.Medium)
-                .height(28)
-                .padding({ left: 14, right: 14 })
-                .backgroundColor($r('app.color.button_bg_blue'))
-                .fontColor(Color.White)
-                .onClick(() => {
-                  NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
-                })
-              Text($r('app.string.child_dbs_hint_dismiss'))
-                .fontSize(11)
+        // 底部提示区（M1 到期提醒 + M5 子数据库配置提示条）
+        // 底部悬浮面包屑（默认可见）为 36vp 绝对定位浮层，提示区需上移避让；移动/选择模式下与面包屑一致隐藏
+        Column({ space: 8 }) {
+          // 条目到期提醒条（M1）：解锁后评估存在已过期/N 天内到期条目时显示（仅根组）
+          if (this.showExpiryHint && this.expiryRemindResult !== null && !this.moveParam && !this.isSelectionMode) {
+            Row({ space: 12 }) {
+              Text(ResourceManager.getString($r('app.string.expiry_remind_banner_text'),
+                this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays))
+                .fontSize(12)
                 .fontColor($r('app.color.text_secondary'))
-                .onClick(() => {
-                  this.dismissChildDbHint();
-                })
+                .layoutWeight(1)
+                .lineHeight(16)
+              Column({ space: 2 }) {
+                Button($r('app.string.expiry_remind_view'))
+                  .fontSize(13)
+                  .fontWeight(FontWeight.Medium)
+                  .height(28)
+                  .padding({ left: 14, right: 14 })
+                  .backgroundColor($r('app.color.button_bg_blue'))
+                  .fontColor(Color.White)
+                  .onClick(() => {
+                    NavigationManager.getInstance().navigateTo(PageConstants.PAGE_EXPIRY_REPORT);
+                  })
+                Text($r('app.string.expiry_remind_dismiss_today'))
+                  .fontSize(11)
+                  .fontColor($r('app.color.text_secondary'))
+                  .onClick(() => {
+                    this.dismissExpiryHint();
+                  })
+              }
+              .alignItems(HorizontalAlign.Center)
             }
-            .alignItems(HorizontalAlign.Center)
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+            .backgroundColor($r('app.color.bg_secondary'))
+            .alignItems(VerticalAlign.Top)
           }
-          .width('100%')
-          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-          .backgroundColor($r('app.color.bg_secondary'))
-          .alignItems(VerticalAlign.Top)
-          .margin({
-            bottom: this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM ? 36 : 0
-          })
+
+          // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
+          if (this.showChildDbHint && !this.moveParam && !this.isSelectionMode) {
+            Row({ space: 12 }) {
+              Text($r('app.string.unconfigured_child_dbs'))
+                .fontSize(12)
+                .fontColor($r('app.color.text_secondary'))
+                .layoutWeight(1)
+                .lineHeight(16)
+              Column({ space: 2 }) {
+                Button($r('app.string.child_dbs_go_configure'))
+                  .fontSize(13)
+                  .fontWeight(FontWeight.Medium)
+                  .height(28)
+                  .padding({ left: 14, right: 14 })
+                  .backgroundColor($r('app.color.button_bg_blue'))
+                  .fontColor(Color.White)
+                  .onClick(() => {
+                    NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
+                  })
+                Text($r('app.string.child_dbs_hint_dismiss'))
+                  .fontSize(11)
+                  .fontColor($r('app.color.text_secondary'))
+                  .onClick(() => {
+                    this.dismissChildDbHint();
+                  })
+              }
+              .alignItems(HorizontalAlign.Center)
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+            .backgroundColor($r('app.color.bg_secondary'))
+            .alignItems(VerticalAlign.Top)
+          }
         }
+        .width('100%')
+        .margin({
+          bottom: this.isBreadcrumbVisible && this.breadcrumbPosition === BreadcrumbPosition.BOTTOM ? 36 : 0
+        })
       }
       .width('100%')
       .height('100%')
