@@ -494,56 +494,52 @@ export default function KdbxSaveServiceTest() {
 
     // ==================== addCustomIcon ====================
 
-    it('addCustomIcon with empty images calls onError', 0, async () => {
-      const database = await KdbxModeTestHelper.createDatabase('IconEmptyDb', 'icon-empty-entry');
-      FileService.getInstance().initDbFileParam();
-      const tracker = new SaveCallbackTracker();
-      await KdbxSaveService.addCustomIcon(database, [], tracker);
-      expect(tracker.errorCount > 0).assertTrue();
-      expect(tracker.lastErrorMessage).assertEqual('Invalid database or base64 image');
+    it('addCustomIcon with empty images returns empty uuid list', 0, () => {
+      const database = Kdbx.create(new KdbxCredentials(ProtectedValue.fromString('t')), 'IconEmptyDb');
+      const uuids = KdbxSaveService.addCustomIcon(database, []);
+      expect(uuids.length).assertEqual(0);
+      expect(database.meta.customIcons.size).assertEqual(0);
     });
 
-    it('addCustomIcon with invalid base64 calls onError per image', 0, async () => {
-      const database = await KdbxModeTestHelper.createDatabase('IconInvalidDb', 'icon-invalid-entry');
-      FileService.getInstance().initDbFileParam();
-      const tracker = new SaveCallbackTracker();
-      const initialIconCount = database.meta.customIcons.size;
-      await KdbxSaveService.addCustomIcon(database, ['no-comma-data', 'also-no-comma'], tracker);
-      expect(database.meta.customIcons.size).assertEqual(initialIconCount);
-      expect(tracker.errorCount >= 1).assertTrue();
+    it('addCustomIcon with invalid base64 returns empty string per image', 0, () => {
+      const database = Kdbx.create(new KdbxCredentials(ProtectedValue.fromString('t')), 'IconInvalidDb');
+      const uuids = KdbxSaveService.addCustomIcon(database, ['no-comma-data', 'also-no-comma']);
+      expect(uuids.length).assertEqual(2);
+      expect(uuids[0]).assertEqual('');
+      expect(uuids[1]).assertEqual('');
+      expect(database.meta.customIcons.size).assertEqual(0);
     });
 
-    it('addCustomIcon with valid base64 adds icons and triggers save', 0, async () => {
-      const database = await KdbxModeTestHelper.createDatabase('IconValidDb', 'icon-valid-entry');
-      FileService.getInstance().initDbFileParam();
-      const tracker = new SaveCallbackTracker();
-      const initialIconCount = database.meta.customIcons.size;
+    it('addCustomIcon with valid base64 adds icon and returns uuid', 0, () => {
+      const database = Kdbx.create(new KdbxCredentials(ProtectedValue.fromString('t')), 'IconValidDb');
       const validBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-      await KdbxSaveService.addCustomIcon(database, [validBase64], tracker);
-      expect(database.meta.customIcons.size).assertEqual(initialIconCount + 1);
-      expect(tracker.errorCount > 0).assertTrue();
+      const uuids = KdbxSaveService.addCustomIcon(database, [validBase64]);
+      expect(database.meta.customIcons.size).assertEqual(1);
+      expect(uuids.length).assertEqual(1);
+      expect(uuids[0] !== '').assertTrue();
+      expect(database.meta.customIcons.has(uuids[0])).assertTrue();
     });
 
-    it('addCustomIcon with mix of valid and invalid base64 adds only valid icons', 0, async () => {
-      const database = await KdbxModeTestHelper.createDatabase('IconMixDb', 'icon-mix-entry');
-      FileService.getInstance().initDbFileParam();
-      const tracker = new SaveCallbackTracker();
-      const initialIconCount = database.meta.customIcons.size;
+    it('addCustomIcon with mix of valid and invalid base64 adds only valid icons', 0, () => {
+      const database = Kdbx.create(new KdbxCredentials(ProtectedValue.fromString('t')), 'IconMixDb');
       const validBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-      await KdbxSaveService.addCustomIcon(database, ['invalid-no-comma', validBase64], tracker);
-      expect(database.meta.customIcons.size).assertEqual(initialIconCount + 1);
+      const uuids = KdbxSaveService.addCustomIcon(database, ['invalid-no-comma', validBase64]);
+      expect(database.meta.customIcons.size).assertEqual(1);
+      expect(uuids.length).assertEqual(2);
+      expect(uuids[0]).assertEqual('');
+      expect(uuids[1] !== '').assertTrue();
     });
 
-    it('addCustomIcon with no callback does not throw on error', 0, async () => {
-      const database = await KdbxModeTestHelper.createDatabase('IconNoCbDb', 'icon-nocb-entry');
-      FileService.getInstance().initDbFileParam();
-      let threw = false;
-      try {
-        await KdbxSaveService.addCustomIcon(database, [], undefined);
-      } catch (e) {
-        threw = true;
-      }
-      expect(threw).assertFalse();
+    it('addCustomIcon dedupes identical icon data and reuses existing uuid', 0, () => {
+      const database = Kdbx.create(new KdbxCredentials(ProtectedValue.fromString('t')), 'IconDedupeDb');
+      const validBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const firstUuids = KdbxSaveService.addCustomIcon(database, [validBase64]);
+      expect(database.meta.customIcons.size).assertEqual(1);
+      const secondUuids = KdbxSaveService.addCustomIcon(database, [validBase64, validBase64]);
+      expect(database.meta.customIcons.size).assertEqual(1);
+      expect(secondUuids.length).assertEqual(2);
+      expect(secondUuids[0]).assertEqual(firstUuids[0]);
+      expect(secondUuids[1]).assertEqual(firstUuids[0]);
     });
 
     // ==================== End-to-end save (async, worker) ====================
