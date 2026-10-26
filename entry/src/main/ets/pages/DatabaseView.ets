@@ -28,6 +28,7 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { FileInfo } from '../storage/IFileStorage';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
+import { HintBanner } from '../components/HintBanner';
 import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
 import { AutoOpenService } from '../services/autoopen/AutoOpenService';
 import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
@@ -2783,74 +2784,32 @@ export struct DatabaseView {
         Column({ space: 8 }) {
           // 条目到期提醒条（M1）：解锁后评估存在已过期/N 天内到期条目时显示（仅根组）
           if (this.showExpiryHint && this.expiryRemindResult !== null && !this.moveParam && !this.isSelectionMode) {
-            Row({ space: 12 }) {
-              Text(ResourceManager.getString($r('app.string.expiry_remind_banner_text'), this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays))
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-                .layoutWeight(1)
-                .lineHeight(16)
-              Column({ space: 2 }) {
-                Button($r('app.string.expiry_remind_view'))
-                  .fontSize(13)
-                  .fontWeight(FontWeight.Medium)
-                  .height(28)
-                  .padding({ left: 14, right: 14 })
-                  .backgroundColor($r('app.color.button_bg_blue'))
-                  .fontColor(Color.White)
-                  .onClick(() => {
-                    NavigationManager.getInstance().navigateTo(PageConstants.PAGE_EXPIRY_REPORT);
-                  })
-                Blank().height(10)
-                Text($r('app.string.expiry_remind_dismiss_today'))
-                  .fontSize(11)
-                  .fontColor($r('app.color.text_secondary'))
-                  .onClick(() => {
-                    this.dismissExpiryHint();
-                  })
+            HintBanner({
+              message: ResourceManager.getString($r('app.string.expiry_remind_banner_text'), this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays),
+              actionLabel: $r('app.string.expiry_remind_view'),
+              dismissLabel: $r('app.string.expiry_remind_dismiss_today'),
+              onAction: () => {
+                NavigationManager.getInstance().navigateTo(PageConstants.PAGE_EXPIRY_REPORT);
+              },
+              onDismiss: () => {
+                this.dismissExpiryHint();
               }
-              .alignItems(HorizontalAlign.Center)
-            }
-            .width('100%')
-            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-            .backgroundColor($r('app.color.bg_secondary'))
-            .alignItems(VerticalAlign.Center)
-            .borderRadius(16)
+            })
           }
 
           // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
           if (this.showChildDbHint && !this.moveParam && !this.isSelectionMode) {
-            Row({ space: 12 }) {
-              Text($r('app.string.unconfigured_child_dbs'))
-                .fontSize(14)
-                .fontColor($r('app.color.text_secondary'))
-                .layoutWeight(1)
-                .lineHeight(16)
-              Column({ space: 2 }) {
-                Button($r('app.string.child_dbs_go_configure'))
-                  .fontSize(13)
-                  .fontWeight(FontWeight.Medium)
-                  .height(28)
-                  .padding({ left: 14, right: 14 })
-                  .backgroundColor($r('app.color.button_bg_blue'))
-                  .fontColor(Color.White)
-                  .onClick(() => {
-                    NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
-                  })
-                Blank().height(10)
-                Text($r('app.string.child_dbs_hint_dismiss'))
-                  .fontSize(11)
-                  .fontColor($r('app.color.text_secondary'))
-                  .onClick(() => {
-                    this.dismissChildDbHint();
-                  })
+            HintBanner({
+              message: $r('app.string.unconfigured_child_dbs'),
+              actionLabel: $r('app.string.child_dbs_go_configure'),
+              dismissLabel: $r('app.string.child_dbs_hint_dismiss'),
+              onAction: () => {
+                NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
+              },
+              onDismiss: () => {
+                this.dismissChildDbHint();
               }
-              .alignItems(HorizontalAlign.Center)
-            }
-            .width('100%')
-            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-            .backgroundColor($r('app.color.bg_secondary'))
-            .alignItems(VerticalAlign.Center)
-            .borderRadius(16)
+            })
           }
         }
         .width('100%')
