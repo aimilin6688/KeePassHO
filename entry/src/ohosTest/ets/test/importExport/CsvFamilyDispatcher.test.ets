@@ -51,12 +51,53 @@ export default function CsvFamilyDispatcherTest() {
         expect(dispatcher.detectFormatId(header, [])).assertEqual('LASTPASS_CSV');
       });
 
+      it('shouldDetectBitwardenFormat', 0, () => {
+        const header = ['folder', 'favorite', 'type', 'name', 'notes', 'fields', 'reprompt',
+          'login_uri', 'login_username', 'login_password', 'login_totp'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('BITWARDEN_CSV');
+      });
+
+      it('shouldDetectProtonPassFormat', 0, () => {
+        const header = ['name', 'url', 'username', 'password', 'note', 'totp', 'email', 'vault'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('PROTONPASS_CSV');
+      });
+
+      it('shouldPreferProtonPassOverChromeForChromeSupersetHeader', 0, () => {
+        // §4.5：Chrome 表头 + Proton 特征列（totp/vault/email）的超集须判为 Proton Pass，而非 Chrome
+        const header = ['name', 'url', 'username', 'password', 'note', 'totp', 'vault'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('PROTONPASS_CSV');
+      });
+
+      it('shouldDetectDashlaneFormat', 0, () => {
+        const header = ['title', 'url', 'username', 'password', 'note', 'category', 'otpSecret', 'lastModified'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('DASHLANE_CSV');
+      });
+
+      it('shouldDetectOnePasswordFormat', 0, () => {
+        const header = ['Title', 'Url', 'Username', 'Password', 'OTPAuth', 'Notes'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('ONEPASSWORD_CSV');
+      });
+
+      it('shouldPreferDashlaneOverOnePasswordForDashlaneHeader', 0, () => {
+        // Dashlane 与 1Password 均满足 title/url/username/password，靠特征列消歧
+        const dashlaneHeader = ['title', 'url', 'username', 'password', 'note', 'category', 'otpSecret', 'lastModified'];
+        expect(dispatcher.detectFormatId(dashlaneHeader, [])).assertEqual('DASHLANE_CSV');
+        const onePasswordHeader = ['Title', 'Url', 'Username', 'Password', 'OTPAuth', 'Notes'];
+        expect(dispatcher.detectFormatId(onePasswordHeader, [])).assertEqual('ONEPASSWORD_CSV');
+      });
+
       it('shouldFallBackToGenericForUnknownHeader', 0, () => {
         expect(dispatcher.detectFormatId(['foo', 'bar'], [])).assertEqual('GENERIC_CSV');
       });
 
       it('shouldFallBackToGenericForKeePassStyleHeader', 0, () => {
         const header = ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
+      });
+
+      it('shouldFallBackToGenericForAppExportHeaderWithLastModified', 0, () => {
+        // 本应用 CSV 导出表头含 Last Modified，须仍走通用 CSV（Dashlane 不得误认领）
+        const header = ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes', 'TOTP', 'Icon', 'Last Modified'];
         expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
       });
 

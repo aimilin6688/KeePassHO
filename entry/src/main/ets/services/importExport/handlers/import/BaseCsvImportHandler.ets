@@ -113,6 +113,8 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
         this.applyTarget(entry, item.target, value, protection);
       }
 
+      this.applyRowExtensions(entry, rows[0], row);
+
       if (titleValue.trim() === '') {
         const fallbackTitle = this.resolveFallbackTitle(urlValue, usernameValue, entryCounter + 1);
         entry.setField('Title', fallbackTitle, protection.title);
@@ -129,6 +131,13 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
    * 构建列映射策略（由具体格式子类实现）
    */
   protected abstract buildColumnMapping(headerRow: string[]): CsvColumnMapping[];
+
+  /**
+   * 行级扩展钩子：列映射主流程之后的按行自定义处理（默认空实现）
+   * 供需要列间条件逻辑的格式使用（如 Bitwarden favorite/fields、Proton email 兜底）
+   */
+  protected applyRowExtensions(entry: KdbxEntry, headerRow: string[], row: string[]): void {
+  }
 
   /**
    * 分组路径归一化钩子（默认原样返回，LastPass 覆写以支持 '\' 分隔）
@@ -243,6 +252,19 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
       }
     }
     return false;
+  }
+
+  /**
+   * 查找表头列索引（大小写/空白不敏感），未找到返回 -1
+   */
+  protected static findHeaderIndex(headerRow: string[], name: string): number {
+    const target = name.trim().toLowerCase();
+    for (let i = 0; i < headerRow.length; i++) {
+      if (headerRow[i].trim().toLowerCase() === target) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private static normalizeHeaders(headerRow: string[]): string[] {

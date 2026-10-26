@@ -5,6 +5,8 @@
 > 约束：**导入能力必须以面向接口方式扩展；上层 UI / 服务层（页面、ViewModel、Facade、ImportService、Registry）零改动，只允许新增实现与组合根注册行；CSV 类导入必须提供列映射向导；尽可能多地支持其他密码库的导入。**
 >
 > 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 工作分支：`docs/import-format-expansion`（worktree）
+>
+> **交付状态（2026-10-27 更新）：M1 已交付并合并 `dev`（merge `f61fca93`）；M2-1（Bitwarden/1Password/Dashlane/Proton Pass 四个固定表头 CSV 格式）已交付，详见 §十 实现进度。**
 
 ---
 
@@ -386,13 +388,83 @@ Dispatcher.import(fileContent)                       [UI 正在 await viewModel.
 
 ## 九、交付计划
 
-| 里程碑 | 内容 | 人日 |
-|---|---|---|
-| M1（P1，2.4.x） | 契约与模型文件、`CsvParser`、签名库、映射引擎、交互桥、向导页；`CsvFamilyDispatcher` + Chrome/Edge/Firefox/LastPass/Generic（原 CSV 行为兼容）；测试与回归 | 10-12 |
-| M2（P2） | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ Bitwarden CSV、1Password CSV、Dashlane、Keeper、Enpass、Proton Pass（CSV/JSON 双格式）；长尾签名库首批（RoboForm/mSecure/Norton/Sticky Password） | 10-12 |
-| M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 |
+| 里程碑 | 内容 | 人日 | 状态 |
+|---|---|---|---|
+| M1（P1，2.4.x） | 契约与模型文件、`CsvParser`、签名库、映射引擎、交互桥、向导页；`CsvFamilyDispatcher` + Chrome/Edge/Firefox/LastPass/Generic（原 CSV 行为兼容）；测试与回归 | 10-12 | ✅ 已交付（`f61fca93` 合并 dev） |
+| M2-1 | Bitwarden CSV、1Password CSV、Dashlane 6+、Proton Pass 四个固定表头 CSV 格式（TDD） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
+| M2-2 | Keeper CSV（record_type 按行解析）+ Enpass CSV（40 列） | 2-3 | ⬜ 未启动 |
+| M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ⬜ 未启动 |
+| M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（RoboForm/mSecure/Norton/Sticky Password） | 4-5 | ⬜ 未启动 |
+| M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 | ⬜ 未启动 |
 
 M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用向导），M2 达成 P2-7 的"覆盖长尾导入格式"。
+
+---
+
+## 十、实现进度（2026-10-27 更新）
+
+### 10.1 已完成
+
+**M1（commit `4eefd0b7`，merge `f61fca93`）**：
+
+1. `csvimport/CsvParser.ets` — RFC4180 宽松解析（引号转义、未闭合引号、跨行字段）
+2. `csvimport/ColumnNameMapper.ets` — KeePass 同义词精确匹配 + 模糊子串匹配
+3. `csvimport/CsvColumnMappingEngine.ets` — Profile 列映射（缺失必需列抛 `INVALID_CSV_HEADER`）+ 建议映射
+4. `csvimport/CsvImportModels.ets` — `CsvTargetField` 等模型
+5. `csvimport/ISniffableImport.ets` — 嗅探能力接口
+6. `handlers/import/BaseCsvImportHandler.ets` — 基类（时间戳/标签/hostname 解析、`getOrCreateGroup`、标题兜底链）
+7. `handlers/import/CsvFamilyDispatcherImportHandler.ets` — `formatId 'CSV'` 族调度器（嗅探阈值 70，未识别回落 Generic）
+8. `handlers/import/{Chrome,Firefox,LastPass,Generic}CsvImportHandler.ets` — 四个格式 handler
+9. `index.ets` 组合根注册 dispatcher（受保护文件中唯一允许的注册改动）
+10. TOTP 列导入：otpauth:// 原文存 `otp`（protected）；裸密钥转 `key=`（KeeOtp 兼容）
+11. Firefox 导入 httpRealm/timeCreated/timePasswordChanged
+12. LastPass `grouping` 支持 `\` 与 `/` 两种嵌套分隔符
+13. 新增 8 个测试套件共 114 用例 + `List.test.ets` 注册
+
+**M2-1（本迭代，TDD）**：
+
+14. `BaseCsvImportHandler` 扩展：`applyRowExtensions(entry, headerRow, row)` 行级扩展钩子（默认空实现）+ `findHeaderIndex` 静态辅助
+15. `handlers/import/BitwardenCsvImportHandler.ets` — favorite=1 → `FAVORITE_TAG` 标签；fields 列按「name: value; …」拆自定义字段；type 2/3/4 统一映射
+16. `handlers/import/OnePasswordCsvImportHandler.ets` — `OTPAuth` 特征列消歧（避免误判含 Notes 的 KeePass 风格导出）
+17. `handlers/import/DashlaneCsvImportHandler.ets` — 特征列 `category/otpsecret/lastmodified` + 排除列 `group/notes`（本应用导出含 Last Modified，不排除会丢 Group/Notes 映射）
+18. `handlers/import/ProtonPassCsvImportHandler.ets` — email 兜底：UserName 为空时作 UserName，否则存自定义字段 `Email`（对齐 KeePassXC ProtonPassReader 语义）
+19. 调度器 family 新序：LastPass → Bitwarden → ProtonPass → Dashlane → OnePassword → Firefox → Chrome（两两冲突已由特征列/排除列消歧）
+20. 新增 4 个测试套件共 52 用例 + 调度器消歧用例（含 §4.5 Chrome 表头超集判 Proton、Dashlane vs 1Password 互斥、本应用导出回归）
+
+### 10.2 实现差异（相对本报告原设计）
+
+1. 契约与模型实际落在 `csvimport/` 单目录（原设计拆 `contracts/`/`model/`/`csv/`/`sniffing/`/`wizard/`），`ISniffableImport` 即契约
+2. 长尾签名库 `FormatSignatureLibrary` 未在 M1/M2-1 实现（推迟至 M2-4 向导一并落地）
+3. `IColumnMappingImport` 交互桥未实现（依赖向导页，推迟至 M2-4）
+4. TOTP 存储格式：统一 `otp` 字段（otpauth 原文 protected / `key=secret`），非独立 KeeOtp 字段
+5. Bitwarden favorite 语义用 `KdbxUtils.FAVORITE_TAG`（`__FAVORITE__`）标签，与旧 `BitwardenJsonImportHandler` 的 `Favorite` 自定义字段不一致（历史遗留，后续统一）
+
+### 10.3 缺失项（对应原设计，均属 M2-4 向导）
+
+- L-1 列映射向导页面 `ColumnMappingWizardPage`
+- L-2 `ImportWizardBridge` 交互桥
+- L-3 router_map 注册
+- L-4 签名库 `FormatSignatureLibrary`（RoboForm/mSecure/Norton/Sticky Password 首批）
+- L-5 建议映射 UI 呈现（`buildSuggestedMapping` 已就绪）
+- L-6 列映射人工修正
+- L-7 向导结果回填导入
+- L-8~L-11 向导测试
+
+### 10.4 未启动
+
+M2-2（Keeper/Enpass CSV）、M2-3（JSON 族调度器 + Proton Pass JSON）、M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
+
+### 10.5 验证记录
+
+| 日期 | 范围 | 结果 |
+|---|---|---|
+| 2026-10-26 | M1 新增 8 套件 | 114/114 真机通过 |
+| 2026-10-26 | M1 回归（importExport 既有套件） | 89/89 通过 |
+| 2026-10-26 | dev 完整套件（M1 合并后） | 2974 用例：2909 pass；65 失败全部为 WebDAV/S3/SFTP 测试连接失败（环境性，需本地服务器） |
+| 2026-10-27 | M2-1 新增（4 handler + 调度器消歧） | 83/83 真机通过（Mate 60 Pro+，`aa test -s class` 5 套件） |
+| 2026-10-27 | M2-1 回归（CSV 全家 + 编排层 + 注册表 15 套件） | 208/208 通过 |
+
+受保护文件（附录 A）在 M1/M2-1 中 diff 均为空；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1 零改动——新 handler 由 dispatcher 内部注册）。
 
 ---
 
@@ -408,31 +480,33 @@ entry/src/main/ets/services/importExport/handlers/IImportHandler.ets
 entry/src/main/ets/services/importExport/handlers/IExportHandler.ets
 ```
 
-## 附录 B：新增文件清单（规划）
+## 附录 B：新增文件清单（✅ 已交付 / ⬜ 待实现）
 
 ```
 entry/src/main/ets/services/importExport/
-  contracts/ISniffableImport.ets
-  contracts/IColumnMappingImport.ets
-  model/CsvMappingModels.ets
-  csv/CsvParser.ets
-  csv/CsvColumnMappingEngine.ets
-  sniffing/FormatSignatureLibrary.ets
-  wizard/ImportWizardBridge.ets
-  handlers/import/CsvFamilyDispatcherImportHandler.ets
-  handlers/import/JsonFamilyDispatcherImportHandler.ets
-  handlers/import/GenericCsvImportHandler.ets          // 原 CsvImportHandler 语义迁移
-  handlers/import/ChromeCsvImportHandler.ets
-  handlers/import/FirefoxCsvImportHandler.ets
-  handlers/import/LastPassCsvImportHandler.ets
-  handlers/import/BitwardenCsvImportHandler.ets
-  handlers/import/OnePasswordCsvImportHandler.ets
-  handlers/import/DashlaneCsvImportHandler.ets
-  handlers/import/KeeperCsvImportHandler.ets
-  handlers/import/ProtonPassImportHandler.ets
-  handlers/import/EnpassImportHandler.ets
+  csvimport/ISniffableImport.ets                        ✅（M1，契约）
+  csvimport/CsvImportModels.ets                         ✅（M1）
+  csvimport/CsvParser.ets                               ✅（M1）
+  csvimport/ColumnNameMapper.ets                        ✅（M1，KeePass 同义词库）
+  csvimport/CsvColumnMappingEngine.ets                  ✅（M1，含 Profile 引擎）
+  sniffing/FormatSignatureLibrary.ets                   ⬜（M2-4）
+  wizard/ImportWizardBridge.ets                         ⬜（M2-4）
+  handlers/import/CsvFamilyDispatcherImportHandler.ets  ✅（M1；M2-1 扩 family 至 7 handler）
+  handlers/import/BaseCsvImportHandler.ets              ✅（M1；M2-1 加 applyRowExtensions 钩子）
+  handlers/import/GenericCsvImportHandler.ets           ✅（M1）
+  handlers/import/ChromeCsvImportHandler.ets            ✅（M1）
+  handlers/import/FirefoxCsvImportHandler.ets           ✅（M1）
+  handlers/import/LastPassCsvImportHandler.ets          ✅（M1）
+  handlers/import/BitwardenCsvImportHandler.ets         ✅（M2-1）
+  handlers/import/OnePasswordCsvImportHandler.ets       ✅（M2-1）
+  handlers/import/DashlaneCsvImportHandler.ets          ✅（M2-1）
+  handlers/import/ProtonPassCsvImportHandler.ets        ✅（M2-1）
+  handlers/import/KeeperCsvImportHandler.ets            ⬜（M2-2）
+  handlers/import/EnpassCsvImportHandler.ets            ⬜（M2-2）
+  handlers/import/JsonFamilyDispatcherImportHandler.ets ⬜（M2-3）
+  handlers/import/ProtonPassJsonImportHandler.ets       ⬜（M2-3）
   ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）
-entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   // 新页面 + router_map 追加
+entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ⬜（M2-4，新页面 + router_map 追加）
 ```
 
 ## 附录 C：与 feature-gap-analysis.md 的条目映射

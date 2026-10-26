@@ -6,6 +6,10 @@ import { ImportError, ImportExportErrorCode } from '../../common/ImportExportErr
 import { ResourceManager } from '../../../../common/utils';
 import { BaseCsvImportHandler } from './BaseCsvImportHandler';
 import { LastPassCsvImportHandler } from './LastPassCsvImportHandler';
+import { BitwardenCsvImportHandler } from './BitwardenCsvImportHandler';
+import { ProtonPassCsvImportHandler } from './ProtonPassCsvImportHandler';
+import { DashlaneCsvImportHandler } from './DashlaneCsvImportHandler';
+import { OnePasswordCsvImportHandler } from './OnePasswordCsvImportHandler';
 import { FirefoxCsvImportHandler } from './FirefoxCsvImportHandler';
 import { ChromeCsvImportHandler } from './ChromeCsvImportHandler';
 import { GenericCsvImportHandler } from './GenericCsvImportHandler';
@@ -18,20 +22,24 @@ const SAMPLE_ROW_COUNT = 5;
 /**
  * CSV 导入格式族调度器
  * 占据 '.csv' / 'CSV' 路由键，按表头嗅探将导入分发到
- * LastPass / Firefox / Chrome / 通用 CSV 处理器
+ * LastPass / Bitwarden / Proton Pass / Dashlane / 1Password / Firefox / Chrome / 通用 CSV 处理器
  */
 export class CsvFamilyDispatcherImportHandler implements IImportHandler {
   readonly supportedExtensions: string[] = ['.csv'];
   readonly formatId = 'CSV';
   readonly formatName = 'CSV';
 
-  /** 格式族（按特异性从高到低排序，避免 LastPass 表头被 Chrome 误认领） */
+  /** 格式族（按特异性从高到低排序，两两冲突已由特征列/排除列消歧） */
   private readonly family: BaseCsvImportHandler[];
   private readonly fallbackHandler: GenericCsvImportHandler;
 
   constructor() {
     this.family = [
       new LastPassCsvImportHandler(),
+      new BitwardenCsvImportHandler(),
+      new ProtonPassCsvImportHandler(),
+      new DashlaneCsvImportHandler(),
+      new OnePasswordCsvImportHandler(),
       new FirefoxCsvImportHandler(),
       new ChromeCsvImportHandler()
     ];

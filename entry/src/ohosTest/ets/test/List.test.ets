@@ -242,6 +242,11 @@ import FirefoxCsvImportHandlerTest from './importExport/FirefoxCsvImportHandler.
 import LastPassCsvImportHandlerTest from './importExport/LastPassCsvImportHandler.test';
 import GenericCsvImportHandlerTest from './importExport/GenericCsvImportHandler.test';
 import CsvFamilyDispatcherTest from './importExport/CsvFamilyDispatcher.test';
+// ===== M2-1：P2 固定表头 CSV 格式批次（Bitwarden/1Password/Dashlane/Proton Pass）=====
+import BitwardenCsvImportHandlerTest from './importExport/BitwardenCsvImportHandler.test';
+import OnePasswordCsvImportHandlerTest from './importExport/OnePasswordCsvImportHandler.test';
+import DashlaneCsvImportHandlerTest from './importExport/DashlaneCsvImportHandler.test';
+import ProtonPassCsvImportHandlerTest from './importExport/ProtonPassCsvImportHandler.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -566,6 +571,12 @@ export default function testsuite() {
   LastPassCsvImportHandlerTest();
   GenericCsvImportHandlerTest();
   CsvFamilyDispatcherTest();
+
+  // ===== M2-1：P2 固定表头 CSV 格式批次 =====
+  BitwardenCsvImportHandlerTest();
+  OnePasswordCsvImportHandlerTest();
+  DashlaneCsvImportHandlerTest();
+  ProtonPassCsvImportHandlerTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();
