@@ -3381,6 +3381,10 @@
       "value": "缺少必须的列: %s"
     },
     {
+      "name": "import_export_fallback_entry_title",
+      "value": "条目 %d"
+    },
+    {
       "name": "import_export_database_empty",
       "value": "数据库为空"
     },
