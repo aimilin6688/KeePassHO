@@ -247,6 +247,9 @@ import BitwardenCsvImportHandlerTest from './importExport/BitwardenCsvImportHand
 import OnePasswordCsvImportHandlerTest from './importExport/OnePasswordCsvImportHandler.test';
 import DashlaneCsvImportHandlerTest from './importExport/DashlaneCsvImportHandler.test';
 import ProtonPassCsvImportHandlerTest from './importExport/ProtonPassCsvImportHandler.test';
+// ===== M2-2：Keeper CSV（record_type 按行解析）+ Enpass CSV（约 40 固定列按列名映射）=====
+import KeeperCsvImportHandlerTest from './importExport/KeeperCsvImportHandler.test';
+import EnpassCsvImportHandlerTest from './importExport/EnpassCsvImportHandler.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -577,6 +580,10 @@ export default function testsuite() {
   OnePasswordCsvImportHandlerTest();
   DashlaneCsvImportHandlerTest();
   ProtonPassCsvImportHandlerTest();
+
+  // ===== M2-2：Keeper CSV + Enpass CSV =====
+  KeeperCsvImportHandlerTest();
+  EnpassCsvImportHandlerTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();

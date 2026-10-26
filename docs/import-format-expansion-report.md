@@ -6,7 +6,7 @@
 >
 > 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 工作分支：`docs/import-format-expansion`（worktree）
 >
-> **交付状态（2026-10-27 更新）：M1 已交付并合并 `dev`（merge `f61fca93`）；M2-1（Bitwarden/1Password/Dashlane/Proton Pass 四个固定表头 CSV 格式）已交付，详见 §十 实现进度。**
+> **交付状态（2026-10-27 更新）：M1 已交付并合并 `dev`（merge `f61fca93`）；M2-1（Bitwarden/1Password/Dashlane/Proton Pass 四个固定表头 CSV 格式）与 M2-2（Keeper CSV record_type 按行解析 + Enpass CSV 40 列）已交付，详见 §十 实现进度。**
 
 ---
 
@@ -392,7 +392,7 @@ Dispatcher.import(fileContent)                       [UI 正在 await viewModel.
 |---|---|---|---|
 | M1（P1，2.4.x） | 契约与模型文件、`CsvParser`、签名库、映射引擎、交互桥、向导页；`CsvFamilyDispatcher` + Chrome/Edge/Firefox/LastPass/Generic（原 CSV 行为兼容）；测试与回归 | 10-12 | ✅ 已交付（`f61fca93` 合并 dev） |
 | M2-1 | Bitwarden CSV、1Password CSV、Dashlane 6+、Proton Pass 四个固定表头 CSV 格式（TDD） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
-| M2-2 | Keeper CSV（record_type 按行解析）+ Enpass CSV（40 列） | 2-3 | ⬜ 未启动 |
+| M2-2 | Keeper CSV（record_type 按行解析）+ Enpass CSV（40 列） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ⬜ 未启动 |
 | M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（RoboForm/mSecure/Norton/Sticky Password） | 4-5 | ⬜ 未启动 |
 | M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 | ⬜ 未启动 |
@@ -431,6 +431,13 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 19. 调度器 family 新序：LastPass → Bitwarden → ProtonPass → Dashlane → OnePassword → Firefox → Chrome（两两冲突已由特征列/排除列消歧）
 20. 新增 4 个测试套件共 52 用例 + 调度器消歧用例（含 §4.5 Chrome 表头超集判 Proton、Dashlane vs 1Password 互斥、本应用导出回归）
 
+**M2-2（本迭代，TDD）**：
+
+21. `handlers/import/KeeperCsvImportHandler.ets` — 首列 `record_type` 嗅探特征；login 行全字段映射（folder→Group、login_url/username/password/totp）；非 login 行（card/bankAccount 等）列按行类型偏移：`login_*` 列值按原表头名转自定义字段（login_password 受保护）+ 清空对应标准字段 + `Record Type` 标记（保留原始大小写）
+22. `handlers/import/EnpassCsvImportHandler.ets` — 首两列 `Title,Category` 嗅探特征；约 40 固定列按列名映射（Category→Group、Login→UserName、OTP Secret/TOTP Secret→TOTP）；其余非空列按原表头名转自定义字段，列名含 password/cvv/ssn/secret 的受保护；字面 `Group` 列为普通自定义字段（分组由 Category 承载，避免双 Group 歧义）
+23. 调度器 family 新序：LastPass → Bitwarden → ProtonPass → Dashlane → OnePassword → **Keeper → Enpass** → Firefox → Chrome（Keeper 首列 record_type、Enpass 首两列 Title,Category 均为唯一特征，与既有 handler 无冲突）
+24. 新增 2 个测试套件共 34 用例 + 调度器 2 个检测用例（Keeper/Enpass 格式识别）
+
 ### 10.2 实现差异（相对本报告原设计）
 
 1. 契约与模型实际落在 `csvimport/` 单目录（原设计拆 `contracts/`/`model/`/`csv/`/`sniffing/`/`wizard/`），`ISniffableImport` 即契约
@@ -438,6 +445,7 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 3. `IColumnMappingImport` 交互桥未实现（依赖向导页，推迟至 M2-4）
 4. TOTP 存储格式：统一 `otp` 字段（otpauth 原文 protected / `key=secret`），非独立 KeeOtp 字段
 5. Bitwarden favorite 语义用 `KdbxUtils.FAVORITE_TAG`（`__FAVORITE__`）标签，与旧 `BitwardenJsonImportHandler` 的 `Favorite` 自定义字段不一致（历史遗留，后续统一）
+6. Keeper/Enpass 非 login 记录不自动对位模板条目（本报告 §六「card→模板条目」）：preset 模板体系（credit_card/bank_card/id_card 等）字段名与 Keeper 列偏移、Enpass 列名无权威映射语义，自动对位属猜测；非登录行以自定义字段无损保留 + `Record Type` 标记（Keeper），后续可在模板体系稳定后补充对位规则
 
 ### 10.3 缺失项（对应原设计，均属 M2-4 向导）
 
@@ -452,7 +460,7 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 
 ### 10.4 未启动
 
-M2-2（Keeper/Enpass CSV）、M2-3（JSON 族调度器 + Proton Pass JSON）、M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
+M2-3（JSON 族调度器 + Proton Pass JSON）、M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
 
 ### 10.5 验证记录
 
@@ -463,8 +471,10 @@ M2-2（Keeper/Enpass CSV）、M2-3（JSON 族调度器 + Proton Pass JSON）、M
 | 2026-10-26 | dev 完整套件（M1 合并后） | 2974 用例：2909 pass；65 失败全部为 WebDAV/S3/SFTP 测试连接失败（环境性，需本地服务器） |
 | 2026-10-27 | M2-1 新增（4 handler + 调度器消歧） | 83/83 真机通过（Mate 60 Pro+，`aa test -s class` 5 套件） |
 | 2026-10-27 | M2-1 回归（CSV 全家 + 编排层 + 注册表 15 套件） | 208/208 通过 |
+| 2026-10-27 | M2-2 新增（2 handler + 调度器检测） | 53/53 真机通过（Mate 60 Pro+，`aa test -s class` 3 套件） |
+| 2026-10-27 | M2-2 回归（M2-1 4 套件 + CSV 全家 8 套件） | 178/178 通过 |
 
-受保护文件（附录 A）在 M1/M2-1 中 diff 均为空；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1 零改动——新 handler 由 dispatcher 内部注册）。
+受保护文件（附录 A）在 M1/M2-1/M2-2 中 diff 均为空；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1/M2-2 零改动——新 handler 由 dispatcher 内部注册）。
 
 ---
 
@@ -501,8 +511,8 @@ entry/src/main/ets/services/importExport/
   handlers/import/OnePasswordCsvImportHandler.ets       ✅（M2-1）
   handlers/import/DashlaneCsvImportHandler.ets          ✅（M2-1）
   handlers/import/ProtonPassCsvImportHandler.ets        ✅（M2-1）
-  handlers/import/KeeperCsvImportHandler.ets            ⬜（M2-2）
-  handlers/import/EnpassCsvImportHandler.ets            ⬜（M2-2）
+  handlers/import/KeeperCsvImportHandler.ets            ✅（M2-2）
+  handlers/import/EnpassCsvImportHandler.ets            ✅（M2-2）
   handlers/import/JsonFamilyDispatcherImportHandler.ets ⬜（M2-3）
   handlers/import/ProtonPassJsonImportHandler.ets       ⬜（M2-3）
   ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）

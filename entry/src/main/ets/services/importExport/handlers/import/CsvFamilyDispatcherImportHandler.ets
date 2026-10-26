@@ -10,6 +10,8 @@ import { BitwardenCsvImportHandler } from './BitwardenCsvImportHandler';
 import { ProtonPassCsvImportHandler } from './ProtonPassCsvImportHandler';
 import { DashlaneCsvImportHandler } from './DashlaneCsvImportHandler';
 import { OnePasswordCsvImportHandler } from './OnePasswordCsvImportHandler';
+import { KeeperCsvImportHandler } from './KeeperCsvImportHandler';
+import { EnpassCsvImportHandler } from './EnpassCsvImportHandler';
 import { FirefoxCsvImportHandler } from './FirefoxCsvImportHandler';
 import { ChromeCsvImportHandler } from './ChromeCsvImportHandler';
 import { GenericCsvImportHandler } from './GenericCsvImportHandler';
@@ -22,7 +24,7 @@ const SAMPLE_ROW_COUNT = 5;
 /**
  * CSV 导入格式族调度器
  * 占据 '.csv' / 'CSV' 路由键，按表头嗅探将导入分发到
- * LastPass / Bitwarden / Proton Pass / Dashlane / 1Password / Firefox / Chrome / 通用 CSV 处理器
+ * LastPass / Bitwarden / Proton Pass / Dashlane / 1Password / Keeper / Enpass / Firefox / Chrome / 通用 CSV 处理器
  */
 export class CsvFamilyDispatcherImportHandler implements IImportHandler {
   readonly supportedExtensions: string[] = ['.csv'];
@@ -40,6 +42,8 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
       new ProtonPassCsvImportHandler(),
       new DashlaneCsvImportHandler(),
       new OnePasswordCsvImportHandler(),
+      new KeeperCsvImportHandler(),
+      new EnpassCsvImportHandler(),
       new FirefoxCsvImportHandler(),
       new ChromeCsvImportHandler()
     ];

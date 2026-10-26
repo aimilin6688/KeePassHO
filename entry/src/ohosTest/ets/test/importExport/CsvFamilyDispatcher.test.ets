@@ -78,6 +78,17 @@ export default function CsvFamilyDispatcherTest() {
         expect(dispatcher.detectFormatId(header, [])).assertEqual('ONEPASSWORD_CSV');
       });
 
+      it('shouldDetectKeeperFormat', 0, () => {
+        const header = ['record_type', 'folder', 'title', 'login_url',
+          'login_username', 'login_password', 'login_totp', 'note'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('KEEPER_CSV');
+      });
+
+      it('shouldDetectEnpassFormat', 0, () => {
+        const header = ['Title', 'Category', 'Note', 'Login', 'Password', 'OTP Secret', 'URL', 'Email'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('ENPASS_CSV');
+      });
+
       it('shouldPreferDashlaneOverOnePasswordForDashlaneHeader', 0, () => {
         // Dashlane 与 1Password 均满足 title/url/username/password，靠特征列消歧
         const dashlaneHeader = ['title', 'url', 'username', 'password', 'note', 'category', 'otpSecret', 'lastModified'];
