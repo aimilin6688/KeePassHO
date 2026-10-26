@@ -28,11 +28,9 @@ import { KdbxFileManager } from '../services/kdbx/KdbxFileManager';
 import { FileInfo } from '../storage/IFileStorage';
 import { TemplateSelectorDialog } from '../components/TemplateSelectorDialog';
 import { DatabaseSwitcherSheet } from '../components/DatabaseSwitcherSheet';
-import { HintBanner } from '../components/HintBanner';
 import { ExpiryHintBar, ExpiryHintBarController } from '../components/ExpiryHintBar';
+import { ChildDbHintBar, ChildDbHintBarController } from '../components/ChildDbHintBar';
 import { DatabaseRegistry } from '../services/kdbx/DatabaseRegistry';
-import { AutoOpenService } from '../services/autoopen/AutoOpenService';
-import { DeviceIdentity } from '../services/autoopen/DeviceIdentity';
 import { ITemplate, isPresetTemplate, IPresetTemplate, IUserTemplate } from '../services/template/TemplateTypes';
 import { UIUtils } from '@kit.ArkUI';
 import window from '@ohos.window';
@@ -119,7 +117,6 @@ export struct DatabaseView {
   // 数据库切换面板（M3）：半模态显示状态 + 面板数据刷新节拍（每次展开自增）
   @State showDatabaseSwitcher: boolean = false;
   @State switcherRefreshTick: number = 0;
-  @State showChildDbHint: boolean = false; // 子数据库配置提示条（M5）
   @State isCurrentDbChild: boolean = false; // 当前库是否为子库（标题行显示子库标识图标）
   // 批量操作相关状态
   @State isSelectionMode: boolean = false; // 是否处于选择模式
@@ -150,6 +147,8 @@ export struct DatabaseView {
   private settingsService: SettingsService = SettingsService.getInstance();
   // 到期提醒条控制器（M1）：解锁完成后触发 ExpiryHintBar 评估
   private expiryHintBarController: ExpiryHintBarController = new ExpiryHintBarController();
+  // 子数据库配置提示条控制器（M5）：分组切换/数据刷新后触发 ChildDbHintBar 重新判定
+  private childDbHintBarController: ChildDbHintBarController = new ChildDbHintBarController();
   // 模板选择对话框控制器
   private templateSelectorController: CustomDialogController = new CustomDialogController({
     builder: TemplateSelectorDialog({
@@ -678,7 +677,7 @@ export struct DatabaseView {
       this.items = [...this.currentGroup.groups, ...this.currentGroup.entries];
       KdbxUtils.sortBy(this.items, this.sortBy);
       this.addFavorite();
-      this.updateChildDbHint();
+      this.childDbHintBarController.updateHint();
       hilog.info(DOMAIN, TAG, '%{public}s', `Loaded ${this.items.length} items`);
     } catch (error) {
       hilog.error(DOMAIN, TAG, '%{public}s', `Failed to process database: ${error}`);
@@ -727,7 +726,7 @@ export struct DatabaseView {
     if (updateBreadcrumb) {
       this.updateBreadcrumb(group);
     }
-    this.updateChildDbHint();
+    this.childDbHintBarController.updateHint();
   }
 
   /**
@@ -794,48 +793,9 @@ export struct DatabaseView {
         this.items = [...savedGroup.groups, ...savedGroup.entries];
         KdbxUtils.sortBy(this.items, this.sortBy);
         this.addFavorite();
-        this.updateChildDbHint();
+        this.childDbHintBarController.updateHint();
       }
     }
-  }
-
-  /**
-   * 子数据库配置提示条（M5）：根组视图且存在未显式配置本设备的 AutoOpen 条目时显示。
-   * 对齐 kp2a GroupBaseActivity.UpdateChildDbInfo：根组判定 + IfDevice 未显式命中判定 + 「不再提示」按库记忆。
-   */
-  private updateChildDbHint(): void {
-    this.showChildDbHint = false;
-    // 子数据库功能禁用时不显示配置提示条
-    if (!SettingsService.isChildDbEnable()) {
-      return;
-    }
-    if (this.database === null || this.currentGroup === undefined) {
-      return;
-    }
-    // 仅根组视图显示
-    if (this.currentGroup.parentGroup !== undefined) {
-      return;
-    }
-    const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
-    if (!AutoOpenService.hasUnconfiguredForDevice(this.database, iocKey, DeviceIdentity.getDeviceId())) {
-      return;
-    }
-    // 「不再提示」按库记忆（KEY_CHILD_DB_HINT_HIDDEN_<iocKeyHash>）
-    const hidden: boolean = SettingsService.getSync(SettingsService.childDbHintHiddenKey(iocKey), false);
-    this.showChildDbHint = !hidden;
-  }
-
-  /**
-   * 「不再提示」子数据库配置条：按库记忆并立即隐藏
-   */
-  private dismissChildDbHint(): void {
-    const iocKey: string = FileService.getRegistry().getCurrentKey() ?? '';
-    if (iocKey.length > 0) {
-      SettingsService.put(SettingsService.childDbHintHiddenKey(iocKey), true).catch(() => {
-        hilog.warn(DOMAIN, TAG, 'Failed to persist child db hint hidden flag');
-      });
-    }
-    this.showChildDbHint = false;
   }
 
   /**
@@ -861,7 +821,7 @@ export struct DatabaseView {
 
       // 更新面包屑导航
       this.updateBreadcrumb(parentGroup);
-      this.updateChildDbHint();
+      this.childDbHintBarController.updateHint();
     } else {
       // 没有父分组，返回到根分组
       const rootGroup = this.database?.getDefaultGroup();
@@ -876,7 +836,7 @@ export struct DatabaseView {
 
         // 更新面包屑导航
         this.updateBreadcrumb(rootGroup);
-        this.updateChildDbHint();
+        this.childDbHintBarController.updateHint();
       }
     }
   }
@@ -1957,7 +1917,7 @@ export struct DatabaseView {
         // 非搜索状态，添加收藏数据
         this.addFavorite();
       }
-      this.updateChildDbHint();
+      this.childDbHintBarController.updateHint();
       // 恢复滚动位置
       setTimeout(() => {
         this.listScroller.scrollTo({ xOffset: 0, yOffset: savedScrollOffset, animation: { duration: 0 } });
@@ -2726,20 +2686,13 @@ export struct DatabaseView {
             selectionMode: this.isSelectionMode
           })
 
-          // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
-          if (this.showChildDbHint && !this.moveParam && !this.isSelectionMode) {
-            HintBanner({
-              message: $r('app.string.unconfigured_child_dbs'),
-              actionLabel: $r('app.string.child_dbs_go_configure'),
-              dismissLabel: $r('app.string.child_dbs_hint_dismiss'),
-              onAction: () => {
-                NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
-              },
-              onDismiss: () => {
-                this.dismissChildDbHint();
-              }
-            })
-          }
+          // 子数据库配置提示条（M5）：判定/显示/隐藏逻辑均封装在组件内
+          ChildDbHintBar({
+            controller: this.childDbHintBarController,
+            currentGroup: this.currentGroup,
+            moveMode: this.moveParam !== undefined,
+            selectionMode: this.isSelectionMode
+          })
         }
         .width('100%')
         .margin({
