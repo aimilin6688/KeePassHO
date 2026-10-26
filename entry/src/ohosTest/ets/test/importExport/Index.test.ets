@@ -48,16 +48,16 @@ export default function IndexTest() {
         expect(handler?.formatId).assertEqual('XML');
       });
 
-      it('shouldRegisterBitwardenJsonImportHandlerByExtension', 0, () => {
+      it('shouldRegisterJsonFamilyDispatcherByExtension', 0, () => {
         const handler = registry.getImportHandler('.json');
         expect(handler).not().assertUndefined();
-        expect(handler?.formatId).assertEqual('BITWARDEN_JSON');
+        expect(handler?.formatId).assertEqual('JSON');
       });
 
       it('shouldRegisterImportHandlersByFormatId', 0, () => {
         expect(registry.getImportHandler('CSV')?.formatId).assertEqual('CSV');
         expect(registry.getImportHandler('XML')?.formatId).assertEqual('XML');
-        expect(registry.getImportHandler('BITWARDEN_JSON')?.formatId).assertEqual('BITWARDEN_JSON');
+        expect(registry.getImportHandler('JSON')?.formatId).assertEqual('JSON');
       });
 
       it('shouldIncludeAllImportFormatsInSupportedList', 0, () => {
@@ -68,7 +68,7 @@ export default function IndexTest() {
         }
         expect(ids.includes('CSV')).assertTrue();
         expect(ids.includes('XML')).assertTrue();
-        expect(ids.includes('BITWARDEN_JSON')).assertTrue();
+        expect(ids.includes('JSON')).assertTrue();
       });
     });
 

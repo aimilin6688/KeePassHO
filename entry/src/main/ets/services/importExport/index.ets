@@ -4,6 +4,7 @@ import { FormatHandlerRegistry } from './FormatHandlerRegistry';
 import { CsvFamilyDispatcherImportHandler } from './handlers/import/CsvFamilyDispatcherImportHandler';
 import { XmlImportHandler } from './handlers/import/XmlImportHandler';
 import { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
+import { JsonFamilyDispatcherImportHandler } from './handlers/import/JsonFamilyDispatcherImportHandler';
 import { CsvExportHandler } from './handlers/export/CsvExportHandler';
 import { XmlExportHandler } from './handlers/export/XmlExportHandler';
 import { KdbxExportHandler } from './handlers/export/KdbxExportHandler';
@@ -36,6 +37,7 @@ export { CsvImportHandler } from './handlers/import/CsvImportHandler';
 export { CsvFamilyDispatcherImportHandler } from './handlers/import/CsvFamilyDispatcherImportHandler';
 export { XmlImportHandler } from './handlers/import/XmlImportHandler';
 export { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
+export { JsonFamilyDispatcherImportHandler } from './handlers/import/JsonFamilyDispatcherImportHandler';
 
 // 导出处理器
 export { CsvExportHandler } from './handlers/export/CsvExportHandler';
@@ -53,7 +55,7 @@ export function registerDefaultHandlers(): void {
   // 注册导入处理器
   registry.registerImportHandler(new CsvFamilyDispatcherImportHandler());
   registry.registerImportHandler(new XmlImportHandler());
-  registry.registerImportHandler(new BitwardenJsonImportHandler());
+  registry.registerImportHandler(new JsonFamilyDispatcherImportHandler());
 
   // 注册导出处理器
   registry.registerExportHandler(new CsvExportHandler());

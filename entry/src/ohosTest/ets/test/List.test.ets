@@ -250,6 +250,9 @@ import ProtonPassCsvImportHandlerTest from './importExport/ProtonPassCsvImportHa
 // ===== M2-2：Keeper CSV（record_type 按行解析）+ Enpass CSV（约 40 固定列按列名映射）=====
 import KeeperCsvImportHandlerTest from './importExport/KeeperCsvImportHandler.test';
 import EnpassCsvImportHandlerTest from './importExport/EnpassCsvImportHandler.test';
+// ===== M2-3：JSON 族调度器 + Proton Pass JSON（语义对齐 KeePassXC ProtonPassReader）=====
+import JsonFamilyDispatcherTest from './importExport/JsonFamilyDispatcher.test';
+import ProtonPassJsonImportHandlerTest from './importExport/ProtonPassJsonImportHandler.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -584,6 +587,10 @@ export default function testsuite() {
   // ===== M2-2：Keeper CSV + Enpass CSV =====
   KeeperCsvImportHandlerTest();
   EnpassCsvImportHandlerTest();
+
+  // ===== M2-3：JSON 族调度器 + Proton Pass JSON =====
+  JsonFamilyDispatcherTest();
+  ProtonPassJsonImportHandlerTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();

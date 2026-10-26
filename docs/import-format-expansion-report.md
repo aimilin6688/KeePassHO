@@ -393,7 +393,7 @@ Dispatcher.import(fileContent)                       [UI 正在 await viewModel.
 | M1（P1，2.4.x） | 契约与模型文件、`CsvParser`、签名库、映射引擎、交互桥、向导页；`CsvFamilyDispatcher` + Chrome/Edge/Firefox/LastPass/Generic（原 CSV 行为兼容）；测试与回归 | 10-12 | ✅ 已交付（`f61fca93` 合并 dev） |
 | M2-1 | Bitwarden CSV、1Password CSV、Dashlane 6+、Proton Pass 四个固定表头 CSV 格式（TDD） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-2 | Keeper CSV（record_type 按行解析）+ Enpass CSV（40 列） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
-| M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ⬜ 未启动 |
+| M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（RoboForm/mSecure/Norton/Sticky Password） | 4-5 | ⬜ 未启动 |
 | M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 | ⬜ 未启动 |
 
@@ -438,6 +438,13 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 23. 调度器 family 新序：LastPass → Bitwarden → ProtonPass → Dashlane → OnePassword → **Keeper → Enpass** → Firefox → Chrome（Keeper 首列 record_type、Enpass 首两列 Title,Category 均为唯一特征，与既有 handler 无冲突）
 24. 新增 2 个测试套件共 34 用例 + 调度器 2 个检测用例（Keeper/Enpass 格式识别）
 
+**M2-3（本迭代，TDD）**：
+
+25. `handlers/import/JsonFamilyDispatcherImportHandler.ets` — `formatId 'JSON'` 族调度器：`detectFormatId(content)` 按顶层 `vaults` → PROTONPASS_JSON、`items` → BITWARDEN_JSON 嗅探（folders 缺省不影响 Bitwarden 识别，兼容 folder-less 导出）；未知结构报 `INVALID_FILE_FORMAT`，非法 JSON 报 `INVALID_JSON_FORMAT`；`.json` 扩展名路由由其接管（`index.ets` 组合根 BitwardenJson 注册替换，BitwardenJsonImportHandler 文件零改动）
+26. `handlers/import/ProtonPassJsonImportHandler.ets` — 以 KeePassXC `ProtonPassReader.cpp` 为权威参考：`vaults`（vaultId→{name,items[]}）内嵌条目优先，顶层 `items`（shareId/vaultId 解析 vault 名建组）仅在 vaults 无内嵌条目时回落；`encrypted:true` → `UNSUPPORTED_FORMAT`，零条目 → `FILE_EMPTY`
+27. Proton Pass JSON 字段映射：login（itemUsername/itemEmail 兜底/password(protected)/totpUri→applyTotp/urls[0]→URL 其余 `KP2A_URL_1..N`）、creditCard（cardholder→UserName 语义、number→UserName、verificationNumber→Password(protected)、card_* 自定义字段）、wifi（ssid/security）、sshKey（ssh_public_key/ssh_private_key(protected)）、未知类型（Notes 加 `Unknown entry type '<原样 type>'` 前缀 + `content_*` 固定 13 字段名转自定义字段，urls 数组跳过）；extraFields（text/totp 明文、hidden 受保护、空值跳过、字段名冲突加 `_N` 后缀）；pinned → `FAVORITE_TAG`；state==2 → expires；秒级时间戳 → times
+28. 新增 2 个测试套件共 33 用例（ProtonPassJson 20 + JsonFamilyDispatcher 13）+ `Index.test.ets` 断言改 'JSON'（3 处）
+
 ### 10.2 实现差异（相对本报告原设计）
 
 1. 契约与模型实际落在 `csvimport/` 单目录（原设计拆 `contracts/`/`model/`/`csv/`/`sniffing/`/`wizard/`），`ISniffableImport` 即契约
@@ -446,6 +453,10 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 4. TOTP 存储格式：统一 `otp` 字段（otpauth 原文 protected / `key=secret`），非独立 KeeOtp 字段
 5. Bitwarden favorite 语义用 `KdbxUtils.FAVORITE_TAG`（`__FAVORITE__`）标签，与旧 `BitwardenJsonImportHandler` 的 `Favorite` 自定义字段不一致（历史遗留，后续统一）
 6. Keeper/Enpass 非 login 记录不自动对位模板条目（本报告 §六「card→模板条目」）：preset 模板体系（credit_card/bank_card/id_card 等）字段名与 Keeper 列偏移、Enpass 列名无权威映射语义，自动对位属猜测；非登录行以自定义字段无损保留 + `Record Type` 标记（Keeper），后续可在模板体系稳定后补充对位规则
+7. Proton Pass JSON `itemEmail` 兜底字段名对齐 ProtonPass CSV（自定义字段 `Email`），非 KeePassXC 的 `login_email`——与 CSV 族共享映射语义，减少同一产品两种导出间的字段名差异
+8. 未知类型 `content_*` 字段名采用固定 13 个白名单（CONTENT_FIELD_NAMES），非 KeePassXC 的全字段动态展开；urls 数组跳过（已有 `KP2A_URL_*` 语义承载）
+9. JSON 调度器 import 双重解析（`detectFormatId` 一次 + 成员 handler 一次）：换取 `BitwardenJsonImportHandler` 零改动；`.json` 文件典型 <10MB，二次解析开销可接受
+10. JSON 族无通用回落 handler（CSV 族回落 Generic）：JSON 长尾格式无稳定"通用"结构，未知结构明确报 `INVALID_FILE_FORMAT` 引导用户确认文件来源
 
 ### 10.3 缺失项（对应原设计，均属 M2-4 向导）
 
@@ -460,7 +471,7 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 
 ### 10.4 未启动
 
-M2-3（JSON 族调度器 + Proton Pass JSON）、M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
+M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
 
 ### 10.5 验证记录
 
@@ -473,6 +484,10 @@ M2-3（JSON 族调度器 + Proton Pass JSON）、M2-4（向导 + 签名库）、
 | 2026-10-27 | M2-1 回归（CSV 全家 + 编排层 + 注册表 15 套件） | 208/208 通过 |
 | 2026-10-27 | M2-2 新增（2 handler + 调度器检测） | 53/53 真机通过（Mate 60 Pro+，`aa test -s class` 3 套件） |
 | 2026-10-27 | M2-2 回归（M2-1 4 套件 + CSV 全家 8 套件） | 178/178 通过 |
+| 2026-10-27 | M2-3 新增（ProtonPassJson 20 + JsonFamilyDispatcher 13） | 33/33 真机通过（Mate 60 Pro+） |
+| 2026-10-27 | M2-3 组合回归（JsonFamilyDispatcher + importExportIndex + BitwardenJson） | 50/50 通过（含 `.json` 路由改 'JSON' 断言） |
+| 2026-10-27 | M2-3 CSV 全家回归（调度器 + 10 CSV handler + TotpHelper + Facade 12 套件） | 156/156 通过 |
+| 2026-10-27 | dev 完整套件（M2-3 收尾） | 3107 用例：3042 pass；65 失败全部为 WebDAV/S3/SFTP/FTP 测试连接失败（环境性，需本地服务器），import/export 相关零失败 |
 
 受保护文件（附录 A）在 M1/M2-1/M2-2 中 diff 均为空；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1/M2-2 零改动——新 handler 由 dispatcher 内部注册）。
 
@@ -513,8 +528,8 @@ entry/src/main/ets/services/importExport/
   handlers/import/ProtonPassCsvImportHandler.ets        ✅（M2-1）
   handlers/import/KeeperCsvImportHandler.ets            ✅（M2-2）
   handlers/import/EnpassCsvImportHandler.ets            ✅（M2-2）
-  handlers/import/JsonFamilyDispatcherImportHandler.ets ⬜（M2-3）
-  handlers/import/ProtonPassJsonImportHandler.ets       ⬜（M2-3）
+  handlers/import/JsonFamilyDispatcherImportHandler.ets ✅（M2-3；`.json` 路由接管）
+  handlers/import/ProtonPassJsonImportHandler.ets       ✅（M2-3）
   ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）
 entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ⬜（M2-4，新页面 + router_map 追加）
 ```
