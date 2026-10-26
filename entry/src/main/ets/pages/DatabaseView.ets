@@ -2266,26 +2266,6 @@ export struct DatabaseView {
               }
               .width('100%')
 
-              // 到期搜索快捷 chip（M2）：一键填入 is:expired 语法
-              if (this.searchText.trim().length === 0) {
-                Row() {
-                  Text($r('app.string.search_chip_expired'))
-                    .fontSize(14)
-                    .fontColor($r('app.color.error'))
-                    .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-                    .borderRadius(14)
-                    .backgroundColor($r('app.color.card_bg'))
-                    .margin({ left: 16 })
-                    .onClick(() => {
-                      this.searchText = 'is:expired';
-                      this.performSearch();
-                    })
-                }
-                .width('100%')
-                .margin({ top: 8 })
-                .alignItems(VerticalAlign.Center)
-              }
-
               // 显示搜索历史
               if (this.isShowHistory()) {
                 Row() {
@@ -2804,9 +2784,8 @@ export struct DatabaseView {
           // 条目到期提醒条（M1）：解锁后评估存在已过期/N 天内到期条目时显示（仅根组）
           if (this.showExpiryHint && this.expiryRemindResult !== null && !this.moveParam && !this.isSelectionMode) {
             Row({ space: 12 }) {
-              Text(ResourceManager.getString($r('app.string.expiry_remind_banner_text'),
-                this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays))
-                .fontSize(12)
+              Text(ResourceManager.getString($r('app.string.expiry_remind_banner_text'), this.expiryRemindResult.totalCount, this.expiryRemindResult.remindDays))
+                .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
                 .layoutWeight(1)
                 .lineHeight(16)
@@ -2821,6 +2800,7 @@ export struct DatabaseView {
                   .onClick(() => {
                     NavigationManager.getInstance().navigateTo(PageConstants.PAGE_EXPIRY_REPORT);
                   })
+                Blank().height(10)
                 Text($r('app.string.expiry_remind_dismiss_today'))
                   .fontSize(11)
                   .fontColor($r('app.color.text_secondary'))
@@ -2833,14 +2813,15 @@ export struct DatabaseView {
             .width('100%')
             .padding({ left: 16, right: 16, top: 8, bottom: 8 })
             .backgroundColor($r('app.color.bg_secondary'))
-            .alignItems(VerticalAlign.Top)
+            .alignItems(VerticalAlign.Center)
+            .borderRadius(16)
           }
 
           // 子数据库配置提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时显示
           if (this.showChildDbHint && !this.moveParam && !this.isSelectionMode) {
             Row({ space: 12 }) {
               Text($r('app.string.unconfigured_child_dbs'))
-                .fontSize(12)
+                .fontSize(14)
                 .fontColor($r('app.color.text_secondary'))
                 .layoutWeight(1)
                 .lineHeight(16)
@@ -2855,6 +2836,7 @@ export struct DatabaseView {
                   .onClick(() => {
                     NavigationManager.getInstance().navigateTo(PageConstants.PAGE_CHILD_DATABASES);
                   })
+                Blank().height(10)
                 Text($r('app.string.child_dbs_hint_dismiss'))
                   .fontSize(11)
                   .fontColor($r('app.color.text_secondary'))
@@ -2867,7 +2849,8 @@ export struct DatabaseView {
             .width('100%')
             .padding({ left: 16, right: 16, top: 8, bottom: 8 })
             .backgroundColor($r('app.color.bg_secondary'))
-            .alignItems(VerticalAlign.Top)
+            .alignItems(VerticalAlign.Center)
+            .borderRadius(16)
           }
         }
         .width('100%')

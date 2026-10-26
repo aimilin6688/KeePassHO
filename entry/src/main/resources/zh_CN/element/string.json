@@ -730,7 +730,7 @@
     },
     {
       "name": "unconfigured_child_dbs",
-      "value": "您的数据库包含「AutoOpen」组中的新子数据库。请指定是否应在此设备上使用这些子数据库。"
+      "value": "「AutoOpen」组中包含新的子数据库，请您指定是否在此设备上启用。"
     },
     {
       "name": "child_db_explanation",
