@@ -501,6 +501,30 @@ export struct EntryView {
   }
 
   /**
+   * 条目头部标题颜色（fgColor 非法/未设置时继承默认色，P2-4 M4）
+   */
+  private getEntryHeaderFgColor(): ResourceColor {
+    const fgColor = KdbxUtils.parseEntryColor(this.entry?.fgColor);
+    return fgColor !== undefined ? fgColor : $r('app.color.text_primary');
+  }
+
+  /**
+   * 条目头部副标题颜色（fgColor 非法/未设置时继承默认色，P2-4 M4）
+   */
+  private getEntryHeaderSubColor(): ResourceColor {
+    const fgColor = KdbxUtils.parseEntryColor(this.entry?.fgColor);
+    return fgColor !== undefined ? fgColor : $r('app.color.text_secondary');
+  }
+
+  /**
+   * 条目头部背景色（bgColor 非法/未设置时继承默认色，P2-4 M4）
+   */
+  private getEntryHeaderBgColor(): ResourceColor {
+    const bgColor = KdbxUtils.parseEntryColor(this.entry?.bgColor);
+    return bgColor !== undefined ? bgColor : $r('app.color.card_bg');
+  }
+
+  /**
    * 构建条目头部（图标 + 标题 + 用户名，当前条目与历史版本共用）
    */
   @Builder
@@ -518,7 +542,7 @@ export struct EntryView {
         Text(this.getEntryHeaderTitle())
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
-          .fontColor($r('app.color.text_primary'))
+          .fontColor(this.getEntryHeaderFgColor())
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -526,7 +550,7 @@ export struct EntryView {
         if (this.getEntryHeaderUsername() !== '') {
           Text(this.getEntryHeaderUsername())
             .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
+            .fontColor(this.getEntryHeaderSubColor())
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -539,7 +563,7 @@ export struct EntryView {
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
-    .backgroundColor($r("app.color.card_bg"))
+    .backgroundColor(this.getEntryHeaderBgColor())
     .borderRadius(8)
     .padding(12)
     .margin({ bottom: 8 })
