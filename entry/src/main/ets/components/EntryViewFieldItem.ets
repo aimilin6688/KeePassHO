@@ -10,6 +10,7 @@ import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 import { FileService } from '../services/FileService';
 import { UIUtils } from '@kit.ArkUI';
 import { ImageViewerDialog } from './ImageViewerDialog';
+import { TotpQrDialog } from './TotpQrDialog';
 
 /**
  * 构建字段项
@@ -74,6 +75,16 @@ export struct EntryViewFieldItem {
       binaryFileName: this.field?.key ?? '',
       // 磁盘引用附件异步回读：弹窗打开时才读取当前内容
       binaryFileProvider: () => this.field?.binaryFile ?? null
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: true
+  });
+  // TOTP 二维码导出弹窗（otpValue 构造期固化，多 TOTP 条目每行独立）
+  private totpQrDialogController: CustomDialogController = new CustomDialogController({
+    builder: TotpQrDialog({
+      otpAuthUrl: this.field?.otpValue ?? '',
+      entryTitle: this.entry ? KdbxUtils.getFieldValueString(this.entry.fields, KdbxUtils.FIELD_TITLE) : ''
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
@@ -250,6 +261,19 @@ export struct EntryViewFieldItem {
           .margin({ left: 8, right: 8 })
           .onClick((event) => {
             this.field.showPlanText = !this.field.showPlanText;
+            return false;
+          })
+      }
+
+      // 右侧TOTP二维码导出按钮
+      if (this.field.isTotp) {
+        Image($r('app.media.ic_qrcode'))
+          .width(24)
+          .height(24)
+          .fillColor($r('app.color.text_primary'))
+          .margin({ left: 8, right: 8 })
+          .onClick((event) => {
+            this.totpQrDialogController.open();
             return false;
           })
       }

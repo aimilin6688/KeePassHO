@@ -176,6 +176,8 @@ import DateUtilsTest from './utils/DateUtils.test';
 import DateUtilsWillExpireTest from './utils/DateUtilsWillExpire.test';
 import KdbxUtilsExpiredSearchTest from './utils/KdbxUtilsExpiredSearch.test';
 import FilenameUtilsTest from './utils/FilenameUtils.test';
+// ===== P1-5：TOTP 二维码导出 QR 内容构建 =====
+import TotpQrHelperTest from './utils/TotpQrHelper.test';
 
 // ===== 新增：services 顶层服务单元测试 =====
 import EventBusTest from './services/EventBus.test';
@@ -515,6 +517,9 @@ export default function testsuite() {
   DateUtilsWillExpireTest();
   KdbxUtilsExpiredSearchTest();
   FilenameUtilsTest();
+
+  // ===== P1-5：TOTP 二维码导出 =====
+  TotpQrHelperTest();
 
   // ===== services 顶层 =====
   EventBusTest();

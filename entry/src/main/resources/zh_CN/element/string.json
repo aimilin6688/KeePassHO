@@ -1525,6 +1525,22 @@
       "value": "发行者"
     },
     {
+      "name": "totp_qr_dialog_title",
+      "value": "TOTP 二维码"
+    },
+    {
+      "name": "totp_qr_warning",
+      "value": "二维码包含 TOTP 密钥，仅在需要扫码导入时展示，谨防截图与窥视。"
+    },
+    {
+      "name": "totp_qr_copy_uri",
+      "value": "复制链接"
+    },
+    {
+      "name": "totp_qr_invalid_uri",
+      "value": "无效的 TOTP 配置，无法生成二维码。"
+    },
+    {
       "name": "security_list_show_totp",
       "value": "列表显示TOTP字段"
     },
