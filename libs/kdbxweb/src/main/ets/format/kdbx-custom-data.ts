@@ -8,6 +8,23 @@ export type KdbxCustomDataItem = { value: string | undefined; lastModified?: Dat
 export type KdbxCustomDataMap = Map<string, KdbxCustomDataItem>;
 
 export class KdbxCustomData {
+    /**
+     * 深拷贝 customData map（条目/分组 copyFrom 与历史快照使用，
+     * 修改源不得影响副本）。P2-4 M1。
+     */
+    static clone(customData: KdbxCustomDataMap | undefined): KdbxCustomDataMap | undefined {
+        if (!customData) {
+            return undefined;
+        }
+        const cloned = new Map<string, KdbxCustomDataItem>();
+        for (const [key, item] of customData) {
+            if (item) {
+                cloned.set(key, { value: item.value, lastModified: item.lastModified });
+            }
+        }
+        return cloned;
+    }
+
     static read(node: Node): KdbxCustomDataMap {
         const customData = new Map<string, KdbxCustomDataItem>();
         for (let i = 0, cn = node.childNodes, len = cn.length; i < len; i++) {
