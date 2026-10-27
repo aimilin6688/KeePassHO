@@ -3855,6 +3855,62 @@
     {
       "name": "brand_icon_no_match",
       "value": "No matching icon"
+    },
+    {
+      "name": "import_format_label_csv",
+      "value": "CSV File"
+    },
+    {
+      "name": "import_format_label_json",
+      "value": "JSON File"
+    },
+    {
+      "name": "import_format_label_xml",
+      "value": "KeePass XML"
+    },
+    {
+      "name": "import_entry_format_hint",
+      "value": "Supports %1$d CSV and %2$d JSON sources; any CSV can be imported via the column mapping wizard"
+    },
+    {
+      "name": "import_format_help_title",
+      "value": "Supported Import Formats"
+    },
+    {
+      "name": "import_format_group_csv_desc",
+      "value": "CSV files exported by the following sources"
+    },
+    {
+      "name": "import_format_group_json_desc",
+      "value": "Only JSON files exported by the following sources"
+    },
+    {
+      "name": "import_format_group_xml_desc",
+      "value": "XML file exported by KeePass 2.x"
+    },
+    {
+      "name": "import_format_generic_note",
+      "value": "Unknown sources go through the column mapping wizard; import after mapping columns manually"
+    },
+    {
+      "name": "import_wizard_unknown_format_hint",
+      "value": "Any CSV is supported: map each column to a field in the \"Mapping\" step"
+    },
+    {
+      "name": "import_success_with_format",
+      "value": "Imported (%1$s), %2$d entries in total"
+    },
+    {
+      "name": "import_json_unsupported_title",
+      "value": "Unrecognized JSON file"
+    },
+    {
+      "name": "import_json_unsupported_message",
+      "value": "Currently only JSON files exported by %1$s and %2$s are supported. Alternatively, export as CSV from the source app and import it via the column mapping wizard."
+    },
+    {
+      "name": "import_json_unsupported_confirm",
+      "value": "Got it"
     }
   ]
 }

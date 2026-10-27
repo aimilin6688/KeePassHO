@@ -16,6 +16,8 @@ import { PresetCsvImportHandler } from './PresetCsvImportHandler';
 import { FormatSignatureLibrary } from '../../sniffing/FormatSignatureLibrary';
 import { ImportWizardBridge } from '../../wizard/ImportWizardBridge';
 import { ColumnMappingProfile } from '../../csvimport/CsvMappingModels';
+import { FormatInfo } from '../../common/FormatInfo';
+import { ImportSessionInfo } from '../../common/ImportSessionInfo';
 
 /** 嗅探分发置信度阈值 */
 const SNIFF_DISPATCH_THRESHOLD = 70;
@@ -54,6 +56,27 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
 
   canHandle(extension: string): boolean {
     return this.supportedExtensions.includes(extension.toLowerCase());
+  }
+
+  /**
+   * 格式族内全部子格式（12 已知来源 + 通用兜底）
+   * 导入格式清单（ImportFormatCatalog）与防漂移护栏测试的单一数据源
+   */
+  getSubFormats(): FormatInfo[] {
+    const formats: FormatInfo[] = [];
+    for (const handler of this.family) {
+      formats.push({
+        formatId: handler.formatId,
+        formatName: handler.formatName,
+        extensions: [...handler.supportedExtensions]
+      });
+    }
+    formats.push({
+      formatId: this.fallbackHandler.formatId,
+      formatName: this.fallbackHandler.formatName,
+      extensions: [...this.fallbackHandler.supportedExtensions]
+    });
+    return formats;
   }
 
   /**
@@ -111,12 +134,18 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
       if (profile !== null) {
         // 用户在向导切换过编码时，须按该编码重新解码解析（与向导呈现的表头保持一致）
         const profileRows = this.resolveProfileRows(fileContent, profile, detectedEncoding, parseResult.rows);
+        // 向导确认导入按通用 CSV 档案执行，上报兜底格式（成功提示用）
+        ImportSessionInfo.getInstance().reportDetectedFormat(
+          this.fallbackHandler.formatId, this.fallbackHandler.formatName
+        );
         return this.fallbackHandler.importWithProfile(profileRows, profile);
       }
       // profile === null：无 UI 上下文可呈现向导（自动化/后台），回落通用建议映射直导
     }
 
     const finalTarget = target !== null ? target : this.fallbackHandler;
+    // 上报最终执行导入的格式（成功提示文案用；forceWizard 已知格式也按 finalTarget 上报）
+    ImportSessionInfo.getInstance().reportDetectedFormat(finalTarget.formatId, finalTarget.formatName);
     return finalTarget.importRows(parseResult.rows);
   }
 

@@ -256,6 +256,8 @@ import ImportWizardBridgeTest from './importExport/ImportWizardBridge.test';
 import CsvMappingWizardTest from './importExport/CsvMappingWizard.test';
 // ===== M2-7：真实导出文件（rawfile 夹具）端到端导入测试（12 CSV 格式 + 2 JSON 格式）=====
 import ImportFixtureFilesTest from './importExport/ImportFixtureFiles.test';
+// ===== M2-8：导入格式提示（catalog 防漂移护栏 + 导入会话信息）=====
+import ImportFormatCatalogTest from './importExport/ImportFormatCatalog.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -598,6 +600,9 @@ export default function testsuite() {
 
   // ===== M2-7：真实导出文件端到端导入（rawfile/import/ 夹具）=====
   ImportFixtureFilesTest();
+
+  // ===== M2-8：导入格式提示（catalog 防漂移护栏 + 导入会话信息）=====
+  ImportFormatCatalogTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();

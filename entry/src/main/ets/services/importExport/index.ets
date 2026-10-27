@@ -14,6 +14,11 @@ import { KeyFileExportHandler } from './handlers/export/KeyFileExportHandler';
 export { Result } from './common/Result';
 export { ImportError, ExportError, ImportExportErrorCode } from './common/ImportExportError';
 export type { FormatInfo } from './common/FormatInfo';
+export { ImportSessionInfo } from './common/ImportSessionInfo';
+
+// 导入格式清单（单一数据源）
+export { ImportFormatCatalog } from './catalog/ImportFormatCatalog';
+export type { ImportSubFormatInfo, ImportFormatGroupInfo } from './catalog/ImportFormatCatalog';
 
 // 接口
 export type { IImportHandler } from './handlers/IImportHandler';

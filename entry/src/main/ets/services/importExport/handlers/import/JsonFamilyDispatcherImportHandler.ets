@@ -5,6 +5,8 @@ import { ImportError, ImportExportErrorCode } from '../../common/ImportExportErr
 import { ResourceManager } from '../../../../common/utils';
 import { BitwardenJsonImportHandler } from './BitwardenJsonImportHandler';
 import { ProtonPassJsonImportHandler } from './ProtonPassJsonImportHandler';
+import { FormatInfo } from '../../common/FormatInfo';
+import { ImportSessionInfo } from '../../common/ImportSessionInfo';
 
 /**
  * JSON 顶层键嗅探原始结构（报告 §4.5）
@@ -35,6 +37,25 @@ export class JsonFamilyDispatcherImportHandler implements IImportHandler {
   }
 
   /**
+   * 格式族内全部子格式（Bitwarden JSON + Proton Pass JSON）
+   * 导入格式清单（ImportFormatCatalog）与防漂移护栏测试的单一数据源
+   */
+  getSubFormats(): FormatInfo[] {
+    return [
+      {
+        formatId: this.bitwardenHandler.formatId,
+        formatName: this.bitwardenHandler.formatName,
+        extensions: [...this.bitwardenHandler.supportedExtensions]
+      },
+      {
+        formatId: this.protonHandler.formatId,
+        formatName: this.protonHandler.formatName,
+        extensions: [...this.protonHandler.supportedExtensions]
+      }
+    ];
+  }
+
+  /**
    * 根据顶层键嗅探具体格式标识
    * @param content JSON 文本
    * @returns 具体格式 formatId（无法识别或非法 JSON 时返回空串）
@@ -60,9 +81,11 @@ export class JsonFamilyDispatcherImportHandler implements IImportHandler {
     const content = ByteUtils.bytesToString(fileContent.content);
     const formatId = this.detectFormatId(content);
     if (formatId === this.protonHandler.formatId) {
+      ImportSessionInfo.getInstance().reportDetectedFormat(formatId, this.protonHandler.formatName);
       return this.protonHandler.import(fileContent);
     }
     if (formatId === this.bitwardenHandler.formatId) {
+      ImportSessionInfo.getInstance().reportDetectedFormat(formatId, this.bitwardenHandler.formatName);
       return this.bitwardenHandler.import(fileContent);
     }
     // 区分非法 JSON 与未知结构

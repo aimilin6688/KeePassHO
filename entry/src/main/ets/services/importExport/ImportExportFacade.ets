@@ -8,6 +8,8 @@ import { ImportService } from './service/ImportService';
 import { ExportService } from './service/ExportService';
 import { FormatHandlerRegistry } from './FormatHandlerRegistry';
 import { FormatInfo } from './common/FormatInfo';
+import { ImportSessionInfo } from './common/ImportSessionInfo';
+import { ImportFormatCatalog, ImportFormatGroupInfo } from './catalog/ImportFormatCatalog';
 import { FileService } from '../FileService';
 import { KdbxUtils, ResourceManager } from '../../common/utils';
 import { LocationInfo } from '../beans/LocationParam';
@@ -35,6 +37,8 @@ export class ImportExportFacade {
    * 导入文件到当前数据库
    */
   async importToCurrentDatabase(location: LocationInfo): Promise<Result<KdbxGroup>> {
+    // 重置导入会话检测信息（成功提示文案用，防止上次导入残留）
+    ImportSessionInfo.getInstance().reset();
     try {
       // 1. 执行导入
       const importedGroup = await this.importService.import(
@@ -108,6 +112,13 @@ export class ImportExportFacade {
    */
   getSupportedExportFormats(): FormatInfo[] {
     return this.registry.getSupportedExportFormats();
+  }
+
+  /**
+   * 获取导入格式分组清单（帮助面板 / 副标题摘要 / 失败引导的单一数据源）
+   */
+  getImportFormatCatalog(): ImportFormatGroupInfo[] {
+    return ImportFormatCatalog.getCatalog();
   }
 
   /**

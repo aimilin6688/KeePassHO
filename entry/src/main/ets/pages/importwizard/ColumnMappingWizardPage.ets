@@ -349,6 +349,15 @@ struct ColumnMappingWizard {
       .width('100%')
       .padding(16)
 
+      // 未识别来源宽慰提示：任何 CSV 均可经列映射导入（见 docs/import-format-hints-design.md §4.2）
+      if (this.detectedFormatName === '') {
+        Text(ResourceManager.getString($r('app.string.import_wizard_unknown_format_hint')))
+          .fontSize(12)
+          .fontColor($r('app.color.text_secondary'))
+          .width('100%')
+          .padding({ left: 16, right: 16, bottom: 12 })
+      }
+
       Row() {
         Text(ResourceManager.getString($r('app.string.import_wizard_encoding_label')))
           .fontSize(14)

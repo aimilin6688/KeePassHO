@@ -3855,6 +3855,62 @@
     {
       "name": "brand_icon_no_match",
       "value": "没有匹配的图标"
+    },
+    {
+      "name": "import_format_label_csv",
+      "value": "CSV 文件"
+    },
+    {
+      "name": "import_format_label_json",
+      "value": "JSON 文件"
+    },
+    {
+      "name": "import_format_label_xml",
+      "value": "KeePass XML"
+    },
+    {
+      "name": "import_entry_format_hint",
+      "value": "支持 %1$d 种 CSV 与 %2$d 种 JSON 来源，任意 CSV 可经列映射向导导入"
+    },
+    {
+      "name": "import_format_help_title",
+      "value": "支持的导入格式"
+    },
+    {
+      "name": "import_format_group_csv_desc",
+      "value": "支持以下来源导出的 CSV 文件"
+    },
+    {
+      "name": "import_format_group_json_desc",
+      "value": "仅支持以下来源导出的 JSON 文件"
+    },
+    {
+      "name": "import_format_group_xml_desc",
+      "value": "KeePass 2.x 导出的 XML 文件"
+    },
+    {
+      "name": "import_format_generic_note",
+      "value": "未识别来源时进入列映射向导，手动指定列后仍可导入"
+    },
+    {
+      "name": "import_wizard_unknown_format_hint",
+      "value": "支持任意 CSV：在“映射”步骤手动指定每列对应的字段即可"
+    },
+    {
+      "name": "import_success_with_format",
+      "value": "导入成功（%1$s），共 %2$d 条记录"
+    },
+    {
+      "name": "import_json_unsupported_title",
+      "value": "无法识别该 JSON 文件"
+    },
+    {
+      "name": "import_json_unsupported_message",
+      "value": "当前支持 %1$s 与 %2$s 导出的 JSON 文件。可在来源应用中改导出为 CSV，导入时经列映射向导手动映射。"
+    },
+    {
+      "name": "import_json_unsupported_confirm",
+      "value": "知道了"
     }
   ]
 }

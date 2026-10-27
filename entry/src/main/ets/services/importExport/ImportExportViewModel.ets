@@ -3,6 +3,8 @@
 import { Result } from './common/Result';
 import { FormatInfo } from './common/FormatInfo';
 import { ImportExportFacade } from './ImportExportFacade';
+import { ImportSessionInfo } from './common/ImportSessionInfo';
+import { ImportFormatGroupInfo } from './catalog/ImportFormatCatalog';
 import { LocationInfo } from '../beans/LocationParam';
 import { KdbxGroup } from 'kdbxweb';
 import { FileService } from '../FileService';
@@ -18,6 +20,10 @@ export class ImportExportViewModel {
   isLoading: boolean = false;
   errorMessage: string = '';
   lastImportedCount: number = 0;
+  /** 最近一次导入失败错误码（JSON 引导弹窗判定用） */
+  lastErrorCode: string = '';
+  /** 最近一次导入嗅探到的格式名（成功提示文案用，未检测到为空串） */
+  lastImportFormatName: string = '';
 
   constructor() {
     this.facade = new ImportExportFacade();
@@ -56,11 +62,36 @@ export class ImportExportViewModel {
   }
 
   /**
+   * 获取导入格式分组清单（帮助面板等 UI 的单一数据源）
+   */
+  getImportFormatCatalog(): ImportFormatGroupInfo[] {
+    return this.facade.getImportFormatCatalog();
+  }
+
+  /**
+   * 顶层导入格式下拉选项显示文案（CSV 文件 / JSON 文件 / KeePass XML，未知回落原名）
+   */
+  displayImportFormatLabel(formatId: string): string {
+    if (formatId === 'CSV') {
+      return ResourceManager.getString($r('app.string.import_format_label_csv'));
+    }
+    if (formatId === 'JSON') {
+      return ResourceManager.getString($r('app.string.import_format_label_json'));
+    }
+    if (formatId === 'XML') {
+      return ResourceManager.getString($r('app.string.import_format_label_xml'));
+    }
+    return formatId;
+  }
+
+  /**
    * 执行导入
    */
   async executeImport(location: LocationInfo): Promise<boolean> {
     this.isLoading = true;
     this.errorMessage = '';
+    this.lastErrorCode = '';
+    this.lastImportFormatName = '';
 
     const result = await this.facade.importToCurrentDatabase(location);
 
@@ -68,8 +99,10 @@ export class ImportExportViewModel {
 
     if (result.isSuccess && result.value) {
       this.lastImportedCount = this.countItems(result.value);
+      this.lastImportFormatName = ImportSessionInfo.getInstance().detectedFormatName;
       return true;
     } else {
+      this.lastErrorCode = result.errorCode || '';
       this.errorMessage = result.errorMessage || ResourceManager.getString($r('app.string.import_export_import_failed'));
       return false;
     }
