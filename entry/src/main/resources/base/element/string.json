@@ -1597,6 +1597,22 @@
       "value": "Issuer"
     },
     {
+      "name": "totp_qr_dialog_title",
+      "value": "TOTP QR Code"
+    },
+    {
+      "name": "totp_qr_warning",
+      "value": "The QR code contains your TOTP secret. Only show it when scanning to import, and avoid screenshots or peeping."
+    },
+    {
+      "name": "totp_qr_copy_uri",
+      "value": "Copy URI"
+    },
+    {
+      "name": "totp_qr_invalid_uri",
+      "value": "Invalid TOTP configuration, unable to generate QR code."
+    },
+    {
       "name": "security_list_show_totp",
       "value": "List show TOTP"
     },
