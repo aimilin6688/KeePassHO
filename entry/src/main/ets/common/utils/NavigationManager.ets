@@ -265,4 +265,12 @@ export class NavigationManager {
     this.navPathStacks.delete(rootPage);
     hilog.info(DOMAIN, TAG, 'Removed NavPathStack for: %{public}s', rootPage);
   }
+
+  /**
+   * 清除当前导航栈引用（不删除栈注册表条目；测试套件收尾清理用，
+   * 防止单例 currentNavPathStack 泄漏到后续套件）
+   */
+  clearCurrentNavPathStack(): void {
+    this.currentNavPathStack = null;
+  }
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@ohos/hypium';
+import { afterAll, describe, expect, it } from '@ohos/hypium';
 import { NavigationManager } from '../../../../main/ets/common/utils/NavigationManager';
 import { PageConfigManager } from '../../../../main/ets/common/utils/PageConfigManager';
 import { NavigationModeType } from '../../../../main/ets/common/constants/PageConfig';
@@ -210,6 +210,13 @@ export default function NavigationManagerTest() {
       expect(config.navigationMode).assertEqual(NavigationModeType.SPLIT);
       expect(config === PageConfigManager.getInstance().getPageConfig(PageConstants.PAGE_SETTINGS)).assertTrue();
       mgr.navigateBackToRoot(PageConstants.PAGE_INDEX);
+    });
+
+    // ---------------- 单例状态收尾清理 ----------------
+    // setCurrentNavPathStack 会写入进程级单例的 currentNavPathStack；
+    // 若不清理，后续套件（CSV 导入向导等）会拿到游离栈导致用例挂起。
+    afterAll(() => {
+      NavigationManager.getInstance().clearCurrentNavPathStack();
     });
   });
 }

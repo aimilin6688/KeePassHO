@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@ohos/hypium';
+import { afterAll, describe, expect, it } from '@ohos/hypium';
 import { FileStorage, StorageConfig, StorageType } from '../../../../main/ets/storage';
 import { WebDAVStorage } from '../../../../main/ets/storage/webdav/WebDAVStorage';
 import { PCloudStorage } from '../../../../main/ets/storage/pcloud/PCloudStorage';
@@ -124,6 +124,13 @@ export default function StorageNavigationTest() {
     // ---------------- page name constant ----------------
     it('OAuth2 login page name constant is stable', 0, () => {
       expect(PageConstants.PAGE_OAUTH2_LOGIN).assertEqual('OAuth2Login');
+    });
+
+    // ---------------- 单例状态收尾清理 ----------------
+    // 本套件多次 setCurrentNavPathStack(TEST_ROOT)，进程级单例的
+    // currentNavPathStack 会残留游离栈，须清理防止污染后续套件。
+    afterAll(() => {
+      NavigationManager.getInstance().clearCurrentNavPathStack();
     });
   });
 }

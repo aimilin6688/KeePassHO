@@ -234,19 +234,29 @@ export default function CsvMappingWizardTest() {
         const testDb = await TestUtils.createTestDatabase('Dispatcher Wizard Database');
         FileService.resetDbFileParam(testDb, Date.now());
 
-        // 未知来源表头（无任何族处理器认领）；headless 测试环境无导航栈 → 桥 resolve null → 通用建议映射直导
-        const csvContent = 'title,username,password,url\n' +
-          'Example,wuser,wpass,https://example.com';
-        const fileContent = TestUtils.createFileContent(csvContent, 'unknown.csv');
+        // 未知来源表头（无任何族处理器认领）→ 请求向导；呈现失败（headless）→ 桥 resolve null → 通用建议映射直导。
+        // 不依赖默认呈现器的「无导航栈」假设：全量套件运行时 NavigationManager 单例可能已被
+        // NavigationManager/StorageNavigation 测试污染（currentNavPathStack 非空但游离），
+        // 默认呈现器 push 到游离栈会永久挂起，故注入拒绝型 spy 保证确定性。
+        const spy = new RecordingRefusingPresenter();
+        ImportWizardBridge.getInstance().setPresenter(spy);
+        try {
+          const csvContent = 'title,username,password,url\n' +
+            'Example,wuser,wpass,https://example.com';
+          const fileContent = TestUtils.createFileContent(csvContent, 'unknown.csv');
 
-        const result = await dispatcher.import(fileContent);
+          const result = await dispatcher.import(fileContent);
 
-        expect(result.entries.length).assertEqual(1);
-        const entry = result.entries[0];
-        expect(entry.fields.get('Title')).assertEqual('Example');
-        expect(entry.fields.get('UserName')).assertEqual('wuser');
-        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('wpass');
-        expect(entry.fields.get('URL')).assertEqual('https://example.com');
+          expect(spy.presented).assertTrue();
+          expect(result.entries.length).assertEqual(1);
+          const entry = result.entries[0];
+          expect(entry.fields.get('Title')).assertEqual('Example');
+          expect(entry.fields.get('UserName')).assertEqual('wuser');
+          expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('wpass');
+          expect(entry.fields.get('URL')).assertEqual('https://example.com');
+        } finally {
+          ImportWizardBridge.getInstance().resetPresenter();
+        }
       });
 
       it('shouldDispatchNortonSignatureDirectly', 0, async () => {
