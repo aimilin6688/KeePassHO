@@ -169,6 +169,62 @@
       "value": "Restored %d item(s), skipped %d"
     },
     {
+      "name": "settings_security_tan_expires_on_use",
+      "value": "Expire TAN after use"
+    },
+    {
+      "name": "settings_security_tan_expires_on_use_tips",
+      "value": "Automatically expire a TAN entry after its password is copied"
+    },
+    {
+      "name": "tan_wizard_title",
+      "value": "Add TANs"
+    },
+    {
+      "name": "tan_wizard_text_label",
+      "value": "TAN text"
+    },
+    {
+      "name": "tan_wizard_text_placeholder",
+      "value": "Paste TAN text here, one per line"
+    },
+    {
+      "name": "tan_wizard_charset_label",
+      "value": "TAN character set"
+    },
+    {
+      "name": "tan_wizard_charset_default",
+      "value": "A-Za-z0-9-"
+    },
+    {
+      "name": "tan_wizard_start_index_label",
+      "value": "Start index"
+    },
+    {
+      "name": "tan_wizard_preview",
+      "value": "Will create %d TAN(s), starting from index %d"
+    },
+    {
+      "name": "tan_wizard_empty_error",
+      "value": "No valid TAN found"
+    },
+    {
+      "name": "tan_add_menu_text",
+      "value": "Add TANs"
+    },
+    {
+      "name": "tan_created_message",
+      "value": "Created %d TAN(s)"
+    },
+    {
+      "name": "tan_list_title",
+      "value": "TAN %s"
+    },
+    {
+      "name": "tan_detail_title",
+      "value": "<TAN> (#%s)"
+    },
+    {
       "name": "confirm_button_text",
       "value": "OK"
     },

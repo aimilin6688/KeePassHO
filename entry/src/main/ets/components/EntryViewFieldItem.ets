@@ -10,6 +10,9 @@ import { ClipboardUtils } from '../common/utils/ClipboardUtils';
 import { FileService } from '../services/FileService';
 import { UIUtils } from '@kit.ArkUI';
 import { ImageViewerDialog } from './ImageViewerDialog';
+import { EventBus } from '../services/EventBus';
+import { KdbxSaveService } from '../services/kdbx/KdbxSaveService';
+import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 /**
  * 构建字段项
@@ -116,6 +119,27 @@ export struct EntryViewFieldItem {
    */
   private copyToClipboard(text: string) {
     ClipboardUtils.copy(KdbxFieldReference.resolveFieldRefsInText(text, FileService.getDatabase(), UIUtils.getTarget(this.entry) as KdbxEntry), this.autoClearClipboardTime);
+    this.expireTanEntryAfterCopy();
+  }
+
+  /**
+   * 复制 TAN 密码后按设置将条目置为过期（P2-4 M3，对齐 KeePass ExpireTanEntryIfOption）
+   */
+  private expireTanEntryAfterCopy(): void {
+    const entry = this.entry;
+    if (!entry || this.field.key !== KdbxUtils.FIELD_PASSWORD || !KdbxUtils.isTanEntry(entry)) {
+      return;
+    }
+    const expiresOnUse = SettingsService.getSync(SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE,
+      SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE_DEFAULT);
+    if (!KdbxUtils.expireTanEntryOnUse(entry, expiresOnUse)) {
+      return;
+    }
+    KdbxSaveService.saveDatabaseFromUi(ToastSaveDatabaseCallback.wrap({
+      onSuccess: () => {
+        EventBus.emit<void>(EventBus.DATABASE_UPDATE);
+      }
+    }));
   }
 
   /**

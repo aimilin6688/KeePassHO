@@ -1059,6 +1059,87 @@ export class KdbxUtils {
     }
     return false;
   }
+
+  /**
+   * TAN 条目标题常量（对齐 KeePass PwDefs.TanTitle，大小写敏感精确匹配）
+   */
+  public static readonly TAN_TITLE = '<TAN>';
+
+  /** 条目颜色合法格式：#RRGGBB */
+  private static readonly ENTRY_COLOR_PATTERN: RegExp = /^#[0-9a-fA-F]{6}$/;
+
+  /**
+   * 是否为 TAN 条目（Title 精确等于 '<TAN>'，对齐 KeePass PwDefs.IsTanEntry）
+   * @param entry 待判定条目
+   */
+  public static isTanEntry(entry: KdbxEntry): boolean {
+    return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE) === KdbxUtils.TAN_TITLE;
+  }
+
+  /**
+   * 获取 TAN 条目序号（存储在 UserName 字段）
+   * @param entry TAN 条目
+   */
+  public static getTanIndex(entry: KdbxEntry): string {
+    return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
+  }
+
+  /**
+   * 批量创建 TAN 条目（对齐 KeePass TanWizardForm.AddTan）：
+   * Title 固定 '<TAN>'，UserName 存序号（0 视为无序号不写入），Password 存 TAN 明文（保护字段）。
+   * @param group 目标分组
+   * @param tans TAN 文本片段（空片段跳过，不占序号）
+   * @param startIndex 起始序号（含）
+   * @returns 实际创建条数
+   */
+  public static addTanEntries(group: KdbxGroup, tans: Array<string>, startIndex: number): number {
+    let index = startIndex;
+    for (const tan of tans) {
+      if (!tan) {
+        continue;
+      }
+      const entry = new KdbxEntry();
+      entry.fields.set(KdbxUtils.FIELD_TITLE, KdbxUtils.TAN_TITLE);
+      if (index > 0) {
+        entry.fields.set(KdbxUtils.FIELD_USERNAME, String(index));
+      }
+      entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(tan));
+      entry.times.update();
+      group.entries.push(entry);
+      index++;
+    }
+    return index - startIndex;
+  }
+
+  /**
+   * TAN 条目"使用后过期"（对齐 KeePass EntryUtil.ExpireTanEntryIfOption）：
+   * 开关关闭或非 TAN 条目不变更；否则先推入历史快照再置过期（expires=true、expiryTime=当前时间）。
+   * @param entry 待过期条目
+   * @param expiresOnUse "TAN 使用后过期"设置开关
+   * @returns 是否发生了变更
+   */
+  public static expireTanEntryOnUse(entry: KdbxEntry, expiresOnUse: boolean): boolean {
+    if (!expiresOnUse || !KdbxUtils.isTanEntry(entry)) {
+      return false;
+    }
+    entry.pushHistory();
+    entry.times.expires = true;
+    entry.times.expiryTime = new Date();
+    entry.times.update();
+    return true;
+  }
+
+  /**
+   * 解析并归一化条目颜色（对齐 KeePass PwEntry.ForegroundColor 语义）：
+   * 仅接受 #RRGGBB 格式并归一化为大写，非法/空值返回 undefined（渲染时继承默认色）。
+   * @param color 数据库中存储的颜色字符串
+   */
+  public static parseEntryColor(color: string | undefined): string | undefined {
+    if (!color || !KdbxUtils.ENTRY_COLOR_PATTERN.test(color)) {
+      return undefined;
+    }
+    return color.toUpperCase();
+  }
 }
 
 /**

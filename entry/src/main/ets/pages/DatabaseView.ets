@@ -1,5 +1,6 @@
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { AddGroupDialog } from '../components/AddGroupDialog';
+import { TanWizardDialog } from '../components/TanWizardDialog';
 import { DatabaseShowParam, DbFileParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -174,6 +175,15 @@ export struct DatabaseView {
         this.newGroupName = "";
         this.editingGroupIndex = -1;
       }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: true
+  })
+  // TAN 批量添加向导（P2-4 M3）
+  private tanWizardDialogController: CustomDialogController = new CustomDialogController({
+    builder: TanWizardDialog({
+      onConfirm: (tans: Array<string>, startIndex: number): void => this.handleAddTan(tans, startIndex)
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
@@ -1149,6 +1159,28 @@ export struct DatabaseView {
   }
 
   /**
+   * 列表条目标题（TAN 条目显示 "TAN 序号"，无序号回退 <TAN>，P2-4 M3）
+   */
+  private getListItemTitle(item: KdbxEntry): string {
+    if (KdbxUtils.isTanEntry(item)) {
+      const tanIndex = KdbxUtils.getTanIndex(item);
+      return tanIndex ? ResourceManager.getString($r('app.string.tan_list_title'), tanIndex) : KdbxUtils.TAN_TITLE;
+    }
+    return KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE);
+  }
+
+  /**
+   * 列表条目副标题（TAN 条目显示密码掩码，P2-4 M3）
+   */
+  private getListItemSubtitle(item: KdbxEntry): string {
+    if (KdbxUtils.isTanEntry(item)) {
+      const password = KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_PASSWORD);
+      return password ? '••••••' : '';
+    }
+    return KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME);
+  }
+
+  /**
    * 复制用户名
    */
   private copyUsername(entry: KdbxEntry) {
@@ -1165,7 +1197,24 @@ export struct DatabaseView {
     const password = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_PASSWORD);
     if (password) {
       ClipboardUtils.copyAutoClear(KdbxFieldReference.resolveFieldRefsInText(password, FileService.getDatabase(), entry));
+      this.expireTanEntryAfterCopy(entry);
     }
+  }
+
+  /**
+   * 复制 TAN 密码后按设置将条目置为过期（P2-4 M3，对齐 KeePass ExpireTanEntryIfOption）
+   */
+  private expireTanEntryAfterCopy(entry: KdbxEntry) {
+    if (!KdbxUtils.isTanEntry(entry)) {
+      return;
+    }
+    const expiresOnUse = SettingsService.getSync(SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE,
+      SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE_DEFAULT);
+    if (!KdbxUtils.expireTanEntryOnUse(entry, expiresOnUse)) {
+      return;
+    }
+    this.saveDatabase();
+    this.updateUI();
   }
 
   /**
@@ -1980,6 +2029,33 @@ export struct DatabaseView {
     this.editingGroupIndex = -1;
   }
 
+  /**
+   * 批量添加 TAN 条目（P2-4 M3）：写入当前分组并保存刷新
+   */
+  private handleAddTan(tans: Array<string>, startIndex: number) {
+    if (!this.database || !this.currentGroup || tans.length === 0) {
+      CommonUtils.showToast({
+        message: $r('app.string.operation_failed'),
+        duration: 2000
+      });
+      return;
+    }
+    const created = KdbxUtils.addTanEntries(this.currentGroup, tans, startIndex);
+    if (created === 0) {
+      CommonUtils.showToast({
+        message: $r('app.string.operation_failed'),
+        duration: 2000
+      });
+      return;
+    }
+    this.saveDatabase();
+    this.updateUI();
+    CommonUtils.showToast({
+      message: ResourceManager.getString($r('app.string.tan_created_message'), created),
+      duration: 2000
+    });
+  }
+
   // 强制组件刷新以应用新主题
   onThemeChanged() {
     this.updateUI();
@@ -2642,7 +2718,7 @@ export struct DatabaseView {
                             .margin(10)
                             // .fillColor(item.fgColor ? item.fgColor : undefined)
                           Column() {
-                            Text(KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE))
+                            Text(this.getListItemTitle(item))
                               .fontSize(18)
                               .textAlign(TextAlign.Start)
                               .flexGrow(1)
@@ -2653,7 +2729,7 @@ export struct DatabaseView {
                                 type: (DateUtils.isExpired(item.times.expires, item.times.expiryTime) ? TextDecorationType.LineThrough :
                                   TextDecorationType.None)
                               })
-                            Text(KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME))
+                            Text(this.getListItemSubtitle(item))
                               .fontSize(12)
                               .textAlign(TextAlign.Start)
                               .flexGrow(1)
@@ -2890,6 +2966,9 @@ export struct DatabaseView {
         },
         onCreateFromTemplate: () => {
           this.openTemplateSelector();
+        },
+        onAddTan: () => {
+          this.tanWizardDialogController.open();
         },
         onShowTotp: () => {
           // 清空 TotpView 的导航栈，确保右侧分栏为空

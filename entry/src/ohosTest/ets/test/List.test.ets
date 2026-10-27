@@ -300,6 +300,8 @@ import Kdbx41MergeTest from './kdbx/Kdbx41Merge.test';
 import Kdbx41VersionUpgradeTest from './kdbx/Kdbx41VersionUpgrade.test';
 // P2-4 M2：回收站恢复到原位置（PreviousParentGroup 消费）
 import KdbxRestorePreviousLocationTest from './kdbx/KdbxRestorePreviousLocation.test';
+// P2-4 M3：TAN 支持（识别 / 批量创建 / 用后过期 / 条目颜色解析）
+import KdbxTanTest from './kdbx/KdbxTan.test';
 
 
 export default function testsuite() {
@@ -646,6 +648,9 @@ export default function testsuite() {
 
   // P2-4 M2：回收站恢复到原位置
   KdbxRestorePreviousLocationTest();
+
+  // P2-4 M3：TAN 支持
+  KdbxTanTest();
 
   // UI 自动化测试
   // OpenDatabaseUiTest();

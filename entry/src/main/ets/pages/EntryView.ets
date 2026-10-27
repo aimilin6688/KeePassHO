@@ -366,12 +366,16 @@ export struct EntryView {
   }
 
   /**
-   * 获取条目头部标题
+   * 获取条目头部标题（TAN 条目显示 "<TAN> (#序号)"，P2-4 M3）
    */
   private getEntryHeaderTitle(): string {
     const entry = this.entry;
     if (!entry) {
       return '';
+    }
+    if (KdbxUtils.isTanEntry(entry)) {
+      const tanIndex = KdbxUtils.getTanIndex(entry);
+      return tanIndex ? ResourceManager.getString($r('app.string.tan_detail_title'), tanIndex) : KdbxUtils.TAN_TITLE;
     }
     return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE);
   }

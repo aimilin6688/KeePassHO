@@ -2,6 +2,7 @@ import { Kdbx, KdbxEntry, KdbxGroup } from 'kdbxweb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { DateUtils } from '../common/utils/DateUtils';
+import { KdbxUtils } from '../common/utils/KdbxUtils';
 import { ExpiryRemindFrequency, SettingsService } from './SettingsService';
 
 const DOMAIN = 0x0000;
@@ -70,6 +71,10 @@ export class ExpiryRemindService {
       return;
     }
     for (const entry of group.entries) {
+      // TAN 条目不参与到期提醒（用后过期是正常生命周期，P2-4 M3）
+      if (KdbxUtils.isTanEntry(entry)) {
+        continue;
+      }
       // kdbxweb 中 expires 可能为 null，统一规范化为 boolean
       const expires: boolean = entry.times.expires === true;
       if (DateUtils.isExpired(expires, entry.times.expiryTime)) {

@@ -29,6 +29,9 @@ export struct DraggableFabCluster {
   /** 从模板创建回调（父级弹出模板选择器） */
   onCreateFromTemplate: () => void = (): void => {
   };
+  /** 添加 TAN 回调（父级弹出 TAN 向导，P2-4 M3） */
+  onAddTan: () => void = (): void => {
+  };
   /** 切换到 TOTP 根页面回调 */
   onShowTotp: () => void = (): void => {
   };
@@ -118,6 +121,31 @@ export struct DraggableFabCluster {
         this.onCreateFromTemplate();
       })
 
+      // 添加 TAN 按钮（P2-4 M3）
+      Button() {
+        Row() {
+          Image($r('app.media.ic_tag'))
+            .width(20)
+            .height(20)
+            .fillColor($r('app.color.button_text_blue'))
+          Text($r('app.string.tan_add_menu_text'))
+            .fontSize(14)
+            .fontColor($r('app.color.button_text_blue'))
+            .margin({ left: 8 })
+        }
+      }
+      .width(120)
+      .height(40)
+      .borderRadius(20)
+      .backgroundColor($r("app.color.button_bg_blue"))
+      .margin({ bottom: 8, top: 4 })
+      .enabled(!this.isLoading)
+      .visibility(this.showAddButtons ? Visibility.Visible : Visibility.None)
+      .onClick(() => {
+        this.showAddButtons = false;
+        this.onAddTan();
+      })
+
       // 显示TOTP
       Button() {
         Image($r('app.media.ic_clock'))
@@ -157,7 +185,7 @@ export struct DraggableFabCluster {
       })
     }
     .width(this.containerWidth)
-    .height(this.showAddButtons ? 200 : this.containerHeight)
+    .height(this.showAddButtons ? 244 : this.containerHeight)
     .visibility(this.visible ? Visibility.Visible : Visibility.None)
     .zIndex(999)
     .gesture(

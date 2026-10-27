@@ -95,6 +95,9 @@ export class SettingsService {
   // 条目显示分组名称
   public static readonly KEY_SECURITY_ITEM_SHOW_GROUP = "Security_item_show_group";
   public static readonly KEY_SECURITY_ITEM_SHOW_GROUP_DEFAULT = true;
+  // TAN 使用后过期（P2-4 M3）：复制 TAN 密码后自动置过期，对齐 KeePass Program.Config.Security.TanExpiresOnUse
+  public static readonly KEY_SECURITY_TAN_EXPIRES_ON_USE = "Security_tan_expires_on_use";
+  public static readonly KEY_SECURITY_TAN_EXPIRES_ON_USE_DEFAULT = true;
 
   // --------------- APP 设置信息 ---------------------
   // 支持弹框
