@@ -4,9 +4,9 @@
 >
 > 约束：**导入能力必须以面向接口方式扩展；上层 UI / 服务层（页面、ViewModel、Facade、ImportService、Registry）零改动，只允许新增实现与组合根注册行；CSV 类导入必须提供列映射向导；尽可能多地支持其他密码库的导入。**
 >
-> 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 工作分支：`docs/import-format-expansion`（worktree）
+> 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 进度基线：`dev`（`564d4abc`，2026-10-27 复核）
 >
-> **交付状态（2026-10-27 更新）：M1 已交付并合并 `dev`（merge `f61fca93`）；M2-1（Bitwarden/1Password/Dashlane/Proton Pass 四个固定表头 CSV 格式）与 M2-2（Keeper CSV record_type 按行解析 + Enpass CSV 40 列）已交付，详见 §十 实现进度。**
+> **交付状态（2026-10-27 复核）：M1~M2-4 全部交付于 `dev`——M1 经 worktree 分支合并（merge `f61fca93`，分支已删）；M2-1 四个固定表头 CSV（`11079bd0`）、M2-2 Keeper/Enpass CSV（`d6d8fa02`）、M2-3 JSON 族调度器 + Proton Pass JSON（`3db22f24`）、M2-4 列映射向导 + 签名库首批（`a8327a7d` + 优化 `04dbeea3`）直接提交 `dev`；受保护文件自 `f61fca93` 起 diff 为空（本次复核确认）。M3（1PUX/OpVault/KDB）未启动，详见 §十 实现进度。**
 
 ---
 
@@ -454,7 +454,7 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 33. `handlers/import/PresetCsvImportHandler.ets` — 签名驱动通用 handler（新格式 = 签名库一条数据行，零新类）：`sniff` 按 signature 评分、`buildColumnMapping` 按 headerMap、`applyRowExtensions` 按 customHeaderMap 转自定义字段 + favoriteHeaders（1/true → `FAVORITE_TAG`）
 34. `BaseCsvImportHandler` 扩展：`abstract formatName`、`importRowsWithMapping(rows, mapping, customItems, importTargetGroupName)`（customItems 自定义字段 + 目标分组包装 + `CsvTargetField.EXPIRY_TIME` → expires/expiryTime）；`GenericCsvImportHandler.importWithProfile(rows, profile)`（WizardTargetField → 标准映射/CUSTOM 列表，全 SKIP 抛 `INVALID_CSV_HEADER`）
 35. 调度器向导路由：未知来源（嗅探全 0）且建议映射为空才 `requestColumnMapping` 弹向导（建议映射可识别时不弹，按建议映射直导，见 §10.2 差异 18）；已知格式经 `SettingsService.KEY_IMPORT_FORCE_CSV_WIZARD`（默认 false，无 UI 开关）强制弹；profile 回传走 `importWithProfile`，headless null 回落原 target 直导；family 追加签名库 Preset handlers
-36. 新增 3 个测试套件共 46 用例（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 17）+ `List.test.ets` 注册
+36. 新增 3 个测试套件共 48 用例（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 19；其中 2 例为 `04dbeea3` 触发条件收紧补充：`shouldAutoImportKeePassStyleCsvWithoutWizard` / `shouldRequestWizardWhenNoRecognizableColumns`）+ `List.test.ets` 注册
 
 ### 10.2 实现差异（相对本报告原设计）
 
@@ -483,11 +483,11 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 
 ### 10.3 缺失项（对应原设计）
 
-M2-4 交付后原 L-1~L-11 清单全部闭环（L-1 向导页面、L-2 交互桥、L-3 route_map 注册、L-4 签名库、L-5 建议映射 UI、L-6 人工修正、L-7 结果回填、L-8~L-11 向导测试均 ✅）。遗留小项见 §10.2 差异 14-16（Norton UTF-16LE、设置开关 UI、下拉本地化显示名）。
+M2-4 交付后原 L-1~L-11 清单全部闭环（L-1 向导页面、L-2 交互桥、L-3 route_map 注册、L-4 签名库、L-5 建议映射 UI、L-6 人工修正、L-7 结果回填、L-8~L-11 向导测试均 ✅）。遗留小项仅剩 §10.2 差异 14-15（Norton UTF-16LE、设置开关 UI）；差异 16（下拉本地化显示名）已随 `04dbeea3` 解决。
 
 ### 10.4 未启动
 
-M3（1PUX/OpVault/KDB），及 M2-4 遗留小项（§10.2 差异 14-16）。
+M3（1PUX/OpVault/KDB），及 M2-4 遗留小项（§10.2 差异 14-15；差异 16 已解决）。
 
 ### 10.5 验证记录
 
@@ -507,7 +507,9 @@ M3（1PUX/OpVault/KDB），及 M2-4 遗留小项（§10.2 差异 14-16）。
 | 2026-10-27 | M2-4 新增（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 17） | 46/46 真机通过（Mate 60 Pro+；修复 emitter 序列化致桥挂起后全绿，见 §10.2 差异 11） |
 | 2026-10-27 | M2-4 回归（CSV 全家 15 套件 + JSON 族 3 套件） | 249/249 通过（0 失败，含调度器向导路由回归护栏：KeePass 风格表头不被 Norton 签名认领） |
 
-受保护文件（附录 A）在 M1/M2-1/M2-2 中 diff 均为空；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1/M2-2 零改动——新 handler 由 dispatcher 内部注册）。
+> **2026-10-27 复核补充**：M2-4 优化提交 `04dbeea3`（向导 UI 标准化 + 触发条件收紧，§10.2 差异 18/19）为 CsvMappingWizard 补充 2 个触发条件用例（17→19，M2-4 套件合计 46→48）；上表 46/46、249/249 记录于该优化提交前，+2 用例无独立真机运行记录（本次复核时无设备连接，待连机补充回归）。
+
+受保护文件（附录 A）在 M1/M2-1~M2-4 中 diff 均为空（2026-10-27 复核 `f61fca93..564d4abc` 确认）；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1~M2-4 零改动——新 handler 由 dispatcher 内部注册）。
 
 ---
 
