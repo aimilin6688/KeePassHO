@@ -30,6 +30,7 @@ export struct TotpView {
   @State resultEntries: Array<KdbxEntry> = [];
   @State searchText: string = ''; // 搜索文本
   @State isSearching: boolean = false; // 是否处于搜索状态
+  @State reloadVersion: number = 0; // 列表重载版本号，用于强制 ForEach 刷新条目内容
   @State indexerSelected: number = 0; // AlphabetIndexer 选中索引
   @State indexerValues: string[] = []; // 索引字母数组
   @State indexerMap: Map<string, number> = new Map(); // 字母到列表索引的映射
@@ -94,6 +95,7 @@ export struct TotpView {
   }
 
   private loadTotpEntries(): void {
+    this.reloadVersion++;
     this.totpEntries = [];
     this.resultEntries = [];
     const kdbx = FileService.getDatabase();
@@ -352,7 +354,7 @@ export struct TotpView {
                     this.navPathStack.pushPathByName(PageConstants.PAGE_ENTRY_VIEW, entryParam);
                   })
                 }
-              }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}`)
+              }, (item: KdbxEntry, index: number) => `${index}-${item.uuid.id}-${this.reloadVersion}`)
             }
           }
           .width('100%')
