@@ -3553,6 +3553,62 @@
       "value": "No pending import to map"
     },
     {
+      "name": "import_wizard_target_skip",
+      "value": "Skip"
+    },
+    {
+      "name": "import_wizard_target_group",
+      "value": "Group"
+    },
+    {
+      "name": "import_wizard_target_title",
+      "value": "Title"
+    },
+    {
+      "name": "import_wizard_target_username",
+      "value": "Username"
+    },
+    {
+      "name": "import_wizard_target_password",
+      "value": "Password"
+    },
+    {
+      "name": "import_wizard_target_url",
+      "value": "URL"
+    },
+    {
+      "name": "import_wizard_target_notes",
+      "value": "Notes"
+    },
+    {
+      "name": "import_wizard_target_totp",
+      "value": "TOTP"
+    },
+    {
+      "name": "import_wizard_target_tags",
+      "value": "Tags"
+    },
+    {
+      "name": "import_wizard_target_icon",
+      "value": "Icon"
+    },
+    {
+      "name": "import_wizard_target_expiry_time",
+      "value": "Expiry time"
+    },
+    {
+      "name": "import_wizard_target_last_modified",
+      "value": "Last modified"
+    },
+    {
+      "name": "import_wizard_target_created",
+      "value": "Created"
+    },
+    {
+      "name": "import_wizard_target_custom",
+      "value": "Custom"
+    },
+    {
       "name": "import_export_database_empty",
       "value": "Database is empty"
     },

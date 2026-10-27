@@ -453,7 +453,7 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 32. `sniffing/FormatSignatureLibrary.ets` — 数据驱动签名库：必需表头全在 → 70、表头 ⊆ 已知全集 → 100；首批 Norton Identity Safe CSV（KeePass NortonIdSafeCsv2013 权威，恰 5 列 url,username,password,title,group）与 True Key CSV（KeePass TrueKeyCsv4 权威，特征列 tk_export_version）
 33. `handlers/import/PresetCsvImportHandler.ets` — 签名驱动通用 handler（新格式 = 签名库一条数据行，零新类）：`sniff` 按 signature 评分、`buildColumnMapping` 按 headerMap、`applyRowExtensions` 按 customHeaderMap 转自定义字段 + favoriteHeaders（1/true → `FAVORITE_TAG`）
 34. `BaseCsvImportHandler` 扩展：`abstract formatName`、`importRowsWithMapping(rows, mapping, customItems, importTargetGroupName)`（customItems 自定义字段 + 目标分组包装 + `CsvTargetField.EXPIRY_TIME` → expires/expiryTime）；`GenericCsvImportHandler.importWithProfile(rows, profile)`（WizardTargetField → 标准映射/CUSTOM 列表，全 SKIP 抛 `INVALID_CSV_HEADER`）
-35. 调度器向导路由：未知来源（嗅探全 0）默认 `requestColumnMapping` 弹向导；已知格式经 `SettingsService.KEY_IMPORT_FORCE_CSV_WIZARD`（默认 false，无 UI 开关）强制弹；profile 回传走 `importWithProfile`，headless null 回落原 target 直导；family 追加签名库 Preset handlers
+35. 调度器向导路由：未知来源（嗅探全 0）且建议映射为空才 `requestColumnMapping` 弹向导（建议映射可识别时不弹，按建议映射直导，见 §10.2 差异 18）；已知格式经 `SettingsService.KEY_IMPORT_FORCE_CSV_WIZARD`（默认 false，无 UI 开关）强制弹；profile 回传走 `importWithProfile`，headless null 回落原 target 直导；family 追加签名库 Preset handlers
 36. 新增 3 个测试套件共 46 用例（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 17）+ `List.test.ets` 注册
 
 ### 10.2 实现差异（相对本报告原设计）
@@ -476,8 +476,10 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 13. 签名评分新增 strict 规则：未声明可选列的签名（knownHeaders 与 requiredHeaders 等长，如 Norton 恰 5 列）文件表头含未知列时直接 0 分（而非 70）——否则本应用 CSV 导出表头（Group,Title,UserName,Password,URL,Notes 为 Norton 必需列超集）会被 70 分误认领（回归用例护栏）
 14. Norton CSV 的 UTF-16LE 编码（KeePass 参考 `Encoding.Unicode` 读取）暂未处理：当前按 UTF-8 解析，UTF-16LE 导出文件需用户先转码；后续可在 `FileContentInfo` 层按 BOM 探测统一处理
 15. `KEY_IMPORT_FORCE_CSV_WIZARD` 已知格式强制向导开关暂无设置页 UI（默认 false）：先用真机测试/Preferences 直改验证链路，UI 入口随 M2-4 后续迭代或设置页改版补充
-16. 向导页目标字段下拉暂显示枚举原始名（TITLE/USERNAME/…）：列映射属高级功能，本地化显示名后续补充
+16. ~~向导页目标字段下拉暂显示枚举原始名~~（已解决）：新增 14 个目标字段本地化标签（`import_wizard_target_*`，base+zh_CN），下拉选项与确认步映射明细共用
 17. True Key `customHeaderMap` 计 18 条（city→City、firstname→First Name、memberid→Member ID 等），KeePass TrueKeyCsv4 大写字段名权威；ignored 8 列（autologin/protectedwithpassword/subdomainonly/type/kind/gender/hexcolor/tk_export_version）；favorite→`FAVORITE_TAG`、expirationdate/expirydate→`EXPIRY_TIME`
+18. 调度器向导触发条件收紧（真机验收反馈）：未知来源但建议映射可识别全部/部分列（如标准 KeePass 风格表头 Group,Title,UserName,Password,URL,Notes）时**不弹向导**，按建议映射直接导入（保持既有行为）；仅建议映射为空（无任何可识别列）时才弹向导。原"未知来源一律弹向导"设计对可自动解析的标准 CSV 打扰用户
+19. 向导页 UI 标准化改版（真机验收反馈）：标准 NavDestination 标题栏（含返回键）替代自绘标题；步骤条改 `Tabs` + `SubTabBarStyle`（标准组件、标准字号）替代自绘 12fp 文本行；预览改表格式（表头行置顶高亮、单元格超 20 字符截断、列多横向滚动）；确认步展示映射明细列表（源列 → 目标字段）而非仅映射计数；底部操作栏改 DatabaseView MoveModeBar 式悬浮布局（内容穿透滚动，Stack alignContent Bottom）
 
 ### 10.3 缺失项（对应原设计）
 

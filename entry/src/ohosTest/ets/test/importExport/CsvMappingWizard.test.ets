@@ -8,10 +8,36 @@ import {
 import { CsvTargetField } from '../../../../main/ets/services/importExport/csvimport/CsvImportModels';
 import { GenericCsvImportHandler } from '../../../../main/ets/services/importExport/handlers/import/GenericCsvImportHandler';
 import { CsvFamilyDispatcherImportHandler } from '../../../../main/ets/services/importExport/handlers/import/CsvFamilyDispatcherImportHandler';
+import { ImportWizardBridge, WizardPagePresenter } from '../../../../main/ets/services/importExport/wizard/ImportWizardBridge';
+import { CsvMappingPreview } from '../../../../main/ets/services/importExport/csvimport/CsvMappingModels';
 import { ImportError, ImportExportErrorCode } from '../../../../main/ets/services/importExport/common/ImportExportError';
 import { TestUtils } from './TestUtils';
 import { FileService } from '../../../../main/ets/services/FileService';
 import { KdbxUtils } from '../../../../main/ets/common/utils';
+
+/**
+ * 记录呈现并拒绝：headless 环境验证向导是否被请求
+ */
+class RecordingRefusingPresenter implements WizardPagePresenter {
+  presented: boolean = false;
+
+  present(preview: CsvMappingPreview): boolean {
+    this.presented = true;
+    return false;
+  }
+}
+
+/**
+ * 记录呈现并接受：验证向导未被请求（presented 应保持 false）
+ */
+class RecordingAcceptingPresenter implements WizardPagePresenter {
+  presented: boolean = false;
+
+  present(preview: CsvMappingPreview): boolean {
+    this.presented = true;
+    return true;
+  }
+}
 
 /**
  * CSV 列映射向导模型 + importWithProfile 导入路径 + 调度器向导路由 单元测试（M2-4）
@@ -288,6 +314,63 @@ export default function CsvMappingWizardTest() {
           .assertEqual('NORTON_IDSAFE_CSV');
         expect(dispatcher.detectFormatId(['tk_export_version', 'name', 'login', 'password'], []))
           .assertEqual('TRUEKEY_CSV');
+      });
+
+      it('shouldAutoImportKeePassStyleCsvWithoutWizard', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('Dispatcher Wizard Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        // 标准 KeePass 风格表头：无族处理器认领，但建议映射可识别全部列
+        // → 不弹向导（present 不被调用），按建议映射直接导入
+        const spy = new RecordingAcceptingPresenter();
+        ImportWizardBridge.getInstance().setPresenter(spy);
+        try {
+          const csvContent = 'Group,Title,UserName,Password,URL,Notes\n' +
+            'Internet Bank,MyBank,bankuser,bankpass,https://bank.example.com,main account';
+          const fileContent = TestUtils.createFileContent(csvContent, 'keepass-style.csv');
+
+          const result = await dispatcher.import(fileContent);
+
+          expect(spy.presented).assertFalse();
+          expect(result.groups.length).assertEqual(1);
+          expect(result.groups[0].name).assertEqual('Internet Bank');
+          expect(result.groups[0].entries[0].fields.get('Title')).assertEqual('MyBank');
+          expect(result.groups[0].entries[0].fields.get('UserName')).assertEqual('bankuser');
+          expect(KdbxUtils.getFieldValueString(result.groups[0].entries[0].fields, 'Password')).assertEqual('bankpass');
+          expect(result.groups[0].entries[0].fields.get('URL')).assertEqual('https://bank.example.com');
+          expect(result.groups[0].entries[0].fields.get('Notes')).assertEqual('main account');
+        } finally {
+          ImportWizardBridge.getInstance().resetPresenter();
+        }
+      });
+
+      it('shouldRequestWizardWhenNoRecognizableColumns', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('Dispatcher Wizard Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        // 无任何可识别列 → 请求向导（present 被调用）；
+        // headless 呈现失败回落直导，通用建议映射为空 → INVALID_CSV_HEADER
+        const spy = new RecordingRefusingPresenter();
+        ImportWizardBridge.getInstance().setPresenter(spy);
+        try {
+          const csvContent = 'colA,colB,colC\nvalue1,value2,value3';
+          const fileContent = TestUtils.createFileContent(csvContent, 'unrecognizable.csv');
+
+          try {
+            await dispatcher.import(fileContent);
+            expect().assertFail();
+          } catch (err) {
+            const error = err as Error;
+            if (error instanceof ImportError) {
+              expect(error.code).assertEqual(ImportExportErrorCode.INVALID_CSV_HEADER);
+            } else {
+              expect().assertFail();
+            }
+          }
+          expect(spy.presented).assertTrue();
+        } finally {
+          ImportWizardBridge.getInstance().resetPresenter();
+        }
       });
     });
   });

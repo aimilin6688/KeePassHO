@@ -3549,6 +3549,62 @@
       "value": "没有待映射的导入"
     },
     {
+      "name": "import_wizard_target_skip",
+      "value": "跳过"
+    },
+    {
+      "name": "import_wizard_target_group",
+      "value": "分组"
+    },
+    {
+      "name": "import_wizard_target_title",
+      "value": "标题"
+    },
+    {
+      "name": "import_wizard_target_username",
+      "value": "用户名"
+    },
+    {
+      "name": "import_wizard_target_password",
+      "value": "密码"
+    },
+    {
+      "name": "import_wizard_target_url",
+      "value": "网址"
+    },
+    {
+      "name": "import_wizard_target_notes",
+      "value": "备注"
+    },
+    {
+      "name": "import_wizard_target_totp",
+      "value": "一次性验证码"
+    },
+    {
+      "name": "import_wizard_target_tags",
+      "value": "标签"
+    },
+    {
+      "name": "import_wizard_target_icon",
+      "value": "图标"
+    },
+    {
+      "name": "import_wizard_target_expiry_time",
+      "value": "过期时间"
+    },
+    {
+      "name": "import_wizard_target_last_modified",
+      "value": "最后修改时间"
+    },
+    {
+      "name": "import_wizard_target_created",
+      "value": "创建时间"
+    },
+    {
+      "name": "import_wizard_target_custom",
+      "value": "自定义"
+    },
+    {
       "name": "import_export_database_empty",
       "value": "数据库为空"
     },

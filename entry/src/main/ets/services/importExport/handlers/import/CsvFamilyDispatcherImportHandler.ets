@@ -19,7 +19,7 @@ import { GenericCsvImportHandler } from './GenericCsvImportHandler';
 import { PresetCsvImportHandler } from './PresetCsvImportHandler';
 import { FormatSignatureLibrary } from '../../sniffing/FormatSignatureLibrary';
 import { ImportWizardBridge } from '../../wizard/ImportWizardBridge';
-import { ColumnMappingProfile } from '../../csvimport/CsvMappingModels';
+import { ColumnMappingProfile, CsvMappingPreview, WizardTargetField } from '../../csvimport/CsvMappingModels';
 
 /** 嗅探分发置信度阈值 */
 const SNIFF_DISPATCH_THRESHOLD = 70;
@@ -110,15 +110,32 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
     );
     if (target === null || forceWizard) {
       const preview = ImportWizardBridge.buildPreview(parseResult.rows, detectedFormatName);
-      const profile: ColumnMappingProfile | null =
-        await ImportWizardBridge.getInstance().requestColumnMapping(preview);
-      if (profile !== null) {
-        return this.fallbackHandler.importWithProfile(parseResult.rows, profile);
+      // 未知来源但建议映射可识别（如标准 KeePass 风格表头 Group/Title/UserName/Password/URL/Notes）
+      // → 不打扰用户弹向导，按建议映射直接导入；仅无可识别列时才需要向导人工映射
+      const skipWizard = target === null && !forceWizard && this.hasMappedSuggestion(preview);
+      if (!skipWizard) {
+        const profile: ColumnMappingProfile | null =
+          await ImportWizardBridge.getInstance().requestColumnMapping(preview);
+        if (profile !== null) {
+          return this.fallbackHandler.importWithProfile(parseResult.rows, profile);
+        }
+        // profile === null：无 UI 上下文可呈现向导（自动化/后台），回落直导
       }
-      // profile === null：无 UI 上下文可呈现向导（自动化/后台），回落直导
     }
 
     const finalTarget = target !== null ? target : this.fallbackHandler;
     return finalTarget.importRows(parseResult.rows);
+  }
+
+  /**
+   * 预览的建议映射中是否存在非 SKIP 列
+   */
+  private hasMappedSuggestion(preview: CsvMappingPreview): boolean {
+    for (const item of preview.suggestedItems) {
+      if (item.targetField !== WizardTargetField.SKIP) {
+        return true;
+      }
+    }
+    return false;
   }
 }

@@ -12,6 +12,15 @@ import {
 /** 向导总步数（预览 → 映射 → 选项 → 确认） */
 const WIZARD_STEP_COUNT = 4;
 
+/** 预览表格单元格字符截断上限（超过 20 字符显示 ...） */
+const PREVIEW_CELL_MAX_CHARS = 20;
+
+/** 预览表格单列宽度（vp，列多时横向滚动） */
+const PREVIEW_COL_WIDTH = 120;
+
+/** 悬浮底栏预留高度（内容穿透底栏时保证末行可滚动至可见区） */
+const FLOATING_BAR_RESERVED_HEIGHT = 96;
+
 /** 目标字段下拉可选项（与 WizardTargetField 一致） */
 const TARGET_OPTIONS: WizardTargetField[] = [
   WizardTargetField.SKIP,
@@ -35,15 +44,16 @@ export function ColumnMappingWizardBuilder(name: string, param: Object): void {
   NavDestination() {
     ColumnMappingWizard()
   }
-  .hideTitleBar(true)
+  .title($r('app.string.import_wizard_title'))
   .backgroundColor($r('app.color.bg_primary'))
 }
 
 /**
  * CSV 列映射向导页（M2-4，§5.1 四步流程）
  * 由 ImportWizardBridge 在 CSV 未知来源（或强制预览）时推入：
- * Step1 预览（识别结果 + 采样行）→ Step2 逐列映射（目标下拉 + 自定义字段名）
- * → Step3 选项（导入目标分组）→ Step4 校验确认（冲突提示 + 映射摘要）。
+ * Step1 预览（识别结果 + 表格式采样数据）→ Step2 逐列映射（目标下拉 + 自定义字段名）
+ * → Step3 选项（导入目标分组）→ Step4 校验确认（冲突提示 + 映射明细）。
+ * 标准标题栏（含返回键）+ Tabs 步骤条；底部操作栏悬浮（内容可穿透滚动）。
  * 确认后经 bridge.notifyComplete(profile) 回传；取消/页面销毁 notifyCancelled 兜底防挂起。
  */
 @Component
@@ -112,6 +122,65 @@ struct ColumnMappingWizard {
     return count;
   }
 
+  /**
+   * 预览单元格文案：超过 20 字符截断显示 ...
+   */
+  private truncateCell(cell: string): string {
+    if (cell.length > PREVIEW_CELL_MAX_CHARS) {
+      return cell.substring(0, PREVIEW_CELL_MAX_CHARS) + '...';
+    }
+    return cell;
+  }
+
+  /**
+   * 目标字段本地化标签（下拉选项与映射明细共用）
+   */
+  private targetFieldLabel(target: WizardTargetField): string {
+    switch (target) {
+      case WizardTargetField.SKIP:
+        return ResourceManager.getString($r('app.string.import_wizard_target_skip'));
+      case WizardTargetField.GROUP:
+        return ResourceManager.getString($r('app.string.import_wizard_target_group'));
+      case WizardTargetField.TITLE:
+        return ResourceManager.getString($r('app.string.import_wizard_target_title'));
+      case WizardTargetField.USERNAME:
+        return ResourceManager.getString($r('app.string.import_wizard_target_username'));
+      case WizardTargetField.PASSWORD:
+        return ResourceManager.getString($r('app.string.import_wizard_target_password'));
+      case WizardTargetField.URL:
+        return ResourceManager.getString($r('app.string.import_wizard_target_url'));
+      case WizardTargetField.NOTES:
+        return ResourceManager.getString($r('app.string.import_wizard_target_notes'));
+      case WizardTargetField.TOTP:
+        return ResourceManager.getString($r('app.string.import_wizard_target_totp'));
+      case WizardTargetField.TAGS:
+        return ResourceManager.getString($r('app.string.import_wizard_target_tags'));
+      case WizardTargetField.ICON:
+        return ResourceManager.getString($r('app.string.import_wizard_target_icon'));
+      case WizardTargetField.EXPIRY_TIME:
+        return ResourceManager.getString($r('app.string.import_wizard_target_expiry_time'));
+      case WizardTargetField.LAST_MODIFIED:
+        return ResourceManager.getString($r('app.string.import_wizard_target_last_modified'));
+      case WizardTargetField.CREATED:
+        return ResourceManager.getString($r('app.string.import_wizard_target_created'));
+      case WizardTargetField.CUSTOM:
+        return ResourceManager.getString($r('app.string.import_wizard_target_custom'));
+      default:
+        return target;
+    }
+  }
+
+  /**
+   * 映射明细目标侧文案：CUSTOM 显示自定义字段名（未填回退"自定义"标签）
+   */
+  private targetDisplayLabel(item: ColumnMappingItem): string {
+    if (item.targetField === WizardTargetField.CUSTOM) {
+      const customName = item.customFieldName.trim();
+      return customName !== '' ? customName : this.targetFieldLabel(WizardTargetField.CUSTOM);
+    }
+    return this.targetFieldLabel(item.targetField);
+  }
+
   private onTargetSelected(columnIndex: number, selectedIndex: number): void {
     const target = TARGET_OPTIONS[selectedIndex];
     const next: ColumnMappingItem[] = [];
@@ -159,30 +228,6 @@ struct ColumnMappingWizard {
   }
 
   @Builder
-  private stepIndicator() {
-    Row({ space: 8 }) {
-      Text(ResourceManager.getString($r('app.string.import_wizard_step_preview')))
-        .fontSize(12)
-        .fontColor(this.step === 0 ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
-      Text('1/4')
-        .fontSize(12)
-        .fontColor($r('app.color.text_secondary'))
-      Text(ResourceManager.getString($r('app.string.import_wizard_step_mapping')))
-        .fontSize(12)
-        .fontColor(this.step === 1 ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
-      Text(ResourceManager.getString($r('app.string.import_wizard_step_options')))
-        .fontSize(12)
-        .fontColor(this.step === 2 ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
-      Text(ResourceManager.getString($r('app.string.import_wizard_step_confirm')))
-        .fontSize(12)
-        .fontColor(this.step === 3 ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.Center)
-    .padding({ top: 8, bottom: 8 })
-  }
-
-  @Builder
   private previewStep() {
     Column() {
       Row() {
@@ -208,27 +253,52 @@ struct ColumnMappingWizard {
 
       Scroll() {
         Column() {
-          ForEach(this.sampleRows, (row: string[]) => {
-            Row() {
-              ForEach(row, (cell: string) => {
-                Text(cell)
-                  .fontSize(12)
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  .layoutWeight(1)
-                  .padding(4)
-              }, (cell: string) => cell)
+          // 表格式预览：第一行为标题（表头），列多时横向滚动，单元格超过 20 字符截断
+          Scroll() {
+            Column() {
+              Row() {
+                ForEach(this.headers, (header: string, index: number) => {
+                  Text(this.truncateCell(header))
+                    .fontSize(14)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor($r('app.color.text_primary'))
+                    .maxLines(1)
+                    .width(PREVIEW_COL_WIDTH)
+                    .padding({ left: 8, right: 8, top: 10, bottom: 10 })
+                }, (header: string, index: number) => `${index}-${header}`)
+              }
+              .width('100%')
+              .backgroundColor($r('app.color.bg_secondary'))
+
+              ForEach(this.sampleRows, (row: string[], rowIndex: number) => {
+                Row() {
+                  ForEach(row, (cell: string, colIndex: number) => {
+                    Text(this.truncateCell(cell))
+                      .fontSize(14)
+                      .fontColor($r('app.color.text_primary'))
+                      .maxLines(1)
+                      .width(PREVIEW_COL_WIDTH)
+                      .padding({ left: 8, right: 8, top: 10, bottom: 10 })
+                  }, (cell: string, colIndex: number) => `${rowIndex}-${colIndex}-${cell}`)
+                }
+                .width('100%')
+                .backgroundColor($r('app.color.card_bg'))
+                .border({ width: { bottom: 1 }, color: $r('app.color.divider') })
+              }, (row: string[], rowIndex: number) => `${rowIndex}`)
             }
-            .width('100%')
-          }, (row: string[], index: number) => `${index}`)
+          }
+          .scrollable(ScrollDirection.Horizontal)
+          .width('100%')
+          .backgroundColor($r('app.color.card_bg'))
+          .borderRadius(12)
+          .clipContent(ContentClipMode.SAFE_AREA)
         }
         .width('100%')
+        .padding({ bottom: FLOATING_BAR_RESERVED_HEIGHT })
       }
       .layoutWeight(1)
-      .backgroundColor($r('app.color.card_bg'))
-      .borderRadius(12)
-      .margin({ left: 12, right: 12, bottom: 12 })
-      .clipContent(ContentClipMode.SAFE_AREA)
+      .width('100%')
+      .align(Alignment.Start)
     }
     .width('100%')
     .height('100%')
@@ -250,7 +320,7 @@ struct ColumnMappingWizard {
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
               Select(this.buildSelectOptions())
                 .selected(this.targetOptionIndex(item.targetField))
-                .value(item.targetField)
+                .value(this.targetFieldLabel(item.targetField))
                 .font({ size: 14 })
                 .onSelect((index: number) => {
                   this.onTargetSelected(item.sourceColumnIndex, index);
@@ -276,15 +346,14 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor($r('app.color.card_bg'))
-    .borderRadius(12)
+    .contentPadding({ bottom: FLOATING_BAR_RESERVED_HEIGHT })
+    .backgroundColor($r('app.color.bg_primary'))
     .divider({ strokeWidth: 1, color: $r('app.color.divider') })
-    .clipContent(ContentClipMode.SAFE_AREA)
   }
 
   @Builder
   private optionsStep() {
-    Column() {
+    Scroll() {
       Column({ space: 8 }) {
         Text(ResourceManager.getString($r('app.string.import_wizard_target_group_name')))
           .fontSize(14)
@@ -308,38 +377,78 @@ struct ColumnMappingWizard {
 
   @Builder
   private confirmStep() {
-    Column() {
-      Text(ResourceManager.getString(
-        $r('app.string.import_wizard_mapped_summary'),
-        this.mappedColumnCount(),
-        this.items.length
-      ))
-        .fontSize(14)
-        .fontColor($r('app.color.text_primary'))
-        .width('100%')
-        .padding(16)
-
-      ForEach(this.validateProfile().conflicts, (conflict: WizardMappingConflict) => {
+    Scroll() {
+      Column() {
         Text(ResourceManager.getString(
-          $r('app.string.import_wizard_conflict_warning'),
-          this.formatConflictLabel(conflict)
+          $r('app.string.import_wizard_mapped_summary'),
+          this.mappedColumnCount(),
+          this.items.length
         ))
-          .fontSize(13)
-          .fontColor($r('app.color.warn'))
+          .fontSize(14)
+          .fontColor($r('app.color.text_primary'))
           .width('100%')
-          .padding({ left: 16, right: 16, bottom: 8 })
-      }, (conflict: WizardMappingConflict) => conflict.targetLabel)
+          .padding(16)
+
+        // 映射明细：源列 → 目标字段（含跳过列，完整呈现映射关系）
+        Column() {
+          ForEach(this.items, (item: ColumnMappingItem) => {
+            Row() {
+              Text(item.sourceColumnName)
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .layoutWeight(1)
+              Text('→')
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ left: 8, right: 8 })
+              Text(this.targetDisplayLabel(item))
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(item.targetField === WizardTargetField.SKIP
+                  ? $r('app.color.text_secondary')
+                  : $r('app.color.text_primary'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+            .border({ width: { bottom: 1 }, color: $r('app.color.divider') })
+          }, (item: ColumnMappingItem) => `${item.sourceColumnIndex}-${item.targetField}-${item.customFieldName}`)
+        }
+        .width('100%')
+        .backgroundColor($r('app.color.card_bg'))
+        .borderRadius(12)
+        .margin({ left: 12, right: 12 })
+        .clipContent(ContentClipMode.SAFE_AREA)
+
+        ForEach(this.validateProfile().conflicts, (conflict: WizardMappingConflict) => {
+          Text(ResourceManager.getString(
+            $r('app.string.import_wizard_conflict_warning'),
+            this.formatConflictLabel(conflict)
+          ))
+            .fontSize(13)
+            .fontColor($r('app.color.warn'))
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 8 })
+        }, (conflict: WizardMappingConflict) => conflict.targetLabel)
+      }
+      .width('100%')
+      .padding({ bottom: FLOATING_BAR_RESERVED_HEIGHT })
+      .alignItems(HorizontalAlign.Start)
     }
     .width('100%')
     .height('100%')
-    .alignItems(HorizontalAlign.Start)
   }
 
   @Builder
   private bottomBar() {
+    // 悬浮底栏（DatabaseView MoveModeBar 布局）：Stack alignContent Bottom 定位，内容可穿透滚动
     Row({ space: 12 }) {
-      Button(ResourceManager.getString($r('app.string.import_wizard_cancel_button')))
-        .type(ButtonType.Capsule)
+      Button(ResourceManager.getString($r('app.string.import_wizard_cancel_button')), { type: ButtonType.Normal })
+        .height(40)
+        .borderRadius(20)
         .layoutWeight(1)
         .backgroundColor($r('app.color.card_bg'))
         .fontColor($r('app.color.text_primary'))
@@ -348,8 +457,9 @@ struct ColumnMappingWizard {
         })
 
       if (this.step > 0) {
-        Button(ResourceManager.getString($r('app.string.import_wizard_prev_button')))
-          .type(ButtonType.Capsule)
+        Button(ResourceManager.getString($r('app.string.import_wizard_prev_button')), { type: ButtonType.Normal })
+          .height(40)
+          .borderRadius(20)
           .layoutWeight(1)
           .backgroundColor($r('app.color.card_bg'))
           .fontColor($r('app.color.text_primary'))
@@ -359,16 +469,22 @@ struct ColumnMappingWizard {
       }
 
       if (this.step < WIZARD_STEP_COUNT - 1) {
-        Button(ResourceManager.getString($r('app.string.import_wizard_next_button')))
-          .type(ButtonType.Capsule)
+        Button(ResourceManager.getString($r('app.string.import_wizard_next_button')), { type: ButtonType.Normal })
+          .height(40)
+          .borderRadius(20)
           .layoutWeight(1)
+          .backgroundColor($r('app.color.button_bg_blue'))
+          .fontColor($r('app.color.button_text_blue'))
           .onClick(() => {
             this.goToStep(this.step + 1);
           })
       } else {
-        Button(ResourceManager.getString($r('app.string.import_wizard_confirm_button')))
-          .type(ButtonType.Capsule)
+        Button(ResourceManager.getString($r('app.string.import_wizard_confirm_button')), { type: ButtonType.Normal })
+          .height(40)
+          .borderRadius(20)
           .layoutWeight(1)
+          .backgroundColor($r('app.color.button_bg_blue'))
+          .fontColor($r('app.color.button_text_blue'))
           .enabled(this.validateProfile().isValid)
           .onClick(() => {
             this.submit();
@@ -382,53 +498,62 @@ struct ColumnMappingWizard {
   private buildSelectOptions(): SelectOption[] {
     const options: SelectOption[] = [];
     for (const target of TARGET_OPTIONS) {
-      options.push({ value: target });
+      options.push({ value: this.targetFieldLabel(target) });
     }
     return options;
   }
 
   build() {
-    Column() {
-      // 自定义标题栏：标题 + 步骤指示
-      Row() {
-        Text(ResourceManager.getString($r('app.string.import_wizard_title')))
-          .fontSize(18)
-          .fontWeight(FontWeight.Bold)
-          .fontColor($r('app.color.text_primary'))
+    // alignContent: Bottom——悬浮底栏（未定位子节点）自动贴容器底部，内容可穿透滚动（同 DatabaseView）
+    Stack({ alignContent: Alignment.Bottom }) {
+      Column() {
+        if (!this.hasPreview) {
+          Column() {
+            Text(ResourceManager.getString($r('app.string.import_wizard_no_pending_request')))
+              .fontSize(15)
+              .fontColor($r('app.color.text_secondary'))
+          }
+          .width('100%')
           .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
+        } else {
+          Tabs({ index: this.step, barPosition: BarPosition.Start }) {
+            TabContent() {
+              this.previewStep()
+            }
+            .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_preview'))))
+
+            TabContent() {
+              this.mappingStep()
+            }
+            .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_mapping'))))
+
+            TabContent() {
+              this.optionsStep()
+            }
+            .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_options'))))
+
+            TabContent() {
+              this.confirmStep()
+            }
+            .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_confirm'))))
+          }
+          .onChange((index: number) => {
+            this.step = index;
+          })
+          .layoutWeight(1)
+          .width('100%')
+        }
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 12 })
+      .height('100%')
 
-      this.stepIndicator()
-
-      if (!this.hasPreview) {
-        Text(ResourceManager.getString($r('app.string.import_wizard_no_pending_request')))
-          .fontSize(15)
-          .fontColor($r('app.color.text_secondary'))
-          .margin({ top: 40 })
-      } else {
-        Column() {
-          if (this.step === 0) {
-            this.previewStep()
-          } else if (this.step === 1) {
-            this.mappingStep()
-          } else if (this.step === 2) {
-            this.optionsStep()
-          } else {
-            this.confirmStep()
-          }
-        }
-        .layoutWeight(1)
-        .width('100%')
-        .clip(true)
+      if (this.hasPreview) {
+        this.bottomBar()
       }
-
-      this.bottomBar()
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 }
