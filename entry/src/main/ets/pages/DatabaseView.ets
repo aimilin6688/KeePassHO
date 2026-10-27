@@ -997,6 +997,16 @@ export struct DatabaseView {
         this.editEntry(item);
       })
 
+      // 恢复到原位置（仅回收站内且可恢复时显示）
+      if (this.canRestoreItem(item)) {
+        MenuItem({
+          startIcon: $r('app.media.ic_rollback'),
+          content: $r('app.string.restore_to_original_location'),
+        }).onClick(() => {
+          this.restoreItem(item);
+        })
+      }
+
       // 选择
       MenuItem({
         startIcon: $r('app.media.ic_check'),
@@ -1058,6 +1068,16 @@ export struct DatabaseView {
       }).onClick(() => {
         this.editGroup(item);
       })
+
+      // 恢复到原位置（仅回收站内且可恢复时显示）
+      if (this.canRestoreItem(item)) {
+        MenuItem({
+          startIcon: $r('app.media.ic_rollback'),
+          content: $r('app.string.restore_to_original_location'),
+        }).onClick(() => {
+          this.restoreItem(item);
+        })
+      }
 
       // 选择
       MenuItem({
@@ -1395,6 +1415,67 @@ export struct DatabaseView {
   }
 
   /**
+   * 当前视图是否为回收站分组（回收站本身或其子分组）
+   */
+  private isViewingRecycleBin(): boolean {
+    const db = this.database;
+    const group = this.currentGroup;
+    if (!db || !group) {
+      return false;
+    }
+    const recycleBinUuid = db.meta.recycleBinUuid;
+    if (recycleBinUuid && group.uuid.equals(recycleBinUuid)) {
+      return true;
+    }
+    return db.isInRecycleBin(group);
+  }
+
+  /**
+   * 批量恢复到原位置（回收站内，逐项 restoreToPreviousLocation，统计成功/跳过数）
+   */
+  private executeBatchRestore(): void {
+    const db = this.database;
+    if (!db) {
+      return;
+    }
+    const entries = this.getSelectedEntries();
+    const groups = this.getSelectedGroups();
+
+    let restoredCount = 0;
+    let skippedCount = 0;
+    entries.forEach(entry => {
+      if (KdbxUtils.restoreToPreviousLocation(db, entry)) {
+        restoredCount++;
+      } else {
+        skippedCount++;
+      }
+    });
+    groups.forEach(group => {
+      if (KdbxUtils.restoreToPreviousLocation(db, group)) {
+        restoredCount++;
+      } else {
+        skippedCount++;
+      }
+    });
+
+    if (restoredCount > 0) {
+      this.saveDatabase();
+    }
+    CommonUtils.showToast({
+      message: $r('app.string.batch_restore_result_message', restoredCount, skippedCount)
+    });
+
+    // 刷新列表数据
+    if (this.currentGroup) {
+      this.currentGroup = db.getGroup(this.currentGroup.uuid);
+      this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
+    }
+
+    // 退出选择模式
+    this.exitSelectionMode();
+  }
+
+  /**
    * 删除条目或分组 - 直接删除
    * @param item 要删除的条目或分组对象（使用对象引用而非索引，避免搜索模式下索引错位）
    */
@@ -1570,6 +1651,34 @@ export struct DatabaseView {
           })
         }
 
+        // 恢复到原位置按钮（回收站内且可恢复时显示）
+        if (this.canRestoreItem(this.selectedItem)) {
+          Column({ space: 8 }) {
+            Button() {
+              Column() {
+                Image($r('app.media.ic_rollback'))
+                  .width(28)
+                  .height(28)
+                  .fillColor($r('app.color.text_primary'))
+                Text($r('app.string.restore_button_text'))
+                  .fontSize(12)
+                  .fontColor($r('app.color.text_primary'))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Center)
+            }
+            .height(48)
+            .width(52)
+            .backgroundColor(Color.Transparent)
+            .borderRadius(8)
+            .onClick(() => {
+              if (this.selectedItem) {
+                this.restoreItem(this.selectedItem);
+              }
+            })
+          }
+        }
+
         // 删除按钮
         Column({ space: 8 }) {
           Button() {
@@ -1736,6 +1845,50 @@ export struct DatabaseView {
     // 隐藏菜单
     this.hideMoreMenu();
     // 保存数据库
+    this.saveDatabase();
+  }
+
+  /**
+   * 条目/分组是否可恢复到原位置（回收站内且 PreviousParentGroup 可用，
+   * 设计文档 §6.2，对齐 KeePass 菜单可见性规则）
+   */
+  private canRestoreItem(item: KdbxGroup | KdbxEntry | null): boolean {
+    const db = this.database;
+    if (!db || !item) {
+      return false;
+    }
+    if (!db.isInRecycleBin(item)) {
+      return false;
+    }
+    return KdbxUtils.getPreviousParentGroupSafe(db, item) !== undefined;
+  }
+
+  /**
+   * 恢复条目/分组到原位置（回收站 PreviousParentGroup 消费）
+   * 成功：Toast 目标分组名 + 保存；不可恢复：Toast 失败文案
+   */
+  private restoreItem(item: KdbxGroup | KdbxEntry): void {
+    const db = this.database;
+    if (!db) {
+      return;
+    }
+    const target = KdbxUtils.getPreviousParentGroupSafe(db, item);
+    if (!target || !KdbxUtils.restoreToPreviousLocation(db, item)) {
+      CommonUtils.showToast({ message: $r('app.string.restore_failed_message') });
+      return;
+    }
+    CommonUtils.showToast({ message: $r('app.string.restore_success_message', target.name ?? '') });
+    // 从列表中移除（通过 UUID 匹配，恢复后不再属于当前分组）
+    const restoredUuid = item.uuid.id;
+    const itemsIndex = this.items.findIndex(i => i.uuid.id === restoredUuid);
+    if (itemsIndex >= 0) {
+      this.items.splice(itemsIndex, 1);
+    }
+    const filteredIndex = this.filteredItems.findIndex(i => i.uuid.id === restoredUuid);
+    if (filteredIndex >= 0) {
+      this.filteredItems.splice(filteredIndex, 1);
+    }
+    this.hideMoreMenu();
     this.saveDatabase();
   }
 
@@ -2780,6 +2933,10 @@ export struct DatabaseView {
       if (this.isSelectionMode) {
         SelectionModeBar({
           hasSelection: this.selectedItems.size > 0,
+          showRestore: this.isViewingRecycleBin(),
+          onBatchRestore: () => {
+            this.executeBatchRestore();
+          },
           onBatchMove: () => {
             this.startBatchMove();
           },

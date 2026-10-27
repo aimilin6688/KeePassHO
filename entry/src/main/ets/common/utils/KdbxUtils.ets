@@ -991,6 +991,74 @@ export class KdbxUtils {
     indexerValues.push(...letters);
     return { indexerValues, indexerMap };
   }
+
+  /**
+   * 获取可安全恢复的目标父分组（对齐 KeePass GetPreviousParentGroupSafeI，
+   * MainForm_Functions.cs:6896-6928）
+   * @param database 数据库
+   * @param object 待恢复的条目/分组
+   * @returns 目标分组；不可恢复时返回 undefined
+   */
+  public static getPreviousParentGroupSafe(
+    database: Kdbx,
+    object: KdbxEntry | KdbxGroup
+  ): KdbxGroup | undefined {
+    // 1. previousParentGroup 未设置 → 不可恢复
+    const previousParentGroup = object.previousParentGroup;
+    if (!previousParentGroup) {
+      return undefined;
+    }
+    // 2. 按 UUID 在根组树递归查找（原分组已被永久删除 → 不可恢复）
+    const target = database.getGroup(previousParentGroup);
+    if (!target) {
+      return undefined;
+    }
+    // 3. 不允许"恢复"到当前父组（已在原位置）
+    if (target === object.parentGroup) {
+      return undefined;
+    }
+    // 4. 分组恢复：目标不得是自身或自身子孙（防环）
+    if (object instanceof KdbxGroup && KdbxUtils.isDescendantOrSelf(target, object)) {
+      return undefined;
+    }
+    return target;
+  }
+
+  /**
+   * 恢复条目/分组到原位置。
+   * Kdbx.move 会把 previousParentGroup 更新为恢复前的父组（交换语义），
+   * 与 KeePassXC restoreSelectedEntries 行为一致。
+   * @param database 数据库
+   * @param object 待恢复的条目/分组
+   * @returns 是否恢复成功
+   */
+  public static restoreToPreviousLocation(
+    database: Kdbx,
+    object: KdbxEntry | KdbxGroup
+  ): boolean {
+    const target = KdbxUtils.getPreviousParentGroupSafe(database, object);
+    if (!target) {
+      return false;
+    }
+    database.move(object, target);
+    return true;
+  }
+
+  /**
+   * candidate 是否为 group 自身或其子孙分组（沿 parentGroup 向上遍历）
+   * @param candidate 待判定分组
+   * @param group 祖先分组
+   */
+  public static isDescendantOrSelf(candidate: KdbxGroup, group: KdbxGroup): boolean {
+    let current: KdbxGroup | undefined = candidate;
+    while (current) {
+      if (current === group) {
+        return true;
+      }
+      current = current.parentGroup;
+    }
+    return false;
+  }
 }
 
 /**

@@ -149,6 +149,26 @@
       "value": "Delete"
     },
     {
+      "name": "restore_to_original_location",
+      "value": "Restore to original location"
+    },
+    {
+      "name": "restore_button_text",
+      "value": "Restore"
+    },
+    {
+      "name": "restore_success_message",
+      "value": "Restored to \"%s\""
+    },
+    {
+      "name": "restore_failed_message",
+      "value": "Original group no longer exists or cannot be restored. Please move it manually"
+    },
+    {
+      "name": "batch_restore_result_message",
+      "value": "Restored %d item(s), skipped %d"
+    },
+    {
       "name": "confirm_button_text",
       "value": "OK"
     },

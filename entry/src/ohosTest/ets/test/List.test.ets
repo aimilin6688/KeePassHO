@@ -298,6 +298,8 @@ import DatabaseChangePasswordMetaTest from './testdata/DatabaseChangePasswordMet
 import Kdbx41CopyFromTest from './kdbx/Kdbx41CopyFrom.test';
 import Kdbx41MergeTest from './kdbx/Kdbx41Merge.test';
 import Kdbx41VersionUpgradeTest from './kdbx/Kdbx41VersionUpgrade.test';
+// P2-4 M2：回收站恢复到原位置（PreviousParentGroup 消费）
+import KdbxRestorePreviousLocationTest from './kdbx/KdbxRestorePreviousLocation.test';
 
 
 export default function testsuite() {
@@ -641,6 +643,9 @@ export default function testsuite() {
   Kdbx41CopyFromTest();
   Kdbx41MergeTest();
   Kdbx41VersionUpgradeTest();
+
+  // P2-4 M2：回收站恢复到原位置
+  KdbxRestorePreviousLocationTest();
 
   // UI 自动化测试
   // OpenDatabaseUiTest();

@@ -6,6 +6,11 @@
 export struct SelectionModeBar {
   /** 是否存在选中项（控制移动/删除按钮可用性） */
   hasSelection: boolean = false;
+  /** 是否显示"恢复到原位置"按钮（回收站分组内批量恢复） */
+  showRestore: boolean = false;
+  /** 批量恢复到原位置回调 */
+  onBatchRestore: () => void = (): void => {
+  };
   /** 批量移动回调 */
   onBatchMove: () => void = (): void => {
   };
@@ -19,6 +24,23 @@ export struct SelectionModeBar {
   build() {
     Column() {
       Row() {
+        // 恢复按钮（回收站内）
+        if (this.showRestore) {
+          Button($r('app.string.restore_button_text'))
+            .layoutWeight(1)
+            .height(40)
+            .margin({ right: 8 })
+            .borderRadius(20)
+            .backgroundColor($r("app.color.button_bg_blue"))
+            .fontColor($r("app.color.button_text_blue"))
+            .enabled(this.hasSelection)
+            .opacity(this.hasSelection ? 1 : 0.5)
+            .id('btn_batch_restore')
+            .onClick(() => {
+              this.onBatchRestore();
+            })
+        }
+
         // 移动按钮
         Button($r('app.string.move_button_text'))
           .layoutWeight(1)

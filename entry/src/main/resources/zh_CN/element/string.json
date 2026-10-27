@@ -149,6 +149,26 @@
       "value": "删除"
     },
     {
+      "name": "restore_to_original_location",
+      "value": "恢复到原位置"
+    },
+    {
+      "name": "restore_button_text",
+      "value": "恢复"
+    },
+    {
+      "name": "restore_success_message",
+      "value": "已恢复到「%s」"
+    },
+    {
+      "name": "restore_failed_message",
+      "value": "原分组已不存在或不可恢复，请在列表中手动移动"
+    },
+    {
+      "name": "batch_restore_result_message",
+      "value": "已恢复 %d 项，跳过 %d 项"
+    },
+    {
       "name": "confirm_button_text",
       "value": "确定"
     },
