@@ -4,7 +4,7 @@ import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { ImportService } from '../../../../main/ets/services/importExport/service/ImportService';
 import { FormatHandlerRegistry } from '../../../../main/ets/services/importExport/FormatHandlerRegistry';
-import { CsvImportHandler } from '../../../../main/ets/services/importExport/handlers/import/CsvImportHandler';
+import { CsvFamilyDispatcherImportHandler } from '../../../../main/ets/services/importExport/handlers/import/CsvFamilyDispatcherImportHandler';
 import { XmlImportHandler } from '../../../../main/ets/services/importExport/handlers/import/XmlImportHandler';
 import { ImportError, ImportExportErrorCode } from '../../../../main/ets/services/importExport/common/ImportExportError';
 import { StorageType } from '../../../../main/ets/storage';
@@ -39,13 +39,13 @@ export default function ImportServiceTest() {
       }
 
       registry = FormatHandlerRegistry.getInstance();
-      registry.registerImportHandler(new CsvImportHandler());
+      registry.registerImportHandler(new CsvFamilyDispatcherImportHandler());
       registry.registerImportHandler(new XmlImportHandler());
       service = new ImportService(registry);
     });
 
     beforeEach(async () => {
-      // CsvImportHandler 依赖 FileService.getDatabase().meta 构造条目
+      // CSV 调度器依赖 FileService.getDatabase().meta 构造条目
       const db = await TestUtils.createTestDatabase('ImportService Test');
       FileService.resetDbFileParam(db, Date.now());
     });

@@ -19,15 +19,14 @@ function buildPresetHandler(formatId: string): PresetCsvImportHandler {
 
 /**
  * FormatSignatureLibrary + PresetCsvImportHandler 单元测试（M2-4）
- * 评分规则（§4.5）：必需表头全在 → 70；表头 ⊆ 已知全集 → 100；否则 0；
- * 未声明可选列的签名（known == required，Norton）出现未知列 → 0（防超集误认领）。
- * 首批签名：Norton Identity Safe CSV（KeePass NortonIdSafeCsv2013 权威）、
- * True Key CSV（KeePass TrueKeyCsv4 权威，特征列 tk_export_version）。
+ * 统一评分规则（matchesHeadersClaimable v3 语义 + 特征列）：
+ * 必需表头缺失 → 0；特征表头全缺 → 0；未知列可识别 → 0（走向导）；满足 → 90（SNIFF_CONFIDENCE）。
+ * 签名：LastPass / Dashlane / 1Password / Firefox / Chrome / Norton Identity Safe / True Key。
  */
 export default function FormatSignatureLibraryTest() {
   describe('FormatSignatureLibrary', () => {
     describe('scoreSignature_norton', () => {
-      it('shouldScore100ForExactNortonHeader', 0, () => {
+      it('shouldScore90ForExactNortonHeader', 0, () => {
         const signature = FormatSignatureLibrary.getSignature('NORTON_IDSAFE_CSV');
         if (signature === null) {
           expect().assertFail();
@@ -37,10 +36,10 @@ export default function FormatSignatureLibraryTest() {
           signature,
           ['url', 'username', 'password', 'title', 'group']
         );
-        expect(score).assertEqual(100);
+        expect(score).assertEqual(90);
       });
 
-      it('shouldScore100ForCaseInsensitiveNortonHeader', 0, () => {
+      it('shouldScore90ForCaseInsensitiveNortonHeader', 0, () => {
         const signature = FormatSignatureLibrary.getSignature('NORTON_IDSAFE_CSV');
         if (signature === null) {
           expect().assertFail();
@@ -50,7 +49,7 @@ export default function FormatSignatureLibraryTest() {
           signature,
           ['URL', 'Username', 'Password', 'Title', 'Group']
         );
-        expect(score).assertEqual(100);
+        expect(score).assertEqual(90);
       });
 
       it('shouldScore0WhenRequiredHeaderMissing', 0, () => {
@@ -68,7 +67,8 @@ export default function FormatSignatureLibraryTest() {
       });
 
       it('shouldScore0ForKeePassStyleSupersetHeader', 0, () => {
-        // 回归护栏：KeePass 风格导出表头是 Norton 必需列的超集，不得被认领（strict 规则 → 0）
+        // 回归护栏：KeePass 风格导出表头是 Norton 必需列的超集，不得被认领
+        // （未知列 notes 可识别 → 走向导预填，不静默认领）
         const signature = FormatSignatureLibrary.getSignature('NORTON_IDSAFE_CSV');
         if (signature === null) {
           expect().assertFail();
@@ -92,7 +92,7 @@ export default function FormatSignatureLibraryTest() {
     });
 
     describe('scoreSignature_truekey', () => {
-      it('shouldScore100ForFullKnownHeader', 0, () => {
+      it('shouldScore90ForFullKnownHeader', 0, () => {
         const signature = FormatSignatureLibrary.getSignature('TRUEKEY_CSV');
         if (signature === null) {
           expect().assertFail();
@@ -102,11 +102,11 @@ export default function FormatSignatureLibraryTest() {
           signature,
           ['tk_export_version', 'name', 'login', 'password', 'url', 'favorite', 'city']
         );
-        expect(score).assertEqual(100);
+        expect(score).assertEqual(90);
       });
 
-      it('shouldScore70ForHeaderWithUnknownExtraColumn', 0, () => {
-        // TrueKey 声明了可选列全集（known > required）：未知列 → 70 候选
+      it('shouldScore90ForHeaderWithUnrecognizableExtraColumn', 0, () => {
+        // 未知列不可识别（mapWithSpecificity === undefined）→ 忽略照导（KeePass 2.x 按名映射语义）
         const signature = FormatSignatureLibrary.getSignature('TRUEKEY_CSV');
         if (signature === null) {
           expect().assertFail();
@@ -116,7 +116,7 @@ export default function FormatSignatureLibraryTest() {
           signature,
           ['tk_export_version', 'name', 'login', 'password', 'future_column']
         );
-        expect(score).assertEqual(70);
+        expect(score).assertEqual(90);
       });
 
       it('shouldScore0WhenTkExportVersionMissing', 0, () => {
@@ -137,7 +137,7 @@ export default function FormatSignatureLibraryTest() {
       it('shouldMatchNortonHeader', 0, () => {
         const result = FormatSignatureLibrary.matchCsvHeaders(['url', 'username', 'password', 'title', 'group']);
         expect(result?.formatId).assertEqual('NORTON_IDSAFE_CSV');
-        expect(result?.score).assertEqual(100);
+        expect(result?.score).assertEqual(90);
       });
 
       it('shouldMatchTrueKeyHeader', 0, () => {
@@ -154,7 +154,7 @@ export default function FormatSignatureLibraryTest() {
 
       it('shouldReturnAllSignatures', 0, () => {
         const signatures = FormatSignatureLibrary.getAllSignatures();
-        expect(signatures.length).assertEqual(2);
+        expect(signatures.length).assertEqual(7);
       });
 
       it('shouldReturnNullForUnknownFormatId', 0, () => {
@@ -176,7 +176,7 @@ export default function FormatSignatureLibraryTest() {
       });
 
       it('shouldSniffBySignatureScore', 0, () => {
-        expect(handler.sniff(['url', 'username', 'password', 'title', 'group'], [])).assertEqual(100);
+        expect(handler.sniff(['url', 'username', 'password', 'title', 'group'], [])).assertEqual(90);
         expect(handler.sniff(['foo', 'bar'], [])).assertEqual(0);
       });
 

@@ -20,6 +20,9 @@ const PROTONPASS_PROFILE: CsvFormatProfile = new CsvFormatProfile(
   }
 );
 
+/** Proton Pass CSV 已知列全集 */
+const PROTON_KNOWN_HEADERS: string[] = ['name', 'url', 'username', 'password', 'note', 'totp', 'email', 'vault'];
+
 /**
  * Proton Pass CSV 导入处理器
  * 导出格式：name,url,username,password,note,totp,email,vault
@@ -35,7 +38,8 @@ export class ProtonPassCsvImportHandler extends BaseCsvImportHandler implements 
   }
 
   sniff(headerRow: string[], sampleRows: string[][]): number {
-    if (BaseCsvImportHandler.hasAllHeaders(headerRow, PROTONPASS_PROFILE.requiredHeaders)
+    // 精确表头集合匹配（多一列/少一列均不认领）+ 特征列（与 Chrome 最小集区分）
+    if (BaseCsvImportHandler.matchesHeadersClaimable(headerRow, PROTONPASS_PROFILE.requiredHeaders, PROTON_KNOWN_HEADERS)
       && BaseCsvImportHandler.hasAnyHeader(headerRow, ['email', 'totp', 'vault'])) {
       return BaseCsvImportHandler.SNIFF_CONFIDENCE;
     }

@@ -2,9 +2,21 @@ import { describe, expect, it, beforeEach } from '@ohos/hypium';
 import { CsvFamilyDispatcherImportHandler } from '../../../../main/ets/services/importExport/handlers/import/CsvFamilyDispatcherImportHandler';
 import { registerDefaultHandlers, FormatHandlerRegistry } from '../../../../main/ets/services/importExport/index';
 import { ImportError, ImportExportErrorCode } from '../../../../main/ets/services/importExport/common/ImportExportError';
+import { ImportWizardBridge } from '../../../../main/ets/services/importExport/wizard/ImportWizardBridge';
 import { TestUtils } from './TestUtils';
 import { FileService } from '../../../../main/ets/services/FileService';
 import { KdbxUtils } from '../../../../main/ets/common/utils';
+
+/**
+ * 纯 ASCII 字符串转字节数组（与 GBK 双字节拼接构造非 UTF-8 内容）
+ */
+function asciiBytes(text: string): number[] {
+  const result: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    result.push(text.charCodeAt(i));
+  }
+  return result;
+}
 
 /**
  * CsvFamilyDispatcherImportHandler 单元测试
@@ -116,6 +128,30 @@ export default function CsvFamilyDispatcherTest() {
         // 仅 url/username/password 无 Firefox 特征列时不误判为 Firefox，走通用 CSV
         expect(dispatcher.detectFormatId(['url', 'username', 'password'], [])).assertEqual('GENERIC_CSV');
       });
+
+      it('shouldClaimKnownFormatWithUnrecognizableExtraColumn', 0, () => {
+        // 完全不可识别的未知列 → 参考 KeePass 2.x 语义：格式认领，未知列忽略
+        const header = ['name', 'url', 'username', 'password', 'note', 'extra'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('CHROME_CSV');
+      });
+
+      it('shouldFallBackToGenericWhenKnownFormatHasRecognizableExtraColumn', 0, () => {
+        // 可识别的未知列（可映射标准字段，数据不能丢）→ 不认领 → 列映射向导
+        const header = ['name', 'url', 'username', 'password', 'note', 'GROUP中文'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
+      });
+
+      it('shouldFallBackToGenericWhenKnownFormatMissesRequiredColumn', 0, () => {
+        // Chrome 必需列 name 缺失，其余格式必需列/特征列也均不齐 → 不认领 → 列映射向导/通用 CSV
+        const header = ['url', 'username', 'password', 'note'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
+      });
+
+      it('shouldFallBackToGenericForChineseAnnotatedHeader', 0, () => {
+        // 「GROUP中文,TITLE中文,…」等带注释表头：无解析器精准命中 → 列映射向导（此处无 UI 回落通用）
+        const header = ['GROUP中文', 'TITLE中文', 'USERNAME用户名', 'PASSWORD密码', 'URL网址', 'NOTES备注'];
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
+      });
     });
 
     describe('importDispatch', () => {
@@ -201,6 +237,107 @@ export default function CsvFamilyDispatcherTest() {
             expect(error.code).assertEqual(ImportExportErrorCode.FILE_EMPTY);
           }
         }
+      });
+    });
+
+    describe('gbkImportDispatch', () => {
+      it('shouldImportGbkEncodedChromeCsv', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('Dispatcher Test Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        // Chrome 表头（ASCII）+ GBK 中文数据：'用户'（D3C3 BBA7）'密码'（C3DC C2EB）'备注'（B1B8 D7A2）
+        const bytes = new Uint8Array(
+          asciiBytes('name,url,username,password,note\nGitHub,https://github.com,')
+            .concat([0xD3, 0xC3, 0xBB, 0xA7, 0x2C])
+            .concat([0xC3, 0xDC, 0xC2, 0xEB, 0x2C])
+            .concat([0xB1, 0xB8, 0xD7, 0xA2])
+        );
+        const fileContent = TestUtils.createFileContentFromBytes(bytes, 'gbk-chrome.csv');
+
+        const result = await dispatcher.import(fileContent);
+
+        expect(result.entries.length).assertEqual(1);
+        const entry = result.entries[0];
+        expect(entry.fields.get('Title')).assertEqual('GitHub');
+        expect(entry.fields.get('UserName')).assertEqual('用户');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('密码');
+        expect(entry.fields.get('Notes')).assertEqual('备注');
+      });
+
+      it('shouldImportGbkEncodedGenericCsvWithChineseGroupTitle', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('Dispatcher Test Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        // KeePass 风格表头（ASCII）+ GBK 中文数据：'工作'（B9A4 D7F7）'中文条目'（D6D0 CEC4 CCF5 C4BF）'用户' '密码'
+        const bytes = new Uint8Array(
+          asciiBytes('Group,Title,UserName,Password\n')
+            .concat([0xB9, 0xA4, 0xD7, 0xF7, 0x2C]) // 工作
+            .concat([0xD6, 0xD0, 0xCE, 0xC4, 0xCC, 0xF5, 0xC4, 0xBF, 0x2C]) // 中文条目
+            .concat([0xD3, 0xC3, 0xBB, 0xA7, 0x2C]) // 用户
+            .concat([0xC3, 0xDC, 0xC2, 0xEB]) // 密码
+        );
+        const fileContent = TestUtils.createFileContentFromBytes(bytes, 'gbk-generic.csv');
+
+        const result = await dispatcher.import(fileContent);
+
+        expect(result.groups.length).assertEqual(1);
+        expect(result.groups[0].name).assertEqual('工作');
+        const entry = result.groups[0].entries[0];
+        expect(entry.fields.get('Title')).assertEqual('中文条目');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('密码');
+      });
+
+      it('shouldReportDetectedEncodingInPreviewSource', 0, () => {
+        // 调度器构建的预览须携带原始字节与检测编码，供向导切换编码重解码
+        const preview = ImportWizardBridge.buildPreview(
+          [['name', 'url'], ['GitHub', 'https://github.com']],
+          'Chrome',
+          TestUtils.createFileContent('name,url\nGitHub,https://github.com', 'sample.csv').content,
+          'gbk'
+        );
+        expect(preview.detectedEncoding).assertEqual('gbk');
+        expect(preview.sourceContent.byteLength > 0).assertTrue();
+      });
+    });
+
+    describe('annotatedHeaderImport', () => {
+      it('shouldImportChineseAnnotatedHeadersViaSuggestedMapping', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('Dispatcher Test Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        // 用户场景：带中文注释表头，无解析器认领 → 无 UI 上下文回落通用建议映射直导；
+        // 建议映射由引擎阶段②前缀匹配生成（GROUP分组/TITLE中文/USERNAME用户名/…）
+        const csvContent = 'GROUP分组,TITLE中文,USERNAME用户名,PASSWORD密码,URL网址,NOTES备注\n' +
+          '工作,中文条目,注释用户,注释密码,https://example.com,中文备注';
+        const fileContent = TestUtils.createFileContent(csvContent, 'annotated.csv');
+
+        const result = await dispatcher.import(fileContent);
+
+        expect(result.groups.length).assertEqual(1);
+        expect(result.groups[0].name).assertEqual('工作');
+        const entry = result.groups[0].entries[0];
+        expect(entry.fields.get('Title')).assertEqual('中文条目');
+        expect(entry.fields.get('UserName')).assertEqual('注释用户');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('注释密码');
+        expect(entry.fields.get('URL')).assertEqual('https://example.com');
+        expect(entry.fields.get('Notes')).assertEqual('中文备注');
+      });
+
+      it('shouldKeepEnglishNameAndAnnotatedUsernameDisambiguated', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('Dispatcher Test Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        // 阶段②消歧：'USERNAME用户名'（命中 8 字符）优先于 'NAME名称'（命中 4 字符）作 UserName
+        const csvContent = 'NAME名称,USERNAME用户名,PASSWORD密码\n' +
+          '名称列值,用户名列值,密码值';
+        const fileContent = TestUtils.createFileContent(csvContent, 'disambiguation.csv');
+
+        const result = await dispatcher.import(fileContent);
+
+        expect(result.entries.length).assertEqual(1);
+        const entry = result.entries[0];
+        expect(entry.fields.get('UserName')).assertEqual('用户名列值');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('密码值');
       });
     });
 

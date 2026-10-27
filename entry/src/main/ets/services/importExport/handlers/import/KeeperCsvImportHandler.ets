@@ -19,6 +19,12 @@ const KEEPER_PROFILE: CsvFormatProfile = new CsvFormatProfile(
   }
 );
 
+/** Keeper CSV 已知列全集 */
+const KEEPER_KNOWN_HEADERS: string[] = [
+  'record_type', 'folder', 'title', 'note',
+  'login_url', 'login_username', 'login_password', 'login_totp'
+];
+
 /**
  * Keeper CSV 导入处理器（报告 §三/§六 规格）
  * 首列 record_type（login/card/address/bankAccount/...）为文档化特征：
@@ -35,7 +41,9 @@ export class KeeperCsvImportHandler extends BaseCsvImportHandler implements IImp
   }
 
   sniff(headerRow: string[], sampleRows: string[][]): number {
-    if (headerRow.length > 0 && headerRow[0].trim().toLowerCase() === 'record_type') {
+    // 首列 record_type + 精确表头集合匹配（多一列/少一列均不认领）
+    if (headerRow.length > 0 && headerRow[0].trim().toLowerCase() === 'record_type'
+      && BaseCsvImportHandler.matchesHeadersClaimable(headerRow, KEEPER_PROFILE.requiredHeaders, KEEPER_KNOWN_HEADERS)) {
       return BaseCsvImportHandler.SNIFF_CONFIDENCE;
     }
     return 0;

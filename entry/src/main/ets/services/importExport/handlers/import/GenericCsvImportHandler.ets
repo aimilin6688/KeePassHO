@@ -3,10 +3,9 @@ import { BaseCsvImportHandler } from './BaseCsvImportHandler';
 import { CsvColumnMapping, CsvColumnMappingEngine } from '../../csvimport/CsvColumnMappingEngine';
 import {
   ColumnMappingItem,
-  ColumnMappingProfile,
-  WizardTargetField,
-  WizardTargetFieldConverter
+  ColumnMappingProfile
 } from '../../csvimport/CsvMappingModels';
+import { CsvTargetField } from '../../csvimport/CsvImportModels';
 import { IImportHandler } from '../IImportHandler';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
 import { ResourceManager } from '../../../../common/utils';
@@ -49,15 +48,14 @@ export class GenericCsvImportHandler extends BaseCsvImportHandler implements IIm
     const mapping: CsvColumnMapping[] = [];
     const customItems: ColumnMappingItem[] = [];
     for (const item of profile.items) {
-      if (item.targetField === WizardTargetField.CUSTOM) {
+      if (item.targetField === CsvTargetField.CUSTOM) {
         customItems.push(item);
         continue;
       }
-      const target = WizardTargetFieldConverter.toCsvTargetField(item.targetField);
-      if (target === undefined) {
+      if (item.targetField === CsvTargetField.SKIP) {
         continue;
       }
-      mapping.push({ target: target, columnIndex: item.sourceColumnIndex });
+      mapping.push({ target: item.targetField, columnIndex: item.sourceColumnIndex });
     }
     if (mapping.length === 0 && customItems.length === 0) {
       throw new ImportError(

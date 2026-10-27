@@ -1,9 +1,7 @@
 import { describe, expect, it, beforeEach } from '@ohos/hypium';
 import {
   ColumnMappingItem,
-  ColumnMappingProfile,
-  WizardTargetField,
-  WizardTargetFieldConverter
+  ColumnMappingProfile
 } from '../../../../main/ets/services/importExport/csvimport/CsvMappingModels';
 import { CsvTargetField } from '../../../../main/ets/services/importExport/csvimport/CsvImportModels';
 import { GenericCsvImportHandler } from '../../../../main/ets/services/importExport/handlers/import/GenericCsvImportHandler';
@@ -28,31 +26,18 @@ class RecordingRefusingPresenter implements WizardPagePresenter {
 }
 
 /**
- * 记录呈现并接受：验证向导未被请求（presented 应保持 false）
- */
-class RecordingAcceptingPresenter implements WizardPagePresenter {
-  presented: boolean = false;
-
-  present(preview: CsvMappingPreview): boolean {
-    this.presented = true;
-    return true;
-  }
-}
-
-/**
  * CSV 列映射向导模型 + importWithProfile 导入路径 + 调度器向导路由 单元测试（M2-4）
  * 1. ColumnMappingProfile.validate：至少一映射列 + 标准目标冲突检测 + CUSTOM 冲突（按自定义字段名/源列名）
- * 2. WizardTargetFieldConverter 双向转换
- * 3. GenericCsvImportHandler.importWithProfile：向导档案 → 标准/自定义字段 + 目标分组包装 + 全 SKIP 报错
- * 4. 调度器未知来源 headless 路由：无 UI 上下文回落建议映射直导；Norton 签名直接分发
+ * 2. GenericCsvImportHandler.importWithProfile：向导档案 → 标准/自定义字段 + 目标分组包装 + 全 SKIP 报错
+ * 3. 调度器未知来源路由：固定格式精确匹配直接导入；未命中请求向导，无 UI 上下文回落建议映射直导
  */
 export default function CsvMappingWizardTest() {
   describe('CsvMappingWizard', () => {
     describe('ColumnMappingProfile_validate', () => {
       it('shouldFailWhenAllColumnsSkipped', 0, () => {
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'a', WizardTargetField.SKIP),
-          new ColumnMappingItem(1, 'b', WizardTargetField.SKIP)
+          new ColumnMappingItem(0, 'a', CsvTargetField.SKIP),
+          new ColumnMappingItem(1, 'b', CsvTargetField.SKIP)
         ], '');
         const result = profile.validate();
         expect(result.hasMappedColumn).assertFalse();
@@ -62,8 +47,8 @@ export default function CsvMappingWizardTest() {
 
       it('shouldPassWithSingleMappedColumn', 0, () => {
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'a', WizardTargetField.SKIP),
-          new ColumnMappingItem(1, 'b', WizardTargetField.TITLE)
+          new ColumnMappingItem(0, 'a', CsvTargetField.SKIP),
+          new ColumnMappingItem(1, 'b', CsvTargetField.TITLE)
         ], '');
         const result = profile.validate();
         expect(result.hasMappedColumn).assertTrue();
@@ -72,8 +57,8 @@ export default function CsvMappingWizardTest() {
 
       it('shouldDetectStandardTargetConflict', 0, () => {
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'name', WizardTargetField.TITLE),
-          new ColumnMappingItem(1, 'title', WizardTargetField.TITLE)
+          new ColumnMappingItem(0, 'name', CsvTargetField.TITLE),
+          new ColumnMappingItem(1, 'title', CsvTargetField.TITLE)
         ], '');
         const result = profile.validate();
         expect(result.hasMappedColumn).assertTrue();
@@ -86,8 +71,8 @@ export default function CsvMappingWizardTest() {
 
       it('shouldDetectCustomFieldConflictByCustomName', 0, () => {
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'colA', WizardTargetField.CUSTOM, 'License'),
-          new ColumnMappingItem(1, 'colB', WizardTargetField.CUSTOM, 'License')
+          new ColumnMappingItem(0, 'colA', CsvTargetField.CUSTOM, 'License'),
+          new ColumnMappingItem(1, 'colB', CsvTargetField.CUSTOM, 'License')
         ], '');
         const result = profile.validate();
         expect(result.conflicts.length).assertEqual(1);
@@ -96,8 +81,8 @@ export default function CsvMappingWizardTest() {
 
       it('shouldNotConflictCustomFieldsWithDifferentNames', 0, () => {
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'colA', WizardTargetField.CUSTOM, 'License'),
-          new ColumnMappingItem(1, 'colB', WizardTargetField.CUSTOM, 'Serial')
+          new ColumnMappingItem(0, 'colA', CsvTargetField.CUSTOM, 'License'),
+          new ColumnMappingItem(1, 'colB', CsvTargetField.CUSTOM, 'Serial')
         ], '');
         const result = profile.validate();
         expect(result.conflicts.length).assertEqual(0);
@@ -106,41 +91,12 @@ export default function CsvMappingWizardTest() {
       it('shouldFallbackCustomNameToSourceColumnNameForConflict', 0, () => {
         // CUSTOM 未填字段名时按源列名参与冲突检测
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'colA', WizardTargetField.CUSTOM, ''),
-          new ColumnMappingItem(1, 'colA', WizardTargetField.CUSTOM, '')
+          new ColumnMappingItem(0, 'colA', CsvTargetField.CUSTOM, ''),
+          new ColumnMappingItem(1, 'colA', CsvTargetField.CUSTOM, '')
         ], '');
         const result = profile.validate();
         expect(result.conflicts.length).assertEqual(1);
         expect(result.conflicts[0].targetLabel).assertEqual('colA');
-      });
-    });
-
-    describe('WizardTargetFieldConverter', () => {
-      it('shouldConvertEachStandardField', 0, () => {
-        expect(WizardTargetFieldConverter.fromCsvTargetField(CsvTargetField.TITLE))
-          .assertEqual(WizardTargetField.TITLE);
-        expect(WizardTargetFieldConverter.fromCsvTargetField(CsvTargetField.USERNAME))
-          .assertEqual(WizardTargetField.USERNAME);
-        expect(WizardTargetFieldConverter.fromCsvTargetField(CsvTargetField.PASSWORD))
-          .assertEqual(WizardTargetField.PASSWORD);
-        expect(WizardTargetFieldConverter.fromCsvTargetField(CsvTargetField.URL))
-          .assertEqual(WizardTargetField.URL);
-        expect(WizardTargetFieldConverter.fromCsvTargetField(CsvTargetField.NOTES))
-          .assertEqual(WizardTargetField.NOTES);
-        expect(WizardTargetFieldConverter.fromCsvTargetField(CsvTargetField.EXPIRY_TIME))
-          .assertEqual(WizardTargetField.EXPIRY_TIME);
-      });
-
-      it('shouldConvertBackEachStandardField', 0, () => {
-        expect(WizardTargetFieldConverter.toCsvTargetField(WizardTargetField.TITLE))
-          .assertEqual(CsvTargetField.TITLE);
-        expect(WizardTargetFieldConverter.toCsvTargetField(WizardTargetField.EXPIRY_TIME))
-          .assertEqual(CsvTargetField.EXPIRY_TIME);
-      });
-
-      it('shouldReturnUndefinedForSkipAndCustom', 0, () => {
-        expect(WizardTargetFieldConverter.toCsvTargetField(WizardTargetField.SKIP)).assertUndefined();
-        expect(WizardTargetFieldConverter.toCsvTargetField(WizardTargetField.CUSTOM)).assertUndefined();
       });
     });
 
@@ -161,10 +117,10 @@ export default function CsvMappingWizardTest() {
           ['Another', 'wuser2', 'wpass2', '']
         ];
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'site', WizardTargetField.TITLE),
-          new ColumnMappingItem(1, 'login', WizardTargetField.USERNAME),
-          new ColumnMappingItem(2, 'secret', WizardTargetField.PASSWORD),
-          new ColumnMappingItem(3, 'license', WizardTargetField.CUSTOM, 'License')
+          new ColumnMappingItem(0, 'site', CsvTargetField.TITLE),
+          new ColumnMappingItem(1, 'login', CsvTargetField.USERNAME),
+          new ColumnMappingItem(2, 'secret', CsvTargetField.PASSWORD),
+          new ColumnMappingItem(3, 'license', CsvTargetField.CUSTOM, 'License')
         ], '');
 
         const result = handler.importWithProfile(rows, profile);
@@ -189,8 +145,8 @@ export default function CsvMappingWizardTest() {
           ['Example', 'some memo']
         ];
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'site', WizardTargetField.TITLE),
-          new ColumnMappingItem(1, 'memo', WizardTargetField.CUSTOM, '')
+          new ColumnMappingItem(0, 'site', CsvTargetField.TITLE),
+          new ColumnMappingItem(1, 'memo', CsvTargetField.CUSTOM, '')
         ], '');
 
         const result = handler.importWithProfile(rows, profile);
@@ -209,7 +165,7 @@ export default function CsvMappingWizardTest() {
           ['Example']
         ];
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'site', WizardTargetField.TITLE)
+          new ColumnMappingItem(0, 'site', CsvTargetField.TITLE)
         ], 'Imported');
 
         const result = handler.importWithProfile(rows, profile);
@@ -230,8 +186,8 @@ export default function CsvMappingWizardTest() {
           ['Example', 'u']
         ];
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'site', WizardTargetField.SKIP),
-          new ColumnMappingItem(1, 'login', WizardTargetField.SKIP)
+          new ColumnMappingItem(0, 'site', CsvTargetField.SKIP),
+          new ColumnMappingItem(1, 'login', CsvTargetField.SKIP)
         ], '');
 
         try {
@@ -254,8 +210,8 @@ export default function CsvMappingWizardTest() {
           ['Example', '1735689600']
         ];
         const profile = new ColumnMappingProfile([
-          new ColumnMappingItem(0, 'site', WizardTargetField.TITLE),
-          new ColumnMappingItem(1, 'expires', WizardTargetField.EXPIRY_TIME)
+          new ColumnMappingItem(0, 'site', CsvTargetField.TITLE),
+          new ColumnMappingItem(1, 'expires', CsvTargetField.EXPIRY_TIME)
         ], '');
 
         const result = handler.importWithProfile(rows, profile);
@@ -316,13 +272,13 @@ export default function CsvMappingWizardTest() {
           .assertEqual('TRUEKEY_CSV');
       });
 
-      it('shouldAutoImportKeePassStyleCsvWithoutWizard', 0, async () => {
+      it('shouldRequestWizardForKeePassStyleCsvWithHeadlessFallback', 0, async () => {
         const testDb = await TestUtils.createTestDatabase('Dispatcher Wizard Database');
         FileService.resetDbFileParam(testDb, Date.now());
 
-        // 标准 KeePass 风格表头：无族处理器认领，但建议映射可识别全部列
-        // → 不弹向导（present 不被调用），按建议映射直接导入
-        const spy = new RecordingAcceptingPresenter();
+        // 标准 KeePass 风格表头：无固定格式精确匹配 → 一律请求向导（present 被调用）；
+        // headless 呈现失败回落建议映射直导
+        const spy = new RecordingRefusingPresenter();
         ImportWizardBridge.getInstance().setPresenter(spy);
         try {
           const csvContent = 'Group,Title,UserName,Password,URL,Notes\n' +
@@ -331,7 +287,7 @@ export default function CsvMappingWizardTest() {
 
           const result = await dispatcher.import(fileContent);
 
-          expect(spy.presented).assertFalse();
+          expect(spy.presented).assertTrue();
           expect(result.groups.length).assertEqual(1);
           expect(result.groups[0].name).assertEqual('Internet Bank');
           expect(result.groups[0].entries[0].fields.get('Title')).assertEqual('MyBank');

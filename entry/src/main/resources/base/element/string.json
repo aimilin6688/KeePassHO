@@ -3505,6 +3505,14 @@
       "value": "%d data rows"
     },
     {
+      "name": "import_wizard_encoding_label",
+      "value": "File encoding"
+    },
+    {
+      "name": "import_wizard_encoding_auto",
+      "value": "Auto"
+    },
+    {
       "name": "import_wizard_source_column",
       "value": "Source column"
     },

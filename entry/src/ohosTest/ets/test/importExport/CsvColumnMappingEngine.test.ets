@@ -114,6 +114,39 @@ export default function CsvColumnMappingEngineTest() {
         expect(mapping[10].target).assertEqual(CsvTargetField.CREATED);
         expect(mapping[10].columnIndex).assertEqual(10);
       });
+
+      it('shouldMapChineseAnnotatedHeaders', 0, () => {
+        // 阶段②前缀匹配：带中文注释的表头全部识别
+        const headers = ['GROUP分组', 'TITLE标题', 'USERNAME用户名', 'PASSWORD密码', 'URL网址', 'NOTES备注'];
+        const mapping = CsvColumnMappingEngine.buildSuggestedMapping(headers);
+        expect(mapping.length).assertEqual(6);
+        expect(mapping[0].target).assertEqual(CsvTargetField.GROUP);
+        expect(mapping[0].columnIndex).assertEqual(0);
+        expect(mapping[1].target).assertEqual(CsvTargetField.TITLE);
+        expect(mapping[2].target).assertEqual(CsvTargetField.USERNAME);
+        expect(mapping[3].target).assertEqual(CsvTargetField.PASSWORD);
+        expect(mapping[4].target).assertEqual(CsvTargetField.URL);
+        expect(mapping[5].target).assertEqual(CsvTargetField.NOTES);
+        expect(mapping[5].columnIndex).assertEqual(5);
+      });
+
+      it('shouldPreferMoreSpecificFuzzyMatchForSameTarget', 0, () => {
+        // 阶段②同目标冲突：'USERNAME用户名'（命中 8 字符）比 'NAME名称'（命中 4 字符）更具体
+        const headers = ['NAME名称', 'USERNAME用户名'];
+        const mapping = CsvColumnMappingEngine.buildSuggestedMapping(headers);
+        expect(mapping.length).assertEqual(1);
+        expect(mapping[0].target).assertEqual(CsvTargetField.USERNAME);
+        expect(mapping[0].columnIndex).assertEqual(1);
+      });
+
+      it('shouldKeepExactWinnerWhenFuzzyColumnExists', 0, () => {
+        // 阶段①精确命中优先；阶段②同目标不再竞争
+        const headers = ['title', 'TITLE标题'];
+        const mapping = CsvColumnMappingEngine.buildSuggestedMapping(headers);
+        expect(mapping.length).assertEqual(1);
+        expect(mapping[0].target).assertEqual(CsvTargetField.TITLE);
+        expect(mapping[0].columnIndex).assertEqual(0);
+      });
     });
   });
 }

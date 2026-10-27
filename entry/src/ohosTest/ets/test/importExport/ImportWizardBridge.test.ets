@@ -6,9 +6,9 @@ import {
 import {
   ColumnMappingItem,
   ColumnMappingProfile,
-  CsvMappingPreview,
-  WizardTargetField
+  CsvMappingPreview
 } from '../../../../main/ets/services/importExport/csvimport/CsvMappingModels';
+import { CsvTargetField } from '../../../../main/ets/services/importExport/csvimport/CsvImportModels';
 import { ImportError, ImportExportErrorCode } from '../../../../main/ets/services/importExport/common/ImportExportError';
 
 /**
@@ -47,7 +47,7 @@ export default function ImportWizardBridgeTest() {
 
     describe('buildPreview', () => {
       it('shouldBuildPreviewWithSuggestedMapping', 0, () => {
-        // ColumnNameMapper：title→TITLE、username→USERNAME、password→PASSWORD、url→URL；未识别列 → SKIP
+        // ColumnNameMapper：title→TITLE、username→USERNAME、password→PASSWORD、url→URL；未识别列 → CUSTOM（自定义字段，字段名回退源列名）
         const rows: string[][] = [
           ['title', 'username', 'password', 'url', 'customfield'],
           ['A', 'u1', 'p1', 'https://a.com', 'x1'],
@@ -63,13 +63,13 @@ export default function ImportWizardBridgeTest() {
 
         expect(preview.suggestedItems[0].sourceColumnIndex).assertEqual(0);
         expect(preview.suggestedItems[0].sourceColumnName).assertEqual('title');
-        expect(preview.suggestedItems[0].targetField).assertEqual(WizardTargetField.TITLE);
+        expect(preview.suggestedItems[0].targetField).assertEqual(CsvTargetField.TITLE);
 
-        expect(preview.suggestedItems[1].targetField).assertEqual(WizardTargetField.USERNAME);
-        expect(preview.suggestedItems[2].targetField).assertEqual(WizardTargetField.PASSWORD);
-        expect(preview.suggestedItems[3].targetField).assertEqual(WizardTargetField.URL);
-        // 未识别列 → SKIP
-        expect(preview.suggestedItems[4].targetField).assertEqual(WizardTargetField.SKIP);
+        expect(preview.suggestedItems[1].targetField).assertEqual(CsvTargetField.USERNAME);
+        expect(preview.suggestedItems[2].targetField).assertEqual(CsvTargetField.PASSWORD);
+        expect(preview.suggestedItems[3].targetField).assertEqual(CsvTargetField.URL);
+        // 未识别列 → CUSTOM（自定义字段，字段名回退源列名）
+        expect(preview.suggestedItems[4].targetField).assertEqual(CsvTargetField.CUSTOM);
       });
 
       it('shouldLimitSampleRowsToTwenty', 0, () => {
@@ -109,7 +109,7 @@ export default function ImportWizardBridgeTest() {
         bridge.setPresenter(new AcceptingPresenter());
         const preview = ImportWizardBridge.buildPreview([['title'], ['A']], '');
         const expected = new ColumnMappingProfile(
-          [new ColumnMappingItem(0, 'title', WizardTargetField.TITLE)],
+          [new ColumnMappingItem(0, 'title', CsvTargetField.TITLE)],
           'Imported'
         );
 

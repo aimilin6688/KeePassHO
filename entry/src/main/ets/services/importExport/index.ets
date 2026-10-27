@@ -33,7 +33,6 @@ export { ImportExportFacade } from './ImportExportFacade';
 export { ImportExportViewModel } from './ImportExportViewModel';
 
 // 导入处理器
-export { CsvImportHandler } from './handlers/import/CsvImportHandler';
 export { CsvFamilyDispatcherImportHandler } from './handlers/import/CsvFamilyDispatcherImportHandler';
 export { XmlImportHandler } from './handlers/import/XmlImportHandler';
 export { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
@@ -50,10 +49,9 @@ export {
   ColumnMappingProfile,
   CsvMappingPreview,
   WizardMappingConflict,
-  WizardTargetField,
-  WizardTargetFieldConverter,
   WizardValidationResult
 } from './csvimport/CsvMappingModels';
+export { CsvTargetField } from './csvimport/CsvImportModels';
 
 // 导出处理器
 export { CsvExportHandler } from './handlers/export/CsvExportHandler';

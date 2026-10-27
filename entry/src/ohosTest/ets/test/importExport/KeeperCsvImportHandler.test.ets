@@ -69,6 +69,20 @@ export default function KeeperCsvImportHandlerTest() {
       it('shouldRejectRandomHeader', 0, () => {
         expect(handler.sniff(['foo', 'bar'], [])).assertEqual(0);
       });
+
+      it('shouldClaimHeaderWithUnrecognizableExtraColumn', 0, () => {
+        // 完全不可识别的未知列 → 参考 KeePass 2.x 语义忽略照导
+        const header = ['record_type', 'folder', 'title', 'login_url',
+          'login_username', 'login_password', 'login_totp', 'note', 'unknown'];
+        expect(handler.sniff(header, [])).assertEqual(90);
+      });
+
+      it('shouldRejectHeaderWithRecognizableExtraColumn', 0, () => {
+        // 可识别的未知列（可映射标准字段）→ 拒绝认领，交由列映射向导预填（不丢列数据）
+        const header = ['record_type', 'folder', 'title', 'login_url',
+          'login_username', 'login_password', 'login_totp', 'note', 'GROUP分组'];
+        expect(handler.sniff(header, [])).assertEqual(0);
+      });
     });
 
     describe('import', () => {

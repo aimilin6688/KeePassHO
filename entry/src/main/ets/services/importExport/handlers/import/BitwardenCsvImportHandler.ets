@@ -20,6 +20,12 @@ const BITWARDEN_PROFILE: CsvFormatProfile = new CsvFormatProfile(
   }
 );
 
+/** Bitwarden CSV 已知列全集 */
+const BITWARDEN_KNOWN_HEADERS: string[] = [
+  'folder', 'favorite', 'type', 'name', 'notes', 'fields', 'reprompt',
+  'login_uri', 'login_username', 'login_password', 'login_totp'
+];
+
 /**
  * Bitwarden CSV 导入处理器
  * 导出格式：folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
@@ -35,7 +41,8 @@ export class BitwardenCsvImportHandler extends BaseCsvImportHandler implements I
   }
 
   sniff(headerRow: string[], sampleRows: string[][]): number {
-    if (BaseCsvImportHandler.hasAllHeaders(headerRow, BITWARDEN_PROFILE.requiredHeaders)) {
+    // 认领判定：可识别的未知列不认领（走向导预填），不可识别列忽略照导
+    if (BaseCsvImportHandler.matchesHeadersClaimable(headerRow, BITWARDEN_PROFILE.requiredHeaders, BITWARDEN_KNOWN_HEADERS)) {
       return BaseCsvImportHandler.SNIFF_CONFIDENCE;
     }
     return 0;

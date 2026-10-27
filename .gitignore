@@ -28,3 +28,4 @@ faultlogger
 /entry/build-profile.json5
 .test_tmp
 .DS_Store
+.vscode

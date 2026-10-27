@@ -4,7 +4,7 @@ import { fileIo as fs } from '@kit.CoreFileKit';
 import { TestContextHelper } from '../TestContextHelper';
 import { ImportExportViewModel } from '../../../../main/ets/services/importExport/ImportExportViewModel';
 import { FormatHandlerRegistry } from '../../../../main/ets/services/importExport/FormatHandlerRegistry';
-import { CsvImportHandler } from '../../../../main/ets/services/importExport/handlers/import/CsvImportHandler';
+import { CsvFamilyDispatcherImportHandler } from '../../../../main/ets/services/importExport/handlers/import/CsvFamilyDispatcherImportHandler';
 import { XmlImportHandler } from '../../../../main/ets/services/importExport/handlers/import/XmlImportHandler';
 import { CsvExportHandler } from '../../../../main/ets/services/importExport/handlers/export/CsvExportHandler';
 import { XmlExportHandler } from '../../../../main/ets/services/importExport/handlers/export/XmlExportHandler';
@@ -40,7 +40,7 @@ export default function ImportExportViewModelTest() {
       }
 
       const registry = FormatHandlerRegistry.getInstance();
-      registry.registerImportHandler(new CsvImportHandler());
+      registry.registerImportHandler(new CsvFamilyDispatcherImportHandler());
       registry.registerImportHandler(new XmlImportHandler());
       registry.registerExportHandler(new CsvExportHandler());
       registry.registerExportHandler(new XmlExportHandler());

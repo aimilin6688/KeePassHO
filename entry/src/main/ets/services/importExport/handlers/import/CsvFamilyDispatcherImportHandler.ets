@@ -1,25 +1,21 @@
-import { KdbxGroup, ByteUtils } from 'kdbxweb';
+import { KdbxGroup } from 'kdbxweb';
 import { CsvParser } from '../../csvimport/CsvParser';
+import { CsvEncoding, CsvEncodingUtils } from '../../csvimport/CsvEncodingUtils';
 import { FileContentInfo } from '../../../../storage';
 import { IImportHandler } from '../IImportHandler';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
 import { ResourceManager } from '../../../../common/utils';
 import { SettingsService } from '../../../SettingsService';
 import { BaseCsvImportHandler } from './BaseCsvImportHandler';
-import { LastPassCsvImportHandler } from './LastPassCsvImportHandler';
 import { BitwardenCsvImportHandler } from './BitwardenCsvImportHandler';
 import { ProtonPassCsvImportHandler } from './ProtonPassCsvImportHandler';
-import { DashlaneCsvImportHandler } from './DashlaneCsvImportHandler';
-import { OnePasswordCsvImportHandler } from './OnePasswordCsvImportHandler';
 import { KeeperCsvImportHandler } from './KeeperCsvImportHandler';
 import { EnpassCsvImportHandler } from './EnpassCsvImportHandler';
-import { FirefoxCsvImportHandler } from './FirefoxCsvImportHandler';
-import { ChromeCsvImportHandler } from './ChromeCsvImportHandler';
 import { GenericCsvImportHandler } from './GenericCsvImportHandler';
 import { PresetCsvImportHandler } from './PresetCsvImportHandler';
 import { FormatSignatureLibrary } from '../../sniffing/FormatSignatureLibrary';
 import { ImportWizardBridge } from '../../wizard/ImportWizardBridge';
-import { ColumnMappingProfile, CsvMappingPreview, WizardTargetField } from '../../csvimport/CsvMappingModels';
+import { ColumnMappingProfile } from '../../csvimport/CsvMappingModels';
 
 /** 嗅探分发置信度阈值 */
 const SNIFF_DISPATCH_THRESHOLD = 70;
@@ -29,8 +25,8 @@ const SAMPLE_ROW_COUNT = 5;
 /**
  * CSV 导入格式族调度器
  * 占据 '.csv' / 'CSV' 路由键，按表头嗅探将导入分发到
- * LastPass / Bitwarden / Proton Pass / Dashlane / 1Password / Keeper / Enpass / Firefox / Chrome /
- * 签名库长尾格式（Norton Identity Safe / True Key…）处理器；
+ * Bitwarden / Proton Pass / Keeper / Enpass（特殊行处理逻辑，独立 handler 类）/
+ * 签名库纯数据格式（LastPass / Dashlane / 1Password / Firefox / Chrome / Norton / True Key…）处理器；
  * 全部未命中（未知来源）时弹列映射向导（无 UI 上下文回落通用建议映射直导）
  */
 export class CsvFamilyDispatcherImportHandler implements IImportHandler {
@@ -38,23 +34,18 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
   readonly formatId = 'CSV';
   readonly formatName = 'CSV';
 
-  /** 格式族（按特异性从高到低排序，两两冲突已由特征列/排除列消歧；签名库长尾格式追加在尾部队列） */
+  /** 格式族：特殊行处理逻辑类在前（两两冲突由特征列/嗅探前置条件消歧），签名库纯数据格式追加在后 */
   private readonly family: BaseCsvImportHandler[];
   private readonly fallbackHandler: GenericCsvImportHandler;
 
   constructor() {
     this.family = [
-      new LastPassCsvImportHandler(),
       new BitwardenCsvImportHandler(),
       new ProtonPassCsvImportHandler(),
-      new DashlaneCsvImportHandler(),
-      new OnePasswordCsvImportHandler(),
       new KeeperCsvImportHandler(),
-      new EnpassCsvImportHandler(),
-      new FirefoxCsvImportHandler(),
-      new ChromeCsvImportHandler()
+      new EnpassCsvImportHandler()
     ];
-    // 签名库长尾格式（数据驱动，新增格式 = 签名库追加一条数据行）
+    // 签名库纯数据格式（数据驱动，新增格式 = 签名库追加一条数据行）
     for (const signature of FormatSignatureLibrary.getAllSignatures()) {
       this.family.push(new PresetCsvImportHandler(signature));
     }
@@ -81,7 +72,9 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
   }
 
   async import(fileContent: FileContentInfo): Promise<KdbxGroup> {
-    const content = ByteUtils.bytesToString(fileContent.content);
+    const bytes = new Uint8Array(fileContent.content);
+    const detectedEncoding = CsvEncodingUtils.detect(bytes);
+    const content = CsvEncodingUtils.decode(bytes, detectedEncoding);
     const parseResult = new CsvParser().parse(content);
     if (parseResult.rows.length === 0) {
       throw new ImportError(
@@ -109,18 +102,18 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
       SettingsService.KEY_IMPORT_FORCE_CSV_WIZARD_DEFAULT
     );
     if (target === null || forceWizard) {
-      const preview = ImportWizardBridge.buildPreview(parseResult.rows, detectedFormatName);
-      // 未知来源但建议映射可识别（如标准 KeePass 风格表头 Group/Title/UserName/Password/URL/Notes）
-      // → 不打扰用户弹向导，按建议映射直接导入；仅无可识别列时才需要向导人工映射
-      const skipWizard = target === null && !forceWizard && this.hasMappedSuggestion(preview);
-      if (!skipWizard) {
-        const profile: ColumnMappingProfile | null =
-          await ImportWizardBridge.getInstance().requestColumnMapping(preview);
-        if (profile !== null) {
-          return this.fallbackHandler.importWithProfile(parseResult.rows, profile);
-        }
-        // profile === null：无 UI 上下文可呈现向导（自动化/后台），回落直导
+      // 精准匹配未命中（多一列/少一列）→ 一律弹列映射向导人工确认，不静默按建议映射直导
+      const preview = ImportWizardBridge.buildPreview(
+        parseResult.rows, detectedFormatName, fileContent.content, detectedEncoding
+      );
+      const profile: ColumnMappingProfile | null =
+        await ImportWizardBridge.getInstance().requestColumnMapping(preview);
+      if (profile !== null) {
+        // 用户在向导切换过编码时，须按该编码重新解码解析（与向导呈现的表头保持一致）
+        const profileRows = this.resolveProfileRows(fileContent, profile, detectedEncoding, parseResult.rows);
+        return this.fallbackHandler.importWithProfile(profileRows, profile);
       }
+      // profile === null：无 UI 上下文可呈现向导（自动化/后台），回落通用建议映射直导
     }
 
     const finalTarget = target !== null ? target : this.fallbackHandler;
@@ -128,14 +121,26 @@ export class CsvFamilyDispatcherImportHandler implements IImportHandler {
   }
 
   /**
-   * 预览的建议映射中是否存在非 SKIP 列
+   * 解析档案对应的导入行：编码与自动检测一致（或未指定）时复用已解析行，
+   * 用户指定了不同编码时重新解码解析
    */
-  private hasMappedSuggestion(preview: CsvMappingPreview): boolean {
-    for (const item of preview.suggestedItems) {
-      if (item.targetField !== WizardTargetField.SKIP) {
-        return true;
-      }
+  private resolveProfileRows(
+    fileContent: FileContentInfo,
+    profile: ColumnMappingProfile,
+    detectedEncoding: string,
+    defaultRows: string[][]
+  ): string[][] {
+    if (profile.encoding === '' || profile.encoding === detectedEncoding) {
+      return defaultRows;
     }
-    return false;
+    const redecoded = CsvEncodingUtils.decode(new Uint8Array(fileContent.content), profile.encoding);
+    const reparsed = new CsvParser().parse(redecoded);
+    if (reparsed.rows.length === 0) {
+      throw new ImportError(
+        ImportExportErrorCode.FILE_EMPTY,
+        ResourceManager.getString($r('app.string.import_export_file_empty'))
+      );
+    }
+    return reparsed.rows;
   }
 }

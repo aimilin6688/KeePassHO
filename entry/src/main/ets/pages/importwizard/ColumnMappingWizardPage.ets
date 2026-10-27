@@ -5,9 +5,11 @@ import {
   ColumnMappingProfile,
   CsvMappingPreview,
   WizardMappingConflict,
-  WizardTargetField,
   WizardValidationResult
 } from '../../services/importExport/csvimport/CsvMappingModels';
+import { CsvTargetField } from '../../services/importExport/csvimport/CsvImportModels';
+import { CsvEncoding, CsvEncodingUtils } from '../../services/importExport/csvimport/CsvEncodingUtils';
+import { CsvParser } from '../../services/importExport/csvimport/CsvParser';
 
 /** 向导总步数（预览 → 映射 → 选项 → 确认） */
 const WIZARD_STEP_COUNT = 4;
@@ -21,23 +23,26 @@ const PREVIEW_COL_WIDTH = 120;
 /** 悬浮底栏预留高度（内容穿透底栏时保证末行可滚动至可见区） */
 const FLOATING_BAR_RESERVED_HEIGHT = 96;
 
-/** 目标字段下拉可选项（与 WizardTargetField 一致） */
-const TARGET_OPTIONS: WizardTargetField[] = [
-  WizardTargetField.SKIP,
-  WizardTargetField.GROUP,
-  WizardTargetField.TITLE,
-  WizardTargetField.USERNAME,
-  WizardTargetField.PASSWORD,
-  WizardTargetField.URL,
-  WizardTargetField.NOTES,
-  WizardTargetField.TOTP,
-  WizardTargetField.TAGS,
-  WizardTargetField.ICON,
-  WizardTargetField.EXPIRY_TIME,
-  WizardTargetField.LAST_MODIFIED,
-  WizardTargetField.CREATED,
-  WizardTargetField.CUSTOM
+/** 目标字段下拉可选项（与 CsvTargetField 一致） */
+const TARGET_OPTIONS: CsvTargetField[] = [
+  CsvTargetField.SKIP,
+  CsvTargetField.GROUP,
+  CsvTargetField.TITLE,
+  CsvTargetField.USERNAME,
+  CsvTargetField.PASSWORD,
+  CsvTargetField.URL,
+  CsvTargetField.NOTES,
+  CsvTargetField.TOTP,
+  CsvTargetField.TAGS,
+  CsvTargetField.ICON,
+  CsvTargetField.EXPIRY_TIME,
+  CsvTargetField.LAST_MODIFIED,
+  CsvTargetField.CREATED,
+  CsvTargetField.CUSTOM
 ];
+
+/** 编码下拉可选项（AUTO = 跟随自动检测结果） */
+const ENCODING_OPTIONS: string[] = [CsvEncoding.AUTO, CsvEncoding.UTF8, CsvEncoding.GBK];
 
 @Builder
 export function ColumnMappingWizardBuilder(name: string, param: Object): void {
@@ -68,6 +73,8 @@ struct ColumnMappingWizard {
   @State targetGroupName: string = '';
   @State detectedFormatName: string = '';
   @State totalRowEstimate: number = 0;
+  @State selectedEncoding: string = CsvEncoding.AUTO;
+  @State detectedEncoding: string = '';
 
   aboutToAppear(): void {
     const preview: CsvMappingPreview | null = this.bridge.getPendingPreview();
@@ -81,6 +88,8 @@ struct ColumnMappingWizard {
     this.items = preview.suggestedItems;
     this.detectedFormatName = preview.detectedFormatName;
     this.totalRowEstimate = preview.totalRowEstimate;
+    this.detectedEncoding = preview.detectedEncoding;
+    this.selectedEncoding = CsvEncoding.AUTO;
   }
 
   aboutToDisappear(): void {
@@ -92,7 +101,7 @@ struct ColumnMappingWizard {
    * 构建当前确认后的映射档案
    */
   private buildProfile(): ColumnMappingProfile {
-    return new ColumnMappingProfile(this.items, this.targetGroupName.trim());
+    return new ColumnMappingProfile(this.items, this.targetGroupName.trim(), this.selectedEncoding);
   }
 
   /**
@@ -115,7 +124,7 @@ struct ColumnMappingWizard {
   private mappedColumnCount(): number {
     let count = 0;
     for (const item of this.items) {
-      if (item.targetField !== WizardTargetField.SKIP) {
+      if (item.targetField !== CsvTargetField.SKIP) {
         count++;
       }
     }
@@ -135,35 +144,35 @@ struct ColumnMappingWizard {
   /**
    * 目标字段本地化标签（下拉选项与映射明细共用）
    */
-  private targetFieldLabel(target: WizardTargetField): string {
+  private targetFieldLabel(target: CsvTargetField): string {
     switch (target) {
-      case WizardTargetField.SKIP:
+      case CsvTargetField.SKIP:
         return ResourceManager.getString($r('app.string.import_wizard_target_skip'));
-      case WizardTargetField.GROUP:
+      case CsvTargetField.GROUP:
         return ResourceManager.getString($r('app.string.import_wizard_target_group'));
-      case WizardTargetField.TITLE:
+      case CsvTargetField.TITLE:
         return ResourceManager.getString($r('app.string.import_wizard_target_title'));
-      case WizardTargetField.USERNAME:
+      case CsvTargetField.USERNAME:
         return ResourceManager.getString($r('app.string.import_wizard_target_username'));
-      case WizardTargetField.PASSWORD:
+      case CsvTargetField.PASSWORD:
         return ResourceManager.getString($r('app.string.import_wizard_target_password'));
-      case WizardTargetField.URL:
+      case CsvTargetField.URL:
         return ResourceManager.getString($r('app.string.import_wizard_target_url'));
-      case WizardTargetField.NOTES:
+      case CsvTargetField.NOTES:
         return ResourceManager.getString($r('app.string.import_wizard_target_notes'));
-      case WizardTargetField.TOTP:
+      case CsvTargetField.TOTP:
         return ResourceManager.getString($r('app.string.import_wizard_target_totp'));
-      case WizardTargetField.TAGS:
+      case CsvTargetField.TAGS:
         return ResourceManager.getString($r('app.string.import_wizard_target_tags'));
-      case WizardTargetField.ICON:
+      case CsvTargetField.ICON:
         return ResourceManager.getString($r('app.string.import_wizard_target_icon'));
-      case WizardTargetField.EXPIRY_TIME:
+      case CsvTargetField.EXPIRY_TIME:
         return ResourceManager.getString($r('app.string.import_wizard_target_expiry_time'));
-      case WizardTargetField.LAST_MODIFIED:
+      case CsvTargetField.LAST_MODIFIED:
         return ResourceManager.getString($r('app.string.import_wizard_target_last_modified'));
-      case WizardTargetField.CREATED:
+      case CsvTargetField.CREATED:
         return ResourceManager.getString($r('app.string.import_wizard_target_created'));
-      case WizardTargetField.CUSTOM:
+      case CsvTargetField.CUSTOM:
         return ResourceManager.getString($r('app.string.import_wizard_target_custom'));
       default:
         return target;
@@ -174,9 +183,9 @@ struct ColumnMappingWizard {
    * 映射明细目标侧文案：CUSTOM 显示自定义字段名（未填回退"自定义"标签）
    */
   private targetDisplayLabel(item: ColumnMappingItem): string {
-    if (item.targetField === WizardTargetField.CUSTOM) {
+    if (item.targetField === CsvTargetField.CUSTOM) {
       const customName = item.customFieldName.trim();
-      return customName !== '' ? customName : this.targetFieldLabel(WizardTargetField.CUSTOM);
+      return customName !== '' ? customName : this.targetFieldLabel(CsvTargetField.CUSTOM);
     }
     return this.targetFieldLabel(item.targetField);
   }
@@ -206,9 +215,83 @@ struct ColumnMappingWizard {
     this.items = next;
   }
 
-  private targetOptionIndex(target: WizardTargetField): number {
+  private targetOptionIndex(target: CsvTargetField): number {
     const index = TARGET_OPTIONS.indexOf(target);
     return index >= 0 ? index : 0;
+  }
+
+  /**
+   * 编码下拉当前选中索引
+   */
+  private encodingOptionIndex(): number {
+    const index = ENCODING_OPTIONS.indexOf(this.selectedEncoding);
+    return index >= 0 ? index : 0;
+  }
+
+  /**
+   * 编码下拉选项文案：AUTO 显示「自动（检测结果）」，其余显示编码名
+   */
+  private encodingOptionLabel(encoding: string): string {
+    if (encoding === CsvEncoding.UTF8) {
+      return 'UTF-8';
+    }
+    if (encoding === CsvEncoding.GBK) {
+      return 'GBK';
+    }
+    const autoLabel = ResourceManager.getString($r('app.string.import_wizard_encoding_auto'));
+    if (this.detectedEncoding === CsvEncoding.GBK) {
+      return `${autoLabel}（GBK）`;
+    }
+    if (this.detectedEncoding === CsvEncoding.UTF8) {
+      return `${autoLabel}（UTF-8）`;
+    }
+    return autoLabel;
+  }
+
+  private buildEncodingOptions(): SelectOption[] {
+    const options: SelectOption[] = [];
+    for (const encoding of ENCODING_OPTIONS) {
+      options.push({ value: this.encodingOptionLabel(encoding) });
+    }
+    return options;
+  }
+
+  private onEncodingSelected(index: number): void {
+    const encoding = ENCODING_OPTIONS[index];
+    if (encoding === this.selectedEncoding) {
+      return;
+    }
+    this.selectedEncoding = encoding;
+    this.reparseWithEncoding(encoding);
+  }
+
+  /**
+   * 切换编码后重新解码解析并刷新预览（表头/采样/建议映射随新编码重建）
+   */
+  private reparseWithEncoding(encoding: string): void {
+    const preview: CsvMappingPreview | null = this.bridge.getPendingPreview();
+    if (preview === null || preview.sourceContent.byteLength === 0) {
+      return;
+    }
+    const effective = encoding !== CsvEncoding.AUTO ? encoding : preview.detectedEncoding;
+    if (effective === '') {
+      return;
+    }
+    const text = CsvEncodingUtils.decode(new Uint8Array(preview.sourceContent), effective);
+    const reparsed = new CsvParser().parse(text);
+    if (reparsed.rows.length === 0) {
+      return;
+    }
+    const rebuilt = ImportWizardBridge.buildPreview(
+      reparsed.rows,
+      preview.detectedFormatName,
+      preview.sourceContent,
+      preview.detectedEncoding
+    );
+    this.headers = rebuilt.headers;
+    this.sampleRows = rebuilt.sampleRows;
+    this.items = rebuilt.suggestedItems;
+    this.totalRowEstimate = rebuilt.totalRowEstimate;
   }
 
   private goToStep(step: number): void {
@@ -231,25 +314,43 @@ struct ColumnMappingWizard {
   private previewStep() {
     Column() {
       Row() {
-        Column({ space: 4 }) {
-          if (this.detectedFormatName !== '') {
-            Text(ResourceManager.getString($r('app.string.import_wizard_detected_format'), this.detectedFormatName))
-              .fontSize(15)
-              .fontColor($r('app.color.text_primary'))
-          } else {
-            Text(ResourceManager.getString($r('app.string.import_wizard_unknown_format')))
-              .fontSize(15)
-              .fontColor($r('app.color.text_secondary'))
-          }
-          Text(ResourceManager.getString($r('app.string.import_wizard_total_rows'), this.totalRowEstimate))
-            .fontSize(13)
+        if (this.detectedFormatName !== '') {
+          Text(ResourceManager.getString($r('app.string.import_wizard_detected_format'), this.detectedFormatName))
+            .fontSize(15)
+            .fontColor($r('app.color.text_primary'))
+            .layoutWeight(1)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        } else {
+          Text(ResourceManager.getString($r('app.string.import_wizard_unknown_format')))
+            .fontSize(15)
             .fontColor($r('app.color.text_secondary'))
+            .layoutWeight(1)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
-        .alignItems(HorizontalAlign.Start)
-        .layoutWeight(1)
+        Text(ResourceManager.getString($r('app.string.import_wizard_total_rows'), this.totalRowEstimate))
+          .fontSize(13)
+          .fontColor($r('app.color.text_secondary'))
       }
       .width('100%')
       .padding(16)
+
+      Row() {
+        Text(ResourceManager.getString($r('app.string.import_wizard_encoding_label')))
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+          .layoutWeight(1)
+        Select(this.buildEncodingOptions())
+          .selected(this.encodingOptionIndex())
+          .value(this.encodingOptionLabel(this.selectedEncoding))
+          .font({ size: 14 })
+          .onSelect((index: number) => {
+            this.onEncodingSelected(index);
+          })
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, bottom: 12 })
 
       Scroll() {
         Column() {
@@ -298,7 +399,7 @@ struct ColumnMappingWizard {
       }
       .layoutWeight(1)
       .width('100%')
-      .align(Alignment.Start)
+      .align(Alignment.TopStart)
     }
     .width('100%')
     .height('100%')
@@ -328,7 +429,7 @@ struct ColumnMappingWizard {
             }
             .width('100%')
 
-            if (item.targetField === WizardTargetField.CUSTOM) {
+            if (item.targetField === CsvTargetField.CUSTOM) {
               TextInput({
                 text: item.customFieldName,
                 placeholder: ResourceManager.getString($r('app.string.import_wizard_custom_field_name'))
@@ -346,7 +447,7 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
-    .contentPadding({ bottom: FLOATING_BAR_RESERVED_HEIGHT })
+    .padding({ bottom: FLOATING_BAR_RESERVED_HEIGHT })
     .backgroundColor($r('app.color.bg_primary'))
     .divider({ strokeWidth: 1, color: $r('app.color.divider') })
   }
@@ -373,6 +474,7 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
+    .align(Alignment.TopStart)
   }
 
   @Builder
@@ -406,7 +508,7 @@ struct ColumnMappingWizard {
               Text(this.targetDisplayLabel(item))
                 .fontSize(14)
                 .fontWeight(FontWeight.Medium)
-                .fontColor(item.targetField === WizardTargetField.SKIP
+                .fontColor(item.targetField === CsvTargetField.SKIP
                   ? $r('app.color.text_secondary')
                   : $r('app.color.text_primary'))
                 .maxLines(1)
@@ -421,7 +523,7 @@ struct ColumnMappingWizard {
         .backgroundColor($r('app.color.card_bg'))
         .borderRadius(12)
         .margin({ left: 12, right: 12 })
-        .clipContent(ContentClipMode.SAFE_AREA)
+        .clip(true)
 
         ForEach(this.validateProfile().conflicts, (conflict: WizardMappingConflict) => {
           Text(ResourceManager.getString(
@@ -440,6 +542,7 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
+    .align(Alignment.TopStart)
   }
 
   @Builder

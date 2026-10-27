@@ -63,6 +63,18 @@ export default function ProtonPassCsvImportHandlerTest() {
       it('shouldRejectRandomHeader', 0, () => {
         expect(handler.sniff(['foo', 'bar'], [])).assertEqual(0);
       });
+
+      it('shouldClaimHeaderWithUnrecognizableExtraColumn', 0, () => {
+        // 完全不可识别的未知列 → 参考 KeePass 2.x 语义忽略照导
+        const header = ['name', 'url', 'username', 'password', 'note', 'totp', 'email', 'vault', 'unknown'];
+        expect(handler.sniff(header, [])).assertEqual(90);
+      });
+
+      it('shouldRejectHeaderWithRecognizableExtraColumn', 0, () => {
+        // 可识别的未知列（可映射标准字段）→ 拒绝认领，交由列映射向导预填（不丢列数据）
+        const header = ['name', 'url', 'username', 'password', 'note', 'totp', 'email', 'vault', 'GROUP分组'];
+        expect(handler.sniff(header, [])).assertEqual(0);
+      });
     });
 
     describe('import', () => {

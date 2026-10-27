@@ -1,8 +1,9 @@
 /**
  * CSV 导入目标字段枚举
- * 对应 KeePassXC CSV 导入的目标列语义
+ * 对应 KeePassXC CSV 导入的目标列语义；SKIP=跳过该列，CUSTOM=自定义字段
  */
 export enum CsvTargetField {
+  SKIP = 'SKIP',
   GROUP = 'GROUP',
   TITLE = 'TITLE',
   USERNAME = 'USERNAME',
@@ -14,7 +15,8 @@ export enum CsvTargetField {
   ICON = 'ICON',
   EXPIRY_TIME = 'EXPIRY_TIME',
   LAST_MODIFIED = 'LAST_MODIFIED',
-  CREATED = 'CREATED'
+  CREATED = 'CREATED',
+  CUSTOM = 'CUSTOM'
 }
 
 /**

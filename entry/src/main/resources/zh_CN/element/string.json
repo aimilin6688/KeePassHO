@@ -3501,6 +3501,14 @@
       "value": "%d 行数据"
     },
     {
+      "name": "import_wizard_encoding_label",
+      "value": "文件编码"
+    },
+    {
+      "name": "import_wizard_encoding_auto",
+      "value": "自动"
+    },
+    {
       "name": "import_wizard_source_column",
       "value": "源列"
     },

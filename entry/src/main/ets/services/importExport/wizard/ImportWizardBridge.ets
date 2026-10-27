@@ -2,10 +2,9 @@ import { NavigationManager, ResourceManager } from '../../../common/utils';
 import {
   ColumnMappingItem,
   ColumnMappingProfile,
-  CsvMappingPreview,
-  WizardTargetField,
-  WizardTargetFieldConverter
+  CsvMappingPreview
 } from '../csvimport/CsvMappingModels';
+import { CsvTargetField } from '../csvimport/CsvImportModels';
 import { CsvColumnMappingEngine } from '../csvimport/CsvColumnMappingEngine';
 import { ImportError, ImportExportErrorCode } from '../common/ImportExportError';
 
@@ -146,16 +145,26 @@ export class ImportWizardBridge {
 
   /**
    * 由解析后的行构建向导预览（表头 + 采样行 + 建议映射 + 识别结果）
+   * @param rows 已解析行（表头为第一行）
+   * @param detectedFormatName 嗅探识别的格式名
+   * @param sourceContent 原始文件字节（向导内切换编码时重新解码用）
+   * @param detectedEncoding 自动检测出的编码（CsvEncoding）
    */
-  static buildPreview(rows: string[][], detectedFormatName: string): CsvMappingPreview {
+  static buildPreview(
+    rows: string[][],
+    detectedFormatName: string,
+    sourceContent: ArrayBuffer = new ArrayBuffer(0),
+    detectedEncoding: string = ''
+  ): CsvMappingPreview {
     const headers = rows[0];
     const suggested = CsvColumnMappingEngine.buildSuggestedMapping(headers);
     const items: ColumnMappingItem[] = [];
     for (let i = 0; i < headers.length; i++) {
-      let target = WizardTargetField.SKIP;
+      // 默认未识别列为自定义字段（字段名回退源列名）；命中的列用建议映射
+      let target = CsvTargetField.CUSTOM;
       for (const mapping of suggested) {
         if (mapping.columnIndex === i) {
-          target = WizardTargetFieldConverter.fromCsvTargetField(mapping.target);
+          target = mapping.target;
           break;
         }
       }
@@ -163,7 +172,9 @@ export class ImportWizardBridge {
     }
     const sampleRows = rows.length > 1 ? rows.slice(1, 1 + PREVIEW_SAMPLE_ROW_LIMIT) : [];
     const totalRowEstimate = rows.length > 1 ? rows.length - 1 : 0;
-    return new CsvMappingPreview(headers, sampleRows, items, detectedFormatName, totalRowEstimate);
+    return new CsvMappingPreview(
+      headers, sampleRows, items, detectedFormatName, totalRowEstimate, sourceContent, detectedEncoding
+    );
   }
 
   private cleanup(): void {

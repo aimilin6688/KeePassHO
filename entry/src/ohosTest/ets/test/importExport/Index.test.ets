@@ -10,7 +10,7 @@ import {
   ImportError,
   ExportError,
   ImportExportErrorCode,
-  CsvImportHandler,
+  CsvFamilyDispatcherImportHandler,
   XmlImportHandler,
   BitwardenJsonImportHandler,
   CsvExportHandler,
@@ -138,7 +138,7 @@ export default function IndexTest() {
       });
 
       it('shouldExposeHandlerClasses', 0, () => {
-        expect(CsvImportHandler).not().assertUndefined();
+        expect(CsvFamilyDispatcherImportHandler).not().assertUndefined();
         expect(XmlImportHandler).not().assertUndefined();
         expect(BitwardenJsonImportHandler).not().assertUndefined();
         expect(CsvExportHandler).not().assertUndefined();

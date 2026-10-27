@@ -1,9 +1,11 @@
-import { KdbxGroup, KdbxEntry, ByteUtils } from 'kdbxweb';
+import { KdbxGroup, KdbxEntry } from 'kdbxweb';
 import { url } from '@kit.ArkTS';
 import hilog from '@ohos.hilog';
 import { ISniffableImport } from '../../csvimport/ISniffableImport';
 import { CsvParser } from '../../csvimport/CsvParser';
+import { CsvEncodingUtils } from '../../csvimport/CsvEncodingUtils';
 import { CsvColumnMapping } from '../../csvimport/CsvColumnMappingEngine';
+import { ColumnNameMapper } from '../../csvimport/ColumnNameMapper';
 import { ColumnMappingItem } from '../../csvimport/CsvMappingModels';
 import { CsvTargetField } from '../../csvimport/CsvImportModels';
 import { FileContentInfo } from '../../../../storage';
@@ -53,7 +55,8 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
   }
 
   async import(fileContent: FileContentInfo): Promise<KdbxGroup> {
-    const content = ByteUtils.bytesToString(fileContent.content);
+    // 编码自动检测（UTF-8 → GBK 回退），GBK 导出文件不再乱码
+    const content = CsvEncodingUtils.decodeAuto(fileContent.content);
     return this.importText(content);
   }
 
@@ -317,6 +320,35 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
       normalized.push(header.trim().toLowerCase());
     }
     return normalized;
+  }
+
+  /**
+   * 表头认领判定（对齐 KeePass 2.x CsvTableObjectReader 按名映射语义 + 自动分发防误认领）：
+   * - 必需列齐全（缺失留空由映射阶段兜底，必需列缺失则该格式无法成立 → 走列映射向导）
+   * - 未知列（不在格式已知全集）须完全不可识别：
+   *   · 可识别的未知列（如「GROUP分组」「TITLE(标题)」，可映射为标准字段）→ 拒绝认领，
+   *     交由向导预填全部列映射（不丢列数据）
+   *   · 完全不可识别的列（用户手加的杂列）→ 参考 KeePass 2.x 语义：忽略照导
+   * @param headerRow 文件表头行
+   * @param required 必需表头（归一化小写）
+   * @param knownHeaders 该格式已知表头全集（归一化小写）
+   */
+  protected static matchesHeadersClaimable(headerRow: string[], required: string[], knownHeaders: string[]): boolean {
+    const normalized = BaseCsvImportHandler.normalizeHeaders(headerRow);
+    for (const item of required) {
+      if (normalized.indexOf(item) < 0) {
+        return false;
+      }
+    }
+    for (const header of normalized) {
+      if (knownHeaders.indexOf(header) >= 0) {
+        continue;
+      }
+      if (ColumnNameMapper.mapWithSpecificity(header) !== undefined) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private getFieldProtection(): CsvFieldProtection {

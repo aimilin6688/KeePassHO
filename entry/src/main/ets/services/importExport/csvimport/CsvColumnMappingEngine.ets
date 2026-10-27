@@ -1,5 +1,5 @@
 import { CsvTargetField } from './CsvImportModels';
-import { ColumnNameMapper } from './ColumnNameMapper';
+import { ColumnNameMapper, ColumnMatch } from './ColumnNameMapper';
 import { ImportError, ImportExportErrorCode } from '../common/ImportExportError';
 import { ResourceManager } from '../../../common/utils';
 
@@ -9,6 +9,14 @@ import { ResourceManager } from '../../../common/utils';
 export interface CsvColumnMapping {
   target: CsvTargetField;
   columnIndex: number;
+}
+
+/**
+ * 模糊匹配候选列（阶段②同目标冲突消歧：命中同义词最长者优先）
+ */
+interface FuzzyCandidate {
+  columnIndex: number;
+  match: ColumnMatch;
 }
 
 /**
@@ -76,27 +84,53 @@ export class CsvColumnMappingEngine {
   }
 
   /**
-   * 通过列名同义词字典构建建议映射（通用 CSV）
+   * 通过列名同义词字典构建建议映射（通用 CSV / 列映射向导预填）
+   * 两阶段：①精确同义词命中，同目标保留首列（KeePass 语义）
+   *        ②模糊命中（包含/前缀，如「GROUP分组」「NAME名称」），同目标取命中同义词最长（最具体）的列
    * @param headers 表头行
-   * @returns 列映射；同一目标字段只保留首个命中的列
+   * @returns 列映射；同一目标字段只保留一列
    */
   static buildSuggestedMapping(headers: string[]): CsvColumnMapping[] {
     const mapping: CsvColumnMapping[] = [];
     const usedTargets = new Set<CsvTargetField>();
+    const usedColumns = new Set<number>();
+
+    // 阶段①：精确同义词（同目标保留首列，KeePass 语义）
     for (let i = 0; i < headers.length; i++) {
-      const target = ColumnNameMapper.mapToTargetField(headers[i]);
+      const target = ColumnNameMapper.mapExact(headers[i]);
       if (target === undefined) {
         continue;
       }
+      usedColumns.add(i);
       if (usedTargets.has(target)) {
         continue;
       }
       usedTargets.add(target);
-      const item: CsvColumnMapping = {
-        target: target,
-        columnIndex: i
-      };
-      mapping.push(item);
+      mapping.push({ target: target, columnIndex: i });
+    }
+
+    // 阶段②：模糊（包含/前缀），同目标取命中同义词最长者，平局取低列号
+    const bestByTarget = new Map<CsvTargetField, FuzzyCandidate>();
+    for (let i = 0; i < headers.length; i++) {
+      if (usedColumns.has(i)) {
+        continue;
+      }
+      const match = ColumnNameMapper.mapWithSpecificity(headers[i]);
+      if (match === undefined || usedTargets.has(match.target)) {
+        continue;
+      }
+      const existing = bestByTarget.get(match.target);
+      if (existing === undefined || match.matchedLength > existing.match.matchedLength) {
+        bestByTarget.set(match.target, { columnIndex: i, match: match });
+      }
+    }
+    const winners: FuzzyCandidate[] = [];
+    bestByTarget.forEach((candidate: FuzzyCandidate) => {
+      winners.push(candidate);
+    });
+    winners.sort((a: FuzzyCandidate, b: FuzzyCandidate): number => a.columnIndex - b.columnIndex);
+    for (const candidate of winners) {
+      mapping.push({ target: candidate.match.target, columnIndex: candidate.columnIndex });
     }
     return mapping;
   }

@@ -79,6 +79,23 @@ export class TestUtils {
   }
 
   /**
+   * 从原始字节创建文件内容信息（GBK 等非 UTF-8 编码测试用）
+   * @param bytes 文件原始字节
+   * @param fileName 文件名
+   */
+  static createFileContentFromBytes(bytes: Uint8Array, fileName: string): FileContentInfo {
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const fileInfo = new FileInfoImpl();
+    fileInfo.name = fileName;
+    fileInfo.size = buffer.byteLength;
+    fileInfo.modifiedTime = Date.now();
+    fileInfo.path = fileName;
+    fileInfo.type = FileType.FILE;
+    fileInfo.childrenCount = 0;
+    return new FileContentInfo(fileInfo, buffer);
+  }
+
+  /**
    * 解码 ArrayBuffer 为字符串
    */
   static decodeBuffer(buffer: ArrayBuffer): string {

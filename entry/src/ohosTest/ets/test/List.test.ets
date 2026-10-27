@@ -115,7 +115,6 @@ import OneDriveUploadSessionTest from './storage/onedrive/OneDriveUploadSession.
 // Import/Export 单元测试
 import ImportExportCommonTest from './importExport/ImportExportCommon.test';
 import FormatHandlerRegistryTest from './importExport/FormatHandlerRegistry.test';
-import CsvImportHandlerTest from './importExport/CsvImportHandler.test';
 import XmlExportHandlerTest from './importExport/XmlExportHandler.test';
 import BitwardenJsonImportHandlerTest from './importExport/BitwardenJsonImportHandler.test';
 import KdbxExportHandlerTest from './importExport/KdbxExportHandler.test';
@@ -235,17 +234,13 @@ import ImportExportViewModelTest from './importExport/ImportExportViewModel.test
 import ImportExportIndexTest from './importExport/Index.test';
 // ===== M1：CSV 导入格式扩展（解析器/列映射/嗅探调度/格式 handler）=====
 import CsvParserTest from './importExport/CsvParser.test';
+import CsvEncodingUtilsTest from './importExport/CsvEncodingUtils.test';
 import ColumnNameMapperTest from './importExport/ColumnNameMapper.test';
 import CsvColumnMappingEngineTest from './importExport/CsvColumnMappingEngine.test';
-import ChromeCsvImportHandlerTest from './importExport/ChromeCsvImportHandler.test';
-import FirefoxCsvImportHandlerTest from './importExport/FirefoxCsvImportHandler.test';
-import LastPassCsvImportHandlerTest from './importExport/LastPassCsvImportHandler.test';
 import GenericCsvImportHandlerTest from './importExport/GenericCsvImportHandler.test';
 import CsvFamilyDispatcherTest from './importExport/CsvFamilyDispatcher.test';
-// ===== M2-1：P2 固定表头 CSV 格式批次（Bitwarden/1Password/Dashlane/Proton Pass）=====
+// ===== M2-1：P2 固定表头 CSV 格式批次（Bitwarden/Proton Pass）=====
 import BitwardenCsvImportHandlerTest from './importExport/BitwardenCsvImportHandler.test';
-import OnePasswordCsvImportHandlerTest from './importExport/OnePasswordCsvImportHandler.test';
-import DashlaneCsvImportHandlerTest from './importExport/DashlaneCsvImportHandler.test';
 import ProtonPassCsvImportHandlerTest from './importExport/ProtonPassCsvImportHandler.test';
 // ===== M2-2：Keeper CSV（record_type 按行解析）+ Enpass CSV（约 40 固定列按列名映射）=====
 import KeeperCsvImportHandlerTest from './importExport/KeeperCsvImportHandler.test';
@@ -253,8 +248,10 @@ import EnpassCsvImportHandlerTest from './importExport/EnpassCsvImportHandler.te
 // ===== M2-3：JSON 族调度器 + Proton Pass JSON（语义对齐 KeePassXC ProtonPassReader）=====
 import JsonFamilyDispatcherTest from './importExport/JsonFamilyDispatcher.test';
 import ProtonPassJsonImportHandlerTest from './importExport/ProtonPassJsonImportHandler.test';
-// ===== M2-4：列映射向导（L-1~L-7）+ 签名库首批（Norton/True Key）=====
+// ===== M2-4：列映射向导（L-1~L-7）+ 签名库（Norton/True Key + 纯数据格式折叠）=====
 import FormatSignatureLibraryTest from './importExport/FormatSignatureLibrary.test';
+// 纯数据格式签名折叠统一测试（Chrome/Firefox/LastPass/Dashlane/1Password → 签名 + Preset handler）
+import PresetCsvImportFormatsTest from './importExport/PresetCsvImportFormats.test';
 import ImportWizardBridgeTest from './importExport/ImportWizardBridge.test';
 import CsvMappingWizardTest from './importExport/CsvMappingWizard.test';
 
@@ -459,7 +456,6 @@ export default function testsuite() {
   ImportExportCommonTest();
   FormatHandlerRegistryTest();
   SimpleHandlerTest();
-  CsvImportHandlerTest();
   XmlExportHandlerTest();
   BitwardenJsonImportHandlerTest();
   KdbxExportHandlerTest();
@@ -574,18 +570,14 @@ export default function testsuite() {
 
   // ===== M1：CSV 导入格式扩展 =====
   CsvParserTest();
+  CsvEncodingUtilsTest();
   ColumnNameMapperTest();
   CsvColumnMappingEngineTest();
-  ChromeCsvImportHandlerTest();
-  FirefoxCsvImportHandlerTest();
-  LastPassCsvImportHandlerTest();
   GenericCsvImportHandlerTest();
   CsvFamilyDispatcherTest();
 
   // ===== M2-1：P2 固定表头 CSV 格式批次 =====
   BitwardenCsvImportHandlerTest();
-  OnePasswordCsvImportHandlerTest();
-  DashlaneCsvImportHandlerTest();
   ProtonPassCsvImportHandlerTest();
 
   // ===== M2-2：Keeper CSV + Enpass CSV =====
@@ -596,8 +588,9 @@ export default function testsuite() {
   JsonFamilyDispatcherTest();
   ProtonPassJsonImportHandlerTest();
 
-  // ===== M2-4：列映射向导 + 签名库首批 =====
+  // ===== M2-4：列映射向导 + 签名库（含纯数据格式折叠统一测试）=====
   FormatSignatureLibraryTest();
+  PresetCsvImportFormatsTest();
   ImportWizardBridgeTest();
   CsvMappingWizardTest();
 

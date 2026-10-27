@@ -1,40 +1,19 @@
 import { CsvTargetField } from './CsvImportModels';
 
 /**
- * 列映射向导目标字段
- * 覆盖全部 CsvTargetField + 跳过（SKIP）/ 自定义（CUSTOM）
- */
-export enum WizardTargetField {
-  SKIP = 'SKIP',
-  GROUP = 'GROUP',
-  TITLE = 'TITLE',
-  USERNAME = 'USERNAME',
-  PASSWORD = 'PASSWORD',
-  URL = 'URL',
-  NOTES = 'NOTES',
-  TOTP = 'TOTP',
-  TAGS = 'TAGS',
-  ICON = 'ICON',
-  EXPIRY_TIME = 'EXPIRY_TIME',
-  LAST_MODIFIED = 'LAST_MODIFIED',
-  CREATED = 'CREATED',
-  CUSTOM = 'CUSTOM'
-}
-
-/**
  * 单个源列的映射项（向导第 2 步一行）
  */
 export class ColumnMappingItem {
   sourceColumnIndex: number;
   sourceColumnName: string;
-  targetField: WizardTargetField;
+  targetField: CsvTargetField;
   /** targetField == CUSTOM 时的自定义字段名（空则回退源列名） */
   customFieldName: string;
 
   constructor(
     sourceColumnIndex: number,
     sourceColumnName: string,
-    targetField: WizardTargetField,
+    targetField: CsvTargetField,
     customFieldName: string = ''
   ) {
     this.sourceColumnIndex = sourceColumnIndex;
@@ -83,10 +62,17 @@ export class ColumnMappingProfile {
   readonly items: ColumnMappingItem[];
   /** 导入到指定分组名（空 = 根分组） */
   importTargetGroupName: string;
+  /** 用户指定的 CSV 文本编码（CsvEncoding；空 = 自动检测，不重新解码） */
+  encoding: string;
 
-  constructor(items: ColumnMappingItem[], importTargetGroupName: string = '') {
+  constructor(
+    items: ColumnMappingItem[],
+    importTargetGroupName: string = '',
+    encoding: string = ''
+  ) {
     this.items = items;
     this.importTargetGroupName = importTargetGroupName;
+    this.encoding = encoding;
   }
 
   /**
@@ -98,11 +84,11 @@ export class ColumnMappingProfile {
     const customBuckets = new Map<string, string[]>();
 
     for (const item of this.items) {
-      if (item.targetField === WizardTargetField.SKIP) {
+      if (item.targetField === CsvTargetField.SKIP) {
         continue;
       }
       mappedCount++;
-      if (item.targetField === WizardTargetField.CUSTOM) {
+      if (item.targetField === CsvTargetField.CUSTOM) {
         const label = item.customFieldName.trim() !== '' ? item.customFieldName.trim() : item.sourceColumnName;
         this.addToBucket(customBuckets, label, item.sourceColumnName);
       } else {
@@ -146,89 +132,26 @@ export class CsvMappingPreview {
   /** 嗅探识别的格式名（空 = 未识别） */
   detectedFormatName: string;
   totalRowEstimate: number;
+  /** 原始文件字节（向导内切换编码时重新解码用） */
+  sourceContent: ArrayBuffer;
+  /** 自动检测出的编码（CsvEncoding；空 = 调用方未提供） */
+  detectedEncoding: string;
 
   constructor(
     headers: string[],
     sampleRows: string[][],
     suggestedItems: ColumnMappingItem[],
     detectedFormatName: string,
-    totalRowEstimate: number
+    totalRowEstimate: number,
+    sourceContent: ArrayBuffer = new ArrayBuffer(0),
+    detectedEncoding: string = ''
   ) {
     this.headers = headers;
     this.sampleRows = sampleRows;
     this.suggestedItems = suggestedItems;
     this.detectedFormatName = detectedFormatName;
     this.totalRowEstimate = totalRowEstimate;
-  }
-}
-
-/**
- * WizardTargetField 与 CsvTargetField 的双向转换
- * （两个枚举同名的标准字段一一对应；SKIP/CUSTOM 仅存在于向导侧）
- */
-export class WizardTargetFieldConverter {
-  static fromCsvTargetField(target: CsvTargetField): WizardTargetField {
-    switch (target) {
-      case CsvTargetField.GROUP:
-        return WizardTargetField.GROUP;
-      case CsvTargetField.TITLE:
-        return WizardTargetField.TITLE;
-      case CsvTargetField.USERNAME:
-        return WizardTargetField.USERNAME;
-      case CsvTargetField.PASSWORD:
-        return WizardTargetField.PASSWORD;
-      case CsvTargetField.URL:
-        return WizardTargetField.URL;
-      case CsvTargetField.NOTES:
-        return WizardTargetField.NOTES;
-      case CsvTargetField.TOTP:
-        return WizardTargetField.TOTP;
-      case CsvTargetField.TAGS:
-        return WizardTargetField.TAGS;
-      case CsvTargetField.ICON:
-        return WizardTargetField.ICON;
-      case CsvTargetField.EXPIRY_TIME:
-        return WizardTargetField.EXPIRY_TIME;
-      case CsvTargetField.LAST_MODIFIED:
-        return WizardTargetField.LAST_MODIFIED;
-      case CsvTargetField.CREATED:
-        return WizardTargetField.CREATED;
-      default:
-        return WizardTargetField.SKIP;
-    }
-  }
-
-  /**
-   * 转回标准目标字段；SKIP/CUSTOM 返回 undefined
-   */
-  static toCsvTargetField(target: WizardTargetField): CsvTargetField | undefined {
-    switch (target) {
-      case WizardTargetField.GROUP:
-        return CsvTargetField.GROUP;
-      case WizardTargetField.TITLE:
-        return CsvTargetField.TITLE;
-      case WizardTargetField.USERNAME:
-        return CsvTargetField.USERNAME;
-      case WizardTargetField.PASSWORD:
-        return CsvTargetField.PASSWORD;
-      case WizardTargetField.URL:
-        return CsvTargetField.URL;
-      case WizardTargetField.NOTES:
-        return CsvTargetField.NOTES;
-      case WizardTargetField.TOTP:
-        return CsvTargetField.TOTP;
-      case WizardTargetField.TAGS:
-        return CsvTargetField.TAGS;
-      case WizardTargetField.ICON:
-        return CsvTargetField.ICON;
-      case WizardTargetField.EXPIRY_TIME:
-        return CsvTargetField.EXPIRY_TIME;
-      case WizardTargetField.LAST_MODIFIED:
-        return CsvTargetField.LAST_MODIFIED;
-      case WizardTargetField.CREATED:
-        return CsvTargetField.CREATED;
-      default:
-        return undefined;
-    }
+    this.sourceContent = sourceContent;
+    this.detectedEncoding = detectedEncoding;
   }
 }
