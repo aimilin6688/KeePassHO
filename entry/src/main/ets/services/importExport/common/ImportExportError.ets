@@ -14,6 +14,8 @@ export enum ImportExportErrorCode {
   INVALID_CSV_HEADER = 'INVALID_CSV_HEADER',
   INVALID_JSON_FORMAT = 'INVALID_JSON_FORMAT',
   PARSE_ERROR = 'PARSE_ERROR',
+  /** 用户在列映射向导中取消导入 */
+  CANCELLED = 'CANCELLED',
 
   // 导出错误
   EXPORT_FAILED = 'EXPORT_FAILED',

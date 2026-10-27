@@ -80,6 +80,10 @@ export class SettingsService {
   // 子数据库提示条（M5）：根组存在未显式配置本设备的 AutoOpen 条目时提示，「不再提示」按库记忆
   public static readonly KEY_CHILD_DB_HINT_HIDDEN_PREFIX = 'ChildDb_hint_hidden_';
 
+  // CSV 列映射向导（M2-4）：已识别格式的导入是否强制显示列映射向导（默认关闭：固定表头命中后直接导入）
+  public static readonly KEY_IMPORT_FORCE_CSV_WIZARD = 'Import_force_csv_wizard';
+  public static readonly KEY_IMPORT_FORCE_CSV_WIZARD_DEFAULT = false;
+
   // 数据库大小上限（MB），CP1 守卫：超过该值的数据库文件拒绝加载
   public static readonly KEY_DATABASE_MAX_SIZE = 'database_max_size';
   public static readonly KEY_DATABASE_MAX_SIZE_DEFAULT = 512;

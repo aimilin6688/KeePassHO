@@ -12,6 +12,7 @@ export enum CsvTargetField {
   TOTP = 'TOTP',
   TAGS = 'TAGS',
   ICON = 'ICON',
+  EXPIRY_TIME = 'EXPIRY_TIME',
   LAST_MODIFIED = 'LAST_MODIFIED',
   CREATED = 'CREATED'
 }

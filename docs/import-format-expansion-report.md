@@ -394,7 +394,7 @@ Dispatcher.import(fileContent)                       [UI 正在 await viewModel.
 | M2-1 | Bitwarden CSV、1Password CSV、Dashlane 6+、Proton Pass 四个固定表头 CSV 格式（TDD） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-2 | Keeper CSV（record_type 按行解析）+ Enpass CSV（40 列） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
-| M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（RoboForm/mSecure/Norton/Sticky Password） | 4-5 | ⬜ 未启动 |
+| M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（Norton Identity Safe CSV、True Key CSV，见 §10.2 差异 12） | 4-5 | ✅ 已交付（见 §10.5 验证记录） |
 | M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 | ⬜ 未启动 |
 
 M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用向导），M2 达成 P2-7 的"覆盖长尾导入格式"。
@@ -445,6 +445,17 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 27. Proton Pass JSON 字段映射：login（itemUsername/itemEmail 兜底/password(protected)/totpUri→applyTotp/urls[0]→URL 其余 `KP2A_URL_1..N`）、creditCard（cardholder→UserName 语义、number→UserName、verificationNumber→Password(protected)、card_* 自定义字段）、wifi（ssid/security）、sshKey（ssh_public_key/ssh_private_key(protected)）、未知类型（Notes 加 `Unknown entry type '<原样 type>'` 前缀 + `content_*` 固定 13 字段名转自定义字段，urls 数组跳过）；extraFields（text/totp 明文、hidden 受保护、空值跳过、字段名冲突加 `_N` 后缀）；pinned → `FAVORITE_TAG`；state==2 → expires；秒级时间戳 → times
 28. 新增 2 个测试套件共 33 用例（ProtonPassJson 20 + JsonFamilyDispatcher 13）+ `Index.test.ets` 断言改 'JSON'（3 处）
 
+**M2-4（本迭代，TDD）**：
+
+29. `pages/importwizard/ColumnMappingWizardPage.ets` — 4 步列映射向导页（预览表+识别名 → 逐列映射 Select+CUSTOM 自定义字段名 TextInput → 目标分组选项 → 冲突校验+映射摘要确认）；`route_map.json` 注册 `ColumnMappingWizard` 路由；确认 `notifyComplete(profile)+pop`、取消 `notifyCancelled()+pop`、`aboutToDisappear` 兜底 `notifyCancelled`；base/zh_CN 双语 23 条字符串
+30. `wizard/ImportWizardBridge.ets` — 交互桥单例：`requestColumnMapping(preview)` 挂起等向导回传；`NavStackWizardPagePresenter` 无导航栈返回 false → null resolve（headless/后台回落建议映射直导）；取消 reject `CANCELLED`；`buildPreview`（表头 + 前 20 行采样 + `buildSuggestedMapping` 建议映射 + 识别名）
+31. `csvimport/CsvMappingModels.ets` — `WizardTargetField`（SKIP + 全部 `CsvTargetField` + CUSTOM）、`ColumnMappingItem`、`ColumnMappingProfile.validate()`（至少一映射列 + 标准/CUSTOM 冲突检测，CUSTOM 空名回退源列名）、`CsvMappingPreview`、双向转换器
+32. `sniffing/FormatSignatureLibrary.ets` — 数据驱动签名库：必需表头全在 → 70、表头 ⊆ 已知全集 → 100；首批 Norton Identity Safe CSV（KeePass NortonIdSafeCsv2013 权威，恰 5 列 url,username,password,title,group）与 True Key CSV（KeePass TrueKeyCsv4 权威，特征列 tk_export_version）
+33. `handlers/import/PresetCsvImportHandler.ets` — 签名驱动通用 handler（新格式 = 签名库一条数据行，零新类）：`sniff` 按 signature 评分、`buildColumnMapping` 按 headerMap、`applyRowExtensions` 按 customHeaderMap 转自定义字段 + favoriteHeaders（1/true → `FAVORITE_TAG`）
+34. `BaseCsvImportHandler` 扩展：`abstract formatName`、`importRowsWithMapping(rows, mapping, customItems, importTargetGroupName)`（customItems 自定义字段 + 目标分组包装 + `CsvTargetField.EXPIRY_TIME` → expires/expiryTime）；`GenericCsvImportHandler.importWithProfile(rows, profile)`（WizardTargetField → 标准映射/CUSTOM 列表，全 SKIP 抛 `INVALID_CSV_HEADER`）
+35. 调度器向导路由：未知来源（嗅探全 0）默认 `requestColumnMapping` 弹向导；已知格式经 `SettingsService.KEY_IMPORT_FORCE_CSV_WIZARD`（默认 false，无 UI 开关）强制弹；profile 回传走 `importWithProfile`，headless null 回落原 target 直导；family 追加签名库 Preset handlers
+36. 新增 3 个测试套件共 46 用例（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 17）+ `List.test.ets` 注册
+
 ### 10.2 实现差异（相对本报告原设计）
 
 1. 契约与模型实际落在 `csvimport/` 单目录（原设计拆 `contracts/`/`model/`/`csv/`/`sniffing/`/`wizard/`），`ISniffableImport` 即契约
@@ -458,20 +469,23 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 9. JSON 调度器 import 双重解析（`detectFormatId` 一次 + 成员 handler 一次）：换取 `BitwardenJsonImportHandler` 零改动；`.json` 文件典型 <10MB，二次解析开销可接受
 10. JSON 族无通用回落 handler（CSV 族回落 Generic）：JSON 长尾格式无稳定"通用"结构，未知结构明确报 `INVALID_FILE_FORMAT` 引导用户确认文件来源
 
-### 10.3 缺失项（对应原设计，均属 M2-4 向导）
+**M2-4 新增差异**：
 
-- L-1 列映射向导页面 `ColumnMappingWizardPage`
-- L-2 `ImportWizardBridge` 交互桥
-- L-3 router_map 注册
-- L-4 签名库 `FormatSignatureLibrary`（RoboForm/mSecure/Norton/Sticky Password 首批）
-- L-5 建议映射 UI 呈现（`buildSuggestedMapping` 已就绪）
-- L-6 列映射人工修正
-- L-7 向导结果回填导入
-- L-8~L-11 向导测试
+11. 交互桥结果回传不经 EventBus/emitter，改为向导页对桥单例的直接方法调用（`notifyComplete/notifyCancelled` 同线程同步 resolve/reject）：emitter 事件队列投递会序列化数据、类实例丢失原型，`instanceof` 收窄恒 false 导致 Promise 永久挂起（真机用例 26 卡死复现；EventBus 既有测试仅传 string 未暴露）；桥与向导页同进程同线程，emitter 中转无收益且有序列化陷阱
+12. 签名库首批由原计划 RoboForm(HTML)/mSecure(无表头位置式)/Sticky(XML) 改为 **Norton Identity Safe CSV + True Key CSV**：前三者均非固定表头 CSV（RoboForm 为 HTML 导出、mSecure v3/v6 为无表头位置式、Sticky 为 XML），与签名库"固定表头匹配"前提冲突，需专用导入器（推迟 M3）；Norton/True Key 均有 KeePass 权威实现且为固定表头
+13. 签名评分新增 strict 规则：未声明可选列的签名（knownHeaders 与 requiredHeaders 等长，如 Norton 恰 5 列）文件表头含未知列时直接 0 分（而非 70）——否则本应用 CSV 导出表头（Group,Title,UserName,Password,URL,Notes 为 Norton 必需列超集）会被 70 分误认领（回归用例护栏）
+14. Norton CSV 的 UTF-16LE 编码（KeePass 参考 `Encoding.Unicode` 读取）暂未处理：当前按 UTF-8 解析，UTF-16LE 导出文件需用户先转码；后续可在 `FileContentInfo` 层按 BOM 探测统一处理
+15. `KEY_IMPORT_FORCE_CSV_WIZARD` 已知格式强制向导开关暂无设置页 UI（默认 false）：先用真机测试/Preferences 直改验证链路，UI 入口随 M2-4 后续迭代或设置页改版补充
+16. 向导页目标字段下拉暂显示枚举原始名（TITLE/USERNAME/…）：列映射属高级功能，本地化显示名后续补充
+17. True Key `customHeaderMap` 计 18 条（city→City、firstname→First Name、memberid→Member ID 等），KeePass TrueKeyCsv4 大写字段名权威；ignored 8 列（autologin/protectedwithpassword/subdomainonly/type/kind/gender/hexcolor/tk_export_version）；favorite→`FAVORITE_TAG`、expirationdate/expirydate→`EXPIRY_TIME`
+
+### 10.3 缺失项（对应原设计）
+
+M2-4 交付后原 L-1~L-11 清单全部闭环（L-1 向导页面、L-2 交互桥、L-3 route_map 注册、L-4 签名库、L-5 建议映射 UI、L-6 人工修正、L-7 结果回填、L-8~L-11 向导测试均 ✅）。遗留小项见 §10.2 差异 14-16（Norton UTF-16LE、设置开关 UI、下拉本地化显示名）。
 
 ### 10.4 未启动
 
-M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
+M3（1PUX/OpVault/KDB），及 M2-4 遗留小项（§10.2 差异 14-16）。
 
 ### 10.5 验证记录
 
@@ -488,6 +502,8 @@ M2-4（向导 + 签名库）、M3（1PUX/OpVault/KDB）。
 | 2026-10-27 | M2-3 组合回归（JsonFamilyDispatcher + importExportIndex + BitwardenJson） | 50/50 通过（含 `.json` 路由改 'JSON' 断言） |
 | 2026-10-27 | M2-3 CSV 全家回归（调度器 + 10 CSV handler + TotpHelper + Facade 12 套件） | 156/156 通过 |
 | 2026-10-27 | dev 完整套件（M2-3 收尾） | 3107 用例：3042 pass；65 失败全部为 WebDAV/S3/SFTP/FTP 测试连接失败（环境性，需本地服务器），import/export 相关零失败 |
+| 2026-10-27 | M2-4 新增（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 17） | 46/46 真机通过（Mate 60 Pro+；修复 emitter 序列化致桥挂起后全绿，见 §10.2 差异 11） |
+| 2026-10-27 | M2-4 回归（CSV 全家 15 套件 + JSON 族 3 套件） | 249/249 通过（0 失败，含调度器向导路由回归护栏：KeePass 风格表头不被 Norton 签名认领） |
 
 受保护文件（附录 A）在 M1/M2-1/M2-2 中 diff 均为空；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1/M2-2 零改动——新 handler 由 dispatcher 内部注册）。
 
@@ -514,8 +530,10 @@ entry/src/main/ets/services/importExport/
   csvimport/CsvParser.ets                               ✅（M1）
   csvimport/ColumnNameMapper.ets                        ✅（M1，KeePass 同义词库）
   csvimport/CsvColumnMappingEngine.ets                  ✅（M1，含 Profile 引擎）
-  sniffing/FormatSignatureLibrary.ets                   ⬜（M2-4）
-  wizard/ImportWizardBridge.ets                         ⬜（M2-4）
+  csvimport/CsvMappingModels.ets                        ✅（M2-4，向导模型 + 转换器 + validate）
+  sniffing/FormatSignatureLibrary.ets                   ✅（M2-4，Norton/True Key 首批签名）
+  wizard/ImportWizardBridge.ets                         ✅（M2-4，交互桥；emitter 序列化陷阱改直连，§10.2 差异 11）
+  handlers/import/PresetCsvImportHandler.ets            ✅（M2-4，签名驱动通用 handler）
   handlers/import/CsvFamilyDispatcherImportHandler.ets  ✅（M1；M2-1 扩 family 至 7 handler）
   handlers/import/BaseCsvImportHandler.ets              ✅（M1；M2-1 加 applyRowExtensions 钩子）
   handlers/import/GenericCsvImportHandler.ets           ✅（M1）
@@ -531,7 +549,7 @@ entry/src/main/ets/services/importExport/
   handlers/import/JsonFamilyDispatcherImportHandler.ets ✅（M2-3；`.json` 路由接管）
   handlers/import/ProtonPassJsonImportHandler.ets       ✅（M2-3）
   ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）
-entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ⬜（M2-4，新页面 + router_map 追加）
+entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ✅（M2-4，4 步向导页 + route_map 注册）
 ```
 
 ## 附录 C：与 feature-gap-analysis.md 的条目映射

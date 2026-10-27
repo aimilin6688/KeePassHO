@@ -38,6 +38,22 @@ export { CsvFamilyDispatcherImportHandler } from './handlers/import/CsvFamilyDis
 export { XmlImportHandler } from './handlers/import/XmlImportHandler';
 export { BitwardenJsonImportHandler } from './handlers/import/BitwardenJsonImportHandler';
 export { JsonFamilyDispatcherImportHandler } from './handlers/import/JsonFamilyDispatcherImportHandler';
+export { PresetCsvImportHandler } from './handlers/import/PresetCsvImportHandler';
+
+// 签名库（M2-4）
+export { FormatSignatureLibrary, CsvFormatSignature, SignatureMatchResult } from './sniffing/FormatSignatureLibrary';
+
+// 列映射向导（M2-4）
+export { ImportWizardBridge, WizardPagePresenter } from './wizard/ImportWizardBridge';
+export {
+  ColumnMappingItem,
+  ColumnMappingProfile,
+  CsvMappingPreview,
+  WizardMappingConflict,
+  WizardTargetField,
+  WizardTargetFieldConverter,
+  WizardValidationResult
+} from './csvimport/CsvMappingModels';
 
 // 导出处理器
 export { CsvExportHandler } from './handlers/export/CsvExportHandler';

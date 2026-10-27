@@ -169,6 +169,11 @@
       "name": "Support",
       "pageSourceFile": "src/main/ets/pages/about/Support.ets",
       "buildFunction": "SupportBuilder"
+    },
+    {
+      "name": "ColumnMappingWizard",
+      "pageSourceFile": "src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets",
+      "buildFunction": "ColumnMappingWizardBuilder"
     }
   ]
 }

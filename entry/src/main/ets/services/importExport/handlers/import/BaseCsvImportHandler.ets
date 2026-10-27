@@ -4,6 +4,7 @@ import hilog from '@ohos.hilog';
 import { ISniffableImport } from '../../csvimport/ISniffableImport';
 import { CsvParser } from '../../csvimport/CsvParser';
 import { CsvColumnMapping } from '../../csvimport/CsvColumnMappingEngine';
+import { ColumnMappingItem } from '../../csvimport/CsvMappingModels';
 import { CsvTargetField } from '../../csvimport/CsvImportModels';
 import { FileContentInfo } from '../../../../storage';
 import { ImportError, ImportExportErrorCode } from '../../common/ImportExportError';
@@ -38,6 +39,8 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
 
   readonly supportedExtensions: string[] = ['.csv'];
   readonly formatId: string;
+  /** 格式显示名（IImportHandler.formatName） */
+  abstract readonly formatName: string;
 
   protected constructor(formatId: string) {
     this.formatId = formatId;
@@ -75,6 +78,28 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
     }
 
     const mapping = this.buildColumnMapping(rows[0]);
+    return this.importRowsWithMapping(rows, mapping, [], '');
+  }
+
+  /**
+   * 按显式列映射 + 自定义字段映射导入（列映射向导确认后的路径）
+   * @param rows 已解析行（表头为第一行）
+   * @param mapping 标准目标字段列映射
+   * @param customItems 自定义字段映射项（源列 → 自定义字段名，空值跳过）
+   * @param importTargetGroupName 导入目标分组名（空 = 根分组；非空时所有条目收入该分组）
+   */
+  importRowsWithMapping(
+    rows: string[][],
+    mapping: CsvColumnMapping[],
+    customItems: ColumnMappingItem[],
+    importTargetGroupName: string
+  ): KdbxGroup {
+    if (rows.length === 0) {
+      throw new ImportError(
+        ImportExportErrorCode.FILE_EMPTY,
+        ResourceManager.getString($r('app.string.import_export_file_empty'))
+      );
+    }
 
     const db = FileService.getDatabase();
     if (!db) {
@@ -85,11 +110,16 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
     const protection = this.getFieldProtection();
     const rootGroup = new KdbxGroup();
     const groupCache = new Map<string, KdbxGroup>();
+    let containerGroup = rootGroup;
+    if (importTargetGroupName.trim() !== '') {
+      containerGroup = KdbxGroup.create(importTargetGroupName.trim(), rootGroup);
+      rootGroup.groups.push(containerGroup);
+    }
     let entryCounter = 0;
 
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      const parentGroup = this.resolveTargetGroup(rootGroup, mapping, row, groupCache);
+      const parentGroup = this.resolveTargetGroup(containerGroup, mapping, row, groupCache);
       const entry = KdbxEntry.create(db.meta, parentGroup);
 
       let titleValue = '';
@@ -111,6 +141,20 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
           usernameValue = value;
         }
         this.applyTarget(entry, item.target, value, protection);
+      }
+
+      for (const customItem of customItems) {
+        if (customItem.sourceColumnIndex >= row.length) {
+          continue;
+        }
+        const customValue = row[customItem.sourceColumnIndex];
+        if (customValue === '') {
+          continue;
+        }
+        const fieldName = customItem.customFieldName.trim() !== ''
+          ? customItem.customFieldName.trim()
+          : customItem.sourceColumnName;
+        entry.setField(fieldName, customValue, false);
       }
 
       this.applyRowExtensions(entry, rows[0], row);
@@ -371,6 +415,14 @@ export abstract class BaseCsvImportHandler implements ISniffableImport {
       case CsvTargetField.TAGS:
         entry.tags = BaseCsvImportHandler.parseTags(value);
         break;
+      case CsvTargetField.EXPIRY_TIME: {
+        const expiryTime = BaseCsvImportHandler.parseTimestamp(value);
+        if (expiryTime !== undefined) {
+          entry.times.expires = true;
+          entry.times.expiryTime = expiryTime;
+        }
+        break;
+      }
       case CsvTargetField.ICON: {
         const icon = parseInt(value);
         if (!isNaN(icon)) {

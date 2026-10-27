@@ -3457,6 +3457,98 @@
       "value": "条目 %d"
     },
     {
+      "name": "import_wizard_request_in_progress",
+      "value": "已有列映射向导请求进行中"
+    },
+    {
+      "name": "import_wizard_cancelled",
+      "value": "导入已取消"
+    },
+    {
+      "name": "import_wizard_no_mapped_column",
+      "value": "没有列映射到目标字段"
+    },
+    {
+      "name": "import_wizard_title",
+      "value": "列映射向导"
+    },
+    {
+      "name": "import_wizard_step_preview",
+      "value": "预览"
+    },
+    {
+      "name": "import_wizard_step_mapping",
+      "value": "映射"
+    },
+    {
+      "name": "import_wizard_step_options",
+      "value": "选项"
+    },
+    {
+      "name": "import_wizard_step_confirm",
+      "value": "确认"
+    },
+    {
+      "name": "import_wizard_detected_format",
+      "value": "识别格式：%s"
+    },
+    {
+      "name": "import_wizard_unknown_format",
+      "value": "未识别来源"
+    },
+    {
+      "name": "import_wizard_total_rows",
+      "value": "%d 行数据"
+    },
+    {
+      "name": "import_wizard_source_column",
+      "value": "源列"
+    },
+    {
+      "name": "import_wizard_target_field",
+      "value": "目标字段"
+    },
+    {
+      "name": "import_wizard_custom_field_name",
+      "value": "自定义字段名"
+    },
+    {
+      "name": "import_wizard_target_group_name",
+      "value": "导入到分组（可选）"
+    },
+    {
+      "name": "import_wizard_target_group_placeholder",
+      "value": "留空导入到根分组"
+    },
+    {
+      "name": "import_wizard_conflict_warning",
+      "value": "多列映射到同一目标：%s"
+    },
+    {
+      "name": "import_wizard_mapped_summary",
+      "value": "已映射 %d / %d 列"
+    },
+    {
+      "name": "import_wizard_confirm_button",
+      "value": "确认导入"
+    },
+    {
+      "name": "import_wizard_next_button",
+      "value": "下一步"
+    },
+    {
+      "name": "import_wizard_prev_button",
+      "value": "上一步"
+    },
+    {
+      "name": "import_wizard_cancel_button",
+      "value": "取消"
+    },
+    {
+      "name": "import_wizard_no_pending_request",
+      "value": "没有待映射的导入"
+    },
+    {
       "name": "import_export_database_empty",
       "value": "数据库为空"
     },

@@ -253,6 +253,10 @@ import EnpassCsvImportHandlerTest from './importExport/EnpassCsvImportHandler.te
 // ===== M2-3：JSON 族调度器 + Proton Pass JSON（语义对齐 KeePassXC ProtonPassReader）=====
 import JsonFamilyDispatcherTest from './importExport/JsonFamilyDispatcher.test';
 import ProtonPassJsonImportHandlerTest from './importExport/ProtonPassJsonImportHandler.test';
+// ===== M2-4：列映射向导（L-1~L-7）+ 签名库首批（Norton/True Key）=====
+import FormatSignatureLibraryTest from './importExport/FormatSignatureLibrary.test';
+import ImportWizardBridgeTest from './importExport/ImportWizardBridge.test';
+import CsvMappingWizardTest from './importExport/CsvMappingWizard.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -591,6 +595,11 @@ export default function testsuite() {
   // ===== M2-3：JSON 族调度器 + Proton Pass JSON =====
   JsonFamilyDispatcherTest();
   ProtonPassJsonImportHandlerTest();
+
+  // ===== M2-4：列映射向导 + 签名库首批 =====
+  FormatSignatureLibraryTest();
+  ImportWizardBridgeTest();
+  CsvMappingWizardTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();
