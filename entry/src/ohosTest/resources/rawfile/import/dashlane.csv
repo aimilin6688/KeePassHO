@@ -1,0 +1,3 @@
+title,url,username,password,note,category,otpSecret,lastModified
+GitHub,https://github.com,dluser,dl-pass-123,Dev,Logins,JBSWY3DPEHPK3PXP,2026-09-15T10:30:00.000Z
+Streaming,https://stream.example.com,streamuser,dl-pass-456,Media account,Entertainment,,2026-10-01T08:00:00.000Z

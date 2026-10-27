@@ -1,0 +1,4 @@
+record_type,folder,title,login_url,login_username,login_password,login_totp,note
+login,Social,Twitter,https://twitter.com,twuser,kp-pass-111,,Personal account
+login,,GitHub,https://github.com,ghuser,kp-pass-222,JBSWY3DPEHPK3PXP,Work account
+card,,Visa Card,John Doe,4111111111111111,123,,Personal credit card

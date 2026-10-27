@@ -4,9 +4,9 @@
 >
 > 约束：**导入能力必须以面向接口方式扩展；上层 UI / 服务层（页面、ViewModel、Facade、ImportService、Registry）零改动，只允许新增实现与组合根注册行；CSV 类导入必须提供列映射向导；尽可能多地支持其他密码库的导入。**
 >
-> 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 进度基线：`dev`（`51ec420c`，2026-10-27 复核）
+> 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 进度基线：`dev`（`89b01de9`，2026-10-28 复核）
 >
-> **交付状态（2026-10-27 复核）：M1~M2-4 全部交付于 `dev`——M1 经 worktree 分支合并（merge `f61fca93`，分支已删）；M2-1 四个固定表头 CSV（`11079bd0`）、M2-2 Keeper/Enpass CSV（`d6d8fa02`）、M2-3 JSON 族调度器 + Proton Pass JSON（`3db22f24`）、M2-4 列映射向导 + 签名库首批（`a8327a7d` + 优化 `04dbeea3`）直接提交 `dev`；M2-5 编码检测与签名库收敛（`51ec420c`）：新增 `CsvEncodingUtils`（UTF-8/GBK 检测 + 向导编码切换）、Chrome/Firefox/LastPass/Dashlane/1Password 五个固定表头 handler 类收敛为签名库数据行、列名映射中文同义词 + 模糊匹配增强。受保护文件自 `f61fca93` 起 diff 为空（本次复核确认）。M3（1PUX/OpVault/KDB）未启动，详见 §十 实现进度。**
+> **交付状态（2026-10-28 复核）：M1~M2-4 全部交付于 `dev`——M1 经 worktree 分支合并（merge `f61fca93`，分支已删）；M2-1 四个固定表头 CSV（`11079bd0`）、M2-2 Keeper/Enpass CSV（`d6d8fa02`）、M2-3 JSON 族调度器 + Proton Pass JSON（`3db22f24`）、M2-4 列映射向导 + 签名库首批（`a8327a7d` + 优化 `04dbeea3`）直接提交 `dev`；M2-5 编码检测与签名库收敛（`51ec420c`）：新增 `CsvEncodingUtils`（UTF-8/GBK 检测 + 向导编码切换）、Chrome/Firefox/LastPass/Dashlane/1Password 五个固定表头 handler 类收敛为签名库数据行、列名映射中文同义词 + 模糊匹配增强；M2-6 基线后收尾（`51ec420c` 之后，2026-10-27 晚）：`9977d067` 签名库新增第 8 条签名 `KEEPASS_CSV`（KeePass 标准表头识别直导）、`a472b5a7` 列名映射包含/前缀优先级修复 + 向导预览表格宽度自适应、`6be37c21` 悬浮底栏边距规范修正、`89b01de9` 导航栈单例泄漏测试修复。受保护文件自 `f61fca93` 起 diff 为空（本次复核确认）。M3（1PUX/OpVault/KDB）未启动，详见 §十 实现进度。**
 
 ---
 
@@ -396,13 +396,14 @@ Dispatcher.import(fileContent)                       [UI 正在 await viewModel.
 | M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（Norton Identity Safe CSV、True Key CSV，见 §10.2 差异 12） | 4-5 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-5 | 编码检测与切换（`CsvEncodingUtils`）+ 固定表头 CSV handler 收敛为签名库数据行 + 列名映射中文同义词/模糊匹配增强（`51ec420c`） | 2-3 | ✅ 已交付（见 §10.1 M2-5） |
+| M2-6 | KeePass CSV 签名识别与直导（`9977d067`）+ 列名映射优先级修复/向导预览与底栏微调（`a472b5a7`、`6be37c21`）+ 测试稳定性（`89b01de9`） | 1-2 | ✅ 已交付（见 §10.1 M2-6） |
 | M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 | ⬜ 未启动 |
 
 M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用向导），M2 达成 P2-7 的"覆盖长尾导入格式"。
 
 ---
 
-## 十、实现进度（2026-10-27 更新）
+## 十、实现进度（2026-10-28 更新）
 
 ### 10.1 已完成
 
@@ -470,6 +471,13 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 45. family 结构定型：4 个特殊行处理逻辑类（Bitwarden/ProtonPass/Keeper/Enpass）+ 签名库全部签名的 `PresetCsvImportHandler`（构造函数遍历 `getAllSignatures()` 组装）+ `GenericCsvImportHandler` 兜底——纯数据格式「新增格式 = 签名库一条数据行，零新增类」落地
 46. 测试重组：新增 `CsvEncodingUtils.test.ets`（22 用例）、`PresetCsvImportFormats.test.ets`（81 用例，覆盖 7 条签名全部格式）；删除 Chrome/Firefox/LastPass/Dashlane/1Password/CsvImportHandler 6 个独立套件；扩充 `ColumnNameMapper`（23）、`CsvFamilyDispatcher`（32）、`CsvColumnMappingEngine`（13）、`CsvMappingWizard`（16）、`FormatSignatureLibrary`（21）、`ImportWizardBridge`（8）、BitwardenCsv/KeeperCsv/ProtonPassCsv 等既有套件 + `List.test.ets` 注册更新
 
+**M2-6 基线后收尾（`a472b5a7` / `6be37c21` / `9977d067` / `89b01de9`，2026-10-27 晚，TDD）**：
+
+47. `9977d067` 签名库新增第 8 条签名 `KEEPASS_CSV`（KeePass CSV）：必需列 `title,username,password,url,notes`（`group` 可选——缺失时条目入根分组），已知列全集含 `totp/tags/icon/last modified/created/expiry time`；标准 KeePass 2.x / KeePassXC / 本应用导出表头命中后**直接导入不再弹列映射向导**（恢复 M2-5 前对 KeePass 风格 CSV 的直导体验，与差异 18 的关系见差异 24）
+48. `9977d067` 测试同步：`FormatSignatureLibrary.test` 21→30 用例（新增 KEEPASS 评分 90/必需列缺失 0 分/1Password 表头 0 分消歧护栏/签名元数据/sniff/直导/无 Group 入根分组等 9 例）；`CsvFamilyDispatcher.test` / `CsvMappingWizard.test` 中 3 个 KeePass 风格用例由「回落 Generic / 弹向导」改写为「识别 KEEPASS_CSV 直导」断言
+49. `a472b5a7` `ColumnNameMapper` 包含/前缀命中优先级修复：前缀命中仅当严格长于包含命中才覆盖（「totp动态密码」按 totp 判 TOTP，不再按子串「密码」误判 PASSWORD；`user password` 保持 PASSWORD——KeePass 2.x 顺序回归）；向导预览表格宽度自适应（列数 × 列宽，列多时横向滚动、列少时占满卡宽）+ 表头背景独立色 `table_header_bg` + 安全区避让（`expandSafeArea`）修正；本报告同步更新至 `51ec420c` 基线
+50. `6be37c21` 向导悬浮底栏边距规范修正（底部 padding 16vp→0，按钮底边贴安全区边界，距屏底约 30vp，符合《间隔参数》手机屏幕底部 28vp 避让区规范）；`89b01de9` 测试稳定性：`NavigationManager` 新增 `clearCurrentNavPathStack` 清理单例引用，修复导航栈单例泄漏导致的测试挂起，CSV 向导测试注入拒绝型 presenter 保证确定性
+
 ### 10.2 实现差异（相对本报告原设计）
 
 1. 契约与模型实际落在 `csvimport/` 单目录（原设计拆 `contracts/`/`model/`/`csv/`/`sniffing/`/`wizard/`），`ISniffableImport` 即契约
@@ -502,6 +510,10 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 22. 签名评分非 §4.5 设计的 100/70/60 阶梯，统一为 v3 认领语义（`BaseCsvImportHandler.matchesHeadersClaimable` / `FormatSignatureLibrary.scoreSignature`）二值评分：①必需表头缺失 → 0；②特征表头（distinguishers）非空且全部缺失 → 0；③未知列（不在已知全集）**可识别**（`ColumnNameMapper.mapWithSpecificity` 非 undefined，如「Notes」）→ 0（走向导预填，不丢列），**完全不可识别的杂列** → 忽略照导（KeePass 2.x 按名映射语义）；④满足全部条件 → 90（`SNIFF_CONFIDENCE`）。调度器分发阈值 70
 23. 向导预填策略（`ImportWizardBridge.buildPreview`）：建议映射命中的列用建议目标，未识别列默认 `CUSTOM`（字段名回退源列名）——保证任何列都不默认丢弃；编码检测信息（detectedEncoding）与原始字节（sourceContent）随预览下发，支撑向导内编码切换重解析
 
+**M2-6 新增差异（`9977d067`）**：
+
+24. 标准 KeePass 风格 CSV（Group,Title,UserName,Password,URL,Notes[,TOTP][,Tags]…）自 `9977d067` 起命中第 8 条签名 `KEEPASS_CSV` 后**直接导入**，不再按差异 18（回退后规则）弹列映射向导。此非差异 18 的再次回退：差异 18 的规则「签名未命中（target === null）或强制开关 → 一律弹向导」不变，仅 KeePass 标准表头由「未知来源」升格为「已知来源」，落入 §4.4「已知来源命中签名后直接导入、不弹向导」语义。消歧护栏：1Password 表头（Title,Url,Username,Password,OTPAuth,Notes）虽含 KEEPASS 全部必需列，但 `otpauth` 列可被 `ColumnNameMapper` 识别 → KEEPASS 记 0 分走向导预填（测试 `shouldScore0ForOnePasswordHeader` 断言），且 ONEPASSWORD 签名评估在先、同分先到者胜；Norton 双向护栏（差异 13/22）不变
+
 ### 10.3 缺失项（对应原设计）
 
 M2-4 交付后原 L-1~L-11 清单全部闭环（L-1 向导页面、L-2 交互桥、L-3 route_map 注册、L-4 签名库、L-5 建议映射 UI、L-6 人工修正、L-7 结果回填、L-8~L-11 向导测试均 ✅）。M2-5（`51ec420c`）补齐编码检测/切换。遗留小项仅剩 §10.2 差异 14 剩余部分（Norton UTF-16LE 编码，GBK 已支持）与差异 15（`KEY_IMPORT_FORCE_CSV_WIZARD` 设置页 UI）。
@@ -527,12 +539,18 @@ M3（1PUX/OpVault/KDB），及遗留小项（§10.2 差异 14 剩余 UTF-16LE、
 | 2026-10-27 | dev 完整套件（M2-3 收尾） | 3107 用例：3042 pass；65 失败全部为 WebDAV/S3/SFTP/FTP 测试连接失败（环境性，需本地服务器），import/export 相关零失败 |
 | 2026-10-27 | M2-4 新增（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 17） | 46/46 真机通过（Mate 60 Pro+；修复 emitter 序列化致桥挂起后全绿，见 §10.2 差异 11） |
 | 2026-10-27 | M2-4 回归（CSV 全家 15 套件 + JSON 族 3 套件） | 249/249 通过（0 失败，含调度器向导路由回归护栏：KeePass 风格表头不被 Norton 签名认领） |
+| 2026-10-28 | M2-6 代码比对复核（`51ec420c..89b01de9`，静态核验，未连机） | 通过：受保护文件（附录 A）diff 为空；签名库 8 条签名与 4 个特殊行 handler、Generic 兜底逐一比对无认领冲突（1Password/Norton 消歧护栏在位）；组合根 `.csv`/`.json`/`.xml` 三路由注册与附录 B 文件清单同 `dev` 工作区一致；KEEPASS_CSV 消歧逐格式核验（Dashlane/Enpass/LastPass/Chrome/True Key 以 `note`/`name` 与 `title`/`notes` 错开互不认领） |
+| 2026-10-28 | 夹具文件真机测试（ImportFixtureFiles 14 用例：12 CSV + 2 JSON 格式各一） | 14/14 真机通过（Mate 60 Pro+，`aa test -s class ImportFixtureFiles`）；夹具为 `entry/src/ohosTest/resources/rawfile/import/` 下 14 个真实导出样例文件（chrome.csv 含 UTF-8 BOM+CRLF、lastpass.csv 含引号内多行 extra 与 `Work\Servers` 反斜杠分组、keeper/enpass 含卡行、bitwarden/proton JSON 含 vaults/folders 嵌套结构），经 `ImportFixtures.ets`（rawfile→FileContentInfo）加载，每 CSV 用例先断言 `detectFormatId` 路由再全链导入断言 |
 
 > **2026-10-27 复核补充**：M2-4 优化提交 `04dbeea3`（向导 UI 标准化 + 触发条件收紧，§10.2 差异 18/19）为 CsvMappingWizard 补充 2 个触发条件用例（17→19，M2-4 套件合计 46→48）；上表 46/46、249/249 记录于该优化提交前，+2 用例无独立真机运行记录（本次复核时无设备连接，待连机补充回归）。
 >
 > **2026-10-27 二次复核（`51ec420c`，M2-5）**：该提交新增/重组的测试套件（CsvEncodingUtils 22 用例、PresetCsvImportFormats 81 用例，及 ColumnNameMapper/CsvFamilyDispatcher/CsvColumnMappingEngine/CsvMappingWizard 等套件扩充）尚无真机运行记录，待连机补充回归；被删除的 6 个独立套件（Chrome/Firefox/LastPass/Dashlane/1Password/CsvImportHandler）的格式行为断言已由 `PresetCsvImportFormats.test.ets` 全量承接（81 用例覆盖 7 条签名格式）。
+>
+> **2026-10-28 三次复核（`89b01de9`，M2-6）**：`9977d067`（FormatSignatureLibrary 21→30 用例、调度器/向导 3 个 KeePass 风格用例改写为直导断言）、`a472b5a7`（ColumnNameMapper 优先级修复 + 向导预览表格）与 `89b01de9`（导航栈泄漏测试修复）尚无独立真机运行记录，待连机补充回归；本次复核为静态代码比对（见 §10.5 末行）。
+>
+> **2026-10-28 夹具测试随附修复**：夹具真机测试暴露并修复 1 处实现与设计缺口 —— LASTPASS 签名 `favoriteHeaders` 为空导致 `fav=1` 未打 `FAVORITE_TAG`（设计见 §五 LastPass 行，`fav` 原在 `knownHeaders` 内被静默跳过）；修复为 `FormatSignatureLibrary.ets` LASTPASS 行 `favoriteHeaders: ['fav']`（数据行改动，无新类），随附将固化旧缺口行为的用例 `shouldIgnoreFavColumn` 改写为 `shouldTagFavoriteWhenFavIsOne`（断言 fav=1 → `FAVORITE_TAG`）。修复后回归：FormatSignatureLibrary 30/30、PresetCsvImportHandler_lastpass 16/16、CsvFamilyDispatcherImportHandler 32/32、ImportFixtureFiles 14/14 真机通过。另有 4 处夹具文件自身的逗号计数笔误（lastpass.csv 缺空 totp 列、enpass.csv/keepass_export.csv 列错位、bitwarden.csv 字段名大小写）在首轮运行后修正，非实现问题。
 
-受保护文件（附录 A）在 M1/M2-1~M2-5 中 diff 均为空（2026-10-27 复核 `f61fca93..51ec420c` 确认）；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1~M2-5 零改动——新 handler 由 dispatcher 内部注册）。
+受保护文件（附录 A）在 M1/M2-1~M2-6 中 diff 均为空（2026-10-28 复核 `f61fca93..89b01de9` 确认）；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1~M2-6 零改动——新 handler 由 dispatcher 内部注册）。
 
 ---
 
@@ -556,10 +574,10 @@ entry/src/main/ets/services/importExport/
   csvimport/CsvImportModels.ets                         ✅（M1；M2-5 扩 CsvTargetField 至 14 值：+LAST_MODIFIED/CREATED）
   csvimport/CsvParser.ets                               ✅（M1）
   csvimport/CsvEncodingUtils.ets                        ✅（M2-5，编码检测 UTF-8 BOM/严格校验→GBK 回退 + 解码）
-  csvimport/ColumnNameMapper.ets                        ✅（M1；M2-5 中文同义词 + 包含/前缀模糊 + mapWithSpecificity）
+  csvimport/ColumnNameMapper.ets                        ✅（M1；M2-5 中文同义词 + 包含/前缀模糊 + mapWithSpecificity；M2-6 修复包含/前缀命中覆盖优先级）
   csvimport/CsvColumnMappingEngine.ets                  ✅（M1；M2-5 建议映射两阶段化）
   csvimport/CsvMappingModels.ets                        ✅（M2-4；M2-5 移除 WizardTargetField、ColumnMappingProfile 增 encoding）
-  sniffing/FormatSignatureLibrary.ets                   ✅（M2-4 Norton/True Key 首批；M2-5 收敛固定表头格式，现 7 条签名）
+  sniffing/FormatSignatureLibrary.ets                   ✅（M2-4 Norton/True Key 首批；M2-5 收敛固定表头格式；M2-6 增第 8 条签名 KEEPASS_CSV，现 8 条签名）
   wizard/ImportWizardBridge.ets                         ✅（M2-4，交互桥；emitter 序列化陷阱改直连，§10.2 差异 11）
   handlers/import/PresetCsvImportHandler.ets            ✅（M2-4；M2-5 增强为签名库全部纯数据格式驱动）
   handlers/import/CsvFamilyDispatcherImportHandler.ets  ✅（M1；family = 4 逻辑类 + 签名库 preset + Generic 兜底）
@@ -578,7 +596,7 @@ entry/src/main/ets/services/importExport/
   handlers/import/OnePasswordCsvImportHandler.ets       🗑（M2-1 交付；M2-5 转签名库数据行，类删除）
   handlers/import/CsvImportHandler.ets                  🗑（M1 前旧 `.csv` handler，见 §2.1；M2-5 清理删除）
   ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）              ⬜
-entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ✅（M2-4 4 步向导页 + route_map 注册；M2-5 Step1 编码下拉 + 切换重解析）
+entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ✅（M2-4 4 步向导页 + route_map 注册；M2-5 Step1 编码下拉 + 切换重解析；M2-6 预览表格宽度自适应 + 表头背景色 + 悬浮底栏边距规范修正）
 ```
 
 ## 附录 C：与 feature-gap-analysis.md 的条目映射

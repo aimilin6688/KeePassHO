@@ -1,0 +1,4 @@
+folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+Work,1,1,GitHub,Dev account,,0,https://github.com,bwuser,bw-pass-123,
+,,1,Personal Site,Home page,"Security Question: first pet; Recovery Code: 776655",0,https://example.com,alice,bw-pass-456,
+,,2,Server Notes,Root password hint,,0,,,,

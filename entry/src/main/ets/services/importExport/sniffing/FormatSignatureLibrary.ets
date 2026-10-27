@@ -97,7 +97,7 @@ export class FormatSignatureLibrary {
     },
     {},
     [],
-    [],
+    ['fav'],
     [],
     true
   );

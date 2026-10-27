@@ -512,7 +512,7 @@ export default function PresetCsvImportFormatsTest() {
         expect(result.entries.length).assertEqual(1);
       });
 
-      it('shouldIgnoreFavColumn', 0, async () => {
+      it('shouldTagFavoriteWhenFavIsOne', 0, async () => {
         const testDb = await TestUtils.createTestDatabase('LastPass Test Database');
         FileService.resetDbFileParam(testDb, Date.now());
 
@@ -521,7 +521,8 @@ export default function PresetCsvImportFormatsTest() {
         const fileContent = TestUtils.createFileContent(csvContent, 'lastpass.csv');
 
         const result = await handler.import(fileContent);
-        expect(result.entries[0].tags.length).assertEqual(0);
+        expect(result.entries[0].tags.length).assertEqual(1);
+        expect(result.entries[0].tags[0]).assertEqual(KdbxUtils.FAVORITE_TAG);
       });
 
       it('shouldThrowFileEmptyForEmptyFile', 0, async () => {

@@ -1,0 +1,3 @@
+Title,Category,Note,Login,Password,OTP Secret,URL,Email,Phone,Card No,CC Cvv,Group
+GitHub,Login,Dev login,epuser,en-pass-123,JBSWY3DPEHPK3PXP,https://github.com,epuser@mail.com,,,,Work
+Backup Card,Payment,Personal card,,,,,,,5555444433332221,321,Finance

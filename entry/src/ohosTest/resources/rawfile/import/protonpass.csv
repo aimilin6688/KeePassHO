@@ -1,0 +1,3 @@
+name,url,email,username,password,totp,note,vault
+GitHub,https://github.com,ppuser@proton.me,ppuser,pp-pass-123,JBSWY3DPEHPK3PXP,Dev,Main Vault
+Proton Site,https://proton.example,mailuser@proton.me,,pp-pass-456,,No username,Backup Vault

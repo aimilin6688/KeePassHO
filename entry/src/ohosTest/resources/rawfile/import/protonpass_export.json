@@ -1,0 +1,74 @@
+{
+  "encrypted": false,
+  "version": 1,
+  "appVersion": "5.0.114.10",
+  "vaults": {
+    "vault-1": {
+      "name": "Main Vault",
+      "description": "Primary vault",
+      "items": [
+        {
+          "uuid": "item-1",
+          "template": "1.0.0",
+          "shareId": "vault-1",
+          "vaultId": "vault-1",
+          "pinned": true,
+          "state": 1,
+          "createTime": 1748640000,
+          "modifyTime": 1748730000,
+          "data": {
+            "type": "login",
+            "metadata": {
+              "name": "Proton Site",
+              "note": "login note"
+            },
+            "content": {
+              "itemUsername": "ppuser",
+              "itemEmail": "ppuser@proton.me",
+              "password": "pp-pass-222",
+              "totpUri": "otpauth://totp/Proton:ppuser?secret=KRSXG5CTMVRXEZLU",
+              "urls": [
+                "https://proton.example",
+                "https://backup.example"
+              ]
+            },
+            "extraFields": [
+              {
+                "fieldName": "Server",
+                "type": "text",
+                "data": {
+                  "content": "web-01"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "uuid": "item-2",
+          "template": "1.0.0",
+          "shareId": "vault-1",
+          "vaultId": "vault-1",
+          "pinned": false,
+          "state": 1,
+          "createTime": 1748640100,
+          "modifyTime": 1748730100,
+          "data": {
+            "type": "creditCard",
+            "metadata": {
+              "name": "Proton Card",
+              "note": ""
+            },
+            "content": {
+              "number": "5555444433332222",
+              "verificationNumber": "321",
+              "cardholderName": "PP Holder",
+              "pin": "9876",
+              "expirationDate": "08/2028"
+            },
+            "extraFields": []
+          }
+        }
+      ]
+    }
+  }
+}

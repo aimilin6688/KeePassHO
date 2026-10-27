@@ -1,0 +1,3 @@
+url,username,password,title,group
+https://norton.example,ntuser,nt-pass-123,Norton Login,Web
+https://bank.example.org,bankuser,bank-pass-456,Bank Login,Finance

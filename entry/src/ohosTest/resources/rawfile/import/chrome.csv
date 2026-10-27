@@ -1,0 +1,4 @@
+﻿name,url,username,password,note
+GitHub,https://github.com,octocat,gh-pass-123,Code hosting
+Example Domain,https://example.com,alice,ex-pass-456,
+Webmail,https://mail.example.org,bob@example.org,m@il-pass-789,Webmail provider

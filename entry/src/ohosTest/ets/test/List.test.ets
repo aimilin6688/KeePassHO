@@ -254,6 +254,8 @@ import FormatSignatureLibraryTest from './importExport/FormatSignatureLibrary.te
 import PresetCsvImportFormatsTest from './importExport/PresetCsvImportFormats.test';
 import ImportWizardBridgeTest from './importExport/ImportWizardBridge.test';
 import CsvMappingWizardTest from './importExport/CsvMappingWizard.test';
+// ===== M2-7：真实导出文件（rawfile 夹具）端到端导入测试（12 CSV 格式 + 2 JSON 格式）=====
+import ImportFixtureFilesTest from './importExport/ImportFixtureFiles.test';
 
 // ===== 新增：storage 配置/工厂/队列单元测试 =====
 import FileStorageFactoryTest from './storage/FileStorageFactory.test';
@@ -593,6 +595,9 @@ export default function testsuite() {
   PresetCsvImportFormatsTest();
   ImportWizardBridgeTest();
   CsvMappingWizardTest();
+
+  // ===== M2-7：真实导出文件端到端导入（rawfile/import/ 夹具）=====
+  ImportFixtureFilesTest();
 
   // ===== storage 配置/工厂/队列 =====
   FileStorageFactoryTest();

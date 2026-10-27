@@ -1,0 +1,6 @@
+url,username,password,totp,extra,name,grouping,fav
+https://twitter.com,twuser,tw-pass-111,JBSWY3DPEHPK3PXP,Twitter main account,Twitter,Social,1
+https://github.com,ghuser,gh-pass-222,,"Multi
+line extra note
+with three lines",GitHub,Work\Servers,0
+https://example.com,exuser,ex-pass-333,,Plain extra,Example,,0

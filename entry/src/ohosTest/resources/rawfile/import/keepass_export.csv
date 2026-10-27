@@ -1,0 +1,3 @@
+Group,Title,UserName,Password,URL,Notes,TOTP,Icon,Last Modified,Created
+Work/Social,Twitter,twuser,kp-tw-pass,https://twitter.com,Imported tweet account,JBSWY3DPEHPK3PXP,1,2026-10-20T07:30:00.000Z,2026-10-01T09:00:00.000Z
+,Local Note,localuser,kp-local-pass,,Offline note,,12,2026-10-21T12:00:00.000Z,2026-10-02T10:00:00.000Z

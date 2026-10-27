@@ -1,0 +1,56 @@
+{
+  "encrypted": false,
+  "folders": [
+    {
+      "id": "f-1",
+      "name": "Work"
+    }
+  ],
+  "items": [
+    {
+      "id": "i-1",
+      "folderId": "f-1",
+      "type": 1,
+      "name": "GitHub",
+      "notes": "Dev account",
+      "favorite": true,
+      "fields": [
+        {
+          "name": "Recovery Code",
+          "value": "rc-987654",
+          "type": 1
+        }
+      ],
+      "login": {
+        "username": "gh-user",
+        "password": "gh-pass-xyz",
+        "uris": [
+          {
+            "uri": "https://github.com"
+          }
+        ],
+        "totp": "JBSWY3DPEHPK3PXP"
+      },
+      "secureNote": null,
+      "card": null,
+      "identity": null,
+      "revisionDate": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "i-2",
+      "folderId": null,
+      "type": 2,
+      "name": "Server Notes",
+      "notes": "Root password hint",
+      "favorite": false,
+      "fields": null,
+      "login": null,
+      "secureNote": {
+        "type": 0
+      },
+      "card": null,
+      "identity": null,
+      "revisionDate": "2026-10-02T00:00:00.000Z"
+    }
+  ]
+}
