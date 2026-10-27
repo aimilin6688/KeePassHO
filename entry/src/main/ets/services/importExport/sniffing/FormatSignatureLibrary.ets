@@ -256,6 +256,39 @@ export class FormatSignatureLibrary {
     ['favorite']
   );
 
+  /**
+   * 标准 KeePass CSV（本应用/KeePass 2.x/KeePassXC 导出）：
+   * Group,Title,UserName,Password,URL,Notes[,TOTP][,Tags][,Icon][,Last Modified][,Created]
+   * 必需列取标准五字段核心（Group 可选：无分组列时全部条目入根分组）
+   */
+  private static readonly KEEPASS: CsvFormatSignature = new CsvFormatSignature(
+    'KEEPASS_CSV',
+    'KeePass CSV',
+    ['title', 'username', 'password', 'url', 'notes'],
+    [
+      'group', 'title', 'username', 'password', 'url', 'notes',
+      'totp', 'tags', 'icon', 'last modified', 'created', 'expiry time'
+    ],
+    {
+      'group': CsvTargetField.GROUP,
+      'title': CsvTargetField.TITLE,
+      'username': CsvTargetField.USERNAME,
+      'password': CsvTargetField.PASSWORD,
+      'url': CsvTargetField.URL,
+      'notes': CsvTargetField.NOTES,
+      'totp': CsvTargetField.TOTP,
+      'tags': CsvTargetField.TAGS,
+      'icon': CsvTargetField.ICON,
+      'last modified': CsvTargetField.LAST_MODIFIED,
+      'created': CsvTargetField.CREATED,
+      'expiry time': CsvTargetField.EXPIRY_TIME
+    },
+    {},
+    [],
+    [],
+    []
+  );
+
   private static readonly SIGNATURES: CsvFormatSignature[] = [
     FormatSignatureLibrary.LASTPASS,
     FormatSignatureLibrary.DASHLANE,
@@ -263,7 +296,8 @@ export class FormatSignatureLibrary {
     FormatSignatureLibrary.FIREFOX,
     FormatSignatureLibrary.CHROME,
     FormatSignatureLibrary.NORTON_IDSAFE,
-    FormatSignatureLibrary.TRUE_KEY
+    FormatSignatureLibrary.TRUE_KEY,
+    FormatSignatureLibrary.KEEPASS
   ];
 
   /**

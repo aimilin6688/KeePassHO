@@ -272,22 +272,21 @@ export default function CsvMappingWizardTest() {
           .assertEqual('TRUEKEY_CSV');
       });
 
-      it('shouldRequestWizardForKeePassStyleCsvWithHeadlessFallback', 0, async () => {
+      it('shouldImportKeePassStandardCsvDirectlyWithoutWizard', 0, async () => {
         const testDb = await TestUtils.createTestDatabase('Dispatcher Wizard Database');
         FileService.resetDbFileParam(testDb, Date.now());
 
-        // 标准 KeePass 风格表头：无固定格式精确匹配 → 一律请求向导（present 被调用）；
-        // headless 呈现失败回落建议映射直导
+        // 标准 KeePass 表头命中 KEEPASS_CSV 签名 → 直接导入，不请求列映射向导
         const spy = new RecordingRefusingPresenter();
         ImportWizardBridge.getInstance().setPresenter(spy);
         try {
           const csvContent = 'Group,Title,UserName,Password,URL,Notes\n' +
             'Internet Bank,MyBank,bankuser,bankpass,https://bank.example.com,main account';
-          const fileContent = TestUtils.createFileContent(csvContent, 'keepass-style.csv');
+          const fileContent = TestUtils.createFileContent(csvContent, 'keepass-standard.csv');
 
           const result = await dispatcher.import(fileContent);
 
-          expect(spy.presented).assertTrue();
+          expect(spy.presented).assertFalse();
           expect(result.groups.length).assertEqual(1);
           expect(result.groups[0].name).assertEqual('Internet Bank');
           expect(result.groups[0].entries[0].fields.get('Title')).assertEqual('MyBank');

@@ -113,15 +113,16 @@ export default function CsvFamilyDispatcherTest() {
         expect(dispatcher.detectFormatId(['foo', 'bar'], [])).assertEqual('GENERIC_CSV');
       });
 
-      it('shouldFallBackToGenericForKeePassStyleHeader', 0, () => {
+      it('shouldDetectKeePassStandardHeader', 0, () => {
+        // 标准 KeePass CSV 导出表头 → KEEPASS_CSV 签名直导（不再弹列映射向导）
         const header = ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes'];
-        expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('KEEPASS_CSV');
       });
 
-      it('shouldFallBackToGenericForAppExportHeaderWithLastModified', 0, () => {
-        // 本应用 CSV 导出表头含 Last Modified，须仍走通用 CSV（Dashlane 不得误认领）
+      it('shouldDetectAppExportHeaderWithLastModifiedAsKeePassCsv', 0, () => {
+        // 本应用 CSV 导出表头含 Last Modified/TOTP/Icon → KEEPASS_CSV（Dashlane 不得误认领）
         const header = ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes', 'TOTP', 'Icon', 'Last Modified'];
-        expect(dispatcher.detectFormatId(header, [])).assertEqual('GENERIC_CSV');
+        expect(dispatcher.detectFormatId(header, [])).assertEqual('KEEPASS_CSV');
       });
 
       it('shouldNotClaimPlainUrlUsernamePasswordHeader', 0, () => {

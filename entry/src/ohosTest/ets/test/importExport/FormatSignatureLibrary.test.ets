@@ -133,6 +133,63 @@ export default function FormatSignatureLibraryTest() {
       });
     });
 
+    describe('scoreSignature_keepass', () => {
+      it('shouldScore90ForStandardKeePassExportHeader', 0, () => {
+        const signature = FormatSignatureLibrary.getSignature('KEEPASS_CSV');
+        if (signature === null) {
+          expect().assertFail();
+          return;
+        }
+        const score = FormatSignatureLibrary.scoreSignature(
+          signature,
+          ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes']
+        );
+        expect(score).assertEqual(90);
+      });
+
+      it('shouldScore90ForAppExportHeaderWithExtendedColumns', 0, () => {
+        // 本应用 CSV 导出表头全集（Group..Created）须命中 KEEPASS_CSV 直导
+        const signature = FormatSignatureLibrary.getSignature('KEEPASS_CSV');
+        if (signature === null) {
+          expect().assertFail();
+          return;
+        }
+        const score = FormatSignatureLibrary.scoreSignature(
+          signature,
+          ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes', 'TOTP', 'Icon', 'Last Modified', 'Created']
+        );
+        expect(score).assertEqual(90);
+      });
+
+      it('shouldScore0WhenRequiredNotesMissing', 0, () => {
+        // 非标准表头（缺 Notes）不认领 → 列映射向导
+        const signature = FormatSignatureLibrary.getSignature('KEEPASS_CSV');
+        if (signature === null) {
+          expect().assertFail();
+          return;
+        }
+        const score = FormatSignatureLibrary.scoreSignature(
+          signature,
+          ['Group', 'Title', 'UserName', 'Password', 'URL']
+        );
+        expect(score).assertEqual(0);
+      });
+
+      it('shouldScore0ForOnePasswordHeader', 0, () => {
+        // 1Password 表头满足必需列但含可识别未知列 otpauth → 不认领（ONEPASSWORD_CSV 先行命中）
+        const signature = FormatSignatureLibrary.getSignature('KEEPASS_CSV');
+        if (signature === null) {
+          expect().assertFail();
+          return;
+        }
+        const score = FormatSignatureLibrary.scoreSignature(
+          signature,
+          ['Title', 'Url', 'Username', 'Password', 'OTPAuth', 'Notes']
+        );
+        expect(score).assertEqual(0);
+      });
+    });
+
     describe('matchAndGet', () => {
       it('shouldMatchNortonHeader', 0, () => {
         const result = FormatSignatureLibrary.matchCsvHeaders(['url', 'username', 'password', 'title', 'group']);
@@ -147,6 +204,14 @@ export default function FormatSignatureLibraryTest() {
         expect(result?.formatId).assertEqual('TRUEKEY_CSV');
       });
 
+      it('shouldMatchStandardKeePassHeader', 0, () => {
+        const result = FormatSignatureLibrary.matchCsvHeaders(
+          ['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes']
+        );
+        expect(result?.formatId).assertEqual('KEEPASS_CSV');
+        expect(result?.score).assertEqual(90);
+      });
+
       it('shouldReturnNullForUnknownHeader', 0, () => {
         const result = FormatSignatureLibrary.matchCsvHeaders(['foo', 'bar']);
         expect(result).assertNull();
@@ -154,7 +219,7 @@ export default function FormatSignatureLibraryTest() {
 
       it('shouldReturnAllSignatures', 0, () => {
         const signatures = FormatSignatureLibrary.getAllSignatures();
-        expect(signatures.length).assertEqual(7);
+        expect(signatures.length).assertEqual(8);
       });
 
       it('shouldReturnNullForUnknownFormatId', 0, () => {
@@ -289,6 +354,64 @@ export default function FormatSignatureLibraryTest() {
         const entry = result.entries[0];
         expect(entry.times.expires).assertTrue();
         expect(entry.times.expiryTime?.getTime()).assertEqual(1735689600000);
+      });
+    });
+
+    describe('PresetCsvImportHandler_keepass', () => {
+      let handler: PresetCsvImportHandler = buildPresetHandler('KEEPASS_CSV');
+
+      beforeEach(() => {
+        handler = buildPresetHandler('KEEPASS_CSV');
+      });
+
+      it('shouldExposeSignatureMetadata', 0, () => {
+        expect(handler.formatId).assertEqual('KEEPASS_CSV');
+        expect(handler.formatName).assertEqual('KeePass CSV');
+      });
+
+      it('shouldSniffStandardKeePassHeader', 0, () => {
+        expect(handler.sniff(['Group', 'Title', 'UserName', 'Password', 'URL', 'Notes'], []))
+          .assertEqual(90);
+        expect(handler.sniff(['Group', 'Title', 'UserName', 'Password'], [])).assertEqual(0);
+      });
+
+      it('shouldImportStandardKeePassExportDirectly', 0, async () => {
+        const testDb = await TestUtils.createTestDatabase('KeePass CSV Test Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        const otpauth = 'otpauth://totp/GitHub?secret=JBSWY3DPEHPK3PXP&issuer=GitHub';
+        const csvContent = 'Group,Title,UserName,Password,URL,Notes,TOTP\n' +
+          'Internet Bank,MyBank,bankuser,bankpass,https://bank.example.com,main account,' + otpauth;
+        const fileContent = TestUtils.createFileContent(csvContent, 'keepass.csv');
+
+        const result = await handler.import(fileContent);
+
+        expect(result.groups.length).assertEqual(1);
+        expect(result.groups[0].name).assertEqual('Internet Bank');
+        expect(result.groups[0].entries.length).assertEqual(1);
+        const entry = result.groups[0].entries[0];
+        expect(entry.fields.get('Title')).assertEqual('MyBank');
+        expect(entry.fields.get('UserName')).assertEqual('bankuser');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'Password')).assertEqual('bankpass');
+        expect(entry.fields.get('URL')).assertEqual('https://bank.example.com');
+        expect(entry.fields.get('Notes')).assertEqual('main account');
+        expect(KdbxUtils.getFieldValueString(entry.fields, 'otp')).assertEqual(otpauth);
+      });
+
+      it('shouldImportEntryWithoutGroupColumnToRoot', 0, async () => {
+        // Group 列可选：缺失时条目入根分组
+        const testDb = await TestUtils.createTestDatabase('KeePass CSV Test Database');
+        FileService.resetDbFileParam(testDb, Date.now());
+
+        const csvContent = 'Title,UserName,Password,URL,Notes\n' +
+          'Root Entry,rootuser,rootpass,https://example.com,note';
+        const fileContent = TestUtils.createFileContent(csvContent, 'keepass.csv');
+
+        const result = await handler.import(fileContent);
+
+        expect(result.groups.length).assertEqual(0);
+        expect(result.entries.length).assertEqual(1);
+        expect(result.entries[0].fields.get('Title')).assertEqual('Root Entry');
       });
     });
   });
