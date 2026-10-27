@@ -142,6 +142,19 @@ struct ColumnMappingWizard {
   }
 
   /**
+   * 预览表格内容宽度（列数 × 单列宽）：列多时超出视口触发横向滚动，列少时占满卡宽
+   */
+  private previewTableWidth(): number {
+    let columns = this.headers.length;
+    for (const row of this.sampleRows) {
+      if (row.length > columns) {
+        columns = row.length;
+      }
+    }
+    return columns * PREVIEW_COL_WIDTH;
+  }
+
+  /**
    * 目标字段本地化标签（下拉选项与映射明细共用）
    */
   private targetFieldLabel(target: CsvTargetField): string {
@@ -369,7 +382,7 @@ struct ColumnMappingWizard {
                 }, (header: string, index: number) => `${index}-${header}`)
               }
               .width('100%')
-              .backgroundColor($r('app.color.bg_secondary'))
+              .backgroundColor($r('app.color.table_header_bg'))
 
               ForEach(this.sampleRows, (row: string[], rowIndex: number) => {
                 Row() {
@@ -387,6 +400,8 @@ struct ColumnMappingWizard {
                 .border({ width: { bottom: 1 }, color: $r('app.color.divider') })
               }, (row: string[], rowIndex: number) => `${rowIndex}`)
             }
+            .constraintSize({ minWidth: '100%' })
+            .width(this.previewTableWidth())
           }
           .scrollable(ScrollDirection.Horizontal)
           .width('100%')
@@ -399,10 +414,12 @@ struct ColumnMappingWizard {
       }
       .layoutWeight(1)
       .width('100%')
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
       .align(Alignment.TopStart)
     }
     .width('100%')
     .height('100%')
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 
   @Builder
@@ -442,14 +459,19 @@ struct ColumnMappingWizard {
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+          .border({ width: { bottom: 1 }, color: $r('app.color.divider') })
         }
       }, (item: ColumnMappingItem) => `${item.sourceColumnIndex}-${item.targetField}-${item.customFieldName}`)
+
+      ListItem() {
+        Column()
+          .height(FLOATING_BAR_RESERVED_HEIGHT)
+      }
     }
     .width('100%')
     .height('100%')
-    .padding({ bottom: FLOATING_BAR_RESERVED_HEIGHT })
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     .backgroundColor($r('app.color.bg_primary'))
-    .divider({ strokeWidth: 1, color: $r('app.color.divider') })
   }
 
   @Builder
@@ -474,6 +496,7 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     .align(Alignment.TopStart)
   }
 
@@ -542,6 +565,7 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     .align(Alignment.TopStart)
   }
 
@@ -619,27 +643,32 @@ struct ColumnMappingWizard {
           .width('100%')
           .layoutWeight(1)
           .justifyContent(FlexAlign.Center)
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
         } else {
           Tabs({ index: this.step, barPosition: BarPosition.Start }) {
             TabContent() {
               this.previewStep()
             }
             .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_preview'))))
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
             TabContent() {
               this.mappingStep()
             }
             .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_mapping'))))
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
             TabContent() {
               this.optionsStep()
             }
             .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_options'))))
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
             TabContent() {
               this.confirmStep()
             }
             .tabBar(new SubTabBarStyle(ResourceManager.getString($r('app.string.import_wizard_step_confirm'))))
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
           }
           .onChange((index: number) => {
             this.step = index;
@@ -650,6 +679,7 @@ struct ColumnMappingWizard {
       }
       .width('100%')
       .height('100%')
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
       if (this.hasPreview) {
         this.bottomBar()
@@ -657,6 +687,7 @@ struct ColumnMappingWizard {
     }
     .width('100%')
     .height('100%')
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
     .backgroundColor($r('app.color.bg_primary'))
   }
 }

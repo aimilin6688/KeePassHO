@@ -121,24 +121,30 @@ export class ColumnNameMapper {
       return { target: exact, matchedLength: normalized.length };
     }
     // 包含（KeePass 2.x 顺序：password → username → url → notes）
+    let containsMatch: ColumnMatch | undefined = undefined;
     let matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.PASSWORDS, normalized);
     if (matchedLength > 0) {
-      return { target: CsvTargetField.PASSWORD, matchedLength: matchedLength };
+      containsMatch = { target: CsvTargetField.PASSWORD, matchedLength: matchedLength };
+    } else {
+      matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.USERNAMES, normalized);
+      if (matchedLength > 0) {
+        containsMatch = { target: CsvTargetField.USERNAME, matchedLength: matchedLength };
+      } else {
+        matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.URLS, normalized);
+        if (matchedLength > 0) {
+          containsMatch = { target: CsvTargetField.URL, matchedLength: matchedLength };
+        } else {
+          matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.NOTES, normalized);
+          if (matchedLength > 0) {
+            containsMatch = { target: CsvTargetField.NOTES, matchedLength: matchedLength };
+          }
+        }
+      }
     }
-    matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.USERNAMES, normalized);
-    if (matchedLength > 0) {
-      return { target: CsvTargetField.USERNAME, matchedLength: matchedLength };
-    }
-    matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.URLS, normalized);
-    if (matchedLength > 0) {
-      return { target: CsvTargetField.URL, matchedLength: matchedLength };
-    }
-    matchedLength = ColumnNameMapper.matchContains(ColumnNameMapper.NOTES, normalized);
-    if (matchedLength > 0) {
-      return { target: CsvTargetField.NOTES, matchedLength: matchedLength };
-    }
-    // 前缀（全部目标字段，最长命中优先）
-    let best: ColumnMatch | undefined = undefined;
+    // 前缀（全部目标字段，最长命中优先）。包含命中作为基准：仅当某前缀同义词严格更长时才覆盖
+    // （「totp动态密码」按 totp 判 TOTP 而非按子串「密码」误判 PASSWORD）；
+    // 同长时保持包含阶段优先（'user password' 仍判 PASSWORD 的 KeePass 2.x 顺序回归）。
+    let best: ColumnMatch | undefined = containsMatch;
     best = ColumnNameMapper.matchPrefix(best, ColumnNameMapper.GROUPS, CsvTargetField.GROUP, normalized);
     best = ColumnNameMapper.matchPrefix(best, ColumnNameMapper.TITLES, CsvTargetField.TITLE, normalized);
     best = ColumnNameMapper.matchPrefix(best, ColumnNameMapper.USERNAMES, CsvTargetField.USERNAME, normalized);

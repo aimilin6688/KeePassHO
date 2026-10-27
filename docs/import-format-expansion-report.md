@@ -4,9 +4,9 @@
 >
 > 约束：**导入能力必须以面向接口方式扩展；上层 UI / 服务层（页面、ViewModel、Facade、ImportService、Registry）零改动，只允许新增实现与组合根注册行；CSV 类导入必须提供列映射向导；尽可能多地支持其他密码库的导入。**
 >
-> 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 进度基线：`dev`（`564d4abc`，2026-10-27 复核）
+> 报告日期：2026-10-26 | 基线分支：`dev`（cc4e99ae） | 进度基线：`dev`（`51ec420c`，2026-10-27 复核）
 >
-> **交付状态（2026-10-27 复核）：M1~M2-4 全部交付于 `dev`——M1 经 worktree 分支合并（merge `f61fca93`，分支已删）；M2-1 四个固定表头 CSV（`11079bd0`）、M2-2 Keeper/Enpass CSV（`d6d8fa02`）、M2-3 JSON 族调度器 + Proton Pass JSON（`3db22f24`）、M2-4 列映射向导 + 签名库首批（`a8327a7d` + 优化 `04dbeea3`）直接提交 `dev`；受保护文件自 `f61fca93` 起 diff 为空（本次复核确认）。M3（1PUX/OpVault/KDB）未启动，详见 §十 实现进度。**
+> **交付状态（2026-10-27 复核）：M1~M2-4 全部交付于 `dev`——M1 经 worktree 分支合并（merge `f61fca93`，分支已删）；M2-1 四个固定表头 CSV（`11079bd0`）、M2-2 Keeper/Enpass CSV（`d6d8fa02`）、M2-3 JSON 族调度器 + Proton Pass JSON（`3db22f24`）、M2-4 列映射向导 + 签名库首批（`a8327a7d` + 优化 `04dbeea3`）直接提交 `dev`；M2-5 编码检测与签名库收敛（`51ec420c`）：新增 `CsvEncodingUtils`（UTF-8/GBK 检测 + 向导编码切换）、Chrome/Firefox/LastPass/Dashlane/1Password 五个固定表头 handler 类收敛为签名库数据行、列名映射中文同义词 + 模糊匹配增强。受保护文件自 `f61fca93` 起 diff 为空（本次复核确认）。M3（1PUX/OpVault/KDB）未启动，详见 §十 实现进度。**
 
 ---
 
@@ -395,6 +395,7 @@ Dispatcher.import(fileContent)                       [UI 正在 await viewModel.
 | M2-2 | Keeper CSV（record_type 按行解析）+ Enpass CSV（40 列） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-3 | `JsonFamilyDispatcher`（Bitwarden JSON 迁入）+ JSON 格式（Proton Pass JSON 等） | 2-3 | ✅ 已交付（见 §10.5 验证记录） |
 | M2-4 | 列映射向导（L-1~L-7）+ 长尾签名库首批（Norton Identity Safe CSV、True Key CSV，见 §10.2 差异 12） | 4-5 | ✅ 已交付（见 §10.5 验证记录） |
+| M2-5 | 编码检测与切换（`CsvEncodingUtils`）+ 固定表头 CSV handler 收敛为签名库数据行 + 列名映射中文同义词/模糊匹配增强（`51ec420c`） | 2-3 | ✅ 已交付（见 §10.1 M2-5） |
 | M3（P3，按需） | 1PUX（OpData01）、OpVault、KDB 移植 | 25-35 | ⬜ 未启动 |
 
 M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用向导），M2 达成 P2-7 的"覆盖长尾导入格式"。
@@ -456,6 +457,19 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 35. 调度器向导路由：未知来源（嗅探全 0）且建议映射为空才 `requestColumnMapping` 弹向导（建议映射可识别时不弹，按建议映射直导，见 §10.2 差异 18）；已知格式经 `SettingsService.KEY_IMPORT_FORCE_CSV_WIZARD`（默认 false，无 UI 开关）强制弹；profile 回传走 `importWithProfile`，headless null 回落原 target 直导；family 追加签名库 Preset handlers
 36. 新增 3 个测试套件共 48 用例（FormatSignatureLibrary 21 + ImportWizardBridge 8 + CsvMappingWizard 19；其中 2 例为 `04dbeea3` 触发条件收紧补充：`shouldAutoImportKeePassStyleCsvWithoutWizard` / `shouldRequestWizardWhenNoRecognizableColumns`）+ `List.test.ets` 注册
 
+**M2-5 编码检测与签名库收敛（`51ec420c`，TDD）**：
+
+37. `csvimport/CsvEncodingUtils.ets` — 编码检测（UTF-8 BOM → 严格 UTF-8 字节序列校验（RFC 3629，拒绝过长编码/代理区/截断序列）→ 回退 GBK）与按编码解码；`CsvEncoding.AUTO/UTF8/GBK` 常量；`BaseCsvImportHandler.import()` 改走 `decodeAuto`，全部 CSV handler 统一支持 GBK 导出文件
+38. 签名库收敛：Chrome/Firefox/LastPass/Dashlane/1Password 五个固定表头 handler 类删除，转为 `FormatSignatureLibrary` 纯数据行（签名扩至 7 条：LASTPASS/DASHLANE/ONEPASSWORD/FIREFOX/CHROME/NORTON_IDSAFE/TRUE_KEY）；`CsvFormatSignature` 新增 `distinguishers`（特征列：非空时任一存在才认领，与最小公共集区分）、`slashGroupPath`（LastPass `\` 分隔归一化 `/`）、行级扩展全数据化（`ignoredHeaders`/`favoriteHeaders`/`customHeaderMap`）；历史遗留 `CsvImportHandler.ets`（M1 前旧 `.csv` handler，见 §2.1）一并清理删除
+39. `PresetCsvImportHandler` 增强：`sniff` 走 `scoreSignature`（v3 认领语义）；`applyRowExtensions` 按 favorite（1/true → `FAVORITE_TAG`）→ customHeaderMap → ignoredHeaders → 签名内部列 → 附加列（字段名 = 原始表头，不归一化）逐级处理；`normalizeGroupPath` 按 `slashGroupPath` 签名归一化
+40. `ColumnNameMapper` 增强：中文同义词（标题/名称、用户名/账号/邮箱、密码/口令、网址/链接、备注、分组、动态密码等）；三阶段匹配 = ①精确同义词 ②包含子串（KeePass 2.x 顺序：password → username → url → notes）③前缀（「GROUP分组」「TITLE(标题)」等带注释表头，最长命中优先）；`mapWithSpecificity` 返回命中同义词长度，同目标冲突取最长命中（最具体）者
+41. `buildSuggestedMapping` 改两阶段：①精确同义词命中，同目标保留首列（KeePass 语义）；②模糊命中（包含/前缀），同目标取命中同义词最长者、平局取低列号（按列号排序输出）
+42. 向导模型统一：`WizardTargetField` 枚举移除，全链路复用 `CsvTargetField`（新增 `LAST_MODIFIED`/`CREATED`，共 SKIP + 12 目标 + CUSTOM = 14 值）；`ColumnMappingProfile` 增 `encoding` 字段（空 = 自动检测，不重新解码）；`CsvMappingPreview` 携 `sourceContent`（原始文件字节）+ `detectedEncoding`
+43. 向导 Step1（预览）新增编码下拉（自动/UTF-8/GBK，「自动」项显示检测结果），切换编码后 `reparseWithEncoding` 重新解码解析并刷新表头/采样行/建议映射；新增 base/zh_CN 双语字符串 2 条（`import_wizard_encoding_label` / `import_wizard_encoding_auto`）
+44. 调度器适配：`import()` 先 `CsvEncodingUtils.detect` 解码再统一解析（成员 handler 复用解析结果）；**向导触发条件改回「签名未命中（target === null）或强制开关 → 一律弹向导」**（回退 §10.2 差异 18 的收紧：精准匹配未命中（多一列/少一列）时按建议映射静默直导有丢列风险，改人工确认；无 UI 上下文 profile null 时仍回落 Generic 建议映射直导）；用户在向导切换过编码时 `resolveProfileRows` 按该编码重新解码解析（与向导呈现的表头保持一致）
+45. family 结构定型：4 个特殊行处理逻辑类（Bitwarden/ProtonPass/Keeper/Enpass）+ 签名库全部签名的 `PresetCsvImportHandler`（构造函数遍历 `getAllSignatures()` 组装）+ `GenericCsvImportHandler` 兜底——纯数据格式「新增格式 = 签名库一条数据行，零新增类」落地
+46. 测试重组：新增 `CsvEncodingUtils.test.ets`（22 用例）、`PresetCsvImportFormats.test.ets`（81 用例，覆盖 7 条签名全部格式）；删除 Chrome/Firefox/LastPass/Dashlane/1Password/CsvImportHandler 6 个独立套件；扩充 `ColumnNameMapper`（23）、`CsvFamilyDispatcher`（32）、`CsvColumnMappingEngine`（13）、`CsvMappingWizard`（16）、`FormatSignatureLibrary`（21）、`ImportWizardBridge`（8）、BitwardenCsv/KeeperCsv/ProtonPassCsv 等既有套件 + `List.test.ets` 注册更新
+
 ### 10.2 实现差异（相对本报告原设计）
 
 1. 契约与模型实际落在 `csvimport/` 单目录（原设计拆 `contracts/`/`model/`/`csv/`/`sniffing/`/`wizard/`），`ISniffableImport` 即契约
@@ -473,21 +487,28 @@ M1 完成即达成 gap 分析 P0-3 首批目标（浏览器 + LastPass + 通用�
 
 11. 交互桥结果回传不经 EventBus/emitter，改为向导页对桥单例的直接方法调用（`notifyComplete/notifyCancelled` 同线程同步 resolve/reject）：emitter 事件队列投递会序列化数据、类实例丢失原型，`instanceof` 收窄恒 false 导致 Promise 永久挂起（真机用例 26 卡死复现；EventBus 既有测试仅传 string 未暴露）；桥与向导页同进程同线程，emitter 中转无收益且有序列化陷阱
 12. 签名库首批由原计划 RoboForm(HTML)/mSecure(无表头位置式)/Sticky(XML) 改为 **Norton Identity Safe CSV + True Key CSV**：前三者均非固定表头 CSV（RoboForm 为 HTML 导出、mSecure v3/v6 为无表头位置式、Sticky 为 XML），与签名库"固定表头匹配"前提冲突，需专用导入器（推迟 M3）；Norton/True Key 均有 KeePass 权威实现且为固定表头
-13. 签名评分新增 strict 规则：未声明可选列的签名（knownHeaders 与 requiredHeaders 等长，如 Norton 恰 5 列）文件表头含未知列时直接 0 分（而非 70）——否则本应用 CSV 导出表头（Group,Title,UserName,Password,URL,Notes 为 Norton 必需列超集）会被 70 分误认领（回归用例护栏）
-14. Norton CSV 的 UTF-16LE 编码（KeePass 参考 `Encoding.Unicode` 读取）暂未处理：当前按 UTF-8 解析，UTF-16LE 导出文件需用户先转码；后续可在 `FileContentInfo` 层按 BOM 探测统一处理
+13. 签名评分 strict 规则（M2-4 版本）：未声明可选列的签名（knownHeaders 与 requiredHeaders 等长，如 Norton 恰 5 列）文件表头含未知列时直接 0 分（而非 70）——否则本应用 CSV 导出表头（Group,Title,UserName,Password,URL,Notes 为 Norton 必需列超集）会被 70 分误认领（回归用例护栏）；`51ec420c` 起演进为对全部签名统一的 v3 认领语义（见差异 22）
+14. Norton CSV 的 UTF-16LE 编码（KeePass 参考 `Encoding.Unicode` 读取）暂未处理：当前按 UTF-8 解析，UTF-16LE 导出文件需用户先转码；后续可在 `FileContentInfo` 层按 BOM 探测统一处理。**部分解决（`51ec420c`）**：GBK/UTF-8 检测与解码已由 `CsvEncodingUtils` 统一支持且向导 Step1 可手动切换编码；UTF-16LE 仍未支持（`CsvEncoding` 仅 UTF-8/GBK）
 15. `KEY_IMPORT_FORCE_CSV_WIZARD` 已知格式强制向导开关暂无设置页 UI（默认 false）：先用真机测试/Preferences 直改验证链路，UI 入口随 M2-4 后续迭代或设置页改版补充
 16. ~~向导页目标字段下拉暂显示枚举原始名~~（已解决）：新增 14 个目标字段本地化标签（`import_wizard_target_*`，base+zh_CN），下拉选项与确认步映射明细共用
 17. True Key `customHeaderMap` 计 18 条（city→City、firstname→First Name、memberid→Member ID 等），KeePass TrueKeyCsv4 大写字段名权威；ignored 8 列（autologin/protectedwithpassword/subdomainonly/type/kind/gender/hexcolor/tk_export_version）；favorite→`FAVORITE_TAG`、expirationdate/expirydate→`EXPIRY_TIME`
-18. 调度器向导触发条件收紧（真机验收反馈）：未知来源但建议映射可识别全部/部分列（如标准 KeePass 风格表头 Group,Title,UserName,Password,URL,Notes）时**不弹向导**，按建议映射直接导入（保持既有行为）；仅建议映射为空（无任何可识别列）时才弹向导。原"未知来源一律弹向导"设计对可自动解析的标准 CSV 打扰用户
+18. ~~调度器向导触发条件收紧（真机验收反馈）：未知来源但建议映射可识别全部/部分列（如标准 KeePass 风格表头 Group,Title,UserName,Password,URL,Notes）时**不弹向导**，按建议映射直接导入（保持既有行为）；仅建议映射为空（无任何可识别列）时才弹向导。原"未知来源一律弹向导"设计对可自动解析的标准 CSV 打扰用户~~（**已回退，`51ec420c`**）：签名未命中（target === null）或强制开关 → 一律弹列映射向导人工确认；理由：精准匹配未命中（多一列/少一列）时按建议映射静默直导有丢列风险（可识别列未在签名 headerMap 内会被丢弃），交向导预填全部列映射（未识别列默认 CUSTOM，不丢列）；无 UI 上下文（headless）时仍回落 Generic 建议映射直导
 19. 向导页 UI 标准化改版（真机验收反馈）：标准 NavDestination 标题栏（含返回键）替代自绘标题；步骤条改 `Tabs` + `SubTabBarStyle`（标准组件、标准字号）替代自绘 12fp 文本行；预览改表格式（表头行置顶高亮、单元格超 20 字符截断、列多横向滚动）；确认步展示映射明细列表（源列 → 目标字段）而非仅映射计数；底部操作栏改 DatabaseView MoveModeBar 式悬浮布局（内容穿透滚动，Stack alignContent Bottom）
+
+**M2-5 新增差异（`51ec420c`）**：
+
+20. `ISniffableImport.sniff` 实际签名是 `sniff(headerRow: string[], sampleRows: string[][]): number`（M1 即如此），非 §4.3 设计的 `sniff(content: Uint8Array)`——调度器先统一解码解析 CSV 再分发，成员 handler 只评估表头，避免每成员重复全文解析
+21. §4.2 设计的约 10 个独立成员 handler 类未全部保留：固定表头格式（Chrome/Firefox/LastPass/Dashlane/1Password/Norton/True Key）自 `51ec420c` 起全部收敛为 `FormatSignatureLibrary` 数据行 + `PresetCsvImportHandler`，仅特殊行处理逻辑格式（Bitwarden/Proton Pass/Keeper/Enpass，行类型/兜底/字段拆分逻辑无法数据化）保留独立 handler 类
+22. 签名评分非 §4.5 设计的 100/70/60 阶梯，统一为 v3 认领语义（`BaseCsvImportHandler.matchesHeadersClaimable` / `FormatSignatureLibrary.scoreSignature`）二值评分：①必需表头缺失 → 0；②特征表头（distinguishers）非空且全部缺失 → 0；③未知列（不在已知全集）**可识别**（`ColumnNameMapper.mapWithSpecificity` 非 undefined，如「Notes」）→ 0（走向导预填，不丢列），**完全不可识别的杂列** → 忽略照导（KeePass 2.x 按名映射语义）；④满足全部条件 → 90（`SNIFF_CONFIDENCE`）。调度器分发阈值 70
+23. 向导预填策略（`ImportWizardBridge.buildPreview`）：建议映射命中的列用建议目标，未识别列默认 `CUSTOM`（字段名回退源列名）——保证任何列都不默认丢弃；编码检测信息（detectedEncoding）与原始字节（sourceContent）随预览下发，支撑向导内编码切换重解析
 
 ### 10.3 缺失项（对应原设计）
 
-M2-4 交付后原 L-1~L-11 清单全部闭环（L-1 向导页面、L-2 交互桥、L-3 route_map 注册、L-4 签名库、L-5 建议映射 UI、L-6 人工修正、L-7 结果回填、L-8~L-11 向导测试均 ✅）。遗留小项仅剩 §10.2 差异 14-15（Norton UTF-16LE、设置开关 UI）；差异 16（下拉本地化显示名）已随 `04dbeea3` 解决。
+M2-4 交付后原 L-1~L-11 清单全部闭环（L-1 向导页面、L-2 交互桥、L-3 route_map 注册、L-4 签名库、L-5 建议映射 UI、L-6 人工修正、L-7 结果回填、L-8~L-11 向导测试均 ✅）。M2-5（`51ec420c`）补齐编码检测/切换。遗留小项仅剩 §10.2 差异 14 剩余部分（Norton UTF-16LE 编码，GBK 已支持）与差异 15（`KEY_IMPORT_FORCE_CSV_WIZARD` 设置页 UI）。
 
 ### 10.4 未启动
 
-M3（1PUX/OpVault/KDB），及 M2-4 遗留小项（§10.2 差异 14-15；差异 16 已解决）。
+M3（1PUX/OpVault/KDB），及遗留小项（§10.2 差异 14 剩余 UTF-16LE、差异 15 设置开关 UI）。
 
 ### 10.5 验证记录
 
@@ -508,8 +529,10 @@ M3（1PUX/OpVault/KDB），及 M2-4 遗留小项（§10.2 差异 14-15；差异 
 | 2026-10-27 | M2-4 回归（CSV 全家 15 套件 + JSON 族 3 套件） | 249/249 通过（0 失败，含调度器向导路由回归护栏：KeePass 风格表头不被 Norton 签名认领） |
 
 > **2026-10-27 复核补充**：M2-4 优化提交 `04dbeea3`（向导 UI 标准化 + 触发条件收紧，§10.2 差异 18/19）为 CsvMappingWizard 补充 2 个触发条件用例（17→19，M2-4 套件合计 46→48）；上表 46/46、249/249 记录于该优化提交前，+2 用例无独立真机运行记录（本次复核时无设备连接，待连机补充回归）。
+>
+> **2026-10-27 二次复核（`51ec420c`，M2-5）**：该提交新增/重组的测试套件（CsvEncodingUtils 22 用例、PresetCsvImportFormats 81 用例，及 ColumnNameMapper/CsvFamilyDispatcher/CsvColumnMappingEngine/CsvMappingWizard 等套件扩充）尚无真机运行记录，待连机补充回归；被删除的 6 个独立套件（Chrome/Firefox/LastPass/Dashlane/1Password/CsvImportHandler）的格式行为断言已由 `PresetCsvImportFormats.test.ets` 全量承接（81 用例覆盖 7 条签名格式）。
 
-受保护文件（附录 A）在 M1/M2-1~M2-4 中 diff 均为空（2026-10-27 复核 `f61fca93..564d4abc` 确认）；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1~M2-4 零改动——新 handler 由 dispatcher 内部注册）。
+受保护文件（附录 A）在 M1/M2-1~M2-5 中 diff 均为空（2026-10-27 复核 `f61fca93..51ec420c` 确认）；`index.ets` 组合根为唯一注册改动（M1 完成，M2-1~M2-5 零改动——新 handler 由 dispatcher 内部注册）。
 
 ---
 
@@ -525,35 +548,37 @@ entry/src/main/ets/services/importExport/handlers/IImportHandler.ets
 entry/src/main/ets/services/importExport/handlers/IExportHandler.ets
 ```
 
-## 附录 B：新增文件清单（✅ 已交付 / ⬜ 待实现）
+## 附录 B：文件清单（✅ 已交付 / 🗑 已移除 / ⬜ 待实现）
 
 ```
 entry/src/main/ets/services/importExport/
-  csvimport/ISniffableImport.ets                        ✅（M1，契约）
-  csvimport/CsvImportModels.ets                         ✅（M1）
+  csvimport/ISniffableImport.ets                        ✅（M1，契约；sniff(headerRow, sampleRows) 表头级嗅探，§10.2 差异 20）
+  csvimport/CsvImportModels.ets                         ✅（M1；M2-5 扩 CsvTargetField 至 14 值：+LAST_MODIFIED/CREATED）
   csvimport/CsvParser.ets                               ✅（M1）
-  csvimport/ColumnNameMapper.ets                        ✅（M1，KeePass 同义词库）
-  csvimport/CsvColumnMappingEngine.ets                  ✅（M1，含 Profile 引擎）
-  csvimport/CsvMappingModels.ets                        ✅（M2-4，向导模型 + 转换器 + validate）
-  sniffing/FormatSignatureLibrary.ets                   ✅（M2-4，Norton/True Key 首批签名）
+  csvimport/CsvEncodingUtils.ets                        ✅（M2-5，编码检测 UTF-8 BOM/严格校验→GBK 回退 + 解码）
+  csvimport/ColumnNameMapper.ets                        ✅（M1；M2-5 中文同义词 + 包含/前缀模糊 + mapWithSpecificity）
+  csvimport/CsvColumnMappingEngine.ets                  ✅（M1；M2-5 建议映射两阶段化）
+  csvimport/CsvMappingModels.ets                        ✅（M2-4；M2-5 移除 WizardTargetField、ColumnMappingProfile 增 encoding）
+  sniffing/FormatSignatureLibrary.ets                   ✅（M2-4 Norton/True Key 首批；M2-5 收敛固定表头格式，现 7 条签名）
   wizard/ImportWizardBridge.ets                         ✅（M2-4，交互桥；emitter 序列化陷阱改直连，§10.2 差异 11）
-  handlers/import/PresetCsvImportHandler.ets            ✅（M2-4，签名驱动通用 handler）
-  handlers/import/CsvFamilyDispatcherImportHandler.ets  ✅（M1；M2-1 扩 family 至 7 handler）
-  handlers/import/BaseCsvImportHandler.ets              ✅（M1；M2-1 加 applyRowExtensions 钩子）
-  handlers/import/GenericCsvImportHandler.ets           ✅（M1）
-  handlers/import/ChromeCsvImportHandler.ets            ✅（M1）
-  handlers/import/FirefoxCsvImportHandler.ets           ✅（M1）
-  handlers/import/LastPassCsvImportHandler.ets          ✅（M1）
-  handlers/import/BitwardenCsvImportHandler.ets         ✅（M2-1）
-  handlers/import/OnePasswordCsvImportHandler.ets       ✅（M2-1）
-  handlers/import/DashlaneCsvImportHandler.ets          ✅（M2-1）
-  handlers/import/ProtonPassCsvImportHandler.ets        ✅（M2-1）
-  handlers/import/KeeperCsvImportHandler.ets            ✅（M2-2）
-  handlers/import/EnpassCsvImportHandler.ets            ✅（M2-2）
+  handlers/import/PresetCsvImportHandler.ets            ✅（M2-4；M2-5 增强为签名库全部纯数据格式驱动）
+  handlers/import/CsvFamilyDispatcherImportHandler.ets  ✅（M1；family = 4 逻辑类 + 签名库 preset + Generic 兜底）
+  handlers/import/BaseCsvImportHandler.ets              ✅（M1；M2-1 加 applyRowExtensions 钩子；M2-5 matchesHeadersClaimable v3 / decodeAuto）
+  handlers/import/GenericCsvImportHandler.ets           ✅（M1；importWithProfile 向导档案导入）
+  handlers/import/BitwardenCsvImportHandler.ets         ✅（M2-1，特殊行逻辑类）
+  handlers/import/ProtonPassCsvImportHandler.ets        ✅（M2-1，特殊行逻辑类）
+  handlers/import/KeeperCsvImportHandler.ets            ✅（M2-2，特殊行逻辑类）
+  handlers/import/EnpassCsvImportHandler.ets            ✅（M2-2，特殊行逻辑类）
   handlers/import/JsonFamilyDispatcherImportHandler.ets ✅（M2-3；`.json` 路由接管）
   handlers/import/ProtonPassJsonImportHandler.ets       ✅（M2-3）
-  ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）
-entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ✅（M2-4，4 步向导页 + route_map 注册）
+  handlers/import/ChromeCsvImportHandler.ets            🗑（M1 交付；M2-5 转签名库数据行，类删除）
+  handlers/import/FirefoxCsvImportHandler.ets           🗑（M1 交付；M2-5 转签名库数据行，类删除）
+  handlers/import/LastPassCsvImportHandler.ets          🗑（M1 交付；M2-5 转签名库数据行，类删除）
+  handlers/import/DashlaneCsvImportHandler.ets          🗑（M2-1 交付；M2-5 转签名库数据行，类删除）
+  handlers/import/OnePasswordCsvImportHandler.ets       🗑（M2-1 交付；M2-5 转签名库数据行，类删除）
+  handlers/import/CsvImportHandler.ets                  🗑（M1 前旧 `.csv` handler，见 §2.1；M2-5 清理删除）
+  ...（P3: OnePassword1PuxImportHandler / KdbImportHandler）              ⬜
+entry/src/main/ets/pages/importwizard/ColumnMappingWizardPage.ets   ✅（M2-4 4 步向导页 + route_map 注册；M2-5 Step1 编码下拉 + 切换重解析）
 ```
 
 ## 附录 C：与 feature-gap-analysis.md 的条目映射

@@ -26,6 +26,10 @@
       "value": "#2c2c2e"
     },
     {
+      "name": "table_header_bg",
+      "value": "#2E3A4E"
+    },
+    {
       "name": "divider",
       "value": "#38383A"
     },
