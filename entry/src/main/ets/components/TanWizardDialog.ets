@@ -188,7 +188,7 @@ export struct TanWizardDialog {
       }
       .layoutWeight(1)
       .constraintSize({ maxHeight: 360 })
-      .scrollBarBarState(BarState.Auto)
+      .scrollBar(BarState.Auto)
       .width('100%')
       .backgroundColor($r("app.color.bg_primary"))
 

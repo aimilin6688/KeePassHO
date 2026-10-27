@@ -11,7 +11,7 @@ import { FileService } from '../services/FileService';
 import { UIUtils } from '@kit.ArkUI';
 import { ImageViewerDialog } from './ImageViewerDialog';
 import { EventBus } from '../services/EventBus';
-import { KdbxSaveService } from '../services/kdbx/KdbxSaveService';
+import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { ToastSaveDatabaseCallback } from '../workers/callback/ToastSaveDatabaseCallback';
 
 /**
