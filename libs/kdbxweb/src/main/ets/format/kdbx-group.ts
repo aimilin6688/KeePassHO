@@ -273,6 +273,11 @@ export class KdbxGroup {
 
             if (item && remoteItem.locationChanged > item.locationChanged) {
                 item.parentGroup = this; // item moved to this group remotely later than local
+                // P2-4 M1：位置胜出方（远端）的 previousParentGroup 与 locationChanged
+                // 一起落地（对齐 KeePass MergeInLocationChanged GetBestPool 语义，
+                // PwDatabase.cs），否则后续 merge 不收敛、恢复原位置会取到过期值。
+                item.previousParentGroup = remoteItem.previousParentGroup;
+                item.times.locationChanged = remoteItem.times.locationChanged;
                 newItems.splice(KdbxGroup.findInsertIx(newItems, remoteCollection, ix), 0, item);
             } else if (!item) {
                 // item created remotely
@@ -289,6 +294,9 @@ export class KdbxGroup {
                     continue;
                 }
                 newItem.parentGroup = this;
+                // copyFrom 刻意不复制 previousParentGroup（内容回滚不得改变位置元数据），
+                // 远端新建对象需显式带过来，作为恢复原位置的依据
+                newItem.previousParentGroup = remoteItem.previousParentGroup;
                 newItems.splice(KdbxGroup.findInsertIx(newItems, remoteCollection, ix), 0, newItem);
             }
         }
@@ -335,6 +343,7 @@ export class KdbxGroup {
         this.notes = group.notes;
         this.icon = group.icon;
         this.customIcon = group.customIcon;
+        this.tags = group.tags.slice();
         this.times = group.times.clone();
         this.expanded = group.expanded;
         this.defaultAutoTypeSeq = group.defaultAutoTypeSeq;
@@ -343,6 +352,7 @@ export class KdbxGroup {
         this.lastTopVisibleEntry = group.lastTopVisibleEntry;
         this.fgColor = group.fgColor;
         this.bgColor = group.bgColor;
+        this.customData = KdbxCustomData.clone(group.customData);
     }
 
     static create(name: string, parentGroup?: KdbxGroup): KdbxGroup {

@@ -1,5 +1,6 @@
 import KdbxSaveService from '../services/kdbx/KdbxSaveService';
 import { AddGroupDialog } from '../components/AddGroupDialog';
+import { TanWizardDialog } from '../components/TanWizardDialog';
 import { DatabaseShowParam, DbFileParam, EntryParam, Icons, MoveParam, TemplateEntryCreateParam } from '../services/TypeDefined';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -174,6 +175,15 @@ export struct DatabaseView {
         this.newGroupName = "";
         this.editingGroupIndex = -1;
       }
+    }),
+    alignment: DialogAlignment.Bottom,
+    customStyle: true,
+    autoCancel: true
+  })
+  // TAN 批量添加向导（P2-4 M3）
+  private tanWizardDialogController: CustomDialogController = new CustomDialogController({
+    builder: TanWizardDialog({
+      onConfirm: (tans: Array<string>, startIndex: number): void => this.handleAddTan(tans, startIndex)
     }),
     alignment: DialogAlignment.Bottom,
     customStyle: true,
@@ -997,6 +1007,16 @@ export struct DatabaseView {
         this.editEntry(item);
       })
 
+      // 恢复到原位置（仅回收站内且可恢复时显示）
+      if (this.canRestoreItem(item)) {
+        MenuItem({
+          startIcon: $r('app.media.ic_rollback'),
+          content: $r('app.string.restore_to_original_location'),
+        }).onClick(() => {
+          this.restoreItem(item);
+        })
+      }
+
       // 选择
       MenuItem({
         startIcon: $r('app.media.ic_check'),
@@ -1058,6 +1078,16 @@ export struct DatabaseView {
       }).onClick(() => {
         this.editGroup(item);
       })
+
+      // 恢复到原位置（仅回收站内且可恢复时显示）
+      if (this.canRestoreItem(item)) {
+        MenuItem({
+          startIcon: $r('app.media.ic_rollback'),
+          content: $r('app.string.restore_to_original_location'),
+        }).onClick(() => {
+          this.restoreItem(item);
+        })
+      }
 
       // 选择
       MenuItem({
@@ -1129,6 +1159,28 @@ export struct DatabaseView {
   }
 
   /**
+   * 列表条目标题（TAN 条目显示 "TAN 序号"，无序号回退 <TAN>，P2-4 M3）
+   */
+  private getListItemTitle(item: KdbxEntry): string {
+    if (KdbxUtils.isTanEntry(item)) {
+      const tanIndex = KdbxUtils.getTanIndex(item);
+      return tanIndex ? ResourceManager.getString($r('app.string.tan_list_title'), tanIndex) : KdbxUtils.TAN_TITLE;
+    }
+    return KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE);
+  }
+
+  /**
+   * 列表条目副标题（TAN 条目显示密码掩码，P2-4 M3）
+   */
+  private getListItemSubtitle(item: KdbxEntry): string {
+    if (KdbxUtils.isTanEntry(item)) {
+      const password = KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_PASSWORD);
+      return password ? '••••••' : '';
+    }
+    return KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME);
+  }
+
+  /**
    * 复制用户名
    */
   private copyUsername(entry: KdbxEntry) {
@@ -1145,7 +1197,24 @@ export struct DatabaseView {
     const password = KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_PASSWORD);
     if (password) {
       ClipboardUtils.copyAutoClear(KdbxFieldReference.resolveFieldRefsInText(password, FileService.getDatabase(), entry));
+      this.expireTanEntryAfterCopy(entry);
     }
+  }
+
+  /**
+   * 复制 TAN 密码后按设置将条目置为过期（P2-4 M3，对齐 KeePass ExpireTanEntryIfOption）
+   */
+  private expireTanEntryAfterCopy(entry: KdbxEntry) {
+    if (!KdbxUtils.isTanEntry(entry)) {
+      return;
+    }
+    const expiresOnUse = SettingsService.getSync(SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE,
+      SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE_DEFAULT);
+    if (!KdbxUtils.expireTanEntryOnUse(entry, expiresOnUse)) {
+      return;
+    }
+    this.saveDatabase();
+    this.updateUI();
   }
 
   /**
@@ -1395,6 +1464,67 @@ export struct DatabaseView {
   }
 
   /**
+   * 当前视图是否为回收站分组（回收站本身或其子分组）
+   */
+  private isViewingRecycleBin(): boolean {
+    const db = this.database;
+    const group = this.currentGroup;
+    if (!db || !group) {
+      return false;
+    }
+    const recycleBinUuid = db.meta.recycleBinUuid;
+    if (recycleBinUuid && group.uuid.equals(recycleBinUuid)) {
+      return true;
+    }
+    return db.isInRecycleBin(group);
+  }
+
+  /**
+   * 批量恢复到原位置（回收站内，逐项 restoreToPreviousLocation，统计成功/跳过数）
+   */
+  private executeBatchRestore(): void {
+    const db = this.database;
+    if (!db) {
+      return;
+    }
+    const entries = this.getSelectedEntries();
+    const groups = this.getSelectedGroups();
+
+    let restoredCount = 0;
+    let skippedCount = 0;
+    entries.forEach(entry => {
+      if (KdbxUtils.restoreToPreviousLocation(db, entry)) {
+        restoredCount++;
+      } else {
+        skippedCount++;
+      }
+    });
+    groups.forEach(group => {
+      if (KdbxUtils.restoreToPreviousLocation(db, group)) {
+        restoredCount++;
+      } else {
+        skippedCount++;
+      }
+    });
+
+    if (restoredCount > 0) {
+      this.saveDatabase();
+    }
+    CommonUtils.showToast({
+      message: $r('app.string.batch_restore_result_message', restoredCount, skippedCount)
+    });
+
+    // 刷新列表数据
+    if (this.currentGroup) {
+      this.currentGroup = db.getGroup(this.currentGroup.uuid);
+      this.items = [...this.currentGroup?.groups || [], ...this.currentGroup?.entries || []];
+    }
+
+    // 退出选择模式
+    this.exitSelectionMode();
+  }
+
+  /**
    * 删除条目或分组 - 直接删除
    * @param item 要删除的条目或分组对象（使用对象引用而非索引，避免搜索模式下索引错位）
    */
@@ -1570,6 +1700,34 @@ export struct DatabaseView {
           })
         }
 
+        // 恢复到原位置按钮（回收站内且可恢复时显示）
+        if (this.canRestoreItem(this.selectedItem)) {
+          Column({ space: 8 }) {
+            Button() {
+              Column() {
+                Image($r('app.media.ic_rollback'))
+                  .width(28)
+                  .height(28)
+                  .fillColor($r('app.color.text_primary'))
+                Text($r('app.string.restore_button_text'))
+                  .fontSize(12)
+                  .fontColor($r('app.color.text_primary'))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Center)
+            }
+            .height(48)
+            .width(52)
+            .backgroundColor(Color.Transparent)
+            .borderRadius(8)
+            .onClick(() => {
+              if (this.selectedItem) {
+                this.restoreItem(this.selectedItem);
+              }
+            })
+          }
+        }
+
         // 删除按钮
         Column({ space: 8 }) {
           Button() {
@@ -1739,6 +1897,50 @@ export struct DatabaseView {
     this.saveDatabase();
   }
 
+  /**
+   * 条目/分组是否可恢复到原位置（回收站内且 PreviousParentGroup 可用，
+   * 设计文档 §6.2，对齐 KeePass 菜单可见性规则）
+   */
+  private canRestoreItem(item: KdbxGroup | KdbxEntry | null): boolean {
+    const db = this.database;
+    if (!db || !item) {
+      return false;
+    }
+    if (!db.isInRecycleBin(item)) {
+      return false;
+    }
+    return KdbxUtils.getPreviousParentGroupSafe(db, item) !== undefined;
+  }
+
+  /**
+   * 恢复条目/分组到原位置（回收站 PreviousParentGroup 消费）
+   * 成功：Toast 目标分组名 + 保存；不可恢复：Toast 失败文案
+   */
+  private restoreItem(item: KdbxGroup | KdbxEntry): void {
+    const db = this.database;
+    if (!db) {
+      return;
+    }
+    const target = KdbxUtils.getPreviousParentGroupSafe(db, item);
+    if (!target || !KdbxUtils.restoreToPreviousLocation(db, item)) {
+      CommonUtils.showToast({ message: $r('app.string.restore_failed_message') });
+      return;
+    }
+    CommonUtils.showToast({ message: $r('app.string.restore_success_message', target.name ?? '') });
+    // 从列表中移除（通过 UUID 匹配，恢复后不再属于当前分组）
+    const restoredUuid = item.uuid.id;
+    const itemsIndex = this.items.findIndex(i => i.uuid.id === restoredUuid);
+    if (itemsIndex >= 0) {
+      this.items.splice(itemsIndex, 1);
+    }
+    const filteredIndex = this.filteredItems.findIndex(i => i.uuid.id === restoredUuid);
+    if (filteredIndex >= 0) {
+      this.filteredItems.splice(filteredIndex, 1);
+    }
+    this.hideMoreMenu();
+    this.saveDatabase();
+  }
+
 
   /**
    * 打开模板选择器
@@ -1825,6 +2027,33 @@ export struct DatabaseView {
     // 重置状态
     this.newGroupName = "";
     this.editingGroupIndex = -1;
+  }
+
+  /**
+   * 批量添加 TAN 条目（P2-4 M3）：写入当前分组并保存刷新
+   */
+  private handleAddTan(tans: Array<string>, startIndex: number) {
+    if (!this.database || !this.currentGroup || tans.length === 0) {
+      CommonUtils.showToast({
+        message: $r('app.string.operation_failed'),
+        duration: 2000
+      });
+      return;
+    }
+    const created = KdbxUtils.addTanEntries(this.currentGroup, tans, startIndex);
+    if (created === 0) {
+      CommonUtils.showToast({
+        message: $r('app.string.operation_failed'),
+        duration: 2000
+      });
+      return;
+    }
+    this.saveDatabase();
+    this.updateUI();
+    CommonUtils.showToast({
+      message: ResourceManager.getString($r('app.string.tan_created_message'), created),
+      duration: 2000
+    });
   }
 
   // 强制组件刷新以应用新主题
@@ -2489,7 +2718,7 @@ export struct DatabaseView {
                             .margin(10)
                             // .fillColor(item.fgColor ? item.fgColor : undefined)
                           Column() {
-                            Text(KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_TITLE))
+                            Text(this.getListItemTitle(item))
                               .fontSize(18)
                               .textAlign(TextAlign.Start)
                               .flexGrow(1)
@@ -2500,7 +2729,7 @@ export struct DatabaseView {
                                 type: (DateUtils.isExpired(item.times.expires, item.times.expiryTime) ? TextDecorationType.LineThrough :
                                   TextDecorationType.None)
                               })
-                            Text(KdbxUtils.getFieldValueString(item.fields, KdbxUtils.FIELD_USERNAME))
+                            Text(this.getListItemSubtitle(item))
                               .fontSize(12)
                               .textAlign(TextAlign.Start)
                               .flexGrow(1)
@@ -2738,6 +2967,9 @@ export struct DatabaseView {
         onCreateFromTemplate: () => {
           this.openTemplateSelector();
         },
+        onAddTan: () => {
+          this.tanWizardDialogController.open();
+        },
         onShowTotp: () => {
           // 清空 TotpView 的导航栈，确保右侧分栏为空
           const totpNavPathStack = NavigationManager.getInstance().getNavPathStackByRoot('TotpView');
@@ -2780,6 +3012,10 @@ export struct DatabaseView {
       if (this.isSelectionMode) {
         SelectionModeBar({
           hasSelection: this.selectedItems.size > 0,
+          showRestore: this.isViewingRecycleBin(),
+          onBatchRestore: () => {
+            this.executeBatchRestore();
+          },
           onBatchMove: () => {
             this.startBatchMove();
           },

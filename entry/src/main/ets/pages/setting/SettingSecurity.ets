@@ -33,6 +33,8 @@ struct SettingSecurityContent {
   @State expireRemindEnabled: boolean = SettingsService.KEY_SECURITY_EXPIRE_REMIND_ENABLE_DEFAULT;
   @State expireRemindDays: number = SettingsService.KEY_SECURITY_EXPIRE_REMIND_DAYS_DEFAULT;
   @State expireRemindFrequency: ExpiryRemindFrequency = SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY_DEFAULT;
+  // TAN 使用后过期（P2-4 M3）
+  @State tanExpiresOnUse: boolean = SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE_DEFAULT;
   // 认证方式
   @State fingerprintLogin: boolean = SettingsService.KEY_SECURITY_FINGERPRINT_LOGIN_DEFAULT;
   @State faceLogin: boolean = SettingsService.KEY_SECURITY_FACE_LOGIN_DEFAULT;
@@ -172,6 +174,11 @@ struct SettingSecurityContent {
     // 到期提醒频率
     this.settingsService.get(SettingsService.KEY_SECURITY_EXPIRE_REMIND_FREQUENCY, this.expireRemindFrequency).then(result => {
       this.expireRemindFrequency = result;
+    });
+
+    // TAN 使用后过期开关（P2-4 M3）
+    this.settingsService.get(SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE, this.tanExpiresOnUse).then(result => {
+      this.tanExpiresOnUse = result;
     });
   }
 
@@ -691,6 +698,47 @@ struct SettingSecurityContent {
                 bottom: 12
               })
             }
+          }
+        }
+        .margin({ top: 12, bottom: 12 })
+        .backgroundColor($r("app.color.card_bg"))
+        .borderRadius(12)
+        .divider({
+          strokeWidth: 1,
+          color: $r('app.color.divider'),
+        })
+
+        // TAN 使用后过期设置（P2-4 M3）
+        ListItemGroup() {
+          ListItem() {
+            Row() {
+              Column() {
+                Text($r("app.string.settings_security_tan_expires_on_use"))
+                  .fontSize(16)
+                  .flexGrow(1)
+                Text($r("app.string.settings_security_tan_expires_on_use_tips"))
+                  .fontSize(12)
+                  .fontColor($r("app.color.text_secondary"))
+                  .margin({ top: 4 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .flexGrow(1)
+
+              Toggle({ type: ToggleType.Switch, isOn: this.tanExpiresOnUse })
+                .selectedColor('#007DFF')
+                .switchPointColor('#FFFFFF')
+                .onChange((isOn: boolean) => {
+                  this.tanExpiresOnUse = isOn;
+                  this.settingsService.put(SettingsService.KEY_SECURITY_TAN_EXPIRES_ON_USE, isOn);
+                })
+            }
+            .width('100%')
+            .padding({
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: 12
+            })
           }
         }
         .margin({ top: 12, bottom: 12 })

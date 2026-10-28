@@ -691,6 +691,8 @@ export class KdbxFormat {
     save(opts?: SaveOptions): Promise<ArrayBuffer> {
         return this.kdbx.credentials.ready.then(() => {
             const stm = new BinaryStream();
+            // P2-4 M1：保存前评估 4.1 特性，4.0 静默升 4.1（须在 header.write 前）
+            this.kdbx.upgradeMinorVersionIfNeeded();
             this.kdbx.header.generateSalts();
             KdbxFormat.applyKdfSaltOverride(this.kdbx, opts);
             this.kdbx.header.write(stm);
@@ -798,6 +800,8 @@ export class KdbxFormat {
                 throw new KdbxError(ErrorCodes.Unsupported, 'saveToFile requires ChaCha20 cipher');
             }
             const stm = new BinaryStream();
+            // P2-4 M1：保存前评估 4.1 特性，4.0 静默升 4.1（须在 header.write 前）
+            this.kdbx.upgradeMinorVersionIfNeeded();
             this.kdbx.header.generateSalts();
             KdbxFormat.applyKdfSaltOverride(this.kdbx, opts);
             this.kdbx.header.write(stm);

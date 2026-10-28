@@ -991,6 +991,155 @@ export class KdbxUtils {
     indexerValues.push(...letters);
     return { indexerValues, indexerMap };
   }
+
+  /**
+   * 获取可安全恢复的目标父分组（对齐 KeePass GetPreviousParentGroupSafeI，
+   * MainForm_Functions.cs:6896-6928）
+   * @param database 数据库
+   * @param object 待恢复的条目/分组
+   * @returns 目标分组；不可恢复时返回 undefined
+   */
+  public static getPreviousParentGroupSafe(
+    database: Kdbx,
+    object: KdbxEntry | KdbxGroup
+  ): KdbxGroup | undefined {
+    // 1. previousParentGroup 未设置 → 不可恢复
+    const previousParentGroup = object.previousParentGroup;
+    if (!previousParentGroup) {
+      return undefined;
+    }
+    // 2. 按 UUID 在根组树递归查找（原分组已被永久删除 → 不可恢复）
+    const target = database.getGroup(previousParentGroup);
+    if (!target) {
+      return undefined;
+    }
+    // 3. 不允许"恢复"到当前父组（已在原位置）
+    if (target === object.parentGroup) {
+      return undefined;
+    }
+    // 4. 分组恢复：目标不得是自身或自身子孙（防环）
+    if (object instanceof KdbxGroup && KdbxUtils.isDescendantOrSelf(target, object)) {
+      return undefined;
+    }
+    return target;
+  }
+
+  /**
+   * 恢复条目/分组到原位置。
+   * Kdbx.move 会把 previousParentGroup 更新为恢复前的父组（交换语义），
+   * 与 KeePassXC restoreSelectedEntries 行为一致。
+   * @param database 数据库
+   * @param object 待恢复的条目/分组
+   * @returns 是否恢复成功
+   */
+  public static restoreToPreviousLocation(
+    database: Kdbx,
+    object: KdbxEntry | KdbxGroup
+  ): boolean {
+    const target = KdbxUtils.getPreviousParentGroupSafe(database, object);
+    if (!target) {
+      return false;
+    }
+    database.move(object, target);
+    return true;
+  }
+
+  /**
+   * candidate 是否为 group 自身或其子孙分组（沿 parentGroup 向上遍历）
+   * @param candidate 待判定分组
+   * @param group 祖先分组
+   */
+  public static isDescendantOrSelf(candidate: KdbxGroup, group: KdbxGroup): boolean {
+    let current: KdbxGroup | undefined = candidate;
+    while (current) {
+      if (current === group) {
+        return true;
+      }
+      current = current.parentGroup;
+    }
+    return false;
+  }
+
+  /**
+   * TAN 条目标题常量（对齐 KeePass PwDefs.TanTitle，大小写敏感精确匹配）
+   */
+  public static readonly TAN_TITLE = '<TAN>';
+
+  /** 条目颜色合法格式：#RRGGBB */
+  private static readonly ENTRY_COLOR_PATTERN: RegExp = /^#[0-9a-fA-F]{6}$/;
+
+  /**
+   * 是否为 TAN 条目（Title 精确等于 '<TAN>'，对齐 KeePass PwDefs.IsTanEntry）
+   * @param entry 待判定条目
+   */
+  public static isTanEntry(entry: KdbxEntry): boolean {
+    return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_TITLE) === KdbxUtils.TAN_TITLE;
+  }
+
+  /**
+   * 获取 TAN 条目序号（存储在 UserName 字段）
+   * @param entry TAN 条目
+   */
+  public static getTanIndex(entry: KdbxEntry): string {
+    return KdbxUtils.getFieldValueString(entry.fields, KdbxUtils.FIELD_USERNAME);
+  }
+
+  /**
+   * 批量创建 TAN 条目（对齐 KeePass TanWizardForm.AddTan）：
+   * Title 固定 '<TAN>'，UserName 存序号（0 视为无序号不写入），Password 存 TAN 明文（保护字段）。
+   * @param group 目标分组
+   * @param tans TAN 文本片段（空片段跳过，不占序号）
+   * @param startIndex 起始序号（含）
+   * @returns 实际创建条数
+   */
+  public static addTanEntries(group: KdbxGroup, tans: Array<string>, startIndex: number): number {
+    let index = startIndex;
+    for (const tan of tans) {
+      if (!tan) {
+        continue;
+      }
+      const entry = new KdbxEntry();
+      entry.fields.set(KdbxUtils.FIELD_TITLE, KdbxUtils.TAN_TITLE);
+      if (index > 0) {
+        entry.fields.set(KdbxUtils.FIELD_USERNAME, String(index));
+      }
+      entry.fields.set(KdbxUtils.FIELD_PASSWORD, ProtectedValue.fromString(tan));
+      entry.times.update();
+      group.entries.push(entry);
+      index++;
+    }
+    return index - startIndex;
+  }
+
+  /**
+   * TAN 条目"使用后过期"（对齐 KeePass EntryUtil.ExpireTanEntryIfOption）：
+   * 开关关闭或非 TAN 条目不变更；否则先推入历史快照再置过期（expires=true、expiryTime=当前时间）。
+   * @param entry 待过期条目
+   * @param expiresOnUse "TAN 使用后过期"设置开关
+   * @returns 是否发生了变更
+   */
+  public static expireTanEntryOnUse(entry: KdbxEntry, expiresOnUse: boolean): boolean {
+    if (!expiresOnUse || !KdbxUtils.isTanEntry(entry)) {
+      return false;
+    }
+    entry.pushHistory();
+    entry.times.expires = true;
+    entry.times.expiryTime = new Date();
+    entry.times.update();
+    return true;
+  }
+
+  /**
+   * 解析并归一化条目颜色（对齐 KeePass PwEntry.ForegroundColor 语义）：
+   * 仅接受 #RRGGBB 格式并归一化为大写，非法/空值返回 undefined（渲染时继承默认色）。
+   * @param color 数据库中存储的颜色字符串
+   */
+  public static parseEntryColor(color: string | undefined): string | undefined {
+    if (!color || !KdbxUtils.ENTRY_COLOR_PATTERN.test(color)) {
+      return undefined;
+    }
+    return color.toUpperCase();
+  }
 }
 
 /**

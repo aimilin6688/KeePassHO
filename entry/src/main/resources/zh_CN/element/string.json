@@ -149,6 +149,82 @@
       "value": "删除"
     },
     {
+      "name": "restore_to_original_location",
+      "value": "恢复到原位置"
+    },
+    {
+      "name": "restore_button_text",
+      "value": "恢复"
+    },
+    {
+      "name": "restore_success_message",
+      "value": "已恢复到「%s」"
+    },
+    {
+      "name": "restore_failed_message",
+      "value": "原分组已不存在或不可恢复，请在列表中手动移动"
+    },
+    {
+      "name": "batch_restore_result_message",
+      "value": "已恢复 %d 项，跳过 %d 项"
+    },
+    {
+      "name": "settings_security_tan_expires_on_use",
+      "value": "TAN 使用后过期"
+    },
+    {
+      "name": "settings_security_tan_expires_on_use_tips",
+      "value": "复制 TAN 密码后自动将条目置为过期"
+    },
+    {
+      "name": "tan_wizard_title",
+      "value": "添加 TAN"
+    },
+    {
+      "name": "tan_wizard_text_label",
+      "value": "TAN 文本"
+    },
+    {
+      "name": "tan_wizard_text_placeholder",
+      "value": "在此粘贴 TAN 文本，每行一个"
+    },
+    {
+      "name": "tan_wizard_charset_label",
+      "value": "TAN 字符集"
+    },
+    {
+      "name": "tan_wizard_charset_default",
+      "value": "A-Za-z0-9-"
+    },
+    {
+      "name": "tan_wizard_start_index_label",
+      "value": "起始序号"
+    },
+    {
+      "name": "tan_wizard_preview",
+      "value": "将创建 %d 个 TAN，起始序号 %d"
+    },
+    {
+      "name": "tan_wizard_empty_error",
+      "value": "未找到有效 TAN"
+    },
+    {
+      "name": "tan_add_menu_text",
+      "value": "添加 TAN"
+    },
+    {
+      "name": "tan_created_message",
+      "value": "已创建 %d 个 TAN"
+    },
+    {
+      "name": "tan_list_title",
+      "value": "TAN %s"
+    },
+    {
+      "name": "tan_detail_title",
+      "value": "<TAN> (#%s)"
+    },
+    {
       "name": "confirm_button_text",
       "value": "确定"
     },

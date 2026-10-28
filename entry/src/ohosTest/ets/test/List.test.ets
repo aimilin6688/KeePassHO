@@ -300,6 +300,15 @@ import GenerateE2eTestDatabaseTest from './testdata/GenerateE2eTestDatabase.test
 // E2E 数据库操作单元测试（修改主密码往返 / 元数据设置持久化）
 import DatabaseChangePasswordMetaTest from './testdata/DatabaseChangePasswordMeta.test';
 
+// P2-4 M1：KDBX 4.1 兼容性数据层（copyFrom 补全 / merge previousParentGroup / 保存版本自动升级）
+import Kdbx41CopyFromTest from './kdbx/Kdbx41CopyFrom.test';
+import Kdbx41MergeTest from './kdbx/Kdbx41Merge.test';
+import Kdbx41VersionUpgradeTest from './kdbx/Kdbx41VersionUpgrade.test';
+// P2-4 M2：回收站恢复到原位置（PreviousParentGroup 消费）
+import KdbxRestorePreviousLocationTest from './kdbx/KdbxRestorePreviousLocation.test';
+// P2-4 M3：TAN 支持（识别 / 批量创建 / 用后过期 / 条目颜色解析）
+import KdbxTanTest from './kdbx/KdbxTan.test';
+
 
 export default function testsuite() {
   ActsAbilityTest();
@@ -646,6 +655,17 @@ export default function testsuite() {
   GenerateE2eTestDatabaseTest();
   // E2E 数据库操作（修改主密码往返 / 元数据设置持久化）
   DatabaseChangePasswordMetaTest();
+
+  // P2-4 M1：KDBX 4.1 兼容性数据层
+  Kdbx41CopyFromTest();
+  Kdbx41MergeTest();
+  Kdbx41VersionUpgradeTest();
+
+  // P2-4 M2：回收站恢复到原位置
+  KdbxRestorePreviousLocationTest();
+
+  // P2-4 M3：TAN 支持
+  KdbxTanTest();
 
   // UI 自动化测试
   // OpenDatabaseUiTest();

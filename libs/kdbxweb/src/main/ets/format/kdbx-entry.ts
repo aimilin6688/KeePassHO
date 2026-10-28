@@ -463,6 +463,8 @@ export class KdbxEntry {
         this.overrideUrl = entry.overrideUrl;
         this.tags = entry.tags.slice();
         this.times = entry.times.clone();
+        this.qualityCheck = entry.qualityCheck;
+        this.customData = KdbxCustomData.clone(entry.customData);
 
         this.fields = new Map<string, KdbxEntryField>();
         for (const [name, value] of entry.fields) {

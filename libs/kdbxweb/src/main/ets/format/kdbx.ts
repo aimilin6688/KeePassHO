@@ -9,6 +9,7 @@ import {
 import { AttachmentStore } from '../utils/attachment-store';
 import { KdbxDeletedObject } from './kdbx-deleted-object';
 import { KdbxGroup } from './kdbx-group';
+import { KdbxCustomDataMap } from './kdbx-custom-data';
 import { KdbxMeta, KdbxMetaEditState } from './kdbx-meta';
 import { KdbxCredentials } from './kdbx-credentials';
 import { KdbxHeader } from './kdbx-header';
@@ -811,5 +812,69 @@ export class Kdbx {
         return (
             this.versionMajor > major || (this.versionMajor === major && this.versionMinor >= minor)
         );
+    }
+
+    /**
+     * P2-4 M1：评估库内是否使用了 KDBX 4.1 特性。
+     * 对齐 KeePass GetMinKdbxVersion（KdbxFile.cs，保存时按实际特性计算最低版本）
+     * 与 KeePassXC kdbxVersionRequired：
+     * - 分组 Tags、条目 QualityCheck（仅 4.1 写出）
+     * - PreviousParentGroup（本应用以其为回收站恢复原位置依据，KeePassXC 亦计入）
+     * - CustomData 项 LastModificationTime（meta/条目/分组）
+     * - 自定义图标 Name / LastModificationTime
+     */
+    uses41Features(): boolean {
+        for (const icon of this.meta.customIcons.values()) {
+            if (icon && (icon.name !== undefined || icon.lastModified !== undefined)) {
+                return true;
+            }
+        }
+        if (Kdbx.customDataHasLastModified(this.meta.customData)) {
+            return true;
+        }
+        if (!this.groups.length) {
+            return false;
+        }
+        for (const item of this.getDefaultGroup().allGroupsAndEntries()) {
+            if (item instanceof KdbxGroup) {
+                if (
+                    item.tags.length > 0 ||
+                    item.previousParentGroup !== undefined ||
+                    Kdbx.customDataHasLastModified(item.customData)
+                ) {
+                    return true;
+                }
+            } else if (
+                item.qualityCheck !== undefined ||
+                item.previousParentGroup !== undefined ||
+                Kdbx.customDataHasLastModified(item.customData)
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static customDataHasLastModified(customData: KdbxCustomDataMap | undefined): boolean {
+        if (!customData) {
+            return false;
+        }
+        for (const item of customData.values()) {
+            if (item && item.lastModified !== undefined) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * P2-4 M1：保存前自动升级次版本（KeePass GetMinKdbxVersion 语义）。
+     * 仅 4.0 → 4.1：次版本升级无加密/头部结构变更，KeePass 2.x 打开即静默升级；
+     * 3.x 不自动升级（涉及加密结构变更，须用户显式 upgrade()）。
+     */
+    upgradeMinorVersionIfNeeded(): void {
+        if (this.versionMajor === 4 && this.versionMinor === 0 && this.uses41Features()) {
+            this.header.versionMinor = 1;
+        }
     }
 }
